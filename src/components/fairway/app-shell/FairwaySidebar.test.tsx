@@ -39,6 +39,44 @@ describe('FairwaySidebar — hideScrollbar', () => {
     const { container } = render(<FairwaySidebar sections={SECTIONS} hideScrollbar={false} />);
     expect(getNav(container).className).not.toContain('scrollbar-hidden');
   });
+});
+
+// Bridge Premium Phase 6: item.shortcut (Bridge's only current producer) was
+// rendered as a visible badge only, with no aria-keyshortcuts companion — a
+// keyboard shortcut that is reachable but never announced to assistive tech.
+describe('FairwaySidebar — shortcut announcement', () => {
+  it('exposes a single-digit shortcut as aria-keyshortcuts verbatim', () => {
+    const sections: readonly NavSection[] = [
+      { items: [{ label: 'Overview', href: '/admin', icon: () => null, shortcut: '1' }] },
+    ];
+    const { container } = render(<FairwaySidebar sections={sections} />);
+    const link = container.querySelector('a[href="/admin"]');
+    expect(link?.getAttribute('aria-keyshortcuts')).toBe('1');
+  });
+
+  it('exposes a single-letter shortcut as Shift+<letter> (the real gesture — see AdminShell)', () => {
+    const sections: readonly NavSection[] = [
+      { items: [{ label: 'Reliability', href: '/admin/reliability', icon: () => null, shortcut: 'R' }] },
+    ];
+    const { container } = render(<FairwaySidebar sections={sections} />);
+    const link = container.querySelector('a[href="/admin/reliability"]');
+    expect(link?.getAttribute('aria-keyshortcuts')).toBe('Shift+R');
+  });
+
+  it('hides the visible shortcut badge from assistive tech (the Link carries the announcement instead)', () => {
+    const sections: readonly NavSection[] = [
+      { items: [{ label: 'Reliability', href: '/admin/reliability', icon: () => null, shortcut: 'R' }] },
+    ];
+    const { container } = render(<FairwaySidebar sections={sections} />);
+    const badge = Array.from(container.querySelectorAll('span')).find((el) => el.textContent === 'R');
+    expect(badge?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('omits aria-keyshortcuts when there is no shortcut', () => {
+    const { container } = render(<FairwaySidebar sections={SECTIONS} />);
+    const link = container.querySelector('a[href="/golf/dashboard"]');
+    expect(link?.hasAttribute('aria-keyshortcuts')).toBe(false);
+  });
 
   it('keeps the nav scrollable (overflow-y-auto) regardless of the scrollbar affordance', () => {
     const { container } = render(<FairwaySidebar sections={SECTIONS} hideScrollbar={false} />);

@@ -950,6 +950,137 @@ remain local under `src/components/admin/triage/` — none of `premium/`'s
 seven primitives (posture pill aside) match a timeline/waterfall/matrix
 layout shape, so nothing else there was a duplicate to replace.
 
+## Phase 6 polish (Bridge Premium Observability, 2026-09-03)
+
+Motion/reduced-motion, keyboard reachability, mobile, loading/error states,
+performance and a11y audit of what was actually on `main` at task start —
+Phase 0 truth models, Phase 3 triage tabs, Phase 4 lenses, the shared
+`src/components/admin/premium/*` primitives, and the admin shell
+(`src/app/admin/_components/**`). Phase 1 (`/admin/errors` redesign), 2
+(Command Deck) and 5 (Engineering OS) were not on `main` yet and were not
+touched; the guard test added here applies to them by convention once they
+land, per the task brief's own instruction not to edit their files.
+
+Findings, in order of what the audit actually turned up rather than what it
+assumed it would:
+
+- **"Unknown never renders as zero" — verified clean, no fix needed.** Every
+  `?? 0` / `|| 0` in `src/lib/admin/{incidents,triage,lenses}/**` was read in
+  context: all are either a genuine histogram/aggregation default (e.g.
+  `adoption-map.ts`'s `Map.get() ?? 0` while building a count table) or
+  explicitly guarded by a separate `known`/`unmeasured`/`unreadable` flag one
+  line away (`self-heal-circuit.ts`'s stage rows, `truth-strip.ts`'s
+  `coverage.anyBlind` branch). Every `catch` block in these three trees
+  (`incidents/fetch.ts`, `incidents/release-context.ts`,
+  `triage/trace-incident-link.ts`) returns `null`/`'unknown'`, never a
+  fabricated zero or empty collection indistinguishable from "checked, found
+  none". No SVG-wrapping-a-focusable-link pattern exists anywhere in
+  `triage/**` or `lenses/**` (the one real `<svg role="img">`,
+  `premium/EvidenceSourceChips.tsx`'s `SourceConfidenceRing`, wraps no
+  interactive children — a correct, decorative-informational use).
+- **Motion — 4 real gaps, fixed.** Two unguarded infinite Tailwind loops
+  (`activity/page.tsx`'s filter skeleton, `TracerRoundDiagnostic.tsx`'s
+  spinner) and two unguarded transform-transitions (`TracerIncidentRow.tsx`,
+  `TracerPlayerList.tsx` chevrons) now match the `motion-safe:`/
+  `motion-reduce:transition-none` convention already used everywhere else in
+  admin. Added `src/app/admin/__tests__/admin-motion-guard-coverage.test.ts`
+  — scans `src/app/admin/**` + `src/components/admin/**` for an unguarded
+  `animate-*`/transform-`transition-*` utility; complements (does not
+  duplicate) the pre-existing
+  `scripts/__tests__/motion-reduced-motion-coverage.test.mjs`, which only
+  sees framer-motion usage and admin uses none for its own chrome/visuals.
+- **Keyboard reachability — 1 real bug, fixed.** AdminShell's global keydown
+  handler intercepted both `'r'` and `'R'` for "refresh now" before ever
+  consulting `hrefForShortcut`, which made Reliability's `'R'` `ADMIN_NAV`
+  shortcut permanently unreachable — every other letter shortcut is
+  deliberately the Shift+letter (uppercase `e.key`) form specifically so it
+  can't collide with a plain reserved key, and refresh broke that invariant.
+  Now reserves only the exact key it needs
+  (`RESERVED_LOCAL_SHORTCUTS`, `admin-nav.ts`), with a regression test
+  asserting no `ADMIN_NAV` key can fall into that reserved set again.
+- **Keyboard "announced" — 1 real gap, fixed.** `NavItem.shortcut` (Bridge's
+  only producer) was a visible-only badge with no `aria-keyshortcuts`
+  companion. `FairwaySidebar.tsx`'s nav `Link` now carries
+  `aria-keyshortcuts` (digit verbatim, letter as `Shift+<letter>` — the real
+  gesture AdminShell listens for), and the now-redundant visible badge is
+  `aria-hidden` so it stops polluting the link's accessible name on an
+  expanded (non-`aria-label`'d) row. `NavItem.shortcut` has exactly one
+  producer repo-wide (`AdminShell.tsx` — checked directly), so this is
+  effectively admin-scoped despite living in shared Fairway shell code.
+- **Mobile, loading/error states — verified clean, no fix needed.** No fixed-
+  width `grid-cols-N` (N≥6) or `flex-nowrap` layout without an
+  `overflow-x-auto` container anywhere in the six triage pages or the five
+  lens pages; the wide-table + `hidden md:block` / phone-alternative pattern
+  documented in `jobs/page.tsx` and `deploys/page.tsx` already covers every
+  case that needs it. Every one of the eleven pages in scope wraps its real
+  content in `PanelBoundary` (a Suspense skeleton + a scoped amber
+  error-with-retry card, never the whole console going blank), on top of the
+  root `/admin/loading.tsx` + `/admin/error.tsx` fallback for anything above
+  panel level.
+  **Narrow-viewport (375px) render tests:** the brief's own escape clause
+  applies to the eleven triage/lens `page.tsx` files themselves — each is an
+  `async` server component doing its own `createClient()` + query, not
+  renderable through RTL without reimplementing its data layer as a mock, so
+  no new per-page 375px test was added. The chrome those pages mount inside
+  already carries dedicated narrow-viewport regression coverage that admin
+  inherits for free: `FairwayBottomNav.test.tsx` pins the 320/390px
+  fallback-to-center-on-overflow and `min-w-0` floor fixes (#899/#905) for
+  the exact bottom nav `AdminShell` renders via `BRIDGE_BOTTOM_NAV_HREFS`,
+  and `AppShell.compact-viewport.test.tsx` pins the icon-rail/scroll-
+  affordance behavior at 768-1023px width and 390px-tall mobile-landscape
+  that `AdminShell` also inherits unmodified. No admin-specific layout
+  diverges from that shared chrome, so no separate 375px suite was
+  duplicated on top of it.
+- **Performance — verified clean, no fix needed.** Every Phase 3/4 read-model
+  fetcher (`fetchReleaseRunway`, `fetchSelfHealCircuit`, the five lens
+  fetchers, `fetchTeamsEkgLens`) is called at most once per page render (the
+  two `fetchTeamsEkgLens` call sites pass different sort args from different
+  pages, not a duplicate call); the base primitives they read
+  (`cachedIncidentBoard` etc.) are already wrapped in React `cache()` at the
+  source layer, which is the correct place for the dedup rather than
+  re-wrapping every derived read model. `fetchSelfHealCircuit` itself is
+  unused — `self-heal/page.tsx` calls `buildSelfHealCircuit` directly and
+  composes its own inputs — noted, not changed (a dead-export cleanup is a
+  different program than Phase 6 polish). No admin read model re-parses a
+  `docs/generated/**` artifact per request the way Phase 5's
+  `WORLD_MODEL.json` mtime cache does; nothing analogous exists on `main`
+  today.
+  **Performance budget for triage/lens read models, stated so a future
+  change can be checked against it rather than re-derived:** (1) a read
+  model returns only the compact typed shape its panel renders — never a
+  raw provider payload (Sentry event bodies, Vercel deployment JSON, cron
+  run logs) forwarded to the client wholesale; (2) each read-model function
+  is called at most once per server render of the page that uses it, with
+  request-scoped dedup living at the shared primitive layer
+  (`cachedIncidentBoard` and peers) via React `cache()`, not re-implemented
+  per fetcher; (3) any list backed by a table with unbounded growth is
+  either paginated or explicitly capped with the cap surfaced to the user
+  (`adoption-map.ts`'s 500-user cap + `roleCoverageNote`), never silently
+  truncated; (4) no per-request re-parse of a large generated artifact —
+  this repo's only instance of that pattern, Phase 5's `WORLD_MODEL.json`
+  mtime cache, has no analogue on `main` today because no admin read model
+  reads a `docs/generated/**` file at request time.
+- **Accessibility — colour contrast verified clean; automated axe coverage
+  BLOCKED, documented rather than worked around.** No `text-accent-500`
+  usage anywhere in `src/app/admin` or `src/components/admin` (the token
+  that fails AA at 2.67:1). `@axe-core/playwright` exists in this repo and is
+  already used by `e2e/accessibility.spec.ts`, but that suite explicitly
+  scopes to unauthenticated public routes only ("Add per-route variants once
+  you have a seeded test account flow") — checked directly, no such flow
+  exists for the `SUPER_ADMIN_USER_IDS`-gated admin console (unlike golf/
+  baseball's ordinary team-scoped demo accounts, there is no Playwright
+  storageState fixture or `*-auth.setup.ts` for a super-admin identity).
+  Standing one up is real auth infrastructure, not a route-table addition,
+  so it is reported here rather than built.
+- **Visual regression — BLOCKED for the same reason, documented rather than
+  worked around.** `e2e/sentry-snapshots.spec.ts` /
+  `e2e/sentry-snapshots-baseball.spec.ts` handle auth per caller (golf via
+  `hasGolfPlayerAuth`, baseball via `storageState` +
+  `playwright/baseball-auth.setup.ts`), and the shared capture helpers
+  (`e2e/fixtures/sentry-snapshot-helpers.ts`) are auth-agnostic — so the
+  mechanism could in principle cover admin routes, but only once a
+  super-admin auth fixture exists. No new screenshot system was built.
+
 ## Known Risk Areas
 
 - Admin actions are more likely to use broad permissions; review for service-role and RLS bypass carefully.

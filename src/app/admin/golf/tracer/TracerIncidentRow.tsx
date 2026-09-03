@@ -33,7 +33,7 @@ export function TracerIncidentRow({ incident }: { incident: TracerIncident }) {
           </span>
           <ChevronDown
             size={14}
-            className="shrink-0 text-warm-400 transition-transform duration-150 group-open:rotate-180"
+            className="shrink-0 text-warm-400 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
             aria-hidden
           />
         </summary>
