@@ -21172,6 +21172,8 @@ export type Database = {
       }
       heartbeat: { Args: never; Returns: undefined }
       helm_debug_db_health_snapshot: { Args: never; Returns: Json }
+      helm_debug_db_lock_snapshot: { Args: never; Returns: Json }
+      helm_debug_db_table_snapshot: { Args: never; Returns: Json }
       helm_debug_finalize_trace: {
         Args: { p_metadata?: Json; p_status: string; p_trace_id: string }
         Returns: undefined
@@ -21199,10 +21201,24 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: Json
       }
+      helm_debug_read_db_lock_incidents: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      helm_debug_read_db_platform_history: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       helm_debug_read_db_stat_deltas: {
         Args: { p_regression_lookback_hours?: number }
         Returns: Json
       }
+      helm_debug_read_db_table_health: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      helm_debug_read_jobs_health: { Args: never; Returns: Json }
+      helm_debug_read_observability_sizes: { Args: never; Returns: Json }
       helm_debug_record_trace_step: {
         Args: {
           p_layer: string
@@ -21427,6 +21443,47 @@ export type Database = {
         }
         Returns: number
       }
+      record_db_lock_incident: {
+        Args: {
+          p_action?: string
+          p_blocked_pid_count?: number
+          p_blocked_query_class?: string
+          p_blocking_query_class?: string
+          p_feature?: string
+          p_helm_trace_id?: string
+          p_kind: string
+          p_relation_name?: string
+          p_release_sha?: string
+          p_role_class: string
+          p_safe_metadata?: Json
+          p_severity: string
+          p_wait_ms: number
+        }
+        Returns: number
+      }
+      record_db_platform_sample: {
+        Args: {
+          p_auth_pool_max: number
+          p_auth_pool_saturation_pct: number
+          p_auth_pool_used: number
+          p_autovacuum_or_bloat_signal: number
+          p_connections_max: number
+          p_connections_used: number
+          p_cpu_pct: number
+          p_db_size_bytes: number
+          p_db_up: number
+          p_io_pressure: number
+          p_memory_pct: number
+          p_pool_saturation_pct: number
+          p_postgrest_pool_max: number
+          p_postgrest_pool_saturation_pct: number
+          p_postgrest_pool_used: number
+          p_realtime_subscriptions: number
+          p_source_status: string
+          p_wal_or_replication_lag_seconds: number
+        }
+        Returns: number
+      }
       record_db_stat_snapshot: {
         Args: {
           p_delta_rows: Json
@@ -21436,6 +21493,7 @@ export type Database = {
         }
         Returns: number
       }
+      record_db_table_samples: { Args: { p_rows: Json }; Returns: number }
       record_round_coachhelm_terminal_state: {
         Args: {
           p_analyzed_at: string
