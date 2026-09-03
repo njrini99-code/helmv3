@@ -29,7 +29,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 14 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 23 | 23 | 9 | 15 |
+| `CURRENT_FEATURE` | 23 | 23 | 9 | 17 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 21 | 3 | 6 | 26 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
@@ -159,7 +159,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | 1 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 11 | 113 | 8 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 11 | 119 | 10 |
 | `memory/features/admin-reliability-collector.md` | current | yes | - | - | 5 | 16 | - |
 | `memory/features/admin-selfheal.md` | current | yes | - | yes | 5 | 27 | - |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 13 | - |
@@ -480,7 +480,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
 | `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 129 | 16 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 132 | 16 |
 | `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | 1 | 4 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
