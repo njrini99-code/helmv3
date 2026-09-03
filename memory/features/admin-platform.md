@@ -26,6 +26,21 @@ This area is high criticality because it often uses broader access patterns, ope
 - `src/app/golf/admin/crm/**`
 - `src/app/api/cron/reliability-triage/**` — the 3-hourly collector behind the
   `/admin/reliability` tab. Its core is `src/lib/reliability/**`.
+- `src/app/admin/database/**` — the zero-cost Supabase/Postgres observability
+  view (Phase 1, 2026-09-03). Distinct from `/admin/reliability`, which
+  correlates APPLICATION-level Sentry/Supabase/Vercel signals every 3 hours;
+  this tab is the DATABASE's own state — connections, deduped Supabase/
+  PostgREST failures grouped by fingerprint, `pg_stat_statements`
+  delta/regression detection — read from `helm_debug` every 5-15 minutes via
+  `src/lib/admin/database/{overview,errors,performance}.ts`. Its data source
+  (`src/lib/observability/supabase/**`, four new `helm_debug` tables) is
+  **HELD, not applied to production** — see `supabase/migrations/HELD.md` —
+  so every fetcher currently renders "not shipped yet"
+  (`status: 'unconfigured'`), not a false failure state.
+- `src/app/api/cron/db-health-sampler/**`, `db-stat-delta/**`,
+  `db-observability-prune/**` — the three Vercel-cron collectors behind
+  `/admin/database` (5m / 15m / daily). Degrade cleanly on the HELD-migration
+  "not found" error shape, same pattern as `helm-debug-prune/route.ts`.
 - `src/app/api/cron/selfheal-triage/**` — the self-healing loop's Diagnose
   stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
   collection/apply core is `src/lib/admin/triage-collect.ts` /
@@ -64,6 +79,16 @@ them would have broken those routes, not the dead one.
 - `src/app/golf/actions/resend-activity.ts`
 - `src/lib/supabase/admin*`
 - `src/lib/cron/**`
+- `src/lib/observability/supabase/**` — the zero-cost Supabase observability
+  layer (Phase 1): `envelope.ts` (canonical error shape, code-first
+  fingerprint), `classify.ts` (SQLSTATE/PostgREST classifier), `observe-
+  result.ts` (`observeSupabaseResult()` — the call a server call site adds
+  around a `{data,error}` result), `record-db-error.ts` (fail-open
+  out-of-band durable writer), `integrity.ts` (the HTTP-200-with-error
+  primitive), `db-health-delta.ts` / `query-regression.ts` (pure delta and
+  regression-detection arithmetic the two health/stat collectors call). See
+  `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.
+- `src/lib/admin/database/**` — the `/admin/database` read models.
 
 ## Core Data
 
@@ -778,6 +803,20 @@ them would have broken those routes, not the dead one.
 - CRM email/reply/suppression logic can have compliance impact.
 - Rollup dashboards can appear live while backed by stale data.
 - Observability code must avoid PII and secret leakage.
+- **The Supabase observability tables (`helm_debug.db_error_events`,
+  `db_health_samples`, `db_stat_deltas`, `db_stat_prior_state`) are HELD, not
+  applied to production**, as of 2026-09-03 — see `supabase/migrations/
+  HELD.md`. `/admin/database` and its three cron collectors are shipped
+  code with no live data source yet; they render `status: 'unconfigured'`
+  until an owner applies the migrations. Do not read a green/empty
+  `/admin/database` page as proof the database is healthy — it may only
+  mean the collector has never run.
+- **`helm_debug` is not reachable by direct table grant, even for
+  `service_role`.** Every read and write goes through a `SECURITY DEFINER`
+  facade (`record_db_error_event`, `helm_debug_read_db_health_history`,
+  etc.) — confirmed against production 2026-09-03 that `service_role` lacks
+  `USAGE` on the schema. A future change that tries `.from('db_error_events')`
+  directly from an admin client will fail; add a new RPC facade instead.
 - **An incident detail page costs a whole board.** `fetchIncidentById`
   (`src/lib/admin/incidents/fetch.ts`) builds the full 168h board — a Sentry
   pull, a paginated `admin_events` sweep, the GitHub work log and per-PR check
@@ -819,6 +858,15 @@ them would have broken those routes, not the dead one.
   guard, asserted at the query level where it actually lives.
 - `src/app/admin/golf/tracer/__tests__/tracer-shared.test.ts` — the Tracer's
   pure grouping/rendering helpers, including `tracerIncidentGroupKey`.
+- `src/lib/observability/supabase/__tests__/*.test.ts` — the SQLSTATE
+  classifier's context-sensitive codes (42501/23505/23503 expected vs
+  unexpected), fingerprint determinism (same code+feature+rpc, different
+  message text -> same fingerprint), the privacy sentinel (a JWT/email/UUID
+  passed into safeDetails never survives into the persisted envelope), and
+  the two-signal reset detection both delta engines share.
+- `src/lib/admin/database/__tests__/*.test.ts` — the three `/admin/database`
+  read models degrade to `status:'unconfigured'` (not `'error'`) on the
+  HELD-migration "not found" shape.
 - Typecheck/build for admin UI changes.
 - Targeted smoke/browser checks for admin dashboards when changing route-level code.
 
@@ -828,3 +876,7 @@ them would have broken those routes, not the dead one.
 - `docs/BI_DASHBOARD_ARCHITECTURE.md`
 - `docs/OBSERVABILITY.md`
 - `docs/SECURITY_AUDIT.md`
+- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's
+  re-measured production baseline for the Supabase/Postgres observability
+  program (the master brief itself lands separately, on the sibling
+  control-plane branch).
