@@ -1296,6 +1296,18 @@ features:
         - scripts/selfheal-repair-install.sh
         - scripts/selfheal-repair-doctor.mjs
         - config/launchd/**
+        # Phase K.4.5 (Engineering OS Intelligence) Janitor generator —
+        # mapped here 2026-09-03 after `knowledge:map` resolved
+        # scripts/janitor/** to `impactedFeatures: []`. Same precedent as
+        # the self-heal REPAIR-stage runner above: this is Bridge/Phase-K
+        # engineering-tooling with no better home, not a separate feature.
+        # scripts/mutation-gate.mjs and .circleci/config.yml (also Phase K,
+        # the mutation-score gate fix) are deliberately NOT added here —
+        # they gate src/lib/coachhelm/v2/ test quality, not the Bridge/admin
+        # surface, and `knowledge:map` confirms they match no feature at all
+        # today; forcing them under admin_platform would be a wrong mapping,
+        # not a closed gap.
+        - scripts/janitor/**
       db:
         - supabase/migrations/*admin*.sql
         - supabase/migrations/*crm*.sql
