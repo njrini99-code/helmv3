@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD022 MD032 MD040 -->
+<!-- markdownlint-disable MD004 MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # HELM — Zero-cost maximum Supabase observability & error tracking (master brief)
 
 Owner-authored master design + implementation brief, researched 2026-09-03, transcribed

@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
+<!-- markdownlint-disable MD004 MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Helm Bridge Premium Observability Architecture (owner brief, 2026-09-03)
 
 Status: design specification, approved by the owner for implementation in auto mode

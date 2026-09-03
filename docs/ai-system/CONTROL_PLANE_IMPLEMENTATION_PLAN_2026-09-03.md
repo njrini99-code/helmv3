@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
+<!-- markdownlint-disable MD004 MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Helm Bridge Control-Plane Implementation Plan
 
 > Scout deliverable. Read-only research against the canonical checkout
