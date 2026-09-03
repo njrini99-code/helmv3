@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
@@ -472,3 +473,12 @@ export async function fetchBriefing(): Promise<BriefingResult> {
   const candidates = results.filter((c): c is BriefingCandidate => c !== null);
   return { items: rankBriefingItems(candidates), degradedChecks };
 }
+
+/** React `cache()`-memoised per request — same convention as
+ *  `cachedIncidentBoard`/`cachedSelfHealBoard` (`incidents/fetch.ts`,
+ *  `data/selfheal.ts`). `/admin`'s `page.tsx` and the Command Deck
+ *  (`CommandDeck.tsx`) both need this within the SAME request; without this
+ *  wrapper each call site ran its own independent `Promise.all` of platform
+ *  checks. Every call site takes zero arguments, so the memo key never
+ *  varies within a request. */
+export const cachedBriefing = cache(() => fetchBriefing());

@@ -253,6 +253,13 @@ export function correlateSignals(
           route,
           errorCode: raw.errorCode,
           count: raw.count,
+          // A provable floor, never a lie: `'unknown'` means the source
+          // demonstrably saw at least `raw.count` occurrences but could not
+          // establish the exact number (see RawSignal.countBasis's own
+          // doc). Once true for a bucket it stays true — merging in a
+          // second source's exact count cannot retroactively make the
+          // first source's floor exact.
+          countIsFloor: raw.countBasis === 'unknown',
           firstSeen: raw.firstSeen,
           lastSeen: raw.lastSeen,
           sources: [raw.source],
@@ -271,6 +278,7 @@ export function correlateSignals(
       }
 
       existing.count += raw.count;
+      existing.countIsFloor = existing.countIsFloor || raw.countBasis === 'unknown';
       existing.severity = pickWorseSeverity(existing.severity, raw.severity);
       if (raw.firstSeen < existing.firstSeen) existing.firstSeen = raw.firstSeen;
       if (raw.lastSeen > existing.lastSeen) existing.lastSeen = raw.lastSeen;

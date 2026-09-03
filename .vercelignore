@@ -94,14 +94,29 @@ routes/
 # and more than half of that is binary: marketing mockup references, visual-audit
 # screenshots, PDFs.
 #
-# Nothing in the build reads it. Verified 2026-08-31: no reference in
-# next.config.mjs, tailwind.config.ts, tsconfig.json or package.json; no import
-# from src/; no /docs route; no runtime readFile against it. Next.js serves
-# static assets from public/, which is separate and stays.
+# Verified 2026-08-31: no reference in next.config.mjs, tailwind.config.ts,
+# tsconfig.json or package.json; no import from src/; no /docs route.
+#
+# STALE AS OF 2026-09-03 (Bridge Premium Phase 5, PR #1790 review): "no
+# runtime readFile against it" stopped being true the moment
+# src/lib/admin/engineering/{blast-radius,charter,decision-inbox}.ts shipped
+# — each does `readFile(join(process.cwd(), 'docs/generated/...'))` at
+# request time for the /admin/engineering panels. Three specific files are
+# carved back in below (and their next.config.mjs `outputFileTracingIncludes`
+# counterpart, so Next's build-time file tracer also keeps them in the
+# serverless function bundle — being in the upload alone is not enough, since
+# the tracer only follows import graphs and cannot see a dynamic readFile
+# call). Everything else under docs/ stays excluded; this is a narrow
+# carve-out, not a reversal of the directory-wide exclusion above.
 #
 # This excludes docs from the UPLOAD only. They remain tracked in git, which is
 # where they are actually read.
-docs/
+docs/*
+!docs/generated/
+docs/generated/*
+!docs/generated/WORLD_MODEL.json
+!docs/generated/contracts/
+!docs/generated/janitor-findings.json
 
 # Secrets. This is the .gitignore-is-ignored trap at its worst address.
 #

@@ -16,6 +16,8 @@ import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
+import { getReplayCoverage } from '@/lib/admin/replay/coverage';
+import { ReplayCoveragePanel } from '@/components/admin/replay/ReplayCoveragePanel';
 import {
   SelfHealCircuit,
   RunHistoryHeatmap,
@@ -341,6 +343,17 @@ export default async function SelfHealPage() {
           <PanelBoundary title="Self-heal flow" skeleton={<PanelPageSkeleton rows={4} />}>
             <FlowBody />
           </PanelBoundary>
+        </div>
+      </Surface>
+      <Surface padding="sm">
+        <Eyebrow as="h2">Replay coverage</Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          Historical incidents backfilled into the Incident Replay Lab (`replay/manifests/`) — each one a
+          fixture-driven proof that the fix commit actually reverses the bug. &ldquo;Not yet run&rdquo; means exactly
+          that, never a quiet pass; see `replay/README.md`.
+        </p>
+        <div className="mt-3">
+          <ReplayCoveragePanel rows={getReplayCoverage()} />
         </div>
       </Surface>
     </div>

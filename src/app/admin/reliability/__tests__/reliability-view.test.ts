@@ -24,6 +24,7 @@ function signal(overrides: Partial<CorrelatedSignal> = {}): CorrelatedSignal {
     route: '/api/x',
     errorCode: null,
     count: 1,
+    countIsFloor: false,
     firstSeen: '2026-08-26T10:00:00.000Z',
     lastSeen: '2026-08-26T10:00:00.000Z',
     sources: ['sentry'],

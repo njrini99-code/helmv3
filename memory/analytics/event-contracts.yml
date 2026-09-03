@@ -1,0 +1,142 @@
+# Behavioral event contracts — Bridge Control Plane Phase D.4.4
+# (docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md §2 item 4,
+# GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md §30-32: "no sensitive content in
+# analytics", allow-list every property BEFORE writing an event).
+#
+# PostHog is wired but thin — pageviews plus one demo-entry event
+# (`DEMO_ENTER_EVENT`, `src/components/demo/DemoEnterTracker.tsx` +
+# `src/app/golf/actions/auth.ts:200`). This is an instrumentation-authoring
+# task on that existing platform, not a platform-selection task — do not
+# add a second analytics provider.
+#
+# Every event name below is `<journey_id>.started` / `<journey_id>.completed`,
+# one pair per golden path in memory/journeys/golden-paths.yml (8 journeys —
+# see that file's own header for why only 8 of the base spec's 12 are seeded).
+# `allowed_properties` is a closed list — a property not named here must
+# never be added to a `captureServer`/`posthog.capture` call for this event.
+# `status: live` means the pair is actually instrumented (source_path names
+# where); `status: planned` means declared but not yet wired — DO NOT infer
+# behavioral-signal coverage for a `planned` event from this file alone.
+#
+# Validated by `npm run knowledge:event-contracts-check`
+# (scripts/knowledge/check-event-contracts.mjs): every `journey_id` must be a
+# real id in golden-paths.yml, every `live` event's `source_path` must be a
+# tracked file containing the event name as a quoted string literal (same
+# discipline check-journeys.mjs applies to flight_recorder/span citations),
+# and no two contracts may declare the same event name twice.
+#
+# ALL EIGHT PAIRS BELOW ARE `status: planned`, DELIBERATELY, NOT AN
+# OVERSIGHT. `loginActionImpl` (src/app/golf/actions/auth.ts) — the natural
+# home for `player_login_hub`'s `authenticate` stage, and where the proven
+# `DEMO_ENTER_EVENT` capture already lives — is SHARED by coach and player
+# logins; role is not resolved until later in the function (the
+# coach/player onboarding branch). Firing a `player_login_hub`-named event
+# there unconditionally would misattribute every coach login as a player
+# journey completion, which is a worse outcome than no instrumentation.
+# Finding the correct role-resolved insertion point in a security-sensitive
+# shared auth path needs its own careful pass, not a rushed edit under this
+# PR's time budget — the contract (allow-listed properties, one pair per
+# seeded journey) ships now so that pass has a reviewed target to wire
+# against, exactly the same "declare the citation, verify it separately"
+# discipline `check-journeys.mjs` already enforces for a `planned` signal.
+
+contracts:
+  - event: player_login_hub.started
+    journey_id: player_login_hub
+    stage_id: authenticate
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [ip]
+    prohibited_properties: [email, name, password]
+    notes: "Deferred — see the file header on why loginActionImpl is not yet the wire-up target."
+
+  - event: player_login_hub.completed
+    journey_id: player_login_hub
+    stage_id: land_on_dashboard
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [ip, is_demo]
+    prohibited_properties: [email, name, password, session_token, full_user_object]
+    notes: "Deferred — see the file header. Target moved to land_on_dashboard (player-role-confirmed) rather than the shared authenticate step."
+
+  - event: player_start_round.started
+    journey_id: player_start_round
+    stage_id: configure_round
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [round_id, qualifier_id]
+    prohibited_properties: [player_name, notes_free_text]
+    notes: "Deferred — out of this PR's time budget, follow-up work."
+
+  - event: player_start_round.completed
+    journey_id: player_start_round
+    stage_id: start_round
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [round_id, hole_count]
+    prohibited_properties: [player_name, notes_free_text]
+    notes: "Deferred — follow-up work."
+
+  - event: player_resume_round.completed
+    journey_id: player_resume_round
+    stage_id: continue_round
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [round_id, holes_played]
+    prohibited_properties: [player_name]
+    notes: "Deferred — follow-up work."
+
+  - event: player_submit_round.completed
+    journey_id: player_submit_round
+    stage_id: submit_round
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [round_id, final_score, duration_ms]
+    prohibited_properties: [player_name, notes_free_text, shot_detail]
+    notes: "Deferred — follow-up work. player_submit_round's registry status is `collecting`, not `active`, so this pair is not yet load-bearing for golden-path health either."
+
+  - event: coach_view_player_stats.started
+    journey_id: coach_view_player_stats
+    stage_id: view_team_stats
+    platform: client
+    status: planned
+    source_path: null
+    allowed_properties: [team_id]
+    prohibited_properties: [player_name, coach_email]
+    notes: "Deferred — follow-up work."
+
+  - event: coach_view_coachhelm_insight.started
+    journey_id: coach_view_coachhelm_insight
+    stage_id: view_intelligence_hub
+    platform: client
+    status: planned
+    source_path: null
+    allowed_properties: [team_id]
+    prohibited_properties: [player_name, insight_text]
+    notes: "Deferred — follow-up work. Insight TEXT is explicitly prohibited: it is LLM-generated free text and a clear PII/sensitive-content risk if captured verbatim."
+
+  - event: coach_create_event.completed
+    journey_id: coach_create_event
+    stage_id: create_event
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [event_id, event_type]
+    prohibited_properties: [event_title, event_location, attendee_list]
+    notes: "Deferred — follow-up work."
+
+  - event: player_rsvp_event.completed
+    journey_id: player_rsvp_event
+    stage_id: rsvp_event
+    platform: server
+    status: planned
+    source_path: null
+    allowed_properties: [event_id, rsvp_status]
+    prohibited_properties: [player_name, notes_free_text]
+    notes: "Deferred — follow-up work."

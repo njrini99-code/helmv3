@@ -13,7 +13,7 @@ import {
 import { fetchTriageQueue } from '@/lib/admin/data/triage';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
-import { fetchBriefing } from '@/lib/admin/data/briefing';
+import { cachedBriefing } from '@/lib/admin/data/briefing';
 import { AdminStatusBanner } from './_components/AdminStatusBanner';
 import { KpiTile } from './_components/KpiTile';
 import { KpiSourceNote } from './_components/KpiSourceNote';
@@ -29,7 +29,7 @@ import { ADMIN_COMMAND_SHORTCUTS } from './_components/admin-nav';
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
 import { buildTruthStrip } from '@/lib/admin/incidents/truth-strip';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
-import { fetchDeployFreshness } from '@/lib/admin/deploy-freshness';
+import { cachedDeployFreshness } from '@/lib/admin/deploy-freshness';
 import { cachedSelfHealBoard } from '@/lib/admin/data/selfheal';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { TruthStrip } from './_components/TruthStrip';
@@ -41,6 +41,7 @@ import { selectAttention } from '@/lib/admin/incidents/attention';
 import { AttentionQueue } from './_components/AttentionQueue';
 import { summarizeFlow } from '@/lib/admin/selfheal-flow';
 import { SelfHealFlowStrip } from './_components/SelfHealFlow';
+import { CommandDeck } from '@/components/admin/command-deck/CommandDeck';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,6 +145,11 @@ async function PostureBoards() {
       label: 'Active users today',
       value: kpis.activeUsersToday,
       href: '/admin/users',
+      // value === null means the count QUERY failed, not that the product had
+      // a quiet day — KpiTile's generic starved copy ("log more data") would
+      // say the opposite of what happened.
+      starvedTitle: 'Active-user count unavailable',
+      starvedDescription: 'The users.last_seen count could not be read. This is not zero activity.',
       source: 'users.last_seen since UTC midnight.',
       freshness: watcher.find((w) => w.label === 'Login events'),
     },
@@ -312,7 +318,7 @@ function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
       href: '/admin/users?attention=demo',
       label: 'Demo Readiness',
       icon: Users,
-      metric: `${kpis.activeUsersToday} active`,
+      metric: kpis.activeUsersToday === null ? 'count unavailable' : `${kpis.activeUsersToday} active`,
       detail: 'Accounts, team filters, roster status for walkthroughs',
     },
     {
@@ -554,7 +560,7 @@ async function MissionTruthStrip() {
   const [board, loop, deploy] = await Promise.all([
     cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
     cachedSelfHealBoard(),
-    fetchDeployFreshness(),
+    cachedDeployFreshness(),
   ]);
 
   const now = Date.now();
@@ -657,7 +663,7 @@ async function AttentionPanel() {
   const [board, loop, briefing] = await Promise.all([
     cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
     cachedSelfHealBoard(),
-    fetchBriefing(),
+    cachedBriefing(),
   ]);
   const now = Date.now();
   const stages = loop.status === 'ok' ? (loop.data?.stages ?? []) : [];
@@ -745,6 +751,30 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-5">
       <AutoRefresh />
+
+      {/* HELM COMMAND DECK (brief §10) — posture sentence, System Orbit,
+          Attention Stack, Decision Inbox, Release Wake, Self-Heal Circuit
+          summary. Additive: every panel below (Right now / Incident
+          operations / Change timeline / the collapsed Posture disclosure)
+          is unchanged. See CommandDeck.tsx's own header for why this is one
+          PanelBoundary rather than one per sub-panel. */}
+      <PanelBoundary
+        title="Helm Command Deck"
+        skeleton={
+          <div className="space-y-4">
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-[360px] w-full rounded-2xl" />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-40 w-full rounded-2xl" />
+            </div>
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+          </div>
+        }
+      >
+        <CommandDeck />
+      </PanelBoundary>
 
       {/* Triage-first ordering (bridge-refit): Status → Needs your eyes →
           Severity mix, all THREE sibling boundaries so a hiccup in one never

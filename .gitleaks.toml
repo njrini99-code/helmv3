@@ -63,4 +63,13 @@ paths = [
   '''docs/operations/2026-05-17-p0-runbook\.md''',
   '''docs/operations/2026-06-30-baseball-stats-seed-key-rotation\.md''',
   '''\.gitleaks\.toml''',
+  # The Supabase error-envelope privacy test asserts that a JWT appearing as
+  # PLAIN TEXT (not only inside a URL) is redacted before it can reach
+  # telemetry. Proving that requires a JWT literal in the test. The value is
+  # the canonical jwt.io HS256 example token — signature SflKxwR..., secret
+  # 'your-256-bit-secret' — published in jwt.io's own documentation and not a
+  # Helm credential. The test itself asserts the string does NOT survive
+  # sanitizeSupabaseFreeText, so removing it would delete the proof that
+  # plain-text JWT redaction works.
+  '''src/lib/observability/supabase/__tests__/envelope\.test\.ts''',
 ]

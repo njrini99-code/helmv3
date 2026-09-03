@@ -335,6 +335,44 @@ jobs:
         id: registry_orphans_test
         continue-on-error: true
         run: npm run knowledge:orphans-check:test
+
+      # memory/invariants/registry.yml must point at checks that are real
+      # and actually wired (Bridge Control Plane Phase D.4.3). Wired here,
+      # AND its own test wired right after it, on purpose —
+      # `knowledge:journeys-check`/`:test` sit unwired above as the
+      # documented example of the "gate that cannot fail is not a gate"
+      # pattern this step exists to avoid repeating for a NEW guard.
+      - name: Invariant registry citations resolve
+        id: invariants_check
+        continue-on-error: true
+        run: npm run knowledge:invariants-check
+
+      - name: Invariant registry checker's own tests
+        id: invariants_check_test
+        continue-on-error: true
+        run: npm run knowledge:invariants-check:test
+
+      # golden-paths.generated.ts (src/lib/admin/slo/**) must not drift from
+      # memory/journeys/golden-paths.yml — the generated module is what
+      # golden-path health reads at request time (memory/** is outside the
+      # Vercel bundle), same drift-check shape as flags:check for
+      # config/feature-flags.yml.
+      - name: Golden-path health module is current
+        id: golden_paths_generate_check
+        continue-on-error: true
+        run: npm run knowledge:golden-paths-generate:check
+
+      # memory/analytics/event-contracts.yml — allow-listed properties for
+      # every behavioral event before it is written (Phase D.4.4).
+      - name: Event contract citations resolve
+        id: event_contracts_check
+        continue-on-error: true
+        run: npm run knowledge:event-contracts-check
+
+      - name: Event contract checker's own tests
+        id: event_contracts_check_test
+        continue-on-error: true
+        run: npm run knowledge:event-contracts-check:test
       # Feature-flag registry governance (config/feature-flags.yml).
       # `flags:check` chains three things: registry.generated.ts is current
       # relative to the YAML (non-mutating drift comparison, same pattern as
