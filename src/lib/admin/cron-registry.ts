@@ -43,6 +43,10 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 4 * 60, schedule: '10 */4 * * *' },
   { jobType: 'ingest-gmail-replies', path: '/api/cron/ingest-gmail-replies', cadenceMinutes: 30, schedule: '*/30 * * * *' },
   { jobType: 'helm-debug-prune', path: '/api/cron/helm-debug-prune', cadenceMinutes: DAILY, schedule: '30 4 * * *' },
+  // Supabase zero-cost observability Phase 1 (#1786): schedules mirror vercel.json byte-for-byte.
+  { jobType: 'db-health-sampler', path: '/api/cron/db-health-sampler', cadenceMinutes: 5, schedule: '*/5 * * * *' },
+  { jobType: 'db-stat-delta', path: '/api/cron/db-stat-delta', cadenceMinutes: 15, schedule: '*/15 * * * *' },
+  { jobType: 'db-observability-prune', path: '/api/cron/db-observability-prune', cadenceMinutes: DAILY, schedule: '45 4 * * *' },
   // vercel.json schedules this "0 */3 * * *" — every 3 hours, hence 180. Read
   // the refresh-engagement note above before touching either half: the cadence
   // and the cron string are two encodings of one fact, and they have already
