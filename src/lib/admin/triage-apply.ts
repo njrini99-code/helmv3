@@ -57,7 +57,6 @@ export async function resolveTriageMember(
   const { data, error: rpcError } = await admin.rpc('admin_auto_resolve_error_fingerprint', {
     p_fingerprint: member.key,
     p_last_seen_at: member.lastSeen,
-    p_fixed_in_sha: null,
     p_note: reason.slice(0, 500),
   });
   if (rpcError) {

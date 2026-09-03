@@ -50,6 +50,7 @@ import { deriveRcaCategory, isAutoResolvable } from '@/lib/admin/rca-category';
 import { isOperatorGatedFaultCode, classifyProviderFault } from '@/lib/admin/provider-fault';
 import { getProductionDeployAt, RELEASE_GRACE_MS } from '@/lib/admin/auto-resolve';
 import type { RcaAnalysis, RcaResult } from '@/lib/admin/rca';
+import type { Json } from '@/lib/types/database';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -155,7 +156,7 @@ async function writeHeartbeat(
       completed_at: completedAt.toISOString(),
       duration_ms: completedAt.getTime() - startedAt.getTime(),
       error_message: errorMessage,
-      metadata: metadata as unknown as Record<string, unknown>,
+      metadata: metadata as unknown as Json,
     });
   } catch {
     // Fire-and-forget, same convention as job-log.ts's writeRow: outcome
