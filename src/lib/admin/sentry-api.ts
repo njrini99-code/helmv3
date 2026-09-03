@@ -127,11 +127,52 @@ function nextCursor(linkHeader: string | null): string | null {
   return m?.[1] ?? null;
 }
 
+/** How long to wait before the single transport-level retry. A socket close is
+ *  immediate, not congestion, so this is deliberately short — nothing like the
+ *  rate-limit backoff below, which waits out someone else's quota. */
+const TRANSPORT_RETRY_MS = 250;
+
+/**
+ * A transport-level failure: the request never got an HTTP response at all.
+ *
+ * undici surfaces these as `TypeError: fetch failed` with the real reason on
+ * `.cause`. They are NOT the same class as a 4xx/5xx — there is no status to
+ * reason about, and the connection usually died because a pooled keep-alive
+ * was reused a moment after the far side closed it. Retrying once on a fresh
+ * connection is the standard answer; retrying an HTTP status is not, which is
+ * why this checks the throw and never the response.
+ */
+function isTransportError(err: unknown): boolean {
+  if (!(err instanceof TypeError)) return false;
+  if (!/fetch failed/i.test(err.message)) return false;
+  const code = (err as { cause?: { code?: unknown } }).cause?.code;
+  return (
+    code === undefined ||
+    code === 'UND_ERR_SOCKET' ||
+    code === 'ECONNRESET' ||
+    code === 'UND_ERR_CONNECT_TIMEOUT' ||
+    code === 'ETIMEDOUT' ||
+    code === 'EPIPE'
+  );
+}
+
 async function sentryGet(path: string, params: URLSearchParams, token: string): Promise<Response> {
-  return fetch(`${API}${path}?${params}`, {
+  const url = `${API}${path}?${params}`;
+  const init = {
     headers: { Authorization: `Bearer ${token}` },
     next: { revalidate: REVALIDATE_SECONDS },
-  });
+  };
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    // Exactly one retry, and only for a transport failure. A second throw
+    // propagates to the caller's catch and is reported as a fault, so a truly
+    // unreachable Sentry still degrades the panel honestly rather than
+    // retrying a page render into a timeout.
+    if (!isTransportError(err)) throw err;
+    await retryDelay(TRANSPORT_RETRY_MS);
+    return await fetch(url, init);
+  }
 }
 
 /** Cap on how long a single 429 retry will wait, regardless of what Sentry's

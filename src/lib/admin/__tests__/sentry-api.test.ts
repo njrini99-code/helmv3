@@ -28,6 +28,62 @@ function issuePayload(id: string) {
   };
 }
 
+describe('sentryGet transport retry', () => {
+  // Vercel runtime errors, 7 days to 2026-09-03: 12 occurrences of
+  // `TypeError: fetch failed` with cause UND_ERR_SOCKET ("other side closed",
+  // bytesWritten 983, bytesRead 0) across /admin.rsc, /admin/errors.rsc,
+  // /admin/health.rsc, /admin/deploys.rsc and /admin/self-heal.rsc — every
+  // Bridge page that reads Sentry. The request never got an HTTP response, so
+  // the 429 path could not see it; it threw straight past into the caller's
+  // catch and was reported as a fault. A pooled keep-alive reused a moment
+  // after the far side closed it is the textbook case for one retry.
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubEnv('SENTRY_READ_TOKEN', READ_TOKEN);
+    vi.stubEnv('SENTRY_ORG', 'helm-xs');
+    vi.stubEnv('SENTRY_PROJECT', 'javascript-nextjs');
+    __setSentryRetryDelayForTests(async () => {});
+  });
+  afterEach(() => {
+    __setSentryRetryDelayForTests(null);
+    vi.unstubAllEnvs();
+  });
+
+  function socketClose() {
+    const e = new TypeError('fetch failed');
+    (e as unknown as { cause: { code: string } }).cause = { code: 'UND_ERR_SOCKET' };
+    return e;
+  }
+
+  it('retries once on a socket close and succeeds', async () => {
+    fetchMock
+      .mockRejectedValueOnce(socketClose())
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([issuePayload('1')]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    const res = await fetchSentryIssues();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res.status).toBe('ok');
+  });
+
+  it('does not retry a non-transport throw — a bug must not be papered over', async () => {
+    fetchMock.mockRejectedValue(new Error('boom'));
+    const res = await fetchSentryIssues();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.status).toBe('error');
+  });
+
+  it('gives up after one retry rather than hanging a page render', async () => {
+    fetchMock.mockRejectedValue(socketClose());
+    const res = await fetchSentryIssues();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res.status).toBe('error');
+  });
+});
+
 describe('fetchSentryIssues', () => {
   // The retry delay is real in production (it exists to honour Retry-After);
   // it is stubbed to instant here so a 429 test does not actually pause the
