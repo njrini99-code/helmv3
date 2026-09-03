@@ -111,7 +111,11 @@ export function FairwayPlayerRoster({
           />
         </Surface>
       ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        /* GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1 — same tablet/
+           mobile-landscape card-width squeeze as FairwayCoachRoster's grid;
+           lg (1024px) instead of md (768px) keeps 2-up only where a card
+           actually has room for a full name. */
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {players.map((player) => (
             <TeammateCard key={player.id} player={player} />
           ))}
@@ -154,7 +158,11 @@ function TeammateCard({ player }: { player: FairwayPlayerRosterPlayer }) {
 
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="min-w-0 truncate font-fw-sans text-h3 font-semibold text-text-primary">
+            {/* Wraps to 2 lines instead of single-line `truncate` — the
+                latter collapsed a two-word name to one letter + ellipsis in
+                the narrower 2-col grid cell (GAPS_AUDIT_TABLET_LANDSCAPE_
+                2026-09-02.md #1). */}
+            <h3 className="min-w-0 line-clamp-2 break-words font-fw-sans text-h3 font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
               {name}
             </h3>
             <FairwayYearBadge year={player.graduation_year} />

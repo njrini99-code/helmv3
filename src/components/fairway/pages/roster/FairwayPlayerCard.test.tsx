@@ -127,3 +127,50 @@ describe('FairwayPlayerCard — CoachHelm signal strip', () => {
     expect(screen.getByText(/no rounds/i)).toBeInTheDocument();
   });
 });
+
+/**
+ * GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1 (HIGH, "the standout defect of
+ * the audit") — at 810×1080 tablet portrait and 844×390 mobile landscape the
+ * 2-col roster grid gave each card ~265px, too narrow for its content:
+ *   - the name collapsed to one letter + ellipsis ("Cole Bennett" -> "C..."),
+ *     because it went through the shared PlayerIdentity primitive, which
+ *     hardcodes single-line `truncate` on the name span.
+ *   - the hometown truncated to two letters ("Austin..." -> "Aus...").
+ *   - the Focus/Goals mini-stat badges clipped mid-word ("3 active" ->
+ *     "3 activ") because Badge defaults to `whitespace-nowrap` and the card's
+ *     own Surface clips at `overflow-hidden`.
+ * FairwayCoachRoster's grid also moved off `md:grid-cols-2` (see its own
+ * test) — these card-level fixes are the second line of defense so a very
+ * long name or a genuinely narrow single-column width still can't repeat it.
+ */
+describe('FairwayPlayerCard — wrap-safe at narrow widths', () => {
+  it('lets a long name wrap to 2 lines instead of truncating to one, and does not use single-line truncate', () => {
+    render(
+      <FairwayPlayerCard
+        player={makePlayer({ first_name: 'Cole', last_name: 'Bennett' })}
+        intent={null}
+      />,
+    );
+    const nameEl = screen.getByText('Cole Bennett');
+    expect(nameEl.className).toMatch(/\bline-clamp-2\b/);
+    expect(nameEl.className).not.toMatch(/\btruncate\b/);
+  });
+
+  it('keeps the hometown on one truncating line with min-w-0 so it clips at the string end, not to 2 letters', () => {
+    render(
+      <FairwayPlayerCard
+        player={makePlayer({ hometown: 'Austin', state: 'TX' })}
+        intent={null}
+      />,
+    );
+    const meta = screen.getByText('Austin, TX');
+    expect(meta.className).toMatch(/\btruncate\b/);
+    expect(meta.className).toMatch(/\bmin-w-0\b/);
+  });
+
+  it('lets the Focus mini-stat badge wrap instead of clipping mid-word ("3 active" never becomes "3 activ")', () => {
+    render(<FairwayPlayerCard player={makePlayer({ active_focus_areas: 3 })} intent={null} />);
+    const badge = screen.getByText('3 active');
+    expect(badge.className).toMatch(/\bwhitespace-normal\b/);
+  });
+});

@@ -228,6 +228,19 @@ export default function ContinueRoundClient({
   // sufficient: an in-flight promise's closure still sees this same ref
   // object after the component unmounts and navigates away.
   const roundDiscardedRef = useRef(false);
+  // MASTER_BUG_REPORT_2026-09-02.md Part 1: the exit dialog's Save for later
+  // (and Discard) navigate away with `router.push`, a client-side transition
+  // that does not itself fire `beforeunload` — but `handleBeforeUnload`'s own
+  // "unsaved changes" check below reads local hole-stat/in-progress-shot
+  // state, not server sync state, so it stays true even the instant after a
+  // successful save (the local state that made it true is still sitting in
+  // React state). If a real unload event ever does coincide with that
+  // navigation, the round has already been safely saved or intentionally
+  // discarded — the warning would be a false positive. Set true BEFORE the
+  // `router.push` in both handleSaveForLater and handleDeleteRound so
+  // `handleBeforeUnload` bails out for exactly those two exits, and nothing
+  // else — a genuinely unsaved close/refresh/back is untouched.
+  const roundExitedSafelyRef = useRef(false);
   // Track the furthest hole the player has naturally progressed to (for re-edit navigation)
   const activeProgressHoleRef = useRef(startHoleIndex);
   // A failed completed-hole checkpoint can be retried from the same hole. Keep
@@ -535,6 +548,9 @@ export default function ContinueRoundClient({
       // Warning "you have unsaved changes" here would fight that instruction
       // on every reload attempt, including the browser's own F5.
       if (roundConflictBlockedRef.current) return;
+      // Save for later / Discard already resolved this round's fate on the
+      // server before navigating away — see roundExitedSafelyRef above.
+      if (roundExitedSafelyRef.current) return;
       const hasUnsavedChanges =
         completedHoleStatsRef.current.some((s) => s != null) ||
         Object.keys(inProgressShotsByHoleRef.current).length > 0;
@@ -548,6 +564,12 @@ export default function ContinueRoundClient({
     const handlePageHide = () => {
       // Skip save if round is being submitted — prevents "already completed" errors
       if (isSubmittingRef.current || allHolesCheckpointedRef.current) return;
+      // Skip after Save for later / Discard: for Discard specifically, a
+      // beacon fired here (pagehide can follow router.push during the same
+      // navigation) would re-write the round the player just deleted —
+      // resurrecting it. For Save for later it would just be a redundant
+      // write of data already durable server-side.
+      if (roundExitedSafelyRef.current) return;
 
       const mergedInProgress = { ...inProgressShotsByHoleRef.current };
       const holesSnapshot = holesRef.current;
@@ -1418,6 +1440,11 @@ export default function ContinueRoundClient({
       }
 
       setShowExitModal(false);
+      // Round is durable server-side as of the successful save above — an
+      // unload/pagehide that coincides with this navigation must not warn or
+      // re-save. Set before router.push (async; the listeners stay live
+      // until the component actually unmounts).
+      roundExitedSafelyRef.current = true;
       router.push('/golf/dashboard/rounds');
     } catch {
       showToast('Failed to save round. Please try again.', 'error');
@@ -1451,6 +1478,10 @@ export default function ContinueRoundClient({
       }
         clearEmergencySave(roundId, playerId);
       setShowExitModal(false);
+      // The round is gone server-side — nothing left to warn about or
+      // re-save on a coincident unload/pagehide. Same reasoning as
+      // handleSaveForLater above.
+      roundExitedSafelyRef.current = true;
       router.push('/golf/dashboard/rounds');
     } catch {
       roundDiscardedRef.current = false;

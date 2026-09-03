@@ -51,6 +51,21 @@ export interface PromptComposerProps {
    * is also what makes "tap Compare players twice" re-seed rather than no-op.
    */
   initialValue?: string;
+  /**
+   * Submit `initialValue` once, on mount, through this exact `submit()` — the
+   * same trim/busy guard, the same clearing, the same failure handling a
+   * manual Send gets. For a question carried in from elsewhere (e.g. `?q=` on
+   * the Ask page) rather than a quick-action seed the coach is meant to finish
+   * typing. Guarded against React StrictMode's double-invoked mount effect, so
+   * a second invocation is a no-op rather than a second turn.
+   */
+  autoSubmit?: boolean;
+  /**
+   * True while the most recent turn ended in an error. The text that turn was
+   * submitted with is put back in the field so a failed send can be retried
+   * without retyping it — a successful turn must never do this.
+   */
+  failed?: boolean;
   className?: string;
 }
 
@@ -77,6 +92,8 @@ export function PromptComposer({
   safeArea,
   autoFocus,
   initialValue,
+  autoSubmit,
+  failed,
   className,
 }: PromptComposerProps) {
   const [value, setValue] = React.useState(initialValue ?? '');
@@ -98,7 +115,9 @@ export function PromptComposer({
   }, [value]);
 
   React.useEffect(() => {
-    if (!initialValue) return;
+    // `autoSubmit` handles its own mount effect below and must not also grab
+    // focus for a field that is about to submit and clear.
+    if (!initialValue || autoSubmit) return;
     const el = textarea.current;
     if (!el) return;
     el.focus();
@@ -123,13 +142,48 @@ export function PromptComposer({
     return pool.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8);
   }, [players, query, context]);
 
+  // The text a turn was submitted with, so a failure can put it back without
+  // the coach retyping it. Overwritten on every submit, so it always names the
+  // MOST RECENT turn — the one `failed` below, if it fires, refers to.
+  const lastSubmittedRef = React.useRef<string | null>(null);
+
   const submit = React.useCallback(() => {
     const text = value.trim();
     if (!text || busy) return;
+    lastSubmittedRef.current = text;
     onSend(text);
     setValue('');
     setMenu('none');
   }, [value, busy, onSend]);
+
+  // A question carried in from elsewhere (e.g. `?q=` on the Ask page) submits
+  // itself once, through the SAME `submit()` a manual Send uses — identical
+  // trim/busy guard, identical clearing, identical failure handling below.
+  // The ref survives React StrictMode's double-invoked mount effect, so the
+  // second invocation is a no-op rather than a second turn.
+  const autoSubmittedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!autoSubmit || autoSubmittedRef.current) return;
+    autoSubmittedRef.current = true;
+    submit();
+    // Mount-only, same contract as the seed-focus effect above: `submit` here
+    // is the closure from the FIRST render, which is exactly the one that
+    // still has `value === initialValue` and the initial (not-yet-busy) state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Restore the text a send just failed on. Only on the transition INTO a
+  // failure (`wasFailed` false -> true) — once restored, `failed` staying true
+  // (or a later unrelated render) must not keep re-clobbering an edit the
+  // coach has since made, and a SUCCESSFUL turn must never repopulate the
+  // field with a question that was already answered.
+  const wasFailed = React.useRef(false);
+  React.useEffect(() => {
+    if (failed && !wasFailed.current && lastSubmittedRef.current) {
+      setValue(lastSubmittedRef.current);
+    }
+    wasFailed.current = Boolean(failed);
+  }, [failed]);
 
   const pickPlayer = React.useCallback(
     (player: ComposerPlayer) => {

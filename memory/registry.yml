@@ -1249,10 +1249,11 @@ features:
         - src/app/golf/admin/crm/components/**
       api:
         - src/app/api/admin/**
-        # Scoped to this one cron rather than src/app/api/cron/** on purpose:
+        # Scoped to these two crons rather than src/app/api/cron/** on purpose:
         # the coachhelm-* crons in that directory belong to coachhelm_ai, and a
         # blanket glob would silently hand their ownership to admin_platform.
         - src/app/api/cron/reliability-triage/**
+        - src/app/api/cron/selfheal-triage/**
       actions:
         - src/app/golf/actions/admin*.ts
         - src/app/golf/actions/admin/**

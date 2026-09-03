@@ -24,8 +24,48 @@ function cronScheduleToMinutes(schedule: string): number {
   if (everyNHour && min !== undefined && /^\d+$/.test(min)) return Number(everyNHour[1]) * 60;
   if (hour === '*' && min !== undefined && /^\d+$/.test(min)) return 60;
   if (hour !== undefined && /^\d+$/.test(hour) && min !== undefined && /^\d+$/.test(min)) return 24 * 60;
+  // A fixed minute, comma-separated hour list — "M H1,H2,H3,H4 * * *" — an
+  // otherwise-daily job fired at N evenly-spaced points. Only recognised when
+  // the gaps between consecutive sorted hours (including the wrap from the
+  // last hour back to the first, +24) are ALL EQUAL: an evenly-spaced
+  // schedule has one true cadence, and an uneven one does not — reporting a
+  // single cadenceMinutes for it would be inventing a number the schedule
+  // does not actually imply, exactly what this test exists to catch.
+  if (hour !== undefined && hour.includes(',') && min !== undefined && /^\d+$/.test(min)) {
+    const hours = hour.split(',').map(Number);
+    if (hours.length >= 2 && hours.every((h) => Number.isInteger(h) && h >= 0 && h <= 23)) {
+      const sorted = [...hours].sort((a, b) => a - b);
+      const gaps = sorted.map((h, i) => (i === 0 ? h + 24 - sorted[sorted.length - 1]! : h - sorted[i - 1]!));
+      // The wrap gap was computed first (i===0) but belongs at the END of the
+      // sequence — rotate it there so "all gaps equal" compares the actual
+      // consecutive intervals, not the wrap gap against itself twice.
+      const rotated = [...gaps.slice(1), gaps[0]!];
+      if (rotated.every((g) => g === rotated[0])) return rotated[0]! * 60;
+    }
+  }
   throw new Error(`cronScheduleToMinutes: unrecognized schedule shape "${schedule}"`);
 }
+
+describe('cronScheduleToMinutes', () => {
+  it.each([
+    ['15 * * * *', 60],
+    ['*/30 * * * *', 30],
+    ['0 */3 * * *', 3 * 60],
+    ['10 */4 * * *', 4 * 60],
+    ['40 3 * * *', 24 * 60],
+    // The shape this contract test could not parse before: four
+    // evenly-spaced daily hours (selfheal-triage).
+    ['17 3,9,15,21 * * *', 6 * 60],
+  ])('%s -> %i', (schedule, expected) => {
+    expect(cronScheduleToMinutes(schedule)).toBe(expected);
+  });
+
+  it('throws on an UNEVEN comma-separated hour list rather than inventing a cadence', () => {
+    // Gaps 3->9 (6), 9->15 (6), 15->3+24 (12) — not all equal, so there is no
+    // single true cadence this schedule implies.
+    expect(() => cronScheduleToMinutes('0 3,9,15 * * *')).toThrow(/unrecognized schedule shape/);
+  });
+});
 
 describe('CRON_REGISTRY ↔ vercel.json contract', () => {
   const vercel = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as {

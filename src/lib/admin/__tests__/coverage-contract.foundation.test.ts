@@ -348,6 +348,11 @@ describe('global tripwire', () => {
     //   generateTournamentPrep/getPlayerPatterns (see feature-registry.ts).
     // 2026-08-22: -1 removes reconcileQualifierStatus. Qualifier closure is
     // a coach-only explicit action, not a page-view side effect.
-    expect(total).toBe(446);
+    // 2026-09-02 (+1): updateAnnouncement (announcements.ts) — a coach edits a
+    //   posted announcement's title/body/urgency/acknowledgement in place
+    //   instead of delete-and-recreate (GAPS_AUDIT_INTERACTION_CRUD). Wrapped
+    //   like deleteAnnouncement; announcements.ts is 'ALL'-mapped, so this
+    //   scan picks it up with no manifest edit.
+    expect(total).toBe(447);
   });
 });
