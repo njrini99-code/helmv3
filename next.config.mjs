@@ -99,6 +99,30 @@ const nextConfig = {
     minimumCacheTTL: 60, // Cache images for 60 seconds
   },
 
+  // Bridge Premium Phase 5 (Engineering OS, PR #1790): the /admin/engineering
+  // page's read models (src/lib/admin/engineering/{blast-radius,charter,
+  // decision-inbox}.ts) call `readFile(join(process.cwd(), '<repo path>'))`
+  // against these five repo files at request time. Next's build-time file
+  // tracer only follows the static import graph to decide what a route's
+  // serverless function bundle carries — a computed `readFile` argument is
+  // invisible to it, so without an explicit include here the panels would
+  // read `unconfigured` in production forever even once the underlying
+  // migration/World-Model PRs land, because the files were traced OUT of the
+  // bundle despite being present in the Vercel upload (see the matching
+  // carve-out in .vercelignore's docs/ exclusion — being uploaded and being
+  // traced into the function bundle are two different gates, and this repo
+  // was missing the second one). Paths are relative to next.config.mjs
+  // (= the repo root, matching `process.cwd()` at runtime in this app).
+  outputFileTracingIncludes: {
+    '/admin/engineering': [
+      './docs/generated/WORLD_MODEL.json',
+      './docs/generated/contracts/**',
+      './docs/generated/janitor-findings.json',
+      './supabase/migrations/HELD.md',
+      './config/mutation-gate.json',
+    ],
+  },
+
   // Experimental features
   experimental: {
     // Enable server actions.

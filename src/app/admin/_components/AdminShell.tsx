@@ -30,6 +30,8 @@ import {
   Search,
   LogOut,
   Recycle,
+  Bot,
+  FileCheck2,
   Route,
   Milestone,
   LineChart,
@@ -140,6 +142,8 @@ const NAV_ICON_BY_HREF = {
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
+  '/admin/engineering': Bot,
+  '/admin/work-log': FileCheck2,
   '/admin/qualifiers': Trophy,
   // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
   // between three sources, and it sits directly beside Errors in the same

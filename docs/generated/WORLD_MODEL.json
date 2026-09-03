@@ -219,6 +219,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/engineering/**",
+        "pattern": "src/app/admin/engineering/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/errors/**",
         "pattern": "src/app/admin/errors/**",
         "category": "routes"
@@ -291,6 +296,11 @@
       {
         "id": "routes:src/app/admin/utilization/**",
         "pattern": "src/app/admin/utilization/**",
+        "category": "routes"
+      },
+      {
+        "id": "routes:src/app/admin/work-log/**",
+        "pattern": "src/app/admin/work-log/**",
         "category": "routes"
       },
       {
@@ -2457,6 +2467,7 @@
         "id": "helm_debug",
         "definedIn": [
           "supabase/migrations/20260825200811_helm_flight_recorder.sql",
+          "supabase/migrations/20260903150000_helm_debug_agent_runs.sql",
           "supabase/migrations/20260903180000_helm_debug_db_error_events.sql",
           "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql",
           "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
@@ -2965,8 +2976,16 @@
         "definedIn": "supabase/migrations/20260902170000_blind_check_ignores_postgres_layer.sql"
       },
       {
+        "id": "helm_debug_get_agent_run",
+        "definedIn": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
+      },
+      {
         "id": "helm_debug_get_trace",
         "definedIn": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
+      },
+      {
+        "id": "helm_debug_list_agent_runs",
+        "definedIn": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
       },
       {
         "id": "helm_debug_list_traces",
@@ -2991,6 +3010,10 @@
       {
         "id": "helm_debug_read_db_stat_deltas",
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+      },
+      {
+        "id": "helm_debug_record_agent_run",
+        "definedIn": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
       },
       {
         "id": "helm_debug_record_trace_step",
@@ -3042,7 +3065,7 @@
       },
       {
         "id": "helm_private",
-        "definedIn": "supabase/migrations/20260902160000_postgres_checkpoints_reach_trace_steps.sql"
+        "definedIn": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
       },
       {
         "id": "ingest_external_round_atomic",
@@ -4646,22 +4669,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 153
+          "line": 167
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 355
+          "line": 369
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 375
+          "line": 389
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 580
+          "line": 594
         },
         {
           "kind": "import_graph",
@@ -4732,6 +4755,21 @@
           "kind": "import_graph",
           "path": "src/lib/admin/data/triage.ts",
           "line": 17
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/engineering/__tests__/blast-radius.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/engineering/blast-radius.ts",
+          "line": 6
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/engineering/decision-inbox.ts",
+          "line": 6
         },
         {
           "kind": "import_graph",
@@ -4820,12 +4858,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 220
+          "line": 234
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 374
+          "line": 388
         }
       ]
     },
@@ -4842,22 +4880,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 154
+          "line": 168
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 221
+          "line": 235
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 384
+          "line": 398
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 466
+          "line": 480
         },
         {
           "kind": "import_graph",
@@ -5359,7 +5397,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 805
+          "line": 972
         },
         {
           "kind": "import_graph",
@@ -5387,6 +5425,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260624000440_baseball_strength_group_audit.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "coachhelm_ai",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 724
         }
       ]
     },
@@ -5655,6 +5705,11 @@
       "kind": "feature_relation",
       "evidence": [
         {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 725
+        },
+        {
           "kind": "import_graph",
           "path": "src/app/golf/actions/admin-data.ts",
           "line": 13
@@ -5703,6 +5758,17 @@
     },
     {
       "source": "admin_platform",
+      "target": "helm_debug",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "helm_debug_db_health_snapshot",
       "kind": "feature_rpc",
       "evidence": [
@@ -5710,6 +5776,30 @@
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
           "line": 153
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "helm_debug_get_agent_run",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/agent-runs/fetch.ts",
+          "line": 149
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "helm_debug_list_agent_runs",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/agent-runs/fetch.ts",
+          "line": 125
         }
       ]
     },
@@ -5770,6 +5860,18 @@
           "kind": "rpc_call",
           "path": "src/lib/admin/database/performance.ts",
           "line": 105
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "helm_debug_record_agent_run",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/agent-runs/record.ts",
+          "line": 161
         }
       ]
     },
@@ -6065,6 +6167,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "routes:src/app/admin/engineering/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/engineering/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "routes:src/app/admin/golf/**",
       "kind": "feature_route",
       "evidence": [
@@ -6192,6 +6306,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/utilization/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/work-log/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/work-log/**"
         }
       ]
     },
@@ -17199,6 +17325,10 @@
         },
         {
           "kind": "migration_schema",
+          "path": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
+        },
+        {
+          "kind": "migration_schema",
           "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
         },
         {
@@ -19058,6 +19188,10 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
         },
         {
           "kind": "migration_schema",
