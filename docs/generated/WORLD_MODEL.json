@@ -3820,17 +3820,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 4
+          "line": 5
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 7
+          "line": 8
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 252
+          "line": 253
         },
         {
           "kind": "import_graph",
@@ -3952,12 +3952,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 61
+          "line": 62
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 260
+          "line": 261
         },
         {
           "kind": "import_graph",
@@ -3984,22 +3984,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 48
+          "line": 49
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 97
+          "line": 98
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 127
+          "line": 128
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 180
+          "line": 181
         },
         {
           "kind": "import_graph",
@@ -4379,22 +4379,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 36
+          "line": 37
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 74
+          "line": 75
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 114
+          "line": 115
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 319
+          "line": 320
         },
         {
           "kind": "import_graph",
@@ -4493,17 +4493,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 37
+          "line": 38
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 107
+          "line": 108
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 113
+          "line": 114
         },
         {
           "kind": "import_graph",
@@ -4535,27 +4535,27 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 38
+          "line": 39
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 75
+          "line": 76
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 108
+          "line": 109
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 123
+          "line": 124
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 205
+          "line": 206
         },
         {
           "kind": "import_graph",
@@ -5714,27 +5714,27 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 85
+          "line": 86
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 110
+          "line": 111
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 119
+          "line": 120
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 129
+          "line": 130
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 146
+          "line": 147
         },
         {
           "kind": "import_graph",
@@ -5751,12 +5751,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 4
+          "line": 5
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 7
+          "line": 8
         },
         {
           "kind": "import_graph",
@@ -5820,7 +5820,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 38
+          "line": 39
         }
       ]
     },
@@ -5892,17 +5892,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 62
+          "line": 63
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 89
+          "line": 90
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 144
+          "line": 145
         },
         {
           "kind": "import_graph",
@@ -5969,12 +5969,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 4
+          "line": 5
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 7
+          "line": 8
         },
         {
           "kind": "import_graph",
@@ -12480,7 +12480,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 105
+          "line": 106
         }
       ]
     },
@@ -12492,7 +12492,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 105
+          "line": 106
         }
       ]
     },
@@ -12504,7 +12504,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 107
         }
       ]
     },
@@ -12516,7 +12516,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 107
         }
       ]
     },

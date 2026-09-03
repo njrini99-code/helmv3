@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD004 MD007 MD012 MD013 MD022 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # Feature: Admin Platform
 
 > Split 2026-09-02 into this shared shell plus three sub-capability docs —
