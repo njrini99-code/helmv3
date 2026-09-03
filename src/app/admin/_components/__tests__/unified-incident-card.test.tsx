@@ -228,6 +228,7 @@ const lensCounts: IncidentLensCounts = {
   repairable: 1,
   'needs-evidence': 0,
   regressions: 0,
+  'expected-recurrence': 0,
   stalled: 0,
   'awaiting-proof': 3,
   all: 9,

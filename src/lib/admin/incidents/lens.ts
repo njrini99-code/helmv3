@@ -28,7 +28,11 @@ export function matchesLens(incident: UnifiedIncident, lens: IncidentLens): bool
       return (
         incident.actionable &&
         incident.lifecycle.state !== 'resolved' &&
-        incident.lifecycle.state !== 'not-a-defect'
+        incident.lifecycle.state !== 'not-a-defect' &&
+        // Expected noise, same as 'not-a-defect' — the analysis already
+        // ruled this recurrence out, so it does not belong in "what needs
+        // work" either. See catalogued defect (e).
+        incident.lifecycle.state !== 'expected-recurrence'
       );
     case 'reliability':
       // Corroborated, OR witnessed by a non-app observer. The second clause
@@ -46,6 +50,12 @@ export function matchesLens(incident: UnifiedIncident, lens: IncidentLens): bool
       return incident.lifecycle.state === 'needs-evidence';
     case 'regressions':
       return incident.lifecycle.state === 'regressed';
+    case 'expected-recurrence':
+      // Recurred after a resolution, same as 'regressions' — but the latest
+      // analysis already found `not-a-defect`, so `deriveLifecycle` routes
+      // it here instead of 'regressed'. Counted separately, never folded
+      // back into the regressions lens.
+      return incident.lifecycle.state === 'expected-recurrence';
     case 'stalled':
       // Judged against the board's OWN clock (`computedAt`), not an ambient
       // `Date.now()`: a lens predicate has to give one answer wherever it

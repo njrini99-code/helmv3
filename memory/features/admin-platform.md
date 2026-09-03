@@ -149,6 +149,26 @@ them would have broken those routes, not the dead one.
   incident reappear — the correct failure direction for a feature whose job is
   hiding things. `reopened_count` survives a re-resolve, so "fixed three times
   already" cannot be laundered.
+- **A regression whose analysis already says NOT A DEFECT is expected
+  recurrence, not a regression.** `deriveLifecycle` rule 1
+  (`src/lib/admin/incidents/lifecycle.ts`) checks `analysis?.category ===
+  'not-a-defect'` before returning `'regressed'` — the analysis already
+  explained why this fingerprint fires (e.g. an access denial that is
+  SUPPOSED to keep happening), so its recurrence is not new information and
+  must not re-alarm an operator with the single loudest signal this system
+  produces. Lands in the dedicated `'expected-recurrence'` lifecycle state
+  (`INCIDENT_LIFECYCLE_STATES`) instead — distinct from the pre-existing
+  `'not-a-defect'` state, which is the classifier's verdict (`!actionable`)
+  and never had a resolution to regress from in the first place; keeping
+  them separate lets a lens count "this specifically recurred after being
+  fixed" apart from "this was never a defect". Neutral tone, not danger; not
+  in `NEEDS_ATTENTION_STATES`; treated as `offLoop('done', …)` by
+  `selfheal-flow.ts`, same as `not-a-defect`; excluded from the `actionable`
+  lens and the Truth Strip's `actionable` count, same as `not-a-defect`. The
+  `regressions` lens (`incident.lifecycle.state === 'regressed'`) needed no
+  change — the state itself no longer produces `'regressed'` for these, so
+  the exclusion is automatic — and a new `expected-recurrence` lens counts
+  them apart.
 - **Auto-resolution requires a production DEPLOY after the last occurrence, not
   merely silence.** A nightly cron is silent 23 hours a day and a seasonal
   feature for months. When the deploy timestamp is unreadable, nothing is

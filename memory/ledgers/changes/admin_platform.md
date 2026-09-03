@@ -1,5 +1,44 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (e) — a fingerprint the analysis already ruled NOT A DEFECT stops re-triggering as a regression
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (e) of the
+  six-defect sweep).
+- **New lifecycle state `'expected-recurrence'`, and a new rule-1 branch in
+  `deriveLifecycle` (`src/lib/admin/incidents/lifecycle.ts`).** A fault
+  recurring after a prior human resolution used to ALWAYS verdict
+  `'regressed'` — the single loudest signal this system produces. Now, when
+  the latest RCA `analysis.category === 'not-a-defect'` (the analysis already
+  explained the recurrence — e.g. an access denial that is supposed to keep
+  firing), it verdicts `'expected-recurrence'` instead: neutral tone, not
+  `danger`; excluded from `NEEDS_ATTENTION_STATES`; excluded from the
+  `actionable` lens (`lens.ts`) and the Truth Strip's `actionable` count
+  (`truth-strip.ts`), same treatment as the pre-existing `'not-a-defect'`
+  state; `selfheal-flow.ts` places it `offLoop('done', …)`, same as
+  `'not-a-defect'`. Deliberately a SEPARATE state from `'not-a-defect'`
+  (the classifier's `!actionable` verdict, which never had a resolution to
+  regress from) — this keeps "recurred after being fixed" countable apart
+  from "was never a defect".
+- **A new `expected-recurrence` lens** (`INCIDENT_LENSES`,
+  `INCIDENT_LENS_LABEL`, `INCIDENT_LENS_DESCRIPTION` in `types.ts`) counts
+  these separately from `regressions`. The `regressions` lens predicate
+  itself is UNCHANGED (`state === 'regressed'`) — no exclusion clause needed,
+  because the underlying data no longer produces `'regressed'` for these
+  incidents. `countLenses`/`IncidentLensRail` both derive from the
+  `INCIDENT_LENSES` array, so the new lens renders and counts with no other
+  code change.
+- **Verified**: new failing-first cases in `lifecycle.test.ts` (the
+  `not-a-defect` category case was red against the pre-fix code; a companion
+  case pins that every OTHER category — or none — still verdicts
+  `'regressed'`), a new case in `lens.test.ts` pinning the lens split and the
+  `actionable`-lens exclusion. Full ripple check across
+  `src/lib/admin src/lib/reliability src/app/admin`: 1731/1731. `npm run
+  typecheck` surfaced the three sites TS's exhaustiveness checking forces on
+  a new union member (`lens.ts`'s and `selfheal-flow.ts`'s non-exhaustive
+  switches, and one test's inline `IncidentLensCounts` literal) — all three
+  fixed. `npm run lint`, `lint:ratchet`, `audit:supabase-errors` (1039
+  baseline, no regression) all green.
+
 ## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (d) — Sentry-origin incidents get an advisory feature tag instead of grouping as unknown
 
 - SHA: pending (branch `agent/reliability-bridge-fixes`, defect (d) of the

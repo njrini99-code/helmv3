@@ -161,6 +161,17 @@ export const INCIDENT_LIFECYCLE_STATES = [
   'awaiting-proof',
   'resolved',
   'regressed',
+  /**
+   * A fault recurred after a prior human resolution (the `regressed`
+   * precondition) AND the latest RCA analysis for it already found
+   * `not-a-defect` — expected noise (e.g. an access denial that is supposed
+   * to keep firing), not a fault that came back for real. Distinct from
+   * `'not-a-defect'` (which never had a resolution to regress from — the
+   * classifier ruled it out from the start) so a lens can still count "this
+   * one specifically recurred" separately from "this was never a defect".
+   * See `deriveLifecycle` rule 1.
+   */
+  'expected-recurrence',
   'not-a-defect',
   'unknown',
 ] as const;
@@ -180,6 +191,7 @@ export const LIFECYCLE_LABEL: Readonly<Record<IncidentLifecycleState, string>> =
   'awaiting-proof': 'AWAITING PROOF',
   resolved: 'RESOLVED',
   regressed: 'REGRESSED',
+  'expected-recurrence': 'EXPECTED RECURRENCE',
   'not-a-defect': 'NOT A DEFECT',
   unknown: 'UNKNOWN',
 };
@@ -205,6 +217,9 @@ export const LIFECYCLE_TONE: Readonly<Record<IncidentLifecycleState, StateTone>>
   'awaiting-proof': 'warning',
   resolved: 'success',
   regressed: 'danger',
+  // Not `'danger'`: this is the whole point of the state — the analysis
+  // already found no defect, so recurring is expected noise, not an alarm.
+  'expected-recurrence': 'neutral',
   'not-a-defect': 'neutral',
   unknown: 'neutral',
 };
@@ -538,6 +553,7 @@ export const INCIDENT_LENSES = [
   'repairable',
   'needs-evidence',
   'regressions',
+  'expected-recurrence',
   'stalled',
   'awaiting-proof',
   'all',
@@ -550,6 +566,7 @@ export const INCIDENT_LENS_LABEL: Readonly<Record<IncidentLens, string>> = {
   repairable: 'Repairable',
   'needs-evidence': 'Needs evidence',
   regressions: 'Regressions',
+  'expected-recurrence': 'Expected recurrence',
   stalled: 'Stalled',
   'awaiting-proof': 'Awaiting proof',
   all: 'All',
@@ -561,7 +578,9 @@ export const INCIDENT_LENS_DESCRIPTION: Readonly<Record<IncidentLens, string>> =
   reliability: 'Seen by two or more independent sources, or by a non-app observer.',
   repairable: 'An analysis says FIX HERE, or a repair candidate is confirmed.',
   'needs-evidence': 'Analysis cannot safely progress without more evidence.',
-  regressions: 'Previously resolved, and observed again since.',
+  regressions: 'Previously resolved, and observed again since — a real regression.',
+  'expected-recurrence':
+    'Recurred after a resolution, but analysis already found it is not a defect — expected noise.',
   stalled: 'Waiting on a self-heal stage past two of its cycles — the loop is running, and not moving these.',
   'awaiting-proof': 'A fix exists; the evidence to close it does not yet.',
   all: 'Everything, including non-defects and expected control flow.',

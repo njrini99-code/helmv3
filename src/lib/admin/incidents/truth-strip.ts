@@ -130,7 +130,14 @@ export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
   const { incidents, coverage, deploy, loop, now } = input;
 
   const actionable = incidents.filter(
-    (i) => i.actionable && i.lifecycle.state !== 'resolved' && i.lifecycle.state !== 'not-a-defect',
+    (i) =>
+      i.actionable &&
+      i.lifecycle.state !== 'resolved' &&
+      i.lifecycle.state !== 'not-a-defect' &&
+      // Same exclusion lens.ts's 'actionable' lens applies — expected noise
+      // from a recurrence the analysis already ruled out. See catalogued
+      // defect (e).
+      i.lifecycle.state !== 'expected-recurrence',
   );
   const regressions = incidents.filter((i) => i.lifecycle.state === 'regressed');
   const critical = actionable.filter((i) => i.severity === 'critical');
