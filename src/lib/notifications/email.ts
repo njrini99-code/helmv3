@@ -5,6 +5,7 @@
  * Falls back gracefully if Resend is not configured.
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
@@ -83,7 +84,7 @@ export async function getUserNotificationPreferences(
 
     return DEFAULT_NOTIFICATION_PREFERENCES;
   } catch (error) {
-    console.error('Error fetching notification preferences:', error);
+    console.error('Error fetching notification preferences:', describeError(error));
     return DEFAULT_NOTIFICATION_PREFERENCES;
   }
 }
@@ -911,7 +912,7 @@ export async function sendEmailNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to send email notification:', error);
+    console.error('Failed to send email notification:', describeError(error));
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

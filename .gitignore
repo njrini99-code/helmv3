@@ -300,6 +300,12 @@ graphify-out/
 # ~8.6 MiB of blobs in history and nothing prevented it recurring.
 _staging-snapshot/
 
+# UI-audit viewport screenshots. The 2026-09-02 sweep produced 10.4 MB of
+# .jpg captures; line 89 already excludes *.png for the same reason, and the
+# .jpg half was simply never covered. The audit markdown is the durable
+# artifact and IS committed — the images are regenerable evidence that was
+# blocking a clean working tree on main.
+docs/ui-audits/**/*.jpg
 # Janitor entropy-report output (scripts/janitor/run.mjs). NOT tracked,
 # deliberately — the report embeds a HEAD SHA and an ISO timestamp that
 # change on every regeneration, which would make every future `npm run

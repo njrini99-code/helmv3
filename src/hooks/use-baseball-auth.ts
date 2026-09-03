@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -135,7 +136,7 @@ function verifyServerSession(
       // not confirm you're signed in" and send to login instead of hanging on
       // the skeleton indefinitely. Mirrors the identical fix already applied
       // to useAuth() in use-auth.ts for the same class of bug.
-      console.error('[useBaseballAuth] session verification failed:', error);
+      console.error('[useBaseballAuth] session verification failed:', describeError(error));
       return { ok: false, redirectTo: '/baseball/login' } as const;
     }
   })();

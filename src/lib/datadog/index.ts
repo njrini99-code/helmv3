@@ -1,3 +1,4 @@
+import { describeError } from '@/lib/utils/describe-error';
 // Datadog RUM (Real User Monitoring) and Browser Logs initialization
 // This runs on the client side to track user sessions, errors, and performance
 // SDKs are lazy-loaded to avoid blocking initial page render (~150KB savings)
@@ -72,7 +73,7 @@ export function initDatadog() {
         sessionSampleRate: 100,
       });
     } catch (error) {
-      console.error('[Datadog] Failed to initialize:', error);
+      console.error('[Datadog] Failed to initialize:', describeError(error));
     }
   });
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { memo, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -149,7 +150,7 @@ const PlayerPeekContentComponent = function PlayerPeekContent({
           setError(result.error || 'Failed to load player');
         }
       } catch (err) {
-        console.error('Error loading player:', err);
+        console.error('Error loading player:', describeError(err));
         setError('Failed to load player');
       } finally {
         setIsLoading(false);

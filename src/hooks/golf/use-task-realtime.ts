@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -375,7 +376,11 @@ export function useTaskRealtime(
       setTasks(transformedTasks);
       setStats(computeTaskStats(transformedTasks));
     } catch (err) {
-      console.error('Error fetching tasks:', err);
+      // This is the call site that produced the production incident behind the
+      // whole sweep: a Supabase PostgrestError reached Sentry as
+      // "Error fetching tasks: [object Object]" and Bridge flagged it MESSAGE
+      // LOST, because nothing was left in it to triage.
+      console.error('Error fetching tasks:', describeError(err));
       setError(err instanceof Error ? err.message : 'Failed to load tasks');
     } finally {
       setLoading(false);

@@ -5973,7 +5973,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/admin/crm/components/CalendarView.tsx",
-          "line": 155
+          "line": 156
         }
       ]
     },
@@ -9439,12 +9439,12 @@
         {
           "kind": "import_graph",
           "path": "src/lib/baseball/read-models/player-lift.ts",
-          "line": 33
+          "line": 34
         },
         {
           "kind": "import_graph",
           "path": "src/lib/baseball/read-models/player-lift.ts",
-          "line": 34
+          "line": 35
         },
         {
           "kind": "import_graph",
@@ -18751,7 +18751,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/offline/sync-engine.ts",
-          "line": 50
+          "line": 51
         }
       ]
     },

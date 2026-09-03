@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
@@ -581,7 +582,7 @@ export default function CRMPage() {
       const uniqueConferences = [...new Set(coachData.map(c => c.conference))].sort();
       setConferences(uniqueConferences);
     } catch (err) {
-      console.error('Failed to fetch all coaches:', err);
+      console.error('Failed to fetch all coaches:', describeError(err));
       toast.error('Failed to load coaches', err instanceof Error ? err.message : 'Please refresh and try again.');
       // Populate the dedicated full-page error screen (below) — previously
       // only the toast fired, so a failed initial load rendered `allCoaches`
@@ -701,7 +702,7 @@ export default function CRMPage() {
       })
       .catch((err) => {
         // Non-fatal: badges fall back to "—" placeholder when the map is empty.
-        console.warn('[crm] engagement fetch failed:', err);
+        console.warn('[crm] engagement fetch failed:', describeError(err));
         logError(
           err instanceof Error ? err : new Error(String(err)),
           { component: 'CRMPage', action: 'fetch-coach-engagement', sport: 'golf' },
@@ -728,7 +729,7 @@ export default function CRMPage() {
         if (!cancelled) setSequenceEnrollmentMap(map);
       })
       .catch((err) => {
-        console.warn('[crm] enrollment fetch failed:', err);
+        console.warn('[crm] enrollment fetch failed:', describeError(err));
         logError(
           err instanceof Error ? err : new Error(String(err)),
           { component: 'CRMPage', action: 'fetch-coach-sequence-enrollment', sport: 'golf' },
@@ -916,7 +917,7 @@ export default function CRMPage() {
       // so the setAllCoaches call above already keeps an open detail panel
       // in sync — no separate setSelectedCoach(...) needed here.
     } catch (err) {
-      console.error('Failed to update coach:', err);
+      console.error('Failed to update coach:', describeError(err));
       toast.error('Failed to update coach', err instanceof Error ? err.message : 'Please try again.');
       logError(
         err instanceof Error ? err : new Error(String(err)),
@@ -967,7 +968,7 @@ export default function CRMPage() {
         return merged;
       }));
     } catch (err) {
-      console.error('Failed to bulk update:', err);
+      console.error('Failed to bulk update:', describeError(err));
       toast.error('Failed to update coaches', err instanceof Error ? err.message : 'Please try again.');
       logError(
         err instanceof Error ? err : new Error(String(err)),
@@ -1207,7 +1208,7 @@ export default function CRMPage() {
       }
       setSelectedIds(new Set());
     } catch (err) {
-      console.error('Bulk action failed:', err);
+      console.error('Bulk action failed:', describeError(err));
       toast.error('Bulk action failed', err instanceof Error ? err.message : 'Please try again.');
       logError(
         err instanceof Error ? err : new Error(String(err)),

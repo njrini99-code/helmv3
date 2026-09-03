@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -112,7 +113,7 @@ export function useCalendarEvents({ teamId, startDate, endDate }: UseCalendarEve
 
         setEvents(mappedEvents);
       } catch (err) {
-        console.error('Error fetching calendar events:', err);
+        console.error('Error fetching calendar events:', describeError(err));
         setError(err instanceof Error ? err.message : 'Failed to fetch events');
       } finally {
         setLoading(false);

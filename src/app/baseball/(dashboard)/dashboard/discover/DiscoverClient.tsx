@@ -10,6 +10,7 @@
 // actual results grid and are out of scope for this pass.
 // =============================================================================
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getDiscoverPlayers, getDiscoverTeams, getWatchlistIds, getStateCounts, type DiscoverFilters, type CoachType } from '@/app/baseball/actions/discover';
@@ -215,7 +216,7 @@ function DiscoverContent() {
         if (err instanceof Error && err.name === 'AbortError') return;
         if (signal.aborted) return;
 
-        console.error('Unexpected error fetching players:', err);
+        console.error('Unexpected error fetching players:', describeError(err));
         setError('An unexpected error occurred. Please try again.');
         setPlayers([]);
         setPlayerCount(0);
@@ -295,7 +296,7 @@ function DiscoverContent() {
         if (err instanceof Error && err.name === 'AbortError') return;
         if (signal.aborted) return;
 
-        console.error('Unexpected error fetching teams:', err);
+        console.error('Unexpected error fetching teams:', describeError(err));
         setTeams([]);
         setTeamCount(0);
         setTeamPages(0);
@@ -331,7 +332,7 @@ function DiscoverContent() {
         // Leave the prior watchlistIds untouched — resetting to [] on a
         // transient fetch failure clobbers real state and shows every heart
         // as unwatched (a false negative), not just a stale one.
-        console.error('Error fetching watchlist:', err);
+        console.error('Error fetching watchlist:', describeError(err));
         addToast({
           type: 'error',
           title: "Couldn't refresh your watchlist",
@@ -357,7 +358,7 @@ function DiscoverContent() {
         setPlayerStateCounts(playerCounts);
         setTeamStateCounts(teamCounts);
       } catch (err) {
-        console.error('Error fetching state counts:', err);
+        console.error('Error fetching state counts:', describeError(err));
       }
     }
 

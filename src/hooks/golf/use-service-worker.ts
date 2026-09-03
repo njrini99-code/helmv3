@@ -13,6 +13,7 @@
  * - Service worker messaging
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ============================================================================
@@ -201,7 +202,7 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
         return;
       }
 
-      console.error('[SW Hook] Registration failed:', error);
+      console.error('[SW Hook] Registration failed:', describeError(error));
 
       setState(prev => ({
         ...prev,
@@ -236,7 +237,7 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
         hasUpdate: false,
       }));
     } catch (error) {
-      console.error('[SW Hook] Unregistration failed:', error);
+      console.error('[SW Hook] Unregistration failed:', describeError(error));
     }
   }, []);
 
@@ -257,7 +258,7 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
 
       setState(prev => ({ ...prev, status: 'registered' }));
     } catch (error) {
-      console.error('[SW Hook] Update check failed:', error);
+      console.error('[SW Hook] Update check failed:', describeError(error));
 
       if (!mountedRef.current) return;
 
@@ -294,7 +295,7 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
 
       return granted;
     } catch (error) {
-      console.error('[SW Hook] Push permission request failed:', error);
+      console.error('[SW Hook] Push permission request failed:', describeError(error));
       return false;
     }
   }, []);
@@ -312,7 +313,7 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
       await registrationRef.current.sync.register(tag);
       return true;
     } catch (error) {
-      console.error('[SW Hook] Background sync registration failed:', error);
+      console.error('[SW Hook] Background sync registration failed:', describeError(error));
       return false;
     }
   }, [state.syncSupported]);

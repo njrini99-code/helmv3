@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PeekPanelRoot } from './PeekPanelRoot';
@@ -68,7 +69,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
     if (activePlayerIdRef.current !== id) return;
 
     if (error) {
-      console.error('Error fetching player:', error);
+      console.error('Error fetching player:', describeError(error));
       toast.error('Failed to load player details');
     } else {
       setPlayer(data);

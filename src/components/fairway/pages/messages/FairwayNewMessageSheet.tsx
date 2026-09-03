@@ -23,6 +23,7 @@
  *     EmptyState/Skeleton/InlineNotice (feedback) · fw tokens + Fraunces.
  * ========================================================================== */
 
+import { describeError } from '@/lib/utils/describe-error';
 import * as React from 'react';
 import { Check, Users, Search } from 'lucide-react';
 
@@ -268,7 +269,7 @@ export function FairwayNewMessageSheet({
           setResults(deduped);
         }
       } catch (error) {
-        console.warn('[new message] recipient search failed:', error);
+        console.warn('[new message] recipient search failed:', describeError(error));
         setSearchFailed(true);
         setResults([]);
       } finally {

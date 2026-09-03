@@ -1,3 +1,4 @@
+import { describeError } from '@/lib/utils/describe-error';
 /**
  * db-error.ts — Safe database error handling for server actions
  *
@@ -26,7 +27,7 @@ export function sanitizeDbError(
   fallback = 'Something went wrong. Please try again.'
 ): string {
   // Always log the real error server-side
-  console.error(`[DB Error:${context}]`, err);
+  console.error(`[DB Error:${context}]`, describeError(err));
 
   const msg =
     (err as SupabaseLikeError)?.message?.toLowerCase() ?? '';
@@ -83,7 +84,7 @@ export function sanitizeDbError(
  * More context-aware than the general DB sanitizer.
  */
 export function sanitizeAuthError(err: unknown, context: string): string {
-  console.error(`[Auth Error:${context}]`, err);
+  console.error(`[Auth Error:${context}]`, describeError(err));
 
   const msg = (err as SupabaseLikeError)?.message?.toLowerCase() ?? '';
 

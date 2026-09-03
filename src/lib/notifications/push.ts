@@ -1,3 +1,4 @@
+import { describeError } from '@/lib/utils/describe-error';
 import 'server-only';
 
 /**
@@ -464,7 +465,7 @@ export async function sendPushNotification(
             .eq('token', deviceToken.token);
         }
       } catch (err) {
-        console.error('Push send error:', err);
+        console.error('Push send error:', describeError(err));
         // Previously console.error-only: an exception thrown while invoking
         // the edge function (network failure, thrown JSON parse, etc.) for
         // one token had no Sentry/Bridge signal at all — distinct from the
@@ -497,7 +498,7 @@ export async function sendPushNotification(
     recordPushOutcome(type, 'success');
     return { success: true };
   } catch (error) {
-    console.error('Failed to send push notification:', error);
+    console.error('Failed to send push notification:', describeError(error));
     // Previously console.error-only: this is the outermost catch for the
     // whole call (generatePushPayload throwing, an unhandled Supabase
     // client error, etc.) — the most severe failure mode in this function

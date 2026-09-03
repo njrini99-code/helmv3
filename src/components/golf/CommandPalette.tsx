@@ -18,6 +18,7 @@
  * same cubic-bezier(0.16, 1, 0.3, 1) easing as DropdownMenu/Tooltip.
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { useRouter } from 'next/navigation';
@@ -200,7 +201,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
         .catch((error: unknown) => {
           // An empty palette is indistinguishable from a team with nobody on
           // it. Say so rather than presenting the failure as a finding.
-          console.warn('[command palette] data fetch failed:', error);
+          console.warn('[command palette] data fetch failed:', describeError(error));
           setData({ players: [], recentRounds: [], recentInsights: [] });
         })
         .finally(() => setDataLoading(false));

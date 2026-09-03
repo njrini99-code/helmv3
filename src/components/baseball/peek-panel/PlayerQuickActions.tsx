@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { memo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -53,7 +54,7 @@ const PlayerQuickActionsComponent = function PlayerQuickActions({
         });
       }
     } catch (error) {
-      console.error('Failed to toggle watchlist:', error);
+      console.error('Failed to toggle watchlist:', describeError(error));
       addToast({
         type: 'error',
         title: 'Could not update watchlist',
