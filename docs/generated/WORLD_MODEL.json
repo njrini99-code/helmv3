@@ -546,6 +546,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/components/admin/premium/**",
+        "pattern": "src/components/admin/premium/**",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/baseball/**",
         "pattern": "src/components/baseball/**",
         "category": "components"
@@ -4169,6 +4174,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/incidents/__tests__/release-watch.test.ts",
+          "line": 18
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/incidents/__tests__/truth-strip.test.ts",
           "line": 26
         },
@@ -4681,22 +4691,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 140
+          "line": 153
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 342
+          "line": 355
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 362
+          "line": 375
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 567
+          "line": 580
         },
         {
           "kind": "import_graph",
@@ -4855,12 +4865,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 207
+          "line": 220
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 361
+          "line": 374
         }
       ]
     },
@@ -4877,22 +4887,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 141
+          "line": 154
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 208
+          "line": 221
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 371
+          "line": 384
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 453
+          "line": 466
         },
         {
           "kind": "import_graph",
@@ -5394,7 +5404,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 720
+          "line": 805
         },
         {
           "kind": "import_graph",
@@ -5458,6 +5468,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/admin/lenses/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "components:src/components/admin/premium/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/admin/premium/**"
         }
       ]
     },
@@ -6504,6 +6526,46 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 8
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/__tests__/rollback.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 46
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 47
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 48
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 49
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/read-model.ts",
+          "line": 50
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/rollback.ts",
+          "line": 18
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/release-intel/types.ts",
+          "line": 14
         }
       ]
     },
@@ -6659,6 +6721,26 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/causal/__tests__/causal-score.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/causal/__tests__/incident-similarity.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/causal/causal-score.ts",
+          "line": 40
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/causal/incident-similarity.ts",
+          "line": 39
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/rca-run.ts",
           "line": 25
         },
@@ -6766,6 +6848,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
+          "line": 61
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
+          "line": 63
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/rca-run.ts",
           "line": 23
         },
@@ -6837,6 +6929,11 @@
       "target": "observability_sentry",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/ensemble/verification-ensemble.ts",
+          "line": 62
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/admin/rca.ts",
