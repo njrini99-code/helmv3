@@ -29,6 +29,7 @@ import { collectSentry, collectSupabase, collectVercel } from './sources';
 import {
   RELIABILITY_SNAPSHOT_JOB_TYPE,
   correlateSignals,
+  resolveFeatureId,
   summarizeSources,
   worstStatus,
 } from './normalize';
@@ -37,26 +38,6 @@ import type { ReliabilityRun, SourceResult } from './types';
 /** Collection window. Matches the 3-hourly cadence with overlap so a skipped
  *  run (Vercel cron scheduling is best-effort) does not leave a blind gap. */
 const WINDOW_HOURS = 4;
-
-/**
- * Advisory route → feature mapping.
- *
- * Deliberately a coarse prefix match and NOT presented as authoritative:
- * `memory/registry.yml` is the canonical router per the OS contract, and it is
- * a build-time artifact this runtime path cannot read. A null here means "not
- * attributed", never "no feature".
- */
-function resolveFeatureId(route: string | null): string | null {
-  if (!route) return null;
-  const r = route.toLowerCase();
-  if (r.includes('/rounds') || r.includes('round')) return 'golf_round_lifecycle';
-  if (r.includes('/qualifier')) return 'qualifiers';
-  if (r.includes('/stats') || r.includes('/analytics')) return 'stats_analytics';
-  if (r.includes('/coachhelm')) return 'coachhelm_ai';
-  if (r.includes('/admin')) return 'admin_platform';
-  if (r.includes('/calendar') || r.includes('/events')) return 'calendar_events';
-  return null;
-}
 
 export interface CollectOutcome {
   run: ReliabilityRun;

@@ -124,6 +124,46 @@ export function proposeRisk(input: {
   return 'R0';
 }
 
+/**
+ * Advisory route → feature mapping.
+ *
+ * Deliberately a coarse prefix match and NOT presented as authoritative:
+ * `memory/registry.yml` is the canonical router per the OS contract, and it is
+ * a build-time artifact this runtime path cannot read. A null here means "not
+ * attributed", never "no feature".
+ *
+ * Lives here (not in `collect.ts`) so it is reachable, pure, with no I/O, from
+ * both the collector's own correlation pass AND `mergeTriage`
+ * (`src/lib/admin/data/triage.ts`) — a Sentry issue's `culprit` is the only
+ * per-issue location signal the Sentry issue-LIST endpoint returns (no
+ * transaction/url field on `SentryIssue`), and it is exactly what this
+ * function already expects: `collectSentry` in `sources.ts` passes
+ * `issue.culprit` as `route` into the same function today.
+ *
+ * NOT every value this returns is a `FEATURE_REGISTRY` key
+ * (`src/lib/admin/feature-registry.ts`) — `stats_analytics`, `qualifiers` and
+ * `calendar_events` are; `golf_round_lifecycle`, `coachhelm_ai` and
+ * `admin_platform` are not. That mismatch predates this comment (the
+ * Reliability tab's own `CorrelatedSignal.featureId` has used this exact
+ * function since the collector shipped) and is left as-is here rather than
+ * silently reinterpreted: an unregistered id still renders, unlinked, in the
+ * feature lens (`UnifiedIncidentCard` — "not a key in the feature registry —
+ * it counts against no feature's health and cannot be filtered on"), which is
+ * strictly better than the "unknown" bucket this fixes Sentry-origin signals
+ * out of.
+ */
+export function resolveFeatureId(route: string | null): string | null {
+  if (!route) return null;
+  const r = route.toLowerCase();
+  if (r.includes('/rounds') || r.includes('round')) return 'golf_round_lifecycle';
+  if (r.includes('/qualifier')) return 'qualifiers';
+  if (r.includes('/stats') || r.includes('/analytics')) return 'stats_analytics';
+  if (r.includes('/coachhelm')) return 'coachhelm_ai';
+  if (r.includes('/admin')) return 'admin_platform';
+  if (r.includes('/calendar') || r.includes('/events')) return 'calendar_events';
+  return null;
+}
+
 function pickWorseSeverity(a: ReliabilitySeverity, b: ReliabilitySeverity): ReliabilitySeverity {
   return SEVERITY_RANK[a] <= SEVERITY_RANK[b] ? a : b;
 }

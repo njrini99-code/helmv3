@@ -463,6 +463,25 @@ them would have broken those routes, not the dead one.
   `src/app/baseball/actions/lift-onboarding.ts`, not the Lift Lab one). Every
   alias must resolve to a registered key and never shadow one —
   `src/lib/admin/__tests__/feature-aliases.test.ts`.
+- **An un-scoped Sentry issue still gets an ADVISORY feature tag, not `null`.**
+  `mergeTriage` (`src/lib/admin/data/triage.ts`) only ever had a per-BATCH
+  feature (`sentryTagHint`, set only when the caller actually scoped the fetch
+  by a Sentry tag) — every other Sentry issue landed `feature: null` and the
+  feature lens on `/admin/errors` grouped them all as "unknown". It now falls
+  back, per issue, to `resolveFeatureId(issue.culprit)` — the same advisory
+  route/feature map `src/lib/reliability/normalize.ts` exports for the
+  Reliability tab's own correlation pass (moved there from `collect.ts` so
+  both callers share one pure implementation; `collectSentry` in
+  `sources.ts` already passes `issue.culprit` as `route` into this same
+  function). The batch-level hint still wins when present — it is honest,
+  Sentry-tag-scoped attribution; the per-issue fallback is a GUESS from a
+  route string, which is why it only fires in the hint's absence. `culprit` is
+  the only per-issue location `SentryIssue` carries — there is no
+  transaction/url field on it. Not every value `resolveFeatureId` returns is a
+  `FEATURE_REGISTRY` key (see its own doc comment for which three of six
+  aren't); an unregistered tag still renders, unlinked, in
+  `UnifiedIncidentCard` — strictly better than the "unknown" bucket this
+  fixes issues out of.
 - **Credential values are validated by SHAPE, in one module.** Every one of
   the eight Bridge values in the local `.env.local` was exactly 11 characters,
   which cleared the old `length >= 10` floor in both

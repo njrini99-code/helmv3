@@ -46,9 +46,9 @@ describe('mergeTriage', () => {
     expect(items[1]!.key).toBe('sentry:noisy');
   });
 
-  it('attributes sport/feature to sentry-origin items only when the caller says the fetch was scoped by that tag', () => {
+  it('attributes sport ONLY when the caller says the fetch was scoped by that tag — sport has no per-issue fallback', () => {
     const unscoped = mergeTriage({ sentryIssues: [sentryIssue({})], appEvents: [] });
-    expect(unscoped[0]).toMatchObject({ sport: null, feature: null });
+    expect(unscoped[0]).toMatchObject({ sport: null });
 
     const scoped = mergeTriage({
       sentryIssues: [sentryIssue({})],
@@ -56,6 +56,42 @@ describe('mergeTriage', () => {
       sentryTagHint: { sport: 'golf', feature: 'round_tracking' },
     });
     expect(scoped[0]).toMatchObject({ sport: 'golf', feature: 'round_tracking' });
+  });
+
+  // Catalogued defect (d): a Sentry-origin item with no batch-level
+  // sentryTagHint used to carry `feature: null` unconditionally, so the
+  // feature lens on /admin/errors grouped every un-scoped Sentry issue as
+  // "unknown" — even one whose `culprit` plainly names a route. mergeTriage
+  // now falls back to the collector's advisory route/feature map
+  // (`resolveFeatureId`, `src/lib/reliability/normalize.ts`) applied to the
+  // issue's own `culprit`, per issue, when the batch-level hint is absent.
+  it('falls back to the advisory route/feature map from the issue\'s own culprit when no batch-level hint is given', () => {
+    const items = mergeTriage({
+      sentryIssues: [sentryIssue({ id: 'r1', culprit: '/api/golf/rounds/submit' })],
+      appEvents: [],
+    });
+    expect(items[0]).toMatchObject({ feature: 'golf_round_lifecycle' });
+  });
+
+  it('a batch-level sentryTagHint feature still wins over the per-issue culprit derivation', () => {
+    const items = mergeTriage({
+      sentryIssues: [sentryIssue({ id: 'r1', culprit: '/api/golf/rounds/submit' })],
+      appEvents: [],
+      sentryTagHint: { feature: 'round_review_ai' },
+    });
+    expect(items[0]).toMatchObject({ feature: 'round_review_ai' });
+  });
+
+  it('stays null when the culprit maps to nothing in the advisory map, same as a missing culprit', () => {
+    const items = mergeTriage({
+      sentryIssues: [
+        sentryIssue({ id: 'r1', culprit: null }),
+        sentryIssue({ id: 'r2', culprit: 'someUnrelatedFunction' }),
+      ],
+      appEvents: [],
+    });
+    expect(items.find((i) => i.key === 'sentry:r1')).toMatchObject({ feature: null });
+    expect(items.find((i) => i.key === 'sentry:r2')).toMatchObject({ feature: null });
   });
 
   it('carries sentry substatus + permalink through', () => {

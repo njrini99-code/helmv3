@@ -1,5 +1,42 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (d) — Sentry-origin incidents get an advisory feature tag instead of grouping as unknown
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (d) of the
+  six-defect sweep).
+- **`mergeTriage` (`src/lib/admin/data/triage.ts`) falls back to a per-issue
+  advisory feature tag when the batch-level `sentryTagHint` is absent.** Every
+  un-scoped Sentry issue used to carry `feature: null` unconditionally, so the
+  feature lens on `/admin/errors` (`featureBreakdown` in `errors/page.tsx`)
+  grouped all of them under the empty-string "unknown" bucket. It now applies
+  `resolveFeatureId(issue.culprit)` per issue — `culprit` is the only
+  per-issue location field `SentryIssue` returns; there is no
+  transaction/url. The batch hint still wins outright when present (honest,
+  Sentry-tag-scoped attribution beats a route-string guess); `feature: null`
+  still results when the culprit doesn't map to anything, unchanged. The same
+  resolved value now also feeds `buildIncidentReport`'s `featureKey` so the
+  Copy-for-Claude report and the row's rendered tag agree.
+- **`resolveFeatureId` moved from `collect.ts` to `normalize.ts`, exported.**
+  It was a private function in `collect.ts` used only for the Reliability
+  tab's own correlation pass; it is pure (no I/O) and belongs beside the
+  module's other pure logic so `triage.ts` can reuse the SAME map rather than
+  writing a second copy that eventually drifts. `collect.ts` now imports it
+  back. Its doc comment states explicitly that three of the six ids it
+  returns (`golf_round_lifecycle`, `coachhelm_ai`, `admin_platform`) are NOT
+  `FEATURE_REGISTRY` keys — a pre-existing mismatch (the Reliability tab's own
+  `CorrelatedSignal.featureId` has used this function since the collector
+  shipped) left as-is rather than silently reinterpreted; an unregistered tag
+  still renders, unlinked, in `UnifiedIncidentCard` rather than falling into
+  "unknown".
+- **Verified**: renamed the now-overbroad sport/feature test in
+  `triage.test.ts` (it previously implied NEITHER field had a fallback; only
+  sport doesn't) and added 3 new cases, one written failing first (per-issue
+  culprit fallback fires; batch hint still wins; a non-mapping culprit stays
+  null) — `npx vitest run src/lib/admin/data/__tests__/triage.test.ts`
+  (20/20). Full ripple check: `npx vitest run src/lib/reliability src/lib/admin`
+  (1312/1312, unchanged pass count). `npm run typecheck`, `lint`,
+  `lint:ratchet` all green.
+
 ## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (b) — the capture-quality panel stops penalising cron rows for lacking a user, and observed-action user attribution is pinned
 
 - SHA: pending (branch `agent/reliability-bridge-fixes`, defect (b) of the

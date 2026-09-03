@@ -14,6 +14,7 @@ import {
   extractErrorCode,
 } from '@/lib/admin/incident-report';
 import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
+import { resolveFeatureId } from '@/lib/reliability/normalize';
 
 export type TriageSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -248,6 +249,15 @@ export function mergeTriage(input: {
   const hintSport = input.sentryTagHint?.sport ?? null;
   const hintFeature = input.sentryTagHint?.feature ?? null;
   const items: TriageItem[] = input.sentryIssues.map((issue) => {
+    // The batch-level hint (an actually Sentry-tag-scoped fetch) is honest,
+    // certain attribution and always wins. When it is absent, fall back to
+    // the collector's advisory route/feature map applied to THIS issue's own
+    // `culprit` — the only per-issue location signal the Sentry issue-list
+    // endpoint returns (see `resolveFeatureId`'s doc comment in
+    // `@/lib/reliability/normalize`). This is a per-issue GUESS, not a tag —
+    // still explicitly weaker than `hintFeature`, and `null` when the culprit
+    // doesn't map to anything, same as before.
+    const feature = hintFeature ?? resolveFeatureId(issue.culprit);
     const severity = SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error';
     const classification = classifyIncident({
       title: issue.title,
@@ -275,7 +285,7 @@ export function mergeTriage(input: {
     eventIds: [],
     substatus: issue.substatus,
     source: 'sentry',
-    feature: hintFeature,
+    feature,
     actionName: null,
     route: issue.culprit,
     klass: classification.klass,
@@ -294,7 +304,7 @@ export function mergeTriage(input: {
       source: 'sentry',
       severity: SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error',
       sport: hintSport,
-      featureKey: hintFeature,
+      featureKey: feature,
       eventCount: issue.count,
       affectedUserCount: issue.userCount,
       firstSeen: issue.firstSeen,
