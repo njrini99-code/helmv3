@@ -113,6 +113,12 @@ export interface SelfHealBoard {
   /** Job types whose heartbeat history could not be read — distinct from a
    *  stage that read cleanly and has simply never run. */
   unreadable: string[];
+  /** The newest repair PR that names an incident, when the work log read
+   *  cleanly and at least one such PR exists. Null on a failed read OR a
+   *  clean read with zero matches — see `repairEvidenceFromWorkLog`; a
+   *  caller wanting to tell those two apart reads `evidence.repairPrsOpened`
+   *  (`null` vs `0`) instead. */
+  repairLink: RepairPrLink | null;
   computedAt: string;
 }
 
@@ -203,6 +209,17 @@ function signalsFromSnapshot(res: AdminFetchResult<ReliabilitySnapshot>): number
 }
 
 /**
+ * The newest repair PR, as a clickable reference — the Bridge Premium
+ * Phase 3 Self-Heal Circuit's "repair-quality link" reads this rather than
+ * re-deriving it from the work log a second time.
+ */
+export interface RepairPrLink {
+  url: string;
+  number: number;
+  createdAt: string;
+}
+
+/**
  * Repair PRs that name an incident, per `repairIncidentIds` on each
  * `WorkLogEntry` (see `github-pr-timeline.ts` / `incidents/repair-link.ts`),
  * plus the newest `created_at` among them. Null count when the work log
@@ -212,18 +229,21 @@ function signalsFromSnapshot(res: AdminFetchResult<ReliabilitySnapshot>): number
  */
 function repairEvidenceFromWorkLog(
   res: AdminFetchResult<WorkLogSnapshot>,
-): { count: number | null; lastAt: string | null } {
-  if (res.status !== 'ok' || !res.data) return { count: null, lastAt: null };
+): { count: number | null; lastAt: string | null; link: RepairPrLink | null } {
+  if (res.status !== 'ok' || !res.data) return { count: null, lastAt: null, link: null };
 
   const matches = res.data.entries.filter((entry) => entry.repairIncidentIds.length > 0);
-  if (matches.length === 0) return { count: 0, lastAt: null };
+  if (matches.length === 0) return { count: 0, lastAt: null, link: null };
 
-  const lastAt = matches.reduce<string | null>((latest, entry) => {
-    if (!latest) return entry.created_at;
-    return Date.parse(entry.created_at) > Date.parse(latest) ? entry.created_at : latest;
-  }, null);
+  const newest = matches.reduce((latest, entry) =>
+    Date.parse(entry.created_at) > Date.parse(latest.created_at) ? entry : latest,
+  );
 
-  return { count: matches.length, lastAt };
+  return {
+    count: matches.length,
+    lastAt: newest.created_at,
+    link: { url: newest.html_url, number: newest.number, createdAt: newest.created_at },
+  };
 }
 
 /**
@@ -353,6 +373,7 @@ export async function fetchSelfHealBoard(now: Date = new Date()): Promise<AdminF
     verdict: summarizeLoopVerdict({ runtime, capability }),
     evidence,
     unreadable,
+    repairLink: repairEvidence.link,
     computedAt: now.toISOString(),
   });
 }
