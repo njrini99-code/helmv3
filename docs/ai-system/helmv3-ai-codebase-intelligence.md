@@ -80,6 +80,40 @@ Start with these because they cross product behavior, UI, database, and trust co
 - Add docs updates as reviewable changes, not silent generated churn.
 - Use Playwright for real browser confidence; TypeScript and tests alone have missed Helmv3 runtime issues before.
 
+## World Model — the dependency graph over feature ownership
+
+`memory/registry.yml` and `src/lib/admin/feature-registry.ts` answer "who owns
+this file". `scripts/knowledge/world-model.mjs` (2026-09-02) answers "what
+does touching this feature put at risk" — a generated graph
+(`docs/generated/WORLD_MODEL.json` + a readable `WORLD_MODEL.md` summary)
+over features, routes, actions, RPCs, tables, jobs (Vercel crons, Inngest
+functions, the self-heal launchd Repair job), named invariant registries
+(`qualifier-invariants.ts`, `operational-rule-engine.ts`), and the runtime
+`FeatureKey` (Sentry/`admin_events`) vocabulary.
+
+Every semantic edge carries evidence — a registry glob, a migration's
+`CREATE TABLE`/`CREATE FUNCTION`, a `.rpc(...)` call site, an
+`observability.feature_keys` declaration, or an explicit cross-reference in
+one feature's current-state doc to another. A bounded TypeScript import walk
+adds a second class of edge that is ALWAYS labelled weak — matching this
+system's own "not automatically a product dependency graph" rule
+(`HELM_AUTONOMY_CONTROL_PLANE.md` §2) — and `--impact` never lets a
+weak-only relation read as equal confidence to a doc-evidenced or
+structural one.
+
+When a registry glob and another feature's narrower glob legitimately
+overlap (the `admin_platform` split into `admin_incidents` /
+`admin_reliability_collector` / `admin_selfheal` is the first case of this),
+the generator resolves each file's PRIMARY owner by most-specific-glob-wins,
+and reports every other match as secondary — never silently drops the
+overlap and never lets it blur which feature an edge should be attributed to.
+
+```bash
+npm run knowledge:world-model                          # write both files
+npm run knowledge:world-model:check                     # verify, no write
+node scripts/knowledge/world-model.mjs --impact <file|feature>   # blast radius
+```
+
 ## Useful Commands
 
 ```bash
