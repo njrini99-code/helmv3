@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 62 | 3 | 31 | 156 |
 | `AUDIT_SNAPSHOT` | 81 | 6 | 37 | 132 |
 | `STATE_SNAPSHOT` | 4 | 0 | 3 | 6 |
-| `HISTORY_LEDGER` | 22 | 0 | 2 | 41 |
+| `HISTORY_LEDGER` | 22 | 0 | 2 | 42 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 33 | 10 |
+| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 35 | 11 |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/team_communications.md` | current | - | - | - | 1 | 9 | 4 |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |

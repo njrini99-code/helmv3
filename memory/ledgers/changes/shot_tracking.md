@@ -691,3 +691,66 @@
   `HELD` in production. That is correct for a local dev stack and must not
   be read as evidence of a production apply — `HELD.md` is the source of
   truth for production state, not the local schema_migrations table.
+
+### Follow-up, same day — closing the reviewer's high finding on `20260902160000`
+
+- New migration: `supabase/migrations/20260902170000_blind_check_ignores_postgres_layer.sql`
+  — HELD, R3, not applied. `db-migration-reviewer` review of `20260902160000`
+  (verdict HOLDS, finding (2)) found that once it ships, `trace_checkpoint`'s
+  unconditional Postgres-layer UPSERT gives every successful
+  `submit_round_atomic`/`save_partial_round_atomic` call at least one
+  Postgres-written row in `helm_debug.trace_steps`, so `helm_debug_finalize_trace`'s
+  plain `count(*)` blind check (added by `20260901140000`) is never 0 for
+  those two workflows again — reopening the exact 1,097-trace blind-success
+  shape `20260901140000` closed. This migration narrows the blind check to a
+  second, narrower count — rows whose `layer` is not `'postgres'` — while
+  `observed_step_count` on the run keeps counting every row, both layers,
+  unchanged. Reproduced the defect and the fix locally in rolled-back
+  transactions, before and after applying: a trace carrying only
+  Postgres-layer rows against `expected_step_count > 0` finalized `success`
+  before this migration and `warning` after it.
+- Applied `20260901140000` (not previously applied to this worktree's local
+  stack — confirmed via its own pre-apply fingerprint, which matched
+  exactly) and then the new `20260902170000` to the local Docker stack via
+  `psql -f`, `ON_ERROR_STOP=1`, in that order, each followed by an explicit
+  `supabase_migrations.schema_migrations` insert. Neither migration is
+  applied in production — see `HELD.md`.
+- Extended `supabase/tests/rls/golf_flight_recorder_checkpoints.sql` with a
+  new Test G (4 assertions, built directly against
+  `helm_debug.trace_runs`/`trace_steps` rather than through the RPCs, since
+  the claim under test is `helm_debug_finalize_trace`'s own counting logic):
+  a trace with only Postgres-layer steps against a nonzero
+  `expected_step_count` still downgrades to `warning`, with
+  `status_downgraded_from` recorded; a trace with at least one
+  application-layer step alongside Postgres-layer ones still finalizes
+  `success`; and `observed_step_count` counts every row regardless of layer
+  in both cases. `plan(24)` -> `plan(28)`.
+- Test F's fixture/comment — the refuter finding that Test F had pinned
+  `db.submit_round_atomic` (declared layer `'postgres'` by both sides
+  already, so no override could ever be observed) instead of
+  `db.save_partial_round_atomic` (the key where the JS and Postgres layers
+  actually diverge) — was already corrected on this branch by the
+  `test(observability): discriminate ...` commit, and independently recorded
+  in `HELD.md`'s `20260902160000` row. Verified against
+  `src/lib/observability/golf-round-flight-workflow.ts` that the current
+  comment and fixture are accurate (`db.submit_round_atomic` declares
+  `layer: 'postgres'`, `db.save_partial_round_atomic` declares
+  `layer: 'supabase'`, matching what both `helm-flight-recorder.ts` call
+  sites and the file's own comment say); no further change was needed.
+- `HELD.md`: added the `20260902170000` row, with the pre-apply fingerprint
+  of the LOCAL stack's `helm_debug_finalize_trace` taken immediately after
+  applying `20260901140000` there — md5 `e017e6980ce7045f46b5e83c73580bdc`,
+  length 2229 (differs from production's own post-apply fingerprint for
+  `20260901140000`, `338d5f344491586a6ab416ed0798548a` / length 2021, only
+  because `pg_get_functiondef`'s formatting is not byte-identical across the
+  local and production Postgres builds, not because the function bodies
+  differ) — and extended the `20260902160000` row's apply-order-caution
+  finding (2) with a note that it is closed by `20260902170000`, and that
+  the two should apply no later than each other, ideally in the same batch.
+- Verified, each captured to a file, exit code checked: `npm run test:rls`
+  (74/74 files, local Docker stack — 0), `node scripts/sql-lint-ratchet.mjs`
+  (0 regressions), `node scripts/markdown-lint-ratchet.mjs` (0, re-run after
+  the `HELD.md` edit), `npm run typecheck` (0), `npm run lint` (0),
+  `node scripts/knowledge/document-inventory.mjs --check` (0, no regen
+  needed). Not run locally: `npm run build` (no `.env.local` in this
+  worktree; CI builds).
