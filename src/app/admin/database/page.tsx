@@ -6,6 +6,10 @@ import { fetchLockIncidents, type LockIncidentRow } from '@/lib/admin/database/l
 import { fetchTableHealth } from '@/lib/admin/database/tables';
 import { fetchJobsHealth, type CronJobDisplayRow } from '@/lib/admin/database/jobs';
 import { fetchTelemetryHealth, type TelemetrySourceRow } from '@/lib/admin/database/telemetry';
+import { fetchPlatformHealth } from '@/lib/admin/database/platform';
+import { fetchDatabaseAdvisors, type AdvisorFinding } from '@/lib/admin/database/advisors';
+import { fetchAlertPolicy } from '@/lib/admin/database/alerts';
+import type { EvaluatedAlert } from '@/lib/observability/supabase/alert-policy';
 import { Surface, Inset, StatTile, StatusPill, InlineNotice, Eyebrow, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
 import { PanelBoundary } from '../_components/PanelBoundary';
@@ -13,16 +17,26 @@ import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
+import { LogEvidenceForm } from './LogEvidenceForm';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Database Mission Control — brief §35's Bridge database views (A, B, C of
- * A-G; D Locks, E Integrity's full workflow contracts, F Jobs/Webhooks and
- * G Telemetry Health beyond collector freshness are later phases — see
- * docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md §7). Every
- * number on this page is read from what the collectors already wrote —
- * nothing here queries production directly.
+ * Database Mission Control — brief §35's Bridge database views.
+ *
+ * Phase 1 shipped A (Mission Control), B (Database Errors) and C (Query
+ * Performance). Phase 2 Track A added D (Locks & Transactions), Table
+ * Health, F (Jobs & Webhooks) and G (Telemetry Health) — see
+ * docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md §7. Phase 2
+ * Track C added Platform (Metrics API), Advisors, Alert policy and
+ * on-demand log evidence — see
+ * docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md. E (Integrity's
+ * full workflow contracts) remains a later phase.
+ *
+ * Every number on this page is read from what the collectors already wrote,
+ * or from a server-only, credential-gated on-demand fetch. Nothing here
+ * queries production directly from the page render except the Metrics API
+ * and Advisors reads, which are themselves read-only and cached.
  */
 
 const SEVERITY_TONE: Record<string, FwStatusTone> = {
@@ -564,6 +578,170 @@ async function TelemetryHealthPanel() {
   );
 }
 
+function dbUpTone(dbUp: number | null): FwStatusTone {
+  if (dbUp === 1) return 'success';
+  if (dbUp === 0) return 'danger';
+  return 'neutral';
+}
+
+async function PlatformPanel() {
+  const result = await fetchPlatformHealth();
+
+  if (result.status === 'unconfigured') {
+    return (
+      <PanelNoData
+        label="Supabase Metrics API not configured"
+        description={result.error ?? 'SUPABASE_SERVICE_ROLE_KEY / NEXT_PUBLIC_SUPABASE_URL required — an intentional $0-cost default, not a defect.'}
+      />
+    );
+  }
+  if (result.status === 'error' || !result.data) {
+    return <PanelStale label="Platform metrics" error={result.error} />;
+  }
+
+  const m = result.data;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusPill tone={dbUpTone(m.dbUp)} size="sm" dot>
+          {m.dbUp === 1 ? 'db up' : m.dbUp === 0 ? 'db down' : 'db status unknown'}
+        </StatusPill>
+        <span className="font-fw-mono text-xs text-warm-500">
+          sampled <LocalTime iso={m.sampledAt} />
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile label="CPU" value={m.cpuPct ?? undefined} suffix="%" tone="neutral" mono />
+        <StatTile label="MEMORY" value={m.memoryPct ?? undefined} suffix="%" tone="neutral" mono />
+        <StatTile label="CONN. POOL" value={m.poolSaturationPct ?? undefined} suffix="%" tone="neutral" mono />
+        <StatTile
+          label="DB SIZE"
+          value={m.dbSizeBytes !== null ? Math.round(m.dbSizeBytes / (1024 * 1024)) : undefined}
+          suffix=" MB"
+          tone="neutral"
+          mono
+        />
+      </div>
+      <p className="text-xs text-warm-500">
+        Allow-list is docs-derived, not live-verified — see{' '}
+        <span className="font-fw-mono">src/lib/observability/supabase/metrics-api.ts</span> header. A missing metric
+        renders as a blank tile, never a fabricated 0.
+      </p>
+    </div>
+  );
+}
+
+const ADVISOR_LEVEL_TONE: Record<string, FwStatusTone> = {
+  ERROR: 'danger',
+  WARN: 'warning',
+  WARNING: 'warning',
+  INFO: 'neutral',
+  UNKNOWN: 'neutral',
+};
+
+function AdvisorRow({ finding }: { finding: AdvisorFinding }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <StatusPill tone={ADVISOR_LEVEL_TONE[finding.level] ?? 'neutral'} size="sm">
+            {finding.level}
+          </StatusPill>
+          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
+            {finding.advisorType}
+          </span>
+        </div>
+        <p className="mt-1 truncate text-sm text-warm-700">{finding.name}</p>
+        {finding.object ? <p className="mt-0.5 truncate font-fw-mono text-xs text-warm-500">{finding.object}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+async function AdvisorsPanel() {
+  const result = await fetchDatabaseAdvisors();
+
+  if (result.status === 'unconfigured') {
+    return (
+      <PanelNoData
+        label="Supabase Advisors not configured"
+        description={result.error ?? 'SUPABASE_ACCESS_TOKEN required — an intentional $0-cost default, not a defect.'}
+      />
+    );
+  }
+  if (result.status === 'error' || !result.data) {
+    return <PanelStale label="Advisors" error={result.error} />;
+  }
+  if (result.data.findings.length === 0) {
+    return <PanelAllClear label="No advisor findings" checkedAt={new Date().toISOString()} />;
+  }
+
+  return (
+    <div className="space-y-2">
+      {result.data.findings.slice(0, 25).map((finding, index) => (
+        <AdvisorRow key={`${finding.advisorType}-${finding.name}-${finding.object ?? index}`} finding={finding} />
+      ))}
+    </div>
+  );
+}
+
+const ALERT_STATE_TONE: Record<EvaluatedAlert['state'], FwStatusTone> = {
+  firing: 'danger',
+  clear: 'success',
+  unknown: 'neutral',
+};
+
+function AlertRow({ alert }: { alert: EvaluatedAlert }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
+            {alert.rule.severity}
+          </span>
+          <span className="truncate text-xs font-medium text-warm-700">{alert.rule.description}</span>
+        </div>
+        {alert.state !== 'clear' && (alert.evidence || alert.reason) ? (
+          <p className="mt-0.5 truncate text-xs text-warm-500">{alert.evidence ?? alert.reason}</p>
+        ) : null}
+      </div>
+      <StatusPill tone={ALERT_STATE_TONE[alert.state]} size="sm">
+        {alert.state}
+      </StatusPill>
+    </div>
+  );
+}
+
+async function AlertPolicyPanel() {
+  const result = await fetchAlertPolicy();
+
+  if (result.status !== 'ok' || !result.data) {
+    return <PanelStale label="Alert policy" error={result.error} />;
+  }
+
+  const { alerts, baselineStatus, firingCount, unknownCount } = result.data;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusPill tone={baselineStatus === 'ready' ? 'success' : 'neutral'} size="sm">
+          baseline {baselineStatus}
+        </StatusPill>
+        <span className="text-xs text-warm-500">
+          {firingCount} firing · {unknownCount} unknown of {alerts.length} rules
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        {alerts.map((alert) => (
+          <AlertRow key={alert.rule.id} alert={alert} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 export default async function DatabasePage() {
   await requireSuperAdmin();
 
@@ -681,6 +859,71 @@ export default async function DatabasePage() {
             <PanelBoundary title="Telemetry Health" skeleton={<PanelPageSkeleton rows={5} />}>
               <TelemetryHealthPanel />
             </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Platform</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            Supabase Metrics API — CPU, memory, connection pool, DB size. $0-cost: read-only, 60s cache.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Platform" skeleton={<PanelPageSkeleton />}>
+              <PlatformPanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Advisors</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            Supabase Security and Performance Advisors, deduped by (advisor type, name, object). No persistence this
+            phase — re-fetched live, 10-minute cache.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Advisors" skeleton={<PanelPageSkeleton rows={5} />}>
+              <AdvisorsPanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Alert policy</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            Every declared rule, always — a rule with no Bridge-level data source reads &quot;unknown&quot;, never a
+            fabricated &quot;clear&quot;.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Alert policy" skeleton={<PanelPageSkeleton rows={8} />}>
+              <AlertPolicyPanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Fetch Supabase evidence</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            On-demand only, never scheduled. Disabled by default (HELM_SUPABASE_LOG_EVIDENCE_ENABLED). One bounded
+            query, sanitized, discarded after a &lt;= 40-line summary.
+          </p>
+          <div className="mt-3">
+            <LogEvidenceForm />
           </div>
         </Inset>
       </Surface>

@@ -37,12 +37,22 @@ const MINUTE = 60_000;
  *
  * These are EXPECTATIONS, not SLAs. Exceeding one means "this reading is older
  * than you probably assume", which is the operator-relevant fact.
+ *
+ * `database` was added 2026-09-03 alongside the `'database'` enum entry in
+ * `./types.ts` — see that file's header for the consequence this had for
+ * `canClaimAllClear` below. Its reading is produced by
+ * `src/lib/admin/incidents/db-observability-source.ts`, which reads
+ * `src/lib/admin/database/overview.ts`'s `fetchDatabaseMissionControl()` —
+ * itself fed by the 5-minute `db-health-sampler` Vercel cron, so `database`'s
+ * expectation mirrors that cadence the same way `supabase`'s mirrors its own
+ * 3-hourly collector above.
  */
 export const SOURCE_EXPECTED_INTERVAL_MS: Readonly<Record<IncidentSourceName, number>> = {
   app: 1 * MINUTE,
   sentry: 1 * MINUTE,
   vercel: 5 * MINUTE,
   supabase: 180 * MINUTE,
+  database: 5 * MINUTE,
 };
 
 /**
