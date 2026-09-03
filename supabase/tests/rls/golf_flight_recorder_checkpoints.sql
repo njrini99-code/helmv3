@@ -14,7 +14,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(24);
+SELECT plan(28);
 
 DO $$
 DECLARE
@@ -470,6 +470,91 @@ SELECT is(
      AND step_key = 'db.save_partial_round_atomic'),
   'required',
   'the Postgres checkpoint UPSERT never overwrites a requiredness the JS layer already recorded'
+);
+
+-- ---------------------------------------------------------------------------
+-- G: helm_debug_finalize_trace's blind check must ignore Postgres-layer
+-- rows -- the defect 20260902170000 closes. Once trace_checkpoint's
+-- fail-open UPSERT (this file's own subject, A/B above) ships, every
+-- successful submit_round_atomic / save_partial_round_atomic call gets
+-- several 'postgres'-layer rows in helm_debug.trace_steps regardless of
+-- whether the JS application layer recorded anything. Before
+-- 20260902170000, helm_debug_finalize_trace's blind check was a plain
+-- count(*) over trace_steps, so those Postgres rows alone made v_observed
+-- nonzero and a trace with ZERO application-layer steps -- the exact shape
+-- of the 1,097-trace production incident 20260901140000 closed -- would
+-- finalize 'success' again. These fixtures are built directly against
+-- trace_runs/trace_steps (not through the RPCs in A/B) because the claim
+-- under test is helm_debug_finalize_trace's own counting logic, not
+-- trace_checkpoint's write path.
+-- ---------------------------------------------------------------------------
+
+RESET role;
+RESET request.jwt.claims;
+
+INSERT INTO helm_debug.trace_runs (trace_id, workflow, environment, expected_step_count)
+VALUES
+  ('00000000-0000-0000-0000-0000000fc206', 'golf.round.submit', 'test', 8),
+  ('00000000-0000-0000-0000-0000000fc207', 'golf.round.submit', 'test', 8)
+ON CONFLICT DO NOTHING;
+
+-- All Postgres-layer, zero application-layer rows -- the blind shape.
+INSERT INTO helm_debug.trace_steps (trace_id, step_key, layer, status, requiredness)
+VALUES
+  ('00000000-0000-0000-0000-0000000fc206', 'db.submit_round_atomic', 'postgres', 'started', 'best_effort'),
+  ('00000000-0000-0000-0000-0000000fc206', 'db.submit_round_atomic.update_round', 'postgres', 'success', 'best_effort'),
+  ('00000000-0000-0000-0000-0000000fc206', 'db.submit_round_atomic.insert_holes', 'postgres', 'success', 'best_effort')
+ON CONFLICT DO NOTHING;
+
+-- One application-layer row alongside Postgres-layer rows -- a genuinely
+-- observed trace, not a blind one.
+INSERT INTO helm_debug.trace_steps (trace_id, step_key, layer, status, requiredness)
+VALUES
+  ('00000000-0000-0000-0000-0000000fc207', 'server.auth', 'server_action', 'success', 'required'),
+  ('00000000-0000-0000-0000-0000000fc207', 'db.submit_round_atomic', 'postgres', 'started', 'best_effort'),
+  ('00000000-0000-0000-0000-0000000fc207', 'db.submit_round_atomic.update_round', 'postgres', 'success', 'best_effort')
+ON CONFLICT DO NOTHING;
+
+SELECT public.helm_debug_finalize_trace(
+  '00000000-0000-0000-0000-0000000fc206', 'success', '{}'::jsonb
+);
+SELECT public.helm_debug_finalize_trace(
+  '00000000-0000-0000-0000-0000000fc207', 'success', '{}'::jsonb
+);
+
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM helm_debug.trace_runs
+    WHERE trace_id = '00000000-0000-0000-0000-0000000fc206'
+      AND status = 'warning'
+      AND metadata ->> 'status_downgraded_from' = 'success'
+      AND metadata ->> 'status_downgraded_reason' IS NOT NULL
+  ),
+  'a trace with only Postgres-layer steps still downgrades success to warning (a)'
+);
+
+SELECT is(
+  (SELECT observed_step_count FROM helm_debug.trace_runs
+   WHERE trace_id = '00000000-0000-0000-0000-0000000fc206'),
+  3,
+  'observed_step_count on a blind-by-app-layer-standard run still counts the Postgres rows (c)'
+);
+
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM helm_debug.trace_runs
+    WHERE trace_id = '00000000-0000-0000-0000-0000000fc207'
+      AND status = 'success'
+      AND NOT (metadata ? 'status_downgraded_from')
+  ),
+  'a trace with at least one application-layer step alongside Postgres-layer steps finalizes success, not warning (b)'
+);
+
+SELECT is(
+  (SELECT observed_step_count FROM helm_debug.trace_runs
+   WHERE trace_id = '00000000-0000-0000-0000-0000000fc207'),
+  3,
+  'observed_step_count on a genuinely-observed run counts BOTH the application-layer and Postgres-layer rows (c)'
 );
 
 SELECT * FROM finish();
