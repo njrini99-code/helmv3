@@ -214,10 +214,25 @@ export function describeBlindness(
   // complete blackout; "incomplete" is a source still delivering some of its
   // signal. Collapsing them would trade one wrong claim for another.
   const partial = rows.filter((r) => r.health === 'partial');
-  if (blind.length === 0 && partial.length === 0) return null;
+  // UNKNOWN sources are named too, as of 2026-09-03. `canClaimAllClear`
+  // requires `unknown === 0`, so an unknown source already BLOCKS the
+  // all-clear — but this function returned null for it, so the beacon
+  // rendered nothing and the queue fell back to copy asserting that a
+  // source "could not be read this refresh". That is false: nothing was
+  // attempted. A degradation with no explanation, or a wrong one, is the
+  // same class of defect as one nothing records.
+  //
+  // Worded distinctly from the other two on purpose. "Could not be read" is
+  // a blackout, "read incompletely" is a partial signal, and "has not
+  // reported yet" is a source that has produced nothing at all — typically
+  // a collector whose migration is not applied, or one that has not yet
+  // written its first sample.
+  const unknown = rows.filter((r) => r.health === 'unknown');
+  if (blind.length === 0 && partial.length === 0 && unknown.length === 0) return null;
 
   const clauses: string[] = [];
   if (blind.length > 0) clauses.push(`${blind.map(describe).join(', ')} could not be read this refresh`);
   if (partial.length > 0) clauses.push(`${partial.map(describe).join(', ')} read incompletely`);
+  if (unknown.length > 0) clauses.push(`${unknown.map(describe).join(', ')} has not reported yet`);
   return `Reliability coverage incomplete — ${clauses.join('; ')}.`;
 }
