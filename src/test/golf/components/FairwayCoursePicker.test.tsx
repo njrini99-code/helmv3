@@ -108,6 +108,41 @@ describe('FairwayCoursePicker', () => {
   });
 
   /**
+   * UI-9 (MASTER_BUG_REPORT_2026-09-02.md, low/cosmetic but "reads as
+   * unfinished"): the picker group (header + carousel/tee list) used to sit
+   * in an `m-auto` wrapper inside the full-height `flex-col` scroll region.
+   * Auto top/bottom margins on a flex-column child absorb leftover main-axis
+   * space, so short content (a single-tee course's tee-selection step)
+   * floated dead-centre with hundreds of px of empty canvas above and below
+   * it instead of sitting under the header like every other step. The fix is
+   * `mx-auto` (horizontal centering on wide viewports only) so the group is
+   * always top-aligned — verified here rather than via a screenshot, since a
+   * regression back to `m-auto` would reintroduce the float for BOTH stages.
+   */
+  it('top-aligns the picker group instead of vertically centering it (UI-9)', async () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
+      </LazyMotion>,
+    );
+
+    // getByRole('heading', level: 1) rather than findByText: the sr-only
+    // DrawerTitle carries the SAME "Choose a course" copy (an <h2>, for the
+    // dialog's accessible name), so a plain text query matches both and
+    // throws on multiple elements. The visible <h1> is the one this
+    // assertion cares about.
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Choose a course' });
+    const header = heading.closest('header');
+    const group = header?.parentElement;
+    expect(group).toBeTruthy();
+    expect(group?.className).toContain('mx-auto');
+    // Guard against `m-auto` (or `my-auto`) sneaking back in — either also
+    // centers the group vertically, which is exactly the UI-9 float.
+    expect(group?.className).not.toMatch(/(^|\s)m-auto(\s|$)/);
+    expect(group?.className).not.toMatch(/(^|\s)my-auto(\s|$)/);
+  });
+
+  /**
    * Incident 700c9a87. The action-side gate (requireCoachActor) was always
    * correct — every one of these affordances was a button whose ONLY outcome
    * for a player was the rejection toast. The new-round route admits players

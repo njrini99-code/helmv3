@@ -8,26 +8,49 @@ import { IconCheck, IconMail } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { GolfAuthShell, AuthPrimaryButton } from '@/components/auth/GolfAuthShell';
 
+// Pragmatic format check, not a full RFC 5322 validator — matches the intent
+// of the native `type="email"` check the form skips via `noValidate`.
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ForgotPasswordPage() {
   const isNative = isNativeApp();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  // The normalized address actually submitted — shown in the confirmation
+  // copy instead of the raw input, so it always reflects what was sent.
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // `noValidate` deliberately skips the browser's native check (the design
+    // system owns error presentation — see the inline banner below), so
+    // nothing else was stopping a malformed address from reaching the server
+    // action and rendering a false-positive "sent" confirmation.
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError('Enter your email address.');
+      return;
+    }
+    if (!EMAIL_FORMAT.test(normalizedEmail)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
       // Hardened server action: rate-limited, always returns a generic message
       // to prevent email enumeration.
-      const result = await requestPasswordResetAction(email);
+      const result = await requestPasswordResetAction(normalizedEmail);
       if (!result.success) {
         setError(result.error ?? 'An unexpected error occurred. Please try again.');
         setLoading(false);
         return;
       }
+      setSubmittedEmail(normalizedEmail);
       setSuccess(true);
       setLoading(false);
     } catch {
@@ -65,7 +88,7 @@ export default function ForgotPasswordPage() {
       heading={success ? 'Check your email' : 'Reset your password'}
       subheading={
         success
-          ? <>We&rsquo;ve sent a reset link to <span className="font-medium text-warm-700">{email}</span></>
+          ? <>We&rsquo;ve sent a reset link to <span className="font-medium text-warm-700">{submittedEmail}</span></>
           : 'Enter your email and we’ll send you a reset link.'
       }
       footer={footer}
@@ -112,7 +135,10 @@ export default function ForgotPasswordPage() {
             label="Email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) setError('');
+            }}
             placeholder="you@example.com"
             required
             // eslint-disable-next-line jsx-a11y/no-autofocus -- primary input on a single-field auth page

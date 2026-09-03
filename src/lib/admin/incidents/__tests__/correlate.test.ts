@@ -52,6 +52,7 @@ function appItem(overrides: Partial<TriageItem> = {}): TriageItem {
     errorCode: null,
     description: 'Load failed — while load round',
     hasRca: false,
+    isFixture: false,
     fingerprint: 'fp-default',
     report: reportWithStack(true, 'Client error: Load failed'),
     ...overrides,
@@ -85,6 +86,7 @@ function sentryItem(overrides: Partial<TriageItem> = {}): TriageItem {
     errorCode: null,
     description: 'Client error: Load failed',
     hasRca: false,
+    isFixture: false,
     fingerprint: null,
     report: reportWithStack(false, 'Client error: Load failed'),
     ...overrides,
@@ -365,6 +367,51 @@ describe('correlateIncidents — merged scalars', () => {
 
     expect(drafts).toHaveLength(1);
     expect(drafts[0]!.severity).toBe('error');
+  });
+});
+
+// Catalogued defect (h): a QA fixture round's evidence must never read as
+// an actionable production defect at the correlated-incident layer either —
+// `mergeTriage` already forces the contributing TriageItem's `actionable`
+// false, and this pins that the fold-in step carries `isFixture` through
+// AND does not accidentally resurrect `actionable` while doing it.
+describe('correlateIncidents — QA fixture rounds', () => {
+  it('carries isFixture: true through unchanged, WITHOUT touching actionable', () => {
+    // actionable is left as whatever the upstream TriageItem carried —
+    // mergeTriage deliberately never forces it false for a fixture, or the
+    // row would drop out of the default feed entirely and the FIXTURE badge
+    // would have nothing left to badge. See triage.ts's isFixture doc
+    // comment.
+    const fixtureRow = appItem({
+      key: 'app:fp-fixture',
+      fingerprint: 'fp-fixture',
+      isFixture: true,
+      actionable: true,
+      klassReason: 'Unexpected failure (severity-derived)',
+    });
+    const drafts = correlateIncidents(input({ triage: [fixtureRow] }));
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]!.isFixture).toBe(true);
+    expect(drafts[0]!.actionable).toBe(true);
+  });
+
+  it('is false for an ordinary app item', () => {
+    const drafts = correlateIncidents(input({ triage: [appItem({ key: 'app:fp-real', fingerprint: 'fp-real' })] }));
+    expect(drafts[0]!.isFixture).toBe(false);
+  });
+
+  it('a fixture app item joined with a corroborating Sentry item for the same fault still reads isFixture', () => {
+    const fixtureRow = appItem({
+      key: 'app:fp-joined',
+      fingerprint: 'fp-joined',
+      isFixture: true,
+      route: '/joined',
+      title: 'Joined fault',
+    });
+    const sentryRow = sentryItem({ key: 'sentry:joined1', route: '/joined', title: 'Joined fault' });
+    const drafts = correlateIncidents(input({ triage: [fixtureRow, sentryRow] }));
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]!.isFixture).toBe(true);
   });
 });
 

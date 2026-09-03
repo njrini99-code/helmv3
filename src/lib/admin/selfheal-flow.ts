@@ -328,6 +328,13 @@ export function deriveIncidentFlow(incident: UnifiedIncident, now: number): Inci
     case 'not-a-defect':
       return offLoop('done', headline);
 
+    // A recurrence the latest analysis already found NOT A DEFECT for is
+    // expected noise, not a fault the loop still owes work on — same
+    // treatment as 'not-a-defect'. See lifecycle.ts rule 1 and catalogued
+    // defect (e).
+    case 'expected-recurrence':
+      return offLoop('done', headline);
+
     case 'resolved': {
       // lifecycle.ts rule 2: a recorded resolution stands. Rule 5a: production
       // proof alone also reads `resolved` — BEFORE Close has written the

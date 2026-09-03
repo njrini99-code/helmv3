@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Sparkles, GitPullRequest, CloudOff, CheckCheck, ChevronRight } from 'lucide-react';
+import { Sparkles, GitPullRequest, CloudOff, CheckCheck, ChevronRight, FlaskConical } from 'lucide-react';
 import { Button, Sparkline } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import {
@@ -361,7 +361,23 @@ export function UnifiedIncidentCard({
 
   chips.push({ key: 'lifecycle', node: <LifecycleChip state={incident.lifecycle.state} /> });
 
-  // Second, ahead of corroboration: the lifecycle chip says WHERE the
+  // Second, ahead of everything below: a seeded QA fixture round changes how
+  // every other fact on this card should be read — occurrences, affected
+  // users, the lifecycle state itself — so it leads, not trails. See
+  // src/lib/admin/qa-fixture-rounds.ts (catalogued defect (h)).
+  if (incident.isFixture) {
+    chips.push({
+      key: 'fixture',
+      node: (
+        <StateChip tone="neutral" title="This incident traces to a seeded QA fixture round, not a production defect">
+          <FlaskConical size={10} aria-hidden />
+          FIXTURE
+        </StateChip>
+      ),
+    });
+  }
+
+  // Third, ahead of corroboration: the lifecycle chip says WHERE the
   // incident is, this one says the loop has had its chances there and not
   // moved it — the fact that changes what an operator does next.
   if (flow.stalled && flow.stageId !== null) {

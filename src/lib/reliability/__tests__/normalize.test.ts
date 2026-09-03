@@ -59,6 +59,15 @@ describe('worstStatus — a blind arm can never present as a clean run', () => {
     expect(worstStatus(['partial', 'blind'])).toBe('blind');
   });
 
+  it('degrades to degraded when a rate-limited arm survived retry but still has no data', () => {
+    expect(worstStatus(['ok', 'partial', 'degraded'])).toBe('degraded');
+  });
+
+  it('blind still outranks degraded — a dead source is worse than a rate-limited one', () => {
+    expect(worstStatus(['degraded', 'blind'])).toBe('blind');
+    expect(worstStatus(['blind', 'degraded'])).toBe('blind');
+  });
+
   it('a blind arm with zero signals is NOT the same as a healthy empty arm', () => {
     // This is the whole point of the envelope. Both arms below carry zero
     // signals; only one of them means "nothing is wrong".

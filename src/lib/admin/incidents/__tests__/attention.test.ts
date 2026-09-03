@@ -51,6 +51,7 @@ function baseIncident(id: string): UnifiedIncident {
     klass: 'defect',
     actionable: true,
     klassReason: 'r',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,
@@ -127,6 +128,28 @@ describe('selectAttention — one row per incident, at its worst reason', () => 
     expect(rows).toHaveLength(1);
     expect(rows[0]!.reason).toBe('regression');
     expect(rows[0]!.why).toBe('Fixed 6 days ago, returned 14 minutes ago.');
+  });
+});
+
+// Catalogued defect (e): `expected-recurrence` correctly stops the
+// regression alarm from firing, but a CRITICAL fault must not go silent
+// simply because the alarm it would otherwise have triggered under no
+// longer applies — an LLM-authored "NOT A DEFECT" verdict must never be
+// able to silence a critical, still-unresolved fault outright.
+describe('selectAttention — a critical expected-recurrence is still critical', () => {
+  it('produces a CRITICAL row for a critical, unresolved expected-recurrence incident', () => {
+    const inc = incident('a', {
+      severity: 'critical',
+      actionable: true,
+      lifecycle: {
+        state: 'expected-recurrence',
+        headline: 'Recurred 14 minutes ago — analysis already found this is not a defect.',
+        because: [],
+      },
+    });
+    const rows = selectAttention({ incidents: [inc], stages: [], coverage: coverage(), now: NOW });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.reason).toBe('critical');
   });
 });
 

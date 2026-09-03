@@ -231,7 +231,18 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+            /* GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1 (HIGH) — at the
+               md breakpoint (768px) the app shell's sidebar leaves only a
+               ~550px content column, so a 2-col grid gave each card ~265px:
+               too narrow for a name + year badge + hometown + a 3-up
+               SG:Total/Focus/Goals row, so "Cole Bennett" rendered as
+               "C..." (measured at 810×1080 and again at 844×390 landscape,
+               where the same md:grid-cols-2 was still active). Stepping the
+               breakpoint to lg (1024px) keeps 2-up for genuinely wide
+               viewports and gives tablet/mobile-landscape a full-width
+               single column instead. FairwayPlayerCard's name and mini-stat
+               row were also made wrap-safe so this isn't the only guard. */
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
               {sorted.map((p) => (
                 <FairwayPlayerCard key={p.id} player={p} intent={intents[p.id] ?? null} />
               ))}

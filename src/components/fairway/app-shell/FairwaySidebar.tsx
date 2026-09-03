@@ -74,6 +74,15 @@ export interface FairwaySidebarProps {
   onNavigate?: () => void;
   /** Link element (defaults to a plain `<a>`; pass Next's `<Link>` in the app). */
   linkComponent?: ShellLinkComponent;
+  /**
+   * Default `true` (existing behavior — no visible scrollbar track on the
+   * dark rail). Pass `false` at short viewport heights so the nav's
+   * scrollability has a visible affordance (audit finding #2,
+   * GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02): with this hidden, a nav that is
+   * scrollable (`scrollHeight > clientHeight`) offered no cue at all that
+   * the items below the fold existed.
+   */
+  hideScrollbar?: boolean;
   className?: string;
 }
 
@@ -238,6 +247,7 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
     isMobile = false,
     onNavigate,
     linkComponent,
+    hideScrollbar = true,
     className,
   },
   ref,
@@ -360,7 +370,8 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
       <nav
         aria-label="Sections"
         className={cn(
-          'scrollbar-hidden flex-1 overflow-y-auto overflow-x-visible py-4',
+          'flex-1 overflow-y-auto overflow-x-visible py-4',
+          hideScrollbar && 'scrollbar-hidden',
           isCollapsed ? 'px-3' : 'px-3',
         )}
       >

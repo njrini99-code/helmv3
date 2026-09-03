@@ -115,9 +115,11 @@ export interface SourceHealth {
   bounded: boolean;
 }
 
-/** How many arms actually returned data. Never counts a blind arm. */
+/** How many arms actually returned data. Never counts a blind or degraded
+ *  arm — a `degraded` (rate-limited-after-retry) arm returned no data for
+ *  this run either, same as `blind`; only the reason differs. */
 export function readingCount(sources: readonly { status: SourceStatus }[]): number {
-  return sources.filter((s) => s.status !== 'blind').length;
+  return sources.filter((s) => s.status !== 'blind' && s.status !== 'degraded').length;
 }
 
 /**

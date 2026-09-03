@@ -1,11 +1,18 @@
 # Contract: the Diagnose stage (`selfheal-triage`)
 
-> Runner: a cloud routine, daily 09:17 UTC. Heartbeat `job_type`:
+> Runner: a Vercel cron (`src/app/api/cron/selfheal-triage/route.ts`), four
+> times a day (`vercel.json`'s `17 3,9,15,21 * * *`). Heartbeat `job_type`:
 > `selfheal-triage`. Read [`README.md`](README.md) first — it explains why this
-> file, and not the routine prompt, is the contract.
+> file, and not routine/route configuration, is the contract.
 >
 > **`src/lib/admin/rca.ts` is authoritative for the vocabulary and the stored
 > shape.** Where this document and that file disagree, that file wins.
+>
+> **`npm run triage` (and `--apply`) is the operator fallback** — the same
+> collection, grouping and apply mechanism the cron uses
+> (`src/lib/admin/triage-collect.ts` / `triage-apply.ts`), runnable by hand
+> with a full human read. It is also the ONLY path that can carry a SHA-
+> ancestry judgement for a SHA-bearing "ALREADY FIXED" claim — see STEP 4.
 
 Your job is to leave the error board **true**, across **all three sources**:
 every unresolved error fingerprint in `admin_events` AND every correlated
@@ -196,6 +203,16 @@ Resolve only when:
 - **(A)** `suggestedFix` starts `ALREADY FIXED`, you have named the commit SHA
   or PR number, **and** `last_seen` predates that fix. An error whose last
   occurrence is older than the commit that fixed it is resolved history.
+  **The automated Vercel-cron runner cannot do this.** A Vercel function
+  carries no git checkout, so it cannot run `git merge-base --is-ancestor` to
+  verify a named SHA actually shipped — it never claims to, and instead
+  leaves a SHA-bearing "ALREADY FIXED" analysis **analysed but open**, for
+  `auto-resolve.ts`'s nightly Rule A (once the deploy is old enough and the
+  fingerprint has gone quiet) or a human / `npm run triage` run to close. The
+  cron only auto-resolves the SHA-FREE case: no commit named, and the cause
+  has already gone quiet since a production deploy that is itself old enough
+  — i.e. `auto-resolve.ts`'s own Rule A condition, reused rather than
+  re-derived.
 - **(B)** `suggestedFix` starts `NOT A DEFECT` and you can name *why* — the
   expected control flow, the suppression rule, the third-party behaviour. Not
   "it seems fine".
@@ -246,6 +263,17 @@ values (
   )
 );
 ```
+
+The automated Vercel-cron runner's heartbeat adds `method: 'vercel-cron'`
+(distinguishing it from a human/`npm run triage` run), `sourceHealth` (the
+plan's own three-arm block, so `/admin/selfheal` doesn't need a second read to
+show it), and `queue: { analysed: [...causeKeys], left_open: [...causeKeys] }`
+— the same counts as `analysed`/`still_open_unanalysed`, but naming which
+causes, not just how many. It also sets `degraded: true` (never `status:
+'failed'`) when a reliability arm reported blind/degraded but the plan itself
+still built successfully — a genuinely unreadable collector, not one arm of a
+readable snapshot, is what fails this heartbeat. See the route's own doc
+comment for the reasoning.
 
 Capture `started_at` into a variable at the very beginning, but do not INSERT
 the row until the end — the row needs a real start time AND real final counts,

@@ -55,6 +55,7 @@ function incident(over: Partial<UnifiedIncident> & { state?: IncidentLifecycleSt
     klass: 'defect',
     actionable: true,
     klassReason: 'unmatched title defaults to a visible defect',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,
@@ -190,6 +191,10 @@ describe('Truth Strip — counts match what the Incidents tab lists', () => {
             // links to is worse than no number at all.
             incident({ id: 'c', state: 'resolved' }),
             incident({ id: 'd', state: 'not-a-defect', actionable: false }),
+            // A QA fixture round stays `actionable: true` (so it still
+            // renders, badged, in the default feed) but must not inflate
+            // this count either — catalogued defect (h).
+            incident({ id: 'e', state: 'new', actionable: true, isFixture: true }),
           ],
         }),
       ),

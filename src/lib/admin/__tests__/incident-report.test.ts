@@ -6,6 +6,7 @@ import {
   featureLabelFor,
   extractActionName,
   extractRoute,
+  extractRoundId,
   extractCollapsedCount,
   extractErrorHint,
   extractRequestId,
@@ -333,6 +334,22 @@ describe('extractActionName / extractRoute / extractCollapsedCount', () => {
     const metadata = { action: 'submitGolfRoundComprehensive', route: '/golf/dashboard/rounds/new' };
     expect(extractActionName(metadata)).toBe('submitGolfRoundComprehensive');
     expect(extractRoute(metadata)).toBe('/golf/dashboard/rounds/new');
+  });
+
+  // Catalogued defect (h): `normalizeContext` in server-error-logger.ts
+  // writes `roundId` as a TOP-LEVEL metadata key (same as `route`/`action`),
+  // never nested — this pins the exact shape the fixture-round match reads.
+  it('extracts roundId from a normalizeContext-shaped metadata blob', () => {
+    const metadata = { action: 'x', roundId: '0b000000-0000-4000-b000-000000000001' };
+    expect(extractRoundId(metadata)).toBe('0b000000-0000-4000-b000-000000000001');
+  });
+
+  it('extractRoundId degrades to null for missing/malformed metadata', () => {
+    expect(extractRoundId(null)).toBeNull();
+    expect(extractRoundId(undefined)).toBeNull();
+    expect(extractRoundId({})).toBeNull();
+    expect(extractRoundId({ roundId: null })).toBeNull();
+    expect(extractRoundId({ roundId: 42 })).toBeNull();
   });
 
   it('extracts nested collapsed_count (metadata.metadata.collapsed_count)', () => {

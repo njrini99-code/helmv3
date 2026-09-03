@@ -46,9 +46,9 @@ describe('mergeTriage', () => {
     expect(items[1]!.key).toBe('sentry:noisy');
   });
 
-  it('attributes sport/feature to sentry-origin items only when the caller says the fetch was scoped by that tag', () => {
+  it('attributes sport ONLY when the caller says the fetch was scoped by that tag — sport has no per-issue fallback', () => {
     const unscoped = mergeTriage({ sentryIssues: [sentryIssue({})], appEvents: [] });
-    expect(unscoped[0]).toMatchObject({ sport: null, feature: null });
+    expect(unscoped[0]).toMatchObject({ sport: null });
 
     const scoped = mergeTriage({
       sentryIssues: [sentryIssue({})],
@@ -56,6 +56,91 @@ describe('mergeTriage', () => {
       sentryTagHint: { sport: 'golf', feature: 'round_tracking' },
     });
     expect(scoped[0]).toMatchObject({ sport: 'golf', feature: 'round_tracking' });
+  });
+
+  // Catalogued defect (d): a Sentry-origin item with no batch-level
+  // sentryTagHint used to carry `feature: null` unconditionally, so the
+  // feature lens on /admin/errors grouped every un-scoped Sentry issue as
+  // "unknown" — even one whose `culprit` plainly names a route. mergeTriage
+  // now falls back to the collector's advisory route/feature map
+  // (`resolveFeatureId`, `src/lib/reliability/normalize.ts`) applied to the
+  // issue's own `culprit`, per issue, when the batch-level hint is absent.
+  it('falls back to the advisory route/feature map from the issue\'s own culprit when no batch-level hint is given', () => {
+    const items = mergeTriage({
+      sentryIssues: [sentryIssue({ id: 'r1', culprit: '/api/golf/rounds/submit' })],
+      appEvents: [],
+    });
+    expect(items[0]).toMatchObject({ feature: 'golf_round_lifecycle' });
+  });
+
+  it('a batch-level sentryTagHint feature still wins over the per-issue culprit derivation', () => {
+    const items = mergeTriage({
+      sentryIssues: [sentryIssue({ id: 'r1', culprit: '/api/golf/rounds/submit' })],
+      appEvents: [],
+      sentryTagHint: { feature: 'round_review_ai' },
+    });
+    expect(items[0]).toMatchObject({ feature: 'round_review_ai' });
+  });
+
+  // Catalogued defect (h): an incident whose evidence traces to a seeded QA
+  // fixture round (supabase/migrations/20260901120000_..._zero_scored_holes.sql)
+  // must be flagged `isFixture: true` and forced `actionable: false` —
+  // regardless of what the message/severity classifier decided — but
+  // `actionable` is left as the classifier's own real verdict. Forcing it
+  // false here would remove the row from the default incident feed entirely
+  // (`matchesKind`'s `kind === undefined -> actionable` default), defeating
+  // the other half of the ask — "label ... in the incident feed" requires
+  // the row to actually render there, badged. The exclusion from the
+  // actionable COUNT happens at each count site instead, keyed on
+  // `isFixture` — see triage.ts's comment on this field.
+  it('flags an app-origin item as isFixture, WITHOUT touching actionable', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({
+          id: 'e1',
+          fingerprint: 'fp-fixture',
+          metadata: { roundId: '0b000000-0000-4000-b000-000000000001' },
+        }),
+      ],
+    });
+    expect(items[0]).toMatchObject({ isFixture: true });
+    // The fixture message classifies as an ordinary defect, same as any
+    // other row with this title/message — `isFixture` did not change it.
+    const plain = mergeTriage({
+      sentryIssues: [],
+      appEvents: [appEvent({ id: 'e2', fingerprint: 'fp-plain' })],
+    });
+    expect(items[0]!.actionable).toBe(plain[0]!.actionable);
+  });
+
+  it('a normal round id (or no roundId at all) is never isFixture', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({ id: 'e1', fingerprint: 'fp-real', metadata: { roundId: 'real-round-1' } }),
+        appEvent({ id: 'e2', fingerprint: 'fp-none', metadata: {} }),
+      ],
+    });
+    expect(items.find((i) => i.key === 'app:fp-real')).toMatchObject({ isFixture: false });
+    expect(items.find((i) => i.key === 'app:fp-none')).toMatchObject({ isFixture: false });
+  });
+
+  it('a Sentry-origin item is never isFixture — it carries no round-id metadata', () => {
+    const items = mergeTriage({ sentryIssues: [sentryIssue({})], appEvents: [] });
+    expect(items[0]).toMatchObject({ isFixture: false });
+  });
+
+  it('stays null when the culprit maps to nothing in the advisory map, same as a missing culprit', () => {
+    const items = mergeTriage({
+      sentryIssues: [
+        sentryIssue({ id: 'r1', culprit: null }),
+        sentryIssue({ id: 'r2', culprit: 'someUnrelatedFunction' }),
+      ],
+      appEvents: [],
+    });
+    expect(items.find((i) => i.key === 'sentry:r1')).toMatchObject({ feature: null });
+    expect(items.find((i) => i.key === 'sentry:r2')).toMatchObject({ feature: null });
   });
 
   it('carries sentry substatus + permalink through', () => {

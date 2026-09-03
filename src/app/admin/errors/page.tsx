@@ -499,7 +499,13 @@ export default async function ErrorsPage({
     // worse than no filter, because the operator cannot tell the queue is
     // being curated at all.
     const suppressedBreakdown = suppressedByClass(board.incidents);
-    const shownActionable = board.incidents.filter((incident) => incident.actionable).length;
+    // A QA fixture round stays `actionable` (unforced — see the field's doc
+    // comment on `TriageItem.isFixture`) so it still renders in this default
+    // feed, badged FIXTURE; it must not count toward "what needs action"
+    // here. Catalogued defect (h).
+    const shownActionable = board.incidents.filter(
+      (incident) => incident.actionable && !incident.isFixture,
+    ).length;
     const heldBack = suppressedBreakdown.reduce((sum, entry) => sum + entry.count, 0);
     const showSuppressedNotice = !filters.kind && heldBack > 0;
     const showWiderWindowHint =

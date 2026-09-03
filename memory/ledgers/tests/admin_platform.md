@@ -1,5 +1,65 @@
 # Admin Platform test ledger
 
+## 2026-09-02 — Reliability/Bridge catalogued-defect sweep (agent/reliability-bridge-fixes), defects (b), (c), (d), (e), (f), (h)
+
+- SHA: recorded on merge of `agent/reliability-bridge-fixes`.
+- New: `src/lib/admin/__tests__/qa-fixture-rounds.test.ts` (3 — the drift
+  guard that reads `supabase/migrations/
+  20260901120000_integrity_completed_round_zero_scored_holes.sql` itself and
+  asserts `QA_FIXTURE_ROUND_IDS` still matches it exactly).
+- Extended, each new case written failing first against the pre-fix code
+  unless noted: `src/lib/admin/__tests__/capture-quality.test.ts` (3 — the
+  'user' field's own denominator excludes cron/system rows; a cron row that
+  is otherwise fully captured does not rank as a weak emitter for lacking a
+  user; total is 0/null when every row is self-referential),
+  `src/lib/admin/__tests__/observe-action-result.test.ts` (1 — pins
+  userId/userEmail forwarding through the soft-failure path unchanged; passed
+  immediately, no code bug — only the thrown-error path had coverage
+  before), `src/lib/reliability/__tests__/sources.test.ts` (preview/
+  null-target/production CANCELED severity), `src/lib/admin/__tests__/
+  sentry-api.test.ts` + `src/lib/reliability/__tests__/normalize.test.ts`
+  (429 retry/degraded, `worstStatus` ranking), `src/lib/admin/data/
+  __tests__/triage.test.ts` (per-issue `resolveFeatureId` fallback for
+  un-scoped Sentry issues, batch hint still wins, non-mapping culprit stays
+  null; three `isFixture` cases — flags without touching `actionable`, a
+  normal round id/no roundId is never a fixture, a Sentry item is never a
+  fixture), `src/lib/admin/incidents/__tests__/lifecycle.test.ts` (2 — a
+  regressed incident whose latest analysis says `not-a-defect` verdicts
+  `'expected-recurrence'`, not `'regressed'`; every other category, or none,
+  still verdicts `'regressed'`), `src/lib/admin/incidents/__tests__/
+  lens.test.ts` (2 — `expected-recurrence` lands in its own lens, never in
+  `regressions`/`actionable`; a QA fixture round stays actionable/true and
+  visible under `all` but never counts in the `actionable` lens),
+  `src/lib/admin/incidents/__tests__/attention.test.ts` (1 — a CRITICAL,
+  unresolved `expected-recurrence` incident still produces a `critical`
+  attention row: this one caught a real gap on first pass — an earlier
+  version left `expected-recurrence` out of `UNRESOLVED_STATES`, silencing a
+  critical recurrence entirely once an LLM-authored "NOT A DEFECT" verdict
+  existed for it), `src/lib/admin/incidents/__tests__/truth-strip.test.ts`
+  (1 — the same fixture exclusion at the Truth Strip's `actionable` cell),
+  `src/lib/admin/incidents/__tests__/correlate.test.ts` (3 — `isFixture`
+  propagation, `actionable` left untouched, propagation across a
+  cross-source join), `src/lib/admin/data/__tests__/incident-feed.test.ts`
+  (1 — `actionableGroups` excludes a fixture while `totalGroups` keeps it;
+  verified red against a temporarily-reverted fix before being restored
+  green), `src/lib/admin/__tests__/incident-report.test.ts` (2 —
+  `extractRoundId`), `src/app/admin/_components/__tests__/
+  unified-incident-card.test.tsx` (3 — the FIXTURE chip renders/does not
+  render, and outranks the blind-source chip under the 5-chip cap).
+- Six pre-existing `TriageItem`/`UnifiedIncident` object-literal test
+  fixtures across five files needed the two new required fields added
+  (`isFixture` on each) once they stopped satisfying their own interfaces —
+  a compile-time gap `tsc` surfaced directly, not a behavioural test change.
+- `npm run build` (webpack + `next build`'s own TypeScript pass, not bare
+  `tsc --noEmit`) run once at the end with the sandbox network disabled:
+  `✓ Compiled successfully`, `Finished TypeScript` clean — the specific
+  failure class `rca-category.ts`'s header warns about (a `server-only`
+  import poisoning a client bundle, invisible to `tsc` and to vitest) did not
+  fire. The run's only failures were prerender errors on unrelated pages
+  (baseball/golf/lifting dashboards, forgot-password, coach-onboarding) from
+  `NEXT_PUBLIC_SUPABASE_URL` being absent in this worktree — expected,
+  `.env.local` is deliberately withheld from worktrees per `.worktreeinclude`.
+
 ## 2026-09-02 — second audit of `agent/fix-bridge-errors`
 
 - SHA: recorded on merge of `agent/fix-bridge-errors`.
