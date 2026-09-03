@@ -26,6 +26,7 @@ import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { computeDbHealthDelta, type DbHealthCurrentSnapshot, type DbHealthRawSnapshot } from '@/lib/observability/supabase/db-health-delta';
+import { fetchSupabasePlatformMetrics } from '@/lib/observability/supabase/metrics-api';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -228,12 +229,73 @@ export async function GET(req: NextRequest) {
       throw new Error(`record_db_health_sample failed: ${describeError(writeResult.error)}`);
     }
 
+    // Platform metrics (brief §20/§22) — AFTER the health row, minimal
+    // extension per Track C's own scope. Fail-open: this project's
+    // SUPABASE_ACCESS_TOKEN/SUPABASE_SERVICE_ROLE_KEY availability and the
+    // 20260903190400 migration's applied-in-production state are both
+    // independent of the health sampler above, and neither may ever fail
+    // THIS job run — a platform-metrics problem must never be reported as
+    // "the health sampler is broken".
+    const platform = await recordPlatformSampleFailOpen(admin);
+
     return NextResponse.json({
       ok: true,
       sampleId: writeResult.data,
       collectorStatus: delta.collectorStatus,
       connectionsPctMax: delta.connectionsPctMax,
       cacheHitRatio: delta.cacheHitRatio,
+      platform,
     });
   });
+}
+
+/**
+ * Fetches platform metrics and writes one `db_platform_samples` row.
+ * Never throws — every branch resolves to a small status object the parent
+ * response embeds under `platform`, and nothing here can fail the health
+ * sampler's own job run (`recordJobRun` above only sees the health-row
+ * write; this function is called after that write already succeeded).
+ */
+async function recordPlatformSampleFailOpen(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<{ skipped: 'unconfigured' | 'migration-not-applied' } | { ok: true; sampleId: number } | { ok: false; failure: string }> {
+  try {
+    const model = await fetchSupabasePlatformMetrics();
+
+    if (model.sourceStatus === 'unconfigured') {
+      return { skipped: 'unconfigured' };
+    }
+
+    const writeResult = (await admin.rpc('record_db_platform_sample' as never, {
+      p_db_up: model.dbUp,
+      p_cpu_pct: model.cpuPct,
+      p_memory_pct: model.memoryPct,
+      p_connections_used: model.connectionsUsed,
+      p_connections_max: model.connectionsMax,
+      p_pool_saturation_pct: model.poolSaturationPct,
+      p_wal_or_replication_lag_seconds: model.walOrReplicationLagSeconds,
+      p_io_pressure: model.ioPressure,
+      p_db_size_bytes: model.dbSizeBytes,
+      p_autovacuum_or_bloat_signal: model.autovacuumOrBloatSignal,
+      p_postgrest_pool_used: model.postgrestPool.used,
+      p_postgrest_pool_max: model.postgrestPool.max,
+      p_postgrest_pool_saturation_pct: model.postgrestPool.saturationPct,
+      p_auth_pool_used: model.authPool.used,
+      p_auth_pool_max: model.authPool.max,
+      p_auth_pool_saturation_pct: model.authPool.saturationPct,
+      p_realtime_subscriptions: model.realtimeSubscriptions,
+      p_source_status: model.sourceStatus,
+    } as never)) as { data: number | null; error: MaybePostgrestError };
+
+    if (writeResult.error) {
+      if (isMigrationNotAppliedError(writeResult.error)) {
+        return { skipped: 'migration-not-applied' };
+      }
+      return { ok: false, failure: describeError(writeResult.error) };
+    }
+
+    return { ok: true, sampleId: writeResult.data ?? -1 };
+  } catch (error) {
+    return { ok: false, failure: describeError(error) };
+  }
 }
