@@ -33,9 +33,19 @@ export interface CoachHelmChatProps {
   variant?: 'page' | 'drawer';
   /**
    * Text to open the composer with — e.g. a question started on the Brief and
-   * carried here. Seeded, never auto-sent: the coach still presses send.
+   * carried here. Seeded only: the coach still presses send — unless
+   * `autoSubmitInitialInput` says otherwise (see below).
    */
   initialInput?: string;
+  /**
+   * Submit `initialInput` once, on mount, through the composer's own
+   * `submit()` — the same validation, loading state, conversation creation
+   * and error handling a manual Send gets. For a question carried in via a
+   * URL param (e.g. `?q=` on the Ask page) that the caller wants delivered
+   * immediately rather than merely pre-filled. Has no effect without a
+   * non-empty `initialInput`.
+   */
+  autoSubmitInitialInput?: boolean;
   /** Greeting shown above the composer on an empty thread. */
   greeting?: React.ReactNode;
   /**
@@ -66,6 +76,7 @@ export function CoachHelmChat({
   initialContext,
   variant = 'page',
   initialInput,
+  autoSubmitInitialInput,
   greeting,
   opening,
   onConversationId,
@@ -136,6 +147,8 @@ export function CoachHelmChat({
       onAddContext={chat.addContext}
       safeArea={variant === 'drawer'}
       initialValue={initialInput}
+      autoSubmit={autoSubmitInitialInput}
+      failed={Boolean(chat.error)}
       // eslint-disable-next-line jsx-a11y/no-autofocus -- an empty Ask page exists to be typed into (desktop only; see finePointer above)
       autoFocus={variant === 'page' && isEmpty && finePointer}
       placeholder={variant === 'drawer' ? 'Ask about this page' : 'Ask about your program'}

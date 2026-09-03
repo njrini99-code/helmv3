@@ -271,11 +271,17 @@ export function FairwayCoursePicker({
             <IconX size={18} aria-hidden />
           </button>
 
-          {/* Scroll wrapper centers the picker group (header + carousel) on the
-              page; m-auto pins it to the viewport centre when it fits and lets
-              it scroll when it doesn't. */}
+          {/* Scroll wrapper. The picker group (header + carousel/tee list) is
+              top-aligned directly under the header and only horizontally
+              centered on wide viewports — it used to be `m-auto`, which also
+              centers VERTICALLY: fine for the courses stage's tall shelves,
+              but on the tees stage a single tee card floated in the middle of
+              the screen with hundreds of px of empty canvas above and below
+              (UI-9). Auto top/bottom margins on a flex-column child absorb
+              leftover main-axis space either way, so this alone fixes both
+              stages without a stage-specific branch. */}
           <div className="flex h-full w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
-            <div className="m-auto flex w-full max-w-3xl flex-col">
+            <div className="mx-auto flex w-full max-w-3xl flex-col">
             {/* Airy, premium header — bold title + clean search on the cream canvas. */}
             <header className="px-1">
               <div className="flex items-start gap-2.5">
