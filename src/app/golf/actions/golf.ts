@@ -29,6 +29,8 @@ import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { roundStage, classifyAutosaveOutcome, OPERATION } from '@/lib/observability/spans';
+import { recordWorkflow } from '@/lib/observability/metrics';
+import { helmLog } from '@/lib/observability/structured-log';
 import { isPlausibleApproach } from '@/lib/golf/approach-plausibility';
 // 2026-05-17: CoachHelm trigger now runs via after(postRoundTrigger) — see
 // docs/architecture/coachhelm-evidence-contract.md and Plan 04. The previous
@@ -7868,11 +7870,49 @@ export async function savePartialRound(
 /**
  * Delete an in-progress round
  */
+/**
+ * Emits `helm.workflow.*` (metrics.ts) + one `helmLog` line for the
+ * 'golf.round.recover' workflow — the "discard an in-progress round so the
+ * player can start clean" action, at each of this function's EXISTING return
+ * branches (no new branches added). No `attachHelmTrace` call here, unlike
+ * the flight-recorder-covered workflows (submit/autosave/shot ops, wired in
+ * helm-flight-recorder.ts's `finalize`): this function never constructs a
+ * flight recorder, so there is no `traceId` to attach.
+ *
+ * `outcome` values distinguish the ordinary "someone else got there first"
+ * race (`stale_round_state` — the function's own pre-existing comment calls
+ * this "ordinary": a submit that already succeeded server-side, or a round
+ * finished in another tab) from a genuine system fault (`db_error`,
+ * `exception`) — the same "transient/expected vs terminal" split
+ * Deliverable 6 asks for, just expressed as this action's own outcome
+ * vocabulary rather than the flight recorder's success/failure/warning/
+ * pending one.
+ */
+function recordDiscardRoundOutcome(outcome: string, errorCode?: string): void {
+  recordWorkflow({
+    feature: 'golf_round_lifecycle',
+    action: 'golf.round.recover',
+    outcome,
+    sport: 'golf',
+    runtime: process.env.NEXT_RUNTIME,
+    errorCode,
+  });
+  helmLog[outcome === 'success' ? 'info' : 'warn']('golf.round_lifecycle.finished', {
+    sport: 'golf',
+    feature: 'golf_round_lifecycle',
+    action: 'golf.round.recover',
+    result: outcome,
+    runtime: process.env.NEXT_RUNTIME,
+    error_code: errorCode,
+  });
+}
+
 async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<void>> {
   try {
     // Validate UUID format
     const validId = CommonSchemas.uuid.safeParse(roundId);
     if (!validId.success) {
+      recordDiscardRoundOutcome('invalid_input');
       return { success: false, error: 'Invalid round ID' };
     }
 
@@ -7882,6 +7922,7 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
     // sign-out (A5, 2026-09-02). See getUserResilient's header.
     const { user } = await getUserResilient(supabase);
     if (!user) {
+      recordDiscardRoundOutcome('unauthenticated');
       return { success: false, error: 'You must be signed in' };
     }
 
@@ -7892,6 +7933,7 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
       .maybeSingle();
 
     if (!player) {
+      recordDiscardRoundOutcome('player_not_found');
       return { success: false, error: 'Player profile not found' };
     }
 
@@ -7919,6 +7961,7 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
       .select('id');
 
     if (error) {
+      recordDiscardRoundOutcome('db_error', typeof error.code === 'string' ? error.code : undefined);
       return { success: false, error: 'Failed to delete round' };
     }
 
@@ -7926,6 +7969,12 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
       // Deliberately specific. The player is one tap from losing their local
       // recovery copy, so "try again" would be the wrong steer — the round is
       // not in a discardable state and retrying cannot change that.
+      //
+      // `stale_round_state`, not `db_error` — nothing failed here. The round
+      // is just no longer in the state this action expected (already
+      // submitted, or removed elsewhere), an ordinary race rather than a
+      // system fault. See this branch's own comment above the query.
+      recordDiscardRoundOutcome('stale_round_state');
       return {
         success: false,
         error: "This round can no longer be discarded — it looks like it was already finished or removed.",
@@ -7935,6 +7984,7 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
     revalidatePath('/golf/dashboard/rounds');
     updateTag(CACHE_TAGS.ROUNDS);
 
+    recordDiscardRoundOutcome('success');
     return { success: true, data: undefined };
 
   } catch (error) {
@@ -7947,6 +7997,7 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
         extra: { stack: error instanceof Error ? error.stack : undefined },
       }
     );
+    recordDiscardRoundOutcome('exception');
     return {
       success: false,
       error: 'Failed to delete round. Please try again.'

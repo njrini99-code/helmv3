@@ -31,6 +31,17 @@ is a second thing to keep true.
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/feature_awareness_system.md`
 
+## `observability_sentry`
+
+**Sentry Observability — Telemetry Vocabulary** · active · criticality medium · owner platform
+
+- **Behaviour:** `memory/features/observability-sentry.md`
+- **Code:** `src/instrumentation*.ts`, `src/lib/observability/**`, `src/lib/observability/__tests__/**`, `src/test/observability/**`
+- **Telemetry:** none. This module IS the observability layer (metric/span/log vocabulary and the beforeSend*/scrubPii hooks) — instrumenting itself would be circular. No admin_events.feature key exists for it by design; see classification: observability_only in observability_keys_unowned below for the same reasoning applied to a runtime key.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/observability_sentry.md`, `memory/ledgers/tests/observability_sentry.md`
+
 ## `coachhelm_ai`
 
 **CoachHelm AI** · active · criticality high · owner product
@@ -223,7 +234,7 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/**`, `src/app/golf/admin/**`, `src/app/admin/_components/**`, `src/app/golf/admin/crm/components/**`, `src/app/api/admin/**`, `src/app/api/cron/reliability-triage/**` … and 20 more in the registry
+- **Code:** `src/app/admin/**`, `src/app/golf/admin/**`, `src/app/admin/_components/**`, `src/app/golf/admin/crm/components/**`, `src/app/api/admin/**`, `src/app/api/cron/reliability-triage/**` … and 24 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
 - **Incidents:** `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
