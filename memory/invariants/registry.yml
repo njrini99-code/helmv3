@@ -1,0 +1,70 @@
+# Executable data-invariant registry — Bridge Control Plane Phase D.4.3.
+#
+# A declarative GOVERNANCE index, not an execution path. These checks run
+# in-process inside the reliability collector's Vercel serverless function
+# (src/lib/reliability/collect.ts, via invariants/run-checks.ts) — that
+# function cannot read files under memory/** at request time (they are not
+# part of the Vercel bundle), so this file is never parsed at runtime. The
+# checks themselves are hand-written TypeScript, statically imported by
+# run-checks.ts; this file exists so the checks are discoverable, their
+# severity and incident provenance are recorded outside code comments, and a
+# golden-path stage (memory/journeys/golden-paths.yml) can link an
+# invariant_id without duplicating its rule text.
+#
+# The validator (npm run knowledge:invariants-check,
+# scripts/knowledge/check-invariants.mjs) re-verifies every citation below on
+# every run: a stale module path, a renamed symbol, or a feature_id that
+# stops resolving in memory/registry.yml fails the check rather than going
+# stale silently — same discipline check-journeys.mjs applies to
+# golden-paths.yml.
+#
+# Schema (see check-invariants.mjs's header for the authoritative version):
+#   invariants[]:
+#     id            snake-case, unique, matches the check's own `.id` field
+#     feature_id    must be a key under `features:` in memory/registry.yml
+#     severity      critical | warning
+#     status        active (checked in production) | collecting (declared,
+#                   not yet wired — none today; every entry below is active)
+#     module        the file whose pure evaluate* function scores severity
+#     symbol        that function's name — verified as `export function
+#                   <symbol>` inside `module`
+#     runner        the file that actually invokes the check inside the
+#                   collector — verified that `id` appears there as a
+#                   single-quoted string literal, proving it is wired, not
+#                   merely declared
+#     incident      the real incident this backfills — verified as a
+#                   git-tracked file
+#     description   why this rule exists, in the incident's own words
+
+invariants:
+  - id: round-graph-orphaned-shots
+    feature_id: shot_tracking
+    severity: critical
+    status: active
+    module: src/lib/reliability/invariants/round-graph-invariants.ts
+    symbol: evaluateOrphanedShots
+    runner: src/lib/reliability/invariants/run-checks.ts
+    incident: memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md
+    description: >
+      Every golf_shots row must reference a real, persisted hole (hole_id
+      NOT NULL). Migration 20260825152726 guards this at write time inside
+      save_partial_round_atomic/submit_round_atomic; this checks whether any
+      row already in the table — written before the guard shipped, or by a
+      path it does not cover — still violates it. Runs every 3h as part of
+      the reliability collector; read on /admin/health's Invariant Lattice.
+
+  - id: round-graph-completed-without-holes
+    feature_id: golf_round_lifecycle
+    severity: critical
+    status: active
+    module: src/lib/reliability/invariants/round-graph-invariants.ts
+    symbol: evaluateCompletedRoundsWithoutHoles
+    runner: src/lib/reliability/invariants/run-checks.ts
+    incident: memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md
+    description: >
+      A golf_rounds row with status = 'completed' must have holes_played >
+      0. The incident's own lesson ("the incomplete graph could be marked
+      completed") generalizes past the specific shot/hole mismatch the
+      migration guards — this is the round-level shape of the same failure.
+      Runs every 3h as part of the reliability collector; read on
+      /admin/health's Invariant Lattice.

@@ -29,21 +29,21 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 14 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 23 | 23 | 9 | 15 |
+| `CURRENT_FEATURE` | 24 | 24 | 10 | 15 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 21 | 3 | 6 | 26 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
-| `PLAN` | 64 | 3 | 33 | 179 |
+| `PLAN` | 64 | 4 | 33 | 176 |
 | `AUDIT_SNAPSHOT` | 82 | 6 | 38 | 137 |
 | `STATE_SNAPSHOT` | 6 | 1 | 5 | 7 |
-| `HISTORY_LEDGER` | 28 | 0 | 5 | 54 |
+| `HISTORY_LEDGER` | 31 | 0 | 5 | 54 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
 | `ARCHIVE` | 1196 | 0 | 419 | 527 |
-| `UNKNOWN` | 104 | 7 | 44 | 142 |
+| `UNKNOWN` | 104 | 7 | 44 | 140 |
 
 ## Files
 
@@ -159,9 +159,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | 1 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 11 | 122 | 8 |
-| `memory/features/admin-reliability-collector.md` | current | yes | - | - | 5 | 16 | - |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 12 | 122 | 8 |
+| `memory/features/admin-reliability-collector.md` | current | yes | - | - | 6 | 21 | - |
 | `memory/features/admin-selfheal.md` | current | yes | - | yes | 5 | 27 | - |
+| `memory/features/admin-slo.md` | current | yes | - | yes | 3 | 25 | - |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 13 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -258,7 +259,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 9 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 162 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 168 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
@@ -311,7 +312,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | 2 | 0 | - |
-| `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | - | - | yes | 5 | 89 | 19 |
+| `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 6 | 89 | 16 |
 | `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 3 | 40 | 4 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | - | - | yes | 1 | 0 | - |
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 1 | 6 | 4 |
@@ -481,8 +482,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
 | `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 132 | 16 |
-| `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
+| `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 8 | - |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | 1 | 4 | - |
+| `memory/ledgers/changes/admin_slo.md` | current | - | - | - | 1 | 14 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 3 | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 19 | 1 |
@@ -500,6 +502,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | 1 |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
 | `memory/ledgers/tests/admin_platform.md` | current | - | - | yes | 3 | 52 | 2 |
+| `memory/ledgers/tests/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
+| `memory/ledgers/tests/admin_slo.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 2 | 3 | 1 |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 1 | 25 | - |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
@@ -578,7 +582,7 @@ them would bury everything above.
 | `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 4 | 7 | - |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
-| `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | - | - | yes | 3 | 16 | 11 |
+| `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | - | - | yes | 3 | 16 | 9 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 6 | 19 | 9 |
 | `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | 4 | 16 | 2 |
 | `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md` | current | - | - | yes | 1 | 15 | 3 |

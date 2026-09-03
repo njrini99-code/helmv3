@@ -260,7 +260,18 @@ is a second thing to keep true.
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** `memory/ledgers/changes/admin_reliability_collector.md`
+- **History:** `memory/ledgers/changes/admin_reliability_collector.md`, `memory/ledgers/tests/admin_reliability_collector.md`
+
+## `admin_slo`
+
+**Admin SLO Center** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-slo.md`
+- **Code:** `src/app/admin/slo/**`, `src/lib/admin/slo/**`
+- **Telemetry:** none — covered by `admin_platform`. A synthesis layer — reads background_job_logs, get_feature_health() and helm_debug_list_traces; writes nothing of its own, so it has no admin_events feature tag.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_slo.md`, `memory/ledgers/tests/admin_slo.md`
 
 ## `admin_selfheal`
 

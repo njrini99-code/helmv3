@@ -22,3 +22,23 @@
 - Full test history for this code predates the split and lives in
   `memory/ledgers/changes/admin_platform.md` / `memory/ledgers/tests/
   admin_platform.md`'s earlier entries; this ledger starts fresh at the split.
+
+## 2026-09-03 — Fourth collector arm: executable invariants (Phase D.4.3)
+
+- SHA: recorded on merge of `agent/controlplane-d`.
+- `collect.ts` now runs a fourth, independently fault-isolated arm — the
+  round-graph invariant runner (`src/lib/reliability/invariants/**`) — via a
+  SEPARATE `Promise.allSettled` alongside the existing 3-source array, never
+  folded into it (`ReliabilitySource` stays closed). Result lands on a new
+  OPTIONAL `ReliabilityRun.invariants` field; `version` was NOT bumped.
+- Also added `error-budget.ts`: a pure rolling-window read over this
+  feature's own `reliability-snapshot` history, consumed by the new
+  `admin_slo` sub-capability (`memory/features/admin-slo.md`) rather than
+  duplicated there.
+- `CorrelatedSignal` gained a new `countIsFloor: boolean` field
+  (`normalize.ts`) — sticky across a merge, true whenever any contributing
+  `RawSignal.countBasis === 'unknown'` — so `error-budget.ts` can mark an
+  observed count as a floor rather than an exact total.
+- See `memory/features/admin-slo.md` for the invariants themselves
+  (round-graph orphaned-shots / completed-without-holes,
+  `memory/invariants/registry.yml`) and the downstream reads.

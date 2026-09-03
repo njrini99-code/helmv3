@@ -33,6 +33,8 @@ import {
   summarizeSources,
   worstStatus,
 } from './normalize';
+import { runInvariantChecks } from './invariants/run-checks';
+import type { InvariantRunSummary } from './invariants/run-checks';
 import type { ReliabilityRun, SourceResult } from './types';
 
 /** Collection window. Matches the 3-hourly cadence with overlap so a skipped
@@ -55,13 +57,44 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
   // Arms run concurrently and are individually fault-isolated: one arm throwing
   // must not take the run down, because a run that dies produces no record at
   // all — which is indistinguishable from "never scheduled" on the jobs board.
-  const settled = await Promise.allSettled([
-    // ONE window owner. Every arm receives the same start, so
-    // ReliabilityRun.windowStart/windowEnd actually describe all three.
-    collectSentry(windowStartIso),
-    collectSupabase(windowStartIso),
-    collectVercel(windowStartIso),
+  //
+  // The invariant runner (Phase D.4.3) is a SEPARATE Promise.allSettled, run
+  // concurrently via Promise.all rather than folded into the array above.
+  // `ReliabilitySource`/`sourceNames` below is a closed 3-element union
+  // indexed positionally against `settled` — widening that array to 4 would
+  // ripple into `summarizeSources`, `worstStatus`, and every consumer keyed
+  // on `ReliabilitySource` (including the Reliability tab's coverage
+  // matrix). The invariant runner has its own result shape
+  // (`InvariantRunSummary`) and its own field on `ReliabilityRun`, so it
+  // never needs to pretend to be a fourth source.
+  const [settled, [invariantsSettled]] = await Promise.all([
+    Promise.allSettled([
+      // ONE window owner. Every arm receives the same start, so
+      // ReliabilityRun.windowStart/windowEnd actually describe all three.
+      collectSentry(windowStartIso),
+      collectSupabase(windowStartIso),
+      collectVercel(windowStartIso),
+    ]),
+    Promise.allSettled([runInvariantChecks(now)]),
   ]);
+
+  // `runInvariantChecks` already catches every per-check failure internally
+  // (timeouts, fetch errors) and reports them as `'unknown'` rows — a
+  // rejection here means something outside that contract broke (e.g.
+  // `createAdminClient()` throwing synchronously). Synthesize the same
+  // all-unknown shape rather than dropping the field: `invariants` being
+  // ABSENT reads as "not run yet" (see the field's own doc on
+  // `ReliabilityRun`), which is a different and less honest claim than
+  // "attempted and failed".
+  const invariants: InvariantRunSummary =
+    invariantsSettled.status === 'fulfilled'
+      ? invariantsSettled.value
+      : {
+          version: 1,
+          generatedAt: now.toISOString(),
+          checks: [],
+          blind: true,
+        };
 
   const sourceNames = ['sentry', 'supabase', 'vercel'] as const;
   const results: SourceResult[] = settled.map((outcome, i) => {
@@ -87,6 +120,7 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
     sources: summarizeSources(results),
     signals,
     truncatedSignals,
+    invariants,
   };
 
   const completedAt = new Date();
@@ -111,6 +145,10 @@ export async function runReliabilityCollection(now: Date = new Date()): Promise<
   const statusNotes = [
     ...(blindArms.length > 0 ? [`blind sources: ${blindArms.join(', ')}`] : []),
     ...(degradedArms.length > 0 ? [`degraded sources: ${degradedArms.join(', ')}`] : []),
+    // Invariants going blind never flips `jobStatus` — it measures data
+    // self-consistency, a different question from "can we see errors" — but
+    // it belongs in the same operator-facing note so it is never silent.
+    ...(invariants.blind ? ['invariants: blind (no check produced a result this run)'] : []),
   ];
 
   const { data, error } = await admin

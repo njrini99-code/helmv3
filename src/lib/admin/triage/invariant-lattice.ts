@@ -28,6 +28,15 @@
  *  - `admin_events` integrity rows (`source = 'integrity'`) — a genuine
  *    nightly-cron RECORDED outcome (`run_integrity_checks()`), already
  *    parsed by `jobs.ts`'s exported `parseIntegrityRows`.
+ *  - Bridge Control Plane Phase D.4.3's round-graph invariants
+ *    (`src/lib/reliability/invariants/run-checks.ts`) — RECORDED by the
+ *    reliability collector every 3h into `background_job_logs`
+ *    (`ReliabilityRun.invariants`), read here from the latest snapshot via
+ *    `fetchReliabilitySnapshot()`. Same "read a recorded outcome, never
+ *    re-run the check at request time" rule as every other row on this
+ *    lattice; a check the collector has not yet reported renders `unknown`,
+ *    the state `run-checks.ts` itself already guarantees for a timeout or a
+ *    failed read, never coerced to `pass`.
  *
  * "A silent data-integrity violation visually outranks ordinary warnings" —
  * `severity` on a failing row is `'critical'` for an integrity-check failure
@@ -38,6 +47,7 @@
 
 import type { QualifierInvariantResult } from '@/lib/admin/qualifier-invariants';
 import type { IntegrityRow } from '@/lib/admin/data/jobs';
+import type { InvariantCheckOutcome } from '@/lib/reliability/invariants/run-checks';
 
 export type InvariantCellState = 'pass' | 'unknown' | 'fail';
 export type InvariantSeverity = 'critical' | 'warning' | null;
@@ -130,16 +140,50 @@ function integrityRowsFor(rows: readonly IntegrityRow[] | null): InvariantLattic
   }));
 }
 
-/** Pure. `qualifierInvariants`/`integrityRows` are `null` only on a failed
- *  read of that specific source — never conflated with "checked, found
- *  nothing" (an empty array). */
+function roundGraphRows(checks: readonly InvariantCheckOutcome[] | null): InvariantLatticeRow[] {
+  if (checks === null) {
+    return [
+      {
+        id: 'round-graph-unreadable',
+        label: 'Round-graph invariants',
+        group: 'Round graph',
+        state: 'unknown',
+        detail: 'Could not be read this refresh.',
+        severity: null,
+        lastCheckedAt: null,
+      },
+    ];
+  }
+
+  return checks.map((c) => ({
+    id: `round-graph-${c.id}`,
+    label: c.label,
+    group: 'Round graph',
+    state: c.state,
+    detail: c.detail,
+    // 'unknown' rows never carry a severity — matches every other source on
+    // this lattice: a state that was never actually established cannot
+    // outrank anything.
+    severity: c.state === 'fail' ? c.severity : null,
+    lastCheckedAt: c.checkedAt,
+  }));
+}
+
+/** Pure. `qualifierInvariants`/`integrityRows`/`roundGraphChecks` are `null`
+ *  only on a failed read of that specific source — never conflated with
+ *  "checked, found nothing" (an empty array). `roundGraphChecks` is
+ *  OPTIONAL (defaults to `null`, rendered as the same single unknown row a
+ *  failed read produces) so a caller that predates Phase D.4.3 keeps
+ *  compiling without a source it does not know to fetch yet. */
 export function buildInvariantLattice(input: {
   qualifierInvariants: readonly QualifierInvariantResult[] | null;
   integrityRows: readonly IntegrityRow[] | null;
+  roundGraphChecks?: readonly InvariantCheckOutcome[] | null;
 }): InvariantLatticeView {
   const rows: InvariantLatticeRow[] = [
     ...qualifierRows(input.qualifierInvariants),
     ...integrityRowsFor(input.integrityRows),
+    ...roundGraphRows(input.roundGraphChecks ?? null),
     ...UNREADABLE_SOURCES.map((s) => ({
       id: s.id,
       label: s.label,

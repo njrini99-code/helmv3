@@ -30,6 +30,13 @@
         "status": "active"
       },
       {
+        "id": "admin_slo",
+        "name": "Admin SLO Center",
+        "criticality": "high",
+        "owner": "platform",
+        "status": "active"
+      },
+      {
         "id": "auth_onboarding_join",
         "name": "Auth Onboarding And Join",
         "criticality": "high",
@@ -266,6 +273,11 @@
       {
         "id": "routes:src/app/admin/self-heal/**",
         "pattern": "src/app/admin/self-heal/**",
+        "category": "routes"
+      },
+      {
+        "id": "routes:src/app/admin/slo/**",
+        "pattern": "src/app/admin/slo/**",
         "category": "routes"
       },
       {
@@ -1479,6 +1491,11 @@
       {
         "id": "services:src/lib/admin/selfheal-*.ts",
         "pattern": "src/lib/admin/selfheal-*.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:src/lib/admin/slo/**",
+        "pattern": "src/lib/admin/slo/**",
         "category": "services"
       },
       {
@@ -6421,27 +6438,27 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 86
+          "line": 103
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 111
+          "line": 128
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 120
-        },
-        {
-          "kind": "feature_doc_contract",
-          "path": "memory/features/admin-reliability-collector.md",
-          "line": 130
+          "line": 137
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 147
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-reliability-collector.md",
+          "line": 164
         }
       ]
     },
@@ -6459,6 +6476,23 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 8
+        }
+      ]
+    },
+    {
+      "source": "admin_reliability_collector",
+      "target": "admin_slo",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-reliability-collector.md",
+          "line": 40
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-reliability-collector.md",
+          "line": 63
         }
       ]
     },
@@ -6482,7 +6516,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 39
+          "line": 53
         }
       ]
     },
@@ -6928,6 +6962,182 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/scripts/selfheal-repair-launchd.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_incidents",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_platform",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 7
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 80
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/__tests__/golden-path-health.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/__tests__/silence-detection.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/__tests__/trace-funnels.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/fetch.ts",
+          "line": 25
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/fetch.ts",
+          "line": 26
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/fetch.ts",
+          "line": 27
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/golden-path-health.ts",
+          "line": 30
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/golden-path-health.ts",
+          "line": 31
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/silence-detection.ts",
+          "line": 33
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/silence-detection.ts",
+          "line": 34
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 29
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_reliability_collector",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 6
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 46
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 67
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 78
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "admin_selfheal",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-slo.md",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "helm_debug_list_traces",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 82
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "observability_sentry",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/slo/trace-funnels.ts",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "routes:src/app/admin/slo/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/slo/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_slo",
+      "target": "services:src/lib/admin/slo/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/slo/**"
         }
       ]
     },

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildInvariantLattice } from '../invariant-lattice';
 import type { QualifierInvariantResult } from '@/lib/admin/qualifier-invariants';
 import type { IntegrityRow } from '@/lib/admin/data/jobs';
+import type { InvariantCheckOutcome } from '@/lib/reliability/invariants/run-checks';
 
 function qualifierResult(overrides: Partial<QualifierInvariantResult> = {}): QualifierInvariantResult {
   return {
@@ -23,6 +24,21 @@ function integrityRow(overrides: Partial<IntegrityRow> = {}): IntegrityRow {
     count: 0,
     lastRunAt: '2026-09-03T00:00:00.000Z',
     sample: [],
+    ...overrides,
+  };
+}
+
+function roundGraphCheck(overrides: Partial<InvariantCheckOutcome> = {}): InvariantCheckOutcome {
+  return {
+    id: 'round-graph-orphaned-shots',
+    label: 'Shots reference a persisted hole',
+    featureId: 'shot_tracking',
+    severity: 'critical',
+    state: 'pass',
+    detail: 'no violations found',
+    violations: 0,
+    sampleIds: [],
+    checkedAt: '2026-09-03T00:00:00.000Z',
     ...overrides,
   };
 }
@@ -89,6 +105,56 @@ describe('buildInvariantLattice', () => {
       integrityRows: [integrityRow()],
     });
     const groups = new Set(view.rows.map((r) => r.group));
-    expect(groups).toEqual(new Set(['Qualifiers', 'Platform integrity', 'Schema', 'Business contracts']));
+    expect(groups).toEqual(new Set(['Qualifiers', 'Platform integrity', 'Round graph', 'Schema', 'Business contracts']));
+  });
+
+  it('omitting roundGraphChecks (a caller predating Phase D.4.3) still compiles and renders one unknown row', () => {
+    const view = buildInvariantLattice({ qualifierInvariants: [], integrityRows: [] });
+    const row = view.rows.find((r) => r.id === 'round-graph-unreadable')!;
+    expect(row.state).toBe('unknown');
+  });
+
+  it('a passing round-graph check reads pass with no severity', () => {
+    const view = buildInvariantLattice({
+      qualifierInvariants: [],
+      integrityRows: [],
+      roundGraphChecks: [roundGraphCheck({ state: 'pass' })],
+    });
+    const row = view.rows.find((r) => r.id === 'round-graph-round-graph-orphaned-shots')!;
+    expect(row.state).toBe('pass');
+    expect(row.severity).toBeNull();
+  });
+
+  it('a failing round-graph check reads fail and keeps its own severity', () => {
+    const view = buildInvariantLattice({
+      qualifierInvariants: [],
+      integrityRows: [],
+      roundGraphChecks: [roundGraphCheck({ state: 'fail', severity: 'critical', violations: 4, detail: '4 violations' })],
+    });
+    const row = view.rows.find((r) => r.id === 'round-graph-round-graph-orphaned-shots')!;
+    expect(row.state).toBe('fail');
+    expect(row.severity).toBe('critical');
+    expect(row.detail).toBe('4 violations');
+    expect(view.anyFailing).toBe(true);
+  });
+
+  it('a round-graph check reported unknown (timeout) never carries a severity, even when its declared severity is critical', () => {
+    const view = buildInvariantLattice({
+      qualifierInvariants: [],
+      integrityRows: [],
+      roundGraphChecks: [roundGraphCheck({ state: 'unknown', severity: 'critical', violations: null, detail: 'Could not be evaluated this run: timed out.' })],
+    });
+    const row = view.rows.find((r) => r.id === 'round-graph-round-graph-orphaned-shots')!;
+    expect(row.state).toBe('unknown');
+    expect(row.severity).toBeNull();
+    expect(view.anyFailing).toBe(false);
+  });
+
+  it('roundGraphChecks: null (a failed read) reads a single unknown row, distinct from an empty array', () => {
+    const failed = buildInvariantLattice({ qualifierInvariants: [], integrityRows: [], roundGraphChecks: null });
+    expect(failed.rows.find((r) => r.id === 'round-graph-unreadable')!.state).toBe('unknown');
+
+    const cleanEmpty = buildInvariantLattice({ qualifierInvariants: [], integrityRows: [], roundGraphChecks: [] });
+    expect(cleanEmpty.rows.find((r) => r.id === 'round-graph-unreadable')).toBeUndefined();
   });
 });

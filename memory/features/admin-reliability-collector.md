@@ -25,6 +25,20 @@ Vercel cron, three-hourly, that runs three fault-isolated collector arms
 cron-board row per run. `/admin/reliability` renders source health, the
 blind-source notice, the severity mix, run history and the raw snapshot.
 
+Since 2026-09-03 (Bridge Control Plane Phase D.4.3) the same run also
+executes a FOURTH, independently fault-isolated arm — the executable
+invariant runner (`src/lib/reliability/invariants/run-checks.ts`) — via a
+SEPARATE `Promise.allSettled` run concurrently alongside the 3-source array,
+not folded into it (`ReliabilitySource`/`sourceNames` stays a closed
+3-element union). Its result lands on the new, OPTIONAL
+`ReliabilityRun.invariants` field — absent on any row written before this
+shipped, and deliberately not a `version` bump, since `parseRun`
+(`src/lib/admin/data/reliability.ts`) only requires `version === 1`. See
+`memory/features/admin-slo.md` for the invariants themselves and the
+downstream read (`/admin/health`'s Invariant Lattice, `/admin/slo`'s error
+budget — a NEW derived view over `error-budget.ts`, likewise owned by
+`admin_slo`, not this feature).
+
 ## Primary Entry Points
 
 ### Routes
@@ -44,7 +58,10 @@ blind-source notice, the severity mix, run history and the raw snapshot.
 - `src/lib/reliability/**` — `collect.ts` (`runReliabilityCollection()`),
   `sources.ts` (`collectSentry`, `collectSupabase`, `collectVercel`),
   `normalize.ts` (`correlateSignals`, `correlationSignature`), `resolution.ts`,
-  `types.ts`.
+  `types.ts`, `error-budget.ts` (`computeErrorBudgets()` — a pure rolling-window
+  read over this feature's own `reliability-snapshot` history, consumed by
+  `admin_slo`), `invariants/**` (the Phase D.4.3 fourth arm: `run-checks.ts`,
+  `round-graph-invariants.ts`, `round-graph-data.ts`).
 
 ## Core Data
 
@@ -177,6 +194,11 @@ blind-source notice, the severity mix, run history and the raw snapshot.
   semantics and cross-source correlation.
 - `src/lib/reliability/__tests__/sources.test.ts` — the self-feeding-read
   guard, asserted at the query level where it actually lives.
+- `src/lib/reliability/__tests__/error-budget.test.ts` — the honesty contract
+  (unreadable/blind windows never read `'ok'`, floor accounting).
+- `src/lib/reliability/invariants/__tests__/*.test.ts` — the round-graph
+  checks' pure logic, the timeout/error-degrades-to-unknown runner contract,
+  and a read-only-by-construction source check.
 - `src/app/admin/reliability/__tests__/reliability-view.test.ts`
 - Typecheck/build for admin UI changes.
 

@@ -1511,6 +1511,46 @@ features:
         - npx vitest run src/lib/reliability src/app/admin/reliability
         - npm run build
 
+  admin_slo:
+    name: Admin SLO Center
+    status: active
+    owner: platform
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: "A synthesis layer — reads background_job_logs, get_feature_health() and helm_debug_list_traces; writes nothing of its own, so it has no admin_events feature tag."
+      covered_by: admin_platform
+    docs:
+      feature: memory/features/admin-slo.md
+      business_logic:
+        - docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md
+      incidents: []
+    code:
+      routes:
+        - src/app/admin/slo/**
+      # src/components/admin/slo/** is reserved (this feature's rendering
+      # lives inline in page.tsx, matching admin_qualifiers's own
+      # convention) — not globbed here since an empty glob fails
+      # check-registry-globs; add it back the moment a file lands there.
+      components: []
+      api: []
+      actions: []
+      services:
+        - src/lib/admin/slo/**
+      db: []
+      tests: []
+    integrations:
+      - supabase
+    review:
+      required_docs:
+        - memory/features/admin-slo.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/admin/slo src/lib/reliability/__tests__/error-budget.test.ts src/lib/reliability/invariants
+        - npm run knowledge:invariants-check
+        - npm run knowledge:golden-paths-generate:check
+        - npm run build
+
   admin_selfheal:
     name: Admin Self-Heal
     status: active
