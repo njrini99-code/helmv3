@@ -495,7 +495,7 @@ async function buildModel() {
   // `walkImpact` labels an edge weak whenever ALL its evidence is
   // import_graph — never silently promoted to a structural-confidence edge.
   const ALIAS_RE = /from\s+['"]@\/([^'"]+)['"]/g;
-  for (const [id, feature] of Object.entries(registry.features ?? {})) {
+  for (const [id, _feature] of Object.entries(registry.features ?? {})) {
     const ownFiles = scannableFiles.filter((f) => {
       if (!(f.startsWith('src/app/') && f.includes('/actions/')) && !f.startsWith('src/lib/')) return false;
       const { primary } = resolvePrimaryFeature(registry, f, matchGlob, flattenCodePatterns);
@@ -568,7 +568,7 @@ function resolveImportedFile(importPath, scannableFiles) {
   return candidates.find((c) => fileSet.has(c)) ?? null;
 }
 
-function buildUnmappedNote(registry, featureIds) {
+function buildUnmappedNote(registry, _featureIds) {
   const probes = ['src/lib/inngest/functions.ts'];
   const unmapped = probes.filter((p) => {
     const { primary } = resolvePrimaryFeature(registry, p, matchGlob, flattenCodePatterns);

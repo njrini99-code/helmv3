@@ -593,7 +593,7 @@ describe('compareStrings', () => {
 
   it('never invokes Intl — verified by monkey-patching localeCompare to throw', () => {
     const original = String.prototype.localeCompare;
-    // eslint-disable-next-line no-extend-native
+
     String.prototype.localeCompare = function throwIfCalled() {
       throw new Error('compareStrings must never call localeCompare');
     };
@@ -601,7 +601,7 @@ describe('compareStrings', () => {
       expect(() => compareStrings('admin_incidents', 'admin_platform')).not.toThrow();
       expect(compareStrings('admin_incidents', 'admin_platform')).toBeLessThan(0);
     } finally {
-      // eslint-disable-next-line no-extend-native
+
       String.prototype.localeCompare = original;
     }
   });
