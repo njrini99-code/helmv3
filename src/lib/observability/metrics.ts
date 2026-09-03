@@ -492,3 +492,32 @@ export function recordRealtimeChannelFailure(input: RecordRealtimeChannelFailure
     runtime: input.runtime,
   });
 }
+
+/**
+ * Phase 2 Track B addition (Edge Function observability, brief §13/§36-39) —
+ * ADDITIVE constant + one record function, same discipline as the Storage
+ * and Realtime additions above. This is the third and last metrics.ts
+ * addition this track makes.
+ */
+export const METRIC_EDGE_FUNCTION_FAILURE = 'helm.edge_function.failure';
+
+interface RecordEdgeFunctionFailureInput {
+  feature: string;
+  action: string;
+  errorCode?: string;
+  environment?: string;
+  runtime?: string;
+}
+
+/** Emits ONLY helm.edge_function.failure — call only from
+ *  `observe-edge.ts`'s error branch. */
+export function recordEdgeFunctionFailure(input: RecordEdgeFunctionFailureInput): void {
+  safeCount(METRIC_EDGE_FUNCTION_FAILURE, 1, {
+    feature: input.feature,
+    action: input.action,
+    operation: 'invoke',
+    environment: input.environment,
+    runtime: input.runtime,
+    error_code: input.errorCode,
+  });
+}

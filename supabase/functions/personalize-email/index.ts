@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { withObservedRequest } from "../_shared/observability.ts";
 
 interface CoachData {
   name: string;
@@ -171,14 +172,14 @@ function personalize(template: string, subject: string, coach: CoachData): { sub
   };
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withObservedRequest("personalize-email", async (req: Request) => {
   // CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "authorization, content-type, x-client-info, apikey",
+        "Access-Control-Allow-Headers": "authorization, content-type, x-client-info, apikey, sentry-trace, baggage, traceparent",
       },
     });
   }
@@ -213,4 +214,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
   }
-});
+}));
