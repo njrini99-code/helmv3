@@ -14,9 +14,31 @@ describe('ADMIN_NAV', () => {
   // routes so existing muscle memory survives the regrouping.
   it('declares the canonical tabs in order', () => {
     expect(ADMIN_NAV.map((e) => e.href)).toEqual([
+      '/admin',
+      '/admin/errors',
+      '/admin/health',
+      '/admin/jobs',
+      '/admin/reliability',
+      '/admin/database',
+      '/admin/self-heal',
+      '/admin/traces',
+      '/admin/qualifiers',
+      '/admin/teams',
+      '/admin/users',
+      '/admin/activity',
+      '/admin/utilization',
+      '/admin/golf',
+      '/admin/baseball',
+      '/admin/lifting',
+      '/admin/deploys',
+      '/admin/releases',
+      '/admin/auth',
+      '/admin/work',
+      '/admin/billing',
+      '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      ,
+      '1', '3', '0', '8', 'R', 'D', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'V', 'B',
     ]);
   });
 
