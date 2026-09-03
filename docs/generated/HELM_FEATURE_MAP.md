@@ -31,6 +31,17 @@ is a second thing to keep true.
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/feature_awareness_system.md`
 
+## `observability_sentry`
+
+**Sentry Observability — Telemetry Vocabulary** · active · criticality medium · owner platform
+
+- **Behaviour:** `memory/features/observability-sentry.md`
+- **Code:** `src/instrumentation*.ts`, `src/lib/observability/**`, `src/lib/observability/__tests__/**`, `src/test/observability/**`
+- **Telemetry:** none. This module IS the observability layer (metric/span/log vocabulary and the beforeSend*/scrubPii hooks) — instrumenting itself would be circular. No admin_events.feature key exists for it by design; see classification: observability_only in observability_keys_unowned below for the same reasoning applied to a runtime key.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/observability_sentry.md`, `memory/ledgers/tests/observability_sentry.md`
+
 ## `coachhelm_ai`
 
 **CoachHelm AI** · active · criticality high · owner product

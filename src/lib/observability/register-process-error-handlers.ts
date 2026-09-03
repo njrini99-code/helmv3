@@ -54,7 +54,22 @@ export async function logProcessErrorToBridge(
   if (!allowBridgeProcessWrite()) return 'rate_limited';
   const write = logServerException(
     error,
-    { action, source: 'background_job', handled: false, ...(metadata ? { metadata } : {}) },
+    {
+      action,
+      source: 'background_job',
+      handled: false,
+      // The caller already sent this exact error to Sentry directly (see
+      // handleUnhandledRejection/handleUncaughtException below) — that direct
+      // call fires unconditionally, BEFORE this function's own rate limit,
+      // so every process-level crash reaches Sentry even during a storm that
+      // caps the Bridge write. logServerException's own internal capture
+      // (captureServerTrace -> captureSentryTrace) would otherwise mint a
+      // SECOND, differently-fingerprinted Sentry issue for the same
+      // exception. skipSentry:true here is what keeps it to one — the
+      // admin_events/error_logs write still happens.
+      skipSentry: true,
+      ...(metadata ? { metadata } : {}),
+    },
     'error',
   ).then(
     () => 'written' as const,

@@ -33,6 +33,12 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
 - `src/app/golf/actions/roster.ts`
 - `src/lib/auth/**`
 - `src/lib/supabase/**`
+- `src/lib/observability/golf-login-outcome.ts` — `recordLoginOutcome`,
+  called from every `loginActionImpl` return branch (Sentry
+  `helm.auth.*` + a structured log line). Lives in its own module rather
+  than inside `auth.ts` itself: that file opens with `'use server'`, and
+  Next.js requires every export from such a file to be an async Server
+  Action, which this synchronous telemetry helper is not.
 
 ## Core Data
 
