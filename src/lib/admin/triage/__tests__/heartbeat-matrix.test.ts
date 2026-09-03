@@ -4,6 +4,7 @@ import type { CronBoardRow, JobsTab } from '@/lib/admin/data/jobs';
 
 function row(overrides: Partial<CronBoardRow> = {}): CronBoardRow {
   return {
+    schedule: '*/5 * * * *',
     jobType: 'event-reminders',
     path: '/api/cron/event-reminders',
     cadenceMinutes: 60,
