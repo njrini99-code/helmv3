@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 24 features, 66 routes, 41 components, 27 apis, 91 actions, 51 services, 46 tests, 128 tables, 136 rpcs, 24 jobs, 11 invariants, 86 sentrySignals, 0 journeys.
-**Edges:** 923 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 24 features, 66 routes, 41 components, 27 apis, 91 actions, 51 services, 47 tests, 128 tables, 136 rpcs, 24 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 933 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -32,7 +32,7 @@ Admin Platform · active · criticality high · owner platform
 - **Relations:** 7 doc/structurally-evidenced, 22 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_lifting_group_audit`
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_list_traces`, `is_super_admin`, `recalculate_round_strokes_gained`, `refresh_player_stats_cache`, `revoke_user_sessions`
-- **Test surfaces:** 2
+- **Test surfaces:** 3
 - **Sentry/admin_events signals:** `admin_dashboard`
 
 ### `admin_reliability_collector`

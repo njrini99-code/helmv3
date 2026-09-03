@@ -1602,6 +1602,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/admin/__tests__/**",
+        "pattern": "src/app/admin/__tests__/**",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/admin/actions/__tests__/analyze-error.test.ts",
         "pattern": "src/app/admin/actions/__tests__/analyze-error.test.ts",
         "category": "tests"
@@ -3773,7 +3778,73 @@
         "tier": "low"
       }
     ],
-    "journeys": []
+    "journeys": [
+      {
+        "id": "coach_create_event",
+        "name": "Coach creates a calendar event",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "calendar_events"
+        ]
+      },
+      {
+        "id": "coach_view_coachhelm_insight",
+        "name": "Coach views a CoachHelm AI insight",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "coach_intelligence_triage"
+        ]
+      },
+      {
+        "id": "coach_view_player_stats",
+        "name": "Coach views team/player stats",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "stats_analytics"
+        ]
+      },
+      {
+        "id": "player_login_hub",
+        "name": "Player logs in and reaches their dashboard",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "auth_onboarding_join",
+          "player_hub"
+        ]
+      },
+      {
+        "id": "player_resume_round",
+        "name": "Player resumes an in-progress round",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "golf_round_lifecycle"
+        ]
+      },
+      {
+        "id": "player_rsvp_event",
+        "name": "Player RSVPs to a calendar event",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "calendar_events"
+        ]
+      },
+      {
+        "id": "player_start_round",
+        "name": "Player configures and starts a new round",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "golf_round_lifecycle"
+        ]
+      },
+      {
+        "id": "player_submit_round",
+        "name": "Player submits a completed round",
+        "source": "memory/journeys/golden-paths.yml",
+        "features": [
+          "golf_round_lifecycle"
+        ]
+      }
+    ]
   },
   "edges": [
     {
@@ -5679,6 +5750,18 @@
           "kind": "import_graph",
           "path": "src/lib/admin/schedule-bridge-write.ts",
           "line": 3
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "tests:src/app/admin/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/__tests__/**"
         }
       ]
     },
@@ -12480,7 +12563,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 105
         }
       ]
     },
@@ -12492,7 +12575,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 105
         }
       ]
     },
@@ -12504,7 +12587,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 107
+          "line": 106
         }
       ]
     },
@@ -12516,7 +12599,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 107
+          "line": 106
         }
       ]
     },
@@ -13504,6 +13587,119 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/lib/push-registration-pending-token.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "journey:coach_create_event",
+      "target": "calendar_events",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 373
+        }
+      ]
+    },
+    {
+      "source": "journey:coach_view_coachhelm_insight",
+      "target": "coach_intelligence_triage",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 341
+        }
+      ]
+    },
+    {
+      "source": "journey:coach_view_player_stats",
+      "target": "stats_analytics",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 310
+        }
+      ]
+    },
+    {
+      "source": "journey:player_login_hub",
+      "target": "auth_onboarding_join",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "source": "journey:player_login_hub",
+      "target": "player_hub",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 115
+        }
+      ]
+    },
+    {
+      "source": "journey:player_resume_round",
+      "target": "golf_round_lifecycle",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 219
+        }
+      ]
+    },
+    {
+      "source": "journey:player_rsvp_event",
+      "target": "calendar_events",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 412
+        }
+      ]
+    },
+    {
+      "source": "journey:player_start_round",
+      "target": "golf_round_lifecycle",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 161
+        },
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 176
+        }
+      ]
+    },
+    {
+      "source": "journey:player_submit_round",
+      "target": "golf_round_lifecycle",
+      "kind": "journey_feature",
+      "evidence": [
+        {
+          "kind": "journey_stage",
+          "path": "memory/journeys/golden-paths.yml",
+          "line": 260
         }
       ]
     },

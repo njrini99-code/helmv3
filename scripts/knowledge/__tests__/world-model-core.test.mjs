@@ -5,6 +5,7 @@ import {
   resolvePrimaryFeature,
   extractDocFeatureCrossRefs,
   extractInvariantsFromSource,
+  parseJourneysDoc,
   cronPathToRouteFile,
   mergeEdges,
   sortWorldModel,
@@ -413,5 +414,142 @@ describe('resolveImpactTarget', () => {
     expect(result.kind).toBe('file');
     expect(result.featureId).toBe('admin_incidents');
     expect(result.secondary).toEqual(['admin_platform']);
+  });
+});
+
+describe('parseJourneysDoc', () => {
+  // Shaped like the real memory/journeys/golden-paths.yml (PR #1779): a
+  // top-level `journeys:` array, `- id:`/`name:`/`stages:` per journey, a
+  // `feature_id:` per stage — NOT the flat `id:`/`features:` shape this
+  // loader originally guessed at before that file existed (world-model.mjs
+  // reported zero journeys against the real file until this parser was
+  // rewritten to match its actual schema, 2026-09-03 PR review). The same
+  // feature_id (`golf_round_lifecycle`) repeats across two stages, on
+  // purpose — the real file does this too (configure_round/start_round),
+  // and it is exactly the case that breaks a naive "first line containing
+  // this value" line-lookup.
+  const GOLDEN_PATH_SHAPED = `
+journeys:
+  - id: player_login_hub
+    name: Player logs in and reaches their dashboard
+    role: player
+    criticality: high
+    status: active
+    stages:
+      - id: authenticate
+        order: 1
+        feature_id: auth_onboarding_join
+      - id: land_on_dashboard
+        order: 2
+        feature_id: player_hub
+
+  - id: player_start_round
+    name: Player configures and starts a new round
+    role: player
+    criticality: high
+    status: active
+    stages:
+      - id: configure_round
+        order: 1
+        feature_id: golf_round_lifecycle
+      - id: start_round
+        order: 2
+        feature_id: golf_round_lifecycle
+`;
+
+  it('parses journeys, features and journey->feature edges from the real schema', () => {
+    const result = parseJourneysDoc(GOLDEN_PATH_SHAPED, 'memory/journeys/golden-paths.yml');
+    expect(result.problems).toEqual([]);
+    expect(result.journeys.map((j) => j.id)).toEqual(['player_login_hub', 'player_start_round']);
+
+    const loginJourney = result.journeys.find((j) => j.id === 'player_login_hub');
+    expect(loginJourney.name).toBe('Player logs in and reaches their dashboard');
+    expect(loginJourney.source).toBe('memory/journeys/golden-paths.yml');
+    expect(loginJourney.features).toEqual(['auth_onboarding_join', 'player_hub']);
+
+    const startRoundJourney = result.journeys.find((j) => j.id === 'player_start_round');
+    // Same feature_id on two stages collapses to one feature in the set...
+    expect(startRoundJourney.features).toEqual(['golf_round_lifecycle']);
+  });
+
+  it('emits one journey_feature edge per stage, each with its own line evidence', () => {
+    const result = parseJourneysDoc(GOLDEN_PATH_SHAPED, 'memory/journeys/golden-paths.yml');
+    expect(result.edges).toHaveLength(4); // 2 stages + 2 stages, not deduped at the edge level
+    for (const edge of result.edges) {
+      expect(edge.kind).toBe('journey_feature');
+      expect(edge.evidence.kind).toBe('journey_stage');
+      expect(edge.evidence.path).toBe('memory/journeys/golden-paths.yml');
+    }
+  });
+
+  it('gives the two golf_round_lifecycle stages DIFFERENT line numbers, not the same one twice', () => {
+    // The exact bug class a naive `text.indexOf('feature_id: golf_round_lifecycle')`
+    // lookup would hit: both stages share a feature_id, so a lookup that
+    // isn't source-order-aware would attribute both edges to the FIRST
+    // occurrence's line.
+    const result = parseJourneysDoc(GOLDEN_PATH_SHAPED, 'memory/journeys/golden-paths.yml');
+    const startRoundEdges = result.edges.filter(
+      (e) => e.source === 'journey:player_start_round' && e.target === 'golf_round_lifecycle',
+    );
+    expect(startRoundEdges).toHaveLength(2);
+    const [first, second] = startRoundEdges;
+    expect(first.evidence.line).toBeDefined();
+    expect(second.evidence.line).toBeDefined();
+    expect(first.evidence.line).not.toBe(second.evidence.line);
+    expect(second.evidence.line).toBeGreaterThan(first.evidence.line);
+  });
+
+  it('prefixes the edge source with journey: so it never collides with a feature id namespace', () => {
+    const result = parseJourneysDoc(GOLDEN_PATH_SHAPED, 'memory/journeys/golden-paths.yml');
+    expect(result.edges.every((e) => e.source.startsWith('journey:'))).toBe(true);
+  });
+
+  it('falls back to the journey id as name when name is missing', () => {
+    const text = `
+journeys:
+  - id: unnamed_journey
+    stages:
+      - id: only_stage
+        feature_id: player_hub
+`;
+    const result = parseJourneysDoc(text, 'memory/journeys/golden-paths.yml');
+    expect(result.journeys[0].name).toBe('unnamed_journey');
+  });
+
+  it('reports a malformed journey entry (no id / no stages) as a problem without throwing', () => {
+    const text = `
+journeys:
+  - name: Missing an id entirely
+    stages: []
+  - id: has_no_stages_array
+    name: Also malformed
+`;
+    const result = parseJourneysDoc(text, 'memory/journeys/golden-paths.yml');
+    expect(result.journeys).toEqual([]);
+    expect(result.problems).toHaveLength(2);
+  });
+
+  it('an unparseable (invalid YAML) file reports a problem and zero journeys, never throws', () => {
+    const invalidYaml = 'journeys:\n  - id: [this is not valid: yaml: at all\n';
+    const result = parseJourneysDoc(invalidYaml, 'memory/journeys/golden-paths.yml');
+    expect(result.journeys).toEqual([]);
+    expect(result.edges).toEqual([]);
+    expect(result.problems).toHaveLength(1);
+    expect(result.problems[0]).toMatch(/YAML parse error/);
+  });
+
+  it('valid YAML with the OLD flat id:/features: shape (schema mismatch) reports a problem, not a silent empty pass', () => {
+    const oldShape = `id: some_journey\nfeatures:\n  - auth_onboarding_join\n`;
+    const result = parseJourneysDoc(oldShape, 'memory/journeys/golden-paths.yml');
+    expect(result.journeys).toEqual([]);
+    expect(result.problems).toHaveLength(1);
+    expect(result.problems[0]).toMatch(/no top-level `journeys` array/);
+  });
+
+  it('an empty journeys: array parses cleanly with zero journeys and zero problems', () => {
+    const result = parseJourneysDoc('journeys: []\n', 'memory/journeys/golden-paths.yml');
+    expect(result.journeys).toEqual([]);
+    expect(result.edges).toEqual([]);
+    expect(result.problems).toEqual([]);
   });
 });

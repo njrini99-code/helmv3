@@ -33,13 +33,21 @@
  *
  * WHAT THIS GENERATOR DOES NOT INVENT
  *
- * `memory/journeys/*.yml` does not exist on this branch (verified: `find
- * memory/journeys` fails). The plan names it as an input IF the parallel
- * "Track C" session has landed it; it has not, as of this generation, so the
- * journeys node list is empty and `notes.journeys` says so explicitly rather
- * than silently reporting zero journeys as "no journeys exist". The loader
- * (`loadJourneys` below) re-checks the directory every run, so this becomes
- * real the moment that branch merges — no code change needed here.
+ * `memory/journeys/golden-paths.yml` landed via PR #1779 (Bridge Track C,
+ * merged to `main` 2026-09-03) using the schema documented in that file's
+ * own header and enforced by `scripts/knowledge/check-journeys.mjs`: a
+ * top-level `journeys:` array, `- id:`/`name:`/`stages:` per journey, and a
+ * `feature_id:` per stage — NOT the flat `id:`/`features:` shape this loader
+ * originally guessed at before that file existed. `loadJourneys` below parses
+ * the real schema with `js-yaml` (already a repo dependency,
+ * `check-journeys.mjs` uses the same import) rather than re-guessing a
+ * shape. It still re-scans the directory every run, so a second journeys
+ * file with a genuinely different (but valid) shape becomes real automatically.
+ * If journey files exist but zero journeys parse — an empty `journeys:` key,
+ * a YAML syntax error, a schema this loader does not recognize —
+ * `notes.journeys` says so as a disclosed gap ("N journey file(s) found, 0
+ * parsed — schema mismatch: ..."), never a silent empty list read as "no
+ * journeys exist".
  *
  * `src/lib/inngest/functions.ts` maps to NO registry feature today (verified
  * with `npm run knowledge:map -- --files src/lib/inngest/functions.ts` ->
@@ -66,6 +74,7 @@ import {
   resolvePrimaryFeature,
   extractDocFeatureCrossRefs,
   extractInvariantsFromSource,
+  parseJourneysDoc,
   cronPathToRouteFile,
   mergeEdges,
   sortWorldModel,
@@ -140,32 +149,47 @@ function loadFeatureKeyMetadata() {
 }
 
 // ---------------------------------------------------------------------------
-// Journeys — stub loader (memory/journeys/*.yml does not exist yet)
+// Journeys — parses memory/journeys/*.yml's real schema (see the module
+// doc-comment above and memory/journeys/golden-paths.yml's own header for
+// the authoritative shape; scripts/knowledge/check-journeys.mjs is the full
+// structural validator, this loader only needs enough to build nodes+edges).
 // ---------------------------------------------------------------------------
 function loadJourneys() {
   const dir = resolve(ROOT, 'memory/journeys');
   if (!existsSync(dir)) {
-    return { journeys: [], note: 'memory/journeys/ does not exist on this branch — journeys node list is empty, not a claim that no journeys exist.' };
+    return {
+      journeys: [],
+      edges: [],
+      note: 'memory/journeys/ does not exist on this branch — journeys node list is empty, not a claim that no journeys exist.',
+    };
   }
   const files = git(['ls-files', 'memory/journeys/*.yml']).trim().split('\n').filter(Boolean);
   if (files.length === 0) {
-    return { journeys: [], note: 'memory/journeys/ exists but contains no tracked *.yml files.' };
+    return { journeys: [], edges: [], note: 'memory/journeys/ exists but contains no tracked *.yml files.' };
   }
-  // Minimal YAML-free reader for the one shape this loader promises: an `id:`
-  // and a `features:` list, same tolerant line-based approach as lib/registry.mjs.
+
   const journeys = [];
+  const edges = [];
+  const fileProblems = []; // { file, reason } — a whole file that didn't parse, or one malformed entry in it
+
   for (const file of files) {
     const text = readTracked(file);
-    const idMatch = text.match(/^id:\s*(.+)$/m);
-    const featureLines = [...text.matchAll(/^\s*-\s*([a-z][a-z0-9_]*)\s*$/gm)];
-    if (!idMatch) continue;
-    journeys.push({
-      id: idMatch[1].trim(),
-      source: file,
-      features: featureLines.map((m) => m[1]).sort(),
-    });
+    const parsed = parseJourneysDoc(text, file);
+    journeys.push(...parsed.journeys);
+    edges.push(...parsed.edges);
+    for (const reason of parsed.problems) fileProblems.push({ file, reason });
   }
-  return { journeys: journeys.sort((a, b) => a.id.localeCompare(b.id)), note: null };
+
+  let note = null;
+  if (journeys.length === 0) {
+    note =
+      `${files.length} journey file(s) found, 0 parsed — schema mismatch` +
+      (fileProblems.length ? `: ${fileProblems.map((p) => `${p.file} (${p.reason})`).join('; ')}` : '.');
+  } else if (fileProblems.length > 0) {
+    note = `${journeys.length} journey(s) parsed from ${files.length} file(s); ${fileProblems.length} problem(s) skipped: ${fileProblems.map((p) => `${p.file} (${p.reason})`).join('; ')}`;
+  }
+
+  return { journeys: journeys.sort((a, b) => a.id.localeCompare(b.id)), edges, note };
 }
 
 // ---------------------------------------------------------------------------
@@ -501,8 +525,9 @@ async function buildModel() {
   }
 
   // --- Journeys --------------------------------------------------------------
-  const { journeys, note: journeysNote } = loadJourneys();
+  const { journeys, edges: journeyEdges, note: journeysNote } = loadJourneys();
   nodes.journeys = journeys;
+  rawEdges.push(...journeyEdges);
 
   const merged = mergeEdges(rawEdges);
   const model = sortWorldModel({

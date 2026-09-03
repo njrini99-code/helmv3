@@ -45,6 +45,8 @@
     "knowledge:check": "node scripts/knowledge/check.mjs",
     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
     "knowledge:globs": "node scripts/check-registry-globs.mjs",
+    "knowledge:orphans-check": "node scripts/knowledge/check-registry-orphans.mjs",
+    "knowledge:orphans-check:test": "node --test scripts/knowledge/__tests__/check-registry-orphans.test.mjs",
     "knowledge:authority-check": "node scripts/knowledge/check-authority.mjs",
     "knowledge:doc-inventory": "node scripts/knowledge/document-inventory.mjs",
     "knowledge:ledger-check": "node scripts/knowledge/check-ledger-integrity.mjs",

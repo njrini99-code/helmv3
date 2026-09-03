@@ -36,6 +36,7 @@
  * whose whole point is that two things are NOT related must not become an
  * edge asserting they are.
  */
+import yaml from 'js-yaml';
 
 /** Word-boundary backtick-quoted token extractor, shared by every doc scan. */
 const BACKTICK_TOKEN_RE = /`([a-z][a-z0-9_]*)`/g;
@@ -191,6 +192,95 @@ export function extractInvariantsFromSource(sourceText, filePath) {
     });
   }
   return invariants;
+}
+
+/**
+ * Parse ONE `memory/journeys/*.yml` file already read into a string, using
+ * the real schema `memory/journeys/golden-paths.yml`'s own header documents
+ * and `scripts/knowledge/check-journeys.mjs` enforces: a top-level
+ * `journeys:` array, each entry `id`/`name`/`stages`, each stage a
+ * `feature_id`. This is NOT the full structural validator — that is
+ * `check-journeys.mjs`'s job (spec_path existence, test_name verbatim match,
+ * environment_strategy vocabulary, and so on). This only needs enough to
+ * build journey nodes and journey->feature edges, and to say clearly when it
+ * could not.
+ *
+ * Pure by design (no fs/git — `world-model.mjs` reads the file and calls
+ * this per file) so the two cases that actually broke this loader once
+ * — a schema this parser doesn't recognize, and a file that isn't valid
+ * YAML at all — are each one synthetic fixture instead of a real
+ * `memory/journeys/` file.
+ *
+ * @param {string} text - raw file contents
+ * @param {string} filePath - tracked path, used as edge evidence
+ * @returns {{
+ *   journeys: Array<{id: string, name: string, source: string, features: string[]}>,
+ *   edges: Array<{source: string, target: string, kind: 'journey_feature', evidence: {kind: 'journey_stage', path: string, line: number | undefined}}>,
+ *   problems: string[],
+ * }}
+ */
+export function parseJourneysDoc(text, filePath) {
+  const journeys = [];
+  const edges = [];
+  const problems = [];
+
+  let doc;
+  try {
+    doc = yaml.load(text);
+  } catch (err) {
+    problems.push(`YAML parse error: ${err.message}`);
+    return { journeys, edges, problems };
+  }
+  if (doc === null || typeof doc !== 'object' || !Array.isArray(doc.journeys)) {
+    problems.push('no top-level `journeys` array (schema mismatch)');
+    return { journeys, edges, problems };
+  }
+
+  // js-yaml's public load() API returns no per-node line/column for a
+  // successfully parsed document, so line evidence for each stage's
+  // `feature_id:` is recovered the same tolerant, source-order way
+  // lib/registry.mjs's own line-based reader works: every `feature_id:` line
+  // in the raw text, in file order, consumed 1:1 against every stage's
+  // feature_id as js-yaml's array is walked in that same order — correct
+  // even when the same feature_id repeats across stages (e.g.
+  // golf_round_lifecycle in both configure_round and start_round in
+  // golden-paths.yml), because both scans preserve source order and neither
+  // reorders.
+  const featureIdLines = [...text.matchAll(/^\s*feature_id:\s*(\S+)\s*$/gm)].map((m) => ({
+    value: m[1],
+    line: text.slice(0, m.index).split('\n').length,
+  }));
+  let cursor = 0;
+
+  doc.journeys.forEach((journey, index) => {
+    if (typeof journey?.id !== 'string' || !Array.isArray(journey?.stages)) {
+      problems.push(`journeys[${index}] missing a string id or a stages array`);
+      return;
+    }
+    const featureIds = new Set();
+    for (const stage of journey.stages) {
+      const featureId = stage?.feature_id;
+      if (typeof featureId !== 'string') continue;
+      featureIds.add(featureId);
+      const hit = featureIdLines[cursor];
+      const line = hit && hit.value === featureId ? hit.line : undefined;
+      if (hit) cursor += 1;
+      edges.push({
+        source: `journey:${journey.id}`,
+        target: featureId,
+        kind: 'journey_feature',
+        evidence: { kind: 'journey_stage', path: filePath, line },
+      });
+    }
+    journeys.push({
+      id: journey.id,
+      name: typeof journey.name === 'string' ? journey.name : journey.id,
+      source: filePath,
+      features: [...featureIds].sort(),
+    });
+  });
+
+  return { journeys, edges, problems };
 }
 
 /**

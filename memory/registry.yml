@@ -1276,6 +1276,17 @@ features:
       tests:
         - src/test/lib/cron/auth.test.ts
         - src/test/api/cron/shared-auth.test.ts
+        # Cross-cutting gate test over ALL of src/app/admin (every
+        # sub-capability's routes included) — a general admin_platform
+        # concern, not scoped to one sub-capability. Added 2026-09-03 after
+        # `npm run knowledge:map -- --files
+        # src/app/admin/__tests__/admin-gate-coverage.test.ts` returned zero
+        # impacted features post-split: the split's 17 named `routes:`
+        # subdirectories replaced the old blanket `src/app/admin/**`, and
+        # `__tests__/` was never one of the 17 or a carved-out sub-capability,
+        # so it fell through to no owner. `scripts/knowledge/check-registry-
+        # orphans.mjs` now fails the build if this ever regresses.
+        - src/app/admin/__tests__/**
     integrations:
       - supabase
       - datadog
@@ -1289,7 +1300,7 @@ features:
         - docs/SECURITY_AUDIT.md
       required_checks:
         - npm run typecheck
-        - npm run test -- --run src/test/lib/cron/auth.test.ts src/test/api/cron/shared-auth.test.ts
+        - npm run test -- --run src/test/lib/cron/auth.test.ts src/test/api/cron/shared-auth.test.ts src/app/admin/__tests__/admin-gate-coverage.test.ts
         - npm run build
 
   admin_incidents:
