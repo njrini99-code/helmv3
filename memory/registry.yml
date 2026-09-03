@@ -1262,6 +1262,7 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
+        - src/app/admin/lenses/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
         # below (errors/ -> admin_incidents, reliability/ ->
         # admin_reliability_collector, self-heal/ -> admin_selfheal), so a
@@ -1297,6 +1298,11 @@ features:
         # because Fairway primitives for a shared, sibling-branch component
         # library live under `src/components/**`, not `src/app/**`.
         - src/components/admin/command-deck/**
+        # Phase 4 lens dominant-visual components (JourneyFlow,
+        # UserJourneyRibbon, TeamEkgRow, AdoptionMapPanel,
+        # ActivityThreadsPanel) — mapped here 2026-09-03 after `knowledge:map`
+        # resolved src/components/admin/lenses/** to `impactedFeatures: []`.
+        - src/components/admin/lenses/**
       api:
         - src/app/api/admin/**
       actions:

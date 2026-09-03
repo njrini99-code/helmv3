@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 25 features, 67 routes, 42 components, 27 apis, 91 actions, 58 services, 49 tests, 128 tables, 136 rpcs, 24 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 958 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 25 features, 68 routes, 43 components, 27 apis, 91 actions, 58 services, 49 tests, 128 tables, 136 rpcs, 24 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 960 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -29,7 +29,7 @@ Admin Incidents · active · criticality high · owner platform
 
 Admin Platform · active · criticality high · owner platform
 
-- **Relations:** 7 doc/structurally-evidenced, 23 import-graph-only (weak)
+- **Relations:** 8 doc/structurally-evidenced, 22 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_lifting_group_audit`
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_list_traces`, `is_super_admin`, `recalculate_round_strokes_gained`, `refresh_player_stats_cache`, `revoke_user_sessions`
 - **Test surfaces:** 3
@@ -69,7 +69,7 @@ Auth Onboarding And Join · active · criticality high · owner platform
 
 BaseballHelm (recruiting + team management + Lift Lab) · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `baseball_actions`, `baseball_ai_audit`, `baseball_availability_statuses`, `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_bodyweight_entries`, `baseball_catching_events`, `baseball_class_conflicts`, `baseball_coach_notes`, `baseball_coach_player_notes`, `baseball_decision_log`, `baseball_demo_sessions`, `baseball_event_acknowledgements`, `baseball_exercises`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_import_runs`, `baseball_import_sources`, `baseball_integration_configs`, `baseball_legacy_backfill_manifest`, `baseball_lift_assignments`, `baseball_lift_days`, `baseball_lift_exercise_substitutions`, `baseball_lift_exercises`, `baseball_lift_import_rows`, `baseball_lift_import_runs`, `baseball_lift_prescriptions`, `baseball_lift_program_assignments`, `baseball_lift_programs`, `baseball_lift_results`, `baseball_lift_sections`, `baseball_lift_session_exercises`, `baseball_lift_sessions`, `baseball_lift_set_results`, `baseball_lift_weeks`, `baseball_meeting_items`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_daily_contracts`, `baseball_player_development_metrics`, `baseball_player_external_ids`, `baseball_player_passport_settings`, `baseball_player_passport_share_tokens`, `baseball_player_timeline_events`, `baseball_postgame_review_items`, `baseball_postgame_reviews`, `baseball_practice_attendance`, `baseball_practice_block_objectives`, `baseball_practice_blocks`, `baseball_practice_effectiveness_reviews`, `baseball_practice_lineup_slots`, `baseball_practice_scrimmages`, `baseball_practices`, `baseball_program_settings`, `baseball_readiness_checkins`, `baseball_seasons`, `baseball_settings_audit_log`, `baseball_signals`, `baseball_soreness_maps`, `baseball_staff_audit_events`, `baseball_staff_invitations`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_stat_visual_views`, `baseball_strength_group_audit`, `baseball_strength_group_members`, `baseball_strength_groups`, `baseball_strength_maxes`, `baseball_strength_prs`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`
 - **RPCs:** `find_baseball_player_by_email_for_roster`, `helm_lifting_mark_athlete_onboarded`, `helm_lifting_sync_org_athletes`, `recalculate_baseball_season_stats`, `recalculate_team_baseball_season_stats`, `save_baseball_full_box_score`
 - **Test surfaces:** 2
@@ -311,7 +311,7 @@ Team Operations · active · criticality high · owner product
 | `admin_platform` | `admin_reliability_collector` | feature_doc_contract |
 | `admin_platform` | `admin_selfheal` | feature_doc_contract, import_graph |
 | `admin_platform` | `auth_onboarding_join` | import_graph (weak) |
-| `admin_platform` | `baseball_core` | import_graph (weak) |
+| `admin_platform` | `baseball_core` | feature_doc_contract, import_graph |
 | `admin_platform` | `crm_outreach` | import_graph (weak) |
 | `admin_platform` | `golf_round_lifecycle` | import_graph (weak) |
 | `admin_platform` | `observability_sentry` | import_graph (weak) |
