@@ -169,7 +169,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 28 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
-| `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 28 | - |
+| `memory/features/observability-sentry.md` | current | yes | - | - | 5 | 28 | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | 4 | 33 | 2 |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
@@ -490,7 +490,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 2 | 6 | 2 |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 5 | 37 | - |
-| `memory/ledgers/changes/observability_supabase.md` | current | - | - | - | 3 | 20 | 5 |
+| `memory/ledgers/changes/observability_supabase.md` | current | - | - | - | 3 | 21 | 5 |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
@@ -619,7 +619,7 @@ them would bury everything above.
 | `docs/observability/SENTRY_TELEMETRY_TAXONOMY.md` | current | yes | - | yes | 2 | 8 | - |
 | `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | yes | - | yes | 5 | 4 | - |
 | `docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md` | current | yes | - | yes | 3 | 14 | - |
-| `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` | current | yes | - | - | 3 | 18 | - |
+| `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` | current | yes | - | - | 3 | 28 | - |
 | `docs/observability/SUPABASE_TRACE_PROPAGATION.md` | current | yes | - | - | 1 | 7 | - |
 | `docs/operations/2026-05-27-baseball-tables-scope.md` | current | - | - | - | 1 | 3 | - |
 | `docs/operations/2026-05-27-v3-w35-diagnosis.md` | current | - | - | - | 2 | 5 | - |
