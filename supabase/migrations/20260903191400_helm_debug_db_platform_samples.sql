@@ -9,7 +9,8 @@
 -- SOURCE: one row per Vercel-cron tick of
 -- `src/app/api/cron/db-health-sampler/route.ts`, which this migration's
 -- companion change extends to also call
--- `fetchSupabasePlatformMetrics()` (`src/lib/observability/supabase/metrics-api.ts`)
+-- `fetchSupabasePlatformMetrics()`
+-- (`src/lib/observability/supabase/metrics-api.ts`)
 -- and write one row here — the same 5-minute cadence as
 -- `db_health_samples`, no new cron schedule. `evaluatePlatformRules`
 -- (`src/lib/observability/supabase/platform-rules.ts`) reads the last few
@@ -38,7 +39,11 @@
 --
 -- ROLLBACK:
 -- DROP FUNCTION public.helm_debug_read_db_platform_history(integer);
--- DROP FUNCTION public.record_db_platform_sample(smallint, numeric, numeric, integer, integer, numeric, numeric, numeric, bigint, numeric, integer, integer, numeric, integer, integer, numeric, integer, text);
+-- DROP FUNCTION public.record_db_platform_sample(
+--   smallint, numeric, numeric, integer, integer, numeric, numeric, numeric,
+--   bigint, numeric, integer, integer, numeric, integer, integer, numeric,
+--   integer, text
+-- );
 -- DROP TABLE helm_debug.db_platform_samples;
 
 create schema if not exists helm_debug;
@@ -68,7 +73,9 @@ create table if not exists helm_debug.db_platform_samples (
     -- PlatformSourceStatus exactly; never silently 'ok' when the fetch
     -- itself failed.
     source_status text not null,
-    constraint db_platform_samples_db_up_check check (db_up is null or db_up in (0, 1)),
+    constraint db_platform_samples_db_up_check check (
+        db_up is null or db_up in (0, 1)
+    ),
     constraint db_platform_samples_source_status_check check (
         source_status in ('ok', 'unconfigured', 'unreachable', 'unparseable')
     )

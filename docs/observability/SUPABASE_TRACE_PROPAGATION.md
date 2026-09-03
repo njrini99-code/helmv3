@@ -48,6 +48,7 @@ today.
 
 ## 2. Live proof — MANUAL PROCEDURE
 
+<!-- markdownlint-disable-next-line MD036 -->
 **live-proof: NOT VERIFIED**
 
 This exact bold line, at the START of a line, is what

@@ -104,8 +104,9 @@ migration reads `unconfigured`, never a fabricated green result.
 Unit-level TypeScript fixtures against every pure evaluator listed above
 (`src/lib/observability/supabase/__tests__/*.test.ts`) and every reader
 (`src/lib/admin/database/__tests__/*.test.ts`), 241 tests at last count in
-this area — see `memory/ledgers/tests/observability_supabase.md` if a
-ledger entry exists there, or add one alongside this doc's next update; no
+this area; no test ledger exists for this feature yet (the tests ledger
+directory carries only `observability_sentry.md`), so add one alongside this
+doc's next update rather than pointing at a file that is not there; no
 pgTAP suite exists for these migrations (same as Phase 1's own migrations),
 and no RLS test exists because there is no row-level policy — the schema
 revocation plus definer-rights-only facade pattern is the enforced

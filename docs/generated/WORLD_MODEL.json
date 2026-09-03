@@ -100,6 +100,13 @@
         "status": "active"
       },
       {
+        "id": "observability_supabase",
+        "name": "Supabase Database Observability — Zero-Cost Error/Health Control Plane",
+        "criticality": "high",
+        "owner": "platform",
+        "status": "active"
+      },
+      {
         "id": "player_coachhelm_development",
         "name": "Player CoachHelm And Development",
         "criticality": "high",
@@ -935,6 +942,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/admin/database/log-evidence-actions.ts",
+        "pattern": "src/app/admin/database/log-evidence-actions.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/baseball/**/actions/**",
         "pattern": "src/app/baseball/**/actions/**",
         "category": "actions"
@@ -1407,6 +1419,16 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/db-observability-metrics-names.mjs",
+        "pattern": "scripts/db-observability-metrics-names.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/db-observability-trace-cert.mjs",
+        "pattern": "scripts/db-observability-trace-cert.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/flags/**",
         "pattern": "scripts/flags/**",
         "category": "services"
@@ -1424,6 +1446,11 @@
       {
         "id": "services:scripts/lib/selfheal-repair-runner.mjs",
         "pattern": "scripts/lib/selfheal-repair-runner.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/repo-doctor/checks/db-observability.mjs",
+        "pattern": "scripts/repo-doctor/checks/db-observability.mjs",
         "category": "services"
       },
       {
@@ -1467,6 +1494,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/admin/database/**",
+        "pattern": "src/lib/admin/database/**",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/admin/incident-*.ts",
         "pattern": "src/lib/admin/incident-*.ts",
         "category": "services"
@@ -1474,6 +1506,11 @@
       {
         "id": "services:src/lib/admin/incidents/**",
         "pattern": "src/lib/admin/incidents/**",
+        "category": "services"
+      },
+      {
+        "id": "services:src/lib/admin/incidents/db-observability-source.ts",
+        "pattern": "src/lib/admin/incidents/db-observability-source.ts",
         "category": "services"
       },
       {
@@ -1749,6 +1786,16 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/lib/admin/database/__tests__/**",
+        "pattern": "src/lib/admin/database/__tests__/**",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/admin/incidents/__tests__/db-observability-source.test.ts",
+        "pattern": "src/lib/admin/incidents/__tests__/db-observability-source.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/lib/golf/nav-registry.test.ts",
         "pattern": "src/lib/golf/nav-registry.test.ts",
         "category": "tests"
@@ -1756,6 +1803,11 @@
       {
         "id": "tests:src/lib/observability/__tests__/**",
         "pattern": "src/lib/observability/__tests__/**",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/observability/supabase/__tests__/**",
+        "pattern": "src/lib/observability/supabase/__tests__/**",
         "category": "tests"
       },
       {
@@ -2456,10 +2508,13 @@
       {
         "id": "helm_debug",
         "definedIn": [
-          "supabase/migrations/20260825200811_helm_flight_recorder.sql",
           "supabase/migrations/20260903180000_helm_debug_db_error_events.sql",
           "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql",
-          "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+          "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql",
+          "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql",
+          "supabase/migrations/20260825200811_helm_flight_recorder.sql",
+          "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql",
+          "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
         ]
       },
       {
@@ -2961,6 +3016,14 @@
         "definedIn": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
       },
       {
+        "id": "helm_debug_db_lock_snapshot",
+        "definedIn": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
+      },
+      {
+        "id": "helm_debug_db_table_snapshot",
+        "definedIn": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+      },
+      {
         "id": "helm_debug_finalize_trace",
         "definedIn": "supabase/migrations/20260902170000_blind_check_ignores_postgres_layer.sql"
       },
@@ -2978,7 +3041,7 @@
       },
       {
         "id": "helm_debug_prune_observability",
-        "definedIn": "supabase/migrations/20260903180300_helm_debug_observability_retention.sql"
+        "definedIn": "supabase/migrations/20260903191300_helm_debug_observability_retention_v2.sql"
       },
       {
         "id": "helm_debug_read_db_error_events",
@@ -2989,8 +3052,28 @@
         "definedIn": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
       },
       {
+        "id": "helm_debug_read_db_lock_incidents",
+        "definedIn": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
+      },
+      {
+        "id": "helm_debug_read_db_platform_history",
+        "definedIn": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+      },
+      {
         "id": "helm_debug_read_db_stat_deltas",
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+      },
+      {
+        "id": "helm_debug_read_db_table_health",
+        "definedIn": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+      },
+      {
+        "id": "helm_debug_read_jobs_health",
+        "definedIn": "supabase/migrations/20260903191200_helm_debug_jobs_health_read.sql"
+      },
+      {
+        "id": "helm_debug_read_observability_sizes",
+        "definedIn": "supabase/migrations/20260903191300_helm_debug_observability_retention_v2.sql"
       },
       {
         "id": "helm_debug_record_trace_step",
@@ -3133,8 +3216,20 @@
         "definedIn": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
       },
       {
+        "id": "record_db_lock_incident",
+        "definedIn": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
+      },
+      {
+        "id": "record_db_platform_sample",
+        "definedIn": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+      },
+      {
         "id": "record_db_stat_snapshot",
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+      },
+      {
+        "id": "record_db_table_samples",
+        "definedIn": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
       },
       {
         "id": "record_round_coachhelm_terminal_state",
@@ -3335,6 +3430,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/db-stat-delta",
         "schedule": "*/15 * * * *"
+      },
+      {
+        "id": "vercel_cron:/api/cron/db-table-health",
+        "kind": "vercel_cron",
+        "path": "/api/cron/db-table-health",
+        "schedule": "7 * * * *"
       },
       {
         "id": "vercel_cron:/api/cron/event-reminders",
@@ -4349,6 +4450,17 @@
     },
     {
       "source": "admin_incidents",
+      "target": "helm_debug",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_incidents",
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
@@ -4651,17 +4763,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 355
+          "line": 364
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 375
+          "line": 384
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 580
+          "line": 589
         },
         {
           "kind": "import_graph",
@@ -4820,12 +4932,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 220
+          "line": 229
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 374
+          "line": 383
         }
       ]
     },
@@ -4847,17 +4959,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 221
+          "line": 230
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 384
+          "line": 393
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 466
+          "line": 475
         },
         {
           "kind": "import_graph",
@@ -5359,7 +5471,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 805
+          "line": 814
         },
         {
           "kind": "import_graph",
@@ -5709,7 +5821,19 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 153
+          "line": 261
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "helm_debug_db_lock_snapshot",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/db-health-sampler/route.ts",
+          "line": 185
         }
       ]
     },
@@ -5733,43 +5857,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-observability-prune/route.ts",
-          "line": 62
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "helm_debug_read_db_error_events",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/admin/database/errors.ts",
-          "line": 170
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "helm_debug_read_db_health_history",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/admin/database/overview.ts",
-          "line": 157
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "helm_debug_read_db_stat_deltas",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/admin/database/performance.ts",
-          "line": 105
+          "line": 83
         }
       ]
     },
@@ -5927,7 +6015,31 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 178
+          "line": 286
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "record_db_lock_incident",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/db-health-sampler/route.ts",
+          "line": 205
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "record_db_platform_sample",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/db-health-sampler/route.ts",
+          "line": 382
         }
       ]
     },
@@ -7059,6 +7171,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/auth.ts",
+          "line": 39
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/coach-entry.ts",
           "line": 4
         },
@@ -7071,6 +7188,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/demo-access.ts",
           "line": 20
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/demo-access.ts",
+          "line": 21
         },
         {
           "kind": "import_graph",
@@ -7106,6 +7228,11 @@
           "kind": "import_graph",
           "path": "src/lib/auth/send-password-reset.ts",
           "line": 4
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/send-password-reset.ts",
+          "line": 6
         },
         {
           "kind": "import_graph",
@@ -7491,6 +7618,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/baseball/actions/auth.ts",
+          "line": 29
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/baseball/actions/calendar.ts",
           "line": 5
         },
@@ -7516,6 +7648,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/baseball/actions/demo-access.ts",
+          "line": 25
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/baseball/actions/demo-tracking.ts",
           "line": 3
         },
@@ -7533,6 +7670,11 @@
           "kind": "import_graph",
           "path": "src/app/baseball/actions/documents.ts",
           "line": 6
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/baseball/actions/documents.ts",
+          "line": 11
         },
         {
           "kind": "import_graph",
@@ -7573,6 +7715,11 @@
           "kind": "import_graph",
           "path": "src/app/baseball/actions/onboarding.ts",
           "line": 5
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/baseball/actions/onboarding.ts",
+          "line": 22
         },
         {
           "kind": "import_graph",
@@ -7638,6 +7785,11 @@
           "kind": "import_graph",
           "path": "src/app/baseball/actions/travel.ts",
           "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/baseball/actions/video-classes.ts",
+          "line": 47
         },
         {
           "kind": "import_graph",
@@ -14540,6 +14692,445 @@
       ]
     },
     {
+      "source": "observability_supabase",
+      "target": "actions:src/app/admin/database/log-evidence-actions.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/database/log-evidence-actions.ts"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "admin_platform",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-supabase.md",
+          "line": 134
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-supabase.md",
+          "line": 137
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/advisors.ts",
+          "line": 11
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/advisors.ts",
+          "line": 12
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/alerts.ts",
+          "line": 60
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/alerts.ts",
+          "line": 61
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/alerts.ts",
+          "line": 62
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/errors.ts",
+          "line": 15
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/errors.ts",
+          "line": 16
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/jobs.ts",
+          "line": 18
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/jobs.ts",
+          "line": 19
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/jobs.ts",
+          "line": 29
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/locks.ts",
+          "line": 14
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/locks.ts",
+          "line": 15
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/overview.ts",
+          "line": 24
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/overview.ts",
+          "line": 25
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/overview.ts",
+          "line": 31
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/performance.ts",
+          "line": 19
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/performance.ts",
+          "line": 20
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/platform.ts",
+          "line": 20
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/platform.ts",
+          "line": 21
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/platform.ts",
+          "line": 22
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/platform.ts",
+          "line": 23
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/tables.ts",
+          "line": 16
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/tables.ts",
+          "line": 17
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/tables.ts",
+          "line": 18
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/telemetry.ts",
+          "line": 28
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/telemetry.ts",
+          "line": 29
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/telemetry.ts",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "api:src/app/api/cron/db-health-sampler/**",
+      "kind": "feature_api",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/api/cron/db-health-sampler/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "api:src/app/api/cron/db-observability-prune/**",
+      "kind": "feature_api",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/api/cron/db-observability-prune/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "api:src/app/api/cron/db-stat-delta/**",
+      "kind": "feature_api",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/api/cron/db-stat-delta/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_error_events",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/errors.ts",
+          "line": 170
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_health_history",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/overview.ts",
+          "line": 178
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_lock_incidents",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/locks.ts",
+          "line": 100
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_platform_history",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/platform.ts",
+          "line": 85
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_stat_deltas",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/performance.ts",
+          "line": 105
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_table_health",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/tables.ts",
+          "line": 146
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_jobs_health",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/jobs.ts",
+          "line": 102
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_observability_sizes",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/telemetry.ts",
+          "line": 109
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "routes:src/app/admin/database/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/database/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "services:scripts/db-observability-metrics-names.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/db-observability-metrics-names.mjs"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "services:scripts/db-observability-trace-cert.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/db-observability-trace-cert.mjs"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "services:scripts/repo-doctor/checks/db-observability.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/repo-doctor/checks/db-observability.mjs"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "services:src/lib/admin/database/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/database/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "services:src/lib/admin/incidents/db-observability-source.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/incidents/db-observability-source.ts"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "services:src/lib/observability/supabase/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/observability/supabase/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "tests:src/lib/admin/database/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/database/__tests__/**"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "tests:src/lib/admin/incidents/__tests__/db-observability-source.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/admin/incidents/__tests__/db-observability-source.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "tests:src/lib/observability/supabase/__tests__/**",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/observability/supabase/__tests__/**"
+        }
+      ]
+    },
+    {
       "source": "player_coachhelm_development",
       "target": "actions:src/app/golf/actions/development.ts",
       "kind": "feature_action",
@@ -16299,8 +16890,18 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/recruit-documents.ts",
+          "line": 23
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/recruiting.ts",
           "line": 20
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/recruiting.ts",
+          "line": 22
         }
       ]
     },
@@ -17208,6 +17809,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
         }
       ]
     },
@@ -19070,6 +19683,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
         }
       ]
     },
@@ -20126,6 +20751,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/documents.ts",
           "line": 12
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/documents.ts",
+          "line": 15
         },
         {
           "kind": "import_graph",

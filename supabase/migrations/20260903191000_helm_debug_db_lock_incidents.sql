@@ -54,13 +54,17 @@ revoke all on schema helm_debug from public;
 create table if not exists helm_debug.db_lock_incidents (
     id bigint generated always as identity primary key,
     detected_at timestamptz not null default clock_timestamp(),
-    kind text not null check (kind in ('long_active', 'idle_in_tx', 'lock_wait', 'deadlock')),
+    kind text not null check (
+        kind in ('long_active', 'idle_in_tx', 'lock_wait', 'deadlock')
+    ),
     severity text not null check (severity in ('warning', 'critical')),
     role_class text not null check (role_class in ('app', 'service', 'other')),
     wait_ms integer check (wait_ms is null or wait_ms >= 0),
     blocked_query_class text,
     blocking_query_class text,
-    blocked_pid_count integer check (blocked_pid_count is null or blocked_pid_count >= 0),
+    blocked_pid_count integer check (
+        blocked_pid_count is null or blocked_pid_count >= 0
+    ),
     relation_name text,
     feature text,
     action text,
@@ -247,10 +251,12 @@ grant execute on function public.helm_debug_db_lock_snapshot()
 to service_role;
 
 revoke execute on function public.record_db_lock_incident(
-    text, text, text, integer, text, text, integer, text, text, text, text, text, jsonb
+    text, text, text, integer, text, text, integer, text, text, text,
+    text, text, jsonb
 ) from public, anon, authenticated;
 grant execute on function public.record_db_lock_incident(
-    text, text, text, integer, text, text, integer, text, text, text, text, text, jsonb
+    text, text, text, integer, text, text, integer, text, text, text,
+    text, text, jsonb
 ) to service_role;
 
 do $$

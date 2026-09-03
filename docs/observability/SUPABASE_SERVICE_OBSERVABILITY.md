@@ -360,7 +360,7 @@ parameter). `classifyCommitOutcome({ transportError, sqlstate, readBack })`
 observe (a clean response with no code and no transport error is
 `UNKNOWN_COMMIT`, not an assumed success). `summarizeAttempts(attempts[])`
 → `attemptFailureCount`/`retryCount`/`finalSuccessCount`/`terminalFailureCount`
-+ a per-fingerprint retry-storm flag (≥5 attempts in any 60s window, brief
+- a per-fingerprint retry-storm flag (≥5 attempts in any 60s window, brief
 §49–55's threshold). `compareDurableChildCounts({ expected, durable, isEdit })`
 flags a full-snapshot replacement that shrank durable children, suppressed
 by a caller-declared `isEdit`.
@@ -378,7 +378,7 @@ session"). Intended call sites once that ownership boundary lifts:
   retry storm before it becomes a production incident.
 - A timeout-prone RPC where the caller can cheaply read back its own
   expected row (e.g. "does this round id now exist") — `classifyCommitOutcome`
-  + `verifyDurableOutcome` together turn "the request timed out" into a
+  - `verifyDurableOutcome` together turn "the request timed out" into a
   real DURABLE_SUCCESS_AFTER_TIMEOUT / TRANSPORT_TIMEOUT / UNKNOWN_COMMIT
   answer instead of an assumed failure.
 

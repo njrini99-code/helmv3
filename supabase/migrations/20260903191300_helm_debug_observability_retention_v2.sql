@@ -195,7 +195,8 @@ as $$
   ) t
 $$;
 
-revoke execute on function public.helm_debug_read_observability_sizes() from public,
+revoke execute on function public.helm_debug_read_observability_sizes()
+from public,
 anon,
 authenticated;
 grant execute on function public.helm_debug_read_observability_sizes()
