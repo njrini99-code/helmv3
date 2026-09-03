@@ -34,17 +34,29 @@
  *     `route` folded into nothing (not a `classifyMergeConfidence` input),
  *     and `firstSeen` as the occurrence clock. It has no Helm trace id,
  *     Sentry trace id, Flight Recorder run id or normalized stack frames to
- *     compare — those never travel on `UnifiedIncident` today — so it can
- *     only ever produce the classifier's `'highest'` tier via
- *     `canonicalFingerprint` equality (which never happens across genuinely
- *     distinct incidents; `correlate.ts` already merged those) or the
- *     `'medium'` tier via matching RPC/error-code/feature/frames/release/
- *     window. `normalizedTopFrames` and `releaseCohort` are also absent, so
- *     in PRACTICE this adapter can only ever surface groups of size one
- *     (no alias found) until those fields exist upstream. This is
- *     documented, not silently degraded: `IncidentGenome.aliasGroup` is
- *     still built and rendered, and a size-one group renders as "no
- *     alternate evidence found" rather than being hidden.
+ *     compare — those never travel on `UnifiedIncident` today — so the
+ *     `canonicalFingerprint`-equality path to `'highest'` never fires across
+ *     genuinely distinct incidents (`correlate.ts` already merged those), and
+ *     the six-dimension `'medium'` tier (feature/operation/frames/code/
+ *     window/release) never fires either, because `normalizedTopFrames` and
+ *     `releaseCohort` are always null on `MergeCandidateFacts` here.
+ *
+ *     CORRECTED 2026-09-03 (PR #1789 review) — this used to claim those two
+ *     gaps left the adapter able to "only ever surface groups of size one in
+ *     practice". That was wrong: `classifyMergeConfidence` ALSO reaches
+ *     `'highest'` tier on same-RPC + same-error-code + same-feature alone
+ *     (`aliases.ts`'s third `'highest'` branch), with NO time window — and
+ *     `rpc`/`errorCode`/`featureId` are exactly the three fields this
+ *     adapter DOES populate from real `UnifiedIncident` data. Two distinct
+ *     incidents sharing an action, an error code and a feature — a common
+ *     shape, e.g. the same RPC failing the same way on two different rows —
+ *     DO group in production, at `'highest'` confidence, regardless of how
+ *     far apart in time they occurred. `IncidentGenome.aliasGroup` is built
+ *     and rendered either way: a size-one group (genuinely the common case,
+ *     just not the ONLY case) renders as "no alternate evidence found"
+ *     rather than being hidden, and a real group renders the joined
+ *     incidents with the tier and reason that joined them — see
+ *     `IncidentGenomePanel.tsx`.
  *   - `buildIncidentEvidenceCoverage` maps the four sources
  *     `UnifiedIncident.sources` actually carries (`sentry`, `supabase`,
  *     `vercel`; `app` has no cell in the six-source model — see
