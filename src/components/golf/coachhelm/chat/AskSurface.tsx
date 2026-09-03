@@ -39,10 +39,15 @@ export interface AskSurfaceProps {
   asOfLabel: string | null;
   coverage: string | null;
   /**
-   * A question started on the Brief and carried here via `?q=`. Seeded into
-   * the composer so the coach does not retype it — but not auto-sent, because
-   * a page that fires a request on load is a page that fires it again on
-   * refresh.
+   * A question started on the Brief and carried here via `?q=`. Submitted
+   * automatically, once, through the composer's own send path — the Brief's
+   * Send button navigates here specifically so the question does not sit
+   * unsent, waiting on a SECOND click the coach has no reason to expect.
+   *
+   * `q` is stripped from the address bar as soon as the submit is kicked off
+   * (below), which is what stops a refresh or back-navigation from resending
+   * it: without that, a page that fires a request on load is a page that
+   * fires it again on refresh.
    */
   pendingQuestion?: string | null;
 }
@@ -79,6 +84,34 @@ export function AskSurface({
     // every subsequent visit to this now-permanent link.
     url.searchParams.delete('q');
     window.history.replaceState(window.history.state, '', url.toString());
+  }, []);
+
+  /**
+   * `pendingQuestion` auto-submits below (via `autoSubmitInitialInput` on
+   * `CoachHelmChat`). Strip `q` from the address bar the moment that submit is
+   * kicked off — not later, when the server mints a conversation id and
+   * `adoptConversationInUrl` above would eventually remove it too — so a
+   * refresh or back-navigation in the gap before that response arrives can
+   * never resend the same question. `history.replaceState`, not
+   * `router.replace`, for the same reason as `adoptConversationInUrl`: a
+   * router navigation re-runs the page and would remount the chat mid-send.
+   *
+   * Guarded by a ref, not just `[pendingQuestion]`, because React StrictMode
+   * double-invokes mount effects — a second invocation must not re-derive a
+   * `q`-bearing URL from `window.location` a second time and no-op only by
+   * coincidence (it already would here, `q` being gone after the first run),
+   * but the guard is what makes that true by construction rather than by luck.
+   */
+  const strippedPendingQuestionRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!pendingQuestion || strippedPendingQuestionRef.current) return;
+    strippedPendingQuestionRef.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('q');
+    window.history.replaceState(window.history.state, '', url.toString());
+    // Mount-only: `pendingQuestion` is a one-time seed from the URL this page
+    // loaded with, not a value that should re-fire the strip on every change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -202,6 +235,7 @@ export function AskSurface({
             onConversationId={adoptConversationInUrl}
             variant="page"
             initialInput={pendingQuestion ?? undefined}
+            autoSubmitInitialInput={Boolean(pendingQuestion)}
             greeting={<Greeting teamName={teamName} />}
             opening={(ask) => (
               <ProgramOpening

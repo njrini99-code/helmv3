@@ -9,23 +9,44 @@ import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+// Pragmatic format check, not a full RFC 5322 validator — matches the intent
+// of the native `type="email"` check the form skips via `noValidate`.
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LiftingForgotPasswordPage() {
   const prefersReducedMotion = useReducedMotion();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  // The normalized address actually submitted — shown in the confirmation
+  // copy instead of the raw input, so it always reflects what was sent.
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // `noValidate` deliberately skips the browser's native check, so nothing
+    // else was stopping a malformed address from reaching Supabase and
+    // rendering a false-positive "sent" confirmation.
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError('Enter your email address.');
+      return;
+    }
+    if (!EMAIL_FORMAT.test(normalizedEmail)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo: `${origin}/lifting/reset-password`,
       });
 
@@ -35,6 +56,7 @@ export default function LiftingForgotPasswordPage() {
         return;
       }
 
+      setSubmittedEmail(normalizedEmail);
       setSuccess(true);
       setLoading(false);
     } catch {
@@ -112,7 +134,7 @@ export default function LiftingForgotPasswordPage() {
             </h2>
             <p className="text-warm-500 text-sm">
               {success
-                ? `We've sent a reset link to ${email}`
+                ? `We've sent a reset link to ${submittedEmail}`
                 : 'Enter your email to receive a reset link'}
             </p>
           </motion.div>
@@ -168,7 +190,10 @@ export default function LiftingForgotPasswordPage() {
                     id="forgot-email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) setError('');
+                    }}
                     placeholder="you@example.com"
                     required
                     autoComplete="email"

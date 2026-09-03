@@ -5,7 +5,7 @@ An error in production is supposed to travel a closed circuit:
 ```text
   CAPTURE          DIAGNOSE           REPAIR          CLOSE
   admin_events  →  rca_analysis  →  a verified PR  →  admin_error_resolutions
-  (the app)        (cloud)          (local agent)     (log-retention cron)
+  (the app)        (vercel cron)    (local agent)     (log-retention cron)
                        │                  │                    │
                        └──────────────────┴────────────────────┘
                        heartbeats → background_job_logs → /admin/jobs
@@ -13,13 +13,30 @@ An error in production is supposed to travel a closed circuit:
 
 Three runners, in three different places:
 
-**Diagnose** — heartbeat `selfheal-triage`. An Anthropic-hosted cloud
-routine, daily 09:17 UTC. Follows [`triage-contract.md`](triage-contract.md).
-Reads **three** sources, not one: `admin_events`, plus the Sentry / Supabase /
-Vercel signals the reliability collector already correlates into
+**Diagnose** — heartbeat `selfheal-triage`. A Vercel cron
+(`src/app/api/cron/selfheal-triage/route.ts`), four times a day
+(`vercel.json`'s `17 3,9,15,21 * * *`). Follows
+[`triage-contract.md`](triage-contract.md). Reads **three** sources, not one:
+`admin_events`, plus the Sentry / Supabase / Vercel signals the reliability
+collector already correlates into
 `background_job_logs.reliability-snapshot`. `admin_events` contains only what
 this app chose to log about itself — a cron dying on a permission grant never
 writes a row there.
+>
+> **Moved off an Anthropic-hosted cloud routine on 2026-09-02.** That
+> environment carried no `SUPABASE_SERVICE_ROLE_KEY`, so every `npm run
+> triage` invocation inside it failed before reading a single row — every
+> "completed" `selfheal-triage` heartbeat that ever landed before this move
+> was a human substituting via MCP or a manual run, never the routine
+> actually doing its job. This Vercel deployment already carries
+> `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY` and `CRON_SECRET`, so
+> Diagnose runs autonomously here instead. The owner should disable/delete
+> the old cloud routine's scheduled-task configuration — it is retired, not a
+> fallback. `npm run triage` (and `--apply`) remain the full-contract operator
+> fallback: the only path that can carry a human's `git merge-base
+> --is-ancestor` judgement for a SHA-bearing "ALREADY FIXED" claim, which the
+> automated cron cannot perform (no git checkout in a Vercel function) — see
+> `triage-contract.md` STEP 4.
 
 **Repair** — heartbeat `selfheal-repair`. A launchd agent on the owner's Mac
 (`~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`), daily 06:40

@@ -140,6 +140,31 @@ describe('rule 1: regressed', () => {
     expect(v.state).toBe('regressed');
     expect(v.state).not.toBe('resolved');
   });
+
+  // Catalogued defect (e): a fingerprint whose latest analysis already found
+  // NOT A DEFECT is expected noise when it recurs, not a new regression — it
+  // must not alarm an operator with the same treatment as a fault that
+  // regressed for real.
+  it("regressed AND the latest analysis says not-a-defect -> 'expected-recurrence', not 'regressed'", () => {
+    const v = deriveLifecycle(
+      baseInput({
+        regressed: true,
+        resolution: makeResolution({ resolvedAt: iso(6 * DAY) }),
+        analysis: makeAnalysis('not-a-defect'),
+        lastSeen: iso(14 * MINUTE),
+      }),
+    );
+    expect(v.state).toBe('expected-recurrence');
+    expect(v.state).not.toBe('regressed');
+    expect(v.because.length).toBeGreaterThan(0);
+  });
+
+  it('regressed with any OTHER analysis category (or none) still reports regressed', () => {
+    for (const analysis of [null, makeAnalysis('fix-here'), makeAnalysis('already-fixed'), makeAnalysis('needs-more-evidence'), makeAnalysis('uncategorized')]) {
+      const v = deriveLifecycle(baseInput({ regressed: true, analysis }));
+      expect(v.state).toBe('regressed');
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

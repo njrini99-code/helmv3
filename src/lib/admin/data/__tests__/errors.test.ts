@@ -76,7 +76,7 @@ describe('describeErrorsFilters', () => {
 
 describe('buildFilteredIncidentsReport', () => {
   const item = (over: Partial<TriageItem>): TriageItem => ({
-    errorCode: null, fingerprint: 'fp-1', hasRca: false, description: 'savePartialRound failed',
+    errorCode: null, fingerprint: 'fp-1', hasRca: false, isFixture: false, description: 'savePartialRound failed',
     key: 'app:fp-1', origin: 'app', title: 'savePartialRound failed', severity: 'error',
     sport: 'golf', occurrences: 1, affectedUsers: 1,
     firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T00:00:00Z',

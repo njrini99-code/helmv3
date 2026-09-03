@@ -55,12 +55,14 @@ export const dynamic = 'force-dynamic';
 const SOURCE_TONE: Record<SourceStatus, FwStatusTone> = {
   ok: 'success',
   partial: 'warning',
+  degraded: 'warning',
   blind: 'danger',
 };
 
 const SOURCE_LABEL: Record<SourceStatus, string> = {
   ok: 'reading',
   partial: 'truncated',
+  degraded: 'degraded',
   blind: 'blind',
 };
 

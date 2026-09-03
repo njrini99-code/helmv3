@@ -19,8 +19,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { logServerError } from '@/lib/server-error-logger';
-import { upsertInsight, attachDrills, GATED_OUT } from '../insights/upsert';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { upsertInsight, attachDrills, GATED_OUT, isEvidenceRefusal } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
 import {
   loadStandingForInsightEvidence,
@@ -36,9 +36,14 @@ type Supabase = SupabaseClient<Database>;
 
 const WORST_HOLES_WINDOW_DAYS = 365;
 // This evidence is emitted as one course-level insight. Its sample count is
-// the sum of the selected holes, so a single four-round hole used to reach the
-// shared writer below with sample_n=4. The writer correctly refused it, but
-// the caller reported that expected quality gate as a production error.
+// the sum of the selected holes, so a below-floor eligible hole can still
+// reach the shared writer below with sample_n < 5. The writer correctly
+// refuses it (upsertInsight throws InsightEvidenceRefusal — see
+// docs/architecture/coachhelm-evidence-contract.md); the catch block below
+// routes that refusal through isEvidenceRefusal() so it logs as a quiet,
+// non-paging event instead of a production error (fixed after incident
+// ea766422, "worst_holes upsert failed" — this comment documented the gap
+// for a time before the catch block was actually updated to close it).
 const WORST_HOLES_MIN_ROUNDS = 5;
 const WORST_HOLES_MIN_AVG_OVER_PAR = 0.8;
 const WORST_HOLES_TOP_N = 3;
@@ -417,16 +422,39 @@ export async function generateWorstHolesInsights(playerId: string): Promise<void
         await attachDrills(supabase, insightId, 'course_management', drillTags);
       }
     } catch (err) {
-      await logServerError('course-management.worst_holes.upsert_failed', {
-        action: 'generateWorstHolesInsights',
-        featureArea: 'coachhelm/v2/mining/course-management',
-        source: 'background_job',
-        playerId,
-        metadata: {
-          course_id: courseId,
-          error: describeError(err),
-        },
-      });
+      // Rule 1's sample-floor refusal is control flow BY DESIGN (see the
+      // header comment above and docs/architecture/coachhelm-evidence-contract.md)
+      // — upsertInsight() throws InsightEvidenceRefusal when evidence.sample_n
+      // is below the platform floor, meaning "don't publish yet", not an infra
+      // failure. Incident ea766422 ("worst_holes upsert failed") paged on
+      // exactly this: the refusal reached logServerError unconditionally and
+      // read as a production error. Route it the same way
+      // v3/composite/synthesis.ts does — a quiet, non-paging event.
+      if (isEvidenceRefusal(err)) {
+        await logServerEvent(
+          `course-management.worst_holes.evidence_refusal: ${err.message}`,
+          {
+            action: 'generateWorstHolesInsights',
+            featureArea: 'coachhelm/v2/mining/course-management',
+            source: 'background_job',
+            skipSentry: true,
+            playerId,
+            metadata: { course_id: courseId },
+          },
+          'warning',
+        );
+      } else {
+        await logServerError('course-management.worst_holes.upsert_failed', {
+          action: 'generateWorstHolesInsights',
+          featureArea: 'coachhelm/v2/mining/course-management',
+          source: 'background_job',
+          playerId,
+          metadata: {
+            course_id: courseId,
+            error: describeError(err),
+          },
+        });
+      }
     }
   }
 }
@@ -594,13 +622,30 @@ export async function generateWarmupHoleInsight(playerId: string): Promise<void>
       await attachDrills(supabase, insightId, 'course_management', drillTags);
     }
   } catch (err) {
-    await logServerError('course-management.warmup.upsert_failed', {
-      action: 'generateWarmupHoleInsight',
-      featureArea: 'coachhelm/v2/mining/course-management',
-      source: 'background_job',
-      playerId,
-      metadata: { error: describeError(err) },
-    });
+    // Same evidence-refusal-vs-infra-failure split as generateWorstHolesInsights
+    // above (incident ea766422) — an InsightEvidenceRefusal is the sample-floor
+    // gate working as designed, not an error worth paging on.
+    if (isEvidenceRefusal(err)) {
+      await logServerEvent(
+        `course-management.warmup.evidence_refusal: ${err.message}`,
+        {
+          action: 'generateWarmupHoleInsight',
+          featureArea: 'coachhelm/v2/mining/course-management',
+          source: 'background_job',
+          skipSentry: true,
+          playerId,
+        },
+        'warning',
+      );
+    } else {
+      await logServerError('course-management.warmup.upsert_failed', {
+        action: 'generateWarmupHoleInsight',
+        featureArea: 'coachhelm/v2/mining/course-management',
+        source: 'background_job',
+        playerId,
+        metadata: { error: describeError(err) },
+      });
+    }
   }
 }
 

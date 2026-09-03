@@ -9,14 +9,18 @@
  * doc + task counts. Expanding lazily loads the full detail via the VERBATIM
  * `getAnnouncementDetail` action and reveals the full body, attachments
  * (opened with `openExternalUrl`), tasks with per-player completion,
- * acknowledgements list with avatars + progress, and the delete action (behind
- * a Fairway confirm modal — reuses `deleteAnnouncement` verbatim).
+ * acknowledgements list with avatars + progress, and Edit + Delete actions.
+ * Edit opens the shared `AnnouncementFormSheet` (mode="edit") to change
+ * title/message/priority/acknowledgement in place via `updateAnnouncement` —
+ * recipients, attachments, and tasks stay fixed (see the note on
+ * updateAnnouncement in announcements.ts). Delete stays behind a Fairway
+ * confirm modal, reusing `deleteAnnouncement` verbatim.
  *
  * Urgency low/normal/high/urgent → FwStatusTone neutral/info/warning/danger.
  * Honest emptiness: em-dash, never fabricated denominators. Tokens ONLY.
  * ========================================================================== */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -34,6 +38,7 @@ import {
 import {
   IconChevronDown,
   IconTrash,
+  IconEdit,
   IconFile,
   IconCheck,
   IconCheckCircle2,
@@ -44,6 +49,11 @@ import {
 import { deleteAnnouncement, getAnnouncementDetail } from '@/app/golf/actions/announcements';
 import { openExternalUrl } from '@/lib/utils/capacitor';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
+import {
+  AnnouncementFormSheet,
+  type AnnouncementEditValues,
+  type Urgency,
+} from './FairwayCreateAnnouncement';
 
 /* ─── Urgency → tone + label ───────────────────────────────────────────────── */
 const URGENCY: Record<string, { tone: FwStatusTone; label: string }> = {
@@ -55,6 +65,14 @@ const URGENCY: Record<string, { tone: FwStatusTone; label: string }> = {
 
 function urgencyFor(u: string | null | undefined) {
   return URGENCY[u || 'normal'] ?? URGENCY.normal!;
+}
+
+/** Narrows the row's `urgency: string | null` down to the strict Urgency
+ *  union the edit form's RadioGroup needs, matching urgencyFor's own
+ *  "unknown/missing → normal" fallback so both stay in agreement. */
+const VALID_URGENCIES: readonly Urgency[] = ['low', 'normal', 'high', 'urgent'];
+function toUrgency(u: string | null | undefined): Urgency {
+  return (VALID_URGENCIES as readonly string[]).includes(u ?? '') ? (u as Urgency) : 'normal';
 }
 
 /* ─── Relative time (deferred to client) ───────────────────────────────────── */
@@ -103,14 +121,54 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
   const [detailError, setDetailError] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   // Defer time-dependent values to client (avoid hydration mismatch).
   const [nowTs, setNowTs] = useState(0);
   useEffect(() => setNowTs(Date.now()), []);
 
-  const urg = urgencyFor(ann.urgency);
+  // Optimistic edit overlay: `ann` is a prop the parent list owns, so a
+  // successful edit can't mutate it directly. `override` holds the just-saved
+  // values so the collapsed header updates immediately, and is cleared the
+  // moment `ann` itself carries those values — i.e. once the edit's
+  // router.refresh() (fired from AnnouncementFormSheet) delivers fresh server
+  // data back down through the list.
+  const [override, setOverride] = useState<AnnouncementEditValues | null>(null);
+  useEffect(() => {
+    setOverride(null);
+  }, [ann.title, ann.body, ann.urgency, ann.requires_acknowledgement]);
+
+  const display = {
+    title: override?.title ?? ann.title,
+    body: override?.body ?? (ann.body ?? ''),
+    urgency: override?.urgency ?? toUrgency(ann.urgency),
+    requiresAcknowledgement: override?.requiresAcknowledgement ?? !!ann.requires_acknowledgement,
+  };
+  // Stable reference for AnnouncementFormSheet's prefill effect — an inline
+  // object literal would change identity on every render and could stomp an
+  // in-progress edit each time this card re-renders while the sheet is open.
+  const editInitialValues = useMemo<AnnouncementEditValues>(
+    () => ({
+      title: display.title,
+      body: display.body,
+      urgency: display.urgency,
+      requiresAcknowledgement: display.requiresAcknowledgement,
+    }),
+    [display.title, display.body, display.urgency, display.requiresAcknowledgement],
+  );
+
+  const urg = urgencyFor(display.urgency);
   const isRecent = nowTs > 0 && ann.published_at && nowTs - new Date(ann.published_at).getTime() < 24 * 3600000;
   const ackComplete = ann.total_recipients > 0 && ann.acknowledged_count >= ann.total_recipients;
+
+  async function loadDetail() {
+    setLoadingDetail(true);
+    setDetailError(false);
+    const result = await getAnnouncementDetail(ann.id);
+    if (result.success && result.data) setDetail(result.data);
+    else setDetailError(true);
+    setLoadingDetail(false);
+  }
 
   async function handleExpand() {
     if (expanded) {
@@ -118,14 +176,17 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
       return;
     }
     setExpanded(true);
-    if (!detail) {
-      setLoadingDetail(true);
-      setDetailError(false);
-      const result = await getAnnouncementDetail(ann.id);
-      if (result.success && result.data) setDetail(result.data);
-      else setDetailError(true);
-      setLoadingDetail(false);
-    }
+    if (!detail) await loadDetail();
+  }
+
+  // Fires after a successful save from the edit sheet. Patches the collapsed
+  // header instantly via `override`, and — only if the card is already
+  // expanded, since collapsed cards fetch fresh on next expand anyway —
+  // re-fetches the detail so the full body / acknowledgement gate reflect the
+  // edit without waiting on the sheet's own router.refresh() to land.
+  async function handleEditSaved(values: AnnouncementEditValues) {
+    setOverride(values);
+    if (expanded) await loadDetail();
   }
 
   async function handleDelete() {
@@ -167,12 +228,12 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
               <span className="h-2 w-2 flex-shrink-0 rounded-full bg-accent-500" aria-hidden />
             )}
             <h3 className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
-              {ann.title}
+              {display.title}
             </h3>
           </div>
 
           {/* Body preview */}
-          <p className="mb-3 line-clamp-1 font-fw-sans text-body-sm text-text-tertiary">{ann.body}</p>
+          <p className="mb-3 line-clamp-1 font-fw-sans text-body-sm text-text-tertiary">{display.body}</p>
 
           {/* Meta row */}
           <div className="flex flex-wrap items-center gap-2 font-fw-sans text-caption text-text-tertiary">
@@ -203,7 +264,7 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
                 honest omission legible instead of looking arbitrary. Honest:
                 only a real denominator, else an em-dash (P273), matching the
                 task counter. */}
-            {ann.requires_acknowledgement && (
+            {display.requiresAcknowledgement && (
               <span
                 className="inline-flex items-center gap-1.5"
                 title="Acknowledgement progress"
@@ -274,7 +335,7 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
         <div
           id={`announcement-detail-${ann.id}`}
           role="region"
-          aria-label={`Details for ${ann.title}`}
+          aria-label={`Details for ${display.title}`}
           className="border-t border-border-subtle px-5 pb-5 pt-4"
         >
           {loadingDetail ? (
@@ -459,8 +520,16 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
                 </div>
               )}
 
-              {/* Delete */}
-              <div className="border-t border-border-subtle pt-3">
+              {/* Edit + Delete */}
+              <div className="flex items-center gap-2 border-t border-border-subtle pt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<IconEdit size={14} />}
+                  onClick={() => setEditOpen(true)}
+                >
+                  Edit
+                </Button>
                 <Button
                   variant="danger"
                   size="sm"
@@ -474,6 +543,18 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
           )}
         </div>
       )}
+
+      {/* ── Edit sheet — title/message/priority/acknowledgement only; see the
+          note on updateAnnouncement in announcements.ts for why recipients,
+          attachments, and tasks aren't editable here. ─────────────────────── */}
+      <AnnouncementFormSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        mode="edit"
+        announcementId={ann.id}
+        initialValues={editInitialValues}
+        onSaved={handleEditSaved}
+      />
 
       {/* ── Delete confirm ─────────────────────────────────────────────────── */}
       <ModalShell

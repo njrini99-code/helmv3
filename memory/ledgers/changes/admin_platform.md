@@ -1,5 +1,336 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Correction to (e) and (h): a critical expected-recurrence must still page, and a fixture must still be visible
+
+Two follow-up fixes to the same session's own defect-(e) and defect-(h)
+commits, found by a stronger-model review before the branch was handed off —
+recorded as their own entries rather than folded silently into the originals,
+since both change behaviour the first pass shipped.
+
+- **(e) — `attention.ts`'s `UNRESOLVED_STATES` now includes
+  `'expected-recurrence'`.** The first pass left it out (matching
+  `'not-a-defect'`, which it is NOT the same as). Consequence: a CRITICAL,
+  still-unresolved fault whose latest analysis said NOT A DEFECT produced NO
+  attention row at all — rule 1 (regression) no longer matched by design,
+  and rule 2 (critical) requires `UNRESOLVED_STATES.has(state)`, which it
+  didn't. An LLM-authored `suggestedFix` string was able to silence a
+  critical fault outright, not merely soften the regression-specific alarm
+  it was wrong about. Fixed by including the state in `UNRESOLVED_STATES`
+  while keeping it OUT of `NEEDS_ATTENTION_STATES` — the regression alarm
+  stays gone, but rule 2 can still fire for one.
+- **(h) — `mergeTriage` no longer forces `actionable: false` for a fixture;
+  the exclusion moved to each count site.** The first pass forced it at the
+  source, which removed the row from `matchesKind`'s default view entirely
+  (`kind === undefined -> incident.actionable`) — the fixture vanished into
+  "N held back" and the FIXTURE badge nobody would ever see it on became the
+  literal opposite of the task's ask ("label them... in the incident feed").
+  `actionable` is now left as `classifyIncident`'s real verdict; the
+  exclusion from "the actionable COUNT" happens explicitly, keyed on
+  `isFixture`, at `lens.ts`'s `actionable` lens, `truth-strip.ts`'s
+  `actionable` cell, `errors/page.tsx`'s `shownActionable`, and
+  `incident-feed.ts`'s `actionableGroups` (the last one because
+  `overview.ts` and `errors/page.tsx` both render that exact field and would
+  otherwise disagree).
+- **Verified**: new failing-first case in `attention.test.ts` (critical
+  expected-recurrence produces a `critical` row); a new case in
+  `truth-strip.test.ts` and `lens.test.ts` pinning the fixture exclusion at
+  each site; a new case in `incident-feed.test.ts` (verified red against a
+  temporarily-reverted fix, then restored); `correlate.test.ts` and
+  `triage.test.ts`'s fixture cases updated to assert `actionable` is left
+  untouched rather than forced false. Full ripple:
+  `src/lib/admin src/lib/reliability src/app/admin` 1748/1748 passing.
+  `npm run typecheck`, `lint`, `lint:ratchet`, `audit:supabase-errors` (1039
+  baseline, no regression) all green, and `npm run build` run once (network
+  sandbox disabled) confirming a clean webpack compile + TypeScript pass —
+  see `memory/ledgers/tests/admin_platform.md` for what it did and did not
+  prove.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (h) — QA fixture rounds get a FIXTURE badge and drop out of the actionable count
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (h) — the
+  last of the six-defect sweep).
+- **New `src/lib/admin/qa-fixture-rounds.ts`**: `QA_FIXTURE_ROUND_IDS`, a
+  literal copy of the four ids
+  `supabase/migrations/20260901120000_integrity_completed_round_zero_scored_holes.sql`
+  names as seeded fixtures (owner decision 2026-09-02: KEPT), plus
+  `isQaFixtureRoundId`. Copied rather than read at runtime — nothing in this
+  code path can read a `.sql` file — so `qa-fixture-rounds.test.ts` instead
+  reads the migration itself and asserts the constant still matches it
+  exactly, closing the drift gap a hand-maintained copy would otherwise open.
+- **New `extractRoundId` in `incident-report.ts`**: `metadata.roundId`, a
+  TOP-LEVEL key (same shape as the existing `extractRoute`/`extractActionName`
+  — `normalizeContext` in `server-error-logger.ts` writes it from
+  `ObservedActionContext.roundId`).
+- **`mergeTriage` (`triage.ts`) sets `TriageItem.isFixture` and forces
+  `actionable: false` at the source.** Any row in an app-origin bucket naming
+  a QA fixture round makes the whole grouped item a fixture — same
+  "any-occurrence-counts" shape `regressed` already uses — and its
+  `actionable` is forced `false` regardless of what `classifyIncident`
+  decided from the message/severity text alone. Forcing it HERE, once,
+  rather than adding a parallel exclusion at every downstream consumer, is
+  what keeps a fixture out of every actionable count that already gates on
+  `.actionable`: the Incidents tab's `shownActionable`, the default-kind
+  facet (`matchesKind`), and the Truth Strip's `actionable` cell all needed
+  NO additional change. Sentry-origin items are always `isFixture: false` — a
+  Sentry issue carries no round-id metadata to match against.
+- **`correlate.ts` carries `isFixture` onto `UnifiedIncident`** (new field,
+  `bucket.appItems.some(i => i.isFixture)`) purely so the card can explain
+  WHY — the exclusion itself already happened upstream.
+  `UnifiedIncidentCard.tsx` renders a neutral-tone FIXTURE chip, SECOND
+  priority (right after the lifecycle chip, ahead of stalled/corroboration/
+  RCA/PR/blind-source) — a fact about the data outranks everything derived
+  from it, including outranking the blind-source chip under the 5-chip cap.
+- **Verified**: `qa-fixture-rounds.test.ts` (3/3, including the drift guard
+  against the live migration file); a new `extractRoundId` case in
+  `incident-report.test.ts` (failing-first); three new `mergeTriage` cases in
+  `triage.test.ts` pinning `isFixture`/forced `actionable: false`
+  (failing-first — all three were red against the pre-fix code); three new
+  `correlateIncidents` cases in `correlate.test.ts`; three new
+  `UnifiedIncidentCard` cases in `unified-incident-card.test.tsx` (chip
+  renders, does not render for an ordinary incident, and outranks the
+  blind-source chip under the cap). Full ripple:
+  `src/lib/admin src/lib/reliability src/app/admin` 1745/1745 passing
+  (six pre-existing `TriageItem`/`UnifiedIncident` test fixtures across five
+  files needed the new required field added — a compile-time gap TS itself
+  surfaced, all fixed). `npm run typecheck`, `lint`, `lint:ratchet`,
+  `audit:supabase-errors` (1039 baseline, no regression) all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (e) — a fingerprint the analysis already ruled NOT A DEFECT stops re-triggering as a regression
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (e) of the
+  six-defect sweep).
+- **New lifecycle state `'expected-recurrence'`, and a new rule-1 branch in
+  `deriveLifecycle` (`src/lib/admin/incidents/lifecycle.ts`).** A fault
+  recurring after a prior human resolution used to ALWAYS verdict
+  `'regressed'` — the single loudest signal this system produces. Now, when
+  the latest RCA `analysis.category === 'not-a-defect'` (the analysis already
+  explained the recurrence — e.g. an access denial that is supposed to keep
+  firing), it verdicts `'expected-recurrence'` instead: neutral tone, not
+  `danger`; excluded from `NEEDS_ATTENTION_STATES`; excluded from the
+  `actionable` lens (`lens.ts`) and the Truth Strip's `actionable` count
+  (`truth-strip.ts`), same treatment as the pre-existing `'not-a-defect'`
+  state; `selfheal-flow.ts` places it `offLoop('done', …)`, same as
+  `'not-a-defect'`. Deliberately a SEPARATE state from `'not-a-defect'`
+  (the classifier's `!actionable` verdict, which never had a resolution to
+  regress from) — this keeps "recurred after being fixed" countable apart
+  from "was never a defect".
+- **A new `expected-recurrence` lens** (`INCIDENT_LENSES`,
+  `INCIDENT_LENS_LABEL`, `INCIDENT_LENS_DESCRIPTION` in `types.ts`) counts
+  these separately from `regressions`. The `regressions` lens predicate
+  itself is UNCHANGED (`state === 'regressed'`) — no exclusion clause needed,
+  because the underlying data no longer produces `'regressed'` for these
+  incidents. `countLenses`/`IncidentLensRail` both derive from the
+  `INCIDENT_LENSES` array, so the new lens renders and counts with no other
+  code change.
+- **Verified**: new failing-first cases in `lifecycle.test.ts` (the
+  `not-a-defect` category case was red against the pre-fix code; a companion
+  case pins that every OTHER category — or none — still verdicts
+  `'regressed'`), a new case in `lens.test.ts` pinning the lens split and the
+  `actionable`-lens exclusion. Full ripple check across
+  `src/lib/admin src/lib/reliability src/app/admin`: 1731/1731. `npm run
+  typecheck` surfaced the three sites TS's exhaustiveness checking forces on
+  a new union member (`lens.ts`'s and `selfheal-flow.ts`'s non-exhaustive
+  switches, and one test's inline `IncidentLensCounts` literal) — all three
+  fixed. `npm run lint`, `lint:ratchet`, `audit:supabase-errors` (1039
+  baseline, no regression) all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (d) — Sentry-origin incidents get an advisory feature tag instead of grouping as unknown
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (d) of the
+  six-defect sweep).
+- **`mergeTriage` (`src/lib/admin/data/triage.ts`) falls back to a per-issue
+  advisory feature tag when the batch-level `sentryTagHint` is absent.** Every
+  un-scoped Sentry issue used to carry `feature: null` unconditionally, so the
+  feature lens on `/admin/errors` (`featureBreakdown` in `errors/page.tsx`)
+  grouped all of them under the empty-string "unknown" bucket. It now applies
+  `resolveFeatureId(issue.culprit)` per issue — `culprit` is the only
+  per-issue location field `SentryIssue` returns; there is no
+  transaction/url. The batch hint still wins outright when present (honest,
+  Sentry-tag-scoped attribution beats a route-string guess); `feature: null`
+  still results when the culprit doesn't map to anything, unchanged. The same
+  resolved value now also feeds `buildIncidentReport`'s `featureKey` so the
+  Copy-for-Claude report and the row's rendered tag agree.
+- **`resolveFeatureId` moved from `collect.ts` to `normalize.ts`, exported.**
+  It was a private function in `collect.ts` used only for the Reliability
+  tab's own correlation pass; it is pure (no I/O) and belongs beside the
+  module's other pure logic so `triage.ts` can reuse the SAME map rather than
+  writing a second copy that eventually drifts. `collect.ts` now imports it
+  back. Its doc comment states explicitly that three of the six ids it
+  returns (`golf_round_lifecycle`, `coachhelm_ai`, `admin_platform`) are NOT
+  `FEATURE_REGISTRY` keys — a pre-existing mismatch (the Reliability tab's own
+  `CorrelatedSignal.featureId` has used this function since the collector
+  shipped) left as-is rather than silently reinterpreted; an unregistered tag
+  still renders, unlinked, in `UnifiedIncidentCard` rather than falling into
+  "unknown".
+- **Verified**: renamed the now-overbroad sport/feature test in
+  `triage.test.ts` (it previously implied NEITHER field had a fallback; only
+  sport doesn't) and added 3 new cases, one written failing first (per-issue
+  culprit fallback fires; batch hint still wins; a non-mapping culprit stays
+  null) — `npx vitest run src/lib/admin/data/__tests__/triage.test.ts`
+  (20/20). Full ripple check: `npx vitest run src/lib/reliability src/lib/admin`
+  (1312/1312, unchanged pass count). `npm run typecheck`, `lint`,
+  `lint:ratchet` all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (b) — the capture-quality panel stops penalising cron rows for lacking a user, and observed-action user attribution is pinned
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (b) of the
+  six-defect sweep).
+- **`analyzeCaptureQuality` (`src/lib/admin/data/capture-quality.ts`) gives the
+  'user' field its own, smaller denominator.** A `source: 'cron'` row
+  (`job-log.ts`'s `Cron failed: <jobType>`, including the reliability
+  collector's own) or `source: 'system'` row (`deploy-marker.ts`) is a machine
+  invocation — it has no session to resolve a user from, so counting it
+  against 'user' coverage blamed a call site for a gap it could never close.
+  New `SELF_REFERENTIAL_SOURCES` set + `isSelfReferentialRow`; the 'user'
+  field's `total`/`present`/`ratio` are computed over the user-eligible
+  subset, every other field (and `report.rows`, and `weakestSources`' row
+  counts) is unchanged — a cron failure legitimately carries error-code,
+  stack, route, feature and action, and stays eligible to rank as a weakest
+  emitter on those. `rca_analysis` rows need no matching filter: they are
+  already excluded upstream by `queryAppErrorEvents`'s `event_type='error'`
+  clause, so a second check here would be a guard that can never fire — not
+  added.
+- **Observed-action user attribution ("second half" of this defect): verified
+  correct, not a bug.** `withAdminObserved` (`src/lib/admin/observed-action.ts`)
+  and its three consumers — `withGolfAction`, `withBaseballAction`,
+  `withLiftingAction` — already resolve `userId`/`userEmail` from the session
+  before calling `observeActionSoftFailure`/`logServerException`, and
+  `observe-action-result.ts` forwards them unchanged into the logger context.
+  No code change was needed; a new test pins the soft-failure path (only the
+  thrown-error path had coverage before) so a future refactor can't silently
+  drop it.
+- **Verified**: new failing-first cases in `capture-quality.test.ts` (11/11
+  passing — 3 new cases were red against the pre-fix code); a new pinning
+  case in `observe-action-result.test.ts` (30/30, passed immediately — see
+  above); `npm run typecheck`, `lint`, `lint:ratchet`, `audit:supabase-errors`
+  all green on this change alone.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (f) — a Sentry 429 gets one honoured retry before it reads as blind
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (f) of the
+  six-defect sweep).
+- **`fetchSentryIssues` no longer gives up on the first 429.** On a 429 it
+  waits out `Retry-After` (parsed, clamped to 30s max, a fixed 1s fallback
+  when the header is missing) and retries the same request exactly once.
+  Only if that retry ALSO fails does it give up — any other status (500,
+  403, ...) still fails immediately, since there's no reason to believe a
+  second attempt changes those.
+- **A rate limit that survives the retry is `degraded`, not `blind`.**
+  `AdminFetchResult` gained an optional `degraded?: boolean` (`fetch-result.ts`,
+  `failed()`); `SourceStatus` in `src/lib/reliability/types.ts` gained a
+  `'degraded'` member, ranked in `worstStatus` between `partial` and `blind`
+  (worse than partial, better than blind — a rate limit usually clears on
+  its own). `statusFromFetch` (`sources.ts`) maps a degraded envelope to
+  `{status: 'degraded', reason: 'rate limited'}`. `readingCount`
+  (`reliability-view.ts`) excludes degraded arms from "arms that returned
+  data", same as blind. `collectVercel`... n/a here; `collect.ts`'s job-log
+  `error_message` now names degraded arms alongside blind ones without
+  flipping the run's `completed`/`failed` status for a degraded-only run.
+- **Deliberately NOT widened**: the Incidents tab's separate `SourceHealth`
+  union (`src/lib/admin/incidents/types.ts`) has no `'degraded'` member. A
+  degraded reliability arm folds into its existing `'blind'` there via
+  `readReliability()`'s ternary in `fetch.ts` — the conservative direction,
+  and consistent with "no all-clear while a required source is blind". A
+  full second-union widening (8 files: `types.ts`, `fetch.ts`, `correlate.ts`,
+  `sources.ts`, `reconciliation.ts`, `triage-engine.ts`,
+  `SourceCoverage.tsx`, `EvidenceWall.tsx`) was assessed and set aside as
+  disproportionate to this fix; the Reliability tab is where the fact
+  ("Sentry reads ... mark the source degraded") is anchored and is now
+  correct end to end.
+- **Verified**: new failing-first retry/degraded cases in
+  `src/lib/admin/__tests__/sentry-api.test.ts` (43/43 passing — a test-only
+  `__setSentryRetryDelayForTests` stub keeps the 429 tests instant instead of
+  actually pausing 30s), new `worstStatus` ranking cases in
+  `normalize.test.ts`; `npx vitest run src/lib/reliability/__tests__/
+  src/lib/admin/__tests__/sentry-api.test.ts src/app/admin/reliability`
+  (139/139); `npm run typecheck`, `lint`, `lint:ratchet`,
+  `audit:supabase-errors` all green.
+
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (c) — canceled preview deploys stop reading as a build problem
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (c) of a
+  six-defect catalogued sweep; each defect lands as its own commit).
+- **`collectVercel` (`src/lib/reliability/sources.ts`) no longer rates every
+  `CANCELED` deployment `warning`.** A canceled `preview` deploy (or one with
+  no recorded `target`) is routine — a push superseded by a later push, or a
+  manual cancel — and now reports `info`. A canceled `production` deployment
+  still reports `warning`: there the intended release never shipped, which is
+  exactly the build-health signal this arm exists to carry. `ERROR` deploys
+  are unaffected (`error` at any target).
+- New helper `vercelDeploySeverity(state, target)` is the single place this
+  is decided; `src/lib/reliability/__tests__/sources.test.ts` pins preview,
+  null-target, and production CANCELED cases plus the untouched ERROR case.
+- **Verified**: `npx vitest run src/lib/reliability/__tests__/sources.test.ts`
+  (25/25 passing, new cases written failing first), `npm run typecheck`,
+  `npm run lint`, `npm run lint:ratchet`, `npm run audit:supabase-errors` all
+  green on this change alone.
+## 2026-09-02 — Diagnose moves off the Anthropic-hosted cloud routine onto a Vercel cron
+
+- Branch: `agent/selfheal-diagnose-cron`.
+- **Why**: the Diagnose stage's cloud-routine environment carried no
+  `SUPABASE_SERVICE_ROLE_KEY`, so `npm run triage` failed before reading a
+  row every time it actually ran there — every `selfheal-triage` heartbeat
+  that ever read `completed` was a human substituting via MCP or a manual
+  run. This deployment already carries `SUPABASE_SERVICE_ROLE_KEY`,
+  `ANTHROPIC_API_KEY` and `CRON_SECRET`, so Diagnose runs here instead.
+- **Extracted, no behaviour change**: `collectAdminEvents`,
+  `collectReliabilitySignals`, `collectRelAnalyses` and `applyPlan` moved out
+  of `scripts/run-triage.ts` into `src/lib/admin/triage-collect.ts` /
+  `triage-apply.ts`; the CLI is now a thin wrapper over both, byte-identical
+  output. `runRcaForFingerprint` / `persistRcaAnalysis` moved out of
+  `src/app/admin/actions/analyze-error.ts` into `src/lib/admin/rca-run.ts`
+  (server-only, no `requireSuperAdmin` gate — the action keeps its own gate
+  and delegates), which also gains `runRcaForReliabilitySignal` for
+  `rel:<signature>` groups with no `admin_events` rows to analyse.
+- **One real behaviour change while extracting**:
+  `collectReliabilitySignals` used to read only the NEWEST
+  `reliability-snapshot` row (`.limit(1)`). It now reads every row inside the
+  triage window and unions their signals (dedupe by correlation signature,
+  count = MAX across rows never sum, firstSeen/lastSeen widened,
+  `sourceHealth` still taken from the newest row only) — a Sentry/Vercel/
+  Supabase signal that fired early in a 72h window and quieted down before
+  the most recent 3-hourly snapshot was previously invisible to triage.
+- **New**: `src/app/api/cron/selfheal-triage/route.ts`, four times a day
+  (`vercel.json`'s `17 3,9,15,21 * * *`, 6h cadence; `09:17 UTC` sits 83
+  minutes before Repair's `10:40 UTC`). Applies the closeable set exactly as
+  `--apply` does, then analyses the queue up to `SELFHEAL_TRIAGE_MAX_ANALYSES`
+  (default 8) groups, persists per-member with deterministic
+  `relatedFingerprints`, and resolves only `not-a-defect` and the SHA-free
+  half of `already-fixed` (a Vercel function has no git checkout to verify a
+  named commit's ancestry, so a SHA-bearing claim is left analysed-but-open
+  for `auto-resolve.ts`'s nightly Rule A or a human run). A provider-fault
+  guard re-classifies each member's own message text
+  (`classifyProviderFault`), not just a stored `errorCode` — three of the
+  four production "Inngest signature" fingerprints carry no persisted
+  `errorCode` at all. The heartbeat is written LAST, directly (not through
+  `recordJobRun`, which drops nested fields), under the same `job_type` both
+  `CRON_REGISTRY` and `SELFHEAL_STAGES` already used; an unregistered,
+  separate `recordJobRun` call wraps the handler purely for crash-safety.
+  `status='failed'` only on a genuine collector read failure or an analyzer
+  error — a blind arm inside an otherwise-readable snapshot reports
+  `completed` with `degraded: true`, because Repair's STEP 0b refuses to run
+  at all on a `failed` Diagnose row and a single flaky Sentry poll should
+  never silently disable Repair.
+- **Registries updated**: `SELFHEAL_STAGES.triage.runner` → `'vercel-cron'`,
+  `cadenceMinutes` → 360 (contract path unchanged); `CRON_REGISTRY` gains the
+  `selfheal-triage` entry; the contract test's `cronScheduleToMinutes` helper
+  (`cron-registry.test.ts`) extended to parse a comma-separated, evenly-spaced
+  hour list — it threw on `vercel.json`'s new schedule string otherwise.
+- **Docs**: `docs/ai-system/selfheal/README.md` and `triage-contract.md`
+  record the new runner and the SHA-ancestry capability gap; the cloud
+  routine is retired, `npm run triage` stays the full-contract fallback.
+- **Verified**: `npm run typecheck`, `npm run lint` (whole repo, both clean);
+  targeted `vitest run` over `src/lib/admin/__tests__`,
+  `src/app/api/cron/**/__tests__`, `src/app/admin/actions/__tests__`, and
+  `scripts` (1172 tests, all passing, including the pre-existing
+  `analyze-error.test.ts` unmodified against the extraction). New tests cover
+  the reliability-collector union fix (two-snapshot fixtures), the extracted
+  analyzer (regression-tested against the same fixtures `analyze-error.test.ts`
+  used), and the route's five required scenarios: cap reached, a blind arm
+  degrading rather than failing the run, an analyzer error leaving one group
+  open while the closeable set still applies, the provider-fault guard
+  refusing to resolve, and the heartbeat write landing last in call order.
+
 ## 2026-09-02 — second audit of `agent/fix-bridge-errors`: a throttle that outlived its write, a `void` the siblings had lost, a lost increment
 
 - SHA: recorded on merge of `agent/fix-bridge-errors` (same PR as the entry
@@ -819,6 +1150,154 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   NOT run — the volume reported 0 GiB free at the time and a cold `.next`
   costs up to 5.7 GiB; no `'use server'` surface changed.
 
+## 2026-09-02 — Diagnose cron final gate: `collectRelAnalyses` binds its read error
+
+- SHA: branch `agent/selfheal-diagnose-cron`, PR pending (final-gate pass on
+  the "move Diagnose onto a Vercel cron" work already committed on this
+  branch — the cron route, the `triage-collect.ts`/`triage-apply.ts`
+  extraction, and the RCA-analysis extraction into `rca-run.ts` were already
+  shipped in prior commits; this entry covers only the fix made during the
+  gate run).
+- **What**: `src/lib/admin/triage-collect.ts`'s `collectRelAnalyses` now
+  destructures `error` from its `fetchAllRowsResult` call (it previously took
+  only `data`) and logs a failure instead of silently returning an empty
+  `Map` indistinguishable from "no prior analyses exist".
+- **Why**: `npm run audit:paginated-reads` regressed 12 -> 13 on this branch
+  — the ratchet's `helm/no-unchecked-paginated-read` rule flagged the
+  unbound `error`. Fixed rather than baseline-raised, per the no-ratchet-
+  raise rule. This read is best-effort enrichment (an "already analysed"
+  annotation merged onto reliability candidates), not a health-critical read
+  — a failure here does not flip `runSelfHealTriage`'s heartbeat to
+  `failed`/`degraded`; the two health-critical reads it sits beside
+  (`collectAdminEvents`, `collectReliabilitySignals`) already bound and
+  reported their own errors into `SourceHealth` before this fix.
+- **Verified**: `npm run typecheck`, `npm run lint` (0 warnings),
+  `npm run lint:ratchet` (68 warnings, no regression),
+  `npx vitest run src/lib/admin src/app/admin src/app/api/cron/selfheal-triage`
+  (146 files / 1671 tests, all pass, before and after the fix),
+  `npm run audit:paginated-reads` (12, baseline 12, confirmed fixed),
+  `npm run audit:supabase-errors` / `audit:fail-open` (1039 / 51, no
+  regression), `node scripts/markdown-lint-ratchet.mjs`,
+  `npm run lint:duplicate-exports`,
+  `node scripts/knowledge/document-inventory.mjs --check`,
+  `npm run docs:path-drift`, `npm run docs:schema-drift`. `npm run build`
+  NOT run locally — CI builds it.
+## 2026-09-02 — Flight Recorder: one observed-step-count definition, undeclared steps, point-in-time durations, downgrade badge, audit script
+
+- SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
+  outside the two in-flight Flight Recorder branches
+  (`agent/flight-recorder-real-timings`, `agent/flight-recorder-db-checkpoints`)
+  — no edit to `src/app/golf/actions/golf.ts`,
+  `src/lib/observability/golf-round-flight-workflow.ts`,
+  `src/lib/observability/helm-flight-recorder.ts`, or any
+  `supabase/migrations/*flight*`/`*trace_steps*` file.
+- **What**: `trace-tree.ts`'s `TraceTree` gains `observedStepCount` as the one
+  named definition of "steps actually observed" (`observed.length`, before
+  synthesised missing nodes) — the KPI strip in `TraceTree.tsx` now reads this
+  field instead of re-deriving `tree.flat.filter(!isMissing).length` inline,
+  so the fleet-list count and the tree's own count can no longer silently
+  read as two different numbers for an OPENED trace.
+  `bridgeGetFlightTrace` (`golf-tracer.ts`) reconciles a trace's
+  `observed_step_count` against its own fetched steps array on open via the
+  new `reconcileObservedStepCount` helper — this only fixes the count once a
+  trace is opened; unopened fleet-list rows still show the DB's own
+  (possibly-stale-pre-2026-09-01-migration) stored counter, a documented scope
+  boundary rather than a full fix (closing it needs a `helm_debug_list_traces`
+  migration change, out of scope here).
+  `TraceStepNode` gains `isUndeclared` (an OBSERVED step whose key is not in
+  the workflow's own declared-key set — verified against
+  `golf-round-flight-workflow.ts` that `golf.round.submit` declares only the
+  top-level `db.submit_round_atomic` key, never its in-transaction children,
+  so every postgres-layer checkpoint child the db-checkpoints migration will
+  start writing hits this by construction) and `isPointInTime` (a row with
+  `finished_at` but no `started_at` — a single-moment checkpoint, rendered as
+  "point-in-time" rather than reading identically to "no data at all").
+  `errorCode` now falls back to `metadata.sqlstate` then `metadata.failure_code`
+  when the `error_code` column is empty, matching the shape
+  `helm_private.trace_exception_checkpoint` actually writes.
+  `trace-view-helpers.ts` gains `resolveTotalDurationMs` (named wrapper around
+  `run.duration_ms`, replacing an inline expression, explicitly documented
+  against ever becoming a sum of step durations — which would double-count
+  time inside nested postgres checkpoint children) and
+  `extractStatusDowngrade` (reads `status_downgraded_from`/
+  `status_downgraded_reason` from a run's `metadata`, matching the exact keys
+  `20260901140000_trace_cannot_claim_success_while_blind.sql` writes).
+  `TracesClient.tsx` renders that downgrade as a warning `InlineNotice` — only
+  ever on the opened trace's detail panel, never the fleet-list row, since
+  `helm_debug_list_traces`'s fixed column list omits `metadata` entirely
+  (a real scope boundary, not an oversight).
+  `missing_required_step_count` was checked against the task's "expose it"
+  wording and found already fully exposed (required field on
+  `FlightTraceRun`, already rendered in `TracesClient.tsx` and
+  `trace-fleet.ts`) — no gap, no change made.
+  New: `scripts/flight-recorder-audit.mjs` +
+  `scripts/lib/flight-recorder-audit-lib.mjs` (`npm run flight-recorder:audit`)
+  — a read-only script over the two `helm_debug_*` RPCs (the only reachable
+  path for a service-role key; `helm_debug` is outside PostgREST's exposed
+  schema list) reporting runs/steps/distinct-step-keys/steps-with-identity/
+  zero-step-runs/downgraded-runs for the last 24h, with an explicit warning
+  when `helm_debug_list_traces`'s 200-row cap may have truncated the window.
+- **Why**: the list RPC's DB-stored `observed_step_count` and the tree's own
+  live count over the fetched steps array are two independently-maintained
+  numbers over the same fact, and can disagree for a trace finalized before
+  the 2026-09-01 finalize-function migration or one still in progress — a
+  debugging tool showing two different counts for the same trace undermines
+  trust in both. The db-checkpoints branch is about to start writing observed
+  postgres-layer rows nested under RPCs whose workflow definitions were never
+  updated to declare them; without `isUndeclared` those rows read as
+  regular declared children with no signal that the workflow model hasn't
+  caught up. The audit script is what proves, after both in-flight branches
+  deploy, that real timings and postgres checkpoints actually started
+  landing — before this track there was no way to check that without reading
+  the database by hand.
+- **Not done, deliberately**: the fleet-list row's `observed_step_count` and
+  the downgrade badge are both scoped to the OPENED trace's detail panel only
+  — fixing either for unopened list rows needs a `helm_debug_list_traces`
+  migration change, which is out of scope for this track (the migration files
+  it would touch are the two in-flight branches' territory).
+- **Verified**: `npm run typecheck`, targeted `eslint --max-warnings 0` on
+  every touched file, `npm run lint:ratchet` (no regression against the
+  tracked baseline), `npm run audit:supabase-errors` (no regression against
+  the tracked baseline), the admin_platform registry's required checks
+  (`src/test/lib/cron/auth.test.ts`, `src/test/api/cron/shared-auth.test.ts`),
+  and the full `unit` vitest project (every file, no regressions). New tests
+  written first and confirmed failing before each implementation
+  (`src/app/admin/traces/__tests__/trace-tree.test.ts`,
+  `src/app/admin/traces/__tests__/trace-view-helpers.test.ts`,
+  `scripts/lib/__tests__/flight-recorder-audit-lib.test.ts`) — the last one
+  registered by exact name in `vitest.config.ts`'s unit project include array,
+  the repo's documented convention for `scripts/lib/__tests__` files, without
+  which it would run under nothing. `npm run build` NOT yet run as of this
+  entry — see the commit history for whether it was run before merge; a
+  `'use server'` surface (`golf-tracer.ts`) changed, so it is required before
+  merge per CLAUDE.md.
+
+## 2026-09-02 — Flight Recorder: a genuine parent_step_key cycle no longer silently vanishes from the rendered tree
+
+- SHA: branch `agent/tracer-gaps`, PR pending. Follow-up to the same day's
+  "one observed-step-count definition" entry above.
+- **What**: `buildTraceTree`'s containment loop pushes every node into either
+  `roots` or its resolved parent's `children` array; a genuine mutual cycle
+  (A's parent is B, B's parent is A, or a longer ring) left every member
+  attached as some OTHER member's child and none ever reached `roots`, so
+  the depth-first walk never visited any of them — the whole cycle vanished
+  from `tree.flat` with no error. Fixed with a rescue sweep: after the
+  normal walk, any node still unvisited is promoted to an additional root
+  and walked from there too. A no-op on every acyclic trace this repo has
+  ever recorded.
+- **Why**: this module's own header comment states the guarantee directly —
+  "the tree would be quietly, plausibly wrong" is exactly what a debugging
+  tool must never be — and `observedStepCount` being correct (fixed earlier
+  today) does not by itself guarantee the *rendered tree* still shows every
+  node; this closes the same gap on the render side. `parent_step_key` is
+  free text written by three separate producers (server, collector, RPC), so
+  a cycle, while never observed in production, is not impossible.
+- **Verified**: two new tests (2-node and 3-node mutual cycles asserting the
+  exact surviving node set) written first and confirmed red (`flat: []` on
+  both) before the fix; full touched-directory suite green after (6 files,
+  111 tests, up from 109). `npm run typecheck` / `lint` / `lint:ratchet` (68
+  warnings, no regression) / `audit:supabase-errors` (baseline 1039, no
+  regression) all clean.
 ## 2026-09-02 — Repair stage's launchd config tracked in the repo, runner captures a failure tail
 
 - SHA: branch `agent/selfheal-repair-hardening`, PR pending.

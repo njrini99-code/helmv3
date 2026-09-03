@@ -48,12 +48,16 @@ export type RiskTier = 'R0' | 'R1' | 'R2' | 'R3';
 /**
  * Why an arm produced what it produced.
  *
- * - `ok`      — reached the provider, results are complete for the window.
- * - `partial` — reached it, but truncated (see `bounded`). Still useful.
- * - `blind`   — could not read it at all. Signals from this arm are ABSENT,
- *               not zero. Never render a blind arm as healthy.
+ * - `ok`       — reached the provider, results are complete for the window.
+ * - `partial`  — reached it, but truncated (see `bounded`). Still useful.
+ * - `degraded` — a rate limit (429) survived one honoured Retry-After retry.
+ *                Signals from this arm are ABSENT for this run, same as
+ *                `blind`, but the cause is transient and usually self-clears
+ *                — worth telling apart from a token that is dead or missing.
+ * - `blind`    — could not read it at all. Signals from this arm are ABSENT,
+ *                not zero. Never render a blind arm as healthy.
  */
-export type SourceStatus = 'ok' | 'partial' | 'blind';
+export type SourceStatus = 'ok' | 'partial' | 'degraded' | 'blind';
 
 export interface SourceResult {
   source: ReliabilitySource;

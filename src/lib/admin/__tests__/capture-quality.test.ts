@@ -91,6 +91,76 @@ describe('analyzeCaptureQuality — expected auth noise', () => {
   });
 });
 
+describe('analyzeCaptureQuality — self-referential rows and the user denominator', () => {
+  it("excludes cron/system rows from the 'user' field's denominator only — they remain in `rows` and every other field", () => {
+    const realRows = [row({ id: 'a' }), row({ id: 'b' })];
+    // A cron failure (job-log.ts's `Cron failed: <jobType>`) legitimately
+    // carries error-code/stack/route/action — it is a real, instrumented
+    // error — but it structurally can never carry a user_id: a cron has no
+    // session. Counting it against 'user' coverage blames a call site for
+    // something no call site could ever do.
+    const cronRow = row({
+      id: 'cron-1',
+      source: 'cron',
+      user_id: null,
+      user_email: null,
+      title: 'Cron failed: reliability-triage',
+    });
+    const systemRow = row({
+      id: 'system-1',
+      source: 'system',
+      user_id: null,
+      user_email: null,
+      title: 'Deployed abc1234',
+    });
+
+    const report = analyzeCaptureQuality([...realRows, cronRow, systemRow], 72, NOW);
+
+    // Every row is a real, analysable event — none of them are auth noise —
+    // so `rows` and every OTHER field's denominator still count all four.
+    expect(report.rows).toBe(4);
+    expect(fieldRatio(report.fields, 'error-code')).toBe(1);
+    expect(fieldRatio(report.fields, 'stack')).toBe(1);
+    expect(fieldRatio(report.fields, 'route')).toBe(1);
+    expect(fieldRatio(report.fields, 'feature')).toBe(1);
+    expect(fieldRatio(report.fields, 'action')).toBe(1);
+
+    // The 'user' field's own `total` drops to the 2 user-eligible rows, so
+    // the two real rows (which DO carry a user) still read 100% — not 50%,
+    // deflated by two rows that could never have carried one.
+    const userField = report.fields.find((f) => f.field === 'user')!;
+    expect(userField.total).toBe(2);
+    expect(userField.present).toBe(2);
+    expect(userField.ratio).toBe(1);
+  });
+
+  it("a cron row that is otherwise fully captured does not rank as a weak emitter for lacking a user", () => {
+    const cronRow = row({
+      id: 'cron-1',
+      source: 'cron',
+      user_id: null,
+      user_email: null,
+      title: 'Cron failed: reliability-triage',
+    });
+    const report = analyzeCaptureQuality([cronRow], 72, NOW);
+    const cronSource = report.weakestSources.find((s) => s.source === 'cron');
+    // Every field this row COULD carry, it does — only 'user' is absent, and
+    // that absence is structural, not an instrumentation gap.
+    expect(cronSource?.missing ?? 0).toBe(0);
+  });
+
+  it("'user' total is 0, never negative or NaN, when every row is self-referential", () => {
+    const report = analyzeCaptureQuality(
+      [row({ id: 'cron-1', source: 'cron', user_id: null, user_email: null })],
+      72,
+      NOW,
+    );
+    const userField = report.fields.find((f) => f.field === 'user')!;
+    expect(userField.total).toBe(0);
+    expect(userField.ratio).toBeNull();
+  });
+});
+
 describe('analyzeCaptureQuality — ratio', () => {
   it('is null, not 0, when there are no rows', () => {
     const report = analyzeCaptureQuality([], 72, NOW);

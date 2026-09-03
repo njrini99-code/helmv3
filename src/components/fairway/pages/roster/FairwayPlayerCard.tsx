@@ -11,7 +11,6 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
 import { TrendGlyph } from '@/components/fairway';
-import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { TrendVerdict } from '@/lib/coachhelm/trend';
 import { FairwayYearBadge } from './FairwayYearBadge';
@@ -78,7 +77,15 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
   const hasScore = player.avg_score && player.avg_score > 0;
 
   return (
-    <Surface elevation="shadow" padding="none" className="overflow-hidden">
+    <Surface
+      elevation="shadow"
+      padding="none"
+      className="overflow-hidden"
+      // Session Replay masks all text by default (instrumentation-client.ts,
+      // maskAllText: true) — this attribute is defense in depth so a player's
+      // name/details stay masked even if that default is ever narrowed later.
+      data-sentry-mask=""
+    >
       <div className="p-5 md:p-6">
         <div className="flex items-start gap-4">
           {/* Avatar + online dot */}
@@ -102,22 +109,30 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             />
           </div>
 
-          {/* Info — identity routed through the shared PlayerIdentity (name +
-              year badge addon + hometown meta). The card keeps its signature
-              large tinted avatar above (showAvatar=false here), and its own
-              status/intent controls below, via the surrounding layout. The card
-              headline keeps its display-face emphasis via nameClassName. */}
+          {/* Info — name + year badge + hometown. Hand-rolled here rather than
+              via the shared PlayerIdentity primitive: PlayerIdentity hardcodes
+              single-line `truncate` on the name span (see
+              src/components/fairway/controls/PlayerIdentity.tsx), which is
+              right for its other call sites (messages picker, qualifier list,
+              CoachHelm attention rows) but collapsed a two-word name to one
+              letter + ellipsis in this card's narrower 2-col grid cell —
+              GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1, "the standout
+              defect of the audit". Letting the name wrap to 2 lines fixes it
+              without touching the shared primitive's other callers. Hometown
+              keeps single-line truncate (min-w-0 so it clips at the string's
+              end, not to two letters). */}
           <div className="min-w-0 flex-1 pt-0.5">
-            <PlayerIdentity
-              name={name}
-              showAvatar={false}
-              size="md"
-              nameClassName="font-fw-display text-body-lg font-semibold tracking-[-0.01em]"
-              nameAddon={<FairwayYearBadge year={player.graduation_year} />}
-              meta={
-                player.hometown && player.state ? `${player.hometown}, ${player.state}` : undefined
-              }
-            />
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <span className="min-w-0 line-clamp-2 break-words font-fw-display text-body-lg font-semibold leading-snug tracking-[-0.01em] text-text-primary [overflow-wrap:anywhere]">
+                {name}
+              </span>
+              <FairwayYearBadge year={player.graduation_year} />
+            </div>
+            {player.hometown && player.state ? (
+              <p className="mt-0.5 min-w-0 truncate font-fw-sans text-caption text-text-tertiary">
+                {player.hometown}, {player.state}
+              </p>
+            ) : null}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <FairwayPlayerStatusBadge playerId={player.id} currentStatus={player.status} size="sm" />
               <FairwayIntentControl
@@ -172,7 +187,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           surfaced at the list level so a coach doesn't have to open every
           player individually to triage the team. */}
       <div className="grid grid-cols-3 gap-2 px-5 pb-4 md:px-6">
-        <div className="rounded-fw-md bg-surface-sunken px-3 py-2.5">
+        <div className="min-w-0 rounded-fw-md bg-surface-sunken px-3 py-2.5">
           <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">SG:Total</p>
           <p
             className={cn(
@@ -193,20 +208,29 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             </p>
           ) : null}
         </div>
-        <div className="flex flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
+        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
           <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Focus</p>
           {player.active_focus_areas ? (
-            <Badge tone="accent" size="sm" numeric className="w-fit">
+            // `whitespace-normal` deliberately overrides Badge's built-in
+            // whitespace-nowrap (twMerge lets className win) — same fix as
+            // TeamCategoryLeakBand's "N of M need work" pill. In this card's
+            // 3-up mini-stat row at tablet/mobile-landscape widths, "3 active"
+            // was wider than its ~1/3 grid cell and got clipped mid-word to
+            // "3 activ" by the card's own overflow-hidden Surface
+            // (GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1). Badge's `min-h`
+            // (not a fixed height) lets the pill grow to a second line
+            // instead of spilling past the card edge.
+            <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">
               {player.active_focus_areas} active
             </Badge>
           ) : (
             <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
           )}
         </div>
-        <div className="flex flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
+        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
           <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Goals</p>
           {player.active_goals ? (
-            <Badge tone="accent" size="sm" numeric className="w-fit">
+            <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">
               {player.active_goals}
             </Badge>
           ) : (

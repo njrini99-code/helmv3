@@ -1,5 +1,65 @@
 # Admin Platform test ledger
 
+## 2026-09-02 — Reliability/Bridge catalogued-defect sweep (agent/reliability-bridge-fixes), defects (b), (c), (d), (e), (f), (h)
+
+- SHA: recorded on merge of `agent/reliability-bridge-fixes`.
+- New: `src/lib/admin/__tests__/qa-fixture-rounds.test.ts` (3 — the drift
+  guard that reads `supabase/migrations/
+  20260901120000_integrity_completed_round_zero_scored_holes.sql` itself and
+  asserts `QA_FIXTURE_ROUND_IDS` still matches it exactly).
+- Extended, each new case written failing first against the pre-fix code
+  unless noted: `src/lib/admin/__tests__/capture-quality.test.ts` (3 — the
+  'user' field's own denominator excludes cron/system rows; a cron row that
+  is otherwise fully captured does not rank as a weak emitter for lacking a
+  user; total is 0/null when every row is self-referential),
+  `src/lib/admin/__tests__/observe-action-result.test.ts` (1 — pins
+  userId/userEmail forwarding through the soft-failure path unchanged; passed
+  immediately, no code bug — only the thrown-error path had coverage
+  before), `src/lib/reliability/__tests__/sources.test.ts` (preview/
+  null-target/production CANCELED severity), `src/lib/admin/__tests__/
+  sentry-api.test.ts` + `src/lib/reliability/__tests__/normalize.test.ts`
+  (429 retry/degraded, `worstStatus` ranking), `src/lib/admin/data/
+  __tests__/triage.test.ts` (per-issue `resolveFeatureId` fallback for
+  un-scoped Sentry issues, batch hint still wins, non-mapping culprit stays
+  null; three `isFixture` cases — flags without touching `actionable`, a
+  normal round id/no roundId is never a fixture, a Sentry item is never a
+  fixture), `src/lib/admin/incidents/__tests__/lifecycle.test.ts` (2 — a
+  regressed incident whose latest analysis says `not-a-defect` verdicts
+  `'expected-recurrence'`, not `'regressed'`; every other category, or none,
+  still verdicts `'regressed'`), `src/lib/admin/incidents/__tests__/
+  lens.test.ts` (2 — `expected-recurrence` lands in its own lens, never in
+  `regressions`/`actionable`; a QA fixture round stays actionable/true and
+  visible under `all` but never counts in the `actionable` lens),
+  `src/lib/admin/incidents/__tests__/attention.test.ts` (1 — a CRITICAL,
+  unresolved `expected-recurrence` incident still produces a `critical`
+  attention row: this one caught a real gap on first pass — an earlier
+  version left `expected-recurrence` out of `UNRESOLVED_STATES`, silencing a
+  critical recurrence entirely once an LLM-authored "NOT A DEFECT" verdict
+  existed for it), `src/lib/admin/incidents/__tests__/truth-strip.test.ts`
+  (1 — the same fixture exclusion at the Truth Strip's `actionable` cell),
+  `src/lib/admin/incidents/__tests__/correlate.test.ts` (3 — `isFixture`
+  propagation, `actionable` left untouched, propagation across a
+  cross-source join), `src/lib/admin/data/__tests__/incident-feed.test.ts`
+  (1 — `actionableGroups` excludes a fixture while `totalGroups` keeps it;
+  verified red against a temporarily-reverted fix before being restored
+  green), `src/lib/admin/__tests__/incident-report.test.ts` (2 —
+  `extractRoundId`), `src/app/admin/_components/__tests__/
+  unified-incident-card.test.tsx` (3 — the FIXTURE chip renders/does not
+  render, and outranks the blind-source chip under the 5-chip cap).
+- Six pre-existing `TriageItem`/`UnifiedIncident` object-literal test
+  fixtures across five files needed the two new required fields added
+  (`isFixture` on each) once they stopped satisfying their own interfaces —
+  a compile-time gap `tsc` surfaced directly, not a behavioural test change.
+- `npm run build` (webpack + `next build`'s own TypeScript pass, not bare
+  `tsc --noEmit`) run once at the end with the sandbox network disabled:
+  `✓ Compiled successfully`, `Finished TypeScript` clean — the specific
+  failure class `rca-category.ts`'s header warns about (a `server-only`
+  import poisoning a client bundle, invisible to `tsc` and to vitest) did not
+  fire. The run's only failures were prerender errors on unrelated pages
+  (baseball/golf/lifting dashboards, forgot-password, coach-onboarding) from
+  `NEXT_PUBLIC_SUPABASE_URL` being absent in this worktree — expected,
+  `.env.local` is deliberately withheld from worktrees per `.worktreeinclude`.
+
 ## 2026-09-02 — second audit of `agent/fix-bridge-errors`
 
 - SHA: recorded on merge of `agent/fix-bridge-errors`.
@@ -469,3 +529,45 @@
   0 before the Errors page rewrite, re-run after it (result recorded in the
   PR). The page test (`errors/__tests__/page.test.tsx`) covers
   `loadErrorsPageData` only, by design, and is unchanged.
+
+## 2026-09-02 — Flight Recorder: canonical observed-step-count, undeclared/point-in-time step states, audit-lib pure functions
+
+- SHA: branch `agent/tracer-gaps`, PR pending.
+- New/extended, each written red before its fix (TDD): `trace-tree.test.ts`
+  gains cases for `observedStepCount` (equals the normalized input length,
+  including on a fixture with a genuine `parent_step_key` cycle — the
+  existing cycle case only asserted an upper bound, which passed even when
+  a cyclic node was silently dropped from the flattened output),
+  `isUndeclared` (true for the fixture's postgres-layer children of a
+  declared parent, and for every observed row under an unrecognised
+  workflow), `isPointInTime` (true only for `finished_at` present /
+  `started_at` absent / no `duration_ms`), and the `metadata.sqlstate` /
+  `metadata.failure_code` fallback chain for `errorCode`.
+  `trace-view-helpers.test.ts` gains `resolveTotalDurationMs` (pinned to
+  `run.duration_ms`, with a regression case guarding against it ever being
+  reimplemented as a sum of step durations) and `extractStatusDowngrade`
+  (reads the two downgrade keys from a run's `metadata`, returns `null` on
+  absent/malformed metadata).
+  `scripts/lib/__tests__/flight-recorder-audit-lib.test.ts` (new, 19 cases)
+  covers the pure summarization functions the new audit script calls:
+  window filtering, distinct-step-key counting, identity-carrying-step
+  counting, zero-step-run and downgraded-run detection, and the 200-row-cap
+  truncation warning.
+- Guarantees now covered:
+  - **The fleet-list step count and the per-trace tree's step count are
+    computed from one named field**, `TraceTree.observedStepCount` — a test
+    fails if the KPI strip is ever re-derived inline instead of reading it.
+  - **A trace's total duration is never resummed from its steps.** Point-in-time
+    and postgres-checkpoint child steps exist specifically so a naive sum would
+    double-count nested time; `resolveTotalDurationMs`'s test pins the
+    single-source-of-truth read from `run.duration_ms`.
+  - **An observed-but-undeclared step (e.g. a postgres checkpoint child) is
+    never confused with a missing (declared-but-unobserved) one** — the two
+    booleans are asserted mutually exclusive on every fixture node.
+  - **The audit script's counts are labelled as a floor, never presented as
+    exact, once the list RPC's 200-row cap is hit** — tested directly against
+    `coverageNotGuaranteed`'s boundary condition (199 vs 200 vs 201 returned
+    rows).
+- Verification: `npx vitest run src/app/admin/traces scripts/lib` — 6 files,
+  109 tests, all passing. `npm run typecheck` / `npm run lint` / `npm run
+  lint:ratchet` (68 warnings, no regression) all clean on the full tree.

@@ -175,6 +175,21 @@ export function extractRoute(metadata: unknown): string | null {
 }
 
 /**
+ * `metadata.roundId` — a TOP-LEVEL key, same shape as `route`/`action`
+ * (`normalizeContext` in `server-error-logger.ts` writes it from
+ * `RoundErrorContext.roundId`, which `observed-action.ts`'s
+ * `ObservedActionContext.roundId` feeds). Used to identify an incident whose
+ * evidence traces back to a QA fixture round — see `qa-fixture-rounds.ts`.
+ */
+export function extractRoundId(metadata: unknown): string | null {
+  if (metadata && typeof metadata === 'object') {
+    const roundId = (metadata as { roundId?: unknown }).roundId;
+    if (typeof roundId === 'string' && roundId.length > 0) return roundId;
+  }
+  return null;
+}
+
+/**
  * The stable `provider_<provider>_<kind>` code the app already writes on every
  * provider fault (server-error-logger persists context.errorCode into
  * metadata.errorCode).

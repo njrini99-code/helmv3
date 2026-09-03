@@ -11,9 +11,12 @@ import {
   extractActionName,
   extractCollapsedCount,
   extractRoute,
+  extractRoundId,
   extractErrorCode,
 } from '@/lib/admin/incident-report';
 import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
+import { resolveFeatureId } from '@/lib/reliability/normalize';
+import { isQaFixtureRoundId } from '@/lib/admin/qa-fixture-rounds';
 
 export type TriageSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -101,6 +104,20 @@ export interface TriageItem {
    * hand to someone else. Null for Sentry rows, whose identity is shortId.
    */
   fingerprint: string | null;
+  /**
+   * This incident's evidence traces back to a QA fixture round —
+   * `qa-fixture-rounds.ts`. Never a production defect: the Errors tab shows
+   * a FIXTURE badge for it, and it is excluded from every "actionable count"
+   * site (`lens.ts`'s `actionable` lens, `truth-strip.ts`, `errors/page.tsx`'s
+   * `shownActionable`, `incident-feed.ts`'s `actionableGroups`) — each keyed
+   * on THIS field. `actionable` itself is deliberately left as
+   * `classifyIncident`'s real verdict, unforced: forcing it false here would
+   * remove the row from `matchesKind`'s default view entirely, which is
+   * exactly the visibility the FIXTURE badge exists to provide. Sentry-origin
+   * items are always `false` — a Sentry issue carries no round-id metadata
+   * to match against.
+   */
+  isFixture: boolean;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
   report: string;
 }
@@ -248,6 +265,15 @@ export function mergeTriage(input: {
   const hintSport = input.sentryTagHint?.sport ?? null;
   const hintFeature = input.sentryTagHint?.feature ?? null;
   const items: TriageItem[] = input.sentryIssues.map((issue) => {
+    // The batch-level hint (an actually Sentry-tag-scoped fetch) is honest,
+    // certain attribution and always wins. When it is absent, fall back to
+    // the collector's advisory route/feature map applied to THIS issue's own
+    // `culprit` — the only per-issue location signal the Sentry issue-list
+    // endpoint returns (see `resolveFeatureId`'s doc comment in
+    // `@/lib/reliability/normalize`). This is a per-issue GUESS, not a tag —
+    // still explicitly weaker than `hintFeature`, and `null` when the culprit
+    // doesn't map to anything, same as before.
+    const feature = hintFeature ?? resolveFeatureId(issue.culprit);
     const severity = SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error';
     const classification = classifyIncident({
       title: issue.title,
@@ -275,7 +301,7 @@ export function mergeTriage(input: {
     eventIds: [],
     substatus: issue.substatus,
     source: 'sentry',
-    feature: hintFeature,
+    feature,
     actionName: null,
     route: issue.culprit,
     klass: classification.klass,
@@ -287,6 +313,8 @@ export function mergeTriage(input: {
     errorCode: null,
     fingerprint: null,
     hasRca: false,
+    // Sentry issues carry no round-id metadata — never a fixture match.
+    isFixture: false,
     report: buildIncidentReport({
       title: issue.title,
       message: issue.culprit ?? issue.title,
@@ -294,7 +322,7 @@ export function mergeTriage(input: {
       source: 'sentry',
       severity: SENTRY_LEVEL_TO_SEVERITY[issue.level] ?? 'error',
       sport: hintSport,
-      featureKey: hintFeature,
+      featureKey: feature,
       eventCount: issue.count,
       affectedUserCount: issue.userCount,
       firstSeen: issue.firstSeen,
@@ -339,6 +367,11 @@ export function mergeTriage(input: {
     const errorCode =
       mostRecentFirst.map((r) => extractErrorCode(r.metadata)).find((c) => c !== null) ?? null;
 
+    // Catalogued defect (h): any row in the bucket naming a QA fixture round
+    // makes the whole grouped incident a fixture — same "any occurrence
+    // counts" reasoning `regressed` below already uses.
+    const isFixture = bucket.rows.some((r) => isQaFixtureRoundId(extractRoundId(r.metadata)));
+
     const classification = classifyIncident({
       title: last.title,
       message: last.message,
@@ -376,12 +409,22 @@ export function mergeTriage(input: {
       actionName,
       route,
       klass: classification.klass,
+      // Left as the classifier's real verdict — NOT forced false for a
+      // fixture. Forcing it here used to remove the row from the default
+      // feed entirely (`matchesKind`'s `kind === undefined -> actionable`
+      // default), which defeated the task's other half: "label ... in the
+      // incident feed" requires the row to actually render there. The
+      // exclusion from "the actionable COUNT" happens at each count site
+      // instead (`lens.ts`, `truth-strip.ts`, `errors/page.tsx`'s
+      // shownActionable, `incident-feed.ts`'s actionableGroups), keyed on
+      // `isFixture` — so the row is visible, badged, and simply not tallied.
       actionable: classification.actionable,
       klassReason: classification.reason,
       hasDegradedMessage: classification.hasDegradedMessage,
       errorCode,
       fingerprint: fp,
       hasRca: input.analyzedFingerprints?.has(fp) ?? false,
+      isFixture,
       report: buildIncidentReport({
         title: last.title,
         message: last.message,

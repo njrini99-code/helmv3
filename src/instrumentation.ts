@@ -24,6 +24,7 @@ import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { resolveServerEnvironment } from '@/lib/sentry-environment';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
+import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
@@ -199,6 +200,15 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
       delete event.request.headers['cookie'];
       delete event.request.headers['Authorization'];
       delete event.request.headers['authorization'];
+      // Defensive: `event.request` is documented as the INBOUND request, so
+      // a well-formed event should never carry a response header here — but
+      // nothing in the SDK's types guarantees an integration or a future
+      // change can't attach one, and the cost of scrubbing a header that
+      // never appears is zero. Added alongside the beforeSendMetric/
+      // beforeSendLog wiring below because the privacy-sentinel suite this
+      // phase adds explicitly checks for it.
+      delete event.request.headers['Set-Cookie'];
+      delete event.request.headers['set-cookie'];
     }
     if (event.request.url) {
       event.request.url = event.request.url.split('?')[0];
@@ -301,12 +311,6 @@ export async function register() {
       // intent survives a future SDK default change, same reasoning as
       // `sourcemaps.deleteSourcemapsAfterUpload` in sentry-build-options.mjs.
       enableMetrics: true,
-      // The second, independent PII/cardinality defence metrics.ts's own
-      // header describes: re-applies its dimension allowlist to every metric
-      // event regardless of which call site (or future call site) emitted
-      // it. Wired here because this file owns server-side Sentry.init;
-      // instrumentation-client.ts (Phase D) needs the matching line.
-      beforeSendMetric: enforceMetricAttributeAllowlist,
 
       // Page loads stay sampled; db.* spans are kept at 1.0 — see makeTracesSampler.
       tracesSampler: makeTracesSampler(isDev),
@@ -314,6 +318,15 @@ export async function register() {
       profileLifecycle: 'trace',
 
       beforeSend: scrubPii,
+      // Second, independent line of defence beyond metrics.ts's/
+      // structured-log.ts's own sanitization at the call site: catches any
+      // Sentry.metrics.*/Sentry.logger.* call anywhere in the codebase that
+      // does not route through record*()/helmLog. See
+      // enforceMetricAttributeAllowlist / enforceLogAttributeAllowlist for
+      // why each fails CLOSED (strips attributes) on an internal error,
+      // unlike the fail-OPEN convention everywhere else in this file.
+      beforeSendMetric: enforceMetricAttributeAllowlist,
+      beforeSendLog: enforceLogAttributeAllowlist,
       ignoreErrors: sharedIgnoreErrors,
     });
 
@@ -373,9 +386,10 @@ export async function register() {
       // runtimes since a metric call could in principle originate from
       // Edge/proxy code.
       enableMetrics: true,
-      beforeSendMetric: enforceMetricAttributeAllowlist,
       tracesSampler: makeTracesSampler(isDev),
       beforeSend: scrubPii,
+      beforeSendMetric: enforceMetricAttributeAllowlist,
+      beforeSendLog: enforceLogAttributeAllowlist,
       ignoreErrors: sharedIgnoreErrors,
     });
 

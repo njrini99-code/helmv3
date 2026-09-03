@@ -66,6 +66,30 @@ describe('incident feed', () => {
     expect(counts).toMatchObject({ totalGroups: 3, appGroups: 2, sentryGroups: 1 });
   });
 
+  // Catalogued defect (h): a QA fixture round stays in `totalGroups` (it
+  // renders, badged, in the default feed — `actionable` is left untouched)
+  // but must never inflate `actionableGroups`, the count `overview.ts` and
+  // `errors/page.tsx` both render.
+  it("excludes a QA fixture round from actionableGroups but keeps it in totalGroups", () => {
+    const { incidents, counts } = buildIncidentFeedFromSources(
+      [
+        appEvent({ id: 'e1', fingerprint: 'fp-real' }),
+        appEvent({
+          id: 'e2',
+          fingerprint: 'fp-fixture',
+          metadata: { roundId: '0b000000-0000-4000-b000-000000000002' },
+        }),
+      ],
+      [],
+      24,
+    );
+
+    expect(incidents).toHaveLength(2);
+    expect(counts.totalGroups).toBe(2);
+    expect(counts.actionableGroups).toBe(1);
+    expect(summarizeIncidentFeed(incidents)).toEqual(counts);
+  });
+
   it('filterSentryIssuesByDeploy passes everything through when deploy data is unavailable', () => {
     const issues = [sentryIssue({ id: 'a', lastSeen: '2020-01-01T00:00:00Z' })];
     expect(filterSentryIssuesByDeploy(issues, null)).toEqual(issues);

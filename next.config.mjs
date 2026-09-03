@@ -438,5 +438,23 @@ export default isDev
             env: process.env.VERCEL_ENV || process.env.NODE_ENV || 'production',
           },
         },
+        // Identifies first-party bundles for `thirdPartyErrorFilterIntegration`
+        // (src/instrumentation-client.ts): at build time this key gets
+        // forwarded to @sentry/webpack-plugin's `moduleMetadata` /
+        // `applicationKey` option (webpack) or injected via a Turbopack
+        // loader (Next.js 16+, this repo's bundler — see `turbopack: {}`
+        // above), tagging every first-party module with `_sentryModuleMetadata`.
+        // MUST match the `filterKeys` array passed to
+        // thirdPartyErrorFilterIntegration exactly — pinned together by
+        // src/lib/security/__tests__/sentry-application-key.test.ts, which
+        // greps this literal directly out of THIS file's raw text (not out of
+        // sentry-build-options.mjs, which only supplies the default for
+        // callers that don't pass their own — see that module's header).
+        // Verified field location: `applicationKey` is a TOP-LEVEL key of
+        // `SentryBuildOptions`, not nested under `_experimental` —
+        // node_modules/@sentry/nextjs/build/types/config/types.d.ts. Only
+        // takes effect in production builds: withSentryConfig itself is
+        // skipped in dev (the `isDev` branch below).
+        applicationKey: 'helm-web',
       })
     );
