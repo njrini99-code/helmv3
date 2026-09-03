@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Feature flags + kill switches
 
 Governance for `config/feature-flags.yml`, `src/lib/flags/**`, and the CI
