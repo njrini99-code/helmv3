@@ -68,6 +68,8 @@
     "seed:baseball:ci": "tsx scripts/seed-baseball-demo.ts --confirm",
     "seed:baseball:demo": "tsx -r dotenv/config scripts/seed-baseball-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-lifting-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-demo-program.ts --confirm && tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts",
     "seed:baseball:e2e": "tsx -r dotenv/config scripts/seed-baseball-e2e.ts",
+    "selfheal:repair:doctor": "node scripts/selfheal-repair-doctor.mjs",
+    "selfheal:repair:install": "bash scripts/selfheal-repair-install.sh",
     "sql:ratchet": "node scripts/sql-lint-ratchet.mjs",
     "start": "next start",
     "test": "vitest --project unit --project unit-dom",
