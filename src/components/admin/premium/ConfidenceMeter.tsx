@@ -71,7 +71,7 @@ export function ConfidenceMeter({ value, label, size = 'md', className }: Confid
           />
         ))}
       </span>
-      <span className={cn('font-fw-mono tabular-nums text-caption', tone)}>
+      <span className={cn('font-fw-mono tabular-nums', size === 'sm' ? 'text-eyebrow' : 'text-caption', tone)}>
         {percent}%{label ? ` ${label}` : ''}
       </span>
     </span>
