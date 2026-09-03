@@ -156,15 +156,6 @@ alongside (not duplicated here).
 
 ## Consumers (who instruments AGAINST the telemetry vocabulary)
 
-- `round_tracking`/`shot_tracking` — `roundStage`/`classifyAutosaveOutcome`
-  (pre-existing) and, going forward, the `OP_ROUND_*`/`OP_SHOT_PERSIST`
-  workflow ops for the server actions in `src/app/golf/actions/golf.ts`
-  (deliberately NOT touched by this feature's own code — a separate,
-  concurrent effort instruments that file against the vocabulary here).
-- `coachhelm_ai` — `OP_COACHHELM_REQUEST`/`OP_COACHHELM_PERSIST` +
-  `recordAi()`.
-- Job/push/auth surfaces repo-wide — `OP_JOB_RUN`/`OP_PUSH_DELIVER`/
-  `OP_AUTH_ATTEMPT` + the matching `record*()` families.
 - `golf_round_lifecycle`/`shot_tracking` — `roundStage`/`classifyAutosaveOutcome`
   (pre-existing, sparse: one `roundStage` call in
   `submitGolfRoundComprehensiveImpl`'s post-submit stats-cache step, one
