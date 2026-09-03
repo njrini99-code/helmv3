@@ -1262,6 +1262,7 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
+        - src/app/admin/database/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
         # below (errors/ -> admin_incidents, reliability/ ->
         # admin_reliability_collector, self-heal/ -> admin_selfheal), so a
@@ -1480,7 +1481,6 @@ features:
       routes:
         - src/app/admin/reliability/**
         - src/app/admin/releases/**
-        - src/app/admin/database/**
       components: []
       api:
         # Scoped to this one cron rather than src/app/api/cron/** on purpose:
