@@ -385,7 +385,7 @@ data yet. They will populate automatically once Phase C/D ship.
 | Golf Round Reliability | `9931247` | https://helm-xs.sentry.io/dashboard/9931247/ | 5 |
 | CoachHelm AI | `9931248` | https://helm-xs.sentry.io/dashboard/9931248/ | 6 |
 | Jobs & Integrations | `9931249` | https://helm-xs.sentry.io/dashboard/9931249/ | 4 |
-| Client Experience | **not created — see below** | — | — |
+| Client Experience | `9931306` | 5 | https://helm-xs.sentry.io/dashboard/9931306/ |
 
 Verified each by `GET /organizations/helm-xs/dashboards/<id>/` and checking
 widget count.
@@ -432,7 +432,11 @@ No cron check-in widget: same reasoning as the deferred cron detector above
 check-in status was found (Crons has its own product page, not a dashboard
 widget type in this API).
 
-### Client Experience — **BLOCKED, not created**
+### Client Experience — created 2026-09-03 after freeing a slot
+
+**Update (commander, 2026-09-03 ~02:45Z):** the owner granted admin authority for this build. `General Template copy` (`308736`) was verified widget-for-widget identical to `General Template` (`260884`) (same 14 widget titles, display types and query fields, never visited) and deleted, which freed the tenth slot; the payload below was then POSTed unchanged and came back as dashboard `9931306` with all five widgets (verified by GET). `General Template copy 1` (`308738`) and `Mobile Template copy` (`308733`) are still present and still look like duplicates; deleting them remains an owner choice. The original blocked-state record is kept below for provenance.
+
+#### Original record
 
 The org is at its **10-dashboard plan cap** for non-prebuilt dashboards.
 Confirmed via `GET /organizations/helm-xs/dashboards/` and counting
@@ -503,7 +507,7 @@ Every object created in this build can be removed with a `DELETE`:
 ```
 DELETE /api/0/organizations/helm-xs/detectors/<id>/      # 9711158, 9711163, 9711164, 9711165, 9711170, 9711171
 DELETE /api/0/organizations/helm-xs/workflows/<id>/       # 3937991 (P2 digest)
-DELETE /api/0/organizations/helm-xs/dashboards/<id>/       # 9931246, 9931247, 9931248, 9931249
+DELETE /api/0/organizations/helm-xs/dashboards/<id>/       # 9931246, 9931247, 9931248, 9931249, 9931306
 ```
 
 Do **not** delete workflow `3937972` or detector `7702315` — both
