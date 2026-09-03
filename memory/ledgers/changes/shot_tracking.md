@@ -694,7 +694,7 @@
 
 ## 2026-09-02 (follow-up) — per-workflow start timeout, CI red on PR #1769
 
-- SHA: (this commit).
+- SHA: `0d223cd50`.
 - Change 1 — `helm-flight-recorder.ts`: `StartHelmFlightRecorderInput` gained
   an optional `startTimeoutMs`, defaulting to `PERSIST_START_TIMEOUT_MS`
   (500ms as of the entry above) when omitted, and used in place of the
