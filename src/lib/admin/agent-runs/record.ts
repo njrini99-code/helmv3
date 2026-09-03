@@ -81,8 +81,6 @@ function defaultDependencies(): RecordAgentRunDependencies {
   return {
     rpc: (args) => (createAdminClient() as unknown as AgentRunRpcClient).rpc('helm_debug_record_agent_run', args),
     onFailure: (error, context) => {
-      // eslint-disable-next-line no-console -- fail-open recorder: this is
-      // the only trace of a dropped write once the RPC call itself fails.
       console.warn('[agent-flight-recorder] record write failed (fail-open, request unaffected)', {
         runId: context.runId,
         workflow: context.workflow,

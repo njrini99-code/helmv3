@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
   Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
   Radar, CreditCard, GitBranch, Trophy, Waypoints,
-  RefreshCw, Dumbbell, Search, LogOut, Recycle,
+  RefreshCw, Dumbbell, Search, LogOut, Recycle, Bot, FileCheck2,
 } from 'lucide-react';
 import {
   AppShell,
@@ -106,6 +106,8 @@ const NAV_ICON_BY_HREF = {
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
+  '/admin/engineering': Bot,
+  '/admin/work-log': FileCheck2,
   '/admin/qualifiers': Trophy,
   // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
   // between three sources, and it sits directly beside Errors in the same

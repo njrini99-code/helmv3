@@ -3,6 +3,8 @@ type AdminHref =
   | '/admin/activity'
   | '/admin/errors'
   | '/admin/traces'
+  | '/admin/engineering'
+  | '/admin/work-log'
   | '/admin/qualifiers'
   | '/admin/reliability'
   | '/admin/self-heal'
@@ -84,6 +86,12 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
+  // Distinct from the "Work log" tab above: that is the PR-timeline view
+  // (github-pr-timeline.ts entries, problem/fix narrative), this is the
+  // change-to-proof join over the SAME entries (repair verdict, shipped
+  // release, post-deploy delta) — Bridge Premium Phase 5 (Engineering OS).
+  { label: 'Proof Log', href: '/admin/work-log', key: 'P', section: 'Platform', description: 'PR → release shipped in → post-deploy proof', meta: 'proof' },
+  { label: 'Engineering OS', href: '/admin/engineering', key: 'G', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
 
   // REVENUE — zero inbound links repo-wide before this entry.
   { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },
