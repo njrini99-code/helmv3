@@ -71,6 +71,35 @@ describe('IncidentGenomePanel', () => {
     expect(screen.getByText('highest')).toBeInTheDocument();
   });
 
+  it('shows the real root incident for a non-root member, never the incident itself', () => {
+    // Regression test for PR #1789 review defect #4: aliasGroup.aliases is
+    // every member EXCEPT the root — so for a non-root member, iterating it
+    // directly (the old code) includes the member's OWN id and never
+    // includes the root at all. Viewing the Genome from 'b' (the LATER of
+    // the two, hence not the root — aliases.ts roots on earliest firstSeen)
+    // must show 'a' as the root cause and never render 'b' as if it were
+    // its own alias.
+    const a = baseIncident('a', {
+      errorCode: '42501',
+      featureId: 'round_tracking',
+      actionName: 'savePartialRound',
+      description: 'incident a description',
+    });
+    const b = baseIncident('b', {
+      errorCode: '42501',
+      featureId: 'round_tracking',
+      actionName: 'savePartialRound',
+      firstSeen: '2026-08-25T19:10:00Z',
+      description: 'incident b description',
+    });
+    const groups = buildBoardAliasGroups([a, b]);
+    const genome = buildIncidentGenome(b, [a, b], groups); // viewed from b, the non-root member
+    render(<IncidentGenomePanel genome={genome} />);
+    expect(screen.getByText('incident a description')).toBeInTheDocument();
+    expect(screen.getByText('Root ·')).toBeInTheDocument();
+    expect(screen.queryByText('incident b description')).not.toBeInTheDocument();
+  });
+
   it('renders the episode timeline and flags an incomplete reconstruction', () => {
     const incident = baseIncident('a', {
       lastSeen: '2026-09-02T12:07:00Z',

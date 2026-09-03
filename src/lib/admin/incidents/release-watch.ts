@@ -61,23 +61,35 @@ import {
 export interface ReleaseRelationshipInput {
   incident: Pick<UnifiedIncident, 'firstSeen' | 'lifecycle' | 'featureId'>;
   releaseDeployedAtMs: number | null;
-  /** True when this incident's own feature appears in the current card's
-   *  `topFeatureDeltas` with a positive delta — real, already-computed
-   *  evidence from `release-ledger.ts`, not an invented signal. */
-  featureRegressedInRelease: boolean;
 }
 
 /**
  * Classify one incident's relationship to the current release, using only
  * evidence this codebase actually has: `firstSeen` vs. the deploy time, and
- * whether the incident's own feature shows a worsening error delta in that
- * deploy's reign (`ReleaseCardData.topFeatureDeltas`). Every OTHER
- * `ReleaseRelationshipEvidence` field `release-context.ts` accepts
- * (`codeInTraceChangedInRelease`, `candidateCohortOnly`, `baselineCohortClean`,
- * `replayReproducesOnNewShaOnly`) has no source in this codebase and is
- * passed `null` — never guessed. `occurrenceTrend` is read off the
- * incident's own lifecycle state, which is the closest already-derived
- * "did this get better or worse" signal this model carries.
+ * `occurrenceTrend` read off the incident's own lifecycle state — the closest
+ * already-derived "did this get better or worse" signal this model carries.
+ *
+ * EVERY `ReleaseRelationshipEvidence` corroboration field
+ * (`featureChangedInRelease`, `codeInTraceChangedInRelease`,
+ * `candidateCohortOnly`, `baselineCohortClean`, `replayReproducesOnNewShaOnly`)
+ * is passed `null` — never guessed. This used to pass a computed
+ * `featureRegressedInRelease` (whether the incident's feature appears in the
+ * current card's `topFeatureDeltas` with a positive delta) as
+ * `featureChangedInRelease`. That was CIRCULAR for exactly the incidents it
+ * mattered for: `topFeatureDeltas` is `errorsAfter - errorsBefore` counted
+ * from the SAME `admin_events` rows this incident's own occurrences are part
+ * of, so a brand-new incident's first occurrences are what move its own
+ * feature's delta positive. The "corroborating" signal was measuring the
+ * incident itself, which is why `release-context.ts:172-179`'s contract
+ * ("proximity alone is not causation") was silently defeated for most new
+ * incidents within the 24h proximity window — `classifyReleaseRelationship`
+ * upgraded them to `new-after-release` at ~60% confidence on no real evidence.
+ * Fixed 2026-09-03 (PR #1789 review) by removing the field: this codebase has
+ * no per-fingerprint breakdown of `topFeatureDeltas` to exclude the
+ * incident's own contribution, and no OTHER code-changed signal exists yet —
+ * see `codeInTraceChangedInRelease`'s own `null`. Until a real signal is
+ * wired, proximity-only incidents correctly resolve to `'no-causal-signal'`,
+ * never a fabricated `'new-after-release'`.
  */
 export function classifyIncidentReleaseRelationship(
   input: ReleaseRelationshipInput,
@@ -94,7 +106,7 @@ export function classifyIncidentReleaseRelationship(
     firstSeenMs,
     releaseDeployedAtMs: input.releaseDeployedAtMs,
     occurrenceTrend,
-    featureChangedInRelease: input.featureRegressedInRelease,
+    featureChangedInRelease: null,
     codeInTraceChangedInRelease: null,
     candidateCohortOnly: null,
     baselineCohortClean: null,
@@ -119,9 +131,25 @@ export interface CurrentReleaseWatch {
   /** Why `currentCard` is null, when it is — surfaced so a panel can render
    *  an honest "release data unavailable" state rather than nothing. */
   unavailableReason: string | null;
+  /** Fingerprints newly seen since the current release, TRUE total —
+   *  `release-ledger.ts`'s `newFingerprintsSince` counter, never the
+   *  `newFingerprintSamples.length` display sample (capped at 5). See
+   *  `newFingerprintsTotalFor`'s own comment. */
+  newFingerprintsTotal: number;
 }
 
-function toSnapshotFacts(
+/** The true count of fingerprints new since a release, NEVER
+ *  `card.newFingerprintSamples.length`. `release-ledger.ts` caps
+ *  `newFingerprintSamples` at 5 (a display sample), while
+ *  `newFingerprintsSince` is the uncapped counter incremented once per
+ *  fingerprint. Using the sample array's length silently reported "5" for
+ *  every release with more than five new fingerprints, with no indication
+ *  the number was truncated. Fixed 2026-09-03 (PR #1789 review). */
+export function newFingerprintsTotalFor(card: ReleaseCardData | null): number {
+  return card?.newFingerprintsSince ?? 0;
+}
+
+export function toCurrentSnapshotFacts(
   card: ReleaseCardData | null,
   incidents: readonly UnifiedIncident[],
   coverage: CoverageSummary,
@@ -138,6 +166,33 @@ function toSnapshotFacts(
     // Always blind: no DB-window read model exists yet — see the module
     // header. Forces dbP95Ms/invariantBreaches/newSqlstates to 'unknown'
     // rather than a fabricated zero.
+    dbSourceBlind: true,
+  };
+}
+
+/**
+ * The BASELINE release's snapshot facts. `rootIncidentCount`/`affectedUsers`
+ * are always `null` here, deliberately — this codebase has no per-release
+ * "reign" scoping for `UnifiedIncident`s (no field says which release an
+ * incident's count belonged to at the time). The only board this module can
+ * read is the CURRENT, live one, so calling `deriveRootIncidentFacts` on it
+ * a second time for "baseline" would silently reuse today's numbers as if
+ * they were a real measurement of the baseline release — `buildReleaseComparison`
+ * would then see `baseline === current` and report `state: 'unchanged'` for a
+ * quantity that was never actually measured for the baseline release. Fixed
+ * 2026-09-03 (PR #1789 review): baseline stays `null`/unknown until a
+ * reign-scoped incident read model exists, matching this module's own
+ * "never unknown as zero/unchanged" discipline for the DB-derived fields.
+ */
+export function toBaselineSnapshotFacts(card: ReleaseCardData | null): ReleaseSnapshotFacts {
+  return {
+    releaseSha: card?.commitSha ?? null,
+    rootIncidentCount: null,
+    affectedUsers: null,
+    journeySuccessRate: null,
+    dbP95Ms: null,
+    sqlstates: [],
+    invariantBreaches: null,
     dbSourceBlind: true,
   };
 }
@@ -179,6 +234,7 @@ export function emptyReleaseWatch(reason: string, coverageBlind: boolean = false
     currentCard: null,
     baselineCard: null,
     unavailableReason: reason,
+    newFingerprintsTotal: 0,
   };
 }
 
@@ -226,6 +282,7 @@ export async function fetchCurrentReleaseWatch(board: {
       currentCard: null,
       baselineCard: null,
       unavailableReason: ledger.status === 'unconfigured' ? 'Release ledger is not configured.' : (ledger.error ?? 'Release ledger unavailable.'),
+      newFingerprintsTotal: 0,
     };
   }
 
@@ -236,15 +293,11 @@ export async function fetchCurrentReleaseWatch(board: {
 
   const relationships = new Map<string, ReleaseRelationshipVerdict>();
   for (const incident of board.incidents) {
-    const featureRegressedInRelease =
-      incident.featureId !== null &&
-      (currentCard?.topFeatureDeltas.some((d) => d.feature === incident.featureId && d.delta > 0) ?? false);
     relationships.set(
       incident.id,
       classifyIncidentReleaseRelationship({
         incident,
         releaseDeployedAtMs: currentCard?.createdAt ?? null,
-        featureRegressedInRelease,
       }),
     );
   }
@@ -287,8 +340,8 @@ export async function fetchCurrentReleaseWatch(board: {
 
   const comparison = baselineCard
     ? buildReleaseComparison({
-        baseline: toSnapshotFacts(baselineCard, board.incidents, board.coverage),
-        current: toSnapshotFacts(currentCard, board.incidents, board.coverage),
+        baseline: toBaselineSnapshotFacts(baselineCard),
+        current: toCurrentSnapshotFacts(currentCard, board.incidents, board.coverage),
       })
     : null;
 
@@ -299,6 +352,7 @@ export async function fetchCurrentReleaseWatch(board: {
     currentCard,
     baselineCard,
     unavailableReason: currentCard === null ? 'No production deploy could be identified.' : null,
+    newFingerprintsTotal: newFingerprintsTotalFor(currentCard),
   };
 }
 

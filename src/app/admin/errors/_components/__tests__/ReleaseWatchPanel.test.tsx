@@ -26,6 +26,7 @@ function baseWatch(overrides: Partial<CurrentReleaseWatch> = {}): CurrentRelease
     currentCard: null,
     baselineCard: null,
     unavailableReason: null,
+    newFingerprintsTotal: 0,
     ...overrides,
   };
 }
@@ -66,5 +67,42 @@ describe('ReleaseWatchPanel', () => {
     expect(screen.getByText('5')).toBeInTheDocument(); // root incidents current
     expect(screen.getAllByText('no read model yet').length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText('DB source blind this window')).toBeInTheDocument();
+  });
+
+  it('shows the true new-fingerprint total, never truncated to the 5-sample cap', () => {
+    // Regression test for PR #1789 review defect #1: the panel used to read
+    // context.newFingerprints.length (a display sample capped at 5 by
+    // release-ledger.ts) as if it were the true count.
+    render(<ReleaseWatchPanel releaseWatch={baseWatch({ newFingerprintsTotal: 23 })} />);
+    expect(screen.getByText(/23 new fingerprints/)).toBeInTheDocument();
+  });
+
+  it('shows root incidents as unknown, never "unchanged", when the baseline was never measured', () => {
+    // Regression test for PR #1789 review defect #2: reusing the live board
+    // for both baseline and current used to make an unmeasured baseline
+    // read as an identical, "unchanged" 5 — a false claim that a comparison
+    // was made. baseline: null is what an honest, unmeasured comparison
+    // renders through this panel: the metric falls through to UnknownInline,
+    // never a number.
+    render(
+      <ReleaseWatchPanel
+        releaseWatch={baseWatch({
+          comparison: {
+            rootIncidents: { baseline: null, current: 5, delta: null, state: 'unknown' },
+            affectedUsers: { baseline: null, current: 3, delta: null, state: 'unknown' },
+            journeySuccessRate: { baseline: null, current: null, delta: null, state: 'unknown' },
+            dbP95Ms: { baseline: null, current: null, delta: null, state: 'unknown' },
+            invariantBreaches: { baseline: null, current: null, delta: null, state: 'unknown' },
+            newSqlstates: null,
+            dbBlind: true,
+          },
+        })}
+      />,
+    );
+    // metricRow renders UnknownInline whenever metric.current === null OR
+    // state === 'unknown' — root incidents' current (5) is a real number so
+    // it renders, but with no "unchanged from N" baseline clause attached.
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.queryByText(/unchanged from/)).not.toBeInTheDocument();
   });
 });

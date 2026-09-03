@@ -26,7 +26,19 @@ function metricRow(label: string, metric: ComparisonMetric, unit: (v: number) =>
   return (
     <div key={label} className="rounded-fw-md bg-surface-sunken px-3 py-2">
       <p className="text-caption uppercase tracking-widest text-warm-500">{label}</p>
-      {metric.state === 'unknown' || metric.current === null ? (
+      {/* Gate on metric.current alone, NOT metric.state === 'unknown'. Those
+          used to be equivalent for every metric this panel rendered — before
+          the defect #2 fix (PR #1789 review), rootIncidents/affectedUsers
+          always had baseline and current either both null or both a real,
+          equal number (same live board reused for both), so 'unknown' state
+          never occurred alongside a real current value. Now that baseline is
+          honestly null until this codebase has a reign-scoped incident
+          model, compareMetric can return state:'unknown' with a REAL current
+          value (we know today's count; we just never measured the
+          baseline). Gating on state alone would hide a known number behind
+          "no read model yet", which is exactly the false-unknown this panel
+          exists to avoid. */}
+      {metric.current === null ? (
         <p className="mt-0.5">
           <UnknownInline label="no read model yet" />
         </p>
@@ -45,7 +57,7 @@ function metricRow(label: string, metric: ComparisonMetric, unit: (v: number) =>
 }
 
 export function ReleaseWatchPanel({ releaseWatch }: { releaseWatch: CurrentReleaseWatch }) {
-  const { context, comparison, currentCard, unavailableReason } = releaseWatch;
+  const { context, comparison, currentCard, unavailableReason, newFingerprintsTotal } = releaseWatch;
   const triplet = context.runtimeIdentity;
 
   return (
@@ -93,7 +105,13 @@ export function ReleaseWatchPanel({ releaseWatch }: { releaseWatch: CurrentRelea
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <p className="text-body-sm text-warm-700">
-              {context.newFingerprints.length} new fingerprint{context.newFingerprints.length === 1 ? '' : 's'} ·{' '}
+              {/* newFingerprintsTotal is release-ledger.ts's uncapped counter — never
+                  context.newFingerprints.length, which is a display sample capped at 5
+                  and previously misread as "5" for every release with more new
+                  fingerprints than that. regressedFingerprints IS the full count
+                  already (derived from the whole relationships map, not a ledger
+                  sample), so it needs no equivalent fix. */}
+              {newFingerprintsTotal} new fingerprint{newFingerprintsTotal === 1 ? '' : 's'} ·{' '}
               {context.regressedFingerprints.length} regressed fingerprint{context.regressedFingerprints.length === 1 ? '' : 's'}{' '}
               since this release
             </p>

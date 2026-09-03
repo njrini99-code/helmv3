@@ -5,11 +5,40 @@
 // module header).
 
 import { describe, it, expect } from 'vitest';
-import { classifyIncidentReleaseRelationship } from '../release-watch';
+import {
+  classifyIncidentReleaseRelationship,
+  newFingerprintsTotalFor,
+  toBaselineSnapshotFacts,
+  toCurrentSnapshotFacts,
+} from '../release-watch';
 import type { UnifiedIncident } from '../types';
+import type { ReleaseCardData } from '@/lib/admin/data/release-ledger';
+import type { CoverageSummary } from '../sources';
 
 function lifecycle(state: UnifiedIncident['lifecycle']['state']): UnifiedIncident['lifecycle'] {
   return { state, headline: 'h', because: [] };
+}
+
+function releaseCard(overrides: Partial<ReleaseCardData> = {}): ReleaseCardData {
+  return {
+    uid: 'r1',
+    commitSha: 'abc1234',
+    commitMessage: 'm',
+    commitRef: 'main',
+    commitAuthor: 'a',
+    createdAt: Date.parse('2026-09-02T12:00:00Z'),
+    isLive: true,
+    gatheringSignal: false,
+    errorsBefore2h: 0,
+    errorsAfter2h: 0,
+    delta: 0,
+    verdict: { tone: 'neutral', label: 'neutral' },
+    resolvedAndQuietSince: 0,
+    newFingerprintsSince: 0,
+    topFeatureDeltas: [],
+    newFingerprintSamples: [],
+    ...overrides,
+  };
 }
 
 describe('classifyIncidentReleaseRelationship', () => {
@@ -17,7 +46,6 @@ describe('classifyIncidentReleaseRelationship', () => {
     const verdict = classifyIncidentReleaseRelationship({
       incident: { firstSeen: '2026-09-02T12:00:00Z', lifecycle: lifecycle('new'), featureId: null },
       releaseDeployedAtMs: null,
-      featureRegressedInRelease: false,
     });
     expect(verdict.relationship).toBe('unknown');
   });
@@ -26,7 +54,6 @@ describe('classifyIncidentReleaseRelationship', () => {
     const verdict = classifyIncidentReleaseRelationship({
       incident: { firstSeen: '2026-08-01T00:00:00Z', lifecycle: lifecycle('new'), featureId: null },
       releaseDeployedAtMs: Date.parse('2026-09-02T12:00:00Z'),
-      featureRegressedInRelease: false,
     });
     expect(verdict.relationship).toBe('existed-before-release');
   });
@@ -35,37 +62,142 @@ describe('classifyIncidentReleaseRelationship', () => {
     const verdict = classifyIncidentReleaseRelationship({
       incident: { firstSeen: '2026-08-01T00:00:00Z', lifecycle: lifecycle('regressed'), featureId: null },
       releaseDeployedAtMs: Date.parse('2026-09-02T12:00:00Z'),
-      featureRegressedInRelease: false,
     });
     expect(verdict.relationship).toBe('regressed-after-release');
   });
 
-  it('new-after-release only when proximity is corroborated by a real feature-delta signal', () => {
-    const bare = classifyIncidentReleaseRelationship({
+  it('never fabricates new-after-release from proximity alone, even for a feature with a positive error delta', () => {
+    // Regression test for PR #1789 review defect #3: this used to pass the
+    // incident's own feature's post-deploy error-count delta as
+    // `featureChangedInRelease` "corroborating" evidence. That delta is
+    // computed from the SAME occurrences as the incident being classified —
+    // a brand-new incident's own first occurrences are what move its
+    // feature's delta positive — so it was never independent evidence, only
+    // proximity measuring itself. No real code-changed signal exists in this
+    // codebase yet, so this must always resolve to 'no-causal-signal' for a
+    // proximate incident, regardless of how "worsened" the feature looks.
+    const verdict = classifyIncidentReleaseRelationship({
       incident: { firstSeen: '2026-09-02T12:07:00Z', lifecycle: lifecycle('new'), featureId: 'round_tracking' },
       releaseDeployedAtMs: Date.parse('2026-09-02T12:00:00Z'),
-      featureRegressedInRelease: false,
     });
-    // Proximity alone is not causation — brief's own rule.
-    expect(bare.relationship).toBe('no-causal-signal');
-    expect(bare.confidence).toBe(0);
-
-    const corroborated = classifyIncidentReleaseRelationship({
-      incident: { firstSeen: '2026-09-02T12:07:00Z', lifecycle: lifecycle('new'), featureId: 'round_tracking' },
-      releaseDeployedAtMs: Date.parse('2026-09-02T12:00:00Z'),
-      featureRegressedInRelease: true,
-    });
-    expect(corroborated.relationship).toBe('new-after-release');
-    expect(corroborated.confidence).toBeLessThan(1);
-    expect(corroborated.confidence).toBeGreaterThan(0);
+    expect(verdict.relationship).toBe('no-causal-signal');
+    expect(verdict.confidence).toBe(0);
   });
 
   it('no-causal-signal when first seen well after the release deploy', () => {
     const verdict = classifyIncidentReleaseRelationship({
       incident: { firstSeen: '2026-09-05T00:00:00Z', lifecycle: lifecycle('new'), featureId: 'round_tracking' },
       releaseDeployedAtMs: Date.parse('2026-09-02T12:00:00Z'),
-      featureRegressedInRelease: true,
     });
     expect(verdict.relationship).toBe('no-causal-signal');
+  });
+});
+
+describe('newFingerprintsTotalFor', () => {
+  it('reads the uncapped newFingerprintsSince counter, never newFingerprintSamples.length', () => {
+    // Regression test for defect #1: release-ledger.ts caps newFingerprintSamples
+    // at 5 (a display sample) but newFingerprintsSince is the true count.
+    const card = releaseCard({
+      newFingerprintsSince: 23,
+      newFingerprintSamples: Array.from({ length: 5 }, (_, i) => ({
+        fingerprint: `fp-${i}`,
+        title: 't',
+        severity: 'error',
+        firstSeen: '2026-09-02T12:05:00Z',
+      })),
+    });
+    expect(newFingerprintsTotalFor(card)).toBe(23);
+    expect(card.newFingerprintSamples).toHaveLength(5); // sanity: the cap is real
+  });
+
+  it('is 0, never null-crashing, when there is no current card', () => {
+    expect(newFingerprintsTotalFor(null)).toBe(0);
+  });
+});
+
+function coverage(overrides: Partial<CoverageSummary> = {}): CoverageSummary {
+  return {
+    reading: 4,
+    partial: 0,
+    blind: 0,
+    unknown: 0,
+    total: 4,
+    anyBlind: false,
+    blindSources: [],
+    oldestAgeMs: 1000,
+    worst: 'reading',
+    ...overrides,
+  };
+}
+
+describe('toBaselineSnapshotFacts / toCurrentSnapshotFacts', () => {
+  const cleanCoverage: CoverageSummary = coverage();
+
+  function incident(id: string, overrides: Partial<UnifiedIncident> = {}): UnifiedIncident {
+    return {
+      id,
+      linkTarget: `/admin/errors/${id}`,
+      title: id,
+      description: id,
+      severity: 'error',
+      lifecycle: lifecycle('new'),
+      firstSeen: '2026-09-01T00:00:00Z',
+      lastSeen: '2026-09-01T00:00:00Z',
+      occurrences: 1,
+      affectedUsers: 0,
+      affectedUsersKnown: false,
+      sources: [],
+      corroboration: 1,
+      appFingerprints: [id],
+      sentryIssueIds: [],
+      reliabilitySignatures: [],
+      route: null,
+      featureId: null,
+      actionName: null,
+      errorCode: null,
+      sport: null,
+      klass: 'defect',
+      actionable: true,
+      klassReason: 'r',
+      isFixture: false,
+      analysis: null,
+      repair: null,
+      deployProof: null,
+      resolution: null,
+      proof: [],
+      proofGaps: [],
+      evidenceCoverage: { dimensions: [], present: 0, total: 7 },
+      report: '',
+      computedAt: '2026-09-01T00:00:00.000Z',
+      ...overrides,
+    };
+  }
+
+  it('baseline never reuses the live board for rootIncidentCount/affectedUsers — always unknown', () => {
+    // Regression test for defect #2: baseline and current used to both read
+    // `board.incidents` (the same, live board), so a board with e.g. 5
+    // actionable incidents produced baseline=5, current=5 -> a comparison
+    // that reports "unchanged" for a quantity that was never measured for
+    // the baseline release at all. Baseline must be unknown until this
+    // codebase has a reign-scoped incident model.
+    const board = [incident('a'), incident('b')];
+    const baseline = toBaselineSnapshotFacts(releaseCard());
+    expect(baseline.rootIncidentCount).toBeNull();
+    expect(baseline.affectedUsers).toBeNull();
+
+    const current = toCurrentSnapshotFacts(releaseCard(), board, cleanCoverage);
+    expect(current.rootIncidentCount).toBe(2);
+  });
+
+  it('a comparison built from these never reports "unchanged" for an unmeasured baseline', async () => {
+    const { buildReleaseComparison } = await import('../release-compare');
+    const board = [incident('a'), incident('b'), incident('c')];
+    const comparison = buildReleaseComparison({
+      baseline: toBaselineSnapshotFacts(releaseCard()),
+      current: toCurrentSnapshotFacts(releaseCard(), board, cleanCoverage),
+    });
+    expect(comparison.rootIncidents.state).toBe('unknown');
+    expect(comparison.rootIncidents.baseline).toBeNull();
+    expect(comparison.rootIncidents.current).toBe(3);
   });
 });
