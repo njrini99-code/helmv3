@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.0.0",
+  "frozen_at": "2026-09-02",
+  "frozen_against_commit": "c34aa936e",
+  "provenance": "Hand-curated from all 11 memory/incidents/**/INC-*.md files that existed at freeze time (`find memory/incidents -iname \"INC-*.md\"`). NOT machine-extracted: each incident file carries a structured `- Feature:` (and sometimes `- Also affects:`) line, which is the source of gold_feature/gold_feature_secondary below, but NO structured touched-files list — file paths appear only in prose (body text, code fences, and the Verification/Repair sections' test-file mentions). gold_files below were extracted by reading each incident in full and keeping only paths independently confirmed to exist via `git ls-files` in this worktree at freeze time. Where an incident named a bare test filename with no directory (e.g. a Verification-section mention with no path prefix), the full path was resolved by an exact `git ls-files` basename search; unresolvable names were dropped rather than guessed.",
+  "seed_rule": "seed_file is exactly ONE file per task: the single source file (or, for three tasks with no named source file, the migration file) a developer would plausibly open first while investigating the incident's symptom, chosen from the incident's own prose (its 'What was wrong'/'Root cause'/'Symptom' section, or the object a fix migration targets). gold_files is every OTHER real file the incident names, excluding seed_file and excluding the incident's own .md file. This is deliberately NOT the full touched-file set: handing the retriever every file the incident already names as input would make every metric trivially perfect. A retrieval path is scored by whether it gets from the ONE seed file to the feature, the feature's own docs, and (via the feature's registered code globs) the OTHER files a developer would still need to find.",
+  "known_limitation": "11 tasks is a small, honest sample (K.7's own risk note: 'a Context Retrieval Bench built on today's small memory/incidents/** corpus is a noisy sample -- treat early scores as directional, not a hard gate, until the corpus grows'). Every number this bench reports should be read that way until the incident corpus is materially larger.",
+  "tasks": [
+    {
+      "id": "INC-2026-08-22-end-date-closed-qualifier-early",
+      "incident_path": "memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md",
+      "gold_feature": "qualifiers",
+      "gold_feature_secondary": [],
+      "seed_file": "src/lib/golf/qualifier-lifecycle.ts",
+      "gold_files": [
+        "src/lib/golf/__tests__/qualifier-lifecycle.test.ts",
+        "src/app/golf/actions/__tests__/create-qualifier-round-count.test.ts"
+      ],
+      "task_description": "An active qualifier was auto-completed while entered players still had rounds remaining, because the lifecycle reconciler treated end_date as a player lockout. Find the reconciler and its regression coverage."
+    },
+    {
+      "id": "INC-2026-08-26-error-rate-hourly-never-written",
+      "incident_path": "memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md",
+      "gold_feature": "admin_platform",
+      "gold_feature_secondary": [],
+      "seed_file": "src/app/golf/actions/admin-system-data.ts",
+      "gold_files": [
+        "src/app/golf/actions/__tests__/admin-system-data.test.ts",
+        "src/lib/admin/incident-classification.ts",
+        "supabase/migrations/20260527000000_prod_public_baseline.sql"
+      ],
+      "task_description": "The System tab's hourly error trend read from a table (error_rate_hourly) that nothing ever writes, so it silently reported zero forever. Find the read path, its regression test, and the derivation pattern it now follows."
+    },
+    {
+      "id": "INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback",
+      "incident_path": "memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md",
+      "gold_feature": "golf_round_lifecycle",
+      "gold_feature_secondary": ["shot_tracking"],
+      "seed_file": "src/app/golf/actions/golf.ts",
+      "gold_files": [
+        "src/app/golf/actions/__tests__/golf-round-submit-abort-no-destructive-fallback.test.ts",
+        "src/app/golf/actions/__tests__/golf-save-partial-round.test.ts"
+      ],
+      "task_description": "A failed final submit or completed-hole checkpoint could delete recoverable round/shot data instead of leaving it for retry. Find the submit/autosave action file and its regression coverage."
+    },
+    {
+      "id": "INC-2026-08-30-account-deletion-still-cascades-golf-history",
+      "incident_path": "memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md",
+      "gold_feature": "golf_round_lifecycle",
+      "gold_feature_secondary": [],
+      "seed_file": "src/app/api/account/delete/route.ts",
+      "gold_files": [
+        "src/app/golf/actions/announcements.ts",
+        "src/app/golf/actions/golf.ts",
+        "src/app/golf/actions/tasks.ts",
+        "src/lib/coachhelm/v3/qualifying/player-notify.ts",
+        "supabase/migrations/20260819200000_preserve_golf_history_on_account_deletion.sql",
+        "docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md"
+      ],
+      "task_description": "A schema fix that preserves golf round/shot history on account deletion is committed but not applied to production, so the delete route still cascades a player's round history today. Find the delete route, the prepared migration, and the four call sites patched ahead of it."
+    },
+    {
+      "id": "INC-2026-08-25-recap-persist-schema-permission",
+      "incident_path": "memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md",
+      "gold_feature": "golf_round_lifecycle",
+      "gold_feature_secondary": [],
+      "seed_file": "supabase/migrations/20260825233000_fix_round_recap_wrapper_definer.sql",
+      "gold_files": [
+        "supabase/migrations/20260825041628_permit_completed_round_recap_write.sql",
+        "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+        "supabase/tests/rls/golf_round_recap_lifecycle.sql"
+      ],
+      "task_description": "Round recap persistence failed for every caller after a schema-permission regression revoked ALL on helm_private from authenticated, breaking a SECURITY INVOKER wrapper's hop into it. Find the repair migration and the two migrations that introduced the regression."
+    },
+    {
+      "id": "INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge",
+      "incident_path": "memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md",
+      "gold_feature": "admin_platform",
+      "gold_feature_secondary": ["coachhelm_ai"],
+      "seed_file": "src/app/api/cron/event-reminders/route.ts",
+      "gold_files": [
+        "src/lib/notifications/golf-message-fanout.ts",
+        "src/lib/coachhelm/v3/qualifying/player-notify.ts",
+        "src/lib/settled-failures.ts",
+        "src/hooks/use-presence.ts"
+      ],
+      "task_description": "A cron reported healthy for two days while failing on every run, because a Promise.allSettled fan-out discarded rejection reasons before anything could log or count them. Find the cron route and the other fan-out sites later routed through the same shared failure-reporting helper."
+    },
+    {
+      "id": "INC-2026-08-22-delete-shot-stale-id",
+      "incident_path": "memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md",
+      "gold_feature": "shot_tracking",
+      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "seed_file": "src/app/golf/actions/golf.ts",
+      "gold_files": [
+        "src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx",
+        "src/lib/admin/__tests__/observe-action-result.test.ts",
+        "src/lib/admin/observe-action-result.ts"
+      ],
+      "task_description": "deleteShot returning a soft 'not found' for an already-absent row was surfaced as a server error, blocking recovery during active round tracking. Find deleteShot, the local single-flight fix, and the observability tier that now classifies this result."
+    },
+    {
+      "id": "INC-2026-08-22-confirmed-snapshot-recovery-prompt",
+      "incident_path": "memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md",
+      "gold_feature": "shot_tracking",
+      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "seed_file": "src/lib/utils/emergency-save.ts",
+      "gold_files": [
+        "src/lib/utils/emergency-save.test.ts",
+        "src/app/golf/actions/__tests__/golf-schemas.test.ts"
+      ],
+      "task_description": "A confirmed, server-acknowledged scorecard was shown as unsaved after iOS backgrounding, because the local emergency-save fallback used a bare newer-timestamp check instead of comparing actual progress against the server. Find the emergency-save module and its test coverage."
+    },
+    {
+      "id": "INC-2026-08-22-partial-save-round-deletion",
+      "incident_path": "memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md",
+      "gold_feature": "shot_tracking",
+      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "seed_file": "src/app/golf/actions/golf.ts",
+      "gold_files": [
+        "src/lib/utils/emergency-save.ts"
+      ],
+      "task_description": "savePartialRound's recovery branch deleted the parent in-progress round as cleanup when a child hole/shot upsert failed, turning a retryable save into a missing round. Find savePartialRound and the emergency-save module its recovery banner now routes through."
+    },
+    {
+      "id": "INC-2026-08-25-atomic-snapshot-hole-mismatch",
+      "incident_path": "memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md",
+      "gold_feature": "shot_tracking",
+      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "seed_file": "supabase/migrations/20260825152726_guard_round_snapshot_shot_group_integrity.sql",
+      "gold_files": [
+        "supabase/tests/rls/golf_atomic_snapshot_integrity.sql"
+      ],
+      "task_description": "A full round payload could include a shot group for a hole absent from its hole list, and a missing-lookup CONTINUE turned that integrity failure into an acknowledged partial write. Find the guard migration and its RLS regression suite."
+    },
+    {
+      "id": "INC-2026-08-25-completed-round-sg-capability",
+      "incident_path": "memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md",
+      "gold_feature": "golf_round_lifecycle",
+      "gold_feature_secondary": ["stats_analytics"],
+      "seed_file": "supabase/migrations/20260825153105_permit_completed_round_sg_recalculation.sql",
+      "gold_files": [
+        "supabase/tests/rls/golf_completed_round_sg_recalculation.sql"
+      ],
+      "task_description": "recalculate_round_strokes_gained didn't declare the narrow stats_cache lifecycle capability before updating derived SG fields, so the completed-round guard rejected the write as a prohibited general edit. Find the capability-granting migration and its RLS suite."
+    }
+  ]
+}
