@@ -1214,13 +1214,29 @@ features:
         - npm run typecheck
         - npm run build
 
+  # admin_platform split into the shared shell plus three sub-capability
+  # entries — admin_incidents / admin_reliability_collector / admin_selfheal —
+  # 2026-09-02. Owner decision: memory/decisions/ADR-2026-09-03-control-plane-
+  # owner-decisions.md, closing OWNER DECISION ADMIN_PLATFORM_REGISTRY_
+  # GRANULARITY ("Every capability this control-plane program builds ...
+  # resolves to one feature_id today ... Phase E's blast-radius graph needs
+  # sub-capability edges to be useful for its own subject matter"). The ADR
+  # itself lands on the parallel Bridge control-plane session's branch, not
+  # this one — cited here by id, not by a path this branch can resolve.
+  #
+  # admin_dashboard is the only runtime FeatureKey this area owns today, and
+  # it stays on the shell (see check-feature-registry.ts: a FeatureKey may
+  # have exactly one semantic owner). The three sub-entries below record
+  # `feature_keys: []` with `covered_by: admin_platform` rather than manufacture
+  # a key nothing writes yet.
   admin_platform:
     name: Admin Platform
     status: active
     owner: platform
     criticality: high
     observability:
-      feature_keys: [admin_dashboard]
+      feature_keys:
+        - admin_dashboard
     docs:
       feature: memory/features/admin-platform.md
       flows:
@@ -1229,6 +1245,7 @@ features:
         # Literal paths, not a glob: document-inventory.mjs's `routed` check is
         # an exact-string Set membership test against each real file, so a
         # glob string here is never `.has()`-equal to an expanded path and
+        # silently reports these docs as unrouted.
         # silently reports these docs as unrouted. Listing the two files this
         # change actually touches keeps that check honest.
         - docs/ai-system/selfheal/README.md
@@ -1245,7 +1262,29 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
-        - src/app/admin/**
+        # Every src/app/admin/** subdirectory EXCEPT the three carved out
+        # below (errors/ -> admin_incidents, reliability/ ->
+        # admin_reliability_collector, self-heal/ -> admin_selfheal), so a
+        # file maps to exactly one routes owner instead of the shell and a
+        # sub-capability both claiming it.
+        - src/app/admin/golf/**
+        - src/app/admin/traces/**
+        - src/app/admin/deploys/**
+        - src/app/admin/auth/**
+        - src/app/admin/qualifiers/**
+        - src/app/admin/activity/**
+        - src/app/admin/baseball/**
+        - src/app/admin/health/**
+        - src/app/admin/ben-leah/**
+        - src/app/admin/utilization/**
+        - src/app/admin/work/**
+        - src/app/admin/users/**
+        - src/app/admin/teams/**
+        - src/app/admin/lifting/**
+        - src/app/admin/jobs/**
+        - src/app/admin/thread/**
+        - src/app/admin/billing/**
+        - src/app/admin/*.tsx
         - src/app/golf/admin/**
       components:
         - src/app/admin/_components/**
@@ -1268,14 +1307,28 @@ features:
         - src/app/golf/actions/admin/**
         - src/app/golf/actions/crm-*.ts
         - src/app/golf/actions/resend-activity.ts
+        # src/app/admin/actions/** mapped to NO feature before 2026-09-02 —
+        # closed as a system gap in the same change as the split. The three
+        # incident-analysis actions moved to admin_incidents and the triage
+        # trigger moved to admin_selfheal; these four are general admin
+        # actions with no sub-capability owner.
+        - src/app/admin/actions/view-as.ts
+        - src/app/admin/actions/golf-tracer.ts
+        - src/app/admin/actions/billing.ts
+        - src/app/admin/actions/sessions.ts
       services:
         - src/lib/supabase/admin*
         - src/lib/cron/**
-        # The Bridge's own data and helper layer mapped to NO feature before
-        # 2026-08-26: `knowledge:map` resolved a page under src/app/admin/** to
-        # admin_platform while resolving the data module that page reads to
-        # nothing. The OS contract calls that a system gap to close in the same
-        # change rather than merely record.
+        # The remainder of src/lib/admin/** not carved into a sub-capability
+        # below. Kept broad rather than enumerating the ~35 remaining files:
+        # a shell glob and a narrower sub-capability glob legitimately
+        # overlapping is an accepted pattern in this registry (see
+        # check-feature-registry.ts's own note on shared modules claimed by
+        # more than one feature's code block) — a file under
+        # src/lib/admin/incidents/** is both admin-platform code AND
+        # incidents code. The world-model generator resolves a PRIMARY
+        # feature per file by most-specific-glob-wins, so the overlap does
+        # not blur blast-radius attribution.
         - src/lib/admin/**
         - src/lib/reliability/**
         # General Supabase/Postgres observability (Phase 1, 2026-09-03):
@@ -1326,6 +1379,17 @@ features:
       tests:
         - src/test/lib/cron/auth.test.ts
         - src/test/api/cron/shared-auth.test.ts
+        # Cross-cutting gate test over ALL of src/app/admin (every
+        # sub-capability's routes included) — a general admin_platform
+        # concern, not scoped to one sub-capability. Added 2026-09-03 after
+        # `npm run knowledge:map -- --files
+        # src/app/admin/__tests__/admin-gate-coverage.test.ts` returned zero
+        # impacted features post-split: the split's 17 named `routes:`
+        # subdirectories replaced the old blanket `src/app/admin/**`, and
+        # `__tests__/` was never one of the 17 or a carved-out sub-capability,
+        # so it fell through to no owner. `scripts/knowledge/check-registry-
+        # orphans.mjs` now fails the build if this ever regresses.
+        - src/app/admin/__tests__/**
     integrations:
       - supabase
       - datadog
@@ -1339,7 +1403,161 @@ features:
         - docs/SECURITY_AUDIT.md
       required_checks:
         - npm run typecheck
-        - npm run test -- --run src/test/lib/cron/auth.test.ts src/test/api/cron/shared-auth.test.ts
+        - npm run test -- --run src/test/lib/cron/auth.test.ts src/test/api/cron/shared-auth.test.ts src/app/admin/__tests__/admin-gate-coverage.test.ts
+        - npm run build
+
+  admin_incidents:
+    name: Admin Incidents
+    status: active
+    owner: platform
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: "No dedicated runtime FeatureKey yet — incident telemetry writes through admin_events under the shared admin_dashboard key on admin_platform, the shell this entry was carved from."
+      covered_by: admin_platform
+    docs:
+      feature: memory/features/admin-incidents.md
+      business_logic:
+        - docs/SECURITY_AUDIT.md
+        - docs/OBSERVABILITY.md
+      incidents: []
+    code:
+      routes:
+        # The incidents-facing UI is /admin/errors (RcaPanel, EvidenceWall,
+        # LifecycleSpine, ErrorSurfaceReconciliation) — there is no
+        # src/app/admin/incidents/** route; naming would suggest otherwise.
+        - src/app/admin/errors/**
+      components: []
+      api: []
+      actions:
+        - src/app/admin/actions/analyze-error.ts
+        - src/app/admin/actions/resolve-error.ts
+        - src/app/admin/actions/sentry-resolve.ts
+      services:
+        - src/lib/admin/incidents/**
+        - src/lib/admin/incident-*.ts
+      db:
+        - supabase/migrations/*incident*.sql
+      tests:
+        - src/test/lib/admin/incident-classification.test.ts
+        - src/test/lib/admin/incident-classification-privilege.test.ts
+        - src/test/lib/admin/incident-grouping-inngest-skew.test.ts
+        - src/test/lib/admin/incident-grouping-opaque-ids.test.ts
+        - src/app/admin/actions/__tests__/analyze-error.test.ts
+        - src/app/admin/actions/__tests__/resolve-error.test.ts
+        - src/app/admin/actions/__tests__/sentry-resolve.test.ts
+    integrations:
+      - supabase
+      - sentry
+    review:
+      required_docs:
+        - memory/features/admin-incidents.md
+        - docs/OBSERVABILITY.md
+      required_checks:
+        - npm run typecheck
+        # Split across two lines to stay under the Review Gate's yamllint
+        # line-length limit (200 chars) — both still cover the same 5 paths;
+        # vitest runs each `required_checks` entry as its own invocation.
+        - npx vitest run src/lib/admin/incidents src/test/lib/admin/incident-classification.test.ts src/test/lib/admin/incident-classification-privilege.test.ts
+        - npx vitest run src/test/lib/admin/incident-grouping-inngest-skew.test.ts src/test/lib/admin/incident-grouping-opaque-ids.test.ts
+        - npm run build
+
+  admin_reliability_collector:
+    name: Admin Reliability Collector
+    status: active
+    owner: platform
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: "No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events."
+      covered_by: admin_platform
+    docs:
+      feature: memory/features/admin-reliability-collector.md
+      business_logic:
+        - docs/OBSERVABILITY.md
+      incidents: []
+    code:
+      routes:
+        - src/app/admin/reliability/**
+        - src/app/admin/releases/**
+      components: []
+      api:
+        # Scoped to this one cron rather than src/app/api/cron/** on purpose:
+        # the coachhelm-* crons in that directory belong to coachhelm_ai, and
+        # a blanket glob would silently hand their ownership here.
+        - src/app/api/cron/reliability-triage/**
+      actions: []
+      services:
+        - src/lib/reliability/**
+      db: []
+      tests: []
+    integrations:
+      - supabase
+      - sentry
+      - vercel
+    review:
+      required_docs:
+        - memory/features/admin-reliability-collector.md
+        - docs/OBSERVABILITY.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/reliability src/app/admin/reliability
+        - npm run build
+
+  admin_selfheal:
+    name: Admin Self-Heal
+    status: active
+    owner: platform
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: "No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events."
+      covered_by: admin_platform
+    docs:
+      feature: memory/features/admin-selfheal.md
+      flows:
+        - docs/ai-system/selfheal/README.md
+        - docs/ai-system/selfheal/repair-contract.md
+        - docs/ai-system/selfheal/triage-contract.md
+        - docs/ai-system/selfheal/STATE-2026-08-28.md
+      business_logic:
+        - docs/OBSERVABILITY.md
+      incidents: []
+    code:
+      routes:
+        - src/app/admin/self-heal/**
+      components: []
+      api:
+        - src/app/api/cron/selfheal-triage/**
+        - src/app/api/cron/log-retention/**
+      actions:
+        - src/app/admin/actions/triage.ts
+      services:
+        - src/lib/admin/selfheal-*.ts
+        - src/lib/admin/rca*.ts
+        - src/lib/admin/triage-*.ts
+        - src/lib/admin/auto-resolve.ts
+        - scripts/run-selfheal-repair.mjs
+        - scripts/lib/selfheal-repair-runner.mjs
+        - scripts/selfheal-repair-install.sh
+        - scripts/selfheal-repair-doctor.mjs
+        - config/launchd/**
+        - docs/ai-system/selfheal/**
+      db: []
+      tests:
+        - src/test/scripts/run-selfheal-repair.test.ts
+        - src/test/scripts/selfheal-repair-launchd.test.ts
+    integrations:
+      - supabase
+      - sentry
+      - github
+    review:
+      required_docs:
+        - memory/features/admin-selfheal.md
+        - docs/ai-system/selfheal/README.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/test/scripts/run-selfheal-repair.test.ts src/test/scripts/selfheal-repair-launchd.test.ts
         - npm run build
 
   team_access_control:
