@@ -1205,6 +1205,14 @@ features:
       components:
         - src/app/admin/_components/**
         - src/app/golf/admin/crm/components/**
+        # Bridge Premium Phase 2 Command Deck UI — `knowledge:map` resolved
+        # `src/components/admin/command-deck/**` to `impactedFeatures: []`
+        # before this line. Same precedent as `src/lib/admin/**` below: this
+        # is the Bridge/admin_platform surface's own component tree, not a
+        # separate feature, just outside `src/app/admin/_components/**`
+        # because Fairway primitives for a shared, sibling-branch component
+        # library live under `src/components/**`, not `src/app/**`.
+        - src/components/admin/command-deck/**
       api:
         - src/app/api/admin/**
         # Scoped to these two crons rather than src/app/api/cron/** on purpose:

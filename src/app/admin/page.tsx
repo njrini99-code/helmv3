@@ -41,6 +41,7 @@ import { selectAttention } from '@/lib/admin/incidents/attention';
 import { AttentionQueue } from './_components/AttentionQueue';
 import { summarizeFlow } from '@/lib/admin/selfheal-flow';
 import { SelfHealFlowStrip } from './_components/SelfHealFlow';
+import { CommandDeck } from '@/components/admin/command-deck/CommandDeck';
 
 export const dynamic = 'force-dynamic';
 
@@ -745,6 +746,30 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-5">
       <AutoRefresh />
+
+      {/* HELM COMMAND DECK (brief §10) — posture sentence, System Orbit,
+          Attention Stack, Decision Inbox, Release Wake, Self-Heal Circuit
+          summary. Additive: every panel below (Right now / Incident
+          operations / Change timeline / the collapsed Posture disclosure)
+          is unchanged. See CommandDeck.tsx's own header for why this is one
+          PanelBoundary rather than one per sub-panel. */}
+      <PanelBoundary
+        title="Helm Command Deck"
+        skeleton={
+          <div className="space-y-4">
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-[360px] w-full rounded-2xl" />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-40 w-full rounded-2xl" />
+            </div>
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+          </div>
+        }
+      >
+        <CommandDeck />
+      </PanelBoundary>
 
       {/* Triage-first ordering (bridge-refit): Status → Needs your eyes →
           Severity mix, all THREE sibling boundaries so a hiccup in one never

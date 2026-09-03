@@ -43,7 +43,11 @@ export interface PostureInput {
   selfHealActing: boolean | null;
   releaseWatch: ReleaseWatchState | 'unknown';
   releaseSha: string | null;
-  decisionCount: number;
+  /** Null when the decision-inbox source itself failed to read — distinct
+   *  from `0`, which means it read fine and nothing is waiting. Same split
+   *  as `selfHealActing` above, for the same reason: a caller's default `0`
+   *  from an unread source must never read as a confirmed calm inbox. */
+  decisionCount: number | null;
   now: number;
 }
 
@@ -106,7 +110,8 @@ function evidenceClause(blind: boolean, sources: readonly IncidentSourceName[]):
   return `Evidence blind: ${sources.join(', ')}`;
 }
 
-function decisionClause(count: number): string {
+function decisionClause(count: number | null): string {
+  if (count === null) return 'Decisions unknown';
   if (count === 0) return 'No decisions waiting on you';
   return count === 1 ? '1 decision needs you' : `${count} decisions need you`;
 }
@@ -147,7 +152,7 @@ export function derivePostureSentence(input: PostureInput): PostureSentence {
     selfHealActing,
     evidenceBlind: input.evidenceBlind,
     blindSources: input.blindSources,
-    decisionWaiting: input.decisionCount > 0,
+    decisionWaiting: input.decisionCount !== null && input.decisionCount > 0,
     computedAt: new Date(input.now).toISOString(),
   };
 }

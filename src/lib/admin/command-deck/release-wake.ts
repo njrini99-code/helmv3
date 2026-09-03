@@ -148,7 +148,13 @@ export function buildReleaseWake(input: BuildReleaseWakeInput): ReleaseWakeSnaps
         deployedAtMs === null ? unknownLane('Release deploy time unknown') : knownLane(databaseErrorEntries.length),
       latency: unknownLane('Query Pulse (brief §37) is not wired yet'),
       invariants: unknownLane('Invariant Lattice (brief §16) is not wired yet'),
-      selfHealActions: knownLane(input.selfHealActionsSinceDeploy),
+      // Gated on `deployedAtMs` the same as the other since-deploy lanes: the
+      // caller can only honestly count actions "since deploy" when it knows
+      // when the deploy was. A caller passing `0` because it, too, could not
+      // establish the deploy time must not read as "zero actions happened" —
+      // that is a materially different claim from "we cannot say".
+      selfHealActions:
+        deployedAtMs === null ? unknownLane('Release deploy time unknown') : knownLane(input.selfHealActionsSinceDeploy),
     },
     computedAt: new Date(now).toISOString(),
   };

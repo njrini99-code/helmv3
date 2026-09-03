@@ -75,6 +75,10 @@ describe('buildReleaseWake', () => {
     expect(result.lanes.incidents.unknown).toBe(true);
     expect(result.lanes.userImpact.unknown).toBe(true);
     expect(result.lanes.databaseErrors.unknown).toBe(true);
+    // Even with selfHealActionsSinceDeploy defaulted to 0 by the caller, an
+    // unknown deploy time must make this lane unknown too — 0 would read as
+    // "confirmed nothing happened", which nobody actually confirmed.
+    expect(result.lanes.selfHealActions.unknown).toBe(true);
     expect(result.deployedAt).toBeNull();
     expect(result.ageHours).toBeNull();
   });

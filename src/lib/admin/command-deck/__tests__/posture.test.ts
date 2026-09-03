@@ -66,7 +66,7 @@ describe('derivePostureSentence', () => {
     expect(result.headline).toContain('2 decisions need you');
   });
 
-  it('all-unknown: every input unreadable -> tone unknown, self-heal unknown, never healthy', () => {
+  it('all-unknown: every input unreadable -> tone unknown, self-heal unknown, decisions unknown, never healthy', () => {
     const result = derivePostureSentence(
       baseInput({
         canClaimAllClear: false,
@@ -75,14 +75,25 @@ describe('derivePostureSentence', () => {
         selfHealActing: null,
         releaseWatch: 'unknown',
         releaseSha: null,
+        decisionCount: null,
       }),
     );
     expect(result.tone).toBe('unknown');
     expect(result.tone).not.toBe('healthy');
     expect(result.selfHealActing).toBe('unknown');
+    expect(result.decisionWaiting).toBe(false);
     expect(result.headline).toContain('Release state unknown');
     expect(result.headline).toContain('Self-heal status unknown');
+    expect(result.headline).toContain('Decisions unknown');
+    expect(result.headline).not.toContain('No decisions waiting on you');
     expect(result.headline).not.toMatch(/Production healthy/);
+  });
+
+  it('decision inbox unreadable: decisionCount null -> "Decisions unknown", never a fabricated calm "No decisions" claim', () => {
+    const result = derivePostureSentence(baseInput({ decisionCount: null }));
+    expect(result.headline).toContain('Decisions unknown');
+    expect(result.headline).not.toContain('No decisions waiting on you');
+    expect(result.decisionWaiting).toBe(false);
   });
 
   it('multiple attention rows: headline notes how many more beyond the top one', () => {

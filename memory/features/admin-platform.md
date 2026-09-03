@@ -891,6 +891,98 @@ work lands.
   model yet in this repo (later Phase D work) and are accepted as
   caller-supplied facts rather than fabricated ahead of the data existing.
 
+## Phase 2 Command Deck (Bridge Premium Observability, 2026-09-03)
+
+`src/lib/admin/command-deck/**` (six pure/mostly-pure modules) and
+`src/components/admin/command-deck/**` (six presentational components plus
+one composition, `CommandDeck.tsx`), inserted above the existing `/admin`
+panels — brief §10 ("Overview: Helm Command Deck"), §11 (System Orbit), §12
+(Release Wake), §18 (Self-Heal Circuit summary), §34 (Decision Inbox). Every
+existing panel below it (Right now / Incident operations / Change timeline /
+the collapsed Posture disclosure) is unchanged. This is a composition layer
+over Phase 0's models and this repo's EXISTING attention/self-heal/coverage
+read models — no second incident, attention, release, or self-heal model
+(brief §44).
+
+- **`posture.ts`** — `derivePostureSentence`: the one scannable line,
+  clauses joined by " · " (posture, release state, top incident, self-heal
+  acting, evidence blindness, decisions waiting). `tone` degrades to
+  `'unknown'` on a blind/unreadable source and can never resolve `'healthy'`
+  from an incomplete read — pinned by an all-unknown fixture.
+- **`orbit.ts`** — `buildSystemOrbit`: the fixed 8-node System Orbit (Users,
+  Next/Vercel, Auth, Supabase, AI, Postgres, Jobs, Realtime), mapped from
+  `IncidentBoard.freshness` (per-source health, the same evidence the Truth
+  Strip renders) and `UnifiedIncident[]` (feature/errorCode-matched per
+  node). **Realtime always renders `'unknown'`** — no `IncidentSourceName`
+  covers it anywhere in this repo, so the node has no evidence to report,
+  deliberately kept rather than hidden as the visual vocabulary's (brief §4)
+  dashed-ring/hatched-fill case in the flesh.
+- **`selfheal-circuit.ts`** — `buildCircuitSummary`: Diagnose -> Repair ->
+  Close, the three stages `SELFHEAL_STAGES` actually automates today — NOT
+  the brief's idealized six-stage Collect/Diagnose/Repair/Review/Deploy/
+  Traffic/Close circuit, which would require inventing three stages this
+  repo does not run. Adds one thing `FlowSummary`/`SelfHealStageDetail`
+  don't already expose: which incident is waiting longest at each stage
+  (`deriveIncidentFlow` re-run per incident, matched against each stage).
+- **`release-wake.ts`** — `buildReleaseWake`: wires the Phase 0
+  `classifyReleaseWatch`/`classifyReleaseRelationship` classifiers against
+  real evidence (`getProductionDeployAt`, `board.incidents`). Every
+  corroborating signal `classifyReleaseRelationship` accepts beyond raw
+  timing (occurrence trend, changed-code, cohort, replay) is passed as
+  unknown/null — this repo tracks none of them yet — which the classifier
+  itself degrades to a temporal-only verdict ("Proximity is not
+  causation"), never a fabricated `NEW AFTER RELEASE`. The `latency` and
+  `invariants` lanes render `unknown: true` with a stated reason (Query
+  Pulse §37 and Invariant Lattice §16 have no read model anywhere in this
+  repo yet) rather than a fabricated zero.
+- **`decisions.ts` / `held-migrations.ts`** — `buildDecisionInbox`: sourced
+  from `selectAttention`'s `'needs-evidence'` rows (brief §6's "repair with
+  insufficient evidence") and `supabase/migrations/HELD.md`'s open `HOLD`
+  rows (a genuinely undecided "destructive/security schema choice", brief
+  §6). `config/open-pr-dispositions.json` was evaluated and NOT used — its
+  three rows are worktree-lifecycle metadata, not a production decision.
+  `held-migrations.ts`'s `fetchHeldMigrations` reads the file via `fs` at
+  request time; this repo has no `outputFileTracingIncludes` entry for it in
+  `next.config.mjs`, so whether that read survives a real Vercel serverless
+  bundle is UNVERIFIED (no `npm run build` was run to check — out of this
+  task's gate scope). Any read failure returns `null`, which
+  `buildDecisionInbox` already treats as `readable: false`, never a
+  silently-empty, falsely-calm inbox.
+- **UI**: `CommandDeck.tsx` gathers every upstream read ONCE via
+  `Promise.all` (all six sources are already fail-soft — none throw, each
+  degrades to an honest `'unknown'`/`null`/blind value on its own) rather
+  than one fetch per sub-panel, both to avoid a second live GitHub-API round
+  trip beyond the one `MissionTruthStrip` already makes
+  (`fetchDeployFreshness`/`fetchBriefing` are not React `cache()`-memoised)
+  and because every visual here reads from the SAME shared fetch — splitting
+  into per-panel Suspense boundaries would buy no independent streaming.
+  Wrapped in ONE `PanelBoundary` from `page.tsx`, matching how
+  `MissionTruthStrip` is wrapped.
+- **Known gap, not fixed here**: `AttentionRow.headline` (`attention.ts`,
+  outside this task's ownership) still reads `incident.description`, not
+  Phase 0's `IncidentPresentation.title` — so the posture sentence and
+  Attention Stack surface the same headline `/admin/errors` already does
+  today, not yet the deterministic plain-English title brief §7 describes.
+  Wiring `IncidentPresentation` into `attention.ts` is Phase 1's ("Incidents
+  + release tracking") territory.
+- **Local primitives, not `premium/*`**: `src/components/admin/command-deck/
+  tone.ts` (a `StateTone`-keyed rail/ink map — the fourth copy of the same
+  small pairing `AttentionQueue.tsx`/`TruthStrip.tsx`/`ChangeTimeline.tsx`
+  each already keep, per `AttentionQueue.tsx`'s own header on why a shared
+  file would be the wrong fix). The sibling `bridge-premium-p1` branch
+  (posture pill / evidence chips / confidence meter / unknown treatment /
+  episode strip primitives under `src/components/admin/premium/*`) had not
+  pushed as of this entry — nothing here duplicates it; swapping to
+  `premium/*` once it lands is a straightforward import change per
+  component, none of which currently exceeds ~40 lines of presentation.
+- **Tests**: 53 vitest cases across 11 files — five fixtures per read model
+  (healthy / blind source / regression / decision waiting / all-unknown)
+  plus render tests (`@testing-library/react`) for every component. No
+  dedicated `CommandDeck.tsx` integration test (would need mocking six
+  modules with no established precedent in this repo for testing an async
+  Server Component this way) — its wiring is exercised by `npm run
+  typecheck` plus each constituent read model's/component's own tests.
+
 ## Known Risk Areas
 
 - Admin actions are more likely to use broad permissions; review for service-role and RLS bypass carefully.

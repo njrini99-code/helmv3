@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 64 | 3 | 33 | 184 |
 | `AUDIT_SNAPSHOT` | 81 | 6 | 37 | 132 |
 | `STATE_SNAPSHOT` | 6 | 0 | 5 | 7 |
-| `HISTORY_LEDGER` | 23 | 0 | 5 | 49 |
+| `HISTORY_LEDGER` | 23 | 0 | 5 | 53 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 1 |
 | `INDEX` | 19 | 0 | 6 | 28 |
@@ -158,7 +158,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 5 | 99 | 3 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 5 | 104 | 3 |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 4 | 102 | 11 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 4 | 110 | 15 |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 3 | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 15 | 1 |
@@ -489,7 +489,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | 1 |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/tests/admin_platform.md` | current | - | - | yes | 3 | 52 | 2 |
+| `memory/ledgers/tests/admin_platform.md` | current | - | - | yes | 3 | 56 | 2 |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 2 | 3 | 1 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 47 | 15 |
@@ -642,7 +642,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 4 | 6 | - |
+| `supabase/migrations/HELD.md` | current | - | - | - | 7 | 6 | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
