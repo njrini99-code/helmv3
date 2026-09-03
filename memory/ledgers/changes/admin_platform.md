@@ -1,6 +1,70 @@
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # Admin Platform change ledger
 
+## 2026-09-03 — Zero-cost Supabase observability, Phase 1 (foundation): envelope, classifier, out-of-band DB error store, health/stat collectors, `/admin/database`
+
+New track (`agent/supabase-observability`), Phase 1 of a multi-phase
+zero-incremental-recurring-cost Supabase/Postgres observability program (the
+master brief lives on a sibling control-plane branch, not yet merged).
+
+- **Re-measured the production baseline** read-only via the Supabase
+  Management API — `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.
+  Corrects four numbers the brief's own 2026-09-03 snapshot got wrong:
+  `max_connections` is 60, not ~200; `service_role` statement_timeout is
+  30s, not 2m; per-role `idle_in_transaction_session_timeout` is UNKNOWN
+  (methodology limit — `pg_roles.rolconfig` can't see pooler-applied GUCs),
+  not 8s; and `helm_debug` (`trace_runs`/`trace_steps`/`helm_debug_prune`)
+  is LIVE in production and has been for about a week, while `HELD.md` and
+  the `helm-debug-prune` cron route's own header still describe it as
+  unapplied — recorded as a stale-doc finding rather than silently fixed
+  (`HELD.md` is shared surface, not this track's to edit).
+- **`src/lib/observability/supabase/{envelope,classify}.ts`** — one
+  canonical error shape and a code-first SQLSTATE/PostgREST classifier
+  covering every always-investigate family the brief names, plus the three
+  context-sensitive codes (42501/23505/23503) where the SAME code is
+  routine in one call path and a defect in another, resolved by an explicit
+  caller-stated flag rather than inferred from message text.
+- **`observe-result.ts` / `record-db-error.ts` / `integrity.ts`** —
+  `observeSupabaseResult()` (the one call a server call site adds around a
+  `{data,error}` result: metric + structured log + a scheduled durable
+  write, for the two actionable+ buckets only — never a duplicate Sentry
+  capture, that stays the existing M1-M4 wrappers' job),
+  `recordDbErrorOutOfBand()` (fail-open, 3s-timeout, opened as a SEPARATE
+  transaction AFTER the failed request already returned, so a rolled-back
+  business transaction can never erase its own failure record), and
+  `checkZeroRowMutationIntegrity()` (the brief's mandatory "HTTP 200 with
+  error payload" primitive — NOT yet wired into any specific workflow's
+  full outcome contract; that is a later, feature-by-feature phase).
+- **`db-health-delta.ts` / `query-regression.ts`** — pure, fixture-tested
+  delta/baseline/regression arithmetic behind two new Vercel-cron
+  collectors (`db-health-sampler` every 5m, `db-stat-delta` every 15m).
+  Reset detection uses two signals in both modules (a changed
+  `stats_reset`, OR any counter going negative) because production's own
+  `pg_stat_database.stats_reset` reads NULL — a timestamp-only check would
+  miss that exact shape.
+- **Four HELD migrations** (`20260903180000`-`20260903180300`) — new
+  `helm_debug` tables (`db_error_events`, `db_health_samples`,
+  `db_stat_deltas`, `db_stat_prior_state`) plus SECURITY DEFINER read/write
+  facades, same isolation pattern as `20260825200811`: schema revoked from
+  public, anon and authenticated, EXECUTE service_role-only, ACL tripwire, no
+  direct table grant to any role including service_role. Not applied — see
+  `supabase/migrations/HELD.md`.
+- **`/admin/database`** (`src/app/admin/database/page.tsx` +
+  `src/lib/admin/database/{overview,errors,performance}.ts`) — Mission
+  Control / Database Errors / Query Performance, registered in `ADMIN_NAV`
+  (Triage, key `D`, beside Reliability). Every fetcher degrades to
+  `status:'unconfigured'` on the HELD-migration shape, so the tab currently
+  renders "not shipped yet" honestly rather than a false green or a false
+  failure.
+- **Verified**: 120 new unit tests, `npx tsc --noEmit` clean,
+  `npm run lint --max-warnings 0` clean on every touched file,
+  `npm run docs:path-drift` clean. NOT VERIFIED: this PR does not compile
+  under CI until the sibling `agent/sentry-max-server` branch (Phase C —
+  `src/lib/observability/{metrics,structured-log,correlation}.ts`) merges
+  to `main` first; `observe-result.ts`/`integrity.ts`/`record-db-error.ts`
+  import from those paths as instructed, and they do not exist on `main`
+  yet as of this writing.
+
 ## 2026-09-02 — Registry granularity split: admin_incidents / admin_reliability_collector / admin_selfheal carved out
 
 - SHA: recorded on merge of `agent/bridge-worldmodel`.
@@ -1728,6 +1792,101 @@ the full description of each module; summarized here for the change record.
   entirely on `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` being present
   in the runtime environment and fails open to `'unknown'` otherwise.
 
+## 2026-09-03 — Bridge Premium Observability Phase 1: incident cards, Incident Genome, Release Watch, Evidence Inspector
+
+**What**: wired the Phase 0 truth models (previous entry) into `/admin/errors`
+and `/admin/errors/[fingerprint]`, per the same brief's §14/§9/§12/§13/§45
+(Phase 1, "Incidents + release tracking"). Two new adapter modules, a shared
+visual-vocabulary directory, and additive changes to the existing incident
+card and detail page.
+
+- **`genome.ts`** (`src/lib/admin/incidents/`): `buildIncidentEvidenceCoverage`
+  (maps `UnifiedIncident.sources` onto three of `coverage.ts`'s six cells
+  plus a repair-derived GitHub reading — `flight-recorder`/`jobs` always
+  `unknown`, no signal exists for either), `buildIncidentEpisodes` (adapts
+  `episodes.ts` to the two timestamps + one current resolution
+  `UnifiedIncident` carries; flags `timelineIncomplete` against
+  `resolution.reopenedCount` rather than fabricating episode boundaries it
+  cannot see), `buildBoardAliasGroups`/`buildIncidentGenome` (`aliases.ts`'s
+  second pass over a board, using only the fields `UnifiedIncident` actually
+  has — no trace ids/normalized frames exist yet, so only the classifier's
+  `highest`/`medium` tiers can fire in practice; documented, not hidden).
+- **`release-watch.ts`** (`src/lib/admin/incidents/`): wires
+  `release-context.ts`/`release-compare.ts` onto `release-ledger.ts`'s
+  already-existing deploy history (`fetchReleaseLedger`) rather than
+  re-deriving deploy data. `classifyIncidentReleaseRelationship` (pure,
+  tested) uses `firstSeen` vs. deploy time plus whether the incident's
+  feature shows a worsening delta in `ReleaseCardData.topFeatureDeltas` —
+  the one real corroborating signal available; every other evidence field is
+  `null`. `fetchCurrentReleaseWatch` (I/O, untested, matches
+  `fetchDeployFreshness`'s convention) always passes `dbSourceBlind: true` —
+  journey success, DB p95 and invariant breaches have no read model in this
+  repo yet, so they render `unknown`, never a fabricated zero.
+- **`src/components/admin/premium/**`** (new directory): `PosturePill` (one
+  tone-mapping surface for closed-vocabulary states — `unknown` routes
+  through `UnknownValue`'s hatched treatment, never a plain gray pill),
+  `EvidenceSourceChips`/`SourceConfidenceRing` (the six-source model, blind
+  vs. partial vs. never-attempted rendered as three distinct states),
+  `ReleaseRelationshipLabel`, `ConfidenceMeter` (structurally clamps below
+  100% and warns in dev if ever passed `1`, on top of every producer already
+  capping below 1), `EpisodeTimelineStrip`, `UnknownValue`/`UnknownInline`,
+  and `EvidenceInspector` (the shared Fairway `Sheet`, Summary/Evidence/
+  Timeline/Repair tabs, typed against a narrow `EvidenceInspectorData`
+  rather than a raw `UnifiedIncident` so a later phase can open it for a
+  release/feature/journey/trace without fabricating a fake incident).
+- **UI wiring**: `UnifiedIncidentCard` gained four optional props
+  (`presentation`, `genome`, `releaseRelationship`, `onInspect`) — additive;
+  a caller that does not pass them renders unchanged. Title prefers the
+  Phase 0 human title over `incident.description`; a muted-mono technical
+  signature line renders beneath it; a release relationship label renders
+  whenever a Release Watch was computed (`undefined` = omitted,
+  `null` = computed-but-unanswerable, rendered hatched); an episode
+  timeline strip renders only when an incident has actually regressed
+  (`episodes.length > 1`); an "Inspect" trigger opens the shared Evidence
+  Inspector. `UnifiedIncidentQueue` owns ONE `EvidenceInspector` instance
+  (not one per row — a per-card Sheet for every row in a long list is
+  exactly the payload §41 asks to avoid) and threads `presentations`/
+  `genomeByIncident`/`releaseRelationships` down. `/admin/errors/page.tsx`
+  computes all three per render and adds a new `ReleaseWatchPanel` (Runtime
+  Identity Triplet, new/regressed fingerprint counts, baseline comparison)
+  above the queue. `/admin/errors/[fingerprint]/page.tsx` renders the human
+  title as an `<h2>` (the page's `<h1>` stays the raw fingerprint — the
+  stable identifier every RCA row/repair artefact keys on) plus a new
+  `IncidentGenomePanel` (occurrence timeline, root-cause alias group with
+  each member's merge tier and reason, attached evidence chips).
+- **Scope note**: same as the Phase 0 entry — filed under `admin_platform`
+  because `memory/registry.yml` has no separate `admin_incidents`/
+  `observability` feature id for this surface as of this entry, not because
+  the work is narrowly scoped. `src/components/admin/premium/**` added to
+  that entry's component glob in the same change.
+- **Tests**: 51 new tests across 12 new `__tests__` files — `genome.test.ts`
+  8, `release-watch.test.ts` 5 (pure half only, per the `fetchDeployFreshness`
+  convention), seven `src/components/admin/premium/__tests__/*` files 25,
+  `UnifiedIncidentCard.premium.test.tsx` 7 (new props only — the
+  pre-existing 580-line card's own behavior is unchanged and untouched by
+  this suite), `ReleaseWatchPanel.test.tsx` 3, `IncidentGenomePanel.test.tsx`
+  3. All ran green per-file. Full `src/app/admin` + `src/lib/admin/incidents`
+  + `src/components/admin` suite (859 tests across 83 files at commit time)
+  run green, exit code checked independently of `tail`.
+- **Verified**: `npm run typecheck` (whole repo, exit 0) after each
+  incremental change. `npx vitest run --maxWorkers=4` on each new/changed
+  test scope, output captured to file with exit code checked separately —
+  never piped through `tail`.
+- **Fixed along the way**: an unrelated `node_modules/node_modules/react`
+  duplication in this worktree (caused by re-running `cp -Rc` against an
+  already-partially-populated destination from an earlier interrupted copy),
+  which produced two React copies and "Invalid hook call" in any test
+  mounting Fairway's `Sheet`. Removed and re-cloned cleanly; not a repo
+  defect, a one-time local setup mistake.
+- **Not done**: `EvidenceInspector` is not opened from `IncidentGenomePanel`
+  or `ReleaseWatchPanel` in this entry, only from the incident card — a
+  later phase can wire additional triggers to the existing shared instance
+  pattern without rebuilding the component. No baseline comparison for
+  journey success/DB p95/invariant breaches (no read model exists anywhere
+  in this repo yet — later Phase D work per `release-compare.ts`'s own
+  header). `ReleaseWatchPanel` lives on `/admin/errors`, not a new
+  `/admin/deploys` Release Runway — that full view is Phase 3's territory
+  per the brief's own implementation order (§45).
 ## 2026-09-03 — App and customer lenses (Bridge Premium Observability Phase 4)
 
 Source: `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`

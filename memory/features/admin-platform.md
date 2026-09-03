@@ -52,9 +52,10 @@ This area is high criticality because it often uses broader access patterns, ope
   `lens.ts` and `truth-strip.ts` are pure; `fetch.ts` is the only module in it
   that performs I/O.
   - Six additional pure read models, added 2026-09-03 as Phase 0 ("Truth and
-    naming") of the owner's Bridge Premium Observability brief (not yet a
-    resolvable path in this checkout — see the "Phase 0 truth models"
-    section below for its location as of this entry), §6/§7/§8/§9/§36/§45:
+    naming") of the owner's Bridge Premium Observability brief
+    (`docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`,
+    landed on `main` via #1783 the same day — see the "Phase 0 truth models"
+    section below), §6/§7/§8/§9/§36/§45:
     `present.ts` (the deterministic human-title
     resolver — `IncidentPresentation`, wired additively as
     `IncidentBoard.presentations` in `fetch.ts`), `aliases.ts` (root-cause
@@ -62,13 +63,32 @@ This area is high criticality because it often uses broader access patterns, ope
     `episodes.ts` (regression episodes), `coverage.ts` (six-source
     evidence coverage, wider than `sources.ts`'s four), `release-context.ts`
     (Runtime Identity Triplet + release relationship + Release Watch), and
-    `release-compare.ts` (baseline-vs-current post-deploy comparison). None
-    of the six are wired into any UI yet — Phase 0 is read models only, per
-    the brief's own implementation order (§45).
+    `release-compare.ts` (baseline-vs-current post-deploy comparison).
+  - `genome.ts` and `release-watch.ts`, added 2026-09-03 as Phase 1
+    ("Incidents + release tracking") of the same brief, §45 — the adapters
+    that wire the six Phase 0 modules above to a live `UnifiedIncident`
+    board and to `release-ledger.ts`'s existing deploy history. See the
+    "Phase 1 wiring" section below for what each honestly can and cannot
+    answer today.
 - `src/app/golf/admin/**`
 - `src/app/golf/admin/crm/**`
 - `src/app/api/cron/reliability-triage/**` — the 3-hourly collector behind the
   `/admin/reliability` tab. Its core is `src/lib/reliability/**`.
+- `src/app/admin/database/**` — the zero-cost Supabase/Postgres observability
+  view (Phase 1, 2026-09-03). Distinct from `/admin/reliability`, which
+  correlates APPLICATION-level Sentry/Supabase/Vercel signals every 3 hours;
+  this tab is the DATABASE's own state — connections, deduped Supabase/
+  PostgREST failures grouped by fingerprint, `pg_stat_statements`
+  delta/regression detection — read from `helm_debug` every 5-15 minutes via
+  `src/lib/admin/database/{overview,errors,performance}.ts`. Its data source
+  (`src/lib/observability/supabase/**`, four new `helm_debug` tables) is
+  **HELD, not applied to production** — see `supabase/migrations/HELD.md` —
+  so every fetcher currently renders "not shipped yet"
+  (`status: 'unconfigured'`), not a false failure state.
+- `src/app/api/cron/db-health-sampler/**`, `db-stat-delta/**`,
+  `db-observability-prune/**` — the three Vercel-cron collectors behind
+  `/admin/database` (5m / 15m / daily). Degrade cleanly on the HELD-migration
+  "not found" error shape, same pattern as `helm-debug-prune/route.ts`.
 - `src/app/api/cron/selfheal-triage/**` — the self-healing loop's Diagnose
   stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
   collection/apply core is `src/lib/admin/triage-collect.ts` /
@@ -92,6 +112,14 @@ This area is high criticality because it often uses broader access patterns, ope
 ### Components
 
 - `src/app/admin/_components/**` (Helm Bridge shell and controls)
+- `src/components/admin/premium/**` — Bridge Premium's shared visual
+  vocabulary (added 2026-09-03, brief Phase 1 §4/§13/§36): `PosturePill`,
+  `EvidenceSourceChips`/`SourceConfidenceRing`, `ReleaseRelationshipLabel`,
+  `ConfidenceMeter`, `EpisodeTimelineStrip`, `UnknownValue`/`UnknownInline`,
+  and `EvidenceInspector` (the shared Fairway `Sheet`, typed against a narrow
+  `EvidenceInspectorData` rather than a raw `UnifiedIncident` so a later
+  phase can open it for a release/feature/journey/trace too). Every later
+  Bridge Premium phase should import these rather than re-implementing.
 - `src/app/golf/admin/crm/components/**`
 - `src/components/admin/lenses/**` — Phase 4 lens dominant visuals
   (`JourneyFlow`, `UserJourneyRibbon`, `TeamEkgRow`, `AdoptionMapPanel`,
@@ -127,6 +155,16 @@ them would have broken those routes, not the dead one.
   (previously unmapped to any feature — a closed system gap).
 - `src/lib/supabase/admin*`
 - `src/lib/cron/**`
+- `src/lib/observability/supabase/**` — the zero-cost Supabase observability
+  layer (Phase 1): `envelope.ts` (canonical error shape, code-first
+  fingerprint), `classify.ts` (SQLSTATE/PostgREST classifier), `observe-
+  result.ts` (`observeSupabaseResult()` — the call a server call site adds
+  around a `{data,error}` result), `record-db-error.ts` (fail-open
+  out-of-band durable writer), `integrity.ts` (the HTTP-200-with-error
+  primitive), `db-health-delta.ts` / `query-regression.ts` (pure delta and
+  regression-detection arithmetic the two health/stat collectors call). See
+  `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.
+- `src/lib/admin/database/**` — the `/admin/database` read models.
 - `src/lib/admin/**` — the remainder not carved into a sub-capability above
   (deploy-freshness, integration-health, sentry-api, vercel-api,
   feature-registry, error-trend, severity, credential-shape, and the rest).
@@ -556,19 +594,14 @@ them would have broken those routes, not the dead one.
 ## Phase 0 truth models (Bridge Premium Observability, 2026-09-03)
 
 Six new pure modules under `src/lib/admin/incidents/`, all read models over
-evidence that already exists — no new tables, no new migration. Source: the
-owner's Bridge Premium Observability brief, §6/§7/§8/§9/§36/§45 (Phase 0,
-"Truth and naming"). As of this entry the brief lives only in the docs-only
-worktree it was written into — `sentry-max-controlplane`, under its own
-`ai-system` briefs directory, filename starting `BRIDGE_PREMIUM_OBSERVABILITY_
-BRIEF` and dated 2026-09-03 — not yet committed to this checkout or `main`.
-Deliberately not written above as one contiguous path: it does not resolve
-in this checkout yet and `docs:path-drift` treats any `docs/...`-shaped
-token in a navigation doc as a claim that the file exists. Locate it fresh
-(`find` under that worktree, or ask whoever committed it) rather than
-trusting this description once it may have moved. None of the six modules
-below render on any screen yet; Phase 1+ of that brief is where the visual
-work lands.
+evidence that already exists — no new tables, no new migration. Source:
+`docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`
+(landed on `main` via #1783, 2026-09-03), §6/§7/§8/§9/§36/§45 (Phase 0,
+"Truth and naming"). (This section previously said the brief lived only in
+a docs-only worktree and had not been committed to `main` — true for a few
+hours on 2026-09-03, no longer true once #1783 merged; corrected the same
+day by the Phase 1 entry below, which is what actually wired these six
+modules into a screen.)
 
 - **`present.ts`** — `resolveIncidentPresentation`, the deterministic
   human-title resolver (brief §7). Tier order: known error code (scored by
@@ -633,6 +666,83 @@ work lands.
   model yet in this repo (later Phase D work) and are accepted as
   caller-supplied facts rather than fabricated ahead of the data existing.
 
+## Phase 1 wiring — incident cards, Incident Genome, Release Watch, Evidence Inspector (2026-09-03)
+
+The six Phase 0 modules above were pure and unwired until this entry. Two
+new adapter modules under `src/lib/admin/incidents/` connect them to a live
+board, and `/admin/errors` + `/admin/errors/[fingerprint]` render the
+result. Brief §14/§9/§12/§13/§45 (Phase 1).
+
+- **`genome.ts`** — `buildIncidentEvidenceCoverage` (maps `UnifiedIncident.
+  sources`'s three sources — `sentry`/`supabase`/`vercel` — onto three of
+  `coverage.ts`'s six cells, plus a GitHub reading inferred from a real
+  `IncidentRepair`; `flight-recorder` and `jobs` always read `unknown` —
+  no per-incident signal exists for either anywhere in this codebase),
+  `buildIncidentEpisodes` (adapts `episodes.ts` to the only two occurrence
+  timestamps and one current resolution `UnifiedIncident` actually carries
+  — can reconstruct at most ONE regression boundary, and flags
+  `timelineIncomplete` whenever `resolution.reopenedCount` says the fault
+  has come back more times than that; never fabricates additional episode
+  boundaries), and `buildBoardAliasGroups`/`buildIncidentGenome` (runs
+  `aliases.ts`'s second pass over a board using only `id`/`errorCode`/
+  `featureId`/`actionName`/`firstSeen` — no trace ids or normalized frames
+  exist on `UnifiedIncident` yet, so in practice only the classifier's
+  `highest` tier — same RPC+code+feature — or `medium` tier can ever fire;
+  a standalone incident renders as an honest size-one group, not hidden).
+- **`release-watch.ts`** — wires `release-context.ts`'s
+  `classifyReleaseRelationship`/`classifyReleaseWatch` and
+  `release-compare.ts`'s `buildReleaseComparison` onto
+  `release-ledger.ts`'s ALREADY-EXISTING deploy history
+  (`fetchReleaseLedger`), rather than re-deriving deploy data — a second
+  Vercel/deploy reader would be the second authority `types.ts`'s own
+  header warns against. `classifyIncidentReleaseRelationship` (pure,
+  tested) uses only `firstSeen` vs. deploy time and the incident's own
+  lifecycle-derived occurrence trend — EVERY `ReleaseRelationshipEvidence`
+  corroboration field (feature-delta, code-in-trace-changed, cohort
+  signals, replay reproduction) is passed `null`, never guessed. Corrected
+  2026-09-03 (PR #1789 second review): this used to say the feature's
+  `topFeatureDeltas` worsening delta was "the one real corroborating
+  signal this codebase has" and was wired as `featureChangedInRelease`.
+  That was circular — a new incident's own first occurrences are what move
+  its own feature's delta positive, so it was proximity measuring itself,
+  not independent evidence — and has been removed; see `release-watch.ts`'s
+  `classifyIncidentReleaseRelationship` header for the full account. A
+  proximity-only incident now correctly resolves to `'no-causal-signal'`.
+  `fetchCurrentReleaseWatch` (I/O, untested per the `fetchDeployFreshness`
+  convention) always passes `dbSourceBlind: true` into
+  `buildReleaseComparison` — journey success rate, DB p95 and invariant
+  breaches have no read model in this repo yet (release-compare.ts's own
+  header: "later Phase D work"), so those three render as unknown, never a
+  fabricated zero.
+- **UI**: `UnifiedIncidentCard` gained three optional props
+  (`presentation`, `genome`, `releaseRelationship`) — additive, so a caller
+  that does not pass them renders exactly as before. The row title now
+  prefers the Phase 0 human title over `incident.description`, a
+  muted-mono technical signature line renders beneath it, a release
+  relationship label renders whenever a Release Watch was computed
+  (`undefined` = omitted entirely, `null` = computed-but-unanswerable,
+  rendered hatched — the two are visually and semantically distinct), and
+  an episode timeline strip renders only when an incident has actually
+  regressed (`episodes.length > 1`). `/admin/errors/page.tsx` computes
+  `board.presentations` (already existed, previously unconsumed),
+  `buildBoardAliasGroups`/`buildIncidentGenome` per rendered row, and
+  `fetchCurrentReleaseWatch` once per page load, and renders a new
+  `ReleaseWatchPanel` (Runtime Identity Triplet, new/regressed fingerprint
+  counts, baseline comparison) above the queue.
+  `/admin/errors/[fingerprint]/page.tsx` renders the Phase 0 title as an
+  `<h2>` (the page's `<h1>` stays the raw fingerprint — the stable
+  identifier every RCA row and repair artefact actually keys on) plus a
+  new `IncidentGenomePanel` (occurrence timeline, root-cause alias group
+  with each member's merge tier and reason, attached evidence-source
+  chips) between the lifecycle explanation and the evidence wall.
+- **Shared vocabulary**: `src/components/admin/premium/**` — see the
+  "Components" section above for the full list. `EvidenceInspector` IS
+  wired: `UnifiedIncidentQueue.tsx` owns one shared instance (matching
+  `FeatureDrawer.tsx`'s established pattern rather than mounting one per
+  row), and `UnifiedIncidentCard.tsx` builds its `EvidenceInspectorData`
+  and opens it via an `onInspect` callback (an "Inspect" button in the
+  card's footer). Corrected 2026-09-03 (PR #1789 review) — this entry
+  previously said the opposite, stale from before that wiring landed.
 ## Phase 4 lenses (Bridge Premium Observability, 2026-09-03)
 
 Seven new pure read models under `src/lib/admin/lenses/`, five small
@@ -968,6 +1078,30 @@ assumed it would:
 - CRM email/reply/suppression logic can have compliance impact.
 - Rollup dashboards can appear live while backed by stale data.
 - Observability code must avoid PII and secret leakage.
+- **The Supabase observability tables (`helm_debug.db_error_events`,
+  `db_health_samples`, `db_stat_deltas`, `db_stat_prior_state`) are HELD, not
+  applied to production**, as of 2026-09-03 — see `supabase/migrations/
+  HELD.md`. `/admin/database` and its three cron collectors are shipped
+  code with no live data source yet; they render `status: 'unconfigured'`
+  until an owner applies the migrations. Do not read a green/empty
+  `/admin/database` page as proof the database is healthy — it may only
+  mean the collector has never run.
+- **`helm_debug` is not reachable by direct table grant, even for
+  `service_role`.** Every read and write goes through a `SECURITY DEFINER`
+  facade (`record_db_error_event`, `helm_debug_read_db_health_history`,
+  etc.) — confirmed against production 2026-09-03 that `service_role` lacks
+  `USAGE` on the schema. A future change that tries `.from('db_error_events')`
+  directly from an admin client will fail; add a new RPC facade instead.
+- **An incident detail page costs a whole board.** `fetchIncidentById`
+  (`src/lib/admin/incidents/fetch.ts`) builds the full 168h board — a Sentry
+  pull, a paginated `admin_events` sweep, the GitHub work log and per-PR check
+  runs — to answer for ONE incident, on top of the page's own
+  `fetchFingerprintDetail` and `fetchResolutionArchive`. The wide window is
+  deliberate (a detail page is reached from bookmarks, RCA rows and PR bodies,
+  so a 72h board would 404 half of them), and correctness beat cost while the
+  read model was being established. Twenty incidents opened in a row is twenty
+  boards. If that starts to bite, the fix is a narrowed by-id query, not a
+  shorter window.
 
 ## Tests To Prefer
 
@@ -993,6 +1127,15 @@ assumed it would:
   script run for real against eight 11-character placeholders.
 - `src/app/admin/golf/tracer/__tests__/tracer-shared.test.ts` — the Tracer's
   pure grouping/rendering helpers, including `tracerIncidentGroupKey`.
+- `src/lib/observability/supabase/__tests__/*.test.ts` — the SQLSTATE
+  classifier's context-sensitive codes (42501/23505/23503 expected vs
+  unexpected), fingerprint determinism (same code+feature+rpc, different
+  message text -> same fingerprint), the privacy sentinel (a JWT/email/UUID
+  passed into safeDetails never survives into the persisted envelope), and
+  the two-signal reset detection both delta engines share.
+- `src/lib/admin/database/__tests__/*.test.ts` — the three `/admin/database`
+  read models degrade to `status:'unconfigured'` (not `'error'`) on the
+  HELD-migration "not found" shape.
 - `src/lib/admin/incidents/__tests__/present.test.ts` — every human-title
   mapping, tier specificity, the generic fallback across every
   `IncidentClass`, and a safety suite proving no title/technical-signature
@@ -1039,6 +1182,10 @@ assumed it would:
 - `docs/BI_DASHBOARD_ARCHITECTURE.md`
 - `docs/OBSERVABILITY.md`
 - `docs/SECURITY_AUDIT.md`
+- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's
+  re-measured production baseline for the Supabase/Postgres observability
+  program (the master brief itself lands separately, on the sibling
+  control-plane branch).
 - `memory/features/admin-incidents.md`
 - `memory/features/admin-reliability-collector.md`
 - `memory/features/admin-selfheal.md`
