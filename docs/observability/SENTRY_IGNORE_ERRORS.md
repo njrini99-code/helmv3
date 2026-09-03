@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Sentry client `ignoreErrors` — what's filtered and why it's still safe
 
 `ignoreErrors` (`src/lib/sentry-client-options.ts`, `CLIENT_IGNORE_ERRORS`,

@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Feature: Sentry Observability
 
 ## Status

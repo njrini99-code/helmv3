@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD060 -->
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Sentry Phase A findings
 
 Measured at commit `44f4ce183` (branch `main`). Read-only pass from
