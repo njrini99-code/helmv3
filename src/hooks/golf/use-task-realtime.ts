@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Task priority levels (based on golf_tasks.priority)
@@ -374,7 +375,14 @@ export function useTaskRealtime(
       setTasks(transformedTasks);
       setStats(computeTaskStats(transformedTasks));
     } catch (err) {
-      console.error('Error fetching tasks:', err);
+      // describeError, not the raw object. Sentry's console integration
+      // stringifies every argument, so a Supabase PostgrestError — a plain
+      // object, not an Error — became the incident title "Error fetching
+      // tasks: [object Object]" in production on 2026-09-03, which Bridge
+      // itself flagged MESSAGE LOST because there is nothing left to triage.
+      // describeError exists for exactly this shape and collapses it to
+      // `code=… msg=… details=…`, so grep-by-code still works.
+      console.error('Error fetching tasks:', describeError(err));
       setError(err instanceof Error ? err.message : 'Failed to load tasks');
     } finally {
       setLoading(false);
