@@ -1,6 +1,89 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Change ledger — observability_supabase
 
+## 2026-09-03 — Phase 3 track D: diagnostics and correlation (schema drift, RLS, release causality, service layers, call budgets, incident detail)
+
+- Branch: `agent/dbobs-p3-diagnostics`, built on the Phase 2 integration tip
+  (Phase 1 + Track A + Track B). Sibling Track C
+  (`agent/dbobs-p2-platform`: Metrics API, advisors, platform rules,
+  on-demand log evidence, alert policy, repo-doctor keys, trace
+  certification) is a separate branch and nothing here imports it.
+- Change: five new PURE modules under
+  `src/lib/observability/supabase/` — `schema-drift.ts`,
+  `authorization-diagnosis.ts`, `release-correlation.ts`,
+  `service-layers.ts`, `call-budgets.ts` — plus two server-only readers
+  (`src/lib/admin/database/incident-detail.ts`, `drift-inputs.ts`) and a
+  single-fingerprint detail surface on `src/app/admin/database/page.tsx`
+  reached by `?incident=<fingerprint>`. Full design:
+  `docs/observability/SUPABASE_DIAGNOSTICS.md`.
+- **No migration.** Every read goes through an RPC that already exists
+  (HELD or not); the drift inputs are repository files plus one bounded
+  on-demand Management API query. No new table, no new facade, no new
+  `HELD.md` row. No existing module was modified other than the Bridge
+  page.
+- Why the three drift axes never collapse: `.claude/rules/shipping.md` §4
+  and `scripts/db/migration-ledger-drift.mjs`'s own header both record that
+  the ledger is not a reliable index of what is live (five local-only
+  migrations verified live in production with no ledger row, 2026-08-26)
+  and that a migration file existing is not evidence the object exists. So
+  `migrationFile` / `ledgerRow` / `generatedTypes` are reported
+  independently, each with its own `unknown`, and an unreadable input is
+  `unknown` rather than `absent`.
+- Why the causal ladder carries no number: PR #1789 fixed a defect in
+  `src/lib/admin/incidents/release-context.ts` where proximity was counted
+  both as the trigger for considering a release and as corroboration for
+  it, producing a false "new after release" at 60% confidence. This module
+  sorts every signal into corroborating (release-side facts, true whether
+  or not the incident occurred) / not-corroborating (restatements of the
+  incident — proximity, occurrence count, SQLSTATE fit alone) /
+  exculpatory (can only lower the rung), emits the rejected signals so a
+  reader sees they were considered, and offers only the rungs
+  unknown / no-signal / possible / likely / reproduced-cause. A numeric
+  confidence would invite the same accumulation.
+- Why `authorization-diagnosis.ts` has no default expectation: nothing in a
+  42501 distinguishes an expected security denial from a defect. Defaulting
+  to "expected" hides defects; defaulting to "unexpected" pages someone for
+  a routine permission check, which the brief's own anti-pattern list
+  names. A caller that states nothing gets UNKNOWN.
+- Deliberately a NEW correlation module rather than a reuse of
+  `admin/incidents/release-context.ts`, for the reason `freshness.ts`
+  already records in that directory for not reusing `sources.ts`: different
+  question, different output vocabulary, and the observability layer must
+  not depend on `src/lib/admin/incidents/**`.
+- Privacy §6: `authorization-diagnosis.ts` does not accept a message,
+  `details` or `hint` at all, so a policy predicate has no code path to
+  travel in — a test passes a sentinel through a widened cast and asserts
+  the serialized output does not contain it. `schema-drift.ts` reads the
+  already-sanitized `normalizedMessage` only to recover an object NAME, and
+  its explanation is built from enumerated axes alone (also tested).
+- Verified: `npx tsc --noEmit -p .` clean; `npx eslint <changed files>
+  --max-warnings 0` clean; `npx vitest run src/lib/observability/supabase
+  src/lib/admin/database src/app/admin/__tests__` — 35 files, 463 tests
+  passing (123 of them new in this track). Not run, by this track's own
+  constraints: `npm run build`, the full `npm test`, `npm run test:rls`,
+  deno, any docs regeneration script.
+- **NOT VERIFIED / open items:**
+  - `drift-inputs.ts`'s applied-ledger read is credential-gated
+    (`SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`) and `.env.local` is
+    withheld from worktrees, so it has never been observed returning a
+    non-null result. It fails open to `null`, which reads as `unknown`.
+  - `drift-inputs.ts`'s FILE reads do not work on Vercel:
+    `supabase/migrations/**` and `src/lib/types/database.ts` are repository
+    files, not part of a traced serverless function bundle, so in a
+    deployed Bridge both axes report `unknown` and the surface renders
+    UNREADABLE. Fixing that means an `outputFileTracingIncludes` change to
+    `next.config.mjs`, deliberately not made here.
+  - `call-budgets.ts` is NOT WIRED. `helm_debug.db_stat_deltas` has no
+    journey dimension, so nothing in this repo can attribute a DB call to a
+    journey today. The evaluator ships; the collector does not, and a
+    fabricated attribution was rejected as worse than an honest
+    `collecting`.
+  - No Sentry issue fetch, no Flight Recorder read, no data-invariant
+    registry — all three are declared `unconfigured` on the detail surface
+    rather than omitted or rendered as passing.
+  - The Bridge surface was not rendered in a browser; there is no
+    component test for `page.tsx` in this repo's admin suite.
+
 ## 2026-09-03 — Phase 2 track A: locks, table health, pg_cron/pg_net health, connection/rollback rules, telemetry freshness, retention v2, Bridge sections
 
 - Branch: `agent/dbobs-p2-collectors`, built on the merged Phase 1
