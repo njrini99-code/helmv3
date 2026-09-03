@@ -29,16 +29,16 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 13 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 19 | 19 | 7 | 8 |
+| `CURRENT_FEATURE` | 20 | 20 | 7 | 8 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
-| `GENERATED_TRUTH` | 15 | 3 | 5 | 24 |
+| `GENERATED_TRUTH` | 15 | 3 | 5 | 22 |
 | `PROCESS_CONTRACT` | 8 | 3 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 62 | 3 | 31 | 156 |
 | `AUDIT_SNAPSHOT` | 82 | 6 | 38 | 137 |
 | `STATE_SNAPSHOT` | 4 | 0 | 3 | 6 |
-| `HISTORY_LEDGER` | 22 | 0 | 3 | 42 |
+| `HISTORY_LEDGER` | 23 | 0 | 3 | 42 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
@@ -166,6 +166,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 2 | 25 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
+| `memory/features/observability-sentry.md` | current | yes | - | - | 1 | 14 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 1 | 13 | - |
@@ -254,7 +255,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 9 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 135 | 2 |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 135 | - |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 28 | 3 | - |
@@ -470,6 +471,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 1 | 6 | 2 |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | 1 | 6 | - |
+| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 1 | 7 | - |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
@@ -588,7 +590,7 @@ them would bury everything above.
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 0 | 21 | 7 |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
 | `docs/observability/SENTRY_SUPABASE_TRACING.md` | current | yes | - | yes | 1 | 2 | - |
-| `docs/observability/SENTRY_TELEMETRY_TAXONOMY.md` | current | yes | - | yes | 0 | 8 | - |
+| `docs/observability/SENTRY_TELEMETRY_TAXONOMY.md` | current | yes | - | yes | 2 | 8 | - |
 | `docs/operations/2026-05-27-baseball-tables-scope.md` | current | - | - | - | 1 | 3 | - |
 | `docs/operations/2026-05-27-v3-w35-diagnosis.md` | current | - | - | - | 2 | 5 | - |
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | 1 |
