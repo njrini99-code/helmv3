@@ -246,7 +246,7 @@ is a second thing to keep true.
 
 - **Behaviour:** `memory/features/admin-reliability-collector.md`
 - **Code:** `src/app/admin/reliability/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`
-- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — the collector writes background_job_logs rows (reliability-snapshot, reliability-triage job types) rather than admin_events, so nothing here claims a FeatureKey today.
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/admin_reliability_collector.md`
@@ -257,7 +257,7 @@ is a second thing to keep true.
 
 - **Behaviour:** `memory/features/admin-selfheal.md`
 - **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 10 more in the registry
-- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — self-heal stages heartbeat into background_job_logs (selfheal-triage, log-retention job types) and SELFHEAL_STAGES capability state, not admin_events.
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/admin_selfheal.md`

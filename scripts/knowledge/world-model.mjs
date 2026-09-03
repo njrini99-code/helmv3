@@ -80,6 +80,7 @@ import {
   sortWorldModel,
   walkImpact,
   resolveImpactTarget,
+  compareStrings,
 } from './lib/world-model-core.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -189,7 +190,7 @@ function loadJourneys() {
     note = `${journeys.length} journey(s) parsed from ${files.length} file(s); ${fileProblems.length} problem(s) skipped: ${fileProblems.map((p) => `${p.file} (${p.reason})`).join('; ')}`;
   }
 
-  return { journeys: journeys.sort((a, b) => a.id.localeCompare(b.id)), edges, note };
+  return { journeys: journeys.sort((a, b) => compareStrings(a.id, b.id)), edges, note };
 }
 
 // ---------------------------------------------------------------------------

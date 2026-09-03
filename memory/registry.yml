@@ -1352,7 +1352,11 @@ features:
         - docs/OBSERVABILITY.md
       required_checks:
         - npm run typecheck
-        - npx vitest run src/lib/admin/incidents src/test/lib/admin/incident-classification.test.ts src/test/lib/admin/incident-grouping-inngest-skew.test.ts src/test/lib/admin/incident-grouping-opaque-ids.test.ts src/test/lib/admin/incident-classification-privilege.test.ts
+        # Split across two lines to stay under the Review Gate's yamllint
+        # line-length limit (200 chars) — both still cover the same 5 paths;
+        # vitest runs each `required_checks` entry as its own invocation.
+        - npx vitest run src/lib/admin/incidents src/test/lib/admin/incident-classification.test.ts src/test/lib/admin/incident-classification-privilege.test.ts
+        - npx vitest run src/test/lib/admin/incident-grouping-inngest-skew.test.ts src/test/lib/admin/incident-grouping-opaque-ids.test.ts
         - npm run build
 
   admin_reliability_collector:
@@ -1362,7 +1366,7 @@ features:
     criticality: high
     observability:
       feature_keys: []
-      reason: "No dedicated runtime FeatureKey yet — the collector writes background_job_logs rows (reliability-snapshot, reliability-triage job types) rather than admin_events, so nothing here claims a FeatureKey today."
+      reason: "No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events."
       covered_by: admin_platform
     docs:
       feature: memory/features/admin-reliability-collector.md
@@ -1403,7 +1407,7 @@ features:
     criticality: high
     observability:
       feature_keys: []
-      reason: "No dedicated runtime FeatureKey yet — self-heal stages heartbeat into background_job_logs (selfheal-triage, log-retention job types) and SELFHEAL_STAGES capability state, not admin_events."
+      reason: "No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events."
       covered_by: admin_platform
     docs:
       feature: memory/features/admin-selfheal.md

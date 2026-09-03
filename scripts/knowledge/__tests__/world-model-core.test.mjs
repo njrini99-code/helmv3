@@ -11,6 +11,7 @@ import {
   sortWorldModel,
   walkImpact,
   resolveImpactTarget,
+  compareStrings,
 } from '../lib/world-model-core.mjs';
 
 // A miniature registry shaped like the real admin_platform split: one broad
@@ -551,5 +552,57 @@ journeys:
     expect(result.journeys).toEqual([]);
     expect(result.edges).toEqual([]);
     expect(result.problems).toEqual([]);
+  });
+});
+
+describe('compareStrings', () => {
+  // The exact CI-vs-local nondeterminism this comparator exists to close:
+  // `npm run knowledge:world-model:check` passed on macOS and failed on
+  // `ubuntu-latest` for the identical commit (2026-09-03), because every
+  // sort in this module used `.localeCompare()` — which resolves an
+  // ICU/environment-dependent DEFAULT locale, not a fixed rule. Regenerating
+  // against the real repo after switching to this comparator moved two real
+  // node pairs, which is why these two are the exact regression fixtures
+  // (not synthetic strings): `[` sorts before `-` under codepoint order but
+  // after it under `en-US` collation, and `PushPermissionSoftAsk.tsx`
+  // (uppercase) sorts differently relative to lowercase `announcements`/
+  // `player-hub`/`roster` under the two orderings.
+  it('sorts a bracket before a hyphen (the rounds/[id]/review vs rounds/** case)', () => {
+    const a = 'src/app/golf/(dashboard)/dashboard/rounds/**';
+    const b = 'src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**';
+    // codepoint: '*' (0x2A) < '[' (0x5B), so rounds/** sorts BEFORE rounds/[id]/...
+    expect(compareStrings(a, b)).toBeLessThan(0);
+    expect([b, a].sort(compareStrings)).toEqual([a, b]);
+  });
+
+  it('sorts an uppercase-leading path by raw codepoint, not locale case-folding', () => {
+    const upper = 'src/components/golf/PushPermissionSoftAsk.tsx';
+    const lower = 'src/components/golf/announcements/index.ts';
+    // codepoint: 'P' (0x50) < 'a' (0x61), so the uppercase path sorts FIRST —
+    // the opposite of where `en-US` locale collation would place it.
+    expect(compareStrings(upper, lower)).toBeLessThan(0);
+    expect([lower, upper].sort(compareStrings)).toEqual([upper, lower]);
+  });
+
+  it('is a total order: equal strings compare to 0, and it never throws on empty strings', () => {
+    expect(compareStrings('admin_platform', 'admin_platform')).toBe(0);
+    expect(compareStrings('', '')).toBe(0);
+    expect(compareStrings('', 'a')).toBeLessThan(0);
+    expect(compareStrings('a', '')).toBeGreaterThan(0);
+  });
+
+  it('never invokes Intl — verified by monkey-patching localeCompare to throw', () => {
+    const original = String.prototype.localeCompare;
+    // eslint-disable-next-line no-extend-native
+    String.prototype.localeCompare = function throwIfCalled() {
+      throw new Error('compareStrings must never call localeCompare');
+    };
+    try {
+      expect(() => compareStrings('admin_incidents', 'admin_platform')).not.toThrow();
+      expect(compareStrings('admin_incidents', 'admin_platform')).toBeLessThan(0);
+    } finally {
+      // eslint-disable-next-line no-extend-native
+      String.prototype.localeCompare = original;
+    }
   });
 });

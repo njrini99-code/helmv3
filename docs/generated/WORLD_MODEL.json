@@ -422,13 +422,13 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
+        "id": "routes:src/app/golf/(dashboard)/dashboard/rounds/**",
+        "pattern": "src/app/golf/(dashboard)/dashboard/rounds/**",
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/rounds/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/rounds/**",
+        "id": "routes:src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
+        "pattern": "src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
         "category": "routes"
       },
       {
@@ -594,6 +594,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/components/golf/PushPermissionSoftAsk.tsx",
+        "pattern": "src/components/golf/PushPermissionSoftAsk.tsx",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/golf/announcements/**",
         "pattern": "src/components/golf/announcements/**",
         "category": "components"
@@ -676,11 +681,6 @@
       {
         "id": "components:src/components/golf/player-hub/**",
         "pattern": "src/components/golf/player-hub/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/components/golf/PushPermissionSoftAsk.tsx",
-        "pattern": "src/components/golf/PushPermissionSoftAsk.tsx",
         "category": "components"
       },
       {
