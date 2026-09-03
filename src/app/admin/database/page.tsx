@@ -69,11 +69,20 @@ async function MissionControlPanel() {
     return <PanelStale label="Database Mission Control" error={result.error} />;
   }
 
-  const { latestSample, collectors } = result.data;
+  const { latestSample, collectors, rules } = result.data;
 
   if (!latestSample) {
     return <PanelNoData label="No health samples yet" description="The collector has not written its first row." />;
   }
+
+  const saturationTone: FwStatusTone =
+    rules.connectionSaturation.level === 'critical'
+      ? 'danger'
+      : rules.connectionSaturation.level === 'high'
+        ? 'danger'
+        : rules.connectionSaturation.level === 'warning'
+          ? 'warning'
+          : 'success';
 
   return (
     <div className="space-y-4">
@@ -98,6 +107,29 @@ async function MissionControlPanel() {
           tone="neutral"
           mono
         />
+      </div>
+
+      {/* Connection-saturation / rollback-rate rules (brief §19, §23, Phase 2 A2) */}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
+          <span className="text-xs font-medium text-warm-700">Connection saturation</span>
+          <StatusPill tone={saturationTone} size="sm" dot>
+            {rules.connectionSaturation.level}
+            {rules.connectionSaturation.sustainedHigh ? ' · sustained' : ''}
+          </StatusPill>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
+          <span className="text-xs font-medium text-warm-700">Rollback rate</span>
+          {rules.rollbackRate.baselineStatus === 'collecting' ? (
+            <StatusPill tone="neutral" size="sm" dot>
+              baseline collecting
+            </StatusPill>
+          ) : (
+            <StatusPill tone={rules.rollbackRate.isRegression ? 'danger' : 'success'} size="sm" dot>
+              {rules.rollbackRate.isRegression ? 'regression' : 'normal'}
+            </StatusPill>
+          )}
+        </div>
       </div>
 
       {latestSample.collectorStatus !== 'ok' ? (

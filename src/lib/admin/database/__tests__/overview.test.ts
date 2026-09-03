@@ -91,4 +91,36 @@ describe('fetchDatabaseMissionControl', () => {
     expect(delta!.lastStatus).toBe('failed');
     expect(prune!.lastStatus).toBe('never_run');
   });
+
+  it('wires the connection-saturation and rollback-rate rules (brief §19, §23) from the same history array', async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [
+        {
+          id: 2,
+          sampled_at: '2026-09-03T12:05:00.000Z',
+          stats_reset_at: null,
+          connections_total: 55,
+          connections_active: 1,
+          connections_idle_in_tx: 0,
+          connections_waiting_lock: 0,
+          connections_pct_max: 0.92, // fraction, not 92 — pins the scale overview.ts feeds the rules
+          longest_active_ms: 5,
+          longest_idle_in_tx_ms: 0,
+          longest_lock_wait_ms: 0,
+          db_size_bytes: 953_068_691,
+          xact_commit_delta: 120,
+          xact_rollback_delta: 5,
+          deadlocks_delta: 0,
+          cache_hit_ratio: 0.98,
+          temp_bytes_delta: 0,
+          collector_status: 'ok',
+        },
+      ],
+      error: null,
+    });
+
+    const result = await fetchDatabaseMissionControl();
+    expect(result.data!.rules.connectionSaturation.level).toBe('critical');
+    expect(result.data!.rules.rollbackRate.baselineStatus).toBe('collecting');
+  });
 });
