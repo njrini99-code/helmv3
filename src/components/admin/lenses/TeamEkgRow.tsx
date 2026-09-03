@@ -8,9 +8,13 @@ import type { TeamsEkgRow } from '@/lib/admin/lenses/teams-ekg';
  * utilization, release impact)"). The EKG strip itself is the EXISTING
  * `EkgSparkline` component already shipping at /admin/teams — this row adds
  * only the two lens-specific overlays teams-ekg.ts computes: release impact
- * and unresolved-incident count.
+ * (since the live release) and unresolved-incident count (bounded to
+ * `windowDays`, matching the EKG's own window — NOT all-time, and NOT
+ * "since the live release" either, which is why the two pills carry
+ * different qualifiers below rather than reading as the same kind of
+ * number).
  */
-export function TeamEkgRow({ team }: { team: TeamsEkgRow }) {
+export function TeamEkgRow({ team, windowDays }: { team: TeamsEkgRow; windowDays: number }) {
   return (
     <Link
       href={team.threadHref}
@@ -25,7 +29,7 @@ export function TeamEkgRow({ team }: { team: TeamsEkgRow }) {
       <EkgSparkline buckets={team.buckets} halo={team.halo} label={team.name} width={200} height={28} />
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill tone={team.unresolvedIncidents === null ? 'neutral' : team.unresolvedIncidents > 0 ? 'warning' : 'success'} size="sm">
-          {team.unresolvedIncidents === null ? 'unresolved unknown' : `${team.unresolvedIncidents} unresolved`}
+          {team.unresolvedIncidents === null ? 'unresolved unknown' : `${team.unresolvedIncidents} unresolved in ${windowDays}d`}
         </StatusPill>
         <StatusPill tone={team.releaseImpact === null ? 'neutral' : team.releaseImpact > 0 ? 'danger' : 'success'} size="sm">
           {team.releaseImpact === null ? 'release impact unknown' : `${team.releaseImpact} since release`}

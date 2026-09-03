@@ -82,7 +82,7 @@ async function BaseballLensBody() {
                 <div key={t.teamId} className="flex items-center justify-between gap-3 py-2">
                   <p className="truncate text-sm text-warm-800">{t.name}</p>
                   <StatusPill tone={t.unresolvedIncidents === null ? 'neutral' : t.unresolvedIncidents > 0 ? 'warning' : 'success'} size="sm">
-                    {t.unresolvedIncidents === null ? 'unknown' : `${t.unresolvedIncidents} unresolved`}
+                    {t.unresolvedIncidents === null ? 'unresolved unknown' : `${t.unresolvedIncidents} unresolved in ${ekg.windowDays}d`}
                   </StatusPill>
                 </div>
               ))

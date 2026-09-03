@@ -28,17 +28,27 @@ function team(overrides: Partial<TeamsEkgRow> = {}): TeamsEkgRow {
 
 describe('TeamEkgRow', () => {
   it('renders the team name and the EKG strip', () => {
-    render(<TeamEkgRow team={team()} />);
+    render(<TeamEkgRow team={team()} windowDays={30} />);
     expect(screen.getByText('Rini University')).toBeInTheDocument();
   });
 
   it('shows "unresolved unknown" rather than a fabricated 0 when the read failed', () => {
-    render(<TeamEkgRow team={team({ unresolvedIncidents: null })} />);
+    render(<TeamEkgRow team={team({ unresolvedIncidents: null })} windowDays={30} />);
     expect(screen.getByText('unresolved unknown')).toBeInTheDocument();
   });
 
   it('shows "release impact unknown" rather than fabricating a clean release when no live release is known', () => {
-    render(<TeamEkgRow team={team({ releaseImpact: null })} />);
+    render(<TeamEkgRow team={team({ releaseImpact: null })} windowDays={30} />);
     expect(screen.getByText('release impact unknown')).toBeInTheDocument();
+  });
+
+  it('qualifies the unresolved count with the actual window — a reader must not read it as "since the release" like the neighboring pill', () => {
+    render(<TeamEkgRow team={team({ unresolvedIncidents: 4 })} windowDays={30} />);
+    expect(screen.getByText('4 unresolved in 30d')).toBeInTheDocument();
+  });
+
+  it('renders a different window value when passed one, proving the label is not hardcoded', () => {
+    render(<TeamEkgRow team={team({ unresolvedIncidents: 2 })} windowDays={7} />);
+    expect(screen.getByText('2 unresolved in 7d')).toBeInTheDocument();
   });
 });

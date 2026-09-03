@@ -34,8 +34,9 @@ async function TeamsLensBody() {
         <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Teams lens</p>
         <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">Team EKG Grid</h2>
         <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-warm-600 md:block">
-          30-day activity/error strip per team, plus release impact and unresolved-incident counts since the current
-          live release. {ekg.liveReleaseSha ? `Live release ${ekg.liveReleaseSha.slice(0, 8)}.` : 'No live release identified.'}
+          {ekg.windowDays}-day activity/error strip per team, plus two separately-windowed overlays: release impact
+          (error/critical events since the current live release) and unresolved incidents (in the same {ekg.windowDays}-day
+          window as the strip, not since the release). {ekg.liveReleaseSha ? `Live release ${ekg.liveReleaseSha.slice(0, 8)}.` : 'No live release identified.'}
         </p>
       </Surface>
 
@@ -51,7 +52,7 @@ async function TeamsLensBody() {
           {ekg.teams.length === 0 ? (
             <PanelNoData label="No teams yet" description="Teams appear here once a golf or baseball team is created." />
           ) : (
-            ekg.teams.map((t) => <TeamEkgRow key={t.teamId} team={t} />)
+            ekg.teams.map((t) => <TeamEkgRow key={t.teamId} team={t} windowDays={ekg.windowDays} />)
           )}
         </div>
       </Surface>
