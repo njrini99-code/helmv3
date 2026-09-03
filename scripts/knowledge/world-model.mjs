@@ -277,12 +277,35 @@ async function buildModel() {
     // ratchet on that mistake is exactly the semgrep-false-zero trap this
     // repo's own conventions warn about — verified against `main` (the -E
     // form here returned 0 hits repo-wide; -P returns real hits).
-    rpcCallHits = git(['grep', '-nP', "\\.rpc\\(\\s*['\"][a-zA-Z_][a-zA-Z0-9_.]*['\"]", '--', '*.ts', '*.tsx'])
+    //
+    // `\b` (not a literal `\.`) so this catches BOTH call shapes this repo
+    // actually uses: the method form `supabase.rpc('x', ...)` and the bare
+    // wrapper form `await rpc('x', ...)` from `src/lib/admin/data/rpc.ts` (a
+    // thin retry/telemetry wrapper — `src/app/admin/actions/resolve-error.ts`
+    // and 12 other files call it this way). A `.`-anchored pattern misses the
+    // bare form entirely: `admin-incidents.md` names `resolve_admin_event` as
+    // load-bearing, but `resolve-error.ts` calls it via the bare wrapper, so
+    // the dot-anchored pattern produced ZERO `feature_rpc` edges for
+    // `admin_incidents` — an evidence extractor asserting absence is worse
+    // than one that just misses a feature. `\b` matches a `.`→word-char
+    // transition too (`.` is non-word), so one pattern covers both shapes
+    // without a second grep pass. Verified against `main`: the dot-anchored
+    // form returned fewer hits than this one, and the added hits are real
+    // `rpc('...')` call sites, not noise (no `fooRpc(`/`rpcFoo(` false hits —
+    // `\b` requires an actual word-boundary immediately before `rpc`).
+    rpcCallHits = git(['grep', '-nP', "\\brpc\\(\\s*['\"][a-zA-Z_][a-zA-Z0-9_.]*['\"]", '--', '*.ts', '*.tsx'])
       .trim()
       .split('\n')
       .filter(Boolean);
-  } catch {
-    rpcCallHits = []; // git grep exits 1 on zero matches — not an error here
+  } catch (err) {
+    // git grep exits 1 on zero matches — not an error here. Anything else
+    // (128 = this git build lacks PCRE support, e.g. a minimal CI image) is a
+    // real failure and must not silently degrade the model — that is the
+    // exact "-E returned 0 hits and nobody noticed" trap this file's own
+    // history records, and staying silent on exit 128 would reintroduce it
+    // the moment this runs somewhere the previous fix wasn't verified.
+    if (err.status !== 1) throw err;
+    rpcCallHits = [];
   }
   for (const hit of rpcCallHits) {
     const [filePart, ...rest] = hit.split(':');
@@ -290,7 +313,7 @@ async function buildModel() {
     if (!lineMatch) continue;
     const line = Number(lineMatch[1]);
     const rest2 = rest.join(':');
-    const nameMatch = rest2.match(/\.rpc\(\s*['"]([a-zA-Z_][a-zA-Z0-9_.]*)['"]/);
+    const nameMatch = rest2.match(/\brpc\(\s*['"]([a-zA-Z_][a-zA-Z0-9_.]*)['"]/);
     if (!nameMatch) continue;
     const rpcName = nameMatch[1];
     if (!rpcDefinedIn.has(rpcName)) continue;
@@ -379,7 +402,12 @@ async function buildModel() {
       // match (qualifier-invariants.ts, operational-rule-engine.ts) is a
       // real named-invariant registry; every test-path match was a fixture.
       .filter((f) => !f.includes('.test.') && !f.includes('.spec.') && !f.includes('/__tests__/'));
-  } catch {
+  } catch (err) {
+    // Same rule as the RPC-call grep above: exit 1 means zero matches (fine),
+    // anything else (e.g. 128 on a git build without PCRE support) must not
+    // be swallowed, or a runner missing -P silently ships a smaller model
+    // and `--check` fails pointing at the wrong cause.
+    if (err.status !== 1) throw err;
     invariantCandidates = [];
   }
   for (const file of invariantCandidates) {
@@ -483,6 +511,19 @@ async function buildModel() {
     notes: {
       journeys: journeysNote,
       unmapped: buildUnmappedNote(registry, featureIds),
+      tableAttribution:
+        'A feature’s `tables` list comes only from its own `db:` migration ' +
+        'globs, scanned for a literal `CREATE TABLE`. A feature can be real ' +
+        'owner of a table with no migration under its glob still containing ' +
+        'that statement (e.g. the table was created by a migration matched by ' +
+        'a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later ' +
+        'superseded by an ALTER/rename this scanner does not follow) — ' +
+        '`admin_incidents` is exactly this case: its current-state doc names ' +
+        '`admin_events` and `admin_error_resolutions` as Core Data, but no ' +
+        'migration under its own `db:` glob still contains their CREATE TABLE, ' +
+        'so this model reports zero tables for it. Read an empty `tables` list ' +
+        'as “no migration-glob evidence found,” never as “this feature ' +
+        'owns no tables” — check the feature’s own doc for the real answer.',
     },
   });
   return model;
@@ -537,6 +578,7 @@ function renderMarkdown(model) {
   L.push(`**Edges:** ${model.edges.length} (merged; an edge with more than one evidence kind is a stronger claim).`);
   if (model.notes?.journeys) L.push(`**Journeys:** ${model.notes.journeys}`);
   if (model.notes?.unmapped) L.push(`**Unmapped:** ${model.notes.unmapped}`);
+  if (model.notes?.tableAttribution) L.push(`**Table attribution:** ${model.notes.tableAttribution}`);
   L.push('');
   L.push('---');
   L.push('');
@@ -616,10 +658,20 @@ async function runImpact(target) {
         : 'none'
     }`,
   );
-  console.log(`  affected journeys: ${result.affectedJourneys.length ? result.affectedJourneys.join(', ') : 'none'}`);
+  console.log(
+    `  affected journeys: ${
+      result.affectedJourneys.length
+        ? result.affectedJourneys.map((j) => `${j.id}${j.weak ? ' (weak)' : ''}`).join(', ')
+        : 'none'
+    }`,
+  );
   console.log(`  tables: ${result.tables.length ? result.tables.join(', ') : 'none'}`);
   console.log(`  rpcs: ${result.rpcs.length ? result.rpcs.join(', ') : 'none'}`);
-  console.log(`  jobs: ${result.jobs.length ? result.jobs.join(', ') : 'none'}`);
+  console.log(
+    `  jobs: ${
+      result.jobs.length ? result.jobs.map((j) => `${j.id}${j.weak ? ' (weak)' : ''}`).join(', ') : 'none'
+    }`,
+  );
   const suiteLabels = result.verificationSuites.map((s) => s.replace(/^tests:/, ''));
   console.log(`  verification suites: ${suiteLabels.length ? suiteLabels.join(', ') : 'none'}`);
   console.log(`  risk note: ${result.riskNote}`);

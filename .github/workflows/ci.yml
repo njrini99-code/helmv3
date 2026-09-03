@@ -298,6 +298,18 @@ jobs:
         continue-on-error: true
         run: npm run knowledge:globs
 
+      # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
+      # 2026-09-02 alongside the generator itself. Without this step the
+      # committed artifact could go stale on the very next registry.yml edit
+      # and nothing would notice: `.claude/rules/quality-gates.md`'s own rule
+      # is "a script in package.json with no workflow step is not a gate,"
+      # and `npm run knowledge:world-model:check` sat exactly there until
+      # this step was added in the same change that introduced it.
+      - name: World Model graph is current
+        id: world_model
+        continue-on-error: true
+        run: npm run knowledge:world-model:check
+
       # Helm Bridge integration env drift.
       #
       # Runs in --drift mode, which is a no-op while NONE of these secrets are

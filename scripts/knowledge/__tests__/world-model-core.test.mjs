@@ -341,12 +341,40 @@ describe('walkImpact', () => {
 
   it('includes a job whose target feature is downstream, not only the primary', () => {
     const result = walkImpact(fixtureModel(), 'admin_incidents');
-    expect(result.jobs).toContain('selfheal-triage-cron');
+    expect(result.jobs.map((j) => j.id)).toContain('selfheal-triage-cron');
+  });
+
+  it('flags a job reached only through a weak (import-graph-only) downstream feature', () => {
+    // fixtureModel: admin_selfheal -> admin_reliability_collector is
+    // import_graph-only (weak). A job attributed to admin_reliability_collector
+    // must carry that weakness — a consumer reading `jobs` should not see it
+    // at the same confidence as a job reached by a doc-evidenced edge.
+    const model = fixtureModel();
+    model.edges.push({
+      source: 'reliability-triage-cron',
+      target: 'admin_reliability_collector',
+      kind: 'job_feature',
+      evidence: [],
+    });
+    const result = walkImpact(model, 'admin_incidents', { maxDepth: 2 });
+    const selfhealJob = result.jobs.find((j) => j.id === 'selfheal-triage-cron');
+    const reliabilityJob = result.jobs.find((j) => j.id === 'reliability-triage-cron');
+    expect(selfhealJob.weak).toBe(false);
+    expect(reliabilityJob.weak).toBe(true);
   });
 
   it('filters journeys to those naming the primary or a downstream feature', () => {
     const result = walkImpact(fixtureModel(), 'admin_incidents');
-    expect(result.affectedJourneys).toEqual(['incident-to-repair']);
+    expect(result.affectedJourneys.map((j) => j.id)).toEqual(['incident-to-repair']);
+  });
+
+  it('flags a journey weak only when every one of its matching features is weak', () => {
+    const result = walkImpact(fixtureModel(), 'admin_incidents');
+    // incident-to-repair names admin_incidents (the primary — never weak) and
+    // admin_selfheal (depth-1, doc-evidenced — not weak either), so the
+    // journey as a whole is not weak.
+    const journey = result.affectedJourneys.find((j) => j.id === 'incident-to-repair');
+    expect(journey.weak).toBe(false);
   });
 
   it('reports found:false for an unknown feature id without throwing', () => {

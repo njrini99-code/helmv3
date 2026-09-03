@@ -318,6 +318,12 @@ export function walkImpact(model, startFeatureId, opts = {}) {
   downstream.sort((a, b) => a.depth - b.depth || a.id.localeCompare(b.id));
 
   const relatedIds = new Set([startFeatureId, ...downstream.map((d) => d.id)]);
+  // Per-feature weak flag for everything reached below: the primary itself is
+  // never weak (it's the walk's own start, not a traversed edge); a
+  // downstream feature is weak exactly when `downstream` recorded it that
+  // way (the edge that first discovered it in the BFS was import_graph-only).
+  const weakByFeature = new Map(downstream.map((d) => [d.id, d.weak]));
+  weakByFeature.set(startFeatureId, false);
   const tables = (model.edges ?? [])
     .filter((e) => e.kind === 'feature_table' && e.source === startFeatureId)
     .map((e) => e.target)
@@ -326,18 +332,35 @@ export function walkImpact(model, startFeatureId, opts = {}) {
     .filter((e) => e.kind === 'feature_rpc' && e.source === startFeatureId)
     .map((e) => e.target)
     .sort();
+  // Jobs are attributed to whatever feature triggers them, which can be
+  // several hops downstream via import-graph-only evidence — e.g. a cron
+  // reached only because its owning feature imports a module the primary
+  // feature also imports, not because the cron actually depends on the
+  // primary feature's behavior. `downstreamCriticalFeatures` already labels
+  // that distinction per feature; `jobs` used to drop it by flattening to
+  // bare ids, so a blast-radius report could claim a cron is at risk with the
+  // exact same confidence as one reached by a registry glob or an RPC call.
+  // Carry the flag through instead of dropping it — never silently drop the
+  // job (Phase F still needs to know it exists), never silently promote it
+  // to strong confidence either.
   const jobs = (model.edges ?? [])
     .filter((e) => e.kind === 'job_feature' && relatedIds.has(e.target))
-    .map((e) => e.source)
-    .sort();
+    .map((e) => ({ id: e.source, weak: weakByFeature.get(e.target) ?? false }))
+    .sort((a, b) => a.id.localeCompare(b.id));
   const tests = (model.edges ?? [])
     .filter((e) => e.kind === 'feature_test' && e.source === startFeatureId)
     .map((e) => e.target)
     .sort();
   const journeys = (model.nodes.journeys ?? [])
     .filter((j) => (j.features ?? []).some((f) => relatedIds.has(f)))
-    .map((j) => j.id)
-    .sort();
+    .map((j) => {
+      // Only the features that actually caused this journey to match are
+      // relevant to its weak flag — a journey can name features outside
+      // `relatedIds` entirely, and those say nothing about confidence here.
+      const matching = (j.features ?? []).filter((f) => relatedIds.has(f));
+      return { id: j.id, weak: matching.every((f) => weakByFeature.get(f) ?? false) };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
 
   const primaryFeature = featuresById.get(startFeatureId);
   const weakCount = downstream.filter((d) => d.weak).length;

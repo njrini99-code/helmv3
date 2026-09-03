@@ -4065,6 +4065,18 @@
     },
     {
       "source": "admin_incidents",
+      "target": "admin_unresolve_error_fingerprint",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/admin/actions/resolve-error.ts",
+          "line": 324
+        }
+      ]
+    },
+    {
+      "source": "admin_incidents",
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
@@ -4077,6 +4089,18 @@
           "kind": "import_graph",
           "path": "src/lib/admin/incident-resolver.ts",
           "line": 16
+        }
+      ]
+    },
+    {
+      "source": "admin_incidents",
+      "target": "resolve_admin_event",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/admin/actions/resolve-error.ts",
+          "line": 221
         }
       ]
     },
@@ -5059,6 +5083,30 @@
     },
     {
       "source": "admin_platform",
+      "target": "get_active_sessions",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/data/auth.ts",
+          "line": 294
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "get_admin_dashboard_rollup",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/admin-data.ts",
+          "line": 167
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "get_crm_coach_stage_history",
       "kind": "feature_rpc",
       "evidence": [
@@ -5138,6 +5186,30 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/crm-kpis.ts",
           "line": 74
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "get_feature_health",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/data/feature-health.ts",
+          "line": 353
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "get_platform_health_stats",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/golf/actions/admin-data.ts",
+          "line": 1792
         }
       ]
     },
@@ -5266,6 +5338,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "is_super_admin",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/require-super-admin.ts",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "player_hub",
       "kind": "feature_relation",
       "evidence": [
@@ -5297,6 +5381,18 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/admin-tracer-data.ts",
           "line": 1578
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "revoke_user_sessions",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/admin/actions/sessions.ts",
+          "line": 25
         }
       ]
     },
@@ -5987,6 +6083,18 @@
           "kind": "import_graph",
           "path": "src/lib/admin/triage-collect.ts",
           "line": 17
+        }
+      ]
+    },
+    {
+      "source": "admin_selfheal",
+      "target": "resolve_admin_event",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/admin/actions/triage.ts",
+          "line": 28
         }
       ]
     },
@@ -16042,6 +16150,42 @@
     },
     {
       "source": "shot_tracking",
+      "target": "helm_debug_finalize_trace",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "line": 135
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
+      "target": "helm_debug_record_trace_step",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "line": 127
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
+      "target": "helm_debug_start_trace",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "line": 121
+        }
+      ]
+    },
+    {
+      "source": "shot_tracking",
       "target": "routes:src/app/golf/(dashboard)/dashboard/rounds/continue/**",
       "kind": "feature_route",
       "evidence": [
@@ -19461,6 +19605,7 @@
   ],
   "notes": {
     "journeys": "memory/journeys/ does not exist on this branch — journeys node list is empty, not a claim that no journeys exist.",
-    "unmapped": "Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts."
+    "unmapped": "Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.",
+    "tableAttribution": "A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer."
   }
 }
