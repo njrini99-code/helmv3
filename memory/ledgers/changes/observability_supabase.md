@@ -55,12 +55,18 @@
   time), targeted `npx eslint <changed files> --max-warnings 0` (clean each
   time), targeted `npx vitest run` on new + touched-existing test files
   (all passed, including confirming B2/B3/B4's wiring did not change any
-  existing action/hook/push test's behavior). B4's four Deno files verified
-  with `deno check --node-modules-dir=none` (network-resolved through the
-  sandbox proxy against real npm/jsr registries; a `deno` binary is present
-  on this machine). `supabase/functions` is excluded from the main
-  `tsconfig.json` project (confirmed before touching Deno files, so
-  `npx tsc --noEmit -p .` never saw them).
+  existing action/hook/push test's behavior). B4's four Deno files were
+  type-checked with `deno check --node-modules-dir=none` during this
+  track's own build (clean, network-resolved through the sandbox proxy
+  against real npm/jsr registries) — but the integrator disabled `deno`
+  invocation on this machine shortly after (its cache reached 4.1 GB twice
+  on a volume that dipped to 7 GiB free and has been removed), so as of
+  this entry: **Deno type-check NOT VERIFIED (deno disabled on this machine
+  by the integrator)** — that earlier clean pass is not a standing
+  guarantee and no `deno` command ran again after the constraint landed.
+  `supabase/functions` is excluded from the main `tsconfig.json` project
+  (confirmed before touching Deno files, so `npx tsc --noEmit -p .` never
+  saw them).
 - Correction avoided: initially assumed (per the task brief's own fallback
   language) that `metrics.ts` might be `server-only`, which would have
   pushed Realtime's failure signal onto a breadcrumb+captureMessage-only
@@ -77,5 +83,6 @@
   observer) plus five out-of-scope files, Realtime's silent-propagation
   monitor is exposed but unused (no product invariant to hang it on yet),
   Edge Functions are not deployed, the commit-outcome model is not wired
-  anywhere, and `Sentry.continueTrace` for Edge Functions was not verified
-  against the pinned SDK.
+  anywhere, `Sentry.continueTrace` for Edge Functions was not verified
+  against the pinned SDK, and the Deno type-check is NOT VERIFIED as of
+  this entry (deno disabled on this machine by the integrator).

@@ -221,14 +221,24 @@ Wrapped all three functions
 `sentry-trace, baggage, traceparent` to each one's CORS
 `Access-Control-Allow-Headers`.
 
-**Type-checked with `deno check --node-modules-dir=none`** (a `deno`
-binary exists on this machine) against all four Deno files — clean, network-
-resolved through the sandbox proxy against the real npm/jsr registries.
-`deno lint` flags the pre-existing "inline `npm:`/`jsr:` specifier, no
-`deno.json`" pattern all three functions already used before this change
-(the `jsr:@supabase/functions-js/edge-runtime.d.ts` import) — not a
-regression this change introduced; this repo has never been `deno lint`-clean
-by that rule and has no `deno.json`.
+**Deno type-check NOT VERIFIED (deno disabled on this machine by the
+integrator).** `deno check`/`deno lint` were run once during this track's
+own build (network-resolved through the sandbox proxy against the real
+npm/jsr registries, all four Deno files clean at that time), but the
+integrator has since disabled `deno` invocation entirely on this machine —
+its cache had reached 4.1 GB twice on a volume that dipped to 7 GiB free
+and has been removed. No `deno` command runs again from this session, so
+that earlier pass is not a standing guarantee and must not be cited as
+current verification. What this change relies on instead: careful reading
+against the fetched official Sentry-Deno-for-Supabase guide (quoted
+verbatim in `_shared/observability.ts`'s header) and the installed
+`@supabase/functions-js`/`@sentry/deno` type shapes read directly from
+their source; the CORS/header edits to each function (`sentry-trace,
+baggage, traceparent` appended to each `Access-Control-Allow-Headers`) are
+mechanical string edits with no type surface to get wrong. A future session
+with `deno` available should re-run `deno check --node-modules-dir=none`
+against `supabase/functions/_shared/observability.ts` and the three
+wrapped `index.ts` files before this is called VERIFIED again.
 
 **DEPLOYMENT IS AN OWNER ACTION.** None of the three functions, nor the new
 `_shared/observability.ts`, has been deployed. `supabase functions deploy
@@ -306,6 +316,10 @@ it as a starting point, not a certification.
   invariant exists yet to hang `createRealtimeActivityMonitor` off.
 - **Edge Functions: not deployed.** Owner action required —
   `supabase functions deploy personalize-email send-apns-push send-fcm-push`.
+- **Edge Functions: Deno type-check NOT VERIFIED** (deno disabled on this
+  machine by the integrator, mid-track, after an earlier clean pass — see
+  §5). Re-run `deno check --node-modules-dir=none` on a machine where deno
+  is available before treating this as verified again.
 - **Commit-outcome model: not wired anywhere**, by design — `golf.ts` is
   owned by another session this phase.
 - **`Sentry.continueTrace` for Edge Functions: NOT VERIFIED.**
