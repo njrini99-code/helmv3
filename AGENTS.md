@@ -99,7 +99,7 @@ CI runs across two platforms:
   Review Gate static analyzers).
 - **CircleCI** (`.circleci/config.yml`, see `.circleci/README.md`)
   — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk,
-  Promptfoo evals) scheduled Mondays 06:00 UTC, plus two native compile
+  Promptfoo evals, Janitor entropy report) scheduled Mondays 06:00 UTC, plus two native compile
   checks gated by BRANCH NAME: iOS Capacitor compile on M-series macOS
   runners (push to `main`, `release/*`, `ios/*`, `capacitor/*`) and Android
   `assembleDebug` on a Linux Android image (push to `main`, `release/*`,

@@ -392,6 +392,34 @@ jobs:
           path: evals/results/
           destination: promptfoo
 
+  # ---------- Weekly: Janitor entropy report (Phase K.4.5) ----------
+  # Advisory only — never fails the job on findings, and never modifies
+  # source files (scripts/janitor/run.mjs is read-only by construction; see
+  # its own header). Regenerates docs/generated/JANITOR_REPORT.md +
+  # janitor-findings.json as build ARTIFACTS on every run — same pattern as
+  # the knip/npm-audit jobs above, and for the same reason: a scheduled
+  # CircleCI job cannot commit back to the repo, so its output is an
+  # artifact for a human to read and, if they choose, commit locally after
+  # `npm run janitor`. No `install-node-deps` step: every Janitor module is
+  # dependency-free (node:fs/path/child_process/url only) — verified by
+  # running it against a worktree with no node_modules installed at all.
+  janitor:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: Janitor unit tests
+          command: npm run test:janitor
+      - run:
+          name: Run the Janitor
+          command: npm run janitor
+      - store_artifacts:
+          path: docs/generated/JANITOR_REPORT.md
+          destination: janitor/JANITOR_REPORT.md
+      - store_artifacts:
+          path: docs/generated/janitor-findings.json
+          destination: janitor/janitor-findings.json
+
 # ---------------------------------------------------------------------------
 # Workflows
 # ---------------------------------------------------------------------------
@@ -408,6 +436,7 @@ workflows:
       - npm-audit
       - stryker-coachhelm
       - promptfoo-evals
+      - janitor
 
   # iOS compile verification. Gated by BRANCH NAME, not by which files
   # changed: only runs on `main`, `release/*`, `ios/*`, `capacitor/*`, or

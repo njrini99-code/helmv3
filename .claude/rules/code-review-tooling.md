@@ -44,7 +44,8 @@ CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
 
 - `weekly` workflow — Knip dead-code, Stryker mutation tests on
   `src/lib/coachhelm/v2/`, full-repo sqlfluff, npm audit, Squawk
-  migration safety. Scheduled Mondays 06:00 UTC; triggered via the
+  migration safety, Janitor entropy report (`scripts/janitor/`, advisory).
+  Scheduled Mondays 06:00 UTC; triggered via the
   `run-weekly=true` pipeline parameter (configure in CircleCI
   project settings → Triggers).
 - `ios` workflow — iOS Capacitor compile verification on M-series

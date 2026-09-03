@@ -26,7 +26,10 @@
  * lives in `config/mutation-gate.json`, committed in the same PR that removes
  * `|| true`, and is explicitly marked PROVISIONAL there — no real weekly
  * mutation score is recorded anywhere in this repo as of this change
- * (see docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md §0.10).
+ * (the Helm Bridge control-plane implementation plan's finding on mutation
+ * testing, Phase K / K.4.1 — that plan document is scaffolding in a
+ * separate, not-yet-committed worktree as of this change, so it is
+ * described here rather than cited by a path that would not resolve).
  * Tighten it by hand the first time a real weekly job log reports a score.
  *
  * EXIT SEMANTICS (matches scripts/control-plane-verify.mjs's convention)

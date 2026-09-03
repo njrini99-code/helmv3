@@ -2,8 +2,10 @@
   "$comment": [
     "Floor for scripts/mutation-gate.mjs, which gates the weekly stryker-coachhelm",
     "CircleCI job (previously `npx stryker run || true`, which masked every exit",
-    "code including a crash — see docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md",
-    "section 7 / K.4.1, and finding #10 in the same doc).",
+    "code including a crash — Phase K / K.4.1 and finding #10 of the Helm Bridge",
+    "control-plane implementation plan; that plan document is scaffolding in a",
+    "separate, not-yet-committed worktree as of this change, so it is described",
+    "here rather than cited by a path that would not resolve).",
     "",
     "PROVISIONAL. No real weekly mutation score is recorded anywhere in this repo",
     "as of the PR that added this file — a full search of docs/ and .circleci/",
