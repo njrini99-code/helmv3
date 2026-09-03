@@ -1,0 +1,26 @@
+{
+  "$comment": [
+    "Floor for scripts/mutation-gate.mjs, which gates the weekly stryker-coachhelm",
+    "CircleCI job (previously `npx stryker run || true`, which masked every exit",
+    "code including a crash — see docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md",
+    "section 7 / K.4.1, and finding #10 in the same doc).",
+    "",
+    "PROVISIONAL. No real weekly mutation score is recorded anywhere in this repo",
+    "as of the PR that added this file — a full search of docs/ and .circleci/",
+    "for a recorded score turned up nothing. This floor is set low deliberately,",
+    "to catch a genuine collapse (tests stop exercising the mutated code at all)",
+    "without failing on a baseline nobody has measured yet.",
+    "",
+    "TIGHTEN THIS the first time a real weekly stryker-coachhelm job reports a",
+    "score in its job log: replace `floor` with (that measured score minus a",
+    "small margin, e.g. 5 points) and delete the word PROVISIONAL from this",
+    "comment. Never raise it to make a red run pass — see .claude/rules/quality-gates.md",
+    "section 1 on baseline/ratchet files; the same discipline applies here even",
+    "though this is a single committed number rather than a ratchet baseline",
+    "(a ratchet baseline needs something to commit the update, and the weekly",
+    "job runs on an ephemeral CircleCI container that cannot commit back to the",
+    "repo — see the comment at the top of scripts/mutation-gate.mjs)."
+  ],
+  "floor": 40,
+  "scope": "src/lib/coachhelm/v2/**/*.ts"
+}
