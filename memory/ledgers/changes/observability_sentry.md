@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
 # Change ledger — observability_sentry
 
 ## 2026-09-02 — client "maximum observability" build: profiling, replay privacy, third-party filter, feedback, breadcrumbs, feature tags

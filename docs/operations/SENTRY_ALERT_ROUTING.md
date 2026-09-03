@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
 # Sentry Alert Routing — Severity, Dedupe, Owner Actions
 
 Companion to `docs/operations/SENTRY_MONITORS.md`, which has every object's

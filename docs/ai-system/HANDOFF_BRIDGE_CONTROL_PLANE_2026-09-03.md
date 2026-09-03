@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
 # Handoff — Helm Bridge engineering control plane (parallel session)
 
 Written 2026-09-03 ~02:50Z by the session that is finishing the Sentry max-out.

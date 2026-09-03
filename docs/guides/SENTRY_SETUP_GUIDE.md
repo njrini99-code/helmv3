@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
 # Sentry Setup Guide for GolfHelm
 **Purpose:** Error tracking, performance monitoring, and real-time alerts
 **Framework:** Next.js 14 (App Router) + TypeScript + Supabase

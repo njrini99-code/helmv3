@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
 # Sentry client experience
 
 What the client-side "maximum observability" build added, how each piece is
