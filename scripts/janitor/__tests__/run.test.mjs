@@ -91,7 +91,7 @@ test('runAll: a classifier that throws is caught, reported as NO_SIGNAL, and doe
   // that does not exist, which is fatal to git ls-files/grep and to
   // readFileSync alike — every classifier should degrade to NO_SIGNAL/it's
   // own error handling rather than the run aborting.
-  const { results, crashes } = await runAll({ repoRoot: '/nonexistent/janitor-test-path-xyz' });
+  const { results } = await runAll({ repoRoot: '/nonexistent/janitor-test-path-xyz' });
   assert.equal(results.length, 12); // the run completed all 12, even if every one failed
   for (const r of results) {
     assert.ok(VALID_VERDICTS.has(r.verdict));
