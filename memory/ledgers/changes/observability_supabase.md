@@ -85,12 +85,23 @@
      and the repair link pointed at `/admin/traces?trace=<id>` when that
      page takes no `searchParams` at all — it now links the index honestly
      and carries the trace id in the label.
+- A fifth defect surfaced on re-review of the fix itself: making
+  `recentChange` return `unconfigured` for a non-missing-object failure gave
+  the UI chip "NOT SHIPPED YET" beside a note explaining the section does not
+  apply — a new wrong answer in the slot the old one occupied, on the
+  majority case. `SectionState` gained a distinct `not-applicable`
+  (chip: NOT APPLICABLE), so the distinction lives in the model and the UI
+  needs no special case. `dataInvariant` and `sentryIssue` genuinely ARE
+  unshipped and keep `unconfigured` — pinned by a test that asserts all
+  three at once.
 - Verified after the fixes: `npx tsc --noEmit -p .` clean; `npx eslint
-  <changed files> --max-warnings 0` clean; `npx vitest run
-  src/lib/observability/supabase src/lib/admin/database` — 34 files, 472
-  tests passing. Not run, by this track's own constraints: `npm run build`,
-  the full `npm test`, `npm run test:rls`, deno, any docs regeneration
-  script.
+  <changed files, including src/app/admin/database/page.tsx>
+  --max-warnings 0` clean; `npx vitest run src/lib/observability/supabase
+  src/lib/admin/database src/app/admin/__tests__` — 35 files, 477 tests
+  passing, `admin-gate-coverage.test.ts` included (it is the suite most
+  likely to have an opinion about a page that now reads `searchParams`).
+  Not run, by this track's own constraints: `npm run build`, the full
+  `npm test`, `npm run test:rls`, deno, any docs regeneration script.
 - **NOT VERIFIED / open items:**
   - `drift-inputs.ts`'s applied-ledger read is credential-gated
     (`SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`) and `.env.local` is

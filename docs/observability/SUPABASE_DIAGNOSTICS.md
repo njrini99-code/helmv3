@@ -327,8 +327,14 @@ the five pure evaluators into one `DatabaseIncidentDetail`.
 | --- | --- | --- |
 | `ok` | Read, has data | the section body |
 | `empty` | Read successfully, nothing in the window | `NONE IN WINDOW` |
-| `unconfigured` | The migration behind it is HELD | `NOT SHIPPED YET` |
+| `not-applicable` | Shipped, but does not apply to this failure class | `NOT APPLICABLE` |
+| `unconfigured` | The migration or source behind it is not shipped | `NOT SHIPPED YET` |
 | `blind` | A genuine read failure | `UNREADABLE` |
+
+`not-applicable` is deliberately distinct from `unconfigured`: "does not apply
+here" and "not shipped yet" are different facts, and collapsing them would put
+`NOT SHIPPED YET` beside a note explaining the section does not apply. The
+distinction lives in the model, so the UI renders it with no special case.
 
 A "locks at the time" panel rendering "none" while the locks migration is HELD is
 a confident wrong answer, worse than a blank one. Only the error store itself
@@ -355,7 +361,7 @@ length.** An empty migration-filename list means two different things — the
 listing was read and named nothing, or it was never read — and in a deployed
 Bridge the second is the default. Keying on length would render the confident
 denial "No migration in this tree names the failing object" on essentially every
-production incident. The section is `unconfigured` for a failure that names no
+production incident. The section is `not-applicable` for a failure that names no
 missing object (attribution here is object-based, so a `42501` has nothing to
 attribute), `blind` when the migrations could not be listed, and `empty` only
 when they were listed and named nothing.
@@ -425,7 +431,7 @@ Fairway tokens only, the page's existing `Surface` / `Inset` / `Eyebrow` /
 npx tsc --noEmit -p .                                              clean
 npx eslint <every changed file> --max-warnings 0                   clean
 npx vitest run src/lib/observability/supabase src/lib/admin/database
-                                             34 files, 472 tests passing
+  src/app/admin/__tests__                    35 files, 477 tests passing
 ```
 
 `npm run build`, `npm test` in full, and `npm run test:rls` were **not run** —

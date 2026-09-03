@@ -589,6 +589,7 @@ async function TelemetryHealthPanel() {
 const SECTION_STATE_TONE: Record<string, FwStatusTone> = {
   ok: 'success',
   empty: 'neutral',
+  'not-applicable': 'neutral',
   unconfigured: 'neutral',
   blind: 'warning',
 };

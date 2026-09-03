@@ -421,8 +421,20 @@ describe('fetchDatabaseIncidentDetail', () => {
       // array would deny a migration exists on essentially every incident.
       // A 42501 names no missing object, so recent-change attribution has no
       // mechanism at all here — and must never read as "no migration exists".
-      expect(result.data?.recentChange.state).toBe('unconfigured');
+      // `not-applicable`, NOT `unconfigured`: the section is shipped, it simply
+      // does not apply to this failure class, and the chip must not say
+      // "NOT SHIPPED YET" beside a note explaining otherwise.
+      expect(result.data?.recentChange.state).toBe('not-applicable');
       expect(result.data?.recentChange.note).not.toContain('No migration in this tree');
+    });
+
+    it('keeps not-applicable distinct from the genuinely-unconfigured sections', async () => {
+      stubRpcs({ helm_debug_read_db_error_events: { data: [errorRow()], error: null } });
+      const result = await fetchDatabaseIncidentDetail(FINGERPRINT);
+      expect(result.data?.recentChange.state).toBe('not-applicable');
+      // These two ARE unshipped, so the shared label is right for them.
+      expect(result.data?.dataInvariant.state).toBe('unconfigured');
+      expect(result.data?.sentryIssue.state).toBe('unconfigured');
     });
 
     it('reports recentChange as blind when only the MIGRATION axis is unknown', async () => {

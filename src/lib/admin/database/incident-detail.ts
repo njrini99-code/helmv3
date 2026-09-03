@@ -81,12 +81,21 @@ function isMigrationNotAppliedError(error: MaybePostgrestError): boolean {
 // Section state — the shape that keeps "nothing" and "we could not look" apart
 // ---------------------------------------------------------------------------
 
-export const SECTION_STATES = ['ok', 'empty', 'unconfigured', 'blind'] as const;
+export const SECTION_STATES = ['ok', 'empty', 'not-applicable', 'unconfigured', 'blind'] as const;
 export type SectionState = (typeof SECTION_STATES)[number];
 
+/**
+ * `not-applicable` is deliberately distinct from `unconfigured`. "This section
+ * does not apply to this failure class" and "this section is not shipped yet"
+ * are different facts, and collapsing them would put NOT SHIPPED YET beside a
+ * note explaining the section does not apply — a new wrong answer in the slot
+ * the old one occupied. The distinction lives in the model so the UI renders it
+ * without a special case.
+ */
 export const SECTION_STATE_LABEL: Readonly<Record<SectionState, string>> = {
   ok: 'READ',
   empty: 'NONE IN WINDOW',
+  'not-applicable': 'NOT APPLICABLE',
   unconfigured: 'NOT SHIPPED YET',
   blind: 'UNREADABLE',
 };
@@ -481,7 +490,7 @@ function buildRecentChangeSection(
   // object. Declared unconfigured, never "no migration exists".
   if (drift.data !== null && drift.data.mechanism === 'not_a_missing_object_failure') {
     return {
-      state: 'unconfigured',
+      state: 'not-applicable',
       data: null,
       note: 'Recent-change attribution is object-based and this failure names no missing object, so no migration can be tied to it here.',
     };
