@@ -181,6 +181,45 @@ function ModalShellRoot({
     (event.target as HTMLElement | null)?.focus({ preventScroll: true });
   }, []);
 
+  // Focus restoration on close (A11Y-1, 2026-09-02 audit): every caller here
+  // drives `open`/`onOpenChange` from its own state — none render a
+  // `<Dialog.Trigger>` (see FairwayEventEditor's New-event modal). Radix's
+  // Dialog.Content (modal variant) ships a default `onCloseAutoFocus` that
+  // unconditionally calls `event.preventDefault()` and then focuses
+  // `context.triggerRef.current` — with no Dialog.Trigger in the tree that
+  // ref is always null, so the call is a no-op, but the `preventDefault()`
+  // still suppresses FocusScope's OWN fallback (return focus to whatever was
+  // focused before the dialog opened). Net effect measured live: focus lands
+  // on `<body>` after every close, forcing a keyboard user to re-tab from the
+  // top of the page. Cmd-K (command-menu.tsx) doesn't hit this because it's a
+  // hand-rolled dialog, not Radix Dialog, and already does its own capture +
+  // restore — same pattern here, adapted to Radix's onCloseAutoFocus hook.
+  //
+  // Capture must run in a LAYOUT effect, not a passive one: FocusScope's own
+  // autofocus-on-mount also runs in a passive effect, and passive effects
+  // fire child-before-parent, so a passive effect here (an ANCESTOR of
+  // FocusScope) would run AFTER FocusScope has already moved focus onto the
+  // panel, capturing the wrong element. Layout effects run before ANY
+  // passive effect in the same commit, so this is guaranteed to see the
+  // real opener.
+  const openerRef = React.useRef<HTMLElement | null>(null);
+  React.useLayoutEffect(() => {
+    if (isOpen) {
+      openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+  }, [isOpen]);
+
+  const handleCloseAutoFocus = React.useCallback((event: Event) => {
+    const opener = openerRef.current;
+    // Still attached and focusable — e.g. not itself removed while the
+    // dialog was open. If not, fall through to Radix's default (harmless
+    // no-op via the null triggerRef) rather than force focus onto body.
+    if (opener && document.contains(opener) && typeof opener.focus === 'function') {
+      event.preventDefault();
+      opener.focus({ preventScroll: true });
+    }
+  }, []);
+
   const titleIsString = typeof title === 'string';
 
   return (
@@ -214,11 +253,19 @@ function ModalShellRoot({
               aria-describedby={description ? undefined : ''}
               onEscapeKeyDown={handleContentEscapeKeyDown}
               onOpenAutoFocus={handleOpenAutoFocus}
+              onCloseAutoFocus={handleCloseAutoFocus}
             >
               <motion.div
                 ref={setContentNode}
                 data-slot={dataSlot}
                 role="dialog"
+                // Radix's Dialog.Content does not set this itself (asChild
+                // merges role/aria-describedby/aria-labelledby/data-state
+                // onto this element, but never aria-modal) — the JS focus
+                // trap works regardless (Tab wraps inside via FocusScope),
+                // so this was a semantic gap for assistive tech, not a
+                // containment failure (A11Y-2, 2026-09-02 audit).
+                aria-modal="true"
                 // Focus target for the coarse-pointer open path (see
                 // handleOpenAutoFocus) — a dialog panel is the one place a
                 // negative tabindex on a div is the a11y-correct move.
