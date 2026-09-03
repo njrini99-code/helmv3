@@ -318,6 +318,44 @@ describe('persistence writes survive the response returning (Vercel freeze)', ()
   });
 });
 
+describe('failOpen catches a synchronous throw from the write dependency', () => {
+  // `write()` is typed `() => Promise<void>`, but nothing enforces that a
+  // dependency actually returns a promise rather than throwing synchronously
+  // before ever constructing one (e.g. a bug in the closure that builds the
+  // RPC payload, thrown before `dependencies.persistStep` is even reached).
+  // Before this fix, `const task = write(); vercelWaitUntil(task);` sat
+  // OUTSIDE failOpen's try block, so a synchronous throw there was never
+  // caught — it escaped as a rejected promise straight out of failOpen,
+  // through transition(), through the `void flightRecorder.x(...)` call
+  // sites in golf.ts, becoming an unhandled rejection on the round-save hot
+  // path instead of the one handled, reported failure the fail-open
+  // guarantee promises.
+  it('reports through onRecorderFailure exactly once and never rejects the caller', async () => {
+    const onRecorderFailure = vi.fn();
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'e5f6a7b8-c9d0-4e1f-8203-405060708090',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      // A synchronous throw, not an async function returning a rejected
+      // promise — that distinction is exactly what this test guards.
+      persistStep: (() => {
+        throw new Error('persistStep threw synchronously');
+      }) as unknown as FlightRecorderDependencies['persistStep'],
+      persistFinalize: async () => {},
+      onRecorderFailure,
+    };
+
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await expect(recorder.complete('server.validation')).resolves.toBeUndefined();
+    expect(onRecorderFailure).toHaveBeenCalledTimes(1);
+    expect(onRecorderFailure).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ operation: 'step' }),
+    );
+  });
+});
+
 describe('recordRescuedStepOutcome', () => {
   it('reports the trace as a success — not a failure — when the fallback rescued the write', async () => {
     const { dependencies, calls } = fakeDependencies();
@@ -369,5 +407,52 @@ describe('recordRescuedStepOutcome', () => {
 
     // The fallback step was never attempted — no fallback ran.
     expect(calls.some((c) => c.kind === 'step' && c.payload.stepKey === 'db.direct_submit_fallback')).toBe(false);
+  });
+
+  it('records the rescued warn/fallback-complete pair but does NOT finalize when deferFinalizeOnRescue is true', async () => {
+    // golf.ts's submit path needs this: a rescued direct-submit-fallback can
+    // fall through into the synchronous, response-blocking
+    // post.qualifier_transition step, whose real timing must land inside the
+    // trace's window before the caller finalizes it itself.
+    const { dependencies, calls } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await recordRescuedStepOutcome(recorder, {
+      failedStepKey: 'db.submit_round_atomic',
+      fallbackStepKey: 'db.direct_submit_fallback',
+      rescued: true,
+      stepInput: { errorCode: '57014', errorSummary: 'statement timeout' },
+      fallbackStepInput: { observed: { round_id: 'r-1' } },
+      deferFinalizeOnRescue: true,
+    });
+
+    expect(calls.some((c) => c.kind === 'finalize')).toBe(false);
+
+    const rpcStepCalls = calls.filter((c) => c.kind === 'step' && c.payload.stepKey === 'db.submit_round_atomic');
+    expect(rpcStepCalls.at(-1)).toMatchObject({ payload: { status: 'warning' } });
+    const fallbackStepCalls = calls.filter((c) => c.kind === 'step' && c.payload.stepKey === 'db.direct_submit_fallback');
+    expect(fallbackStepCalls.map((c) => c.payload.status)).toEqual(['started', 'success']);
+
+    // The caller is responsible for finalizing afterward.
+    await recorder.finalize('success');
+    expect(calls.at(-1)).toMatchObject({ kind: 'finalize', payload: { status: 'success' } });
+  });
+
+  it('still finalizes immediately on an UNRESCUED outcome even when deferFinalizeOnRescue is true', async () => {
+    // The flag only ever applies to the rescued branch — see its own doc.
+    // An unrescued outcome returns control to the caller immediately, so
+    // there is nothing later whose timing deferring finalize could protect.
+    const { dependencies, calls } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await recordRescuedStepOutcome(recorder, {
+      failedStepKey: 'db.submit_round_atomic',
+      fallbackStepKey: 'db.direct_submit_fallback',
+      rescued: false,
+      stepInput: { errorCode: '57014', errorSummary: 'statement timeout' },
+      deferFinalizeOnRescue: true,
+    });
+
+    expect(calls.at(-1)).toMatchObject({ kind: 'finalize', payload: { status: 'failure' } });
   });
 });

@@ -150,8 +150,19 @@ function environmentForTrace(value: string | undefined): string {
  * latency onto every round write. `persistStart`'s own `failOpen` wrapper
  * only guards against a REJECTION; a hang that never settles at all would
  * still block the caller forever without this.
+ *
+ * Lowered from 1500ms to 500ms (2026-09-02, flight-recorder real-timings
+ * reviewer fix): the real-per-stage-timing refit moved recorder construction
+ * — which awaits this bounded write — BEFORE any business logic in
+ * `deleteShot`, `updateShot`, and `savePartialRound`'s new-round branch (it
+ * already led `submitGolfRoundComprehensive`). A hung `helm_debug` write now
+ * stalls the start of every one of those actions, not only submit, and
+ * exactly during the mid-incident window described above — when a player
+ * can least afford extra latency on a shot edit or autosave. 500ms is still
+ * generous for a healthy same-region Supabase RPC (typically tens of ms) and
+ * caps the worst case those newly-affected call sites can add.
  */
-export const PERSIST_START_TIMEOUT_MS = 1500;
+export const PERSIST_START_TIMEOUT_MS = 500;
 
 /**
  * Resolves 'settled' once `promise` settles, or 'timeout' after `ms` —
@@ -257,9 +268,17 @@ export async function createHelmFlightRecorder(
    * caller either way.
    */
   const failOpen = async (operation: string, write: () => Promise<void>) => {
-    const task = write();
-    vercelWaitUntil(task);
     try {
+      // `write` is typed to return a promise, but nothing enforces that at
+      // the call site — a bug in the closure that builds the payload (or in
+      // a misbehaving dependency) can throw SYNCHRONOUSLY before any promise
+      // exists. Both the construction and the `vercelWaitUntil` registration
+      // live inside this try (not before it) so that case is caught exactly
+      // like an async rejection: one handled report through
+      // `onRecorderFailure`, never an unhandled rejection escaping to a
+      // `void flightRecorder.x(...)` call site in golf.ts.
+      const task = write();
+      vercelWaitUntil(task);
       await task;
     } catch (error) {
       dependencies.onRecorderFailure(error, { operation, trace_id: traceId, workflow: input.workflow });
@@ -395,6 +414,19 @@ export interface RescuedStepOutcomeInput {
   stepInput?: FlightRecorderStepInput;
   /** Attached to the fallback step's `complete` call — only used when `rescued`. */
   fallbackStepInput?: FlightRecorderStepInput;
+  /**
+   * When true, a RESCUED outcome (`rescued: true`) still marks the failed
+   * step warned and the fallback step complete, but does NOT call
+   * `finalize('success')` — the caller has more response-blocking work left
+   * to record (e.g. golf.ts's `post.qualifier_transition`) before the
+   * trace's real window closes, and must finalize itself once that work is
+   * done. Has no effect on the unrescued branch, which always finalizes
+   * 'failure' immediately: that branch returns control to the caller before
+   * any such later step could run, so there is nothing left to protect.
+   * Defaults to false (finalize immediately either way), preserving the
+   * original contract for any caller that doesn't pass it.
+   */
+  deferFinalizeOnRescue?: boolean;
 }
 
 /**
@@ -425,5 +457,6 @@ export async function recordRescuedStepOutcome(
   await recorder.warn(input.failedStepKey, input.stepInput);
   await recorder.start(input.fallbackStepKey);
   await recorder.complete(input.fallbackStepKey, input.fallbackStepInput);
+  if (input.deferFinalizeOnRescue) return;
   await recorder.finalize('success');
 }

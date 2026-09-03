@@ -60,8 +60,29 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
+// Lets one test force the `golf_shots` update in updateShotImpl to fail with
+// a specific Supabase error, without disturbing every other query the fake
+// supabase client serves normally (the earlier ownership/round lookups still
+// go through the real fake). Reset in afterEach so it never leaks between
+// tests.
+let shotMutationError: { code?: string; message: string } | null = null;
+
+vi.mock('@/lib/supabase/untyped', () => ({
+  fromUntyped: (client: { from: (table: string) => unknown }, table: string) => {
+    if (table === 'golf_shots' && shotMutationError) {
+      const err = shotMutationError;
+      return {
+        update: () => ({
+          eq: async () => ({ data: null, error: err }),
+        }),
+      };
+    }
+    return client.from(table);
+  },
+}));
+
 let recorderShouldReject = false;
-type RecorderCall = { method: string; stepKey?: string };
+type RecorderCall = { method: string; stepKey?: string; input?: unknown };
 let recorderCalls: RecorderCall[];
 const MOCK_TRACE_ID = 'a1b2c3d4-1111-4111-8111-111111111111';
 
@@ -71,8 +92,8 @@ vi.mock('@/lib/observability/helm-flight-recorder', () => ({
       throw new Error('helm_debug store unavailable');
     }
     const traceId = input.traceId ?? MOCK_TRACE_ID;
-    const record = (method: string) => (stepKey?: string) => {
-      recorderCalls.push({ method, stepKey });
+    const record = (method: string) => (stepKey?: string, stepInput?: unknown) => {
+      recorderCalls.push({ method, stepKey, input: stepInput });
       return Promise.resolve(undefined);
     };
     return {
@@ -110,12 +131,14 @@ function seed(overrides?: { shots?: Array<Record<string, unknown>> }) {
 beforeEach(() => {
   recorderShouldReject = false;
   recorderCalls = [];
+  shotMutationError = null;
   vi.clearAllMocks();
 });
 
 afterEach(() => {
   delete process.env.VERCEL_ENV;
   delete process.env.HELM_FLIGHT_RECORDER_ENABLED;
+  shotMutationError = null;
 });
 
 describe('deleteShot — flight recorder wiring (golf.shot.delete)', () => {
@@ -187,5 +210,27 @@ describe('updateShot — flight recorder wiring (golf.shot.add_or_edit)', () => 
 
     expect(result).toEqual({ success: false, error: 'Shot not found', code: 'shot_not_found' });
     expect(recorderCalls.some((c) => c.method === 'finalize' && c.stepKey === 'warning')).toBe(true);
+  });
+
+  it('records the real Supabase error on a db.shot_mutation failure, like deleteShot does for db.delete_shot', async () => {
+    // Before this fix, a failed golf_shots update recorded a hardcoded
+    // `errorSummary: 'Failed to update shot'` — losing the actual Postgres
+    // error code/message that deleteShot's db.delete_shot fail() already
+    // captures. The player-facing error message is untouched by this fix;
+    // only what lands in the trace changes.
+    seed();
+    shotMutationError = {
+      code: '23514',
+      message: 'new row for relation "golf_shots" violates check constraint "golf_shots_club_type_check"',
+    };
+
+    const result = await updateShot(SHOT, VALID_UPDATE);
+
+    expect(result).toEqual({ success: false, error: 'Failed to update shot' });
+    const failCall = recorderCalls.find((c) => c.method === 'fail' && c.stepKey === 'db.shot_mutation');
+    expect(failCall?.input).toMatchObject({
+      errorCode: '23514',
+      errorSummary: 'new row for relation "golf_shots" violates check constraint "golf_shots_club_type_check"',
+    });
   });
 });

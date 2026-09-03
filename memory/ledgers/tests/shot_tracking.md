@@ -358,3 +358,41 @@ Each written red first against the pre-fix source; defect descriptions in
   unit --project unit-dom` over the round, shot, offline, utils and auth
   suites listed in `memory/ledgers/changes/shot_tracking.md`, same date
   (205 files, 2281 passed, 4 skipped — the C4 block — 0 failed).
+
+## 2026-09-02 — Flight Recorder: three reviewer findings on PR #1769
+
+Each written red first against the pre-fix source; defect descriptions in
+`memory/ledgers/changes/shot_tracking.md`, same date.
+
+- `src/app/golf/actions/__tests__/golf-round-submit-flight-recorder.test.ts`
+  (finding 1, new case): seeds a qualifier round via the existing round's
+  persisted `qualifier_id`/`qualifier_round_number` and asserts, from the
+  exact ORDER the mocked recorder's methods are invoked (no artificial delay
+  needed — the bug was in call order, not timing), that
+  `post.qualifier_transition`'s `complete`/`warn` call lands before
+  `finalize`, and that exactly one `finalize` call fires, with status
+  `'success'` (guards against a double-finalize regression from the
+  restructure).
+- `src/lib/observability/__tests__/helm-flight-recorder.test.ts`:
+  - (finding 2, new case) a `persistStep` dependency that throws
+    synchronously (not an async function returning a rejected promise) is
+    caught by `failOpen`, reports through `onRecorderFailure` exactly once,
+    and never rejects the caller.
+  - (finding 1 support, two new cases) `recordRescuedStepOutcome`'s new
+    `deferFinalizeOnRescue` option: a rescued outcome records the
+    warn/fallback-complete pair without finalizing, and the caller's own
+    later `finalize()` call is what actually persists; an unrescued outcome
+    still finalizes `'failure'` immediately regardless of the flag.
+- `src/app/golf/actions/__tests__/golf-shot-delete-update-flight-recorder.test.ts`
+  (finding 3, new case, plus a new `@/lib/supabase/untyped` mock to force a
+  `golf_shots` update failure without disturbing the file's other queries):
+  asserts `db.shot_mutation`'s `fail()` call now carries the real Supabase
+  `errorCode`/`errorSummary` instead of the prior hardcoded string, mirroring
+  the assertion already implicit in `deleteShot`'s `db.delete_shot` wiring.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, 68 warnings, no
+  regressions), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib` (252 files, 2212 passed, 3 skipped,
+  0 failed), `node scripts/knowledge/document-inventory.mjs --check` (0),
+  `npm run docs:path-drift` (0, 1254 references checked, baseline 0). Not
+  run: `npm run build` (excluded by this task's own instructions).

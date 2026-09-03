@@ -2338,7 +2338,9 @@ async function submitGolfRoundComprehensiveImpl(
           // duplicate submit or emitting a false production error.
           void flightRecorder.complete('db.submit_round_atomic', { metadata: { reconciled_after_transport_error: true } });
           await runSubmitVerification(existingRoundId);
-          endTrace('success');
+          // Not finalized here — see the single `endTrace('success')` after
+          // the qualifier-transition block below, which is what this and
+          // every other success fall-through in this function defers to.
           round = { id: existingRoundId };
         } else {
           await logServerException(new Error(rpcError.message), { action: 'submitGolfRoundComprehensive.rpc', helmTraceId: flightRecorder.traceId, traceStep: 'db.submit_round_atomic' });
@@ -2369,22 +2371,27 @@ async function submitGolfRoundComprehensiveImpl(
             },
             backupPersisted
           );
-          // Deferred until AFTER the fallback resolves — see
-          // recordRescuedStepOutcome's own doc. Marking db.submit_round_atomic
-          // failed before this point would poison finalize() into reporting
-          // 'failure' even if the fallback above had just saved the round.
-          // It calls the recorder's OWN finalize directly, not our local
-          // `endTrace` — mark the trace ended synchronously (before this
-          // fire-and-forget call's internal awaits run) so the `finally`
-          // safety net below never races it with a second, conflicting
-          // finalize call.
-          traceEnded = true;
+          // `deferFinalizeOnRescue: true` — a RESCUED outcome falls through
+          // to the qualifier-transition block below, whose real,
+          // response-blocking duration must land inside the trace's window
+          // before it closes; the single `endTrace('success')` after that
+          // block is the one finalize call for every success path in this
+          // function, this one included. An UNRESCUED outcome is unaffected
+          // by the flag (see recordRescuedStepOutcome's own doc) — it
+          // finalizes 'failure' immediately and returns below, so
+          // `traceEnded` is marked synchronously to guard the `finally`
+          // safety net against a second, conflicting finalize call racing
+          // this fire-and-forget one.
+          if (!fallbackResult.success) {
+            traceEnded = true;
+          }
           void recordRescuedStepOutcome(flightRecorder, {
             failedStepKey: 'db.submit_round_atomic',
             fallbackStepKey: 'db.direct_submit_fallback',
             rescued: fallbackResult.success,
             stepInput: { errorCode: rpcError.code, errorSummary: rpcError.message },
             fallbackStepInput: { observed: { round_id: existingRoundId } },
+            deferFinalizeOnRescue: true,
           });
           if (!fallbackResult.success) {
             return fallbackResult;
@@ -2433,7 +2440,8 @@ async function submitGolfRoundComprehensiveImpl(
               // the player their finished round is missing.
               void flightRecorder.complete('db.submit_round_atomic', { metadata: { already_completed: true } });
               await runSubmitVerification(existingRoundId);
-              endTrace('success');
+              // Deferred to the single `endTrace('success')` after the
+              // qualifier-transition block — see that call's own comment.
               round = { id: existingRoundId };
             } else {
               // No row for this id. Re-submitting as a NEW round is safe
@@ -2476,7 +2484,8 @@ async function submitGolfRoundComprehensiveImpl(
         } else {
           void flightRecorder.complete('db.submit_round_atomic', { observed: { round_id: existingRoundId } });
           await runSubmitVerification(existingRoundId);
-          endTrace('success');
+          // Deferred to the single `endTrace('success')` after the
+          // qualifier-transition block — see that call's own comment.
           // Log warnings from resilient detail inserts (round saved successfully)
           if (rpcResult?.warnings?.length > 0) {
             detailWarnings = rpcResult.warnings as string[];
@@ -2559,7 +2568,8 @@ async function submitGolfRoundComprehensiveImpl(
         if (submissionCommitted) {
           void flightRecorder.complete('db.submit_round_atomic', { metadata: { reconciled_after_transport_error: true } });
           await runSubmitVerification(newRound.id);
-          endTrace('success');
+          // Deferred to the single `endTrace('success')` after the
+          // qualifier-transition block — see that call's own comment.
           round = { id: newRound.id };
         } else {
           // Do NOT delete the round — preserve it so the user can retry.
@@ -2593,19 +2603,19 @@ async function submitGolfRoundComprehensiveImpl(
             },
             true
           );
-          // Deferred until AFTER the fallback resolves — see
-          // recordRescuedStepOutcome's own doc. Marking db.submit_round_atomic
-          // failed before this point would poison finalize() into reporting
-          // 'failure' even if the fallback above had just saved the round.
           // See the mirrored comment on the existing-round branch above for
-          // why `traceEnded` is set synchronously here.
-          traceEnded = true;
+          // why `deferFinalizeOnRescue: true` is passed unconditionally and
+          // `traceEnded` is only set for the unrescued outcome.
+          if (!fallbackResult.success) {
+            traceEnded = true;
+          }
           void recordRescuedStepOutcome(flightRecorder, {
             failedStepKey: 'db.submit_round_atomic',
             fallbackStepKey: 'db.direct_submit_fallback',
             rescued: fallbackResult.success,
             stepInput: { errorCode: rpcError.code, errorSummary: rpcError.message },
             fallbackStepInput: { observed: { round_id: newRound.id } },
+            deferFinalizeOnRescue: true,
           });
           if (!fallbackResult.success) {
             return fallbackResult;
@@ -2654,7 +2664,8 @@ async function submitGolfRoundComprehensiveImpl(
         } else {
           void flightRecorder.complete('db.submit_round_atomic', { observed: { round_id: newRound.id } });
           await runSubmitVerification(newRound.id);
-          endTrace('success');
+          // Deferred to the single `endTrace('success')` after the
+          // qualifier-transition block — see that call's own comment.
           // Log warnings from resilient detail inserts (round saved successfully)
           if (rpcResult?.warnings?.length > 0) {
             detailWarnings = rpcResult.warnings as string[];
@@ -2727,6 +2738,21 @@ async function submitGolfRoundComprehensiveImpl(
         : flightRecorder.complete('post.qualifier_transition', { observed: { qualifier_id: effectiveQualifierId } }));
     }
 
+    // The single finalize point for every success path in this function
+    // (direct RPC success, the already_completed/reconciled carve-outs, and
+    // a rescued direct-submit-fallback) — every one of those branches above
+    // sets `round` and falls through to here instead of calling `endTrace`
+    // itself. Placed AFTER the qualifier-transition block on purpose: that
+    // block is awaited synchronously, on the response-blocking path (see its
+    // own comment above), so its real duration must land inside the trace's
+    // window. Finalizing any earlier — as each branch used to do individually
+    // — closes the trace before that work runs and silently drops it from
+    // duration_ms, which is the exact bug class this refit closes. `endTrace`'s
+    // own `traceEnded` guard makes this a no-op on every branch that already
+    // finalized directly (the early-return warning/failure paths above, and
+    // an unrescued direct-submit-fallback via recordRescuedStepOutcome).
+    endTrace('success');
+
     // 2026-05-17: closes audit P-HIGH-1. Previously this awaited the stats-
     // cache invalidation inside the user-facing response, adding 0.5–2s of
     // p99 latency to round submits. Move to after() so the user response
@@ -2747,20 +2773,23 @@ async function submitGolfRoundComprehensiveImpl(
     const backgroundPlayerId = player.id;
     const backgroundRoundId = round.id;
     // Both declared 'async' on golf.round.submit — start them here, BEFORE
-    // after(), and complete/fail them INSIDE the callback below. The trace
-    // itself is already finalized by this point (every branch above called
-    // endTrace on the way here): helm_debug_finalize_trace stamps the trace
-    // row's own finished_at/duration_ms at that moment, so these two steps'
-    // real start/finish timestamps land AFTER the trace's own reported
-    // window — by design, not a bug. Moving finalize() into after() instead
-    // would leave the player-facing trace open for the whole background
-    // tail, which is worse: the response has already been sent by the time
-    // after() runs, so nothing is waiting on it. The admin client the
-    // recorder uses internally (createAdminClient) is request-independent,
-    // so calling it from inside after() is safe — same as the existing
-    // stats-cache and postRoundTrigger calls in this same callback already
-    // do. See the flight-recorder section of memory/features/shot-tracking.md
-    // and the dedicated test asserting this ordering.
+    // after(), and complete/fail them INSIDE the callback below. Unlike
+    // post.qualifier_transition above (awaited synchronously, so its timing
+    // lands inside the trace via the single `endTrace('success')` call
+    // right after that block), these two are genuinely deferred: the trace
+    // is already finalized by the time after() runs — through that same
+    // shared `endTrace('success')`, or one of the early-return
+    // warning/failure calls above it — so helm_debug_finalize_trace has
+    // already stamped the trace row's own finished_at/duration_ms. These
+    // two steps' real start/finish timestamps land AFTER that window by
+    // design, not a bug: moving finalize() into after() instead would leave
+    // the player-facing trace open for the whole background tail, which is
+    // worse, since the response has already been sent by the time after()
+    // runs and nothing is waiting on it. The admin client the recorder uses
+    // internally (createAdminClient) is request-independent, so calling it
+    // from inside after() is safe — same as the existing stats-cache and
+    // postRoundTrigger calls in this same callback already do. See the
+    // flight-recorder section of memory/features/shot-tracking.md.
     void flightRecorder.start('post.stats');
     void flightRecorder.start('post.coachhelm');
     after(async () => {
@@ -9417,7 +9446,10 @@ async function updateShotImpl(
       .eq('id', shotId);
 
     if (updateError) {
-      void flightRecorder.fail('db.shot_mutation', { errorSummary: 'Failed to update shot' });
+      // Record the real Supabase error, same as deleteShot's db.delete_shot
+      // fail() does — the player-facing message stays the generic sentence
+      // below; only what lands in the trace changes.
+      void flightRecorder.fail('db.shot_mutation', { errorCode: updateError.code, errorSummary: updateError.message });
       endTrace('failure');
       return { success: false, error: 'Failed to update shot' };
     }

@@ -426,13 +426,31 @@ known gap: because construction now precedes the player lookup,
 `trace_runs.player_id`/`team_id` are null for every trace (the persisted
 columns are extracted once, from construction-time metadata) — per-step
 metadata on `server.auth`/`server.player` still carries `user_id`/`player_id`
-for correlation. `post.stats`, `post.qualifier_transition`, and
-`post.coachhelm` are started before `after()` (or, for qualifier transition,
-before its own synchronous block) and completed/failed inside it; because the
-trace is already finalized by then, their real start/finish timestamps land
-after the trace's own reported total-duration window by design — the
-alternative, deferring `finalize()` into the background tail, would leave the
-player-facing trace open long after the response has already been sent.
+for correlation.
+
+`post.qualifier_transition` (2026-09-02, reviewer fix) is awaited
+synchronously, on the response-blocking path, NOT deferred into `after()`
+despite its `background` layer label in `golf-round-flight-workflow.ts` — its
+`start()`/`complete()`/`warn()` calls wrap `updateQualifierEntryStats` and
+`advanceQualifierOnRoundSubmit` in place. `submitGolfRoundComprehensiveImpl`
+finalizes every success path (the direct RPC success, the
+already-completed/reconciled carve-outs, and a rescued
+direct-submit-fallback) through ONE shared `endTrace('success')` call placed
+AFTER that block, not inside each branch — every one of those branches falls
+through to it instead of finalizing itself, and
+`recordRescuedStepOutcome`'s `deferFinalizeOnRescue` option is what lets the
+rescued-fallback branch defer its own finalize the same way. Before this fix,
+each branch finalized immediately on its own RPC success, so
+`post.qualifier_transition`'s real duration was silently dropped from
+`duration_ms` even though it ran before the response was sent — the same bug
+class the rest of this section closes. `post.stats` and `post.coachhelm` are
+genuinely different: both are declared `async` and their actual work is
+deferred into `after()`, which runs only after the response has already gone
+out, so their start()/complete() calls (issued before `after()` is
+registered, completed/failed inside its callback) correctly land AFTER the
+trace's own reported total-duration window — the alternative, deferring
+`finalize()` itself into the background tail, would leave the player-facing
+trace open long after the response has already been sent.
 
 Every call site above fires the recorder with `void flightRecorder.x(...)` —
 deliberately unawaited, so a trace write can never block the player's save.

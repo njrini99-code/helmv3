@@ -624,3 +624,70 @@
   (0 failures), `node scripts/knowledge/document-inventory.mjs --check` (0).
   Not run: `npm run build` (no `.env.local` in this worktree; excluded by
   this task's own instructions).
+
+## 2026-09-02 — Flight Recorder: three reviewer findings on PR #1769
+
+- SHA: (this commit).
+- Change, finding 1 (`golf.ts`, `submitGolfRoundComprehensiveImpl`):
+  `post.qualifier_transition` is awaited synchronously on the
+  response-blocking path (see its own comment above the `if
+  (effectiveQualifierId)` block), not deferred into `after()` like
+  `post.stats`/`post.coachhelm` — but every RPC-success branch used to call
+  `endTrace('success')`/`recorder.finalize('success')` immediately, before
+  that block ever ran, so its real duration was silently dropped from
+  `duration_ms`. Fixed by removing every per-branch `endTrace('success')` and
+  the direct `finalize('success')` a rescued `recordRescuedStepOutcome` call
+  made, and finalizing ONCE, in a single `endTrace('success')` placed after
+  the qualifier-transition block — every success-continuation branch
+  (existing-round and new-round RPC success, the already-completed/reconciled
+  carve-outs, and a rescued direct-submit-fallback) now falls through to it
+  instead of finalizing itself. `recordRescuedStepOutcome`
+  (`helm-flight-recorder.ts`) gained a `deferFinalizeOnRescue` option so its
+  rescued branch can record the warn/fallback-complete pair without calling
+  `finalize('success')` itself, defaulting to `false` (identical to the prior
+  contract) for any caller that doesn't pass it. The early-return
+  warning/failure branches (busy, round_missing, RPC failure, an unrescued
+  fallback) are unaffected — they return before the qualifier-transition
+  block runs, so their finalize timing was never wrong.
+- Change, finding 2 (`helm-flight-recorder.ts`, `failOpen`): `const task =
+  write(); vercelWaitUntil(task);` sat OUTSIDE the try block, so a dependency
+  that threw SYNCHRONOUSLY (rather than returning a rejected promise) escaped
+  the fail-open guarantee as an unhandled rejection instead of one handled
+  report through `onRecorderFailure`. Fixed by moving both lines inside the
+  `try`, ahead of the existing `await task`; behavior for the async-rejection
+  case is unchanged.
+- Change, finding 3 (`golf.ts`, `updateShotImpl`): the `db.shot_mutation`
+  failure recorded a hardcoded `errorSummary: 'Failed to update shot'`
+  instead of the real Supabase error. Fixed to record `updateError.code`/
+  `updateError.message`, matching `deleteShot`'s `db.delete_shot` fail() call.
+  The player-facing error message is unchanged.
+- Also: lowered `PERSIST_START_TIMEOUT_MS` from 1500ms to 500ms. The
+  2026-09-02 real-timings refit above moved recorder construction — which
+  awaits this bounded write — before any business logic in `deleteShot`,
+  `updateShot`, and `savePartialRound`'s new-round branch (previously only
+  `submitGolfRoundComprehensive` led with it), so a hung `helm_debug` write
+  now stalls the start of every one of those actions during the exact
+  mid-incident window this constant's own doc comment says is the only time
+  it fires in production. 500ms still comfortably covers a healthy
+  same-region Supabase RPC. Also corrected two stale comments this fix
+  touched directly: `golf.ts`'s `post.stats` block no longer claims "every
+  branch above called endTrace" (now one shared call) or cites a
+  non-existent "dedicated test asserting this ordering"; and
+  `memory/features/shot-tracking.md`'s Flight Recorder section no longer
+  says `post.qualifier_transition`'s timing lands outside the trace window
+  by design — it now correctly lands inside it, same as every other
+  synchronous step.
+- Why: this is a fix-forward on the two 2026-09-02 Flight Recorder entries
+  above, from PR review on `agent/flight-recorder-real-timings` (#1769) — the
+  refit that added real per-stage timing had itself left one response-blocking
+  step's timing outside the window it measures, one fail-open path that could
+  still fail closed on a synchronous throw, and one step whose recorded error
+  didn't match what actually happened.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, 68 warnings, no
+  regressions), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib` (252 files, 2212 passed, 3 skipped,
+  0 failed), `node scripts/knowledge/document-inventory.mjs --check` (0),
+  `npm run docs:path-drift` (0, 1254 references checked, baseline 0). Not
+  run: `npm run build` (excluded by this task's own instructions).
