@@ -28,6 +28,7 @@ features:
       actions: []
       services:
         - scripts/knowledge/**
+        - memory/journeys/**
         - .devin/wiki.json
         - .github/workflows/feature-awareness.yml
         - package.json
