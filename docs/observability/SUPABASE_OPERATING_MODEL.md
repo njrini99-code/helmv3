@@ -217,11 +217,24 @@ F. Tracks C, D and E were building in parallel and their work is not counted
 here — a criterion they may have closed is recorded as unknown on this
 branch, not as met.
 
-The most important line first: **every migration in this program is HELD and
-none has been applied to production** (`supabase/migrations/HELD.md`). Every
-criterion below whose evidence is a `helm_debug` table is therefore
-`MECHANISM ONLY`: the code is written and tested, and the store it writes to
-does not exist in production yet.
+The most important line first: **every migration in this program is recorded
+HOLD**, so every criterion below whose evidence is a `helm_debug` observability
+table is `MECHANISM ONLY` — the code is written and tested, and the store it
+writes to is not expected to exist in production yet.
+
+Sourced, not asserted: that comes from the two Phase 1 and Phase 2 rows in
+`supabase/migrations/HELD.md`, both reading `HOLD — R3, prepared, not
+reviewed`, verified identical on this branch and on `origin/main`. It is a
+reading of the REGISTER, not of the live catalog, and
+`.claude/rules/shipping.md` §4 is explicit that "recorded" and "applied" have
+disagreed before. Note the distinction that makes this easy to get wrong: the
+`helm_debug` SCHEMA itself IS applied in production — the flight-recorder and
+trace migrations discharged their holds between 2026-08-26 and 2026-09-03, and
+their rows say so. What remains held is the six OBSERVABILITY tables this
+program adds inside that existing schema. A commit message elsewhere in the
+repo saying "after the helm_debug schema apply" refers to the former, not the
+latter. Before anyone converts a `MECHANISM ONLY` here into `MET`, read the
+live catalog rather than this table.
 
 | # | Criterion | Verdict on this branch |
 | --- | --- | --- |
