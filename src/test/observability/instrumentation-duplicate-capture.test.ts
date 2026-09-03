@@ -124,6 +124,27 @@ describe('onRequestError — captureRequestError respects __helmBridgeLogged', (
     await onRequestError(err, baseRequest, baseErrorContext);
     expect(mocks.logServerException).toHaveBeenCalledTimes(1);
   });
+
+  // Review of Phase C (2026-09-03): withLiftingAction logs these via
+  // logServerEvent (which never marks the error) and re-raises, so without the
+  // name skip every "not signed in" / "no org" / "no edit access" request wrote
+  // a second admin_events row labelled as an unhandled 500.
+  it.each(['LiftingUnauthorizedError', 'LiftingNoOrgError', 'LiftingForbiddenError', 'GolfDemoReadOnlyError'])(
+    'skips the Bridge write for the re-raised control-flow class %s even when unmarked',
+    async (name) => {
+      const err = new Error('expected control flow');
+      err.name = name;
+      await onRequestError(err, baseRequest, baseErrorContext);
+      expect(mocks.logServerException).not.toHaveBeenCalled();
+    },
+  );
+
+  it('still writes a genuine Lifting failure that merely shares the prefix', async () => {
+    const err = new Error('boom');
+    err.name = 'LiftingSetSaveFailed';
+    await onRequestError(err, baseRequest, baseErrorContext);
+    expect(mocks.logServerException).toHaveBeenCalledTimes(1);
+  });
 });
 
 /**

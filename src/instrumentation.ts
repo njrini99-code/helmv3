@@ -410,7 +410,14 @@ export async function register() {
 const bridgeSkipErrorNames = new Set(
   sharedIgnoreErrors.filter(
     (entry): entry is string =>
-      typeof entry === 'string' && (entry.startsWith('Baseball') || entry === 'PlayerAccessError'),
+      typeof entry === 'string' &&
+      (entry.startsWith('Baseball') ||
+        entry === 'PlayerAccessError' ||
+        // Lift Lab's wrapper re-raises these exactly like withBaseballAction
+        // does (review of Phase C, 2026-09-03: each one produced a second
+        // admin_events row labelled as an unhandled 500).
+        entry.startsWith('Lifting') ||
+        entry === 'GolfDemoReadOnlyError'),
   ),
 );
 
