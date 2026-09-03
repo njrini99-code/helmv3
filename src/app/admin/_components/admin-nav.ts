@@ -5,6 +5,7 @@ type AdminHref =
   | '/admin/traces'
   | '/admin/qualifiers'
   | '/admin/reliability'
+  | '/admin/database'
   | '/admin/self-heal'
   | '/admin/auth'
   | '/admin/golf'
@@ -51,6 +52,12 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // shows each source's incidents, this one shows what MORE THAN ONE source
   // agrees on, plus which sources were readable at all.
   { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
+  // Database/Postgres-layer signal, distinct from Reliability: that tab
+  // correlates APPLICATION-level signals across three sources every 3
+  // hours; this tab is the DATABASE's own state — connections, deduped
+  // Supabase/PostgREST failures, query-performance deltas — read from the
+  // zero-cost collectors every 5-15 minutes.
+  { label: 'Database', href: '/admin/database', key: 'D', section: 'Triage', description: 'Postgres health, deduped DB errors, query deltas', meta: '5m' },
   // The self-healing circuit as a thing that can be watched. Distinct from
   // Jobs & Integrity, which answers "did the crons run": this answers "is the
   // loop alive, and has each stage ever actually produced its output" — a
