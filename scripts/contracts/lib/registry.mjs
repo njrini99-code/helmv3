@@ -121,7 +121,7 @@ export function resolveFeatureId(requestedId, registry) {
  */
 export function getFeatureBlock(rawText, featureId) {
   const lines = rawText.split('\n');
-  const entryRe = /^  ([a-z0-9_]+):\s*$/;
+  const entryRe = /^ {2}([a-z0-9_]+):\s*$/;
   let start = -1;
   let end = lines.length;
   for (let i = 0; i < lines.length; i += 1) {

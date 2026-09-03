@@ -120,7 +120,7 @@ function pathResolves(path, trackedFiles) {
  * `refs.globs` or `refs.paths` names something that should resolve against
  * tracked files.
  */
-export function checkPathExistence(claims, trackedFiles, headShaShort, log = () => {}) {
+export function checkPathExistence(claims, trackedFiles, headShaShort, _log = () => {}) {
   for (const claim of claims) {
     if (NEGATED_RE.test(claim.text)) continue;
     const globs = claim.refs?.globs ?? [];
@@ -245,7 +245,7 @@ export function checkLedgerCorrections(ledgerClaims) {
  */
 export function checkAdrSupersedes(adrClaims, allAdrFiles) {
   const byTitleOrFilename = new Map();
-  for (const { path, text } of allAdrFiles) {
+  for (const { path } of allAdrFiles) {
     const filename = path.split('/').pop();
     byTitleOrFilename.set(filename, path);
     byTitleOrFilename.set(filename.replace(/\.md$/, ''), path);
