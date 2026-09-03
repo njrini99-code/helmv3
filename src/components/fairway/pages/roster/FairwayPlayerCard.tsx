@@ -77,7 +77,15 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
   const hasScore = player.avg_score && player.avg_score > 0;
 
   return (
-    <Surface elevation="shadow" padding="none" className="overflow-hidden">
+    <Surface
+      elevation="shadow"
+      padding="none"
+      className="overflow-hidden"
+      // Session Replay masks all text by default (instrumentation-client.ts,
+      // maskAllText: true) — this attribute is defense in depth so a player's
+      // name/details stay masked even if that default is ever narrowed later.
+      data-sentry-mask=""
+    >
       <div className="p-5 md:p-6">
         <div className="flex items-start gap-4">
           {/* Avatar + online dot */}

@@ -27,6 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { estimateCostUsd } from '@/lib/coachhelm/v3/llm/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { classifyProviderFault } from '@/lib/admin/provider-fault';
+import { recordAi } from '@/lib/observability/metrics';
 
 /**
  * The model this runs on, and why it is not Opus.
@@ -244,8 +245,22 @@ export async function extractScheduleFromImage(
           ],
         },
       ],
+      // Sentry AI observability opt-in (Phase A finding: the integration
+      // instruments nothing unless the CALL itself sets isEnabled — see
+      // docs/observability/SENTRY_PHASE_A_FINDINGS.md §(a), which names this
+      // exact call site as the strongest PII vector in the app: raw image
+      // bytes of a student's class schedule can carry their full name,
+      // university, course numbers/times, and section/CRN data. recordInputs/
+      // recordOutputs:false is not optional here.
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'golf.scheduleVision.extract',
+        recordInputs: false,
+        recordOutputs: false,
+      },
     });
 
+  const startedAt = Date.now();
   let res: Awaited<ReturnType<typeof call>>;
   try {
     res = await call(SCHEDULE_VISION_MODEL);
@@ -253,6 +268,15 @@ export async function extractScheduleFromImage(
     // Only retry when the model was unreachable. A schema or content failure is
     // a real failure and must surface — retrying it would just spend twice.
     if (!isModelAccessError(error) || SCHEDULE_VISION_MODEL === SCHEDULE_VISION_FALLBACK_MODEL) {
+      recordAi({
+        feature: 'golf_schedule_vision',
+        action: 'golf.scheduleVision.extract',
+        model: SCHEDULE_VISION_MODEL,
+        outcome: 'failure',
+        durationMs: Date.now() - startedAt,
+        errorCode: classifyProviderFault(error)?.code,
+        runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+      });
       throw error;
     }
     await logServerError(
@@ -260,8 +284,32 @@ export async function extractScheduleFromImage(
       { action: 'golf.scheduleVision.modelFallback' },
       'warning',
     );
-    res = await call(SCHEDULE_VISION_FALLBACK_MODEL);
+    try {
+      res = await call(SCHEDULE_VISION_FALLBACK_MODEL);
+    } catch (fallbackError) {
+      recordAi({
+        feature: 'golf_schedule_vision',
+        action: 'golf.scheduleVision.extract',
+        model: SCHEDULE_VISION_FALLBACK_MODEL,
+        outcome: 'failure',
+        durationMs: Date.now() - startedAt,
+        errorCode: classifyProviderFault(fallbackError)?.code,
+        runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+      });
+      throw fallbackError;
+    }
   }
+
+  recordAi({
+    feature: 'golf_schedule_vision',
+    action: 'golf.scheduleVision.extract',
+    model: SCHEDULE_VISION_MODEL,
+    outcome: 'success',
+    durationMs: Date.now() - startedAt,
+    inputTokens: res.usage?.inputTokens,
+    outputTokens: res.usage?.outputTokens,
+    runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+  });
 
   await recordVisionSpend(res.usage, playerId ?? null);
   return reconcileDays(res.object, images, playerId ?? null);
@@ -348,6 +396,7 @@ async function reconcileDays(
   const withDays = extraction.classes.filter((c) => c.days.length > 0);
   if (!extraction.is_class_schedule || withDays.length === 0) return extraction;
 
+  const startedAt = Date.now();
   try {
     const verify = await generateObject({
       // Same account choice as the primary read. This one fails SILENTLY — the
@@ -369,10 +418,37 @@ async function reconcileDays(
           ],
         },
       ],
+      // Same PII vector and same opt-in requirement as extractScheduleFromImage
+      // above — see that call site's comment.
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'golf.scheduleVision.verify',
+        recordInputs: false,
+        recordOutputs: false,
+      },
     });
     await recordVisionSpend(verify.usage, playerId);
+    recordAi({
+      feature: 'golf_schedule_vision',
+      action: 'golf.scheduleVision.verify',
+      model: SCHEDULE_VISION_FALLBACK_MODEL,
+      outcome: 'success',
+      durationMs: Date.now() - startedAt,
+      inputTokens: verify.usage?.inputTokens,
+      outputTokens: verify.usage?.outputTokens,
+      runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+    });
     return applyDayVerification(extraction, verify.object.classes);
-  } catch {
+  } catch (error) {
+    recordAi({
+      feature: 'golf_schedule_vision',
+      action: 'golf.scheduleVision.verify',
+      model: SCHEDULE_VISION_FALLBACK_MODEL,
+      outcome: 'failure',
+      durationMs: Date.now() - startedAt,
+      errorCode: classifyProviderFault(error)?.code,
+      runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+    });
     return extraction;
   }
 }

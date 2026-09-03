@@ -178,9 +178,18 @@ const staleDeploymentRecoveryScript = `
 
   // Proactive deployment staleness check.
   // Polls /api/health every 5 minutes while the page is visible.
-  // If the server deployment ID changes, shows a non-blocking banner.
-  const BOOT_DEPLOYMENT_ID = document.querySelector('meta[name="x-deployment-id"]')?.getAttribute('content');
-  if (BOOT_DEPLOYMENT_ID && BOOT_DEPLOYMENT_ID !== 'dev') {
+  // If the server's release changes, shows a non-blocking banner.
+  //
+  // Compares against /api/health's release field (git SHA), not the raw
+  // Vercel deployment id that field used to be — /api/health stopped
+  // returning that id deliberately (see its own header comment: an
+  // unauthenticated endpoint should not hand back a Vercel-internal
+  // identifier). The !res.ok check below — now also true for a 503
+  // "degraded" response, not just a network failure — still just skips this
+  // poll cycle, same as before: a degraded backend must never be read as
+  // "a new deploy landed".
+  const BOOT_RELEASE = document.querySelector('meta[name="x-deployment-id"]')?.getAttribute('content');
+  if (BOOT_RELEASE && BOOT_RELEASE !== 'dev') {
     let staleNotified = false;
     async function checkDeployment() {
       if (staleNotified || document.visibilityState === 'hidden') return;
@@ -188,7 +197,7 @@ const staleDeploymentRecoveryScript = `
         const res = await fetch('/api/health', { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
-        if (data.deploymentId && data.deploymentId !== BOOT_DEPLOYMENT_ID) {
+        if (data.release && data.release !== BOOT_RELEASE) {
           staleNotified = true;
           var banner = document.createElement('div');
           banner.id = 'stale-deploy-banner';

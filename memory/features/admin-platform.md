@@ -54,6 +54,14 @@ This area is high criticality because it often uses broader access patterns, ope
   analyzer core is `src/lib/admin/rca-run.ts` (shared with the super-admin
   `analyzeErrorFingerprint` server action). See
   `docs/ai-system/selfheal/README.md`.
+- `src/app/admin/releases/**` — the feature-flag/kill-switch governance
+  board (added 2026-09-03, Phase F.4.2). Reads
+  `src/lib/admin/data/feature-flags.ts`, which reads the typed constant
+  `src/lib/flags/registry.generated.ts` (compiled from `config/feature-
+  flags.yml` by `npm run flags:generate`). No business logic of its own.
+  Full governance contract — schema, the NEVER-GATE list, the `npm run
+  flags:check` CI gate, how to add/expire a flag — lives in
+  `docs/ai-system/FEATURE_FLAGS.md`, not duplicated here.
 
 ### Components
 
@@ -178,6 +186,32 @@ them would have broken those routes, not the dead one.
   production: all existing `background_job_logs` rows use those two words and
   nothing else. An earlier draft wrote `success`, which no other writer emits and
   every status-based filter would have missed.
+- **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor
+  check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,
+  not a replacement for it.** `startCronCheckIn`/`finishCronCheckIn`
+  (`src/lib/observability/cron-monitors.ts`) wrap all 3 exit paths (success,
+  a resolved >=400 Response, a thrown error), keyed by a monitor slug
+  resolved from `CRON_REGISTRY` (`api-cron-<dashed-path>`, or
+  `job-<jobType>` for anything unregistered). This is Sentry's OWN Cron
+  Monitors feature (an external "did this heartbeat arrive on schedule"
+  alert), independent of the Jobs board's own overdue/failed
+  classification (`classifyCronStatus`) — the two can disagree (Sentry
+  alerts on a missed check-in before the Jobs board's own 1.5x-cadence
+  threshold would mark a row overdue), and that is intentional redundancy,
+  not a bug to reconcile. `automaticVercelMonitors` in
+  `src/lib/sentry-build-options.mjs` is deliberately `false` so this
+  manual, per-job check-in stays the SINGLE Cron Monitor mechanism — the
+  installed SDK's own build-time source shows the auto option would
+  build-time-inject a second, independent monitor per Vercel cron path,
+  duplicating this. Fail-open throughout: a Sentry outage never blocks or
+  fails a cron. Full job table, monitor slug conventions, and the
+  `automaticVercelMonitors:false` decision record live in
+  `docs/observability/SENTRY_CRON_MONITORS.md`. The Inngest durable-function
+  path (`withBridgeLogging`, `src/lib/inngest/functions.ts`) and the
+  launchd Repair script (`scripts/run-selfheal-repair.mjs` via
+  `scripts/lib/sentry-cron-checkin.mjs`, which cannot import TS/`@/`-aliased
+  modules) get the same check-in treatment through their own call sites,
+  not through `recordJobRun`.
 - **Only a TOTALLY blind reliability run returns 503; a partially blind one
   returns 200.** `recordJobRun` does more than write a job row on a >=400 — it
   also calls `logServerEvent(..., 'error')`, which writes an `admin_events` row.

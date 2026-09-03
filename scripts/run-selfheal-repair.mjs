@@ -24,10 +24,25 @@ import { createClient } from '@supabase/supabase-js';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { reconcileRepairRun, truncateTail } from './lib/selfheal-repair-runner.mjs';
+import { createCronCheckIn } from './lib/sentry-cron-checkin.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RUN_BOUNDED = resolve(HERE, 'run-bounded.mjs');
 const JOB_TYPE = 'selfheal-repair';
+// Same `job-<jobType>` naming convention src/lib/observability/cron-monitors.ts
+// uses for a job with no Vercel CRON_REGISTRY path — this launchd job has
+// none, by definition.
+const SENTRY_MONITOR_SLUG = `job-${JOB_TYPE}`;
+
+// Never 'production' — this runs standalone on the owner's own machine via
+// launchd, never on Vercel, and this repo treats "never mislabel a
+// non-Vercel run as production" as a hard invariant elsewhere
+// (src/lib/sentry-environment.ts). A distinct tag keeps this job's Sentry
+// Cron Monitor history clearly separated from Vercel-hosted crons.
+const cronCheckIn = createCronCheckIn({
+  dsn: (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || '').trim() || undefined,
+  environment: 'launchd-repair',
+});
 
 const argv = process.argv.slice(2);
 const sepIndex = argv.indexOf('--');
@@ -120,6 +135,23 @@ const runId = randomUUID();
 const startedAt = new Date().toISOString();
 process.stderr.write(`[run-selfheal-repair] run_id=${runId} timeout=${timeoutSeconds}s\n`);
 
+// Started immediately, awaited later (in finish(), where the id is actually
+// needed) — never blocks spawning the real child below. One check-in pair
+// around the whole run: 'in_progress' here, 'ok'/'error' in finish(). This is
+// the ONLY mechanism that can catch "Repair never ran at all" (launchd never
+// fired, the machine was asleep past the scheduled time) — a fallback
+// heartbeat row in reconcileRepairRun still requires THIS process to have
+// started and reached that code.
+const cronCheckInIdPromise = cronCheckIn.start(SENTRY_MONITOR_SLUG, {
+  // daily, per selfheal-registry.ts's cadenceMinutes: DAILY for this job.
+  schedule: { type: 'interval', value: 1, unit: 'day' },
+  // Generous margin: launchd wake timing on a laptop is far less precise
+  // than a cloud cron scheduler.
+  checkinMargin: 15,
+  maxRuntime: Math.max(5, Math.ceil(timeoutSeconds / 60) + 5),
+  timezone: 'UTC',
+});
+
 // stdin stays inherited — untouched, this exact path is proven to exit 0
 // under launchd. stdout/stderr are piped so this process can capture a tail
 // for the failure heartbeat, but every byte is still forwarded to this
@@ -173,6 +205,22 @@ async function finish(childExit) {
   if (result.kind === 'fallback-failed') {
     process.stderr.write(`[run-selfheal-repair] fallback write FAILED: ${result.error}\n`);
   }
+
+  // Mirrors reconcileRepairRun's own "unreadable != absent" discipline rather
+  // than guessing: 'heartbeat-present' means the run completed its contract
+  // (ok); 'fallback-written'/'fallback-failed' mean a successful read proved
+  // the run did NOT complete it (error); 'heartbeat-state-unknown' means we
+  // genuinely cannot tell — deliberately left in_progress rather than
+  // reported either way, so Sentry's own maxRuntime eventually flags it as a
+  // missed check-in instead of this process inventing an answer.
+  const durationMs = Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
+  const cronCheckInId = await cronCheckInIdPromise;
+  if (result.kind === 'heartbeat-present') {
+    await cronCheckIn.finish(SENTRY_MONITOR_SLUG, cronCheckInId, 'ok', durationMs);
+  } else if (result.kind === 'fallback-written' || result.kind === 'fallback-failed') {
+    await cronCheckIn.finish(SENTRY_MONITOR_SLUG, cronCheckInId, 'error', durationMs);
+  }
+
   process.exit(childExit);
 }
 

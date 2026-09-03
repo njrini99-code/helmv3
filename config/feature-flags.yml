@@ -1,0 +1,112 @@
+# Feature flag + kill-switch registry.
+#
+# Source of truth for `src/lib/flags/registry.generated.ts` (regenerate with
+# `npm run flags:generate`; `npm run flags:check` is the CI governance gate —
+# see docs/ai-system/FEATURE_FLAGS.md for the full schema, the NEVER-GATE
+# list, and how to add/expire a flag).
+#
+# Owner decision: ADR 2026-09-03-control-plane-owner-decisions.md
+# (`FEATURE_FLAG_INFRASTRUCTURE_NET_NEW` = "Flags yes";
+# `CANARY_ROLLOUT_MECHANISM` = "Canary later" — `environment` below is
+# booleans ONLY, never a percentage/cohort. Percentage rollout is explicitly
+# deferred, not built here.
+#
+# Schema per flag (all fields required unless noted):
+#   feature_id             stable id; also the string passed to isFlagEnabled()
+#   owner                  who to ask before flipping/removing this flag
+#   purpose                one sentence: what it controls and why it exists
+#   type                   release | experiment | operations_kill_switch | temporary_migration
+#   status                 active | archived
+#   created_at             ISO date
+#   expires_at             ISO date or null — required for temporary_migration;
+#                          optional (norm: set one) for release/experiment;
+#                          may be null for a permanent operations_kill_switch
+#   default                boolean fallback when an environment key is absent
+#   environment            { production, preview, development } — booleans only
+#   kill_switch_behavior   required (non-empty) when type is operations_kill_switch;
+#                          null otherwise. What turning it off disables, what
+#                          keeps running, who may change it, how it's audited.
+#   cleanup_plan           required for every flag — how/when it gets removed
+#                          ("no planned removal" is a valid, honest answer for
+#                          a permanent operations_kill_switch)
+
+version: 1
+
+flags:
+  # Describes an EXISTING env-driven toggle. Does not change its runtime
+  # behavior: src/app/golf/actions/golf.ts:1210 and
+  # src/lib/observability/helm-flight-recorder.ts:194 (both owned by the
+  # parallel Sentry session per
+  # docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md's ownership
+  # table) still read process.env.HELM_FLIGHT_RECORDER_ENABLED directly.
+  # src/lib/flags/__tests__/is-enabled.test.ts proves isFlagEnabled('flight_recorder')
+  # returns exactly what that raw read returns across the same env matrix, so
+  # the owning session can swap the call site later with a parity guarantee
+  # already in place.
+  - feature_id: flight_recorder
+    owner: platform (Bridge)
+    purpose: >-
+      Arms per-request golf round mutation tracing (client to server action
+      to RPC to in-transaction checkpoints) so /admin/traces has data to
+      show. An operability lever only — disabling it stops the mutation
+      from being observed, never stops the mutation from running.
+    type: operations_kill_switch
+    status: active
+    created_at: "2026-09-03"
+    expires_at: null
+    default: true
+    environment:
+      # Real code: `!isProduction || traceId != null || HELM_FLIGHT_RECORDER_ENABLED === 'true'`.
+      # The `!isProduction` half is exactly what production=false/preview=
+      # true/development=true encodes here. The `traceId != null` half is a
+      # per-request override this boolean rollout model cannot express — a
+      # caller with an explicit trace id is force-armed regardless of this
+      # column, unchanged by this registry entry.
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: >-
+      Off: no helm_debug_start_trace / helm_debug_record_trace_step /
+      helm_debug_finalize_trace RPCs are called from the golf round action
+      path. The round mutation itself is unaffected — this switch only
+      controls whether it is observed. Changed by setting
+      HELM_FLIGHT_RECORDER_ENABLED at the environment level (deploy-time,
+      not a runtime toggle); auditable via the Vercel environment-variable
+      change log.
+    cleanup_plan: >-
+      No planned removal — permanent ops tooling. This registry entry
+      documents the existing toggle; it does not wire the call sites, which
+      sit outside this PR's file-ownership boundary. Wiring is left to the
+      Sentry session that owns those two files.
+
+  # Describes an EXISTING env-driven toggle. Does not change its runtime
+  # behavior: src/lib/coachhelm/v2/gate.ts's isCoachHelmEnabled() still
+  # reads process.env.NEXT_PUBLIC_COACHHELM_ENABLED directly — not wired
+  # through this library. Included so the registry has one real example of
+  # a `release`-shaped entry alongside the operations_kill_switch example
+  # above, and so a future removal/rewrite of that toggle has a governance
+  # record to update rather than a bare env read to rediscover.
+  - feature_id: coachhelm_v2_availability
+    owner: golf/coachhelm
+    purpose: >-
+      Global product-availability switch for the CoachHelm V2 AI layer. Off
+      disables the whole surface for every coach and player account; the
+      underlying check is a fail-open string comparison (any value except
+      the literal string "false" leaves it on).
+    type: release
+    status: active
+    created_at: "2026-09-03"
+    expires_at: null
+    default: true
+    environment:
+      production: true
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      No planned removal — this has been the live product-availability
+      switch for CoachHelm V2 since its rollout; this registry entry
+      documents it without wiring the call site, which lives outside this
+      PR's scope. A future session may wire src/lib/coachhelm/v2/gate.ts
+      through isFlagEnabled('coachhelm_v2_availability') as a small,
+      independent follow-up.

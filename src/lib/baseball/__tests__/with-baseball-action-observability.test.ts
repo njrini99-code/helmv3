@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   logServerException: vi.fn(async (..._args: unknown[]) => undefined),
   logServerError: vi.fn(async (..._args: unknown[]) => undefined),
   logServerEvent: vi.fn(async (..._args: unknown[]) => undefined),
+  recordWorkflow: vi.fn(),
   scope: {
     setTag: vi.fn(),
     setUser: vi.fn(),
@@ -56,6 +57,8 @@ vi.mock('@/lib/server-error-logger', () => ({
 vi.mock('@sentry/nextjs', () => ({
   withScope: (fn: (scope: typeof mocks.scope) => unknown) => fn(mocks.scope),
 }));
+
+vi.mock('@/lib/observability/metrics', () => ({ recordWorkflow: mocks.recordWorkflow }));
 
 import {
   BaseballActionError,
@@ -278,5 +281,78 @@ describe('withBaseballAction RLS-denial capture', () => {
     await flushRlsDenialLogs();
     expect(mocks.logServerEvent).not.toHaveBeenCalled();
     expect(mocks.logServerException).toHaveBeenCalledTimes(1);
+  });
+});
+
+// =============================================================================
+// Deliverable 6 (Sentry max-observability, Phase C) — helm.workflow.* via
+// recordWorkflow, sport/action dimensions ONLY. Mirrors
+// with-golf-action.test.ts's own "helm.workflow.* metric" describe block.
+// =============================================================================
+describe('withBaseballAction — helm.workflow.* metric', () => {
+  it('records outcome:"success" with sport/action dimensions when fn resolves', async () => {
+    const action = withBaseballAction(
+      'loadBaseballDashboard',
+      { featureArea: 'baseball-dashboard' },
+      async () => ({ ok: true }),
+    );
+
+    await action();
+
+    expect(mocks.recordWorkflow).toHaveBeenCalledTimes(1);
+    expect(mocks.recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'loadBaseballDashboard',
+        outcome: 'success',
+        sport: 'baseball',
+        durationMs: expect.any(Number),
+      }),
+    );
+  });
+
+  it('records outcome:"failure" for an unexpected throw', async () => {
+    const action = withBaseballAction(
+      'saveBaseballPractice',
+      { featureArea: 'baseball-practice', feature: 'baseball_practice' },
+      async () => {
+        throw new Error('database write failed');
+      },
+    );
+
+    await expect(action()).rejects.toBeInstanceOf(BaseballActionError);
+
+    expect(mocks.recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'saveBaseballPractice', outcome: 'failure' }),
+    );
+  });
+
+  it('records the specific expected-error class name (not a flat "failure") for a control-flow throw', async () => {
+    mocks.getActiveBaseballContext.mockResolvedValue(null as never);
+    const action = withBaseballAction(
+      'loadBaseballDashboard',
+      { featureArea: 'baseball-dashboard' },
+      async () => ({ ok: true }),
+    );
+
+    await expect(action()).rejects.toBeInstanceOf(BaseballNoActiveTeamError);
+
+    expect(mocks.recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'BaseballNoActiveTeamError' }),
+    );
+  });
+
+  it('never carries a teamId/coachId/playerId dimension — sport/action only', async () => {
+    const action = withBaseballAction(
+      'loadBaseballDashboard',
+      { featureArea: 'baseball-dashboard' },
+      async () => ({ ok: true }),
+    );
+
+    await action();
+
+    const call = mocks.recordWorkflow.mock.calls[0]![0] as Record<string, unknown>;
+    expect(call).not.toHaveProperty('teamId');
+    expect(call).not.toHaveProperty('coachId');
+    expect(call).not.toHaveProperty('playerId');
   });
 });
