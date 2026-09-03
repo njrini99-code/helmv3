@@ -45,7 +45,7 @@ master brief lives on a sibling control-plane branch, not yet merged).
   `helm_debug` tables (`db_error_events`, `db_health_samples`,
   `db_stat_deltas`, `db_stat_prior_state`) plus SECURITY DEFINER read/write
   facades, same isolation pattern as `20260825200811`: schema revoked from
-  public/anon/authenticated, EXECUTE service_role-only, ACL tripwire, no
+  public, anon and authenticated, EXECUTE service_role-only, ACL tripwire, no
   direct table grant to any role including service_role. Not applied — see
   `supabase/migrations/HELD.md`.
 - **`/admin/database`** (`src/app/admin/database/page.tsx` +
