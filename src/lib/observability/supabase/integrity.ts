@@ -41,7 +41,7 @@ import {
   type SupabaseRuntime,
   type SupabaseService,
 } from './envelope';
-import { scheduleDbErrorRecording } from './record-db-error';
+import { scheduleDbErrorRecording, type DbErrorRecorderClient } from './record-db-error';
 
 function hasEdgeRuntimeGlobal(): boolean {
   return (globalThis as Record<string, unknown>).EdgeRuntime !== undefined;
@@ -75,6 +75,13 @@ export interface MutationIntegrityCheckInput {
   journey?: string | null;
   helmTraceId?: string | null;
   durationMs?: number | null;
+  /**
+   * REPLAY/TEST SEAM (brief §57). Threaded straight through to
+   * `recordDbErrorOutOfBand` — see `RecordDbErrorOptions.client` for why it
+   * is a parameter rather than a module mock. Production call sites never
+   * set it, so `createAdminClient()` remains the only path a request takes.
+   */
+  recorderClient?: DbErrorRecorderClient;
 }
 
 export interface MutationIntegrityCheckOutcome {
@@ -160,7 +167,7 @@ export function checkZeroRowMutationIntegrity(input: MutationIntegrityCheckInput
       relation: input.relation ?? undefined,
     });
 
-    scheduleDbErrorRecording(envelope, { forceIndividualRow: true });
+    scheduleDbErrorRecording(envelope, { forceIndividualRow: true, client: input.recorderClient });
 
     return { ok: false, envelope };
   } catch {

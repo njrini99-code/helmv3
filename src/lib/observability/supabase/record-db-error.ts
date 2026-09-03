@@ -59,6 +59,37 @@ function timeout(ms: number): Promise<{ timedOut: true }> {
   });
 }
 
+/**
+ * The one method this recorder calls on a Supabase client. Narrow on
+ * purpose: an injected replay/test double implements a single function
+ * rather than pretending to be a SupabaseClient.
+ */
+export interface DbErrorRecorderClient {
+  rpc(
+    name: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<{ data: unknown; error: { code?: string | null; message?: string | null } | null }>;
+}
+
+export interface RecordDbErrorOptions {
+  /** Maps to `record_db_error_event`'s `p_force_individual_row` (brief §8). */
+  forceIndividualRow?: boolean;
+  /**
+   * REPLAY/TEST SEAM (brief §57). Substitutes the admin client so a fixture
+   * can drive this function's REAL body — argument construction, the
+   * migration-not-applied branch, the timeout race, the fail-open catch —
+   * against a double, with no database and no service-role secret.
+   *
+   * Production callers never pass this: `scheduleDbErrorRecording` omits it,
+   * so `createAdminClient()` stays the only path a request can take. It is a
+   * parameter rather than a module mock because the replay runner
+   * (scripts/db-observability-replay.mjs) executes under plain Node, where
+   * `vi.mock` does not exist — and a fixture suite that can only run inside
+   * one test framework is a fixture suite that cannot be run from a runbook.
+   */
+  client?: DbErrorRecorderClient;
+}
+
 export interface RecordDbErrorOutcome {
   ok: boolean;
   skipped?: 'migration-not-applied' | 'timed-out';
@@ -80,10 +111,10 @@ export interface RecordDbErrorOutcome {
  */
 export async function recordDbErrorOutOfBand(
   envelope: SupabaseErrorEnvelope,
-  options: { forceIndividualRow?: boolean } = {},
+  options: RecordDbErrorOptions = {},
 ): Promise<RecordDbErrorOutcome> {
   try {
-    const admin = createAdminClient();
+    const admin = options.client ?? createAdminClient();
 
     const rpcCall = admin.rpc('record_db_error_event' as never, {
       p_service: envelope.service,
@@ -154,7 +185,7 @@ export async function recordDbErrorOutOfBand(
  */
 export function scheduleDbErrorRecording(
   envelope: SupabaseErrorEnvelope,
-  options: { forceIndividualRow?: boolean } = {},
+  options: RecordDbErrorOptions = {},
 ): void {
   const task = recordDbErrorOutOfBand(envelope, options);
   vercelWaitUntil(task);

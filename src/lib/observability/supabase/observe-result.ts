@@ -47,7 +47,7 @@ import {
   type SupabaseService,
 } from './envelope';
 import { classifyPostgrestError, type ClassifyContext, type MinimalPostgrestError } from './classify';
-import { scheduleDbErrorRecording } from './record-db-error';
+import { scheduleDbErrorRecording, type DbErrorRecorderClient } from './record-db-error';
 
 export type SupabaseFailureBucket =
   | 'expected_control_flow'
@@ -111,6 +111,13 @@ export interface ObserveSupabaseResultInput {
    *  default fingerprint/hour-bucket upsert — reserve for data-integrity
    *  or security-critical events where per-occurrence evidence matters. */
   forceIndividualRow?: boolean;
+  /**
+   * REPLAY/TEST SEAM (brief §57). Threaded straight through to
+   * `recordDbErrorOutOfBand` — see `RecordDbErrorOptions.client` for why it
+   * is a parameter rather than a module mock. Production call sites never
+   * set it, so `createAdminClient()` remains the only path a request takes.
+   */
+  recorderClient?: DbErrorRecorderClient;
 }
 
 export interface ObserveSupabaseResultOutcome {
@@ -218,7 +225,10 @@ export function observeSupabaseResult(input: ObserveSupabaseResultInput): Observ
       relation: input.relation ?? undefined,
     });
 
-    scheduleDbErrorRecording(envelope, { forceIndividualRow: input.forceIndividualRow });
+    scheduleDbErrorRecording(envelope, {
+      forceIndividualRow: input.forceIndividualRow,
+      client: input.recorderClient,
+    });
 
     return { observed: true, bucket, envelope };
   } catch {
