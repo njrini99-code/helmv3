@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD060 -->
+<!-- markdownlint-disable MD013 MD022 MD032 MD040 MD060 -->
 # Sentry SDK API verification — Phase A
 
 Measured at commit `44f4ce183` (branch `main`). Source of truth: the
