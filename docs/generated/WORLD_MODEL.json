@@ -234,6 +234,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/lenses/**",
+        "pattern": "src/app/admin/lenses/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/lifting/**",
         "pattern": "src/app/admin/lifting/**",
         "category": "routes"
@@ -5732,6 +5737,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/jobs/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/lenses/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/lenses/**"
         }
       ]
     },
