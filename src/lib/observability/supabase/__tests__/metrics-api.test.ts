@@ -1,4 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Mocked, never a direct `process.env.SUPABASE_SERVICE_ROLE_KEY` reference in
+// this test file — the Review Gate's `no-service-role-in-client` ast-grep
+// rule (`.coderabbit/ast-grep/no-service-role-in-client.yml`) matches that
+// literal pattern anywhere, test files included, and its allowlist
+// (`scripts/__tests__/review-gate-rules.test.mjs`) only covers
+// `src/lib/supabase/admin*`. Mocking `getServiceRoleKey` (the one function
+// that DOES live there) both satisfies the gate and is the more honest test
+// boundary — this file is testing `metrics-api.ts`'s behavior given a
+// credential, not re-testing how the credential is read from the environment.
+const mocks = vi.hoisted(() => ({ getServiceRoleKey: vi.fn(() => null as string | null) }));
+vi.mock('@/lib/supabase/admin', () => ({ getServiceRoleKey: mocks.getServiceRoleKey }));
+
 import {
   __resetPlatformMetricsCacheForTests,
   buildPlatformHealthModel,
@@ -182,19 +195,16 @@ describe('buildPlatformHealthModel', () => {
 
 describe('fetchSupabasePlatformMetrics — unconfigured path (no network)', () => {
   const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const originalKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   beforeEach(() => {
     __resetPlatformMetricsCacheForTests();
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    mocks.getServiceRoleKey.mockReturnValue(null);
   });
 
   afterEach(() => {
     if (originalUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     else process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
-    if (originalKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-    else process.env.SUPABASE_SERVICE_ROLE_KEY = originalKey;
     __resetPlatformMetricsCacheForTests();
   });
 

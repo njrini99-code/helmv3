@@ -47,6 +47,7 @@ import 'server-only';
  * an instantaneous rate applies here exactly as it does to
  * `pg_stat_statements`.
  */
+import { getServiceRoleKey } from '@/lib/supabase/admin';
 
 export type PlatformSourceStatus = 'ok' | 'unconfigured' | 'unreachable' | 'unparseable';
 
@@ -347,7 +348,7 @@ export async function fetchSupabasePlatformMetrics(nowMs: number = Date.now()): 
   }
 
   const projectRef = resolveProjectRef();
-  const credential = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const credential = getServiceRoleKey();
   const sampledAtIso = new Date(nowMs).toISOString();
 
   if (!projectRef || !credential) {

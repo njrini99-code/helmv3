@@ -46,6 +46,23 @@ import { check, Status } from '../result.mjs';
 
 export const meta = { id: 'db-observability', title: 'Database observability control plane' };
 
+/**
+ * Whether `docs/observability/SUPABASE_TRACE_PROPAGATION.md` records its
+ * live-proof marker as VERIFIED. Exported (not inlined into `run`) so this
+ * exact regression is unit-testable without filesystem scaffolding — see
+ * `scripts/repo-doctor/__tests__/db-observability.test.ts`. ANCHORED TO
+ * LINE-START, DELIBERATELY: an earlier, unanchored version of this regex
+ * matched the doc's OWN prose instructing the owner how to update the
+ * marker (a sentence discussing `live-proof: VERIFIED` as an example),
+ * producing a false "VERIFIED" the very first time this check ran against
+ * that doc. Requiring the match to be the bold marker line itself, at the
+ * start of a line, closes that: discussing the marker can never flip the
+ * result, only setting it can.
+ */
+export function detectLiveProofVerified(proofDocText) {
+  return /^\*\*live-proof:\s*VERIFIED\*\*/im.test(proofDocText);
+}
+
 function fileExists(repoRoot, relPath) {
   return existsSync(join(repoRoot, relPath));
 }
@@ -254,7 +271,7 @@ export async function run(ctx) {
     // request log line) is deliberately manual and on-demand — brief §14, §32:
     // "no continuous ingestion". This is always LOCAL_ONLY, never PASS/FAIL —
     // there is no automated state for a check that must never run itself.
-    const liveProofDone = /live-proof[^\n]*:\s*VERIFIED\b/i.test(proofDoc);
+    const liveProofDone = detectLiveProofVerified(proofDoc);
     out.push(
       check(
         'db-observability.traceparent-live-proof',
