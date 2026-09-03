@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
 | `ARCHIVE` | 1196 | 0 | 419 | 527 |
-| `UNKNOWN` | 93 | 4 | 39 | 134 |
+| `UNKNOWN` | 94 | 5 | 40 | 134 |
 
 ## Files
 
@@ -65,7 +65,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 0 | 11 | 2 |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 0 | 7 | 2 |
-| `.claude/rules/shipping.md` | current | - | - | yes | 4 | 12 | 1 |
+| `.claude/rules/shipping.md` | current | - | - | yes | 6 | 12 | 1 |
 | `AGENTS.md` | current | yes | - | yes | 0 | 18 | 2 |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | 2 |
@@ -158,7 +158,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 2 | 83 | 2 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 2 | 87 | 2 |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -464,7 +464,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 1 | 85 | 8 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 1 | 98 | 8 |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 1 | 6 | 2 |
@@ -555,7 +555,8 @@ them would bury everything above.
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 3 | 3 | - |
 | `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 3 | 7 | - |
-| `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | - | - | yes | 2 | 16 | 13 |
+| `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | 1 |
+| `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | - | - | yes | 2 | 16 | 12 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 5 | 19 | 9 |
 | `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | 4 | 13 | 2 |
 | `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md` | current | - | - | yes | 1 | 15 | 3 |
