@@ -48,6 +48,7 @@ import {
   type ComposeResult,
 } from './types';
 import { describeError } from '@/lib/utils/describe-error';
+import { recordAi } from '@/lib/observability/metrics';
 
 // Rough prompt-token estimate (4 chars per token is the standard rule
 // of thumb). Used pre-call to size the budget check; the post-call
@@ -298,21 +299,62 @@ async function runLlmAttempt(
   model_id: string,
   promptTokensEstimate: number,
 ): Promise<LlmAttempt> {
-  // Direct Anthropic when the key is set, else the gateway string. `model_id`
-  // stays gateway-prefixed everywhere else in this function — the cost table,
-  // checkBudget and the call-log row are all keyed by it. See
-  // @/lib/ai/model-provider for what these two accounts are.
-  const res = await generateText({
-    model: resolveModelProvider(model_id),
-    prompt: req.prompt,
-    maxOutputTokens: req.max_completion_tokens * 2,
-  });
+  const startedAt = Date.now();
+  let res: Awaited<ReturnType<typeof generateText>>;
+  try {
+    // Direct Anthropic when the key is set, else the gateway string.
+    // `model_id` stays gateway-prefixed everywhere else in this function —
+    // the cost table, checkBudget and the call-log row are all keyed by it.
+    // See @/lib/ai/model-provider for what these two accounts are.
+    res = await generateText({
+      model: resolveModelProvider(model_id),
+      prompt: req.prompt,
+      maxOutputTokens: req.max_completion_tokens * 2,
+      // Sentry AI observability opt-in (Phase A finding, §(a)): compose()
+      // is the ONE choke point every v3 LLM call in this codebase routes
+      // through — round review, hero narrative, coach chat's own
+      // composers. `req.prompt` can carry a player's first name (Phase A's
+      // own example: hero-narrative.ts builds it into the prompt text
+      // directly) and evidence values from the round/player's own data.
+      // No prompt or completion belongs in Sentry from any of them.
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: `coachhelm.compose.${req.task}`,
+        recordInputs: false,
+        recordOutputs: false,
+      },
+    });
+  } catch (error) {
+    recordAi({
+      feature: 'coachhelm_compose',
+      action: `v3.llm.compose.${req.task}`,
+      model: model_id,
+      outcome: 'failure',
+      durationMs: Date.now() - startedAt,
+      errorCode: classifyProviderFault(error)?.code,
+      runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+    });
+    throw error;
+  }
+
   const text = res.text;
   // `usage` is `LanguageModelUsage` with optional inputTokens/outputTokens
   // numbers; widen the inference TS sees on the gateway-string path.
   const usage = res.usage as { inputTokens?: number; outputTokens?: number } | undefined;
   const prompt_tokens = usage?.inputTokens ?? promptTokensEstimate;
   const completion_tokens = usage?.outputTokens ?? Math.ceil(text.length / 4);
+
+  recordAi({
+    feature: 'coachhelm_compose',
+    action: `v3.llm.compose.${req.task}`,
+    model: model_id,
+    outcome: 'success',
+    durationMs: Date.now() - startedAt,
+    inputTokens: usage?.inputTokens,
+    outputTokens: usage?.outputTokens,
+    runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+  });
+
   return {
     text,
     prompt_tokens,

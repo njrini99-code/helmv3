@@ -258,14 +258,7 @@ authenticated Sentry MCP sat available the whole time.
 `field=feature&field=level&field=count_unique(issue)` replaced an 85-request
 fanout with one query).
 
-**The Sentry credentials in `.env.local` are NOT usable.** Measured 2026-08-29:
-`SENTRY_READ_TOKEN` and `SENTRY_AUTH_TOKEN` are 11-character placeholders and
-`SENTRY_ORG` is not the real slug, so a direct REST call returns
-`HTTP 401 {"detail":"Invalid token"}`. They still pass `usableSecret()` in
-`src/lib/admin/sentry-api.ts` (>= 10 chars, no placeholder pattern), so
-`config()` treats Sentry as CONFIGURED and every local Sentry read fails soft
-and silently. Production is unaffected. Do not spend time debugging local
-Sentry reads — they cannot work; use the MCP.
+**The Sentry credentials in `.env.local` are real since 2026-09-03.** The owner issued a user auth token with org-admin scopes (`SENTRY_AUTH_TOKEN`), and `SENTRY_ORG=helm-xs` / `SENTRY_PROJECT=javascript-nextjs` are the real slugs, so direct REST calls and `src/lib/admin/sentry-api.ts` reads work locally. The MCP remains the read path that needs no secret. Until that date the three values were 11-character placeholders that passed `usableSecret()` and made every local Sentry read fail soft — if a read fails with `401 Invalid token` again, check whether the token was rotated (it was pasted in chat once and is due for rotation) before debugging code. Control-plane edits (detectors, workflows, uptime, snapshots) are documented in `docs/operations/SENTRY_MONITORS.md`.
 
 **Path 2 — direct database credentials.** `psql`, `supabase db execute`,
 `supabase db query`, and anything else holding

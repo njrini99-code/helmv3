@@ -1,6 +1,13 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Sentry Setup Guide for GolfHelm
 **Purpose:** Error tracking, performance monitoring, and real-time alerts
 **Framework:** Next.js 14 (App Router) + TypeScript + Supabase
+
+> This guide documents the ORIGINAL setup (npm install + wizard) and is
+> dated (it still says "Next.js 14"; the repo is on Next.js 16). For the
+> CURRENT client-side build — browser UI profiling, Session Replay privacy,
+> third-party error filtering, the in-app feedback form, and Helm breadcrumb
+> conventions — see `docs/observability/SENTRY_CLIENT_EXPERIENCE.md`.
 
 ---
 

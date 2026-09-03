@@ -26,6 +26,8 @@ import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
 import { gatedDelivery, type DeliveryNotificationKey } from '@/lib/coachhelm/v3/notifications/types';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { recordPush } from '@/lib/observability/metrics';
+import { helmLog } from '@/lib/observability/structured-log';
 
 /**
  * Maps a notification type to the `push_*` preference key that gates it.
@@ -202,6 +204,44 @@ function generatePushPayload(
  * which BYPASSES RLS; a user-supplied `userId` would leak another user's device
  * tokens. All current callers pass DB-derived ids.
  */
+/**
+ * Emits `helm.push.*` (metrics.ts `recordPush`) + one `helmLog` line for
+ * `sendPushNotification` — deliberately only for calls that actually TRIED
+ * to reach a device. "User opted out" and "genuinely no registered devices"
+ * both return `{ success: true }` at the call site (correct: nothing was
+ * owed), but recording a `recordPush` attempt for either would inflate the
+ * attempt counter with calls that were never real delivery attempts. Those
+ * two get an `helmLog.info` line ONLY (`opted_out` / `no_devices`) so the
+ * silence stays visible without corrupting what "attempt" means for this
+ * metric — see the bulk-sender's own header comment on the neighboring
+ * mistake this file already fixed once (reporting delivery that never
+ * happened) for why an honest non-attempt still deserves a signal.
+ */
+function recordPushOutcome(
+  type: NotificationType,
+  outcome: 'success' | 'failure' | 'opted_out' | 'no_devices',
+  errorCode?: string,
+): void {
+  const runtime = process.env.NEXT_RUNTIME;
+  if (outcome === 'opted_out' || outcome === 'no_devices') {
+    helmLog.info('push.send_skipped', {
+      feature: 'push_notifications',
+      action: type,
+      result: outcome,
+      runtime,
+    });
+    return;
+  }
+  recordPush({ feature: 'push_notifications', action: type, outcome, runtime, errorCode });
+  helmLog[outcome === 'success' ? 'info' : 'warn']('push.send_finished', {
+    feature: 'push_notifications',
+    action: type,
+    result: outcome,
+    runtime,
+    error_code: errorCode,
+  });
+}
+
 export async function sendPushNotification(
   type: NotificationType,
   userId: string,
@@ -211,6 +251,7 @@ export async function sendPushNotification(
     // Check user preferences
     const prefs = await getUserNotificationPreferences(userId);
     if (!shouldSendPush(type, prefs)) {
+      recordPushOutcome(type, 'opted_out');
       return { success: true }; // User opted out
     }
 
@@ -239,11 +280,13 @@ export async function sendPushNotification(
         `[push] device-token read failed for user ${userId}; reporting non-delivery instead of a phantom send: ${tokenError.message}`,
         { action: 'push.sendPushNotification.readTokens', featureArea: 'notifications', userId },
       );
+      recordPushOutcome(type, 'failure', 'token_read_failed');
       return { success: false, error: 'Could not read device tokens' };
     }
 
     // Genuinely no registered devices: nothing was owed, so this is a success.
     if (!tokens || tokens.length === 0) {
+      recordPushOutcome(type, 'no_devices');
       return { success: true };
     }
 
@@ -413,12 +456,15 @@ export async function sendPushNotification(
         `[push] no device accepted this ${type} for user ${userId} (${tokens.length} token(s) tried); previously reported as sent`,
         { action: 'push.sendPushNotification.deliver', featureArea: 'notifications', userId },
       );
+      recordPushOutcome(type, 'failure', 'no_device_accepted');
       return { success: false, error: 'No device accepted the notification' };
     }
 
+    recordPushOutcome(type, 'success');
     return { success: true };
   } catch (error) {
     console.error('Failed to send push notification:', error);
+    recordPushOutcome(type, 'failure', 'exception');
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

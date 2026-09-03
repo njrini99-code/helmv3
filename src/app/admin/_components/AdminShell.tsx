@@ -4,10 +4,34 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
-  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
-  Radar, CreditCard, GitBranch, Trophy, Waypoints,
-  RefreshCw, Dumbbell, Search, LogOut, Recycle, Bot, FileCheck2,
+  LayoutDashboard,
+  Activity,
+  AlertTriangle,
+  KeyRound,
+  Flag,
+  CircleDot,
+  Users,
+  Timer,
+  Rocket,
+  HeartPulse,
+  ExternalLink,
+  MessageSquarePlus,
+  Gauge,
+  SearchCheck,
+  ScrollText,
+  Radar,
+  CreditCard,
+  GitBranch,
+  Trophy,
+  Waypoints,
+  RefreshCw,
+  Dumbbell,
+  Search,
+  LogOut,
+  Recycle,
+  Bot,
+  FileCheck2,
+  ToggleLeft,
 } from 'lucide-react';
 import {
   AppShell,
@@ -127,6 +151,10 @@ const NAV_ICON_BY_HREF = {
   '/admin/users': Users,
   '/admin/jobs': Timer,
   '/admin/deploys': Rocket,
+  // A toggle, not another release/rocket glyph: this tab's subject is
+  // per-flag on/off governance, distinct from Deploys & Infra's release
+  // ledger — a second rocket would read as a duplicate of it.
+  '/admin/releases': ToggleLeft,
   '/admin/health': HeartPulse,
   '/admin/teams': Radar,
   '/admin/billing': CreditCard,

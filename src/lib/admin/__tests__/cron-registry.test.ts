@@ -92,6 +92,19 @@ describe('CRON_REGISTRY ↔ vercel.json contract', () => {
       expect(entry.cadenceMinutes).toBe(cronScheduleToMinutes(cronEntry!.schedule));
     },
   );
+
+  // entry.schedule feeds Sentry Cron Monitor check-ins' MonitorConfig.schedule
+  // (src/lib/observability/cron-monitors.ts) — an EXACT string match, not just
+  // an equivalent minute-count, so a monitor's expected schedule in Sentry
+  // never quietly disagrees with the schedule Vercel actually runs.
+  it.each(CRON_REGISTRY.map((entry) => [entry.jobType, entry] as const))(
+    '%s: schedule is byte-identical to vercel.json\'s schedule string',
+    (_jobType, entry) => {
+      const cronEntry = vercel.crons.find((c) => c.path === entry.path);
+      expect(cronEntry, `no vercel.json cron found for path ${entry.path}`).toBeDefined();
+      expect(entry.schedule).toBe(cronEntry!.schedule);
+    },
+  );
 });
 
 describe('classifyCronStatus', () => {

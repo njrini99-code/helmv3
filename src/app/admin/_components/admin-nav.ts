@@ -18,6 +18,7 @@ type AdminHref =
   | '/admin/utilization'
   | '/admin/jobs'
   | '/admin/deploys'
+  | '/admin/releases'
   | '/admin/health'
   | '/admin/teams'
   | '/admin/billing';
@@ -84,6 +85,9 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
 
   // PLATFORM
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
+  // The flag/kill-switch governance board — feature-flags.yml rendered as a
+  // registry, not the deploy-risk/rollback surface `/admin/deploys` owns.
+  { label: 'Releases', href: '/admin/releases', key: 'K', section: 'Platform', description: 'Feature flags and kill switches', meta: 'flags' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
   // Distinct from the "Work log" tab above: that is the PR-timeline view
