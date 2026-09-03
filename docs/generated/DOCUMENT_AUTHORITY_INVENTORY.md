@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
 | `CURRENT_FEATURE` | 24 | 24 | 9 | 15 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
-| `GENERATED_TRUTH` | 23 | 3 | 6 | 26 |
+| `GENERATED_TRUTH` | 21 | 3 | 6 | 26 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
@@ -261,8 +261,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 166 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 0 | 107 | 3 |
