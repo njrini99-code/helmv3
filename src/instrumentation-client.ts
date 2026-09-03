@@ -3,6 +3,8 @@ import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { resolveClientEnvironment } from '@/lib/sentry-environment';
+import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
+import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
 
 /**
  * True when this event came from `captureConsoleIntegration` rather than an
@@ -65,6 +67,13 @@ Sentry.init({
   // Enable Sentry SDK structured logs (separate from error events).
   enableLogs: true,
 
+  // Second, independent line of defence beyond metrics.ts's/
+  // structured-log.ts's own sanitization at the call site — see
+  // instrumentation.ts (the server twin of this hardening) for the full
+  // rationale, including why each fails CLOSED on an internal error.
+  beforeSendMetric: enforceMetricAttributeAllowlist,
+  beforeSendLog: enforceLogAttributeAllowlist,
+
   // Capture 100% of sessions with errors, 10% of all sessions (prod only)
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: isDev ? 0 : 0.1,
@@ -125,6 +134,12 @@ Sentry.init({
         delete event.request.headers['cookie'];
         delete event.request.headers['Authorization'];
         delete event.request.headers['authorization'];
+        // Defensive, same reasoning as the server twin in instrumentation.ts:
+        // Set-Cookie is a response header and should never appear on
+        // event.request in a well-formed event, but scrubbing it costs
+        // nothing and the privacy-sentinel suite checks for it explicitly.
+        delete event.request.headers['Set-Cookie'];
+        delete event.request.headers['set-cookie'];
       }
       if (event.request.url) {
         // Strip both query string (?...) and fragment (#...) — either may
