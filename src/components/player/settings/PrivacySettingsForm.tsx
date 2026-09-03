@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -114,7 +115,7 @@ export function PrivacySettingsForm({
       toast.success('Privacy settings saved successfully');
       onSave?.(settings);
     } catch (error) {
-      console.error('Error saving privacy settings:', error);
+      console.error('Error saving privacy settings:', describeError(error));
       toast.error('Failed to save privacy settings');
     } finally {
       setSaving(false);

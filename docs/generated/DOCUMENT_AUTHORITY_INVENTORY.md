@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 0 |
 | `INDEX` | 20 | 1 | 7 | 28 |
-| `ARCHIVE` | 1196 | 0 | 419 | 527 |
+| `ARCHIVE` | 1206 | 0 | 419 | 535 |
 | `UNKNOWN` | 112 | 12 | 46 | 146 |
 
 ## Files
@@ -564,7 +564,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 ### `ARCHIVE`
 
-1196 file(s) under `docs/archive/` — historical evidence only, listed
+1206 file(s) under `docs/archive/` — historical evidence only, listed
 by count rather than by name because none of them is a reference and enumerating
 them would bury everything above.
 
@@ -669,7 +669,7 @@ them would bury everything above.
 | `docs/qa/helm-role-permission-matrix.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/qa/helm-route-inventory.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/qa/helm-system-overview.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/qa/helm-test-personas-and-seed-data.md` | current | - | - | yes | 0 | 0 | - |
+| `docs/qa/helm-test-personas-and-seed-data.md` | current | - | - | yes | 1 | 0 | - |
 | `docs/qa/helm-workflow-specifications.md` | current | - | - | - | 0 | 0 | - |
 | `docs/seed/BASEBALLHELM_DEMO_DATA_CONTRACT.md` | current | - | - | yes | 2 | 9 | 2 |
 | `docs/testing/IOS_SIMULATOR_QA_HARNESS.md` | current | - | - | - | 0 | 0 | - |

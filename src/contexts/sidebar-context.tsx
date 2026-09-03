@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface SidebarContextType {
@@ -26,7 +27,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       // localStorage unavailable (SSR, incognito, etc.)
-      console.warn('Failed to load sidebar state from localStorage:', error);
+      console.warn('Failed to load sidebar state from localStorage:', describeError(error));
     }
   }, []);
 
@@ -35,7 +36,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
     } catch (error) {
       // localStorage unavailable (SSR, incognito, etc.)
-      console.warn('Failed to save sidebar state to localStorage:', error);
+      console.warn('Failed to save sidebar state to localStorage:', describeError(error));
     }
   }, [collapsed]);
 

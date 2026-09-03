@@ -5,6 +5,7 @@
  * Uses Supabase Storage with signed URLs for secure access.
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { createClient } from '@/lib/supabase/client';
 import { resolveMimeType } from './mime';
 import { convertHeicToJpeg } from './heic-to-jpeg';
@@ -288,7 +289,7 @@ export async function uploadAttachment(
     }
   } catch (err) {
     // Non-critical, continue with upload
-    console.warn('[Attachments] Failed to get media metadata:', err);
+    console.warn('[Attachments] Failed to get media metadata:', describeError(err));
   }
 
   // Upload to Supabase Storage
@@ -310,7 +311,7 @@ export async function uploadAttachment(
     });
 
   if (uploadError) {
-    console.error('[Attachments] Upload error:', uploadError);
+    console.error('[Attachments] Upload error:', describeError(uploadError));
     return {
       success: false,
       error: `Upload failed: ${uploadError.message}`,
@@ -327,7 +328,7 @@ export async function uploadAttachment(
     .createSignedUrl(storagePath, 3600);
 
   if (urlError || !urlData) {
-    console.error('[Attachments] Failed to get signed URL:', urlError);
+    console.error('[Attachments] Failed to get signed URL:', describeError(urlError));
     return {
       success: false,
       error: 'Upload succeeded but failed to get URL',

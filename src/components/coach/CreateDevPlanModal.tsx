@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -159,7 +160,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
     setLoading(false);
 
     if (error) {
-      console.error('Error creating dev plan:', error);
+      console.error('Error creating dev plan:', describeError(error));
       showToast('Failed to create development plan. Please try again.', 'error');
       return;
     }

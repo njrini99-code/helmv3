@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
@@ -226,7 +227,7 @@ export function PlayerComparison({
       }
     } catch (error) {
       toast.error('Failed to save comparison');
-      console.error('Save comparison error:', error);
+      console.error('Save comparison error:', describeError(error));
     } finally {
       setSaving(false);
     }
@@ -306,7 +307,7 @@ export function PlayerComparison({
       toast.error('Failed to export PDF. Please try again.');
       // Log error but don't expose details
       if (process.env.NODE_ENV === 'development') {
-        console.error('Export error:', error);
+        console.error('Export error:', describeError(error));
       }
     } finally {
       setExporting(false);

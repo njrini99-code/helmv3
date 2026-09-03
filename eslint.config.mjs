@@ -18,6 +18,7 @@ import noArbitraryBgWhite from "./eslint-rules/no-arbitrary-bg-white.mjs";
 import noUncheckedSupabaseError from "./eslint-rules/no-unchecked-supabase-error.mjs";
 import noEmptyCollectionOnError from "./eslint-rules/no-empty-collection-on-error.mjs";
 import noHealthyValueOnError from "./eslint-rules/no-healthy-value-on-error.mjs";
+import noRawErrorInConsole from "./eslint-rules/no-raw-error-in-console.mjs";
 import noUncheckedPaginatedRead from "./eslint-rules/no-unchecked-paginated-read.mjs";
 
 // Downgrade every `error`-severity rule in a flat-config rules object to
@@ -58,6 +59,26 @@ export default tseslint.config(
       // also swallow committed files in subdirectories.
       "scripts/*.js",
     ],
+  },
+  {
+    // helm/no-raw-error-in-console is scoped to src/ ON PURPOSE.
+    //
+    // Its whole rationale is Sentry's console integration: it captures
+    // console.error at the driver and stringifies every argument, so a plain
+    // object becomes the literal "[object Object]" and the incident loses its
+    // code, message and details. That integration only runs in the APP
+    // runtime. scripts/ is CLI tooling whose console output goes to a
+    // terminal or a CI log and never becomes an incident, so the same call
+    // there costs nothing and forcing describeError into it would import an
+    // `@/` alias that scripts/ tsconfig does not even resolve.
+    //
+    // Measured: 0 violations under src/, 16 under scripts/. Scoping is the
+    // honest fix; adding 16 to a baseline would have recorded debt that is
+    // not debt.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "helm/no-raw-error-in-console": "error",
+    },
   },
   {
     files: ["scripts/**/*.{js,mjs,cjs,ts,mts,cts}"],
@@ -118,6 +139,7 @@ export default tseslint.config(
           "no-unchecked-supabase-error": noUncheckedSupabaseError,
           "no-empty-collection-on-error": noEmptyCollectionOnError,
           "no-healthy-value-on-error": noHealthyValueOnError,
+          "no-raw-error-in-console": noRawErrorInConsole,
           "no-unchecked-paginated-read": noUncheckedPaginatedRead,
         },
       },

@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -1032,7 +1033,7 @@ export function PremiumCalendarClient({
         }
         router.refresh();
       } catch (err) {
-        console.error('Failed to reschedule event:', err);
+        console.error('Failed to reschedule event:', describeError(err));
         toast.error('Reschedule failed', err instanceof Error ? err.message : 'Failed to reschedule event. Please try again.');
         logError(
           err instanceof Error ? err : new Error(String(err)),
@@ -1091,7 +1092,7 @@ export function PremiumCalendarClient({
 
       router.refresh();
     } catch (err) {
-      console.error('Failed to reschedule event:', err);
+      console.error('Failed to reschedule event:', describeError(err));
       toast.error('Reschedule failed', err instanceof Error ? err.message : 'Failed to reschedule event. Please try again.');
       logError(
         err instanceof Error ? err : new Error(String(err)),

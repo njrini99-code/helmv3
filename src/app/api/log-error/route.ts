@@ -1,3 +1,4 @@
+import { describeError } from '@/lib/utils/describe-error';
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
@@ -93,7 +94,7 @@ function stripUrlSecrets(value: string): string {
 function reportRedactionFailure(error: unknown, field: 'message' | 'stack'): void {
   console.error(
     `[log-error route] ${field} redaction failed; persisting a placeholder instead of the raw value`,
-    error,
+    describeError(error),
   );
   try {
     Sentry.captureException(error, {
@@ -163,7 +164,7 @@ function redactClientPayloadForStorage(rawUrl: string | null, rawContext: unknow
       context: redactPiiDeep(strippedContext),
     };
   } catch (error) {
-    console.error('[log-error route] PII/token redaction failed; persisting with context omitted', error);
+    console.error('[log-error route] PII/token redaction failed; persisting with context omitted', describeError(error));
     Sentry.captureException(error, { tags: { component: 'log-error-route-redaction' } });
     return {
       url: rawUrl ? (rawUrl.split(/[?#]/)[0] ?? null) : null,
@@ -458,7 +459,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // This route IS the error-reporting pipeline — a failure here has no
     // downstream logger to fall back on, so it must self-report directly.
-    console.error('[log-error route] Failed to persist client error report', error);
+    console.error('[log-error route] Failed to persist client error report', describeError(error));
     Sentry.captureException(error, { tags: { component: 'log-error-route' } });
     return NextResponse.json({ success: false }, { status: 500 });
   }

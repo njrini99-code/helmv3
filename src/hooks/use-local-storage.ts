@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback } from 'react';
 
 // Type-safe localStorage hook
@@ -15,7 +16,7 @@ function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T) => voi
         setStoredValue(JSON.parse(item));
       }
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+      console.warn(`Error reading localStorage key "${key}":`, describeError(error));
     }
     setIsHydrated(true);
   }, [key]);
@@ -26,7 +27,7 @@ function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T) => voi
       setStoredValue(value);
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      console.warn(`Error setting localStorage key "${key}":`, describeError(error));
     }
   }, [key]);
 

@@ -28,6 +28,7 @@
 // return an honest empty result rather than throwing.
 // =============================================================================
 
+import { describeError } from '@/lib/utils/describe-error';
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
@@ -86,7 +87,7 @@ async function resolvePlayerTeam(
     .limit(1)
     .maybeSingle();
   if (error) {
-    console.error('[player-lift] resolvePlayerTeam query failed', error);
+    console.error('[player-lift] resolvePlayerTeam query failed', describeError(error));
     return null;
   }
   return member?.team_id ?? null;

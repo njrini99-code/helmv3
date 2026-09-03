@@ -7,6 +7,7 @@
  * Events are sent to an API route which inserts them via service role.
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import type { AdminEventType, AdminEventSeverity } from './admin-logger';
 
 // ============================================
@@ -87,7 +88,7 @@ async function sendToAPI(event: ClientEventInput & { browserInfo: BrowserInfo })
 
     return true;
   } catch (err) {
-    console.error('[AdminLoggerClient] Failed to send event:', err);
+    console.error('[AdminLoggerClient] Failed to send event:', describeError(err));
     return false;
   }
 }

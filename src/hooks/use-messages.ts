@@ -50,7 +50,7 @@ export function useMessages(conversationId: string) {
     if (conversationIdRef.current !== requestConversationId) return;
 
     if (fetchError) {
-      console.error('[useMessages] Failed to load messages:', fetchError);
+      console.error('[useMessages] Failed to load messages:', describeError(fetchError));
       logError(
         new Error(fetchError.message || 'Failed to load messages'),
         { component: 'useMessages', action: 'fetchMessages', sport: 'baseball' },
@@ -136,7 +136,7 @@ export function useMessages(conversationId: string) {
       }
       return true;
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error sending message:', describeError(error));
       logError(
         error instanceof Error ? error : new Error('Failed to send message'),
         { component: 'useMessages', action: 'sendMessage', sport: 'baseball' },

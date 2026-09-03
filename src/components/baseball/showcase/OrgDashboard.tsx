@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -111,7 +112,7 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
         .order('joined_at', { ascending: false });
 
       if (rosterError) {
-        console.error('Failed to load organization roster:', rosterError);
+        console.error('Failed to load organization roster:', describeError(rosterError));
         setRoster([]);
         setLoading(false);
         return;

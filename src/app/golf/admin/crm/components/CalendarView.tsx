@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -160,7 +161,7 @@ export function CalendarView({
       if (error) throw error;
       setEvents((data || []) as CRMEvent[]);
     } catch (err) {
-      console.error('Failed to fetch events:', err);
+      console.error('Failed to fetch events:', describeError(err));
       // Fallback to direct query
       const { data } = await supabase
         .from('crm_events')
