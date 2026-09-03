@@ -31,19 +31,19 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
 | `CURRENT_FEATURE` | 19 | 19 | 7 | 8 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
-| `GENERATED_TRUTH` | 15 | 3 | 5 | 22 |
+| `GENERATED_TRUTH` | 15 | 3 | 5 | 24 |
 | `PROCESS_CONTRACT` | 8 | 3 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 62 | 3 | 31 | 156 |
-| `AUDIT_SNAPSHOT` | 81 | 6 | 37 | 132 |
+| `AUDIT_SNAPSHOT` | 82 | 6 | 38 | 137 |
 | `STATE_SNAPSHOT` | 4 | 0 | 3 | 6 |
 | `HISTORY_LEDGER` | 22 | 0 | 3 | 42 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
 | `ARCHIVE` | 1196 | 0 | 419 | 527 |
-| `UNKNOWN` | 93 | 4 | 39 | 134 |
+| `UNKNOWN` | 96 | 6 | 42 | 141 |
 
 ## Files
 
@@ -65,7 +65,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 0 | 11 | 2 |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 0 | 7 | 2 |
-| `.claude/rules/shipping.md` | current | - | - | yes | 4 | 12 | 1 |
+| `.claude/rules/shipping.md` | current | - | - | yes | 6 | 12 | 1 |
 | `AGENTS.md` | current | yes | - | yes | 0 | 18 | 2 |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | 2 |
@@ -254,7 +254,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 9 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 129 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 135 | 2 |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 28 | 3 | - |
@@ -266,9 +266,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 1 | 7 | - |
-| `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 1 | 11 | 2 |
-| `docs/ai-system/selfheal/triage-contract.md` | current | - | - | yes | 0 | 6 | - |
+| `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 2 | 7 | - |
+| `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 2 | 11 | 2 |
+| `docs/ai-system/selfheal/triage-contract.md` | current | - | - | yes | 1 | 6 | - |
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 2 | 7 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 11 | 7 |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 5 | 2 |
@@ -425,6 +425,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 1 | 28 | 7 |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | 0 | 0 | - |
 | `docs/features/coachhelm/COACHHELM_ENGINE_AUDIT_2026-03-11.md` | current | - | - | - | 0 | 19 | - |
+| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 0 | 35 | 5 |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/NAV_ISSUES.md` | current | - | - | - | 0 | 0 | - |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/README.md` | current | - | - | - | 0 | 0 | - |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/coach/ERRORS.md` | current | - | - | - | 0 | 2 | - |
@@ -552,7 +553,7 @@ them would bury everything above.
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 2 | 6 | - |
-| `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 3 | 3 | - |
+| `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
 | `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 3 | 7 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | - | - | yes | 2 | 16 | 13 |
@@ -584,7 +585,10 @@ them would bury everything above.
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/PLAYWRIGHT_SETUP_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 0 | - |
-| `docs/observability/SENTRY_SUPABASE_TRACING.md` | current | - | - | yes | 0 | 2 | - |
+| `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 0 | 21 | 7 |
+| `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
+| `docs/observability/SENTRY_SUPABASE_TRACING.md` | current | yes | - | yes | 1 | 2 | - |
+| `docs/observability/SENTRY_TELEMETRY_TAXONOMY.md` | current | yes | - | yes | 0 | 8 | - |
 | `docs/operations/2026-05-27-baseball-tables-scope.md` | current | - | - | - | 1 | 3 | - |
 | `docs/operations/2026-05-27-v3-w35-diagnosis.md` | current | - | - | - | 2 | 5 | - |
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | 1 |
@@ -602,7 +606,7 @@ them would bury everything above.
 | `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | 3 | 0 | - |
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | 2 | 0 | - |
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | 1 | 0 | - |
-| `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 2 | 4 | - |
+| `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 3 | 4 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 1 | 3 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | 1 |
@@ -611,7 +615,7 @@ them would bury everything above.
 | `docs/operations/context/SYSTEMS_AND_DATA_MAP.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/operations/context/TELEMETRY_BASELINE.md` | current | - | - | yes | 0 | 5 | - |
 | `docs/operations/context/TOOLS_AND_SERVICES_REGISTRY.md` | current | - | - | yes | 0 | 28 | 7 |
-| `docs/qa/helm-bug-risk-register.md` | current | - | - | yes | 0 | 0 | - |
+| `docs/qa/helm-bug-risk-register.md` | current | - | - | yes | 2 | 0 | - |
 | `docs/qa/helm-coachhelm-ai-map.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/qa/helm-database-map.md` | current | - | - | - | 0 | 1 | - |
 | `docs/qa/helm-feature-catalog.md` | current | - | - | - | 0 | 0 | - |
