@@ -123,4 +123,35 @@ describe('fetchGolfJourneyLens', () => {
     expect(findStage(lens.stages, 'stats').metric.attempts).toBeNull();
     expect(findStage(lens.stages, 'dashboard').confidence).toBe('incidents_only');
   });
+
+  it('paginates past the PostgREST 1000-row cap on golf_rounds — a second page beyond the first 1000 still counts', async () => {
+    perTable['admin_events'] = adminEventsDefaults();
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({
+      id: `r${i}`,
+      status: 'in_progress',
+      created_at: '2026-09-01T00:00:00Z',
+      updated_at: '2026-09-01T00:00:00Z',
+    }));
+    const page2 = [{ id: 'r1000', status: 'completed', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T05:00:00Z' }];
+    perTable['golf_rounds'] = [() => ({ data: page1, error: null }), () => ({ data: page2, error: null })];
+
+    const lens = await fetchGolfJourneyLens(new Date('2026-09-03T00:00:00Z'));
+
+    // 1001 total, not truncated to 1000 — this is the exact regression a
+    // single-page `.select()` produces silently (a "successful" read that
+    // is quietly wrong, not an error).
+    expect(findStage(lens.stages, 'start_round').metric.attempts).toBe(1001);
+    expect(findStage(lens.stages, 'submit').metric.completions).toBe(1); // only the page-2 row is completed
+  });
+
+  it('unknown vs zero: a succeeded count query with a null count (not an error) yields null, never a fabricated 0', async () => {
+    perTable['admin_events'] = adminEventsDefaults({ 0: () => ({ count: null, error: null }) }); // login count
+    perTable['golf_rounds'] = [() => ({ data: [], error: null })];
+
+    const lens = await fetchGolfJourneyLens(new Date('2026-09-03T00:00:00Z'));
+
+    const login = findStage(lens.stages, 'authenticate');
+    expect(login.metric.attempts).toBeNull();
+    expect(login.metric.completions).toBeNull();
+  });
 });

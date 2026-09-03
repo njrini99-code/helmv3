@@ -106,4 +106,33 @@ describe('fetchLiftingFlowLens', () => {
     expect(findStage(lens.stages, 'program_assigned').incidents.count).toBeNull();
     expect(lens.degradedNote).toContain('Lift Lab incidents count unreadable');
   });
+
+  it('paginates past the PostgREST 1000-row cap on helm_lifting_set_results — the highest-volume table here', async () => {
+    seedEmptyPlatform();
+    perTable['helm_lifting_sessions'] = [
+      () => ({
+        data: [{ id: 's1', status: 'started', readiness_checkin_id: null, athlete_id: 'ath-page2' }],
+        error: null,
+      }),
+    ];
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({ athlete_id: `ath${i}` }));
+    const page2 = [{ athlete_id: 'ath-page2' }];
+    perTable['helm_lifting_set_results'] = [() => ({ data: page1, error: null }), () => ({ data: page2, error: null })];
+
+    const lens = await fetchLiftingFlowLens(new Date('2026-09-03T00:00:00Z'));
+
+    // 1001 distinct athletes, not truncated to the first page's 1000 —
+    // the page-2-only athlete (ath-page2) proves the second page was
+    // actually fetched, not silently dropped.
+    expect(findStage(lens.stages, 'sets_logged').metric.completions).toBe(1001);
+  });
+
+  it('unknown vs zero: a succeeded count query with a null count (not an error) yields null, never a fabricated 0', async () => {
+    seedEmptyPlatform();
+    perTable['admin_events'] = [() => ({ count: null, error: null }), zeroCount];
+
+    const lens = await fetchLiftingFlowLens(new Date('2026-09-03T00:00:00Z'));
+
+    expect(findStage(lens.stages, 'program_assigned').incidents.count).toBeNull();
+  });
 });

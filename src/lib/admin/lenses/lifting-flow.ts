@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { JourneyLens, JourneyStage } from './types';
 
 /**
@@ -61,9 +62,12 @@ async function incidentCountsForFeatures(
   const errors: string[] = [];
   if (allRes.error) errors.push(`Lift Lab incidents count unreadable: ${allRes.error.message}`);
   if (criticalRes.error) errors.push(`Lift Lab critical-incidents count unreadable: ${criticalRes.error.message}`);
+  // `?? null`, never `?? 0` — a succeeded count query with a null count
+  // (malformed/missing PostgREST count header) is unknown, not a verified
+  // zero.
   return {
-    count: allRes.error ? null : allRes.count ?? 0,
-    criticalCount: criticalRes.error ? null : criticalRes.count ?? 0,
+    count: allRes.error ? null : allRes.count ?? null,
+    criticalCount: criticalRes.error ? null : criticalRes.count ?? null,
     errors,
   };
 }
@@ -78,12 +82,58 @@ export async function fetchLiftingFlowLens(now: Date = new Date()): Promise<Jour
   const sinceIso = new Date(now.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const degraded: string[] = [];
 
+  // Paginated past the PostgREST 1000-row cap on every row-level read below —
+  // `helm_lifting_set_results` in particular is per-SET (every set of every
+  // exercise of every session), the highest-volume table in this lens and
+  // the first to truncate silently on an active platform. An unpaginated
+  // `.select()` here undercounts every downstream stage without ever
+  // surfacing as an error (see golf-journey.ts's identical fix).
   const [assignmentsRes, sessionsRes, setResultsRes, maxesRes, prsRes, incidents] = await Promise.all([
-    admin.from('helm_lifting_program_assignments').select('id, status, created_at').gte('created_at', sinceIso),
-    admin.from('helm_lifting_sessions').select('id, status, readiness_checkin_id, athlete_id, created_at').gte('created_at', sinceIso),
-    admin.from('helm_lifting_set_results').select('athlete_id, created_at').gte('created_at', sinceIso),
-    admin.from('helm_lifting_maxes').select('athlete_id, created_at').gte('created_at', sinceIso),
-    admin.from('helm_lifting_prs').select('athlete_id, achieved_at').gte('achieved_at', sinceIso),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('helm_lifting_program_assignments')
+        .select('id, status, created_at')
+        .gte('created_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('helm_lifting_sessions')
+        .select('id, status, readiness_checkin_id, athlete_id, created_at')
+        .gte('created_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    // Ordered by `id` (the primary key), not `athlete_id` — fetchAllRowsResult
+    // requires a STABLE order on a UNIQUE column so page boundaries don't
+    // drift, and many rows share one athlete_id (that's the whole point of
+    // this table). PostgREST accepts an `order` column that isn't in
+    // `select`, so `id` need not be selected to be ordered on.
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('helm_lifting_set_results')
+        .select('athlete_id, created_at')
+        .gte('created_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('helm_lifting_maxes')
+        .select('athlete_id, created_at')
+        .gte('created_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('helm_lifting_prs')
+        .select('athlete_id, achieved_at')
+        .gte('achieved_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
     incidentCountsForFeatures(admin, FEATURE_KEYS, sinceIso),
   ]);
   degraded.push(...incidents.errors);

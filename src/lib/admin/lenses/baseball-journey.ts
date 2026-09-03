@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { JourneyLens, JourneyStage } from './types';
 
 /**
@@ -72,9 +73,12 @@ async function incidentCountsForFeatures(
   const errors: string[] = [];
   if (allRes.error) errors.push(`${label} incidents count unreadable: ${allRes.error.message}`);
   if (criticalRes.error) errors.push(`${label} critical-incidents count unreadable: ${criticalRes.error.message}`);
+  // `?? null`, never `?? 0` — a succeeded count query with a null count
+  // (malformed/missing PostgREST count header) is unknown, not a verified
+  // zero.
   return {
-    count: allRes.error ? null : allRes.count ?? 0,
-    criticalCount: criticalRes.error ? null : criticalRes.count ?? 0,
+    count: allRes.error ? null : allRes.count ?? null,
+    criticalCount: criticalRes.error ? null : criticalRes.count ?? null,
     errors,
   };
 }
@@ -89,9 +93,27 @@ export async function fetchBaseballJourneyLens(now: Date = new Date()): Promise<
   const sinceIso = new Date(now.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const degraded: string[] = [];
 
+  // Paginated past the PostgREST 1000-row cap — an unpaginated `.select()`
+  // silently truncates once either table's rows in the window pass 1000,
+  // which undercounts attempts/completions without ever surfacing as an
+  // error (see golf-journey.ts's identical fix for the same defect).
   const [playersRes, devPlansRes] = await Promise.all([
-    admin.from('baseball_players').select('id, onboarding_completed, created_at').gte('created_at', sinceIso),
-    admin.from('baseball_developmental_plans').select('id, status, created_at').gte('created_at', sinceIso),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('baseball_players')
+        .select('id, onboarding_completed, created_at')
+        .gte('created_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('baseball_developmental_plans')
+        .select('id, status, created_at')
+        .gte('created_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
   ]);
 
   let playersOnboarded: number | null = null;

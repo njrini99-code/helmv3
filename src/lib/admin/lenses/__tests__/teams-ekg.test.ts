@@ -130,4 +130,20 @@ describe('fetchTeamsEkgLens', () => {
     expect(lens.teams[0]!.unresolvedIncidents).toBeNull();
     expect(lens.degradedNote).toContain('unresolved-incident read failed');
   });
+
+  it('paginates the unresolved-incident read past the PostgREST 1000-row cap — a team whose only row lands past page 1 is not fabricated to 0', async () => {
+    pulseResult = { ...pulseResult, teams: [team({ teamId: 't1' }), team({ teamId: 'late-team', name: 'Late University' })] };
+    const page1 = Array.from({ length: 1000 }, () => ({ team_id: 't1' }));
+    const page2 = [{ team_id: 'late-team' }];
+    // No live release configured (unconfigured), so only the unresolved
+    // query's `.from('admin_events')` calls fire — two pages of it.
+    perTable['admin_events'] = [() => ({ data: page1, error: null }), () => ({ data: page2, error: null })];
+
+    const lens = await fetchTeamsEkgLens();
+
+    const late = lens.teams.find((t) => t.teamId === 'late-team')!;
+    expect(late.unresolvedIncidents).toBe(1); // NOT 0 — a single-page read would have silently dropped this team's only row
+    const t1 = lens.teams.find((t) => t.teamId === 't1')!;
+    expect(t1.unresolvedIncidents).toBe(1000);
+  });
 });

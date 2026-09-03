@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { JourneyLens, JourneyStage, SignalConfidence } from './types';
 
 /**
@@ -81,9 +82,12 @@ async function incidentCountsForFeatures(
   const errors: string[] = [];
   if (allRes.error) errors.push(`${label} incidents count unreadable: ${allRes.error.message}`);
   if (criticalRes.error) errors.push(`${label} critical-incidents count unreadable: ${criticalRes.error.message}`);
+  // `?? null`, never `?? 0` — a `count: 'exact', head: true` request that
+  // succeeded but came back with a null count (a malformed/missing
+  // PostgREST count header) is unknown, not a verified zero.
   return {
-    count: allRes.error ? null : allRes.count ?? 0,
-    criticalCount: criticalRes.error ? null : criticalRes.count ?? 0,
+    count: allRes.error ? null : allRes.count ?? null,
+    criticalCount: criticalRes.error ? null : criticalRes.count ?? null,
     errors,
   };
 }
@@ -105,10 +109,18 @@ export async function fetchGolfJourneyLens(now: Date = new Date()): Promise<Jour
       .eq('event_type', 'login')
       .eq('sport', 'golf')
       .gte('created_at', sinceIso),
-    admin
-      .from('golf_rounds')
-      .select('id, status, created_at, updated_at')
-      .gte('created_at', sinceIso),
+    // Paginated past the PostgREST 1000-row cap — an unpaginated `.select()`
+    // silently truncated once golf_rounds in the window passed 1000, which
+    // undercounted every downstream stage (start_round/autosave/resume/
+    // submit) without ever surfacing as an error.
+    fetchAllRowsResult((from, to) =>
+      admin
+        .from('golf_rounds')
+        .select('id, status, created_at, updated_at')
+        .gte('created_at', sinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
     admin
       .from('admin_events')
       .select('id', { count: 'exact', head: true })
@@ -122,7 +134,7 @@ export async function fetchGolfJourneyLens(now: Date = new Date()): Promise<Jour
       .gte('created_at', sinceIso),
   ]);
 
-  const loginAttempts = loginRes.error ? null : loginRes.count ?? 0;
+  const loginAttempts = loginRes.error ? null : loginRes.count ?? null;
   if (loginRes.error) degraded.push(`login count unreadable: ${loginRes.error.message}`);
 
   let roundsStarted: number | null = null;
@@ -227,7 +239,7 @@ export async function fetchGolfJourneyLens(now: Date = new Date()): Promise<Jour
       },
       incidents: roundIncidents,
       confidence: 'durable_unproven' satisfies SignalConfidence,
-      sourceNote: `golf_rounds.status='completed' in the window, cross-checked against ${roundSubmittedRes.error ? 'an unreadable' : (roundSubmittedRes.count ?? 0)} round_submitted event(s). golden-paths.yml marks this journey "collecting" — the number is real, e2e coverage proving it is not complete.`,
+      sourceNote: `golf_rounds.status='completed' in the window, cross-checked against ${roundSubmittedRes.error || roundSubmittedRes.count === null ? 'an unknown number of' : roundSubmittedRes.count} round_submitted event(s). golden-paths.yml marks this journey "collecting" — the number is real, e2e coverage proving it is not complete.`,
     },
     {
       id: 'stats',
@@ -244,7 +256,7 @@ export async function fetchGolfJourneyLens(now: Date = new Date()): Promise<Jour
       featureKeys: FEATURE_KEYS.coach,
       metric: {
         attempts: null,
-        completions: aiGenRes.error ? null : aiGenRes.count ?? 0,
+        completions: aiGenRes.error ? null : aiGenRes.count ?? null,
         successRate: null,
       },
       incidents: coachIncidents,

@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { fetchPulseGrid, type PulseSort, type PulseTeamRow } from '@/lib/admin/data/pulse-grid';
 import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
 
@@ -20,10 +21,12 @@ import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
  *     SINCE the current live release (fetchReleaseLedger's `isLive` card),
  *     i.e. incidents plausibly tied to what's running right now.
  *   - unresolvedIncidents: currently-unresolved error/critical admin_events
- *     for this team — the closest honest proxy for "failed journeys" this
- *     module can support without a per-journey-stage-per-team join, which
- *     was out of scope for the time available. Disclosed as an
- *     approximation, not oversold as journey-level attribution.
+ *     for this team, bounded to the SAME window pulse-grid's activity/error
+ *     buckets use (`pulse.windowDays`, not all-time) — the closest honest
+ *     proxy for "failed journeys" this module can support without a
+ *     per-journey-stage-per-team join, which was out of scope for the time
+ *     available. Disclosed as an approximation, not oversold as
+ *     journey-level attribution.
  *
  * "Utilization" (feature adoption by team) is intentionally NOT duplicated
  * here — see adoption-map.ts, which already breaks feature adoption down by
@@ -75,14 +78,32 @@ export async function fetchTeamsEkgLens(sort: PulseSort = 'attention'): Promise<
   if (releaseLedger.status === 'error') degraded.push(`release ledger unreadable: ${releaseLedger.error ?? 'unknown error'}`);
   const liveReleaseSinceIso = liveRelease ? new Date(liveRelease.createdAt).toISOString() : null;
 
+  // Bound to the SAME window the rest of the EKG uses (pulse.windowDays back
+  // from the moment pulse-grid was generated) — an unbounded "unresolved"
+  // read used to answer a different question (all time) than every other
+  // column on this row (30 days), and widened the row-count risk with it.
+  const ekgWindowSinceIso = new Date(
+    new Date(pulse.generatedAt).getTime() - pulse.windowDays * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  // Paginated past the PostgREST 1000-row cap — an unpaginated `.select()`
+  // silently truncates once error/critical admin_events rows in the window
+  // pass 1000, and a truncated-but-"successful" read used to resolve every
+  // team OUTSIDE the truncated page to a fabricated 0 (a green "0
+  // unresolved" pill on a team that was never actually checked). Ordered by
+  // `id` (PK), not `team_id` — many rows share one team_id.
   let releaseImpactByTeam: Map<string, number> | null = null;
   if (liveReleaseSinceIso) {
-    const res = await admin
-      .from('admin_events')
-      .select('team_id')
-      .not('team_id', 'is', null)
-      .in('severity', ['error', 'critical'])
-      .gte('created_at', liveReleaseSinceIso);
+    const res = await fetchAllRowsResult((from, to) =>
+      admin
+        .from('admin_events')
+        .select('id, team_id')
+        .not('team_id', 'is', null)
+        .in('severity', ['error', 'critical'])
+        .gte('created_at', liveReleaseSinceIso)
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
     if (res.error) {
       degraded.push(`release-impact read failed: ${res.error.message}`);
     } else {
@@ -90,12 +111,17 @@ export async function fetchTeamsEkgLens(sort: PulseSort = 'attention'): Promise<
     }
   }
 
-  const unresolvedRes = await admin
-    .from('admin_events')
-    .select('team_id')
-    .not('team_id', 'is', null)
-    .in('severity', ['error', 'critical'])
-    .eq('resolved', false);
+  const unresolvedRes = await fetchAllRowsResult((from, to) =>
+    admin
+      .from('admin_events')
+      .select('id, team_id')
+      .not('team_id', 'is', null)
+      .in('severity', ['error', 'critical'])
+      .eq('resolved', false)
+      .gte('created_at', ekgWindowSinceIso)
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
   let unresolvedByTeam: Map<string, number> | null = null;
   if (unresolvedRes.error) {
     degraded.push(`unresolved-incident read failed: ${unresolvedRes.error.message}`);

@@ -97,4 +97,28 @@ describe('fetchBaseballJourneyLens', () => {
       expect(findStage(lens.stages, id).metric.attempts).toBeNull();
     }
   });
+
+  it('paginates past the PostgREST 1000-row cap on baseball_players — a second page beyond the first 1000 still counts', async () => {
+    perTable['admin_events'] = adminEventsDefaults();
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({ id: `p${i}`, onboarding_completed: false }));
+    const page2 = [{ id: 'p1000', onboarding_completed: true }];
+    perTable['baseball_players'] = [() => ({ data: page1, error: null }), () => ({ data: page2, error: null })];
+    perTable['baseball_developmental_plans'] = [() => ({ data: [], error: null })];
+
+    const lens = await fetchBaseballJourneyLens(new Date('2026-09-03T00:00:00Z'));
+
+    const roster = findStage(lens.stages, 'roster_onboarding');
+    expect(roster.metric.attempts).toBe(1001);
+    expect(roster.metric.completions).toBe(1); // only the page-2 row is onboarded
+  });
+
+  it('unknown vs zero: a succeeded count query with a null count (not an error) yields null, never a fabricated 0', async () => {
+    perTable['admin_events'] = adminEventsDefaults({ 0: () => ({ count: null, error: null }) }); // roster incidents "all"
+    perTable['baseball_players'] = [() => ({ data: [], error: null })];
+    perTable['baseball_developmental_plans'] = [() => ({ data: [], error: null })];
+
+    const lens = await fetchBaseballJourneyLens(new Date('2026-09-03T00:00:00Z'));
+
+    expect(findStage(lens.stages, 'roster_onboarding').incidents.count).toBeNull();
+  });
 });
