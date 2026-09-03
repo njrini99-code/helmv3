@@ -2,7 +2,7 @@
 -- facade for self-monitoring (brief §44, §40-48, Phase 2 A6)
 --
 -- RISK TIER: R3. HELD — see supabase/migrations/HELD.md. Depends on
--- 20260903190000 (db_lock_incidents) and 20260903190100 (db_table_samples)
+-- 20260903191000 (db_lock_incidents) and 20260903191100 (db_table_samples)
 -- already being applied — this migration's CREATE OR REPLACE references
 -- both tables by name inside PL/pgSQL, so (like the Phase 1 retention
 -- migration's own note) CREATE FUNCTION itself succeeds regardless of

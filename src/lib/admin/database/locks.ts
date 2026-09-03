@@ -4,7 +4,7 @@ import 'server-only';
  * Helm Bridge — Locks & Transactions (brief §35D).
  *
  * Reads `helm_debug.db_lock_incidents` through the read RPC
- * `helm_debug_read_db_lock_incidents` (20260903190000, HELD — `helm_debug`
+ * `helm_debug_read_db_lock_incidents` (20260903191000, HELD — `helm_debug`
  * is not PostgREST-exposed, so an RPC is the only read path, same reasoning
  * as every other reader in this directory). Every row here was already
  * threshold-evaluated by `evaluateLockSnapshot`
@@ -48,7 +48,12 @@ export interface LockIncidentRow {
 
 export interface LockIncidentsSnapshot {
   incidents: LockIncidentRow[];
+  /** Open incidents among the rows actually fetched. When
+   *  `openCountIsFloor` is true this is a lower bound, not a total. */
   openCount: number;
+  /** True when the read hit its page ceiling, so `openCount` and
+   *  `criticalOpenCount` are floors rather than totals. */
+  openCountIsFloor: boolean;
   criticalOpenCount: number;
   notApplied: boolean;
 }
@@ -105,11 +110,19 @@ export async function fetchLockIncidents(): Promise<AdminFetchResult<LockInciden
 
   const incidents = (data ?? []).map(mapRow);
   const open = incidents.filter((i) => i.resolvedAt === null);
+  // The reader asks for at most DEFAULT_LIMIT rows, so a full page means the
+  // true total is unknown, not equal to the page size. `openCount` is then a
+  // floor, and the tiles that render it must say so rather than present a
+  // saturated cap as a real count. Nothing writes `resolved_at` yet, so this
+  // saturates in practice, not only in theory.
+  const atCeiling = incidents.length >= DEFAULT_LIMIT;
 
-  return ok({
+  const result = ok({
     incidents,
     openCount: open.length,
+    openCountIsFloor: atCeiling,
     criticalOpenCount: open.filter((i) => i.severity === 'critical').length,
     notApplied: false,
   });
+  return atCeiling ? { ...result, truncated: true } : result;
 }

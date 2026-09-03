@@ -22,7 +22,7 @@
  * `deltas.deadlocks` for the deadlock signal), and persist any resulting
  * candidates via `record_db_lock_incident`. This half runs in its OWN
  * try/catch, entirely after the health write succeeds or degrades: if the
- * lock migration (20260903190000, HELD, applied independently of the
+ * lock migration (20260903191000, HELD, applied independently of the
  * health-sampler migration) is not yet applied, or any lock-side call
  * throws for any other reason, the run must still report the health sample
  * it already wrote as a success — a missing/broken lock feature must never
@@ -344,7 +344,7 @@ export async function GET(req: NextRequest) {
     // Platform metrics (brief §20/§22) — AFTER the health row, minimal
     // extension per Track C's own scope. Fail-open: this project's
     // SUPABASE_ACCESS_TOKEN/SUPABASE_SERVICE_ROLE_KEY availability and the
-    // 20260903190400 migration's applied-in-production state are both
+    // 20260903191400 migration's applied-in-production state are both
     // independent of the health sampler above, and neither may ever fail
     // THIS job run — a platform-metrics problem must never be reported as
     // "the health sampler is broken".

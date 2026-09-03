@@ -8,10 +8,10 @@
   `src/lib/observability/supabase/**` and `src/lib/admin/database/**`) is a
   sibling branch, not touched here.
 - Change: four HELD migrations
-  (`20260903190000_helm_debug_db_lock_incidents.sql`,
-  `20260903190100_helm_debug_db_table_samples.sql`,
-  `20260903190200_helm_debug_jobs_health_read.sql`,
-  `20260903190300_helm_debug_observability_retention_v2.sql`); five new
+  (`20260903191000_helm_debug_db_lock_incidents.sql`,
+  `20260903191100_helm_debug_db_table_samples.sql`,
+  `20260903191200_helm_debug_jobs_health_read.sql`,
+  `20260903191300_helm_debug_observability_retention_v2.sql`); five new
   pure evaluator modules
   (`src/lib/observability/supabase/{locks,health-rules,table-health,jobs-health,freshness}.ts`)
   with fixture tests; four new Bridge readers
@@ -177,7 +177,7 @@
   (`src/lib/admin/database/{platform,advisors,alerts}.ts`); extended
   `src/app/api/cron/db-health-sampler/route.ts` to also record one
   `db_platform_samples` row per tick (fail-open, HELD migration
-  `20260903190400_helm_debug_db_platform_samples.sql`); added the
+  `20260903191400_helm_debug_db_platform_samples.sql`); added the
   "Fetch Supabase evidence" form
   (`src/app/admin/database/{log-evidence-actions.ts,LogEvidenceForm.tsx}`)
   and four new `/admin/database` page sections (Platform, Advisors, Alert

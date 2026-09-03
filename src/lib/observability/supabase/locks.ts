@@ -5,7 +5,7 @@
  * arithmetic on a bounded snapshot deserves fixture-driven tests, not
  * plpgsql. `evaluateLockSnapshot` takes the rows
  * `public.helm_debug_db_lock_snapshot()` (the read-only definer-rights RPC,
- * 20260903190000_helm_debug_db_lock_incidents.sql) returns, already
+ * 20260903191000_helm_debug_db_lock_incidents.sql) returns, already
  * classified into `roleClass`/`safeQueryClass`/`blockingQueryClass` IN SQL —
  * this module never sees raw query text, only the small closed labels the
  * SQL facade computed from a 200-character-bounded prefix.

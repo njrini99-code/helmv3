@@ -10,7 +10,7 @@
 -- docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md §1, §3).
 -- Nothing here is written or persisted by Helm; it is a live read at
 -- request time, same shape as `helm_debug_db_lock_snapshot()`'s current-
--- state read (20260903190000) — not an appended history table.
+-- state read (20260903191000) — not an appended history table.
 --
 -- CAPABILITY DETECTION, SECTION BY SECTION, NOT ALL-OR-NOTHING. Each of the
 -- three independent reads below (cron jobs, pg_net queue depth, pg_net

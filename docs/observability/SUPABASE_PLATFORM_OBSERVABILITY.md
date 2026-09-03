@@ -230,7 +230,7 @@ on it and no code path assumes it exists.
   into `helm_debug_prune_observability`
   (`20260903180300_helm_debug_observability_retention.sql`) would edit a
   migration another track already shipped; this migration
-  (`20260903190400_helm_debug_db_platform_samples.sql`) is purely additive
+  (`20260903191400_helm_debug_db_platform_samples.sql`) is purely additive
   on purpose. At the 5-minute cadence this grows ~8,640 rows/month, the same
   order as `db_health_samples`, which the existing retention budget already
   accounts for in aggregate. Surfaced as a `WARN` in `repo:doctor` (§6).

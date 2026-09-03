@@ -13,7 +13,7 @@
  * src/lib/admin/database/tables.ts, so a threshold tuned later applies
  * retroactively to already-stored history instead of only to future rows.
  *
- * Both RPCs are HELD (20260903190100_helm_debug_db_table_samples.sql, not
+ * Both RPCs are HELD (20260903191100_helm_debug_db_table_samples.sql, not
  * applied to production) — degrades to a 200 no-op while unapplied, same
  * isMigrationNotAppliedError pattern as every other collector in this
  * series.

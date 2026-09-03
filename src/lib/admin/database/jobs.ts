@@ -4,7 +4,7 @@ import 'server-only';
  * Helm Bridge — Jobs & Webhooks: pg_cron + pg_net health (brief §26, §28,
  * §35F).
  *
- * Reads `public.helm_debug_read_jobs_health()` (20260903190200, HELD) — a
+ * Reads `public.helm_debug_read_jobs_health()` (20260903191200, HELD) — a
  * single live read over `cron.job`/`cron.job_run_details`/
  * `net.http_request_queue`/`net._http_response`, no stored table. Each of
  * the three sub-sections (cron, net queue, net responses) can independently

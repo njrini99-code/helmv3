@@ -2,7 +2,7 @@
  * Pure pg_cron / pg_net health evaluation (brief §26, §28).
  *
  * NO NEW TABLE — this module classifies whatever
- * `helm_debug_read_jobs_health()` (20260903190200_helm_debug_jobs_health_read.sql)
+ * `helm_debug_read_jobs_health()` (20260903191200_helm_debug_jobs_health_read.sql)
  * reads LIVE from `cron.job`/`cron.job_run_details`/`net.http_request_queue`/
  * `net._http_response` at request time. Same "pure evaluator, fixture
  * tested" convention as every other module in this directory.

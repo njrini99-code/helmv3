@@ -270,7 +270,7 @@ Added on top of Phase 1, at $0 incremental recurring cost — full detail in
   `computeWorkloadBudget` (reusing Phase 1's EXACT `source_class`
   vocabulary — `helm_product`/`supabase_realtime`/`pg_net_job`/
   `pg_cron_job`/`observability`/`unknown` — never a second vocabulary).
-- **`db_platform_samples`** (HELD migration `20260903190400`): one row per
+- **`db_platform_samples`** (HELD migration `20260903191400`): one row per
   `db-health-sampler` tick (extended, not a new cron), fail-open. Retention
   is a NAMED, undocumented-until-now gap — not wired into the shared
   `helm_debug_prune_observability` migration, surfaced as a `WARN` in

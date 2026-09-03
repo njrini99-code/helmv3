@@ -346,14 +346,25 @@ async function LocksPanel() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-        <StatTile label="OPEN INCIDENTS" value={result.data.openCount} tone={result.data.openCount > 0 ? 'accent' : 'neutral'} mono />
         <StatTile
-          label="CRITICAL OPEN"
+          label={result.data.openCountIsFloor ? 'OPEN INCIDENTS (AT LEAST)' : 'OPEN INCIDENTS'}
+          value={result.data.openCount}
+          tone={result.data.openCount > 0 ? 'accent' : 'neutral'}
+          mono
+        />
+        <StatTile
+          label={result.data.openCountIsFloor ? 'CRITICAL OPEN (AT LEAST)' : 'CRITICAL OPEN'}
           value={result.data.criticalOpenCount}
           tone={result.data.criticalOpenCount > 0 ? 'accent' : 'neutral'}
           mono
         />
       </div>
+      {result.data.openCountIsFloor ? (
+        <p className="text-xs text-warm-600">
+          The reader hit its page ceiling, so these are lower bounds, not totals. Nothing resolves a lock incident yet,
+          so an open count that reaches the ceiling stays there.
+        </p>
+      ) : null}
       <div className="space-y-2">
         {result.data.incidents.slice(0, 25).map((incident) => (
           <LockIncidentRowView key={incident.id} incident={incident} />

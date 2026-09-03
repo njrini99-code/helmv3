@@ -8,7 +8,7 @@ import 'server-only';
  * fetchDatabaseErrors, fetchQueryPerformance, fetchTableHealth,
  * fetchCollectorHealth) rather than re-querying the database a second time,
  * plus one new RPC read (`helm_debug_read_observability_sizes`,
- * 20260903190300, HELD) for table sizes and rolling-24h row counts
+ * 20260903191300, HELD) for table sizes and rolling-24h row counts
  * (self-monitoring). Freshness classification is pure and lives in
  * src/lib/observability/supabase/freshness.ts — this file only wires each
  * source's last-sample timestamp and readability through it.

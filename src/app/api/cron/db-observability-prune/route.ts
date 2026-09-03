@@ -7,7 +7,7 @@
  * with a 4-arg signature pruning `db_error_events` (30d), `db_health_samples`
  * (30d), `db_stat_deltas` (14d), and `db_stat_prior_state` (14d since last
  * seen); Phase 2's A6
- * (20260903190300_helm_debug_observability_retention_v2.sql, HELD)
+ * (20260903191300_helm_debug_observability_retention_v2.sql, HELD)
  * `CREATE OR REPLACE`s the SAME 4-arg signature (deliberately unchanged —
  * see that migration's header for why adding parameters would have created
  * a second, ambiguous overload) to ALSO prune `db_lock_incidents` (30d) and
@@ -47,7 +47,7 @@ interface PruneResult {
   deleted_db_stat_deltas: number;
   deleted_db_stat_prior_state: number;
   // Phase 2 A6 keys — present only once
-  // 20260903190300_helm_debug_observability_retention_v2.sql is applied
+  // 20260903191300_helm_debug_observability_retention_v2.sql is applied
   // (it CREATE OR REPLACEs the same 4-arg RPC as Phase 1's function, so the
   // response shape here depends on which version is live, not on anything
   // this route passes in).

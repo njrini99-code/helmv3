@@ -186,10 +186,10 @@ export async function run(ctx) {
 
   // Explicit, named gap (not a silent omission — shipping.md §1's own rule):
   // db_platform_samples (this phase's new table, migration
-  // 20260903190400) has NO prune function wired. Editing the shared
+  // 20260903191400) has NO prune function wired. Editing the shared
   // retention migration above would be a cross-track edit into a file this
   // track does not own; see docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md.
-  if (fileExists(repoRoot, 'supabase/migrations/20260903190400_helm_debug_db_platform_samples.sql')) {
+  if (fileExists(repoRoot, 'supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql')) {
     out.push(
       check(
         'db-observability.platform-samples-retention-gap',
