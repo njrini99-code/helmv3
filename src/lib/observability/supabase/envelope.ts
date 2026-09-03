@@ -157,8 +157,17 @@ const SECRET_PAIR_RE =
  * embeds the offending row's id ("Key (round_id)=(...) already exists"), and
  * brief §6 is explicit that a UUID must never become a stored/queryable
  * dimension even when it looks harmless. Never throws.
+ *
+ * `maxChars` defaults to the telemetry bound and exists so a caller writing
+ * a LONGER durable artefact (an incident record under `memory/incidents/**`,
+ * whose prose is meant to be read by a human) can raise the limit without
+ * forking a second, weaker redactor. The masking rules are identical at
+ * every length; only the truncation point moves.
  */
-export function sanitizeSupabaseFreeText(value: string | null | undefined): string | null {
+export function sanitizeSupabaseFreeText(
+  value: string | null | undefined,
+  maxChars: number = MAX_SAFE_TEXT_CHARS,
+): string | null {
   if (value === null || value === undefined) return null;
   try {
     const withoutSecrets = value
@@ -166,7 +175,7 @@ export function sanitizeSupabaseFreeText(value: string | null | undefined): stri
       .replace(BEARER_RE, 'bearer [secret]')
       .replace(SECRET_PAIR_RE, '$1=[secret]');
     const withoutUuids = withoutSecrets.replace(UUID_RE, '[id]');
-    const safe = redactFreeTextForStorage(withoutUuids, MAX_SAFE_TEXT_CHARS);
+    const safe = redactFreeTextForStorage(withoutUuids, maxChars);
     return safe.length > 0 ? safe : null;
   } catch {
     return '[redaction failed]';
