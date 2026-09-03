@@ -1204,6 +1204,13 @@ features:
         - src/app/golf/admin/**
       components:
         - src/app/admin/_components/**
+        # Bridge Premium's shared visual vocabulary (PosturePill,
+        # EvidenceSourceChips/SourceConfidenceRing, ReleaseRelationshipLabel,
+        # ConfidenceMeter, EpisodeTimelineStrip, UnknownValue/UnknownInline,
+        # EvidenceInspector), added 2026-09-03 as Phase 1 of the Bridge
+        # Premium Observability brief — mapped here after knowledge:map
+        # resolved src/components/admin/premium/** to impactedFeatures: [].
+        - src/components/admin/premium/**
         - src/app/golf/admin/crm/components/**
       api:
         - src/app/api/admin/**
