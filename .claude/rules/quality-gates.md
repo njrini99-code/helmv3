@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 ---
 paths:
   - ".github/workflows/**"
@@ -147,8 +148,8 @@ Verified 2026-08-20. Do not treat these as coverage:
 
 - **GitHub Actions** — per-PR fast path: `ci.yml` (typecheck, lint, vitest,
   build, RLS, knowledge + doc gates) and `review-gate.yml` (static analyzers).
-- **CircleCI** — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk)
-  Mondays 06:00 UTC, plus iOS Capacitor compile.
+- **CircleCI** — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk,
+  Janitor entropy report) Mondays 06:00 UTC, plus iOS Capacitor compile.
 - **5 required checks on `main`**, verified live 2026-09-02 and all resolving to
   real job names: `CI aggregate`, `Review Gate aggregate`,
   `Analyze (actions)`, `Analyze (javascript-typescript)`, `Analyze (python)`.

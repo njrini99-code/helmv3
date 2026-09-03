@@ -1537,6 +1537,78 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   full-repo scan); see commit message for its result. `npm run build` NOT
   run — no `'use server'` surface changed.
 
+## 2026-09-03 — Phase K.4.5 Janitor generator; Phase K.4.1 Stryker mutation gate (adjacent, unmapped)
+
+- **What**: Two Phase K (Engineering OS Intelligence) deliverables from the
+  Helm Bridge control-plane implementation plan, §7/K.4 (that plan document
+  is scaffolding in a separate, not-yet-committed worktree as of this
+  change, so it is described here rather than cited by a path that would
+  not resolve — `npm run docs:path-drift` catches exactly this class of
+  drift, and caught it against an earlier draft of this entry).
+  (1) `scripts/janitor/**` — a read-only entropy-report generator (see the
+  new "Actions And Services" entry in `memory/features/admin-platform.md`
+  for the full description; mapped to this feature in `memory/registry.yml`
+  after `knowledge:map` resolved it to `impactedFeatures: []`, same
+  precedent as the self-heal REPAIR-stage runner entry above this one).
+  (2) `.circleci/config.yml`'s `stryker-coachhelm` job ran
+  `npx stryker run || true`, masking every exit code including a crash —
+  fixed with `scripts/mutation-gate.mjs`, which reads Stryker's own JSON
+  report, computes the mutation score from mutant status counts, and fails
+  the job below a committed floor (`config/mutation-gate.json`, marked
+  PROVISIONAL — no real weekly score is recorded anywhere in this repo).
+- **Why (2) is NOT added to this feature's `memory/registry.yml` glob**:
+  the mutation gate governs `src/lib/coachhelm/v2/` test quality, not the
+  Bridge/admin surface — `knowledge:map --files .circleci/config.yml
+  scripts/mutation-gate.mjs` returns `impactedFeatures: []` and stays that
+  way after this change; forcing it under `admin_platform` would be a wrong
+  mapping, not a closed gap, so it is recorded here only for the adjacent
+  provenance (same PR, same Phase K plan section) — it has no feature-doc
+  entry anywhere in this repo, by design, and the next session that touches
+  Stryker/mutation testing should read `scripts/mutation-gate.mjs`'s own
+  header comment, not a feature doc, for its contract.
+- **Why the ratchet-baseline pattern this repo uses everywhere else
+  (`.lint-baseline.json` etc.) does NOT apply to the mutation floor**: those
+  work because a human runs `--update` locally and commits the result; the
+  weekly Stryker job runs on an ephemeral CircleCI container that cannot
+  commit back to the repo, so a "write the baseline on first run" design
+  would silently treat every week as week one, forever green — the same
+  failure class this ledger entry's fix closes, in a new shape. The floor
+  is a committed number instead, explicitly provisional in its own file.
+- **Why the Janitor writes a SEPARATE file, never `config/control-plane-gaps.json`
+  itself**, even though it reuses that file's `id`/`owner`/`opened`/`scope`/
+  `reason`/`closes_when` field shape: that file's own `$comment` says
+  "Nothing may be listed here to make a red verifier green... Adding one is
+  a decision, not a repair" — an automated finding is a PROPOSAL, not a
+  decision a human has made. `janitor-findings.json` (same directory, gitignored) and
+  `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) say this explicitly in their own
+  headers.
+- **Verified**: `npm run test:janitor` (`node --test
+  scripts/janitor/__tests__/*.test.mjs`) — 52/52 pass, covering every
+  classifier's `FINDINGS`/`ZERO_FINDINGS_VERIFIED`/`NO_SIGNAL` paths against
+  real disposable git-repo fixtures (not mocks — several classifiers shell
+  out to real `git ls-files`/`git grep`/`git log`). `npm run test:mutation-gate`
+  (`node --test scripts/mutation-gate.test.mjs`) — 13/13 pass, covering the
+  score formula, the floor boundary, and every UNKNOWN path (missing
+  report, unparseable JSON, missing floor, zero valid mutants). `npm run
+  janitor` run for real against this worktree: 12/12 classes returned a
+  valid verdict, 0 classifier crashes, found a real, previously-invisible
+  entropy signal in the process — `abandoned-experiments.mjs`'s first draft
+  used `\d` inside a `git grep -E` pattern, which is POSIX ERE (no Perl
+  shorthand support) and silently matched nothing; fixed to `[0-9]` and
+  caught by this run producing 0 findings pre-fix vs. real findings
+  post-fix, plus a regression test. `circleci config validate
+  .circleci/config.yml` passes. Stryker was **not** run locally (explicit
+  instruction) — the mutation gate's real report path
+  (`reports/mutation/mutation.json`, Stryker's JSON-reporter default) and
+  computed score are therefore unverified against a live Stryker run; check
+  both against the first real weekly job log. `npm run typecheck` / `npm
+  run lint` / `npm run build` were **not** run from this worktree — no
+  `node_modules` installed (shared-disk policy across concurrent agent
+  worktrees); every new script here is dependency-free (`node:fs`,
+  `node:path`, `node:child_process`, `node:url` only) and was verified to
+  run correctly with no `node_modules` present at all, which is direct
+  evidence typecheck/lint have no missing-import surface to fail on, but is
+  not a substitute for actually running them — CI does.
 ## 2026-09-03 — Bridge Premium Observability Phase 0: six truth-model read models under incidents/
 
 Implements Phase 0 ("Truth and naming") of the owner's Bridge Premium
