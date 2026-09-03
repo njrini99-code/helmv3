@@ -55,7 +55,13 @@ import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
-import { ADMIN_NAV, hrefForShortcut, BRIDGE_BOTTOM_NAV_HREFS, BRIDGE_BOTTOM_NAV_LABELS } from './admin-nav';
+import {
+  ADMIN_NAV,
+  hrefForShortcut,
+  RESERVED_LOCAL_SHORTCUTS,
+  BRIDGE_BOTTOM_NAV_HREFS,
+  BRIDGE_BOTTOM_NAV_LABELS,
+} from './admin-nav';
 import { RelativeTime } from './RelativeTime';
 
 /** Sub-route leaf labels the Breadcrumb trail can't derive from ADMIN_NAV
@@ -373,10 +379,16 @@ export function AdminShell({
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'r' || e.key === 'R') {
+      // Reserved BEFORE hrefForShortcut, and case-SENSITIVE (plain 'r' only)
+      // — every ADMIN_NAV letter shortcut is the Shift+letter (uppercase)
+      // form precisely so it never collides with a local key reserved here.
+      // This used to check `e.key === 'r' || e.key === 'R'`, which ate
+      // Shift+R and made Reliability's 'R' tab shortcut permanently
+      // unreachable; see RESERVED_LOCAL_SHORTCUTS in admin-nav.ts.
+      if (RESERVED_LOCAL_SHORTCUTS.has(e.key)) {
         e.preventDefault();
         // Routed through the SAME `doRefresh` the Refresh button/icon use —
-        // one refresh path, so the "R" shortcut also updates the freshness
+        // one refresh path, so the "r" shortcut also updates the freshness
         // clock and the icon spin instead of silently going stale.
         doRefresh();
         return;

@@ -48,6 +48,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
 import { CoachContextError } from './context';
+import { logServerError } from '@/lib/server-error-logger';
 import { METRIC_IDS } from './metrics-catalog';
 import {
   ROUND_TREND_METRIC_IDS,
@@ -154,6 +155,8 @@ export interface BuildToolsArgs {
 function guarded(
   fn: () => Promise<ToolEnvelope>,
   collect: (e: ToolEnvelope) => void,
+  toolName: string,
+  ctx: CoachChatContext,
 ): Promise<ToolEnvelope> {
   return fn()
     .then((envelope) => {
@@ -165,6 +168,21 @@ function guarded(
         err instanceof CoachContextError
           ? err.message
           : 'That read could not be completed.';
+      // A read tool that throws was previously invisible to Sentry/Bridge —
+      // the coach just saw a degraded envelope with no server-side signal.
+      // CoachContextError is expected control flow (skipSentry); anything
+      // else is a genuine unexpected failure worth an issue.
+      void logServerError(
+        `coachhelm tool read failed: ${toolName}`,
+        {
+          action: `coachhelm.tool.${toolName}`,
+          feature: 'coachhelm_chat',
+          userId: ctx.coach_id,
+          skipSentry: err instanceof CoachContextError,
+          handled: true,
+        },
+        'warning',
+      );
       return unavailableEnvelope('Could not complete that read.', message);
     });
 }
@@ -206,7 +224,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     <I extends Record<string, unknown>>(name: string, run: (input: I) => Promise<ToolEnvelope>) =>
     async (input: I) => {
       progress(name, input);
-      const envelope = await guarded(() => run(input), collect);
+      const envelope = await guarded(() => run(input), collect, name, ctx);
       evidence(name, envelope);
       return envelope;
     };
@@ -239,6 +257,21 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       });
     } catch (err) {
       // A plan we cannot build must never produce a Confirm button.
+      const expected =
+        err instanceof ActionPlanError ||
+        err instanceof PracticePlanError ||
+        err instanceof CoachContextError;
+      void logServerError(
+        `coachhelm tool propose failed: ${action.toolName}`,
+        {
+          action: `coachhelm.tool.${action.toolName}.propose`,
+          feature: 'coachhelm_chat',
+          userId: ctx.coach_id,
+          skipSentry: expected,
+          handled: true,
+        },
+        'warning',
+      );
       writer.write({
         type: 'data-progress',
         id: `progress-${(progressId += 1)}`,
@@ -267,6 +300,18 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       plan = built.plan;
       proposal = built.proposal;
     } catch (err) {
+      const expected = err instanceof ActionPlanError || err instanceof PracticePlanError;
+      void logServerError(
+        `coachhelm tool execute-build failed: ${action.toolName}`,
+        {
+          action: `coachhelm.tool.${action.toolName}.execute`,
+          feature: 'coachhelm_chat',
+          userId: ctx.coach_id,
+          skipSentry: expected,
+          handled: true,
+        },
+        'warning',
+      );
       return {
         status: 'failed',
         message:
@@ -548,6 +593,18 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
           });
         } catch (err) {
           // A plan we cannot build must not produce a Confirm button.
+          const expected = err instanceof PracticePlanError;
+          void logServerError(
+            'coachhelm tool propose failed: create_recurring_practice',
+            {
+              action: 'coachhelm.tool.create_recurring_practice.propose',
+              feature: 'coachhelm_chat',
+              userId: ctx.coach_id,
+              skipSentry: expected,
+              handled: true,
+            },
+            'warning',
+          );
           writer.write({
             type: 'data-progress',
             id: `progress-${(progressId += 1)}`,
@@ -571,6 +628,18 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
           plan = built.plan;
           proposal = built.proposal;
         } catch (err) {
+          const expected = err instanceof PracticePlanError;
+          void logServerError(
+            'coachhelm tool execute-build failed: create_recurring_practice',
+            {
+              action: 'coachhelm.tool.create_recurring_practice.execute',
+              feature: 'coachhelm_chat',
+              userId: ctx.coach_id,
+              skipSentry: expected,
+              handled: true,
+            },
+            'warning',
+          );
           return {
             status: 'failed',
             message: err instanceof PracticePlanError ? err.message : 'Could not build the plan.',

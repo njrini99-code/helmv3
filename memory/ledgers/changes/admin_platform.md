@@ -2134,3 +2134,50 @@ section for the full per-module description; not restated here.
   fallback, not a true dependency graph, since neither
   `WORLD_MODEL.json` under `docs/generated` nor `memory/registry.yml` carries
   feature-to-feature edges in this repo today.
+
+## 2026-09-03 — Bridge Premium Phase 6: polish (motion, keyboard, mobile, loading/error, performance, a11y audit)
+
+- **Scope**: audited what was actually on `main` at task start against the
+  Phase 6 brief
+  (`docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`
+  §41-46) — Phase 0 truth models, Phase 3 triage tabs, Phase 4
+  lenses, the shared `src/components/admin/premium/*` primitives, and the
+  admin shell. Phases 1/2/5 were not on `main` and were not touched; fixes
+  here (especially the new motion guard test) apply to them by convention
+  once they land.
+- **Fixed, with a regression test each**:
+  - 4 unguarded Tailwind motion utilities (2 infinite `animate-pulse`/
+    `animate-spin` loops, 2 transform-transitions) across
+    `activity/page.tsx`, `TracerRoundDiagnostic.tsx`, `TracerIncidentRow.tsx`,
+    `TracerPlayerList.tsx`. New
+    `src/app/admin/__tests__/admin-motion-guard-coverage.test.ts` scans
+    `src/app/admin/**` + `src/components/admin/**` for the same class of gap
+    going forward.
+  - AdminShell's global keydown handler ate Shift+R for "refresh" before
+    `hrefForShortcut` ever saw it, permanently unreachable-ing Reliability's
+    `'R'` `ADMIN_NAV` shortcut. Fixed via `RESERVED_LOCAL_SHORTCUTS`
+    (`admin-nav.ts`) plus a collision-regression test in `admin-nav.test.ts`.
+  - `NavItem.shortcut` had no `aria-keyshortcuts` companion — reachable but
+    never announced. `FairwaySidebar.tsx` now emits it (digit verbatim,
+    letter as `Shift+<letter>`) and hides the now-redundant visible badge
+    from assistive tech, with 4 new tests in `FairwaySidebar.test.tsx`.
+- **Verified clean, no change needed** (see the feature doc's "Phase 6
+  polish" section for the full evidence trail): the "unknown never renders
+  as zero" rule across `incidents/triage/lenses` read models; no
+  SVG-wraps-a-focusable-link pattern; mobile horizontal-overflow risk on the
+  eleven in-scope pages; per-panel loading/error coverage (`PanelBoundary`);
+  duplicate-fetch performance risk in Phase 3/4 read models; `accent-500`
+  contrast-failing token usage in admin.
+- **Blocked, documented rather than worked around**: automated axe coverage
+  and the Sentry Snapshots visual-regression flow both need a super-admin
+  Playwright auth fixture that does not exist (`e2e/accessibility.spec.ts`
+  and the sentry-snapshots specs are both auth-gated per-caller today, and
+  neither has one for `SUPER_ADMIN_USER_IDS`). Standing one up is auth
+  infrastructure, not a route-table addition — not built, per the task
+  brief's own instruction not to invent a new screenshot/audit system.
+- **Verified**: `npx tsc --noEmit` clean. New/changed tests
+  (`admin-motion-guard-coverage.test.ts`, `admin-nav.test.ts`,
+  `FairwaySidebar.test.tsx`) run scoped via
+  `npx vitest run --maxWorkers=4 <paths>` — 17/17 passing, including a
+  manual revert-and-rerun of the motion guard test to confirm it actually
+  fails on the violation it exists to catch (then restored).
