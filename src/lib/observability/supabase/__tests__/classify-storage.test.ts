@@ -53,11 +53,29 @@ describe('classifyStorageError — DatabaseTimeout is always critical', () => {
   });
 });
 
-describe('classifyStorageError — AccessDenied default is INVERTED from classify.ts 42501', () => {
-  it('defaults to expected/info (routine RLS boundary on someone else’s object)', () => {
+describe('classifyStorageError — an unexplained AccessDenied is UNKNOWN, never silently expected', () => {
+  it('defaults to unknown/warning when the caller says nothing about the denial', () => {
+    // Changed 2026-09-03 after review. The old default was expected/info,
+    // which routes to `expected_control_flow`: no metric, no log, no
+    // durable record. That made silence from the caller act as evidence
+    // that the denial was routine, which is the exact inversion this
+    // directory's own rule forbids.
     const result = classifyStorageError({ code: 'AccessDenied' }, baseCtx);
+    expect(result.expectedness).toBe('unknown');
+    expect(result.expectedness).not.toBe('expected');
+    expect(result.severity).toBe('warning');
+  });
+
+  it('is expected/info only when the caller explicitly declares expectedAccessDenied', () => {
+    const result = classifyStorageError({ code: 'AccessDenied' }, { ...baseCtx, expectedAccessDenied: true });
     expect(result.expectedness).toBe('expected');
     expect(result.severity).toBe('info');
+  });
+
+  it('a codeless 403 follows the same rule, so an error that lost its code is not dropped', () => {
+    const result = classifyStorageError({ status: 403, message: 'forbidden' }, baseCtx);
+    expect(result.expectedness).toBe('unknown');
+    expect(result.expectedness).not.toBe('expected');
   });
 
   it('becomes error/unexpected when the caller declares accessDeniedOnOwnPath', () => {

@@ -248,13 +248,17 @@ export interface DurableChildCountComparison {
 }
 
 /**
- * Never throws: a non-finite/negative input degrades to a `flagged: true`
- * comparison (fail toward suspicion, not toward silence) rather than
- * throwing into a save path that is already mid-write.
+ * Never throws, and an input it cannot trust is flagged rather than
+ * silently normalised: a non-finite or negative `expected` or `durable`
+ * yields `flagged: true` (fail toward suspicion, not toward silence)
+ * rather than throwing into a save path that is already mid-write.
  */
 export function compareDurableChildCounts(input: CompareDurableChildCountsInput): DurableChildCountComparison {
-  const expected = Number.isFinite(input.expected) ? input.expected : 0;
-  const durable = Number.isFinite(input.durable) ? input.durable : 0;
+  const expectedUntrusted = !Number.isFinite(input.expected) || input.expected < 0;
+  const durableUntrusted = !Number.isFinite(input.durable) || input.durable < 0;
+  const untrusted = expectedUntrusted || durableUntrusted;
+  const expected = expectedUntrusted ? 0 : input.expected;
+  const durable = durableUntrusted ? 0 : input.durable;
   const delta = durable - expected;
   const shrank = durable < expected;
   return {
@@ -262,6 +266,6 @@ export function compareDurableChildCounts(input: CompareDurableChildCountsInput)
     durable,
     delta,
     shrank,
-    flagged: shrank && !input.isEdit,
+    flagged: untrusted || (shrank && !input.isEdit),
   };
 }

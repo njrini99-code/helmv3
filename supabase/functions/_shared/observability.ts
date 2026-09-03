@@ -168,7 +168,11 @@ export function withObservedRequest(
             if (release) scope.setTag('release', release);
             if (trace.traceparent) scope.setTag('trace.traceparent', trace.traceparent);
             if (trace.sentryTrace) scope.setTag('trace.sentry_trace', trace.sentryTrace);
-            if (trace.baggage) scope.setTag('trace.baggage', trace.baggage);
+            // `baggage` is a caller-controlled request header. It is
+            // propagation metadata by contract, but nothing enforces that,
+            // so record only that it was present rather than its content —
+            // the one unsanitized free-text path into telemetry otherwise.
+            if (trace.baggage) scope.setTag('trace.baggage_present', 'true');
             Sentry.captureException(sanitizeExceptionForCapture(error));
           });
           await Sentry.flush(2000);

@@ -37,8 +37,21 @@ describe('observeStorageResult', () => {
     expect(mocks.scheduleDbErrorRecording).not.toHaveBeenCalled();
   });
 
-  it('EXPECTED (AccessDenied, default): no metric, no log, no DB write', () => {
+  it('UNEXPLAINED AccessDenied is actionable, not silent: it still records', () => {
+    // Changed 2026-09-03 after review. A denial the caller did not explain
+    // must not be swallowed by `expected_control_flow`.
     const outcome = observeStorageResult({ ...baseInput, error: { code: 'AccessDenied', message: 'denied' } });
+    expect(outcome.bucket).not.toBe('expected_control_flow');
+    expect(mocks.recordStorageFailure).toHaveBeenCalled();
+    expect(mocks.scheduleDbErrorRecording).toHaveBeenCalled();
+  });
+
+  it('EXPECTED (AccessDenied the caller declared routine): no metric, no log, no DB write', () => {
+    const outcome = observeStorageResult({
+      ...baseInput,
+      error: { code: 'AccessDenied', message: 'denied' },
+      expectedAccessDenied: true,
+    });
     expect(outcome.bucket).toBe('expected_control_flow');
     expect(mocks.recordStorageFailure).not.toHaveBeenCalled();
     expect(mocks.scheduleDbErrorRecording).not.toHaveBeenCalled();

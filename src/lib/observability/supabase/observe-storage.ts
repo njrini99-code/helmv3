@@ -61,6 +61,10 @@ export interface ObserveStorageResultInput {
   expectedMissingObject?: boolean;
   idempotentUpsert?: boolean;
   accessDeniedOnOwnPath?: boolean;
+  /** The caller KNOWS this denial is a routine authorization boundary.
+   *  Without it an AccessDenied classifies `unknown` and is recorded,
+   *  because silence is not evidence of routineness. */
+  expectedAccessDenied?: boolean;
 }
 
 export interface ObserveStorageResultOutcome {
@@ -84,6 +88,7 @@ export function observeStorageResult(input: ObserveStorageResultInput): ObserveS
       expectedMissingObject: input.expectedMissingObject,
       idempotentUpsert: input.idempotentUpsert,
       accessDeniedOnOwnPath: input.accessDeniedOnOwnPath,
+      expectedAccessDenied: input.expectedAccessDenied,
     };
     const classification = classifyStorageError(input.error, ctx);
     const bucket = classifyBucket(classification.expectedness, classification.severity);

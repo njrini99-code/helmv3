@@ -61,6 +61,11 @@ export interface ClassifyStorageContext {
    *  case Storage AccessDenied should NOT be treated as routine. See file
    *  header for why the default is inverted from classify.ts's 42501. */
   accessDeniedOnOwnPath?: boolean;
+  /** The caller KNOWS this denial is a routine authorization boundary (a
+   *  cross-tenant probe the product expects to be refused). Only this
+   *  silences it; an unset flag classifies as `unknown`, never `expected`,
+   *  because silence is not evidence of routineness. */
+  expectedAccessDenied?: boolean;
 }
 
 export interface StorageClassificationResult {
@@ -123,11 +128,20 @@ function classifyByCode(code: string, ctx: ClassifyStorageContext): CodeResult {
   }
 
   if (code === 'AccessDenied') {
-    // See file header: default is EXPECTED (routine cross-tenant RLS
-    // boundary), and `accessDeniedOnOwnPath` is what escalates it.
-    return ctx.accessDeniedOnOwnPath
-      ? { code, severity: 'error', expectedness: 'unexpected', retryability: 'no' }
-      : { code, severity: 'info', expectedness: 'expected', retryability: 'no' };
+    // `accessDeniedOnOwnPath` escalates to a defect. The DEFAULT is
+    // `unknown`, not `expected`: this directory's own rule is that silence
+    // is not evidence of routineness, and `expected` routes to
+    // `expected_control_flow`, which emits no metric, no log and no durable
+    // record. A caller that genuinely knows the denial is a routine
+    // cross-tenant boundary says so with `expectedAccessDenied`; a caller
+    // that says nothing gets an actionable-but-unproven classification
+    // rather than silence.
+    if (ctx.accessDeniedOnOwnPath) {
+      return { code, severity: 'error', expectedness: 'unexpected', retryability: 'no' };
+    }
+    return ctx.expectedAccessDenied
+      ? { code, severity: 'info', expectedness: 'expected', retryability: 'no' }
+      : { code, severity: 'warning', expectedness: 'unknown', retryability: 'no' };
   }
 
   if (code === 'InvalidJWT') {
@@ -179,9 +193,16 @@ function classifyByStatus(status: number, ctx: ClassifyStorageContext): CodeResu
       : { code, severity: 'warning', expectedness: 'unexpected', retryability: 'conditional' };
   }
   if (status === 403) {
-    return ctx.accessDeniedOnOwnPath
-      ? { code, severity: 'error', expectedness: 'unexpected', retryability: 'no' }
-      : { code, severity: 'info', expectedness: 'expected', retryability: 'no' };
+    // Reached only when the error carried NO code, so a Storage failure
+    // that lost its code in transit lands here. Defaulting that to
+    // `expected` dropped it entirely even at a call site that had passed
+    // the flag — same reasoning as the AccessDenied branch above.
+    if (ctx.accessDeniedOnOwnPath) {
+      return { code, severity: 'error', expectedness: 'unexpected', retryability: 'no' };
+    }
+    return ctx.expectedAccessDenied
+      ? { code, severity: 'info', expectedness: 'expected', retryability: 'no' }
+      : { code, severity: 'warning', expectedness: 'unknown', retryability: 'no' };
   }
   if (status === 504 || status >= 500) {
     return { code, severity: 'critical', expectedness: 'unexpected', retryability: 'conditional' };

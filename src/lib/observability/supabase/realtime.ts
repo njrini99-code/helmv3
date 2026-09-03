@@ -149,6 +149,7 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
         });
         recordRealtimeChannelFailure({ feature: options.feature, result: status });
         helmLog.warn('supabase.realtime.transport_failure', {
+      subscription_type: options.subscriptionType,
           feature: options.feature,
           result: status,
           service: 'realtime',
