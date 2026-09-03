@@ -12,7 +12,16 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Global error boundary caught:', error);
+    // Deliberately no explicit console.error here (Phase A finding #2). It
+    // used to sit before logError() and raced its own dedup marker:
+    // captureConsoleIntegration captures a console.error SYNCHRONOUSLY, at
+    // the instant it runs — before logError's first statement,
+    // markBridgeLogged(error), had set the marker that
+    // instrumentation-client.ts's beforeSend checks to drop a
+    // console-origin echo of an error already reported. Every hit of this
+    // last-resort root boundary minted TWO Sentry issues. logError already
+    // console.group-logs the message/stack/context in development
+    // (error-logging.ts) — after markBridgeLogged, so it does not race.
     logError(error, {
       component: 'GlobalErrorBoundary',
       action: 'render',

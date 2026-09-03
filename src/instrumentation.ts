@@ -67,6 +67,20 @@ const sharedIgnoreErrors = [
   // Sentry as an error — dozens of them, all working as designed.
   'GolfDemoReadOnlyError',
   'PlayerAccessError',
+  // Lift Lab's equivalent of the Baseball five above — withLiftingAction
+  // (src/lib/lifting/with-lifting-action.ts) resolves AUTH -> ORG-CONTEXT ->
+  // EDIT-GATE and throws these three typed control-flow classes, logged via
+  // logServerEvent(..., skipSentry: true, ...) and then re-thrown so callers
+  // can branch — the exact same re-raise-escapes-to-onRequestError shape as
+  // the Baseball classes above. Phase A finding #3
+  // (docs/observability/SENTRY_PHASE_A_FINDINGS.md §(b)/(c)): this list was
+  // never updated when Lift Lab's wrapper shipped, so every "not signed in" /
+  // "no Lifting org resolved" / "no edit access" throw was a live, alertable
+  // Sentry issue — the exact noise pattern already fixed for Baseball/Golf,
+  // reproduced in the one wrapper nobody matched up.
+  'LiftingUnauthorizedError',
+  'LiftingNoOrgError',
+  'LiftingForbiddenError',
 ];
 
 /**
@@ -399,27 +413,48 @@ type OnRequestErrorContext = Readonly<{
   revalidateReason?: 'on-demand' | 'stale';
 }>;
 
-// Capture errors from nested React Server Components. Sentry still gets
-// every error first (unchanged behavior); the Helm Bridge write is strictly
-// additive and can never affect Next's own error handling.
+// Capture errors from nested React Server Components. The Helm Bridge write
+// is strictly additive and can never affect Next's own error handling.
 export async function onRequestError(
   error: unknown,
   request: OnRequestErrorRequest,
   errorContext: OnRequestErrorContext,
 ): Promise<void> {
-  Sentry.captureRequestError(error, request, errorContext);
+  // isAlreadyBridgeLogged has no node-only deps (see bridge-logged-marker.ts)
+  // so it's imported statically above and is safe to call on both the edge
+  // and nodejs paths, and before any dynamic import below.
+  const alreadyLogged = isAlreadyBridgeLogged(error);
+
+  // Phase A finding #6 (duplicate-capture bug #4, structural): this call used
+  // to run UNCONDITIONALLY, regardless of whether the throw site already sent
+  // this exact error to Sentry itself. When a call site does
+  // `logServerException(error, {...}); throw error;` WITHOUT skipSentry, that
+  // throw-site call already ran the richer capture (Sentry.withScope with
+  // action/feature/sport tags, a fingerprint override) via
+  // captureSentryTrace — and captureRequestError below would mint a SECOND,
+  // differently-fingerprinted issue for the identical error the moment it
+  // escaped the boundary. Symmetrically, when a call site deliberately passed
+  // skipSentry:true (a routine/expected error it chose not to page on), an
+  // unconditional captureRequestError here undermined that choice the moment
+  // the error escaped. Gating on the same __helmBridgeLogged marker
+  // shouldSkipBridgeWrite already reads fixes both: an error already routed
+  // through the approved logServerException/logError pipeline — captured or
+  // deliberately not — is never captured a second/first time here. A
+  // never-before-seen error (alreadyLogged === false) is captured exactly as
+  // before.
+  if (!alreadyLogged) {
+    Sentry.captureRequestError(error, request, errorContext);
+  }
 
   try {
     // Dynamic import keeps server-error-logger (and its @/lib/supabase/admin
     // dependency) out of the edge bundle — only resolved on the nodejs path.
-    // isAlreadyBridgeLogged has no node-only deps (see bridge-logged-marker.ts)
-    // so it's imported statically above and is safe to call on both paths.
     const { logServerException } =
       process.env.NEXT_RUNTIME === 'nodejs'
         ? await import('@/lib/server-error-logger')
         : { logServerException: undefined };
 
-    if (shouldSkipBridgeWrite(error, isAlreadyBridgeLogged(error))) return;
+    if (shouldSkipBridgeWrite(error, alreadyLogged)) return;
 
     const route = errorContext.routePath || request.path;
     const source = mapRouteTypeToSource(errorContext.routeType);
