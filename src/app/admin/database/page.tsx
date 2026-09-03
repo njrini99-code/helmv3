@@ -4,6 +4,10 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchDatabaseMissionControl, type CollectorHealth } from '@/lib/admin/database/overview';
 import { fetchDatabaseErrors, type DbErrorFingerprintGroup } from '@/lib/admin/database/errors';
 import { fetchQueryPerformance, type StatDeltaRow } from '@/lib/admin/database/performance';
+
+/** How many of the newest sampled windows the panel renders. Named so the
+ *  disclosure below and the slice cannot drift apart. */
+const LATEST_SAMPLE_CAP = 20;
 import { fetchLockIncidents, type LockIncidentRow } from '@/lib/admin/database/locks';
 import { fetchTableHealth } from '@/lib/admin/database/tables';
 import { fetchJobsHealth, type CronJobDisplayRow } from '@/lib/admin/database/jobs';
@@ -67,7 +71,13 @@ const COLLECTOR_LABEL: Record<string, string> = {
 
 function CollectorChip({ collector }: { collector: CollectorHealth }) {
   const tone: FwStatusTone =
-    collector.lastStatus === 'completed' ? 'success' : collector.lastStatus === 'failed' ? 'danger' : 'neutral';
+    collector.lastStatus === 'completed'
+      ? 'success'
+      : collector.lastStatus === 'failed'
+        ? 'danger'
+        : collector.lastStatus === 'unknown'
+          ? 'warning'
+          : 'neutral'
   return (
     <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
       <span className="text-xs font-medium text-warm-700">{COLLECTOR_LABEL[collector.jobType] ?? collector.jobType}</span>
@@ -78,7 +88,11 @@ function CollectorChip({ collector }: { collector: CollectorHealth }) {
           </span>
         ) : null}
         <StatusPill tone={tone} size="sm" dot>
-          {collector.lastStatus === 'never_run' ? 'never run' : collector.lastStatus}
+          {collector.lastStatus === 'never_run'
+            ? 'never run'
+            : collector.lastStatus === 'unknown'
+              ? 'unknown — job log unreadable'
+              : collector.lastStatus}
         </StatusPill>
       </div>
     </div>
@@ -297,13 +311,32 @@ async function PerformancePanel() {
 
   return (
     <div className="space-y-4">
+      {/* The regressions are rendered from `recentRegressions`, NOT from the
+          `latest` slice below. Until 2026-09-03 this notice said the flagged
+          windows were "shown inline below with their flags" while the list
+          underneath rendered `latest.slice(0, 20)` — a different set entirely.
+          A regression outside the newest twenty samples was counted in the
+          headline and then invisible, which is worse than not counting it. */}
       {result.data.recentRegressions.length > 0 ? (
-        <InlineNotice tone="warning" title="Regressions in the last 24h">
-          {result.data.recentRegressions.length} flagged window(s) — shown inline below with their flags.
-        </InlineNotice>
+        <div className="space-y-2">
+          <InlineNotice tone="warning" title="Regressions in the last 24h">
+            {result.data.recentRegressions.length} flagged window(s), listed below.
+          </InlineNotice>
+          {result.data.recentRegressions.map((row) => (
+            <StatDeltaRowView key={`regression-${row.id}`} row={row} />
+          ))}
+        </div>
       ) : null}
+
       <div className="space-y-2">
-        {result.data.latest.slice(0, 20).map((row) => (
+        <p className="text-caption text-warm-500">
+          Most recent {Math.min(LATEST_SAMPLE_CAP, result.data.latest.length)} of{' '}
+          {result.data.latest.length} sampled window(s).
+          {result.data.latest.length > LATEST_SAMPLE_CAP
+            ? ' Older windows are not shown here — regressions among them appear in the list above.'
+            : ''}
+        </p>
+        {result.data.latest.slice(0, LATEST_SAMPLE_CAP).map((row) => (
           <StatDeltaRowView key={row.id} row={row} />
         ))}
       </div>
