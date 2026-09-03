@@ -28,6 +28,7 @@ features:
       actions: []
       services:
         - scripts/knowledge/**
+        - scripts/contracts/**
         - .devin/wiki.json
         - .github/workflows/feature-awareness.yml
         - package.json
