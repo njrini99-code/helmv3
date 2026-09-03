@@ -37,6 +37,17 @@ This area is high criticality because it often uses broader access patterns, ope
     `release-compare.ts` (baseline-vs-current post-deploy comparison). None
     of the six are wired into any UI yet — Phase 0 is read models only, per
     the brief's own implementation order (§45).
+- `src/app/admin/engineering/**` — Engineering OS hub (Bridge Premium Phase
+  5, 2026-09-03): Decision Inbox (Engineering-OS-scoped — see the Phase 5
+  section below for why this is deliberately NOT the general operator
+  Decision Inbox), Agent Flight Recorder, Charter & verifier visibility,
+  blast radius + causal confidence, repair quality. Five independently
+  `PanelBoundary`-wrapped sections, each backed by its own module under
+  `src/lib/admin/engineering/`.
+- `src/app/admin/work-log/**` — the change-to-proof Work Log (Bridge
+  Premium Phase 5). Distinct from `src/app/admin/work/**` (the existing
+  PR-narrative timeline, `github-pr-timeline.ts`'s own render): this adds
+  the release-shipped-in and post-deploy-proof join over the SAME entries.
 - `src/app/golf/admin/**`
 - `src/app/golf/admin/crm/**`
 - `src/app/api/cron/reliability-triage/**` — the 3-hourly collector behind the
@@ -891,6 +902,83 @@ work lands.
   model yet in this repo (later Phase D work) and are accepted as
   caller-supplied facts rather than fabricated ahead of the data existing.
 
+## Phase 5 Engineering OS (Bridge Premium Observability, 2026-09-03)
+
+Six new modules under `src/lib/admin/agent-runs/` and
+`src/lib/admin/engineering/`, plus the two routes documented above. Source:
+the owner's Bridge Premium Observability brief §29-40/§45 (Phase 5) and
+`memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md`'s
+`AGENT_FLIGHT_RECORDER_STORAGE` row.
+
+- **Agent Flight Recorder** (`src/lib/admin/agent-runs/`) — one HELD
+  migration (`supabase/migrations/20260903150000_helm_debug_agent_runs.sql`,
+  registered in `HELD.md`, awaiting `db-migration-reviewer` review and
+  owner apply) adds `helm_debug.agent_runs` — one table, not the golf
+  round Flight Recorder's run+steps pair, because an agent run has no
+  fixed enumerable step schema — plus three service-role-only facades on
+  the golf Flight Recorder's exact pattern. `record.ts` is a fail-open
+  server-only writer (sanitizes/truncates before write, never throws);
+  `fetch.ts` reports the migration's current absence as `unconfigured`,
+  matching the established convention for a not-yet-applied `helm_debug_*`
+  RPC (`src/lib/admin/data/player-detail.ts`'s flight-trace section,
+  `traces/page.tsx`'s `loadTraces()`).
+- **Decision Inbox — Engineering OS scoped**
+  (`src/lib/admin/engineering/{held-migrations,decision-inbox}.ts`).
+  Deliberately NOT a second general Decision Inbox — the control-plane
+  implementation plan (§J.4.5) is explicit that the real one is
+  `src/lib/admin/incidents/attention.ts`'s `selectAttention`, rendered on
+  the Bridge home page's `AttentionQueue`. This module's sources are
+  disjoint by construction (HELD migration rows parsed from `HELD.md`,
+  Janitor findings from the Janitor's machine-readable findings file under
+  `docs/generated` — absent in a fresh checkout; it is generated on
+  demand by `npm run janitor`, never committed)
+  — neither is `UnifiedIncident` or `SelfHealStageDetail`, the data
+  `selectAttention` already derives from. Field names mirror `AttentionRow`'s (`key`,
+  `reason`, `state`, `headline`, `why`, `ageMs`, `href`, `tone`) so a human
+  merging this into `attention.ts` later (new `AttentionReason` variants
+  per §J.4.5) can do so mechanically instead of redesigning the shape.
+- **Charter & verifier visibility** (`src/lib/admin/engineering/charter.ts`)
+  — three independent reads: mutation gate config
+  (`config/mutation-gate.json` — the report itself,
+  `reports/mutation/mutation.json`, only exists on the weekly
+  `stryker-coachhelm` CircleCI container, never in a checkout), resolved
+  contracts per feature (`docs/generated/contracts/*.json`, committed —
+  three exist as of this entry: `admin_platform`, `coachhelm_ai`,
+  `golf_round_lifecycle`), and Janitor's ranked findings (its
+  machine-readable findings file under `docs/generated`, NOT committed —
+  regenerate with `npm run janitor`). One missing artifact never blanks
+  the other two.
+- **Blast radius + causal confidence**
+  (`src/lib/admin/engineering/blast-radius.ts`). `computeBlastRadius` is a
+  bounded 1-2 hop breadth-first walk over the Helm World Model graph
+  (`docs/generated/WORLD_MODEL.json` — does not exist on `main` as of this
+  entry) — a lightweight CONSUMER of that already-materialized graph, not
+  a reimplementation of the World Model generator's own `--impact` engine
+  (`world-model.mjs` under `scripts/knowledge` also does not exist on
+  `main` yet; registry parsing, critical-feature scoring, journey attribution
+  stay exactly where they live once it lands). Both ship on
+  `agent/bridge-worldmodel` (PR #1785, open) —
+  `fetchBlastRadius` reports `unconfigured` until that merges.
+  `formatCausalConfidenceLadder` is pure formatting only, over
+  `release-context.ts`'s existing `classifyReleaseRelationship` verdict
+  (Phase 0, above) — deliberately no second causal-confidence engine.
+- **Work Log proof + repair quality**
+  (`src/lib/admin/engineering/work-log.ts`). `buildWorkLogProof` composes
+  `fetchWorkLog()` (GitHub PRs) and `fetchReleaseLedger()` (Vercel deploys
+  + error deltas) — both pre-existing, no new network calls — by time-
+  bucketing each merged PR against the earliest known deploy at or after
+  its merge time (`shippedInRelease`; `notYetDeployed: true` when merged
+  after every known deploy). Two scope limits worth restating for anyone
+  extending this: "which gates proved it" is the PR's own self-reported
+  `repairVerdict` (confirmed/corrected/not-reviewed) plus the CURRENT gate
+  posture from the Charter panel, never live per-PR CI check-run data (a
+  new network call this deliverable was not authorized to add); "did the
+  fix stay fixed" (`buildRepairQuality`'s `stayedFixed`) is the RELEASE-
+  level verdict tone the release ledger already computes
+  (`ReleaseCardData.verdict`), not per-fingerprint episode tracking (a
+  Phase 1 concept — `episodes.ts` above — this file has no access path
+  to without a second incident-fetching pipeline).
+
 ## Known Risk Areas
 
 - Admin actions are more likely to use broad permissions; review for service-role and RLS bypass carefully.
@@ -962,6 +1050,28 @@ work lands.
 - `src/lib/admin/incidents/__tests__/release-compare.test.ts` — DB-blindness
   forcing DB-derived metrics unknown TOGETHER, including the "a blind source
   with a raw 0 does not render as a real zero" case.
+- `src/lib/admin/agent-runs/__tests__/{record,fetch}.test.ts` — the writer
+  is fail-open under both an RPC rejection and an RPC error result; the
+  reader distinguishes `unconfigured` (HELD migration not applied) from a
+  real `error`, and never reports zero runs as if the source were blind.
+- `src/lib/admin/engineering/__tests__/held-migrations.test.ts` — includes
+  a regression guard that parses the REAL `supabase/migrations/HELD.md`
+  and asserts every returned row's status actually starts with HOLD.
+- `src/lib/admin/engineering/__tests__/decision-inbox.test.ts` — sources
+  stay disjoint (every item is `held-migration` or `janitor-finding`,
+  never anything incident-shaped), and a missing artifact reports
+  `unconfigured` rather than a fabricated empty inbox.
+- `src/lib/admin/engineering/__tests__/blast-radius.test.ts` — depth
+  capping, weak-edge flagging (evidence all `import_graph`), never
+  returning an unrelated pair, and the causal-confidence ladder formatter.
+- `src/lib/admin/engineering/__tests__/work-log.test.ts` — the release
+  time-bucketing (earliest deploy at/after merge), `notYetDeployed` vs.
+  a genuinely unknown match, and repair-quality per-source isolation (the
+  release ledger failing still returns the PR rows).
+- `src/app/admin/engineering/__tests__/page.test.tsx`,
+  `src/app/admin/work-log/__tests__/{page,WorkLogProofCard}.test.tsx` —
+  page-shell render tests (every section heading, no nested `<main>`) plus
+  a fully data-driven suite for `WorkLogProofCard`.
 - Typecheck/build for admin UI changes.
 - Targeted smoke/browser checks for admin dashboards when changing route-level code.
 
@@ -971,7 +1081,16 @@ work lands.
 - `docs/BI_DASHBOARD_ARCHITECTURE.md`
 - `docs/OBSERVABILITY.md`
 - `docs/SECURITY_AUDIT.md`
-- The Bridge Premium Observability brief the "Phase 0 truth models" section
-  above implements — see that section for its worktree location as of
-  2026-09-03; not linked here as a repo path because it does not resolve in
-  this checkout yet (`docs:path-drift` would flag it).
+- `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —
+  the Bridge Premium Observability brief the "Phase 0 truth models" and
+  "Phase 5 Engineering OS" sections above implement. Verified resolvable in
+  this checkout 2026-09-03 — the "Phase 0" section's claim above that it
+  "does not resolve in this checkout yet" is now stale; corrected here
+  rather than edited in place, per `.claude/rules/shipping.md` §1 (leave
+  the original reasoning legible, don't silently rewrite history).
+- `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §J.4.5 —
+  the "do not build a second Decision Inbox" finding the Phase 5 section's
+  Decision Inbox module is scoped against.
+- `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` —
+  `AGENT_FLIGHT_RECORDER_STORAGE`, the owner decision the Phase 5 section's
+  migration implements.

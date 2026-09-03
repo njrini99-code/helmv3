@@ -1624,3 +1624,113 @@ the full description of each module; summarized here for the change record.
   file-based truth, since none exists in this repo; the reader depends
   entirely on `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` being present
   in the runtime environment and fails open to `'unknown'` otherwise.
+
+## 2026-09-03 — Bridge Premium Observability Phase 5: Engineering OS (Agent Flight Recorder, Decision Inbox, Charter, blast radius, Work Log)
+
+Implements Phase 5 of the owner's Bridge Premium Observability brief (§29-40,
+§45). One HELD migration, six new read-model modules, two new routes. See
+`memory/features/admin-platform.md`'s "Phase 5 Engineering OS" section for
+the full description of each module; summarized here for the change record.
+
+- **Migration** (`supabase/migrations/20260903150000_helm_debug_agent_runs.sql`,
+  HELD, registered in `HELD.md`, `db-migration-reviewer` review NOT yet
+  performed): `helm_debug.agent_runs` — one table in the already-applied
+  `helm_debug` schema, plus `helm_private.agent_run_safe_payload` and three
+  service-role-only facades (`helm_debug_record_agent_run`/`_list_agent_runs`/
+  `_get_agent_run`). Four-parameter write facade (`p_run_id`, `p_workflow`,
+  `p_status`, `p_payload` jsonb) rather than one parameter per field, so the
+  REVOKE line, GRANT line and ACL tripwire stay in sync by construction. No
+  `workflow` CHECK constraint (unlike the golf recorder's `^golf[.]`) — the
+  writer is fail-open, and a CHECK that rejects an unrecognized value would
+  turn a swallowed insert into a silently blind recorder, the exact failure
+  class `20260901140000`'s header names.
+- **`src/lib/admin/agent-runs/{record,fetch}.ts`** — `record.ts` is a
+  fail-open server-only writer: sanitizes/truncates every string field
+  (600-char cap, strips secret-shaped keys, mirrors the DB-side sanitizer as
+  defense in depth) and never throws — an RPC rejection or error result both
+  route to `onFailure` and resolve normally. `fetch.ts` maps
+  `helm_debug_record_agent_run`/`_list_agent_runs`/`_get_agent_run`
+  RPC results to `AgentRunListRow`/`AgentRunDetail`, reporting the migration's
+  current absence (`42883`/`42P01`/"does not exist") as `unconfigured`, not
+  `error` — matching the established convention for a not-yet-applied
+  `helm_debug_*` RPC.
+- **`src/lib/admin/engineering/{held-migrations,decision-inbox}.ts`** —
+  `parseHeldMigrations` extracts HOLD-status rows from `HELD.md`'s register
+  table (deliberately not a full markdown-table parser: a handful of APPLIED
+  rows carry an embedded literal `|` that breaks naive splitting, but no HOLD
+  row has ever been observed to, and only the migration filename + bolded
+  status token are read before any prose). `buildDecisionInbox` composes
+  those rows with Janitor findings (its machine-readable findings file
+  under `docs/generated`, capped at `janitorLimit`) into
+  `EngineeringDecisionItem[]` — sources kept
+  disjoint from `UnifiedIncident`/`SelfHealStageDetail` on purpose (see the
+  feature-doc section for why: the control-plane plan explicitly says not to
+  build a second Decision Inbox).
+- **`src/lib/admin/engineering/charter.ts`** — three independent
+  `fetch*Charter` functions (mutation gate, resolved contracts, Janitor),
+  each reporting its own artifact's absence without affecting the others.
+- **`src/lib/admin/engineering/blast-radius.ts`** — `computeBlastRadius`:
+  pure breadth-first walk over `WorldModelEdge[]`, capped at 2 hops and 40
+  nodes, flagging an edge `weak` when every piece of its evidence is
+  `import_graph`-only (the same rule `world-model.mjs`'s own `--impact`
+  output uses). `fetchBlastRadius` reads the World Model graph file under
+  `docs/generated` and reports `unconfigured` — it does not exist on
+  `main` as of this change (ships on PR #1785). `formatCausalConfidenceLadder` is pure
+  formatting over `release-context.ts`'s existing `ReleaseRelationshipVerdict`
+  — no second causal engine.
+- **`src/lib/admin/engineering/work-log.ts`** — `buildWorkLogProof`
+  time-buckets each merged `WorkLogEntry` against the earliest
+  `ReleaseCardData` deployed at or after its merge time (ascending-sorted
+  internally regardless of input order); `null` release data yields
+  `shippedInRelease: null` for every row rather than fabricating a match.
+  `buildRepairQuality` filters to PRs claiming a repair
+  (`repairIncidentIds.length > 0`) and labels `stayedFixed` from the
+  shipping release's own verdict tone (`improved`/`worsened`/`unchanged`),
+  or `not-yet-deployed`/`unknown` when there is no release match.
+- **`src/app/admin/engineering/page.tsx`** — five independently
+  `PanelBoundary`-wrapped sections (Decision Inbox, Agent Flight Recorder,
+  Charter & verifier visibility, blast radius + causal confidence, repair
+  quality), each backed 1:1 by the modules above. `?entity=<feature_id>`
+  selects the blast-radius entity (default `admin_platform`).
+- **`src/app/admin/work-log/page.tsx`** + `WorkLogProofCard.tsx` — the
+  change-to-proof PR list, distinct from the existing narrative timeline at
+  `/admin/work`.
+- **Nav**: `ADMIN_NAV` gained two entries (`/admin/engineering` key `G`,
+  `/admin/work-log` key `P`, both Platform section) and `AdminShell.tsx`'s
+  route-icon map gained matching entries (`Bot`, `FileCheck2`);
+  `nav-covers-every-route.test.ts` passes unmodified (both routes are top-
+  level rail entries, no `DETAIL_LEAVES` change needed).
+- **`memory/registry.yml`**: added
+  `supabase/migrations/*helm_debug_agent_runs*.sql` to `admin_platform`'s
+  `db:` globs — the migration's filename also matches `shot_tracking`'s
+  broader `*helm_debug*.sql` glob (a real, accepted double-mapping: that
+  glob correctly covers the GOLF round Flight Recorder's own
+  `helm_debug_retention` file and is not narrowed here, out of scope for
+  this change) but did not match `admin_platform` at all before this entry,
+  the actual owning feature for a Bridge/Engineering-OS table.
+- **Tests**: 74 new tests across eleven files — `agent-runs/__tests__/
+  {record,fetch}.test.ts` (18), `engineering/__tests__/{held-migrations,
+  decision-inbox,charter,blast-radius,work-log}.test.ts` (48), `admin/
+  engineering/__tests__/page.test.tsx` (3), `admin/work-log/__tests__/
+  {page,WorkLogProofCard}.test.tsx` (1 + 6 = 7 — some folded into the 48
+  above by directory; see each file for its own count). All green,
+  `npx vitest run --maxWorkers=4` scoped to the changed directories, plus
+  `src/test/lib/admin/nav-covers-every-route.test.ts` re-run to confirm the
+  nav change didn't regress it.
+- **Verified**: `npm run typecheck` (full project, 0 errors) and
+  `npx eslint --max-warnings 0` on every new/changed file (0 warnings after
+  fixing two `text-[Npx]` arbitrary-value hits and one stale
+  `eslint-disable` comment), each checked independently of the command's
+  own stdout tail, never piped through `tail`.
+- **Not done / owner action needed**: the migration is HELD pending
+  `db-migration-reviewer` review and owner apply — until then, Agent Flight
+  Recorder reads/writes are no-ops (fail-open) and the panel shows
+  `unconfigured`. No live World Model artifact yet (PR #1785 open) — blast
+  radius shows `unconfigured` until it merges. No Janitor findings file
+  committed (by design — regenerate on demand with `npm run janitor`) —
+  Charter's Janitor panel and the Decision Inbox's Janitor half both show
+  the disclosed-gap state until then. No live per-PR CI check-run data in
+  Work Log (would be a new network call outside this deliverable's
+  authorization) — "which gates proved it" is the PR's self-reported
+  verdict plus current gate posture, stated as a scope limit in the code
+  comments and the feature doc, not implied by the field names.

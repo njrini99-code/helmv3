@@ -14,9 +14,10 @@
 --
 -- WHY
 -- ---
--- ADR-2026-09-03-control-plane-owner-decisions.md's AGENT_FLIGHT_RECORDER_STORAGE
--- row: a new, narrow `helm_debug.agent_runs` table, RPC-gated and
--- service-role only, reusing the golf Flight Recorder's storage pattern
+-- ADR-2026-09-03-control-plane-owner-decisions.md's
+-- AGENT_FLIGHT_RECORDER_STORAGE row: a new, narrow `helm_debug.agent_runs`
+-- table, RPC-gated and service-role only, reusing the golf Flight
+-- Recorder's storage pattern
 -- (a private schema PostgREST cannot see, reached only through
 -- SECURITY DEFINER facades) rather than a jsonb blob bolted onto
 -- `background_job_logs`. This is a record of autonomous Claude runs
@@ -47,7 +48,8 @@
 --   select count(*) from helm_debug.agent_runs;
 --   select proname from pg_proc where proname like 'helm_debug_%agent_run%';
 --
--- ROLLBACK: DROP FUNCTION public.helm_debug_record_agent_run(uuid,text,text,jsonb);
+-- ROLLBACK: DROP FUNCTION
+--           public.helm_debug_record_agent_run(uuid,text,text,jsonb);
 --           DROP FUNCTION public.helm_debug_list_agent_runs(integer,text,text);
 --           DROP FUNCTION public.helm_debug_get_agent_run(uuid);
 --           DROP TABLE helm_debug.agent_runs;
@@ -56,50 +58,61 @@
 --           -- file defines no triggers on any existing table.
 
 create table if not exists helm_debug.agent_runs (
-  id uuid primary key default gen_random_uuid(),
-  run_id uuid not null unique,
-  -- Free-form `namespace.verb` (e.g. 'selfheal.diagnose', 'selfheal.repair').
-  -- Deliberately NOT constrained to a fixed prefix by CHECK: the writer
-  -- (record.ts) is fail-open, and a CHECK that rejects an unrecognized
-  -- workflow value would turn a swallowed insert into a silently blind
-  -- recorder -- the exact failure class 20260901140000's header describes
-  -- for the golf trace recorder (1,097 blind traces before that fix).
-  workflow text not null,
-  status text not null default 'started'
+    id uuid primary key default gen_random_uuid(),
+    run_id uuid not null unique,
+    -- Free-form `namespace.verb` (e.g. 'selfheal.diagnose', 'selfheal.repair').
+    -- Deliberately NOT constrained to a fixed prefix by CHECK: the writer
+    -- (record.ts) is fail-open, and a CHECK that rejects an unrecognized
+    -- workflow value would turn a swallowed insert into a silently blind
+    -- recorder -- the exact failure class 20260901140000's header describes
+    -- for the golf trace recorder (1,097 blind traces before that fix).
+    workflow text not null,
+    status text not null default 'started'
     check (status in ('started', 'success', 'failure', 'rejected', 'pending')),
-  incident_fingerprint text,
-  charter text,
-  hypotheses jsonb not null default '[]'::jsonb,
-  context_loaded jsonb not null default '[]'::jsonb,
-  tools_used jsonb not null default '[]'::jsonb,
-  files_changed jsonb not null default '[]'::jsonb,
-  -- Per-role verdicts once the verification ensemble (ADR: no new model
-  -- cost, default OFF) is wired up: {"adversary": {...}, "security": {...},
-  -- "product": {...}, "judge": {...}}. Empty object until then.
-  verification jsonb not null default '{}'::jsonb,
-  verifier_verdict text check (verifier_verdict is null or verifier_verdict in ('accept', 'reject', 'not_run')),
-  production_outcome text check (production_outcome is null or production_outcome in ('proven', 'regressed', 'unknown', 'pending')),
-  -- App-level convention (matches src/lib/admin/incidents/release-context.ts's
-  -- classifyReleaseRelationship): never write 1.0. Not a DB CHECK -- the
-  -- constraint that matters is "never claim certainty from correlation
-  -- alone," which is a derivation-time decision, not a storage-time one.
-  confidence numeric check (confidence is null or (confidence >= 0 and confidence <= 1)),
-  started_at timestamptz not null default clock_timestamp(),
-  finished_at timestamptz,
-  duration_ms integer check (duration_ms is null or duration_ms >= 0),
-  metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default clock_timestamp(),
-  updated_at timestamptz not null default clock_timestamp()
+    incident_fingerprint text,
+    charter text,
+    hypotheses jsonb not null default '[]'::jsonb,
+    context_loaded jsonb not null default '[]'::jsonb,
+    tools_used jsonb not null default '[]'::jsonb,
+    files_changed jsonb not null default '[]'::jsonb,
+    -- Per-role verdicts once the verification ensemble (ADR: no new model
+    -- cost, default OFF) is wired up: {"adversary": {...}, "security": {...},
+    -- "product": {...}, "judge": {...}}. Empty object until then.
+    verification jsonb not null default '{}'::jsonb,
+    verifier_verdict text
+    check (
+        verifier_verdict is null
+        or verifier_verdict in ('accept', 'reject', 'not_run')
+    ),
+    production_outcome text
+    check (
+        production_outcome is null
+        or production_outcome in ('proven', 'regressed', 'unknown', 'pending')
+    ),
+    -- App-level convention (matches
+    -- src/lib/admin/incidents/release-context.ts's
+    -- classifyReleaseRelationship): never write 1.0. Not a DB CHECK -- the
+    -- constraint that matters is "never claim certainty from correlation
+    -- alone," which is a derivation-time decision, not a storage-time one.
+    confidence numeric
+    check (confidence is null or (confidence >= 0 and confidence <= 1)),
+    started_at timestamptz not null default clock_timestamp(),
+    finished_at timestamptz,
+    duration_ms integer check (duration_ms is null or duration_ms >= 0),
+    metadata jsonb not null default '{}'::jsonb,
+    created_at timestamptz not null default clock_timestamp(),
+    updated_at timestamptz not null default clock_timestamp()
 );
 
 create index if not exists agent_runs_started_at_idx
-  on helm_debug.agent_runs (started_at desc);
+on helm_debug.agent_runs (started_at desc);
 create index if not exists agent_runs_workflow_started_at_idx
-  on helm_debug.agent_runs (workflow, started_at desc);
+on helm_debug.agent_runs (workflow, started_at desc);
 create index if not exists agent_runs_status_started_at_idx
-  on helm_debug.agent_runs (status, started_at desc);
+on helm_debug.agent_runs (status, started_at desc);
 create index if not exists agent_runs_incident_fingerprint_idx
-  on helm_debug.agent_runs (incident_fingerprint) where incident_fingerprint is not null;
+on helm_debug.agent_runs (incident_fingerprint)
+where incident_fingerprint is not null;
 
 -- 20260825200811's `revoke all on all tables in schema helm_debug from
 -- public` ran before this table existed and does not retroactively cover
@@ -136,10 +149,10 @@ revoke all on function helm_private.agent_run_safe_payload(jsonb) from public;
 -- either raises at apply time or silently narrows a REVOKE. Structured
 -- fields are unpacked from `p_payload` instead.
 create or replace function public.helm_debug_record_agent_run(
-  p_run_id uuid,
-  p_workflow text,
-  p_status text,
-  p_payload jsonb default '{}'::jsonb
+    p_run_id uuid,
+    p_workflow text,
+    p_status text,
+    p_payload jsonb default '{}'::jsonb
 )
 returns uuid
 language plpgsql
@@ -205,9 +218,9 @@ end;
 $$;
 
 create or replace function public.helm_debug_list_agent_runs(
-  p_limit integer default 50,
-  p_workflow text default null,
-  p_status text default null
+    p_limit integer default 50,
+    p_workflow text default null,
+    p_status text default null
 )
 returns jsonb
 language sql
@@ -238,11 +251,25 @@ as $$
   where r.run_id = p_run_id
 $$;
 
-revoke all on function public.helm_debug_record_agent_run(uuid, text, text, jsonb) from public, anon, authenticated;
-revoke all on function public.helm_debug_list_agent_runs(integer, text, text) from public, anon, authenticated;
-revoke all on function public.helm_debug_get_agent_run(uuid) from public, anon, authenticated;
-grant execute on function public.helm_debug_record_agent_run(uuid, text, text, jsonb) to service_role;
-grant execute on function public.helm_debug_list_agent_runs(integer, text, text) to service_role;
+revoke all on function public.helm_debug_record_agent_run(
+    uuid, text, text, jsonb
+) from public,
+anon,
+authenticated;
+revoke all on function public.helm_debug_list_agent_runs(
+    integer, text, text
+) from public,
+anon,
+authenticated;
+revoke all on function public.helm_debug_get_agent_run(uuid) from public,
+anon,
+authenticated;
+grant execute on function public.helm_debug_record_agent_run(
+    uuid, text, text, jsonb
+) to service_role;
+grant execute on function public.helm_debug_list_agent_runs(
+    integer, text, text
+) to service_role;
 grant execute on function public.helm_debug_get_agent_run(uuid) to service_role;
 
 -- ACL-assertion tripwire, matching 20260825200811's (fixed) pattern:
@@ -250,7 +277,7 @@ grant execute on function public.helm_debug_get_agent_run(uuid) to service_role;
 -- not STRICT and would silently accept an arbitrary overload if one is
 -- ever added -- and fail the migration outright on any drift from
 -- "service_role only".
-DO $$
+do $$
 DECLARE
   v_fn oid;
   v_signatures text[] := ARRAY[
