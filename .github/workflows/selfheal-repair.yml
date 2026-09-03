@@ -30,10 +30,10 @@
 # without CI passing AND a human merging. The agent is additionally told
 # branch-and-PR-only in its system prompt, and the job holds no deploy
 # credential of any kind.
-
+---
 name: Self-heal Repair
 
-on:
+"on":
   schedule:
     # Daily at 06:40 UTC — the cadence the launchd agent already ran on, so the
     # Bridge "next expected" reading does not move when the runtime does.
@@ -70,7 +70,8 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           # STEP 2 of the contract checks `git log` on the suspect files to see
           # whether the bug was already fixed after the last occurrence. A
@@ -79,7 +80,8 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        # v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
           cache: npm
@@ -89,7 +91,9 @@ jobs:
 
       - name: Run Repair
         id: repair
-        uses: anthropics/claude-code-action@1f291e1cfe0f5fc21db2aef19af844591600ade7 # v1
+        # v1
+        uses: >-
+          anthropics/claude-code-action@1f291e1cfe0f5fc21db2aef19af844591600ade7
         env:
           # STEP 0 of the contract reads production through the service role.
           # There is no MCP in this runtime, which the contract already assumes.
@@ -101,7 +105,8 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
             --max-turns 40
-            --append-system-prompt "Branch and PR only. Never push to main, never merge, never deploy, never mutate production data."
+            --append-system-prompt "Branch and PR only. Never push to
+            main, never merge, never deploy, never mutate production data."
           prompt: |
             You are the Repair stage of Helm's self-heal loop. Run it against
             the current incident board.
@@ -124,8 +129,9 @@ jobs:
             and explains why is a successful run, and is much more useful than
             a speculative fix.
 
-      # The Bridge Self-heal panel reads runtime from background_job_logs. Without
-      # this the stage would run correctly and still render as silent — the exact
+      # The Bridge Self-heal panel reads runtime from
+      # background_job_logs. Without this the stage would run correctly and
+      # still render as silent — the exact
       # failure mode this workflow exists to remove. `if: always()` so a failed
       # Repair records a FAILED heartbeat rather than no heartbeat, because
       # "it broke" and "it never ran" must not look identical.
@@ -135,22 +141,27 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OUTCOME: ${{ steps.repair.outcome }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           status="completed"
           [ "$OUTCOME" = "success" ] || status="failed"
+          run_url="$REPO_URL/actions/runs/$RUN_ID"
+          jt='"job_type":"selfheal-repair"'
+          body=$(printf '{%s,"status":"%s",' "$jt" "$status")
+          body="$body$(printf '"error_message":"Actions run: %s",' "$run_url")"
+          body="$body$(printf '"metadata":{"runtime":"github-actions"}}')"
           curl -sS -X POST "$SUPABASE_URL/rest/v1/background_job_logs" \
             -H "apikey: $SERVICE_KEY" \
             -H "Authorization: Bearer $SERVICE_KEY" \
             -H "Content-Type: application/json" \
             -H "Prefer: return=minimal" \
-            -d "$(printf '{"job_type":"selfheal-repair","status":"%s","error_message":"GitHub Actions run: %s","metadata":{"runtime":"github-actions","run_id":"%s"}}' \
-                  "$status" "$RUN_URL" "${GITHUB_RUN_ID}")" \
+            -d "$(printf '%s' "$body")" \
             && echo "heartbeat written: $status"
 
       - name: Bound reminder
         if: always()
         run: |
-          echo "Repair is PR-only by contract: it never merges and never deploys."
+          echo "Repair is PR-only: it never merges and never deploys."
           echo "main requires five status checks and a human merge."

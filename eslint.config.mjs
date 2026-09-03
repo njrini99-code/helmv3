@@ -61,6 +61,26 @@ export default tseslint.config(
     ],
   },
   {
+    // helm/no-raw-error-in-console is scoped to src/ ON PURPOSE.
+    //
+    // Its whole rationale is Sentry's console integration: it captures
+    // console.error at the driver and stringifies every argument, so a plain
+    // object becomes the literal "[object Object]" and the incident loses its
+    // code, message and details. That integration only runs in the APP
+    // runtime. scripts/ is CLI tooling whose console output goes to a
+    // terminal or a CI log and never becomes an incident, so the same call
+    // there costs nothing and forcing describeError into it would import an
+    // `@/` alias that scripts/ tsconfig does not even resolve.
+    //
+    // Measured: 0 violations under src/, 16 under scripts/. Scoping is the
+    // honest fix; adding 16 to a baseline would have recorded debt that is
+    // not debt.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "helm/no-raw-error-in-console": "error",
+    },
+  },
+  {
     files: ["scripts/**/*.{js,mjs,cjs,ts,mts,cts}"],
     languageOptions: {
       globals: {
@@ -137,7 +157,6 @@ export default tseslint.config(
       "jsx-a11y/click-events-have-key-events": "warn",
 
       // W0 canonical design-system rules (synthesis §5), shipped as warnings.
-      "helm/no-raw-error-in-console": "error",
       "helm/no-raw-button": "warn",
       "helm/no-raw-input": "warn",
       "helm/no-arbitrary-text-px": "warn",
