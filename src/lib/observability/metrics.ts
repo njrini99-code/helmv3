@@ -47,6 +47,7 @@
  * signal that they were doing so.
  */
 import * as Sentry from '@sentry/nextjs';
+import { scheduleTelemetryFlush } from './flush';
 
 // ---------------------------------------------------------------------------
 // Dimensions
@@ -223,6 +224,7 @@ export const METRIC_LOG_REDACTED_FIELD = 'helm.log.redacted_field';
 function safeCount(name: string, value: number, attributes: Record<string, unknown>): void {
   try {
     Sentry.metrics.count(name, value, { attributes: sanitizeMetricAttributes(attributes) });
+    scheduleTelemetryFlush();
   } catch {
     // A Sentry failure must never reach product code.
   }
@@ -236,6 +238,7 @@ function safeDistribution(
 ): void {
   try {
     Sentry.metrics.distribution(name, value, { unit, attributes: sanitizeMetricAttributes(attributes) });
+    scheduleTelemetryFlush();
   } catch {
     // A Sentry failure must never reach product code.
   }

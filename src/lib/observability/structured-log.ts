@@ -48,6 +48,7 @@
  * NEVER THROWS. A logging call must never be the reason a workflow fails.
  */
 import * as Sentry from '@sentry/nextjs';
+import { scheduleTelemetryFlush } from './flush';
 import { maskEmails } from './redact-pii';
 import { recordLogRedactedField } from './metrics';
 
@@ -177,6 +178,7 @@ function emit(level: HelmLogLevel, event: string, fields: HelmLogFields): void {
     const safeEvent = typeof event === 'string' && event.length > 0 ? event : 'helm.log.invalid_event';
     const attributes = buildAttributes(safeEvent, fields ?? {});
     Sentry.logger[level](safeEvent, attributes);
+    scheduleTelemetryFlush();
   } catch {
     // A logging call must never be the reason a workflow fails.
   }
