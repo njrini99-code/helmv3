@@ -21171,6 +21171,7 @@ export type Database = {
         Returns: boolean
       }
       heartbeat: { Args: never; Returns: undefined }
+      helm_debug_db_health_snapshot: { Args: never; Returns: Json }
       helm_debug_finalize_trace: {
         Args: { p_metadata?: Json; p_status: string; p_trace_id: string }
         Returns: undefined
@@ -21181,6 +21182,27 @@ export type Database = {
         Returns: Json
       }
       helm_debug_prune: { Args: { p_retention_days?: number }; Returns: Json }
+      helm_debug_prune_observability: {
+        Args: {
+          p_error_events_retention_days?: number
+          p_health_samples_retention_days?: number
+          p_prior_state_retention_days?: number
+          p_stat_deltas_retention_days?: number
+        }
+        Returns: Json
+      }
+      helm_debug_read_db_error_events: {
+        Args: { p_limit?: number; p_min_severity?: string; p_since?: string }
+        Returns: Json
+      }
+      helm_debug_read_db_health_history: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      helm_debug_read_db_stat_deltas: {
+        Args: { p_regression_lookback_hours?: number }
+        Returns: Json
+      }
       helm_debug_record_trace_step: {
         Args: {
           p_layer: string
@@ -21200,6 +21222,10 @@ export type Database = {
           p_workflow: string
         }
         Returns: string
+      }
+      helm_debug_stat_statements_snapshot: {
+        Args: { p_limit?: number }
+        Returns: Json
       }
       helm_lifting_accept_invite: { Args: { p_token: string }; Returns: Json }
       helm_lifting_assign_team: {
@@ -21319,6 +21345,97 @@ export type Database = {
         Returns: undefined
       }
       recompute_team_sg: { Args: { p_team_id: string }; Returns: undefined }
+      record_db_error_event: {
+        Args: {
+          p_action: string
+          p_attempt?: number
+          p_auth_code?: string
+          p_bucket_class?: string
+          p_duration_ms?: number
+          p_environment: string
+          p_error_code?: string
+          p_expectedness: string
+          p_feature: string
+          p_fingerprint: string
+          p_force_individual_row?: boolean
+          p_function_name?: string
+          p_helm_trace_id?: string
+          p_http_status?: number
+          p_journey?: string
+          p_normalized_message: string
+          p_operation: string
+          p_postgrest_code?: string
+          p_relation_name?: string
+          p_release_sha?: string
+          p_retryability: string
+          p_rpc_name?: string
+          p_runtime: string
+          p_safe_details?: string
+          p_safe_hint?: string
+          p_safe_metadata?: Json
+          p_sentry_span_id?: string
+          p_sentry_trace_id?: string
+          p_service: string
+          p_severity: string
+          p_sport?: string
+          p_sqlstate?: string
+          p_storage_code?: string
+          p_terminal?: boolean
+        }
+        Returns: string
+      }
+      record_db_health_sample: {
+        Args: {
+          p_blks_hit: number
+          p_blks_hit_delta: number
+          p_blks_read: number
+          p_blks_read_delta: number
+          p_cache_hit_ratio: number
+          p_collector_status?: string
+          p_conflicts: number
+          p_conflicts_delta: number
+          p_connections_active: number
+          p_connections_idle_in_tx: number
+          p_connections_pct_max: number
+          p_connections_total: number
+          p_connections_waiting_lock: number
+          p_db_size_bytes: number
+          p_deadlocks: number
+          p_deadlocks_delta: number
+          p_longest_active_ms: number
+          p_longest_idle_in_tx_ms: number
+          p_longest_lock_wait_ms: number
+          p_stats_reset_at: string
+          p_temp_bytes: number
+          p_temp_bytes_delta: number
+          p_temp_files: number
+          p_temp_files_delta: number
+          p_tup_deleted: number
+          p_tup_deleted_delta: number
+          p_tup_fetched: number
+          p_tup_fetched_delta: number
+          p_tup_inserted: number
+          p_tup_inserted_delta: number
+          p_tup_returned: number
+          p_tup_returned_delta: number
+          p_tup_updated: number
+          p_tup_updated_delta: number
+          p_xact_commit: number
+          p_xact_commit_delta: number
+          p_xact_rollback: number
+          p_xact_rollback_delta: number
+        }
+        Returns: number
+      }
+      record_db_stat_snapshot: {
+        Args: {
+          p_delta_rows: Json
+          p_prior_state_rows: Json
+          p_sampled_at: string
+          p_stats_reset_at: string
+        }
+        Returns: number
+      }
       record_round_coachhelm_terminal_state: {
         Args: {
           p_analyzed_at: string
