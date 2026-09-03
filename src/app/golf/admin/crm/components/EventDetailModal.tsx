@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -85,7 +86,7 @@ export function EventDetailModal({
       setStatus(newStatus);
       onRefresh();
     } catch (err) {
-      console.error('Failed to update status:', err);
+      console.error('Failed to update status:', describeError(err));
     } finally {
       setSubmitting(false);
     }
@@ -128,7 +129,7 @@ export function EventDetailModal({
       onRefresh();
       onClose();
     } catch (err) {
-      console.error('Failed to complete event:', err);
+      console.error('Failed to complete event:', describeError(err));
     } finally {
       setSubmitting(false);
     }
@@ -144,7 +145,7 @@ export function EventDetailModal({
       onRefresh();
       onClose();
     } catch (err) {
-      console.error('Failed to delete:', err);
+      console.error('Failed to delete:', describeError(err));
     } finally {
       setSubmitting(false);
     }

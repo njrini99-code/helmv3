@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -113,7 +114,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
         .neq('player_type', 'college'); // never show college players
 
       if (error) {
-        console.error('Error fetching players via high_school_org_id:', error);
+        console.error('Error fetching players via high_school_org_id:', describeError(error));
       }
 
       (playersData || []).forEach((p: RosterPlayer) => {
@@ -153,7 +154,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
         .in('team_id', teamIds);
 
       if (error) {
-        console.error('Error fetching team members:', error);
+        console.error('Error fetching team members:', describeError(error));
       }
 
       if (teamMembers) {

@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -123,7 +124,7 @@ export function useMessageAttachments() {
 
         return messageResult;
       } catch (err) {
-        console.error('[useMessageAttachments] Error:', err);
+        console.error('[useMessageAttachments] Error:', describeError(err));
         logError(
           err instanceof Error ? err : new Error(String(err)),
           { component: 'useMessageAttachments', action: 'send-message-with-attachments', sport: 'golf', conversationId },

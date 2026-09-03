@@ -10,6 +10,7 @@
 // `<EditorsLetter>` instead of the bespoke destructive/warm boxes).
 // =============================================================================
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -63,7 +64,7 @@ export default function DevPlanDetailPage() {
       setNotFound(false);
       setFetchError(null);
     } catch (error) {
-      console.error('Error fetching dev plan:', error);
+      console.error('Error fetching dev plan:', describeError(error));
       setPlan(null);
       const message = error instanceof Error ? error.message : '';
       // getDevPlanForCoach throws either a raw "no rows" Postgrest error (the

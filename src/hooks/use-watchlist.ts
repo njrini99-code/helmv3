@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
@@ -47,7 +48,7 @@ export function useWatchlist() {
         .order('priority', { ascending: false });
 
       if (fetchError) {
-        console.error('[useWatchlist] fetchWatchlist failed:', fetchError);
+        console.error('[useWatchlist] fetchWatchlist failed:', describeError(fetchError));
         logError(
           new Error(fetchError.message || 'Failed to load watchlist'),
           { component: 'useWatchlist', action: 'fetchWatchlist', sport: 'baseball' },
@@ -59,7 +60,7 @@ export function useWatchlist() {
 
       setWatchlist((data || []) as WatchlistWithPlayer[]);
     } catch (err) {
-      console.error('[useWatchlist] fetchWatchlist failed:', err);
+      console.error('[useWatchlist] fetchWatchlist failed:', describeError(err));
       logError(
         err instanceof Error ? err : new Error('Failed to load watchlist'),
         { component: 'useWatchlist', action: 'fetchWatchlist', sport: 'baseball' },

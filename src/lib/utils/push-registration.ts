@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './capacitor';
 import { isSafeInternalPath } from './safe-redirect';
@@ -143,7 +144,7 @@ async function submitPendingDeviceToken(): Promise<void> {
     // Still unauthorized. The token STAYS parked: the user has most likely not
     // signed in yet, and flushPendingDeviceToken will finish the job the moment
     // they do.
-    console.warn('[Push] Device token not registered yet; will retry when a session exists', lastError);
+    console.warn('[Push] Device token not registered yet; will retry when a session exists', describeError(lastError));
   } finally {
     deviceTokenSubmitInFlight = false;
   }
@@ -195,7 +196,7 @@ export function teardownDeviceTokenOnSignOut(): void {
     .catch((err) => {
       console.warn(
         '[Push] Sign-out token deactivation failed; row stays active until next launch:',
-        err,
+        describeError(err),
       );
     });
 }
@@ -263,12 +264,12 @@ export async function initPushListeners(): Promise<void> {
     }).catch((err) => {
       // addListener() itself rejects async when the plugin is unavailable —
       // separate from anything the callback above does.
-      console.error('[Push] addListener("registration") failed:', err);
+      console.error('[Push] addListener("registration") failed:', describeError(err));
     });
 
     // Listen for registration errors
     PushNotifications.addListener('registrationError', (error) => {
-      console.error('[Push] Registration failed:', error);
+      console.error('[Push] Registration failed:', describeError(error));
     }).catch(() => {});
 
     // Foreground notifications are displayed by the system based on
@@ -310,7 +311,7 @@ export async function initPushListeners(): Promise<void> {
       if (!handled) window.location.href = rawUrl;
     }).catch(() => {});
   } catch (err) {
-    console.error('[Push] Listener setup failed:', err);
+    console.error('[Push] Listener setup failed:', describeError(err));
   }
 }
 
@@ -360,7 +361,7 @@ export async function requestPushPermission(): Promise<'granted' | 'denied'> {
     setPushSoftAskState('dismissed');
     return 'denied';
   } catch (err) {
-    console.error('[Push] Permission request failed:', err);
+    console.error('[Push] Permission request failed:', describeError(err));
     setPushSoftAskState('dismissed');
     return 'denied';
   }

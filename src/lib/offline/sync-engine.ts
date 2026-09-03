@@ -14,6 +14,7 @@
  * - Error recovery and reporting
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import {
   getPendingRounds,
   getPendingHoles,
@@ -400,7 +401,7 @@ class SyncEngine {
       // SAME already-known condition on the same interval — one production
       // incident showing up as several Sentry events instead of one.
       if (!isIdbUnavailableThisSession()) {
-        console.error('Failed to refresh pending count:', error);
+        console.error('Failed to refresh pending count:', describeError(error));
       }
     }
   }
@@ -1002,7 +1003,7 @@ class SyncEngine {
       // constructor and again from initialize(), so an unconditional log
       // double-reports the same already-known device-level failure.
       if (!isIdbUnavailableThisSession()) {
-        console.error('Failed to load sync metadata:', error);
+        console.error('Failed to load sync metadata:', describeError(error));
       }
     }
   }
@@ -1015,7 +1016,7 @@ class SyncEngine {
       this.updateProgress('cleanup', 1, 1, 'Cleaning up old data');
       await clearSyncedData();
     } catch (error) {
-      console.error('Cleanup failed:', error);
+      console.error('Cleanup failed:', describeError(error));
     }
   }
 
@@ -1056,7 +1057,7 @@ class SyncEngine {
       try {
         (this.config.callbacks[event] as (...args: unknown[]) => void)?.(...args);
       } catch (error) {
-        console.error(`Callback error (${event}):`, error);
+        console.error(`Callback error (${event}):`, describeError(error));
       }
     }
 
@@ -1067,7 +1068,7 @@ class SyncEngine {
         try {
           (callback[event] as (...args: unknown[]) => void)?.(...args);
         } catch (error) {
-          console.error(`Callback error (${event}):`, error);
+          console.error(`Callback error (${event}):`, describeError(error));
         }
       }
     });
@@ -1224,7 +1225,7 @@ class SyncEngine {
 
       return { success: true };
     } catch (error) {
-      console.error('Error resolving conflict:', error);
+      console.error('Error resolving conflict:', describeError(error));
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

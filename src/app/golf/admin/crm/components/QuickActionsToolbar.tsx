@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -92,7 +93,7 @@ export function QuickActionsToolbar({
       );
       onRefresh();
     } catch (err) {
-      console.error('Failed to advance leads:', err);
+      console.error('Failed to advance leads:', describeError(err));
     } finally {
       setProcessing(null);
     }
@@ -236,7 +237,7 @@ function SingleCoachQuickAction({
       onRefresh();
       onClose();
     } catch (err) {
-      console.error('Failed to log contact:', err);
+      console.error('Failed to log contact:', describeError(err));
     } finally {
       setSubmitting(false);
     }

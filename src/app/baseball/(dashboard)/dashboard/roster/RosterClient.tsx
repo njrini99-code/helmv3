@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -238,7 +239,7 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
       .order('joined_at', { ascending: false });
 
     if (rosterError) {
-      console.error('[Roster] Failed to fetch roster:', rosterError);
+      console.error('[Roster] Failed to fetch roster:', describeError(rosterError));
       setRoster([]);
       setLoadError('roster');
       setLoading(false);

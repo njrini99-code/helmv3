@@ -14,6 +14,7 @@
  * (no overlap with the coach-facing Stats Center, which is its own surface).
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect } from 'react';
 import { IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -104,7 +105,7 @@ export function MyStatsClient() {
       setPlayer(aggregatesResult.player as PlayerInfo);
       setTeamName(aggregatesResult.teamName);
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      console.error('Error fetching stats:', describeError(err));
       setError('Failed to load your stats. Please try again.');
     } finally {
       setLoading(false);

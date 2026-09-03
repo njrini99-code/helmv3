@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BaseballPlayer as Player } from '@/lib/types';
@@ -34,7 +35,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
         setAdded(true);
       }
     } catch (error) {
-      console.error('Error adding to watchlist:', error);
+      console.error('Error adding to watchlist:', describeError(error));
       showToast('Failed to add to watchlist', 'error');
     } finally {
       setAdding(false);
@@ -52,7 +53,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
       const result = await createConversation([player.user_id]);
       router.push(`/baseball/dashboard/messages/${result.conversationId}`);
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      console.error('Error creating conversation:', describeError(error));
       showToast('Failed to create conversation', 'error');
     } finally {
       setMessaging(false);

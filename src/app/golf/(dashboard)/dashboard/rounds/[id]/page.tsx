@@ -206,7 +206,7 @@ export default async function RoundDetailPage({
     }
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[round-detail] recap generation failed:', err);
+      console.warn('[round-detail] recap generation failed:', describeError(err));
     }
   }
 

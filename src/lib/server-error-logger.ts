@@ -29,7 +29,7 @@ import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incid
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId } from '@/lib/admin/request-context';
-import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump } from '@/lib/utils/describe-error';
+import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump, describeError } from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
 import { resolveFeatureKey } from '@/lib/admin/feature-registry';
 import { absorbIntoRecentEvent } from '@/lib/admin/durable-collapse';
@@ -346,7 +346,7 @@ const STACK_BUDGET = 8000;
 function reportRedactionFailure(error: unknown, field: 'stack' | 'message'): void {
   console.error(
     `[ServerErrorLogger] ${field} redaction failed; persisting a placeholder instead of the raw value`,
-    error,
+    describeError(error),
   );
   try {
     Sentry.captureException(error, {

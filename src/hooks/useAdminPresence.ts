@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel, RealtimePresenceState, User } from '@supabase/supabase-js';
@@ -200,7 +201,7 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
             };
             await channel.track(payload);
           } catch (err) {
-            console.error('Failed to track presence:', err);
+            console.error('Failed to track presence:', describeError(err));
           }
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false);

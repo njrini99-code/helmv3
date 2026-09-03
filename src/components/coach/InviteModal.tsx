@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useId } from 'react';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button } from '@/components/ui/button';
@@ -63,14 +64,14 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
         });
 
       if (error) {
-        console.error('Error generating invite:', error);
+        console.error('Error generating invite:', describeError(error));
         showToast('Failed to generate invite link', 'error');
       } else {
         setInviteCode(code);
         showToast('Invite link generated successfully', 'success');
       }
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error:', describeError(err));
       showToast('An error occurred', 'error');
     } finally {
       setGenerating(false);

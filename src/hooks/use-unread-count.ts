@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
@@ -78,7 +79,7 @@ export function useUnreadCount() {
         setUnreadCount(totalUnread);
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      console.error('Error fetching unread count:', describeError(error));
     } finally {
       setLoading(false);
     }

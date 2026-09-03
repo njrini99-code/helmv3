@@ -16,6 +16,7 @@
  * - Integration with sync engine
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
@@ -253,7 +254,7 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
               state.storageQuota = stats?.storageQuota || 0;
             });
           } catch (error) {
-            console.error('Failed to check storage availability:', error);
+            console.error('Failed to check storage availability:', describeError(error));
             set((state) => {
               state.isStorageAvailable = false;
             });
@@ -271,7 +272,7 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
             });
             get().addNotification('Offline data cleared');
           } catch (error) {
-            console.error('Failed to clear offline data:', error);
+            console.error('Failed to clear offline data:', describeError(error));
             get().addNotification('Failed to clear offline data');
           }
         },
@@ -419,7 +420,7 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
               }
             });
           } catch (error) {
-            console.error('Failed to update pending count:', error);
+            console.error('Failed to update pending count:', describeError(error));
           }
         },
 

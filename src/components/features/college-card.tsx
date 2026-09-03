@@ -11,6 +11,7 @@
 // now reads in lane ink: green when interested, quiet graphite otherwise.
 // =============================================================================
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
@@ -66,7 +67,7 @@ export function CollegeCard({
       // Revert on error
       setInterested(!newState);
       onInterestToggle?.(college.id, !newState);
-      console.error('Failed to update interest:', error);
+      console.error('Failed to update interest:', describeError(error));
     }
 
     setLoading(false);

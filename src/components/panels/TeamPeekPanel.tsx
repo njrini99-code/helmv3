@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -219,7 +220,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
       setStaff(staffList);
       setRoster(rosterList);
     } catch (err) {
-      console.error('Error fetching team profile:', err);
+      console.error('Error fetching team profile:', describeError(err));
       toast.error('Failed to load team profile');
     } finally {
       setLoading(false);

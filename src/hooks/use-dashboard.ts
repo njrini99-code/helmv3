@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -58,7 +59,7 @@ export function useSavedSearches() {
     try {
       localStorage.setItem(`saved_searches_${coach.id}`, JSON.stringify(updated));
     } catch (error) {
-      console.error('Error saving search:', error);
+      console.error('Error saving search:', describeError(error));
     }
 
     return newSearch;
@@ -74,7 +75,7 @@ export function useSavedSearches() {
       localStorage.setItem(`saved_searches_${coach.id}`, JSON.stringify(updated));
       return true;
     } catch (error) {
-      console.error('Error deleting search:', error);
+      console.error('Error deleting search:', describeError(error));
       return false;
     }
   };
@@ -105,7 +106,7 @@ export function usePlayersByState() {
 
         setStateCounts(normalizedCounts);
       } catch (error) {
-        console.error('Error fetching player distribution:', error);
+        console.error('Error fetching player distribution:', describeError(error));
         setStateCounts({});
       } finally {
         setLoading(false);

@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logError } from '@/lib/error-logging';
@@ -181,7 +182,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       if (preview) URL.revokeObjectURL(preview);
       onUploadComplete?.();
     } catch (err) {
-      console.error('Upload error:', err);
+      console.error('Upload error:', describeError(err));
       // Only clean up the storage object if the row was never saved — once
       // saveMyVideo succeeds, the file is referenced by a real row and must stay.
       if (!dbSaved) {

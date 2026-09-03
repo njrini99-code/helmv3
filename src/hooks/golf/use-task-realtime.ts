@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -375,7 +376,7 @@ export function useTaskRealtime(
       setTasks(transformedTasks);
       setStats(computeTaskStats(transformedTasks));
     } catch (err) {
-      console.error('Error fetching tasks:', err);
+      console.error('Error fetching tasks:', describeError(err));
       setError(err instanceof Error ? err.message : 'Failed to load tasks');
     } finally {
       setLoading(false);
