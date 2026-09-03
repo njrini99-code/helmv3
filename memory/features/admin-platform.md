@@ -22,6 +22,20 @@ This area is high criticality because it often uses broader access patterns, ope
   the contract; `correlate.ts`, `lifecycle.ts`, `proof.ts`, `sources.ts`,
   `lens.ts` and `truth-strip.ts` are pure; `fetch.ts` is the only module in it
   that performs I/O.
+  - Six additional pure read models, added 2026-09-03 as Phase 0 ("Truth and
+    naming") of the owner's Bridge Premium Observability brief (not yet a
+    resolvable path in this checkout — see the "Phase 0 truth models"
+    section below for its location as of this entry), §6/§7/§8/§9/§36/§45:
+    `present.ts` (the deterministic human-title
+    resolver — `IncidentPresentation`, wired additively as
+    `IncidentBoard.presentations` in `fetch.ts`), `aliases.ts` (root-cause
+    dedupe ABOVE `correlate.ts`'s own join — see that file's entry below),
+    `episodes.ts` (regression episodes), `coverage.ts` (six-source
+    evidence coverage, wider than `sources.ts`'s four), `release-context.ts`
+    (Runtime Identity Triplet + release relationship + Release Watch), and
+    `release-compare.ts` (baseline-vs-current post-deploy comparison). None
+    of the six are wired into any UI yet — Phase 0 is read models only, per
+    the brief's own implementation order (§45).
 - `src/app/golf/admin/**`
 - `src/app/golf/admin/crm/**`
 - `src/app/api/cron/reliability-triage/**` — the 3-hourly collector behind the
@@ -797,6 +811,86 @@ them would have broken those routes, not the dead one.
   an in-place pending state and a visible retryable error if session revocation
   fails.
 
+## Phase 0 truth models (Bridge Premium Observability, 2026-09-03)
+
+Six new pure modules under `src/lib/admin/incidents/`, all read models over
+evidence that already exists — no new tables, no new migration. Source: the
+owner's Bridge Premium Observability brief, §6/§7/§8/§9/§36/§45 (Phase 0,
+"Truth and naming"). As of this entry the brief lives only in the docs-only
+worktree it was written into — `sentry-max-controlplane`, under its own
+`ai-system` briefs directory, filename starting `BRIDGE_PREMIUM_OBSERVABILITY_
+BRIEF` and dated 2026-09-03 — not yet committed to this checkout or `main`.
+Deliberately not written above as one contiguous path: it does not resolve
+in this checkout yet and `docs:path-drift` treats any `docs/...`-shaped
+token in a navigation doc as a claim that the file exists. Locate it fresh
+(`find` under that worktree, or ask whoever committed it) rather than
+trusting this description once it may have moved. None of the six modules
+below render on any screen yet; Phase 1+ of that brief is where the visual
+work lands.
+
+- **`present.ts`** — `resolveIncidentPresentation`, the deterministic
+  human-title resolver (brief §7). Tier order: known error code (scored by
+  how much of code+action+feature it pins down, so the SAME code — e.g.
+  `42501` — resolves to different titles for CoachHelm's recap-persist step
+  vs round-tracking autosave) -> known operation/action -> known feature ->
+  normalized message fingerprint -> generic category from `IncidentClass`.
+  38 real mappings, grounded in `memory/incidents/**` and code read directly
+  (not invented) — see the file header for the full evidence list. Wired
+  ADDITIVELY as `IncidentBoard.presentations: Record<string,
+  IncidentPresentation>` in `fetch.ts`, keyed on the board rather than added
+  to `UnifiedIncident` itself, because every `incidents/__tests__/*.test.ts`
+  file hand-builds full `UnifiedIncident` literals and a new required field
+  there is a mechanical diff across all of them.
+- **`aliases.ts`** — root-cause dedupe ABOVE `correlate.ts`, not a
+  replacement for it. `correlate.ts` already performs the brief's highest
+  merge tier at the raw-evidence grain (one exact
+  `errorCode::route::messagePrefix` signature — why `UnifiedIncident.
+  appFingerprints`/`.sentryIssueIds`/`.reliabilitySignatures` are already
+  arrays). `aliases.ts` is the pass above that: given already-built
+  incident-shaped facts whose raw signatures genuinely differ, decide via
+  `classifyMergeConfidence` (highest: shared trace id / Flight Recorder run
+  / canonical fingerprint / RPC+code+feature; medium: ALL SIX of
+  feature+operation+frames+code+release+tight-window; explicit never-merge
+  on message/time/source/user alone) and group via union-find
+  (`groupIntoRootIncidents`) into a root incident with per-alias provenance.
+- **`episodes.ts`** — `deriveEpisodes` (brief §8, last paragraph). An
+  episode is opened by a REGRESSION, never pre-emptively by a resolution —
+  a fix that has simply never recurred stays one episode, resolved, not
+  two. When two resolutions land between the same pair of occurrences, the
+  LATER one is credited as the fix a following regression actually defied.
+- **`coverage.ts`** — six-source evidence coverage (brief §36: Sentry /
+  Supabase / Flight Recorder / Vercel / GitHub / Jobs), wider than
+  `sources.ts`'s four (`app`/`sentry`/`supabase`/`vercel`, which answers a
+  board-level question). Reuses `SourceHealth` from `types.ts` rather than a
+  second vocabulary; a source missing a reading is an explicit `unknown`
+  cell, never a dropped row or a healthy zero.
+- **`release-context.ts`** — the Runtime Identity Triplet (app SHA / DB
+  migration head / AI config identity — the last derived deterministically
+  from `MODEL_FOR_TASK`, `src/lib/coachhelm/v3/llm/types.ts`, the only
+  versioned CoachHelm config that exists), `classifyReleaseRelationship`
+  (the six release relationships, brief §9 — proximity alone is explicitly
+  `NO CAUSAL SIGNAL`, never `NEW AFTER RELEASE`, and confidence for `NEW
+  AFTER RELEASE` is capped below 1 regardless of how many signals
+  corroborate it), and `classifyReleaseWatch` (the seven Release Watch
+  states; `PROVEN HEALTHY` additionally requires full source coverage — a
+  blind source past the healthy window is `UNKNOWN`, never healthy on
+  silence). The DB migration head has no file-based source of truth in this
+  repo — `fetchProductionMigrationHead` is a separate, deliberately
+  UNTESTED fail-open reader (Management API `database/query`, same split as
+  `deploy-freshness.ts`'s `fetchDeployFreshness`/`classifyDeployFreshness`).
+- **`release-compare.ts`** — baseline-vs-current post-deploy comparison
+  (brief §9/§28): root incidents, affected users, journey success, DB p95,
+  invariant breaches, new SQLSTATEs, each with a delta and
+  improved/worsened/unchanged/unknown state. DB-derived metrics (p95,
+  invariant breaches, new SQLSTATEs) are forced `unknown` TOGETHER whenever
+  either side's DB source was blind, even if a caller passed a raw `0` for
+  one — a zero read from a blind source is not a zero. `deriveRootIncidentFacts`
+  is the one adapter provided, using the identical "actionable, not
+  resolved, not not-a-defect" definition `truth-strip.ts`'s Incidents cell
+  already uses. Journey success, DB p95 and invariant breaches have no read
+  model yet in this repo (later Phase D work) and are accepted as
+  caller-supplied facts rather than fabricated ahead of the data existing.
+
 ## Known Risk Areas
 
 - Admin actions are more likely to use broad permissions; review for service-role and RLS bypass carefully.
@@ -867,6 +961,30 @@ them would have broken those routes, not the dead one.
 - `src/lib/admin/database/__tests__/*.test.ts` — the three `/admin/database`
   read models degrade to `status:'unconfigured'` (not `'error'`) on the
   HELD-migration "not found" shape.
+- `src/lib/admin/incidents/__tests__/present.test.ts` — every human-title
+  mapping, tier specificity, the generic fallback across every
+  `IncidentClass`, and a safety suite proving no title/technical-signature
+  field can ever echo a UUID, an email or the raw message.
+- `src/lib/admin/incidents/__tests__/fetch-presentation.test.ts` — the
+  board's `presentations` map agrees with a direct `resolveIncidentPresentation`
+  call, incident for incident.
+- `src/lib/admin/incidents/__tests__/aliases.test.ts` — every merge-confidence
+  tier, the never-merge rules (including a pile-up of every forbidden signal
+  at once), and grouping (direct match, transitive match via two different
+  shared dimensions, never-merge fixtures staying ungrouped).
+- `src/lib/admin/incidents/__tests__/episodes.test.ts` — continuing episodes,
+  the brief's own regression-after-fix worked example, a three-episode
+  fix/regress/fix/regress chain, and unknown-deploy-time/unknown-SHA
+  regressions staying honestly unattributed.
+- `src/lib/admin/incidents/__tests__/coverage.test.ts` — every health->mark
+  mapping and the always-six-cells invariant.
+- `src/lib/admin/incidents/__tests__/release-context.test.ts` — every
+  release-relationship branch (including the proximity-is-not-causation
+  case) and every Release Watch transition, including bad-news-outranks-
+  elapsed-time and the blind-source-blocks-PROVEN-HEALTHY case.
+- `src/lib/admin/incidents/__tests__/release-compare.test.ts` — DB-blindness
+  forcing DB-derived metrics unknown TOGETHER, including the "a blind source
+  with a raw 0 does not render as a real zero" case.
 - Typecheck/build for admin UI changes.
 - Targeted smoke/browser checks for admin dashboards when changing route-level code.
 
@@ -880,3 +998,7 @@ them would have broken those routes, not the dead one.
   re-measured production baseline for the Supabase/Postgres observability
   program (the master brief itself lands separately, on the sibling
   control-plane branch).
+- The Bridge Premium Observability brief the "Phase 0 truth models" section
+  above implements — see that section for its worktree location as of
+  2026-09-03; not linked here as a repo path because it does not resolve in
+  this checkout yet (`docs:path-drift` would flag it).
