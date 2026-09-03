@@ -42,6 +42,18 @@ describe('SELFHEAL_STAGES', () => {
     expect(new Set(types).size).toBe(types.length);
   });
 
+  it('runs Diagnose as the selfheal-triage Vercel cron, four times a day, unchanged contract path', () => {
+    // Moved off the Anthropic-hosted cloud routine (src/app/api/cron/
+    // selfheal-triage/route.ts) — see docs/ai-system/selfheal/README.md. The
+    // contract itself did not move: the automated runner still follows
+    // triage-contract.md, just with a narrower SHA-ancestry capability noted
+    // there.
+    const triage = SELFHEAL_STAGES.find((s) => s.id === 'triage')!;
+    expect(triage.runner).toBe('vercel-cron');
+    expect(triage.cadenceMinutes).toBe(6 * 60);
+    expect(triage.contract).toBe('docs/ai-system/selfheal/triage-contract.md');
+  });
+
   it('names an in-repo contract for every stage', () => {
     // The whole reason this registry exists is that the routine contracts used
     // to live only in routine configuration, where nothing diffed them.

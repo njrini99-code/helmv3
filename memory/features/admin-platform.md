@@ -26,6 +26,14 @@ This area is high criticality because it often uses broader access patterns, ope
 - `src/app/golf/admin/crm/**`
 - `src/app/api/cron/reliability-triage/**` — the 3-hourly collector behind the
   `/admin/reliability` tab. Its core is `src/lib/reliability/**`.
+- `src/app/api/cron/selfheal-triage/**` — the self-healing loop's Diagnose
+  stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
+  collection/apply core is `src/lib/admin/triage-collect.ts` /
+  `triage-apply.ts` (shared with the `npm run triage` CLI,
+  `scripts/run-triage.ts`, which is now a thin wrapper over both) and its
+  analyzer core is `src/lib/admin/rca-run.ts` (shared with the super-admin
+  `analyzeErrorFingerprint` server action). See
+  `docs/ai-system/selfheal/README.md`.
 
 ### Components
 
@@ -267,6 +275,29 @@ them would have broken those routes, not the dead one.
   `head.ref`, while the list-pulls fallback returns the ref. A failed GitHub
   read makes repair state `unknown`, never `none` — reporting an unreachable
   API as an empty queue re-queues work that is already sitting in a branch.
+- **Diagnose is a Vercel cron, not a cloud routine, as of 2026-09-02.**
+  `SELFHEAL_STAGES.triage.runner` is `'vercel-cron'`
+  (`src/lib/admin/selfheal-registry.ts`), cadence 6 hours, heartbeat
+  `job_type = 'selfheal-triage'` written by
+  `src/app/api/cron/selfheal-triage/route.ts` directly (not through
+  `recordJobRun`, which keeps only top-level scalars and would silently drop
+  `sourceHealth`/`queue`) — a SEPARATE, unregistered `recordJobRun` call
+  wraps the handler purely for crash-safety, mirroring `log-retention`'s
+  two-job-type split for the same reason. The route reuses
+  `triage-collect.ts`/`triage-apply.ts` (the same modules `npm run triage`
+  wraps) and `rca-run.ts` (the same analyzer `analyzeErrorFingerprint` calls,
+  factored out from behind that action's `requireSuperAdmin()` gate). It
+  auto-resolves only what `triage-contract.md` STEP 4 allows, and — because a
+  Vercel function has no git checkout — never resolves a SHA-bearing
+  "ALREADY FIXED" claim itself; that case is left analysed-but-open for
+  `auto-resolve.ts`'s nightly Rule A or a human/`npm run triage` run. A
+  fingerprint carrying a provider-fault (an Inngest/AI-account credential
+  fault, say) is never auto-resolved even when a model mis-categorises it,
+  because the guard re-classifies the member's own message text
+  (`classifyProviderFault`) in addition to reading a stored `errorCode` —
+  three of the four production "Inngest signature" fingerprints carry no
+  persisted `errorCode` at all, so the stored-code check alone would miss
+  them.
 - **Runtime health and capability proof are separate facts for every
   self-healing stage.** A stage can heartbeat healthily for a week while never
   once producing its output; on 2026-08-28 Repair's heartbeats were green and

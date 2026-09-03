@@ -264,6 +264,72 @@ since both change behaviour the first pass shipped.
   (25/25 passing, new cases written failing first), `npm run typecheck`,
   `npm run lint`, `npm run lint:ratchet`, `npm run audit:supabase-errors` all
   green on this change alone.
+## 2026-09-02 — Diagnose moves off the Anthropic-hosted cloud routine onto a Vercel cron
+
+- Branch: `agent/selfheal-diagnose-cron`.
+- **Why**: the Diagnose stage's cloud-routine environment carried no
+  `SUPABASE_SERVICE_ROLE_KEY`, so `npm run triage` failed before reading a
+  row every time it actually ran there — every `selfheal-triage` heartbeat
+  that ever read `completed` was a human substituting via MCP or a manual
+  run. This deployment already carries `SUPABASE_SERVICE_ROLE_KEY`,
+  `ANTHROPIC_API_KEY` and `CRON_SECRET`, so Diagnose runs here instead.
+- **Extracted, no behaviour change**: `collectAdminEvents`,
+  `collectReliabilitySignals`, `collectRelAnalyses` and `applyPlan` moved out
+  of `scripts/run-triage.ts` into `src/lib/admin/triage-collect.ts` /
+  `triage-apply.ts`; the CLI is now a thin wrapper over both, byte-identical
+  output. `runRcaForFingerprint` / `persistRcaAnalysis` moved out of
+  `src/app/admin/actions/analyze-error.ts` into `src/lib/admin/rca-run.ts`
+  (server-only, no `requireSuperAdmin` gate — the action keeps its own gate
+  and delegates), which also gains `runRcaForReliabilitySignal` for
+  `rel:<signature>` groups with no `admin_events` rows to analyse.
+- **One real behaviour change while extracting**:
+  `collectReliabilitySignals` used to read only the NEWEST
+  `reliability-snapshot` row (`.limit(1)`). It now reads every row inside the
+  triage window and unions their signals (dedupe by correlation signature,
+  count = MAX across rows never sum, firstSeen/lastSeen widened,
+  `sourceHealth` still taken from the newest row only) — a Sentry/Vercel/
+  Supabase signal that fired early in a 72h window and quieted down before
+  the most recent 3-hourly snapshot was previously invisible to triage.
+- **New**: `src/app/api/cron/selfheal-triage/route.ts`, four times a day
+  (`vercel.json`'s `17 3,9,15,21 * * *`, 6h cadence; `09:17 UTC` sits 83
+  minutes before Repair's `10:40 UTC`). Applies the closeable set exactly as
+  `--apply` does, then analyses the queue up to `SELFHEAL_TRIAGE_MAX_ANALYSES`
+  (default 8) groups, persists per-member with deterministic
+  `relatedFingerprints`, and resolves only `not-a-defect` and the SHA-free
+  half of `already-fixed` (a Vercel function has no git checkout to verify a
+  named commit's ancestry, so a SHA-bearing claim is left analysed-but-open
+  for `auto-resolve.ts`'s nightly Rule A or a human run). A provider-fault
+  guard re-classifies each member's own message text
+  (`classifyProviderFault`), not just a stored `errorCode` — three of the
+  four production "Inngest signature" fingerprints carry no persisted
+  `errorCode` at all. The heartbeat is written LAST, directly (not through
+  `recordJobRun`, which drops nested fields), under the same `job_type` both
+  `CRON_REGISTRY` and `SELFHEAL_STAGES` already used; an unregistered,
+  separate `recordJobRun` call wraps the handler purely for crash-safety.
+  `status='failed'` only on a genuine collector read failure or an analyzer
+  error — a blind arm inside an otherwise-readable snapshot reports
+  `completed` with `degraded: true`, because Repair's STEP 0b refuses to run
+  at all on a `failed` Diagnose row and a single flaky Sentry poll should
+  never silently disable Repair.
+- **Registries updated**: `SELFHEAL_STAGES.triage.runner` → `'vercel-cron'`,
+  `cadenceMinutes` → 360 (contract path unchanged); `CRON_REGISTRY` gains the
+  `selfheal-triage` entry; the contract test's `cronScheduleToMinutes` helper
+  (`cron-registry.test.ts`) extended to parse a comma-separated, evenly-spaced
+  hour list — it threw on `vercel.json`'s new schedule string otherwise.
+- **Docs**: `docs/ai-system/selfheal/README.md` and `triage-contract.md`
+  record the new runner and the SHA-ancestry capability gap; the cloud
+  routine is retired, `npm run triage` stays the full-contract fallback.
+- **Verified**: `npm run typecheck`, `npm run lint` (whole repo, both clean);
+  targeted `vitest run` over `src/lib/admin/__tests__`,
+  `src/app/api/cron/**/__tests__`, `src/app/admin/actions/__tests__`, and
+  `scripts` (1172 tests, all passing, including the pre-existing
+  `analyze-error.test.ts` unmodified against the extraction). New tests cover
+  the reliability-collector union fix (two-snapshot fixtures), the extracted
+  analyzer (regression-tested against the same fixtures `analyze-error.test.ts`
+  used), and the route's five required scenarios: cap reached, a blind arm
+  degrading rather than failing the run, an analyzer error leaving one group
+  open while the closeable set still applies, the provider-fault guard
+  refusing to resolve, and the heartbeat write landing last in call order.
 
 ## 2026-09-02 — second audit of `agent/fix-bridge-errors`: a throttle that outlived its write, a `void` the siblings had lost, a lost increment
 
@@ -1084,6 +1150,38 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   NOT run — the volume reported 0 GiB free at the time and a cold `.next`
   costs up to 5.7 GiB; no `'use server'` surface changed.
 
+## 2026-09-02 — Diagnose cron final gate: `collectRelAnalyses` binds its read error
+
+- SHA: branch `agent/selfheal-diagnose-cron`, PR pending (final-gate pass on
+  the "move Diagnose onto a Vercel cron" work already committed on this
+  branch — the cron route, the `triage-collect.ts`/`triage-apply.ts`
+  extraction, and the RCA-analysis extraction into `rca-run.ts` were already
+  shipped in prior commits; this entry covers only the fix made during the
+  gate run).
+- **What**: `src/lib/admin/triage-collect.ts`'s `collectRelAnalyses` now
+  destructures `error` from its `fetchAllRowsResult` call (it previously took
+  only `data`) and logs a failure instead of silently returning an empty
+  `Map` indistinguishable from "no prior analyses exist".
+- **Why**: `npm run audit:paginated-reads` regressed 12 -> 13 on this branch
+  — the ratchet's `helm/no-unchecked-paginated-read` rule flagged the
+  unbound `error`. Fixed rather than baseline-raised, per the no-ratchet-
+  raise rule. This read is best-effort enrichment (an "already analysed"
+  annotation merged onto reliability candidates), not a health-critical read
+  — a failure here does not flip `runSelfHealTriage`'s heartbeat to
+  `failed`/`degraded`; the two health-critical reads it sits beside
+  (`collectAdminEvents`, `collectReliabilitySignals`) already bound and
+  reported their own errors into `SourceHealth` before this fix.
+- **Verified**: `npm run typecheck`, `npm run lint` (0 warnings),
+  `npm run lint:ratchet` (68 warnings, no regression),
+  `npx vitest run src/lib/admin src/app/admin src/app/api/cron/selfheal-triage`
+  (146 files / 1671 tests, all pass, before and after the fix),
+  `npm run audit:paginated-reads` (12, baseline 12, confirmed fixed),
+  `npm run audit:supabase-errors` / `audit:fail-open` (1039 / 51, no
+  regression), `node scripts/markdown-lint-ratchet.mjs`,
+  `npm run lint:duplicate-exports`,
+  `node scripts/knowledge/document-inventory.mjs --check`,
+  `npm run docs:path-drift`, `npm run docs:schema-drift`. `npm run build`
+  NOT run locally — CI builds it.
 ## 2026-09-02 — Flight Recorder: one observed-step-count definition, undeclared steps, point-in-time durations, downgrade badge, audit script
 
 - SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
