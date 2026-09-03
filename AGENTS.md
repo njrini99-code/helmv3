@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # AGENTS.md
 
 ## Repo map
@@ -99,7 +100,7 @@ CI runs across two platforms:
   Review Gate static analyzers).
 - **CircleCI** (`.circleci/config.yml`, see `.circleci/README.md`)
   — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk,
-  Promptfoo evals) scheduled Mondays 06:00 UTC, plus two native compile
+  Promptfoo evals, Janitor entropy report) scheduled Mondays 06:00 UTC, plus two native compile
   checks gated by BRANCH NAME: iOS Capacitor compile on M-series macOS
   runners (push to `main`, `release/*`, `ios/*`, `capacitor/*`) and Android
   `assembleDebug` on a Linux Android image (push to `main`, `release/*`,

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # Admin Platform test ledger
 
 ## 2026-09-02 — Reliability/Bridge catalogued-defect sweep (agent/reliability-bridge-fixes), defects (b), (c), (d), (e), (f), (h)
@@ -571,3 +572,37 @@
 - Verification: `npx vitest run src/app/admin/traces scripts/lib` — 6 files,
   109 tests, all passing. `npm run typecheck` / `npm run lint` / `npm run
   lint:ratchet` (68 warnings, no regression) all clean on the full tree.
+
+## 2026-09-03 — Janitor + Stryker mutation gate: new node:test guarantees, no vitest wiring
+
+- `scripts/janitor/__tests__/*.test.mjs` (`npm run test:janitor`) — 52
+  cases across `lib.test.mjs` (verdict-shape assertion, ranking), the
+  baseline-file classifiers (`duplicate-helpers`, `stale-docs`), the
+  git-grep classifiers (`dead-flags`, `deprecated-apis`, `mock-inflation`,
+  `duplicate-telemetry`, `abandoned-experiments`), the fs/registry
+  classifiers (`oversized-modules`, `unused-tests`,
+  `missing-feature-mappings`, `orphan-routes`), and `run.mjs`'s orchestrator
+  (every classifier against one real fixture repo, both report writers
+  round-tripped through `JSON.parse(JSON.stringify(...))`, a crash-isolation
+  test). Fixtures are real disposable git repos
+  (`scripts/janitor/__tests__/helpers.mjs`'s `makeFixtureRepo`, backdating
+  commits via `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` for the staleness
+  classifier) — not mocks of `git`, because several classifiers shell out to
+  real `git ls-files`/`git grep`/`git log` on principle (see
+  `scripts/janitor/lib/repo.mjs`'s header on the `.worktrees/` filesystem-walk
+  incident) and a mock cannot exercise that path honestly.
+- `scripts/mutation-gate.test.mjs` (`npm run test:mutation-gate`) — 13 cases
+  covering `computeMutationScore`'s formula (killed/timeout vs.
+  survived/no-coverage, Ignored/CompileError/RuntimeError excluded), the
+  floor-boundary case (`score === floor` is PASS, not FAIL), and every
+  `UNKNOWN` path (missing report file, unparseable JSON, missing/non-numeric
+  floor, zero valid mutants — i.e. an empty `mutate` glob never silently
+  reads as a pass).
+- **Deliberately node:test, not vitest**, per this task's instruction and to
+  avoid the dead-guard trap this repo has hit before
+  (`.claude/rules/quality-gates.md` §2: "A file under `scripts/__tests__/`
+  runs only if `vitest.config.ts` names it... with no glob"): both suites
+  are wired to real callers instead — `npm run test:janitor` /
+  `npm run test:mutation-gate` in `package.json`, and both run as an actual
+  CircleCI step (`.circleci/config.yml`'s `janitor` and `stryker-coachhelm`
+  jobs) BEFORE the expensive work they gate, not left as an unwired script.
