@@ -1,0 +1,416 @@
+# Golden-path registry — Bridge Control Plane Phase D.4.1.
+#
+# A thin index over EXISTING e2e/*.spec.ts coverage and the Flight
+# Recorder / Sentry-span vocabulary already live in the codebase. This file
+# is not a new source of truth: every citation below was grepped against
+# this worktree (branch agent/bridge-track-c, based on main @ c34aa936e,
+# which already includes PR #1777) and must keep resolving. The validator
+# (`npm run knowledge:journeys-check`, scripts/knowledge/check-journeys.mjs)
+# re-verifies every citation on every run — a stale line number or a renamed
+# test title fails the check rather than silently going stale.
+#
+# Source specs:
+#   - docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md
+#     section 2 (D.4 "Smallest coherent implementation", item 1) and
+#     section 1's ledger row "Golden paths already half-exist as Playwright
+#     specs" (finding #12).
+#   - docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md §6-7, which
+#     names `environment_strategy` as (production: read_only_observation,
+#     preview: executable) and seeds a 12-journey list. This file seeds the
+#     8 journeys named in the Bridge Track C task
+#     (player_login_hub, player_start_round, player_resume_round,
+#     player_submit_round, coach_view_player_stats,
+#     coach_view_coachhelm_insight, coach_create_event, player_rsvp_event).
+#     The remaining 4 of §6-7's list (coach_login_dashboard,
+#     coach_view_calendar, coach_check_player_availability,
+#     player_view_development_plan) are NOT seeded here — out of this task's
+#     stated scope, not forgotten; add them in a follow-up rather than
+#     inventing coverage under time pressure.
+#
+# Schema — see the header comment in scripts/knowledge/check-journeys.mjs
+# for the authoritative, enforced version. Summary:
+#
+#   journeys[]:
+#     id, name, role (player|coach), criticality (high|medium|low),
+#     status (active|collecting — collecting = no live proof for at least
+#       one stage; never invent a citation to make a `collecting` journey
+#       look `active`), environment_strategy {production, preview},
+#       description, stages[]
+#
+#   stages[] (ORDERED — `order` must equal 1-based array position):
+#     id, order, feature_id (must be a key under `features:` in
+#       memory/registry.yml — validated, not duplicated: this file does NOT
+#       copy each feature's name/criticality/docs, only its id), production_observation
+#       (natural|preview_only|untested), invariant_ids ([] today — see
+#       "Invariants" note below), invariant_status (MISSING|LINKED),
+#       observable_signals[] (>=1), notes (optional)
+#
+#   observable_signals[].type:
+#     e2e             — spec_path (tracked file) + test_name (verified
+#                        verbatim inside spec_path) + line (informational)
+#     flight_recorder — source_path (tracked file) + workflow and/or
+#                        step_key (verified verbatim inside source_path)
+#     span            — source_path (tracked file) + symbol (verified as
+#                        `export const <symbol>` inside source_path)
+#     metric          — source_path + symbol + build_status
+#                        (live requires source_path to exist and symbol to
+#                        resolve; planned_not_merged requires neither —
+#                        src/lib/observability/metrics.ts does not exist on
+#                        this branch yet, see the note on player_submit_round)
+#     planned         — reason (string), no file citation; only legal when
+#                        the journey's status is `collecting`
+#
+# Invariants: memory/invariants/registry.yml does not exist yet (Phase D.4.3,
+# not part of this task) — every stage below carries invariant_ids: [] and
+# invariant_status: MISSING. The one live executable-invariant precedent in
+# this codebase today, qualifier-invariants (source
+# src/lib/admin/qualifier-invariants.ts), covers the qualifiers feature,
+# which none of these 8 journeys' stages route through — so there is nothing
+# real to link yet, not an oversight.
+#
+# Known feature-routing gap this registry surfaces rather than papers over:
+# the "unavailable player deep-dive" surface at
+# /golf/dashboard/players/[id]/game and .../genome (exercised by
+# e2e/golf-critical-paths.spec.ts:75 and :86) has NO memory/registry.yml
+# code-glob mapping under any feature — neither stats_analytics's
+# `dashboard/stats/**` nor roster_team's `dashboard/roster|team/**` glob
+# matches `dashboard/players/**`. coach_view_player_stats below cites the
+# team-level stats surface instead (`/dashboard/stats/team`, which IS
+# covered by stats_analytics), and does not paper over the players/[id] gap
+# by inventing a mapping. Recorded here per AGENTS.md's "a governed file
+# that maps to no feature is a system gap" rule; fixing memory/registry.yml
+# is out of this task's scope.
+
+journeys:
+  - id: player_login_hub
+    name: Player logs in and reaches their dashboard
+    role: player
+    criticality: high
+    status: active
+    environment_strategy:
+      production: read_only_observation
+      preview: executable
+    description: >
+      A player authenticates with the app and lands on their post-login
+      dashboard surface.
+    stages:
+      - id: authenticate
+        order: 1
+        feature_id: auth_onboarding_join
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: e2e
+            spec_path: e2e/auth.spec.ts
+            test_name: "should successfully log in as a player"
+            line: 40
+        notes: >
+          env-gated on GOLFHELM_PLAYER_*/E2E_GOLF_* credentials (see the
+          fixture's hasGolfPlayerAuth skip guard); self-skips rather than
+          failing when unset.
+
+      - id: land_on_dashboard
+        order: 2
+        feature_id: player_hub
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: e2e
+            spec_path: e2e/golf-critical-paths.spec.ts
+            test_name: "player dashboard renders without an error boundary"
+            line: 111
+        notes: >
+          This test asserts the route `/golf/dashboard` (root), not
+          `/golf/dashboard/hub`. memory/registry.yml's player_hub entry maps
+          only `dashboard/hub/**` — whether the root dashboard route
+          redirects a player to the hub surface, or is itself a distinct
+          player-landing route outside player_hub's registered globs, was
+          not traced in this pass. Flagged rather than silently mapped;
+          verify before treating this stage's feature_id as exact.
+
+  - id: player_start_round
+    name: Player configures and starts a new round
+    role: player
+    criticality: high
+    status: active
+    environment_strategy:
+      production: read_only_observation
+      preview: executable
+    description: >
+      A player fills in course/hole setup and starts round tracking, which
+      persists the first durable round draft.
+    stages:
+      - id: configure_round
+        order: 1
+        feature_id: golf_round_lifecycle
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: e2e
+            spec_path: e2e/golf-round.spec.ts
+            test_name: "should configure a full round entry"
+            line: 52
+        notes: >
+          Reaches an enabled "Start round →" CTA; does not itself click it
+          (see start_round below, which does).
+
+      - id: start_round
+        order: 2
+        feature_id: golf_round_lifecycle
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: e2e
+            spec_path: e2e/golf-round.spec.ts
+            test_name: "should save round in progress"
+            line: 101
+          - type: flight_recorder
+            source_path: src/app/golf/actions/golf.ts
+            workflow: golf.round.autosave
+            step_key: db.create_or_update_draft
+        notes: >
+          The e2e test's "Start round →" click (line 101) triggers the
+          client's first autosave, which the server serves through
+          savePartialRound -> savePartialRoundImpl (source
+          src/app/golf/actions/golf.ts:6352, exported action at :7860),
+          running inside the `golf.round.autosave` Flight Recorder workflow
+          (workflow tag at :6375). The `db.create_or_update_draft` checkpoint
+          (first start at :7429) is the branch that fires on first save of a
+          brand-new round, as distinguished from `db.save_partial_round_atomic`
+          (first start at :7155), which fires on every subsequent save of an
+          already-existing round — see player_resume_round below, which cites
+          that second checkpoint as its resume-continuation evidence. ⚠️ DATA:
+          this e2e test writes a real in_progress golf_rounds row (see the
+          spec file's own header) and tears it down through the app's
+          discard UI in the same test.
+
+  - id: player_resume_round
+    name: Player resumes an in-progress round
+    role: player
+    criticality: high
+    status: active
+    environment_strategy:
+      production: read_only_observation
+      preview: executable
+    description: >
+      A player returns to an in-progress round from the rounds list and
+      continues shot tracking from where they left off.
+    stages:
+      - id: continue_round
+        order: 1
+        feature_id: golf_round_lifecycle
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: e2e
+            spec_path: e2e/golf-round.spec.ts
+            test_name: "should continue an in-progress round"
+            line: 150
+          - type: flight_recorder
+            source_path: src/app/golf/actions/golf.ts
+            workflow: golf.round.autosave
+            step_key: db.save_partial_round_atomic
+        notes: >
+          This e2e test is conditional on an in-progress round already
+          existing (`if (await continueButton.isVisible())`) — it self-skips
+          its assertions when the fixture account has no in-progress round,
+          rather than failing. Any subsequent autosave on an existing round
+          (as opposed to the first save of a new one — see
+          player_start_round's start_round stage) runs the
+          `db.save_partial_round_atomic` checkpoint
+          (src/app/golf/actions/golf.ts:7155), distinct from
+          `db.create_or_update_draft`.
+
+  - id: player_submit_round
+    name: Player submits a completed round
+    role: player
+    criticality: high
+    status: collecting
+    environment_strategy:
+      production: read_only_observation
+      preview: not_executed
+    description: >
+      A player finishes all 18 holes and submits the round for scoring,
+      stats recalculation, and (where applicable) qualifier progression.
+      No current e2e spec performs this click — see the note below for why
+      that is a real, currently-accepted product/test-infra gap rather than
+      an oversight in this registry.
+    stages:
+      - id: submit_round
+        order: 1
+        feature_id: golf_round_lifecycle
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: flight_recorder
+            source_path: src/app/golf/actions/golf.ts
+            workflow: golf.round.submit
+            step_key: db.submit_round_atomic
+          - type: planned
+            reason: >
+              No e2e spec exercises round submission today.
+              e2e/golf-round.spec.ts's own file header documents that its
+              round-creating test ("should save round in progress") requires
+              a matching teardown because there is no staging environment —
+              every run may hit production. There is no equivalent teardown
+              path for a *completed* round (deleteInProgressRound only
+              covers in_progress rows), so this repo has never added a
+              submit-round e2e test. "should display stats after round
+              completion" (e2e/golf-round.spec.ts:192) reads stats from
+              rounds a fixture account already completed out of band — it
+              does not perform a submission itself and is deliberately not
+              cited as e2e proof of this stage. Flight Recorder proof
+              (`golf.round.submit`, workflow tag at
+              src/app/golf/actions/golf.ts:1667) is real and live in
+              production today; e2e coverage is the missing half, which is
+              why this journey's status is `collecting` rather than
+              `active`.
+        notes: >
+          The submit workflow also runs server.validation, server.auth,
+          server.player, verify.round/holes/shots, post.qualifier_transition,
+          post.stats and post.coachhelm checkpoints in the same
+          `golf.round.submit` Flight Recorder run (all confirmed live in
+          src/app/golf/actions/golf.ts in this pass) — db.submit_round_atomic
+          is cited above as the single most load-bearing checkpoint, not the
+          only one.
+
+  - id: coach_view_player_stats
+    name: Coach views team/player stats
+    role: coach
+    criticality: medium
+    status: active
+    environment_strategy:
+      production: read_only_observation
+      preview: executable
+    description: >
+      A coach opens the team stats surface to review player performance.
+    stages:
+      - id: view_team_stats
+        order: 1
+        feature_id: stats_analytics
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: e2e
+            spec_path: e2e/golf-critical-paths.spec.ts
+            test_name: "team stats renders"
+            line: 68
+        notes: >
+          Asserts `/golf/dashboard/stats/team` renders without an error
+          boundary; matches stats_analytics's registered
+          `dashboard/stats/**` glob in memory/registry.yml. Does not cover
+          the per-player deep-dive surface at
+          `/golf/dashboard/players/[id]/game` — see the file-header note on
+          that registry gap.
+
+  - id: coach_view_coachhelm_insight
+    name: Coach views a CoachHelm AI insight
+    role: coach
+    criticality: high
+    status: active
+    environment_strategy:
+      production: read_only_observation
+      preview: executable
+    description: >
+      A coach opens the CoachHelm intelligence hub to review AI-generated
+      insights about the team.
+    stages:
+      - id: view_intelligence_hub
+        order: 1
+        feature_id: coach_intelligence_triage
+        production_observation: natural
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: e2e
+            spec_path: e2e/golf-critical-paths.spec.ts
+            test_name: "CoachHelm intelligence hub renders"
+            line: 61
+        notes: >
+          Asserts `/golf/dashboard/intelligence`, which matches
+          coach_intelligence_triage's registered
+          `dashboard/intelligence/**` glob in memory/registry.yml (a
+          separate feature id from `coachhelm_ai`, which owns
+          `dashboard/coachhelm/**` — the two features share overlapping
+          CoachHelm surfaces by design; this journey names the one the cited
+          e2e test actually exercises).
+
+  - id: coach_create_event
+    name: Coach creates a calendar event
+    role: coach
+    criticality: medium
+    status: collecting
+    environment_strategy:
+      production: read_only_observation
+      preview: not_executed
+    description: >
+      A coach creates a new team calendar event (practice, game, or other).
+      No current e2e spec exercises event creation — see the stage note.
+    stages:
+      - id: create_event
+        order: 1
+        feature_id: calendar_events
+        production_observation: untested
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: planned
+            reason: >
+              No e2e spec creates a calendar event today.
+              e2e/golf-critical-paths.spec.ts:43 ("calendar loads and a
+              month view renders") only confirms the calendar page itself
+              renders — it does not open the event editor or submit a new
+              event. A repo-wide search of e2e/*.spec.ts for
+              create/new-event coverage (this pass, 2026-09) found none.
+              memory/registry.yml's calendar_events entry lists
+              src/app/golf/actions/attendance.ts, calendar-feeds.ts,
+              calendar-sync.ts, event-documents.ts, recurring-events.ts,
+              schedule-image.ts as the governed action surface — the
+              creation path itself has unit coverage under
+              src/test/lib/calendar/** and src/test/api/calendar/** per that
+              same registry entry's `tests` field, but no end-to-end proof.
+        notes: >
+          Left `collecting` rather than seeded with an invented e2e
+          citation, per D.4.1's own instruction to mark unimplemented
+          journeys `collecting` instead of inventing coverage.
+
+  - id: player_rsvp_event
+    name: Player RSVPs to a calendar event
+    role: player
+    criticality: medium
+    status: collecting
+    environment_strategy:
+      production: read_only_observation
+      preview: not_executed
+    description: >
+      A player responds to (RSVPs) an upcoming team calendar event. No
+      current e2e spec exercises this — see the stage note.
+    stages:
+      - id: rsvp_event
+        order: 1
+        feature_id: calendar_events
+        production_observation: untested
+        invariant_ids: []
+        invariant_status: MISSING
+        observable_signals:
+          - type: planned
+            reason: >
+              No e2e spec RSVPs to an event today. A repo-wide search of
+              e2e/*.spec.ts for "rsvp" (case-insensitive, this pass, 2026-09)
+              found zero matches. RSVP/attendance is backed by
+              src/app/golf/actions/attendance.ts, which
+              memory/registry.yml maps under BOTH calendar_events and
+              player_hub (shared action file); this journey names
+              calendar_events since RSVP is fundamentally an event-response
+              action.
+        notes: >
+          Left `collecting` rather than seeded with an invented e2e
+          citation, per D.4.1's own instruction to mark unimplemented
+          journeys `collecting` instead of inventing coverage.
