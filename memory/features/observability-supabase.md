@@ -3,6 +3,23 @@
 
 ## Status
 
+- active build, three phases so far. Every migration in phases 1 and 2 is
+  HELD — none has been applied to production (see
+  `supabase/migrations/HELD.md`). Phase 3 Track F adds no migration at all.
+- platform infrastructure, not a product feature — this doc exists so a
+  reader touching `helm_debug.*`, `src/lib/observability/supabase/**`, or
+  `src/lib/admin/database/**` has one place to start.
+- **Registry routing (corrected 2026-09-03).** This bullet previously read
+  "add a `memory/registry.yml` mapping the next time this area is touched
+  (none exists yet)". That is no longer true and had gone stale: Phase 2
+  Track B mapped `src/lib/observability/supabase/**` and
+  `src/app/admin/database/**` under `admin_platform`, and routed this doc
+  through its `flows:`. What remains genuinely unmapped is a runtime
+  FEATURE KEY — `admin_platform`'s only `observability.feature_keys` entry
+  is `admin_dashboard`, so an envelope emitted by a database collector
+  still resolves to no key. That, and the other registry gaps Track F
+  surfaced, are recorded in
+  `docs/observability/SUPABASE_OPERATING_MODEL.md`.
 - active build, two phases so far, both HELD at the database layer (no
   migration in either phase has been applied to production — see
   `supabase/migrations/HELD.md`)
@@ -99,6 +116,48 @@ migration reads `unconfigured`, never a fabricated green result.
   tables on fixed internal 30-day windows. A new sizes/self-monitoring
   facade covers all six `helm_debug` observability tables.
 
+### Phase 3 track D (brief §34, §40-43, §48, §53, §68)
+
+Diagnostics and correlation — the layer that turns "what failed" into "what it
+means and what changed". Full design:
+`docs/observability/SUPABASE_DIAGNOSTICS.md`. **No migration**: every read goes
+through an RPC that already exists, so this phase adds no table, no facade and
+no `HELD.md` row.
+
+- Pure evaluators, all in `src/lib/observability/supabase/`:
+  - `schema-drift.ts` — maps a missing-object failure (42P01/42703/42883/
+    3F000 and the PostgREST 20x schema-cache family) to a verdict, keeping
+    THREE axes independent with three separate `unknown`s: does the TREE
+    create it, does the LEDGER record it, do the TYPES mention it. The
+    ledger is explicitly not authoritative about what is live, and every
+    unreadable input is `unknown` rather than `absent`.
+  - `authorization-diagnosis.ts` — EXPECTED_SECURITY_DENIAL vs
+    UNEXPECTED_PRODUCT_FAILURE vs UNKNOWN, plus the §68 42501 runbook
+    pruned by RPC/table surface. No default expectation: only the call site
+    knows, so silence is UNKNOWN. The input type cannot carry a message,
+    so a policy predicate has no path to the output.
+  - `release-correlation.ts` — the causal ladder (unknown / no-signal /
+    possible / likely / reproduced-cause) with every signal sorted into
+    corroborating (release-side facts) / not-corroborating (restatements of
+    the incident, emitted so a reader sees they were rejected) /
+    exculpatory. Proximity alone tops out at `possible`;
+    `reproduced-cause` needs experimental evidence. No numeric confidence.
+  - `service-layers.ts` — observed layer vs likely origin layer, with
+    ambiguity as an explicit answer (PGRST003, a bare 5xx) rather than a
+    coin flip. A five-character SQLSTATE is a Postgres verdict wherever it
+    surfaced.
+  - `call-budgets.ts` — measure-before-enforce per-journey call budgets,
+    `baseline_status: 'collecting' | 'ready'`, median baseline, no
+    per-journey constant anywhere. NOT WIRED: `db_stat_deltas` has no
+    journey dimension.
+- Bridge readers: `src/lib/admin/database/incident-detail.ts` (composes one
+  fingerprint's detail; every section carries its own
+  ok/empty/unconfigured/blind state) and `drift-inputs.ts` (the I/O half
+  behind `schema-drift.ts`; degrades to unreadable, never to empty).
+- Bridge page addition: a single-fingerprint detail surface at
+  `/admin/database?incident=<fingerprint>`, linked from each error-group
+  row. The admin gate still runs before any data access.
+
 ## Tests
 
 Unit-level TypeScript fixtures against every pure evaluator listed above
@@ -122,6 +181,57 @@ integration, Advisor integration, on-demand log evidence, Trace Explorer
 extension and replay fixtures, alert policy/paging. None of these are
 silently absent — each stays an explicit NOT VERIFIED / not-yet-built item
 rather than an assumed "done."
+
+Phase 3 track D adds its own, all recorded rather than assumed:
+
+- `call-budgets.ts` has no collector. `helm_debug.db_stat_deltas` carries
+  `queryid` / `safe_query_class` / `source_class` and no journey dimension,
+  so nothing in this repo can attribute a DB call to a journey today.
+- `drift-inputs.ts` reads `supabase/migrations/**` and
+  `src/lib/types/database.ts` from disk. Those are repository files, not
+  part of a traced serverless function bundle, so in a DEPLOYED Bridge both
+  drift axes report `unknown`. An `outputFileTracingIncludes` change to
+  `next.config.mjs` would fix it and was deliberately not made.
+- The applied-migration-ledger read is credential-gated and NOT VERIFIED —
+  `.env.local` is withheld from worktrees, so it has never been observed
+  returning a non-null result. It fails open to `null`.
+- No data-invariant registry is wired to a fingerprint, and the Sentry
+  issue is not fetched on the detail surface. Both are declared
+  `unconfigured` there rather than omitted or rendered as passing.
+- `identity.httpStatus` on the detail surface is structurally null: the
+  error store has no HTTP column. It renders "not captured".
+### Phase 3 Track F (2026-09-03; brief §67-77, §86)
+
+Eight pure modules, one server-only writer, one CLI, two docs. **No
+migration and no new table** — deliberately, not by omission.
+
+- `db-state.ts` — `foldDatabaseState` to GREEN / AMBER / RED / DEGRADED /
+  UNKNOWN plus the evidence that produced it. A required source that is not
+  live can never yield GREEN; RED still beats DEGRADED; a stale source's
+  last row contributes a cap, never a signal.
+- `absence.ts` — five detectors for signals that STOPPED, each requiring an
+  `ActivityContext` whose `unknown` variant yields `unknown`, never
+  `absent`. Season windows are an input; no sport calendar is hardcoded.
+- `layered-performance.ts` — request p95 (measured, supplied) against
+  database shape (aggregates only). No percentile-shaped field exists on the
+  database side, asserted structurally by test.
+- `incident-memory.ts` / `incident-memory-writer.ts` — records a RESOLVED
+  database incident into `memory/incidents/**`. No second store, no table.
+- `repair-completeness.ts` — the eight §76 criteria, PASS / FAIL / UNKNOWN
+  each, three-valued roll-up, no score and no boolean.
+- `query-explainer.ts` — no imports at all, so it structurally cannot run
+  anything; ANALYZE withheld for mutations everywhere and for production
+  reads; persists no plan.
+- `repo-mapping.ts` — envelope to migration, callers, tests and feature doc,
+  with the registry and migration listing passed in. Reports registry gaps.
+- `sentry-contract.ts` — the ten §71 tags by allow-list, unsafe values
+  refused rather than masked, three separately named trace ids.
+- Docs: `docs/observability/SUPABASE_RUNBOOKS.md` (42501, 57014) and
+  `docs/observability/SUPABASE_OPERATING_MODEL.md` (operating model plus the
+  §86 scoring, four criteria NOT MET or NOT VERIFIED with evidence).
+- **Not wired.** Nothing in Track F is called from a production path, and
+  `db-state.ts` is not mounted on any Bridge surface —
+  `src/app/admin/database/page.tsx` was owned by a sibling track this phase.
 
 <!-- merged: Track B section appended by the Phase 2 integrator -->
 # Feature: Supabase Service Observability (Auth / Storage / Realtime / Edge Functions)

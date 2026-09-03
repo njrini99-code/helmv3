@@ -13,6 +13,7 @@ import type { FlightTraceRun } from '@/app/admin/actions/golf-tracer';
 import { LocalTime } from '../_components/LocalTime';
 import { flightStepStatusTone, FLIGHT_REQUIREDNESS_LABEL } from '../golf/tracer/tracer-shared';
 import { buildTraceTree, type TraceStepNode } from './trace-tree';
+import { TraceExplorerLayerPanel } from './TraceExplorerLayerPanel';
 import {
   EM_DASH,
   displayValue,
@@ -476,6 +477,13 @@ export function TraceTree({
         stepsNeverRan={tree.missingRequiredCount}
         failureKey={tree.failureKey}
       />
+
+      {/* Brief §56 — the layer read of the same tree, and the rollback
+          banner. Above the tree deliberately: when a transaction erased its
+          own trace rows the tree below is SHORT AND PLAUSIBLE, and the whole
+          point of the banner is to be seen before that short tree is
+          believed. */}
+      <TraceExplorerLayerPanel tree={tree} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0">

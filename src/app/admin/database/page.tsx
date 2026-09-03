@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchDatabaseMissionControl, type CollectorHealth } from '@/lib/admin/database/overview';
 import { fetchDatabaseErrors, type DbErrorFingerprintGroup } from '@/lib/admin/database/errors';
@@ -6,6 +8,17 @@ import { fetchLockIncidents, type LockIncidentRow } from '@/lib/admin/database/l
 import { fetchTableHealth } from '@/lib/admin/database/tables';
 import { fetchJobsHealth, type CronJobDisplayRow } from '@/lib/admin/database/jobs';
 import { fetchTelemetryHealth, type TelemetrySourceRow } from '@/lib/admin/database/telemetry';
+import {
+  fetchDatabaseIncidentDetail,
+  DB_WORKFLOW_STAGE_LABEL,
+  SECTION_STATE_LABEL,
+  type DatabaseIncidentDetail,
+  type Section,
+} from '@/lib/admin/database/incident-detail';
+import { SCHEMA_DRIFT_VERDICT_LABEL } from '@/lib/observability/supabase/schema-drift';
+import { AUTHORIZATION_VERDICT_LABEL } from '@/lib/observability/supabase/authorization-diagnosis';
+import { CAUSAL_CONFIDENCE_LABEL } from '@/lib/observability/supabase/release-correlation';
+import { SERVICE_LAYER_LABEL } from '@/lib/observability/supabase/service-layers';
 import { fetchPlatformHealth } from '@/lib/admin/database/platform';
 import { fetchDatabaseAdvisors, type AdvisorFinding } from '@/lib/admin/database/advisors';
 import { fetchAlertPolicy } from '@/lib/admin/database/alerts';
@@ -172,7 +185,10 @@ async function MissionControlPanel() {
 
 function ErrorGroupRow({ group }: { group: DbErrorFingerprintGroup }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2.5">
+    <Link
+      href={`/admin/database?incident=${encodeURIComponent(group.fingerprint)}`}
+      className="flex items-start justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2.5 transition-colors hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+    >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <StatusPill tone={SEVERITY_TONE[group.severity] ?? 'neutral'} size="sm">
@@ -190,8 +206,9 @@ function ErrorGroupRow({ group }: { group: DbErrorFingerprintGroup }) {
         <p className="font-fw-mono text-caption text-warm-500">
           <LocalTime iso={group.lastSeenAt} />
         </p>
+        <p className="mt-0.5 text-caption text-warm-500">diagnose →</p>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -764,8 +781,427 @@ async function AlertPolicyPanel() {
 }
 
 
-export default async function DatabasePage() {
+
+// ---------------------------------------------------------------------------
+// Incident detail (brief §34) — rendered only when ?incident=<fingerprint>
+// ---------------------------------------------------------------------------
+
+const SECTION_STATE_TONE: Record<string, FwStatusTone> = {
+  ok: 'success',
+  empty: 'neutral',
+  'not-applicable': 'neutral',
+  unconfigured: 'neutral',
+  blind: 'warning',
+};
+
+/** One labelled block whose body is replaced by an explicit state chip when
+ *  its source is empty, not shipped, or unreadable. Never a fabricated zero. */
+function DetailSection<T>({
+  title,
+  section,
+  children,
+}: {
+  title: string;
+  section: Section<T>;
+  children: (data: T) => React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-warm-700">{title}</span>
+        <StatusPill tone={SECTION_STATE_TONE[section.state] ?? 'neutral'} size="sm" dot>
+          {SECTION_STATE_LABEL[section.state]}
+        </StatusPill>
+      </div>
+      {section.state === 'ok' && section.data !== null ? (
+        <div className="mt-2">{children(section.data)}</div>
+      ) : (
+        <p className="mt-1.5 text-xs text-warm-600">{section.note ?? 'No detail available.'}</p>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string | number | null }) {
+  return (
+    <div>
+      <p className="text-caption uppercase tracking-wide text-warm-600">{label}</p>
+      <p className="font-fw-mono text-xs text-warm-800">{value ?? 'unknown'}</p>
+    </div>
+  );
+}
+
+const STAGE_TONE: Record<string, FwStatusTone> = {
+  reached: 'success',
+  'failed-here': 'danger',
+  'not-reached': 'neutral',
+  unknown: 'neutral',
+};
+
+function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
+  const { identity } = detail;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill tone={SEVERITY_TONE[identity.severity] ?? 'neutral'} size="sm">
+            {identity.severity}
+          </StatusPill>
+          <span className="font-fw-mono text-xs text-warm-800">{identity.primaryClass}</span>
+        </div>
+        <p className="mt-1 text-sm font-medium text-warm-900">{identity.title}</p>
+        <p className="mt-0.5 break-all font-fw-mono text-caption text-warm-600">{identity.fingerprint}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile label="OCCURRENCES" value={identity.occurrences} tone="neutral" mono />
+        <StatTile label="BUCKETS" value={detail.bucketCount} tone="neutral" mono />
+        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+          <Field label="SQLSTATE / code" value={identity.sqlstate ?? identity.errorCode} />
+        </div>
+        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+          {/* The error store has no HTTP column — an explicit "not captured", never a 0. */}
+          <Field label="HTTP status" value={identity.httpStatus ?? 'not captured'} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 rounded-lg border border-border-subtle px-3 py-2.5 sm:grid-cols-4">
+        <Field label="Feature" value={identity.feature} />
+        <Field label="Action" value={identity.action} />
+        <Field label="Service" value={identity.service} />
+        <Field label="Operation" value={identity.operation} />
+        <Field label="RPC" value={identity.rpc} />
+        <Field label="Relation" value={identity.relation} />
+        <Field label="Release" value={identity.releaseSha} />
+        <Field label="Environment" value={identity.environment} />
+      </div>
+
+      <div className="grid gap-3 text-xs sm:grid-cols-2">
+        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+          <p className="text-caption uppercase tracking-wide text-warm-600">First seen</p>
+          <p className="font-fw-mono text-xs text-warm-800">
+            <LocalTime iso={identity.firstSeenAt} />
+          </p>
+        </div>
+        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+          <p className="text-caption uppercase tracking-wide text-warm-600">Last seen</p>
+          <p className="font-fw-mono text-xs text-warm-800">
+            <LocalTime iso={identity.lastSeenAt} />
+          </p>
+        </div>
+      </div>
+
+      {/* Service layers (brief §48) */}
+      <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-medium text-warm-700">Service layer</span>
+          <div className="flex items-center gap-2">
+            <StatusPill tone="neutral" size="sm">
+              observed {SERVICE_LAYER_LABEL[detail.serviceLayer.observedLayer]}
+            </StatusPill>
+            <StatusPill tone={detail.serviceLayer.ambiguous ? 'warning' : 'success'} size="sm" dot>
+              origin {SERVICE_LAYER_LABEL[detail.serviceLayer.likelyOriginLayer]} ·{' '}
+              {detail.serviceLayer.originConfidence}
+            </StatusPill>
+          </div>
+        </div>
+        <ul className="mt-1.5 space-y-1">
+          {detail.serviceLayer.reasons.map((reason) => (
+            <li key={reason} className="text-xs text-warm-600">
+              {reason}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Workflow stages (brief §34) */}
+      <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+        <span className="text-xs font-medium text-warm-700">Database workflow</span>
+        <div className="mt-2 space-y-1.5">
+          {detail.workflowStages.map((stage) => (
+            <div key={stage.stage} className="flex items-start justify-between gap-2">
+              <span className="text-xs text-warm-700">{DB_WORKFLOW_STAGE_LABEL[stage.stage]}</span>
+              <div className="flex min-w-0 items-center gap-2">
+                {stage.detail ? <span className="truncate text-caption text-warm-600">{stage.detail}</span> : null}
+                <StatusPill tone={STAGE_TONE[stage.status] ?? 'neutral'} size="sm" dot>
+                  {stage.status.replace(/-/g, ' ')}
+                </StatusPill>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Authorization (brief §41 / §68) */}
+      {detail.authorization.applies ? (
+        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-medium text-warm-700">Authorization</span>
+            <StatusPill
+              tone={
+                detail.authorization.verdict === 'EXPECTED_SECURITY_DENIAL'
+                  ? 'success'
+                  : detail.authorization.verdict === 'UNEXPECTED_PRODUCT_FAILURE'
+                    ? 'danger'
+                    : 'warning'
+              }
+              size="sm"
+              dot
+            >
+              {AUTHORIZATION_VERDICT_LABEL[detail.authorization.verdict]}
+            </StatusPill>
+          </div>
+          <p className="mt-1.5 text-xs text-warm-600">{detail.authorization.explanation}</p>
+          {detail.authorization.runbook.length > 0 ? (
+            <ol className="mt-2 space-y-1.5">
+              {detail.authorization.runbook.map((step, index) => (
+                <li key={step.id} className="text-xs text-warm-700">
+                  <span className="font-fw-mono text-warm-600">{index + 1}.</span> {step.question}
+                  <span className="mt-0.5 block text-caption text-warm-600">{step.why}</span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Schema / types / migration drift (brief §40-41) */}
+      <DetailSection title="Schema, types and migration drift" section={detail.schemaDrift}>
+        {(drift) => (
+          <div className="space-y-1.5">
+            <StatusPill tone={drift.verdict === 'not-applicable' ? 'neutral' : 'warning'} size="sm" dot>
+              {SCHEMA_DRIFT_VERDICT_LABEL[drift.verdict]}
+            </StatusPill>
+            <p className="text-xs text-warm-600">{drift.explanation}</p>
+            <div className="grid grid-cols-3 gap-2">
+              <Field label="Migration file" value={drift.migrationFile} />
+              <Field label="Ledger row" value={drift.ledgerRow} />
+              <Field label="Generated types" value={drift.generatedTypes} />
+            </div>
+            {drift.nextSteps.length > 0 ? (
+              <ul className="space-y-1">
+                {drift.nextSteps.map((step) => (
+                  <li key={step} className="text-caption text-warm-600">
+                    {step}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        )}
+      </DetailSection>
+
+      {/* Release correlation + causal confidence (brief §42-43) */}
+      <DetailSection title="Release correlation" section={detail.releaseCorrelation}>
+        {(correlation) => (
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill
+                tone={
+                  correlation.confidence === 'reproduced-cause'
+                    ? 'danger'
+                    : correlation.confidence === 'likely'
+                      ? 'warning'
+                      : 'neutral'
+                }
+                size="sm"
+                dot
+              >
+                {CAUSAL_CONFIDENCE_LABEL[correlation.confidence]}
+              </StatusPill>
+              <span className="font-fw-mono text-caption text-warm-600">
+                {correlation.releaseSha ?? 'no release'} · via {correlation.releaseIdentitySource}
+              </span>
+            </div>
+            <p className="text-xs text-warm-600">{correlation.because}</p>
+            {correlation.corroborating.length > 0 ? (
+              <div>
+                <p className="text-caption uppercase tracking-wide text-warm-600">Corroborating</p>
+                <ul className="space-y-1">
+                  {correlation.corroborating.map((line) => (
+                    <li key={line} className="text-caption text-warm-700">
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {correlation.notCorroborating.length > 0 ? (
+              <div>
+                <p className="text-caption uppercase tracking-wide text-warm-600">Considered, not counted</p>
+                <ul className="space-y-1">
+                  {correlation.notCorroborating.map((line) => (
+                    <li key={line} className="text-caption text-warm-600">
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {correlation.exculpatory.length > 0 ? (
+              <div>
+                <p className="text-caption uppercase tracking-wide text-warm-600">Arguing against</p>
+                <ul className="space-y-1">
+                  {correlation.exculpatory.map((line) => (
+                    <li key={line} className="text-caption text-warm-700">
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </DetailSection>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <DetailSection title="Database health at the time" section={detail.healthAtTheTime}>
+          {(health) => (
+            <div className="grid grid-cols-2 gap-2">
+              <Field
+                label="Connections"
+                value={health.connectionsPctMax === null ? null : `${Math.round(health.connectionsPctMax * 100)}%`}
+              />
+              <Field
+                label="Cache hit"
+                value={health.cacheHitRatio === null ? null : `${(health.cacheHitRatio * 100).toFixed(1)}%`}
+              />
+              <Field label="Rollbacks" value={health.xactRollbackDelta} />
+              <Field label="Deadlocks" value={health.deadlocksDelta} />
+              <Field label="Longest lock wait" value={health.longestLockWaitMs === null ? null : `${health.longestLockWaitMs}ms`} />
+              <Field label="Sample offset" value={`${health.offsetMinutes} min`} />
+            </div>
+          )}
+        </DetailSection>
+
+        <DetailSection title="Locks at the time" section={detail.locksAtTheTime}>
+          {(locks) => (
+            <ul className="space-y-1.5">
+              {locks.map((lock) => (
+                <li key={`${lock.detectedAt}-${lock.kind}`} className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-warm-700">
+                    {lock.kind.replace(/_/g, ' ')}
+                    {lock.relationName ? ` · ${lock.relationName}` : ''}
+                  </span>
+                  <span className="font-fw-mono text-caption text-warm-600">
+                    {lock.waitMs === null ? '—' : `${lock.waitMs}ms`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DetailSection>
+      </div>
+
+      <DetailSection title="Query health versus baseline" section={detail.queryHealth}>
+        {(rows) => (
+          <ul className="space-y-1.5">
+            {rows.map((row) => (
+              <li key={`${row.sampledAt}-${row.safeQueryClass}`} className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-xs text-warm-700">{row.safeQueryClass}</span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {row.regressionFlags.map((flag) => (
+                    <StatusPill key={flag} tone="warning" size="sm">
+                      {flag.replace(/_/g, ' ')}
+                    </StatusPill>
+                  ))}
+                  <span className="font-fw-mono text-caption text-warm-600">
+                    {row.meanExecMsWindow === null ? '—' : `${row.meanExecMsWindow.toFixed(1)}ms`}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DetailSection>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <DetailSection title="Recent change" section={detail.recentChange}>
+          {(change) => (
+            <ul className="space-y-1">
+              {change.migrationFilenames.map((filename) => (
+                <li key={filename} className="break-all font-fw-mono text-caption text-warm-700">
+                  {filename}
+                </li>
+              ))}
+            </ul>
+          )}
+        </DetailSection>
+
+        <DetailSection title="Data invariant" section={detail.dataInvariant}>
+          {() => null}
+        </DetailSection>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <DetailSection title="Sentry issue" section={detail.sentryIssue}>
+          {() => null}
+        </DetailSection>
+
+        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+          <span className="text-xs font-medium text-warm-700">Trace correlation</span>
+          <div className="mt-2 grid grid-cols-1 gap-2">
+            <Field label="Helm trace" value={identity.helmTraceId} />
+            <Field label="Sentry trace" value={identity.sentryTraceId} />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+        <span className="text-xs font-medium text-warm-700">Repair</span>
+        <ul className="mt-2 space-y-1.5">
+          {detail.repairLinks.map((link) => (
+            <li key={`${link.kind}-${link.target}`} className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-warm-700">{link.label}</span>
+              {link.kind === 'href' ? (
+                <Link
+                  href={link.target}
+                  className="font-fw-mono text-caption text-accent-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+                >
+                  {link.target}
+                </Link>
+              ) : (
+                <span className="font-fw-mono text-caption text-warm-600">{link.target}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+async function IncidentDetailPanel({ fingerprint }: { fingerprint: string }) {
+  const result = await fetchDatabaseIncidentDetail(fingerprint);
+
+  if (result.status === 'unconfigured') {
+    return (
+      <PanelNoData
+        label="Database error store not shipped yet"
+        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+      />
+    );
+  }
+  if (result.status === 'error' || !result.data) {
+    return <PanelStale label="Incident detail" error={result.error} />;
+  }
+
+  return <IncidentDetailBody detail={result.data} />;
+}
+
+export default async function DatabasePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // The admin gate runs before ANY data access, including reading the query
+  // string — same order every other Bridge page uses.
   await requireSuperAdmin();
+
+  const params = await searchParams;
+  const rawIncident = params.incident;
+  const incidentFingerprint = typeof rawIncident === 'string' && rawIncident.length > 0 ? rawIncident : null;
 
   return (
     <div className="space-y-5">
@@ -777,6 +1213,35 @@ export default async function DatabasePage() {
           collectors already wrote. Zero-cost: no log drain, no new vendor.
         </p>
       </div>
+
+      {incidentFingerprint !== null ? (
+        <>
+          <Surface>
+            <Inset>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Eyebrow as="h2">Incident detail</Eyebrow>
+                <Link
+                  href="/admin/database"
+                  className="text-xs text-accent-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+                >
+                  ← back to all sections
+                </Link>
+              </div>
+              <p className="mt-1 text-xs text-warm-600">
+                One fingerprint, every source that has something to say about it. A section whose source is not shipped
+                or cannot be read says so — it never renders a zero.
+              </p>
+              <div className="mt-3">
+                <PanelBoundary title="Incident detail" skeleton={<PanelPageSkeleton rows={8} />}>
+                  <IncidentDetailPanel fingerprint={incidentFingerprint} />
+                </PanelBoundary>
+              </div>
+            </Inset>
+          </Surface>
+
+          <DatelineRule />
+        </>
+      ) : null}
 
       <Surface>
         <Inset>
