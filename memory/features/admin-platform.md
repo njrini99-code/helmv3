@@ -1,5 +1,19 @@
+<!-- markdownlint-disable MD004 MD007 MD012 MD013 MD022 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # Feature: Admin Platform
+
+> Split 2026-09-02 into this shared shell plus three sub-capability docs —
+> `memory/features/admin-incidents.md`, `memory/features/
+> admin-reliability-collector.md`, `memory/features/admin-selfheal.md` — as
+> part of the `admin_platform` registry granularity split
+> (ADR-2026-09-03-control-plane-owner-decisions, memory/decisions/ — on the parallel Bridge control-plane session's branch, not yet on this branch, closing
+> OWNER DECISION `ADMIN_PLATFORM_REGISTRY_GRANULARITY`). Read the sibling docs
+> for the Incidents page, the reliability collector, and the self-healing
+> loop's Diagnose/Repair/Close stages; this doc owns everything else in the
+> Bridge — the dashboard shell, Golf Tracer, Flight Recorder/traces, health
+> rollups, CRM, and cross-cutting platform infrastructure (error-path write
+> scheduling, flood collapse, credential shape, feature aliasing) all three
+> sub-capabilities build on.
 
 ## Status
 
@@ -7,7 +21,12 @@
 
 ## Current State
 
-Admin Platform is the internal operations and monitoring surface for Helm/GolfHelm. It includes the main admin dashboard, data quality/tracer views, platform health, BI-style reporting, user/team activity, audit/security views, and a CRM/admin outreach subsystem.
+Admin Platform is the internal operations and monitoring surface for
+Helm/GolfHelm — the Bridge shell, the main admin dashboard, Golf Tracer, the
+Flight Recorder (`/admin/traces`), platform health, BI-style reporting,
+user/team activity, audit/security views, and a CRM/admin outreach subsystem.
+Incidents, the reliability collector, and the self-healing loop are owned by
+the three sibling docs above; this doc is the shell and everything they share.
 
 This area is high criticality because it often uses broader access patterns, operational data, and admin/server-only helpers.
 
@@ -15,6 +34,15 @@ This area is high criticality because it often uses broader access patterns, ope
 
 ### Routes
 
+- `src/app/admin/**` (Helm Bridge) — **except** `src/app/admin/errors/**`
+  (`admin_incidents`), `src/app/admin/reliability/**`
+  (`admin_reliability_collector`), and `src/app/admin/self-heal/**`
+  (`admin_selfheal`); those three sub-capabilities' routes are documented in
+  their own docs. Everything else — the dashboard, Golf Tracer, Flight
+  Recorder/traces, health, deploys, auth, qualifiers, activity, users, teams,
+  jobs, billing, utilization, work, ben-leah, baseball, lifting, thread — is
+  this doc's.
+- `src/app/golf/admin/**`, `src/app/golf/admin/crm/**`
 - `src/app/admin/**` (Helm Bridge)
 - `src/app/admin/self-heal/**` — the self-healing circuit board. Distinct from
   `/admin/jobs`, which answers "did the crons run"; this answers "is the loop
@@ -98,8 +126,18 @@ them would have broken those routes, not the dead one.
 - `src/app/golf/actions/admin/**`
 - `src/app/golf/actions/crm-*.ts`
 - `src/app/golf/actions/resend-activity.ts`
+- `src/app/admin/actions/view-as.ts`, `golf-tracer.ts`, `billing.ts`,
+  `sessions.ts` — general admin actions; `analyze-error.ts`/`resolve-error.ts`/
+  `sentry-resolve.ts` moved to `admin_incidents` and `triage.ts` moved to
+  `admin_selfheal` in the same change that mapped `src/app/admin/actions/**`
+  (previously unmapped to any feature — a closed system gap).
 - `src/lib/supabase/admin*`
 - `src/lib/cron/**`
+- `src/lib/admin/**` — the remainder not carved into a sub-capability above
+  (deploy-freshness, integration-health, sentry-api, vercel-api,
+  feature-registry, error-trend, severity, credential-shape, and the rest).
+  Overlaps by design with the sub-capabilities' narrower globs on their own
+  carved files — see the registry comment on this glob.
 - `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor
   entropy-report generator. Read-only: it never modifies source files, only
   writes `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) and
@@ -130,26 +168,12 @@ them would have broken those routes, not the dead one.
 - Platform user, organization, membership, team, coach, player, round, event, insight, and audit data.
 - CRM tables for coaches, events, sequences, suppressions, email tracking, replies, and timeline activity.
 - Health/audit data from application logs, auth, error tracking, and operational tables.
+- `background_job_logs` — the shared cron heartbeat table every registered
+  cron writes to (`completed` / `failed` vocabulary, verified against
+  production; no other status word is emitted).
 
 ## Business Rules
 
-- One incident-grouping algorithm for `admin_events`, not two. As of
-  2026-08-26, the Golf Tracer (`admin-tracer-data.ts`'s `buildTracerIncidents`)
-  groups error rows by the same write-time `admin_events.fingerprint` column
-  the Errors tab's triage queue groups by (`mergeTriage` in
-  `src/lib/admin/data/triage.ts`; `fingerprint` is set once at insert by
-  `buildIncidentSignature()` in `src/lib/admin/incident-grouping.ts`). A NULL
-  fingerprint (rows written before that column existed) falls back to a
-  synthetic `row:<id>` key — the pure helper is
-  `tracerIncidentGroupKey` in `src/app/admin/golf/tracer/tracer-shared.ts`,
-  and its fallback deliberately mirrors `mergeTriage`'s own
-  `row.fingerprint ?? \`row:${row.id}\`` string-for-string. The Tracer's
-  shot-tracking LENS (`isShotTrackingTracerEvent` — featureArea/action-prefix/
-  route filtering) is a FILTER applied to the raw event list before this
-  grouping runs, not a second grouping algorithm. Before this date the Tracer
-  recomputed its own read-time key from normalized message + route + action +
-  errorCode, which could disagree with the Errors tab's grouping for the same
-  underlying rows.
 - Admin access must remain explicit and server-side; service-role behavior must not leak into client bundles.
 - Helm Bridge uses the authenticated GolfHelm session. Its shell must expose a
   usable sign-out control on both the desktop rail and the mobile More sheet;
@@ -158,33 +182,11 @@ them would have broken those routes, not the dead one.
 - CRM automation/suppression behavior must respect opt-out and reply-stop logic.
 - Operational charts should not be treated as source of truth if rollups are stale.
 - Cron/admin endpoints must use configured secrets and auth checks.
-- **Incident resolution has exactly one write path.** Every resolve — a single
-  row, a whole fingerprint, or a bulk selection — goes through the user-scoped
-  `resolve_admin_event` RPC and busts `BRIDGE_INCIDENT_CACHE_TAG`. The RPC
-  gates on `is_super_admin()` reading `auth.uid()`, so it must be called with
-  the user-scoped client; a service-role client makes `auth.uid()` NULL and the
-  RPC Forbids. Service-role access is read-only on this path.
-- **An in-app RCA analysis is not an incident.** `analyzeErrorFingerprint`
-  stores its verdict as an `admin_events` row with `event_type='rca_analysis'`
-  under the analyzed fingerprint, written BORN RESOLVED (`resolved: true`,
-  `resolved_at`) like every other non-incident record this table holds —
-  pinned by `src/app/admin/actions/__tests__/analyze-error.test.ts`. Every
-  incident query must still exclude that event type, or an analysis is counted
-  as an occurrence of the thing it analyzes (inflating occurrence counts and
-  moving last-seen).
-- **The reliability collector writes TWO `background_job_logs` rows per run, and
-  they must stay distinct.** `recordJobRun('reliability-triage', …)` writes the
-  standard cron-board row — every registered cron must call it, enforced by
-  `src/app/api/cron/__tests__/cron-job-log-coverage.test.ts` — and the detailed
-  correlated payload is written separately under `reliability-snapshot`. They
-  cannot be one row: `recordJobRun`'s `extractOutcomeMetadata` deliberately keeps
-  only TOP-LEVEL SCALARS, so `signals[]` and `sources[]` would be silently
-  stripped and the tab would render every run as "recorded but unreadable". Only
-  `reliability-triage` belongs in `CRON_REGISTRY`; the snapshot type is a payload
-  store, not a scheduled job.
 - **The row status vocabulary is `completed` / `failed`.** Verified against
   production: all existing `background_job_logs` rows use those two words and
   nothing else. An earlier draft wrote `success`, which no other writer emits and
+  every status-based filter would have missed. Both `admin_reliability_collector`
+  and `admin_selfheal` write to this shared table under this vocabulary.
   every status-based filter would have missed.
 - **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor
   check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,
@@ -336,108 +338,18 @@ them would have broken those routes, not the dead one.
 - **`unknown` is a state, and nothing may collapse it into a healthy value.**
   A CI check read that failed is `unknown`, never `pending` — pending reads as
   orderly progress. An unreadable deploy leaves an incident `merged`, never
-  `resolved` and never `awaiting-deploy`. A blind source's freshness is
-  `unknown`, not `fresh`, even when the failed attempt was seconds ago. This
-  is the same rule `src/lib/reliability/types.ts` states for one collector
-  run, lifted to every Bridge surface.
-- **No all-clear anywhere while a required source is blind.**
-  `canClaimAllClear` in `src/lib/admin/incidents/sources.ts` is the single
-  guard. "No incidents found" under an unreadable Sentry converts a broken
-  read into a green screen, which is the most damaging empty state a
-  monitoring surface can show. The incident queue, the proof-debt panel and
-  the Truth Strip's incident cell all consult it; a new panel that renders an
-  empty state must too.
-- **Corroboration is an observation count, not a confidence score**, and
-  evidence coverage is a checklist, not a percentage. Two systems seeing a
-  fault is a mechanical fact about coverage and says nothing about
-  likelihood. Rendering either as a percentage would imply a calibration this
-  system does not have — which is also why the Reliability tab groups by
-  source count in WORDS.
-- **Repair state is joined from GitHub, never stored.** A repair PR names its
-  incident through the two markers `docs/ai-system/selfheal/repair-contract.md`
-  already mandates: the `/admin/errors/<fp>` body link (STEP 5) and the
-  `fix/rca-<fp>` branch (STEP 4). Both are scanned, because the Bridge reads
-  PRs through GitHub's SEARCH endpoint, which returns the body but not
-  `head.ref`, while the list-pulls fallback returns the ref. A failed GitHub
-  read makes repair state `unknown`, never `none` — reporting an unreachable
-  API as an empty queue re-queues work that is already sitting in a branch.
-- **Diagnose is a Vercel cron, not a cloud routine, as of 2026-09-02.**
-  `SELFHEAL_STAGES.triage.runner` is `'vercel-cron'`
-  (`src/lib/admin/selfheal-registry.ts`), cadence 6 hours, heartbeat
-  `job_type = 'selfheal-triage'` written by
-  `src/app/api/cron/selfheal-triage/route.ts` directly (not through
-  `recordJobRun`, which keeps only top-level scalars and would silently drop
-  `sourceHealth`/`queue`) — a SEPARATE, unregistered `recordJobRun` call
-  wraps the handler purely for crash-safety, mirroring `log-retention`'s
-  two-job-type split for the same reason. The route reuses
-  `triage-collect.ts`/`triage-apply.ts` (the same modules `npm run triage`
-  wraps) and `rca-run.ts` (the same analyzer `analyzeErrorFingerprint` calls,
-  factored out from behind that action's `requireSuperAdmin()` gate). It
-  auto-resolves only what `triage-contract.md` STEP 4 allows, and — because a
-  Vercel function has no git checkout — never resolves a SHA-bearing
-  "ALREADY FIXED" claim itself; that case is left analysed-but-open for
-  `auto-resolve.ts`'s nightly Rule A or a human/`npm run triage` run. A
-  fingerprint carrying a provider-fault (an Inngest/AI-account credential
-  fault, say) is never auto-resolved even when a model mis-categorises it,
-  because the guard re-classifies the member's own message text
-  (`classifyProviderFault`) in addition to reading a stored `errorCode` —
-  three of the four production "Inngest signature" fingerprints carry no
-  persisted `errorCode` at all, so the stored-code check alone would miss
-  them.
-- **Runtime health and capability proof are separate facts for every
-  self-healing stage.** A stage can heartbeat healthily for a week while never
-  once producing its output; on 2026-08-28 Repair's heartbeats were green and
-  it had never completed a PR-opening run. `selfheal-capability.ts` derives
-  capability from mechanical evidence (signals collected, analyses written,
-  repair PRs opened, auto-resolutions recorded) and a `null` count means the
-  read failed, so capability is `unknown` — never `unproven`. A loop whose
-  runtime is `ok` and whose capability is `unproven` must never render as
-  healthy.
-- **A heartbeat's free text is not necessarily an error, and a heartbeat row is
-  not necessarily a stage run.** `background_job_logs.error_message` is the only
-  free-text column a stage has, so a run that SUCCEEDS and wants to explain
-  itself writes there; `data/selfheal.ts` and `data/jobs.ts` therefore split it
-  into `lastError` (only when the run classified `failed` or `degraded`) and
-  `lastNote`. The table is also open — a human at a psql prompt produces
-  `status = 'completed'` exactly like a stage does — so
-  `selfheal-provenance.ts` classifies each run as `autonomous`,
-  `operator-assisted` or `instrument-probe` from the strings the runs recorded,
-  and carries the basis with the verdict. An unrecognised shape degrades to
-  `autonomous` with a null basis and renders NO chip: the classifier detects a
-  run that ANNOUNCED human involvement and cannot detect one that stayed quiet.
-- **Late is not overdue.** `classifyCronStatus` only calls a stage overdue at
-  `cadenceMinutes * 1.5`, measured from `started_at`. `SelfHealStageDetail`
-  carries `overdueAt` so the view stops re-deriving that multiplier, and
-  `deriveSchedulePosition` draws the window the classifier actually measures —
-  a stage past its expected time but short of the threshold reads "late by 4h,
-  not yet overdue" rather than as a bare past timestamp under "Next expected".
+  `resolved` and never `awaiting-deploy`. This principle is stated once here
+  and applied throughout the Bridge — by `admin_reliability_collector` for a
+  collector run's freshness and by `admin_incidents` for every derived state.
 - **The Flight Recorder's two axes are never summed.** Instrumentation coverage
   (how much of the declared pipeline has call sites wired to the recorder) and
   outcome (whether the work succeeded) are independent. Measured 2026-09-01, 46
   of 50 production traces miss declared-required steps while 40 of those
   succeeded — a short trace is not a failed one, and a combined "46 problems"
   figure would be false. `trace-fleet.ts` counts them separately;
-  `stepCoverage` returns null rather than inventing a denominator.
-- **A Sentry rate limit gets one honoured retry before it counts as blind.**
-  `fetchSentryIssues` (`src/lib/admin/sentry-api.ts`) waits out the 429's
-  `Retry-After` (capped at 30s; a sane default when the header is absent)
-  and retries exactly once. If the retry also fails, the envelope is marked
-  `degraded: true` rather than a bare error. The Reliability tab's
-  `SourceStatus` (`src/lib/reliability/types.ts`) carries this through as its
-  own `'degraded'` value — ranked worse than `partial` but better than
-  `blind` in `worstStatus`, since a rate limit "usually clears on its own"
-  (the same wording `integration-health.ts`'s `KIND_COPY` already used for
-  this fault kind) — with reason `'rate limited'`. Scoped to the Reliability
-  tab only: the Incidents tab's separate `SourceHealth` union
-  (`src/lib/admin/incidents/types.ts`) has no `degraded` member and a
-  degraded reliability arm folds into its existing `'blind'` there, which is
-  the conservative direction and consistent with "no all-clear while a
-  required source is blind".
-- **A canceled preview deployment is not a build problem.** `collectVercel`
-  rates a `CANCELED` Vercel deployment `info` unless its `target` is
-  `production`, where a canceled deploy means the intended release never
-  shipped and stays `warning`. A superseded or manually-canceled preview
-  build is routine noise, not a reliability signal.
+  `stepCoverage` returns null rather than inventing a denominator. This is
+  `/admin/traces`, a DIFFERENT Flight Recorder from the self-healing loop's
+  Diagnose/Repair pipeline in `admin_selfheal`.
 - **The capture-quality panel's 'user' field excludes rows that could never
   have carried a user.** `analyzeCaptureQuality` (`src/lib/admin/data/
   capture-quality.ts`) measures how completely `admin_events` rows were
@@ -511,12 +423,6 @@ them would have broken those routes, not the dead one.
   under any key, service-role included. `helm_debug_list_traces` hard-caps at
   200 rows server-side with no offset/cursor; the script logs (never silently
   drops) the case where that cap may have truncated the true 24h population.
-- **Reliability is a lens, not a second queue.** `/admin/reliability` keeps
-  source health, the blind-source notice, the severity mix, run history and
-  the raw snapshot — removing those was never the goal. What it must not do
-  is sort by severity (the Incidents tab's axis) or dead-end its rows: every
-  signal title links to `/admin/errors/rel:<signature>`, which is the same
-  string the nightly triage stores its analysis under.
 - **Error text is redacted before it is stored**, not only before it reaches
   Sentry, and `stack` / `message` / `title` count as error text — not just
   `url` and `context`. URL query strings and fragments can carry magic-link
@@ -525,87 +431,9 @@ them would have broken those routes, not the dead one.
   `redactFreeTextForStorage` in `src/lib/observability/redact-pii.ts` is the
   single implementation, called by BOTH write paths (the client ingest route
   and the server logger). Keep it that way: both write the same two columns,
-  both are read back by the RCA action and forwarded to a third-party model,
-  and a second copy is one that eventually stops matching — silently, on the
-  half nobody is looking at.
-- **A SHA match may only ever prove a fix shipped — never disprove it.**
-  `deriveServesFix` (`src/lib/admin/incidents/deploy-proof.ts`) answers "does
-  production serve this fix" as `true` / `false` / `null`. Production almost
-  never sits on the fix commit, because any later deploy moves it past, so
-  equality is evidence of shipping and inequality is evidence of nothing. The
-  merge timestamp is the general test: a deploy cut after the merge carries the
-  merge. An implementation that returned `false` on SHA mismatch reported every
-  fix older than one deploy as permanently unshipped, and made the timestamp
-  branch unreachable whenever both SHAs were known. `deployAt === null` (Vercel
-  unreadable) is `null`, never `false` — the same three-outcome rule
-  `shipStatus` follows.
-- **One attention list on the Overview, and the platform checks are in it.**
-  `selectAttention` ranks incidents, dead self-heal stages, `fetchBriefing`'s
-  platform checks and the standing blind-source caveat on ONE scale. The
-  Overview briefly carried two panels both titled "Needs your eyes" — one for
-  the briefing, one for incidents and the loop — which left the operator
-  ranking two lists against each other by eye. A second attention list is no
-  more defensible than a second incident list. A briefing check that could not
-  RUN withdraws the all-clear and is stated on the list, because a check that
-  failed to execute is not a check that passed.
-- **Every filter control on the incident queue must narrow the canonical
-  queue.** Lens (lifecycle/attention) and `?kind=` (incident class) are
-  orthogonal facets over the SAME list, both applied in
-  `src/lib/admin/incidents/lens.ts`. `?kind=` was once parsed, rendered as
-  chips and linked from the suppressed notice while nothing downstream
-  consulted it — the canonical queue is built from `IncidentFeedFilters`, which
-  has no `kind` field — so every one of those controls was inert and the
-  notice's "N held back" described a list the operator was no longer looking
-  at. A control that does nothing is worse than a missing one: it teaches the
-  operator the queue is curated when it is not. Counts shown beside a filter
-  are measured over the list that filter actually narrows.
-- **A QA fixture round is labelled, visibly, and excluded only from the
-  actionable COUNT — never hidden.** `supabase/migrations/
-  20260901120000_integrity_completed_round_zero_scored_holes.sql` names four
-  `golf_rounds` ids as seeded fixtures (owner decision 2026-09-02: KEPT, not
-  removed) — `src/lib/admin/qa-fixture-rounds.ts` carries a literal copy of
-  that exact array (nothing at runtime can read a `.sql` file), and
-  `qa-fixture-rounds.test.ts` reads the migration itself and asserts the two
-  match, so they cannot drift silently. `mergeTriage` (`triage.ts`) matches
-  each app-origin bucket's rows against it via `extractRoundId(row.metadata)`
-  — `metadata.roundId` is a top-level key, same shape as `route`/`action`,
-  written by `normalizeContext` from `ObservedActionContext.roundId` — and
-  when ANY row in the bucket names a fixture round, sets `TriageItem.
-  isFixture: true`. **`actionable` is deliberately LEFT UNTOUCHED** —
-  whatever `classifyIncident` decided from the text stands. An earlier
-  version of this forced `actionable: false` at the source, which silently
-  dropped the row out of `matchesKind`'s default view (`kind === undefined ->
-  incident.actionable`) — the row vanished into "N held back" and the FIXTURE
-  badge that exists to explain it became undiscoverable. The two asks —
-  "label it in the feed" and "exclude it from the actionable count" — are
-  answered separately: the row renders, badged, in the default feed; the
-  EXCLUSION happens explicitly at every count site instead, keyed on
-  `isFixture`: `lens.ts`'s `actionable` lens, `truth-strip.ts`'s `actionable`
-  cell, `errors/page.tsx`'s `shownActionable`, and `incident-feed.ts`'s
-  `summarizeIncidentFeed`/`actionableGroups` (the last one because
-  `overview.ts` and `errors/page.tsx` both render that exact field and must
-  agree). `correlate.ts` carries `isFixture` through onto `UnifiedIncident`
-  (`bucket.appItems.some(i => i.isFixture)`); `UnifiedIncidentCard` renders a
-  neutral-tone FIXTURE chip, second priority right after the lifecycle chip
-  (a fact about the DATA outranks everything derived from it, including
-  outranking the blind-source chip under the 5-chip cap) — not a `StateChip`
-  on lifecycle itself, because the lifecycle machinery still describes this
-  incident honestly; the fixture flag is an orthogonal fact layered on top,
-  not a reclassification. Sentry-origin items are always `isFixture: false`
-  — a Sentry issue carries no round-id metadata to match against.
-- The overnight digest (`/api/cron/admin-digest` → `build-digest.ts`) NAMES
-  only actionable, non-degradation incident groups — the Errors tab's default
-  view — and COUNTS the rest as "Not listed: N handled degradations · N quiet
-  (client connectivity, expected access)". Before 2026-09-02 every group was
-  listed, so the email led with three "Client error: Load failed" rows above
-  "0 critical".
-- `classifyIncident` rule 3c: a CLIENT-sourced transport-layer TypeError
-  (`isTransientNetworkErrorMessage` — "Load failed", "Failed to fetch", …)
-  is `integration` / not actionable, the same verdict rule 4 gives the generic
-  "network error" wording. Server-side "fetch failed" (undici, a Vercel
-  function) is not matched and stays actionable. The phrase list is shared
-  with `error-logging` and the message-send retry so the three cannot drift.
-
+  both are read back by the RCA action (`admin_selfheal`) and forwarded to a
+  third-party model, and a second copy is one that eventually stops matching —
+  silently, on the half nobody is looking at.
 - **A Bridge write on an error path is SCHEDULED, never detached.** Every
   capture class used to `void logServerException(...)` and throw. On Vercel a
   promise nobody awaited and nobody registered with the platform is dropped
@@ -675,13 +503,6 @@ them would have broken those routes, not the dead one.
   Monday cron and a round submit is normal, and `scripts/inngest-health-check.mjs`
   is the active proof. Setting the variables in Vercel Production and
   redeploying is an OWNER action.
-- **The incident badge has THREE states.** `fetchBridgeErrorBadge` returns
-  `null` — never 0 — when the feed read fails (it used to `catch { return 0 }`,
-  converting the throw `bridge-honest-failure.test.ts` pins into the
-  reassuring zero that throw exists to prevent, and `unstable_cache` held it
-  for 60s). `AdminShell` renders `null` as no numeric badge PLUS a distinct
-  "Incidents unreadable" chip in the top bar at every breakpoint. Same rule
-  layout.tsx already applied to the Health badge.
 - **Feature attribution aliases `feature` too, not only `featureArea`.**
   `resolveFeatureKey` used to return an explicit `feature` untouched, so
   `feature: 'coachhelm_chat'` landed unregistered while the same string as
@@ -697,25 +518,6 @@ them would have broken those routes, not the dead one.
   `src/app/baseball/actions/lift-onboarding.ts`, not the Lift Lab one). Every
   alias must resolve to a registered key and never shadow one —
   `src/lib/admin/__tests__/feature-aliases.test.ts`.
-- **An un-scoped Sentry issue still gets an ADVISORY feature tag, not `null`.**
-  `mergeTriage` (`src/lib/admin/data/triage.ts`) only ever had a per-BATCH
-  feature (`sentryTagHint`, set only when the caller actually scoped the fetch
-  by a Sentry tag) — every other Sentry issue landed `feature: null` and the
-  feature lens on `/admin/errors` grouped them all as "unknown". It now falls
-  back, per issue, to `resolveFeatureId(issue.culprit)` — the same advisory
-  route/feature map `src/lib/reliability/normalize.ts` exports for the
-  Reliability tab's own correlation pass (moved there from `collect.ts` so
-  both callers share one pure implementation; `collectSentry` in
-  `sources.ts` already passes `issue.culprit` as `route` into this same
-  function). The batch-level hint still wins when present — it is honest,
-  Sentry-tag-scoped attribution; the per-issue fallback is a GUESS from a
-  route string, which is why it only fires in the hint's absence. `culprit` is
-  the only per-issue location `SentryIssue` carries — there is no
-  transaction/url field on it. Not every value `resolveFeatureId` returns is a
-  `FEATURE_REGISTRY` key (see its own doc comment for which three of six
-  aren't); an unregistered tag still renders, unlinked, in
-  `UnifiedIncidentCard` — strictly better than the "unknown" bucket this
-  fixes issues out of.
 - **Credential values are validated by SHAPE, in one module.** Every one of
   the eight Bridge values in the local `.env.local` was exactly 11 characters,
   which cleared the old `length >= 10` floor in both
@@ -736,122 +538,21 @@ them would have broken those routes, not the dead one.
   `bridge_fingerprint`) so one Bridge incident is one Sentry issue and a
   varying title cannot fragment grouping. An explicit `context.fingerprint`
   still wins. Consequence: existing server-trace Sentry issues regroup once.
-- **The self-healing loop has THREE axes, and throughput is the one a
-  heartbeat cannot show.** Runtime (`selfheal-registry.ts`: is each stage on
-  schedule) and capability (`selfheal-capability.ts`: has it ever produced its
-  output) were both green on a loop that skipped the same incident every
-  night. `src/lib/admin/selfheal-flow.ts` (2026-09-01) places every incident
-  on the board at the stage whose turn it is, from the lifecycle `lifecycle.ts`
-  already derived, and calls it STALLED once that stage has had
-  `STALL_CYCLES` (2) of its own registry cadence to act and has not. Three
-  rules: a failed read (`repair.status === 'unknown'`, an unreadable deploy, a
-  blind source) places the incident at `unknown` and can never stall a stage;
-  the threshold is the stage's cadence from `SELFHEAL_STAGES`, never a literal;
-  an active stage (`repairing`) is never stalled. Close's wait starts when
-  silence became proof — deploy time plus `PRODUCTION_PROOF_WINDOW_MS` — not
-  at the deploy. The model reaches four surfaces from one function: the
-  `stalled` lens on the Errors tab (judged against `computedAt`, never
-  `Date.now()`), the `stage-stalled` attention reason (ranked after
-  `repair-ci-failed`, before `repairable-untouched`, because "Repair had its
-  chances" is the stronger fact about the same incident), the Truth Strip's
-  self-heal cell (a stall escalates `ok`/`warning` to `N STALLED`; it never
-  softens `danger`/`unknown`), and the per-stage backlog strip on the Overview
-  and the Self-heal page. Counts only on the Overview: a stalled incident
-  already earns its attention row, and a third list is the split this read
-  model exists to remove.
-- **The Repair stage's launchd config is tracked in the repo, not only on the
-  owner's Mac.** `config/launchd/com.helm.bridge-rca-repair.plist` is the
-  source of truth for `~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`;
-  `npm run selfheal:repair:install` installs/reloads it and
-  `npm run selfheal:repair:doctor` checks it end to end — installed and
-  byte-identical to the repo copy, loaded (`launchctl print`), the env file's
-  variable names present, the `claude` binary and prompt file resolve, the
-  `-p` argument does not start with `-` or `$(`, and the newest production
-  `selfheal-repair` heartbeat is fresh (<26h) and not a runner failure. This
-  closes the 2026-09-02 fire that failed in 0.6s: the plist passed SKILL.md's
-  raw YAML-frontmatter text as `claude -p`'s argument and the CLI parsed the
-  leading `---` as an unknown option, exiting before writing anything. The
-  outer runner (`scripts/run-selfheal-repair.mjs`) now pipes the child's
-  stdout/stderr (forwarding every byte to its own stdout/stderr in real time,
-  so the plist's `>> log 2>&1` still sees the same output) and, on a
-  runner-level failure, redacts and truncates (`redactSecrets`/`truncateTail`
-  in `scripts/lib/selfheal-repair-runner.mjs`) the child's last ~4KB into the
-  fallback heartbeat's `metadata.child_output_tail`, so a future failure like
-  this one explains itself on `/admin/selfheal` instead of reading only
-  "child exited 1". A static vitest
-  (`src/test/scripts/selfheal-repair-launchd.test.ts`) parses every plist
-  under `config/launchd/**` and fails if the `-p` argument trap, a missing
-  `--strict-mcp-config`, or a wrong `--mcp-config` target ever regresses.
-  `redactSecrets`'s per-pattern replacement is keyed on an explicit
-  `keyGroup` flag stored on each `SECRET_PATTERNS` entry, not inferred from
-  whether the replace callback's second argument is truthy — a zero-capture
-  pattern's second callback argument is `String.replace`'s numeric match
-  OFFSET, not a capture group, and treating it as one produced a mangled
-  `"<offset>=[REDACTED]"` for any secret not located at index 0 of the
-  matched text.
-- **Lens counts are measured over the faceted list.** `countLensesForKind`
-  counts through the same `matchesKind` predicate `applyIncidentFacets`
-  narrows with, so the number beside a lens equals what clicking it shows
-  while `?kind=` is active. `board.lensCounts` stays the board-level fact.
-  Separately, the `awaiting-proof` lens no longer admits an incident whose
-  ONLY proof gap is `source-blind`: a failed read is not a fix awaiting proof.
-- **The legacy `TriageQueue` takes `canClaimAllClear` too.** Defaults to true
-  for existing call sites; the Overview passes the Sentry pull's status,
-  because that feed's only external witness is Sentry and an empty queue
-  under a failed or unconfigured pull is a partial count.
-- **The Errors tab has one "compared to what".** `fetchErrorsTab` counts
-  error-or-worse rows written in the current window and the equal window
-  before it (sport filter applies, the others do not, so the pair stays
-  comparable); `describeWindowDelta` refuses a percentage against a zero prior
-  window and reports an unreadable count as `unknown`, never a flat 0%. When
-  Sentry's hourly series is unavailable, `sumHourlyBuckets` folds the app's
-  own per-fingerprint 24h histograms into one series against the exact clock
-  they were built on (`appHourlyComputedAt`) and the chart says "app events
-  only" — one witness, labelled as one, rather than a blank chart over data
-  the Bridge already held.
 
 ## UI Contract
 
 - Admin surfaces should be dense, scannable, and operational rather than marketing-style.
 - Health, errors, data freshness, and needs-attention states should be visible without hunting.
 - A count that could not be read is rendered as UNREADABLE, never as zero and
-  never as nothing. The incident badge's `null` state is a visible chip
-  ("Incidents unreadable", `role="status"`) in the shell's top bar, shown at
-  every breakpoint because on the phone the bottom-nav badge is the only other
-  signal.
+  never as nothing — the Health badge follows this rule, the same as the
+  Incidents badge documented in `admin_incidents`.
 - The Overview answers "is anything on fire" above the fold: banner, briefing,
   severity mix, then the triage queue. Posture KPIs live in a disclosure below
   it, not above it. Each KPI carries its own source note — the provenance is
   per-tile, not a separate panel.
-- The Incidents page (`/admin/errors`) is organised as five questions, top to
-  bottom, each under a heading that says which one it answers: what needs
-  attention (the canonical queue), is it getting worse (window-over-window,
-  hourly, by source and by feature), is the Bridge seeing everything (source
-  reconciliation, wiring, traceability), what Sentry still holds open, and what
-  was fixed. Filters are grouped and labelled in words with an explicit "All"
-  per group (`ErrorsFilterBar`), collapsed until one is active; the legend
-  (`HowToReadIncidents`) is a closed `<details>` under the header. Every
-  incident row carries a feature TAG in registry words ("untagged" said out
-  loud, an unregistered key rendered as itself, dashed), the lifecycle
-  headline sentence, and a Details disclosure with only what the row does not
-  already say: first/last seen, the error code with a plain-language hint
-  (`error-code-hint.ts`, null for codes it does not know), the kind and its
-  reason, every source with its health, the analysis, the repair, and the
-  ordered checks behind the lifecycle state.
-- An error's detail page shows what was actually captured — Postgres error code
-  and hint, request id, runtime, handled/unhandled, source file, and the flight
-  trace link when one exists — each copyable on its own. A field with no value
-  renders an em-dash; nothing is invented to fill the grid.
 - Feature health renders through one component wherever it appears (Overview
   rollup, Health grid, per-app pages). Status thresholds, two-window hysteresis,
   and knownGaps annotations belong to the data layer, never to a view.
-- The Reliability tab states source health BEFORE signals. A blind source
-  renders as danger rather than the neutral tone "not configured" gets
-  elsewhere in the Bridge: opting out of Inngest is a config choice, whereas an
-  unreadable source falsifies the tab's whole claim. Its empty state is split in
-  two — "all sources read, nothing found" is an all-clear, "sources blind,
-  nothing found" is explicitly not one — and a never-run collector reads as a
-  wiring problem, not as health.
 - CRM screens need clear pipeline, task, suppression, reply, sequence, and timeline states.
 - Loading/error states should avoid blank admin pages; operational users need partial data when available.
 - The desktop rail and mobile More sheet expose the same sign-out outcome, with
@@ -1006,23 +707,11 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
 - CRM email/reply/suppression logic can have compliance impact.
 - Rollup dashboards can appear live while backed by stale data.
 - Observability code must avoid PII and secret leakage.
-- **An incident detail page costs a whole board.** `fetchIncidentById`
-  (`src/lib/admin/incidents/fetch.ts`) builds the full 168h board — a Sentry
-  pull, a paginated `admin_events` sweep, the GitHub work log and per-PR check
-  runs — to answer for ONE incident, on top of the page's own
-  `fetchFingerprintDetail` and `fetchResolutionArchive`. The wide window is
-  deliberate (a detail page is reached from bookmarks, RCA rows and PR bodies,
-  so a 72h board would 404 half of them), and correctness beat cost while the
-  read model was being established. Twenty incidents opened in a row is twenty
-  boards. If that starts to bite, the fix is a narrowed by-id query, not a
-  shorter window.
 
 ## Tests To Prefer
 
 - `src/test/lib/cron/auth.test.ts`
 - `src/test/api/cron/shared-auth.test.ts`
-- `src/test/lib/admin/bridge-honest-failure.test.ts` — the Bridge never fails
-  toward reassurance (feed throw, badge `null`).
 - `src/lib/admin/__tests__/schedule-bridge-write.test.ts`,
   `src/lib/admin/__tests__/observed-action-scheduling.test.ts`,
   `src/test/lib/admin/integration-health-scheduling.test.ts`,
@@ -1041,10 +730,6 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
 - `src/lib/admin/__tests__/credential-shape.test.ts`,
   `src/test/scripts/check-helm-bridge-env.test.ts` — shape validators and the
   script run for real against eight 11-character placeholders.
-- `src/lib/reliability/__tests__/normalize.test.ts` — source-degradation
-  semantics and cross-source correlation.
-- `src/lib/reliability/__tests__/sources.test.ts` — the self-feeding-read
-  guard, asserted at the query level where it actually lives.
 - `src/app/admin/golf/tracer/__tests__/tracer-shared.test.ts` — the Tracer's
   pure grouping/rendering helpers, including `tracerIncidentGroupKey`.
 - `src/lib/admin/incidents/__tests__/present.test.ts` — every human-title
@@ -1080,6 +765,9 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
 - `docs/BI_DASHBOARD_ARCHITECTURE.md`
 - `docs/OBSERVABILITY.md`
 - `docs/SECURITY_AUDIT.md`
+- `memory/features/admin-incidents.md`
+- `memory/features/admin-reliability-collector.md`
+- `memory/features/admin-selfheal.md`
 - The Bridge Premium Observability brief the "Phase 0 truth models" section
   above implements — see that section for its worktree location as of
   2026-09-03; not linked here as a repo path because it does not resolve in
