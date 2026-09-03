@@ -209,6 +209,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/database/**",
+        "pattern": "src/app/admin/database/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/deploys/**",
         "pattern": "src/app/admin/deploys/**",
         "category": "routes"
@@ -5887,6 +5892,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/billing/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/database/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/database/**"
         }
       ]
     },
