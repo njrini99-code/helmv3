@@ -1,0 +1,1432 @@
+{
+  "tool": "contract:resolve",
+  "requested_id": "coachhelm_ai",
+  "feature_id": "coachhelm_ai",
+  "resolution": {
+    "via": "direct",
+    "note": null
+  },
+  "anchor_sha": "c34aa936ec50",
+  "current_contract": [
+    {
+      "id": "c1-status",
+      "kind": "status",
+      "text": "status: active; criticality: high",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 54,
+        "heading": "coachhelm_ai"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c2-owner",
+      "kind": "owner",
+      "text": "owner: product",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 55,
+        "heading": "coachhelm_ai"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c3-observability",
+      "kind": "observability",
+      "text": "runtime FeatureKey vocabulary: [coachhelm_ai_engine, insights_management, coachhelm_analytics, round_review_ai]",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 58,
+        "heading": "coachhelm_ai"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c4-route",
+      "kind": "route",
+      "text": "src/app/golf/(dashboard)/dashboard/coachhelm/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 79,
+        "heading": "code.routes"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/(dashboard)/dashboard/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c5-route",
+      "kind": "route",
+      "text": "src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 80,
+        "heading": "code.routes"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c6-component",
+      "kind": "component",
+      "text": "src/components/golf/coachhelm/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 82,
+        "heading": "code.components"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/components/golf/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c7-api",
+      "kind": "api",
+      "text": "src/app/api/coachhelm/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 84,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c8-api",
+      "kind": "api",
+      "text": "src/app/api/cron/coachhelm-calibration/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 85,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/cron/coachhelm-calibration/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c9-api",
+      "kind": "api",
+      "text": "src/app/api/cron/coachhelm-insight-lifecycle/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 86,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/cron/coachhelm-insight-lifecycle/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c10-api",
+      "kind": "api",
+      "text": "src/app/api/cron/coachhelm-roster-sweep/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 87,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/cron/coachhelm-roster-sweep/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c11-api",
+      "kind": "api",
+      "text": "src/app/api/cron/coachhelm-safety-net/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 88,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/cron/coachhelm-safety-net/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c12-api",
+      "kind": "api",
+      "text": "src/app/api/cron/coachhelm-validation/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 89,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/cron/coachhelm-validation/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c13-api",
+      "kind": "api",
+      "text": "src/app/api/cron/v3/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 90,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/cron/v3/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c14-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/coachhelm-*.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 92,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/coachhelm-*.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c15-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/insight-*.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 93,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/insight-*.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c16-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/player-effectiveness.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 94,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/player-effectiveness.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c17-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/player-fingerprint.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 95,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/player-fingerprint.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c18-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/player-fingerprint-types.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 96,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/player-fingerprint-types.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c19-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/insights.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 101,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/insights.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c20-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/intelligence-dashboard.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 102,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/intelligence-dashboard.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c21-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/player-feedback.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 103,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/player-feedback.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c22-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/v3/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 104,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/v3/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c23-service",
+      "kind": "service",
+      "text": "src/lib/coachhelm/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 106,
+        "heading": "code.services"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/lib/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c24-db",
+      "kind": "db",
+      "text": "supabase/migrations/*coachhelm*.sql",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 108,
+        "heading": "code.db"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "supabase/migrations/*coachhelm*.sql"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c25-db",
+      "kind": "db",
+      "text": "supabase/migrations/*insight*.sql",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 109,
+        "heading": "code.db"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "supabase/migrations/*insight*.sql"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c27-test",
+      "kind": "test",
+      "text": "src/test/coachhelm/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 112,
+        "heading": "code.tests"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/test/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c28-test",
+      "kind": "test",
+      "text": "src/test/api/cron/coachhelm*.test.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 113,
+        "heading": "code.tests"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/test/api/cron/coachhelm*.test.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c29-test",
+      "kind": "test",
+      "text": "src/app/golf/actions/player-fingerprint.chart.test.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 114,
+        "heading": "code.tests"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/player-fingerprint.chart.test.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c30-required_check",
+      "kind": "required_check",
+      "text": "npm run typecheck",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 126,
+        "heading": "review.required_checks"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c31-required_check",
+      "kind": "required_check",
+      "text": "npm run test -- --run src/test/coachhelm",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 127,
+        "heading": "review.required_checks"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c32-required_check",
+      "kind": "required_check",
+      "text": "npm run build",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 128,
+        "heading": "review.required_checks"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c33-other",
+      "kind": "other",
+      "text": "declared integrations: supabase, sentry, datadog, llm_provider",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 115,
+        "heading": "coachhelm_ai"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c34-observability_manifest",
+      "kind": "observability_manifest",
+      "text": "{\n    key: 'coachhelm_ai_engine',\n    label: 'CoachHelm Engine',\n    app: 'coachhelm',\n    actions: {\n      'src/app/golf/actions/insight-delivery.ts': 'ALL',\n      'src/app/golf/actions/player-fingerprint.ts': 'ALL',\n      'src/app/golf/actions/insights.ts': [\n        'getTopInsightsByStrokeImpact',\n        'generateTeamInsights',\n        'getActiveInsights',\n        'analyzePlayer',\n        'generatePlayerInsight',\n        'generateTeamInsight',\n        'generatePracticeRecommendations',\n        'generateTournamentPrep',\n        'getPlayerTrajectory',\n        'getPlayerPatterns',\n        'recordInteraction',\n        'getCoachHelmStatus',\n        'triggerPlayerInsightsAfterRound',\n        'refreshPlayerAnalysisAsCoach',\n        'refreshTeamAnalysisAsCoach',\n        'getTeamCoachHelmAccess',\n        'getOrCreateTeamCoachHelmSettings',\n        'updateTeamCoachHelmSettings',\n      ],\n    },\n    primaryTable: 'golf_coach_insights',\n    heartbeatTable: 'golf_coach_insights',\n    tier: 'high',\n    seasonalEmpty: false,\n    healthSignal:\n      'Post-round trigger fan-out (triggerPlayerInsightsAfterRound) completes; insights/patterns accumulate per completed round. Heartbeat measured against round-submit cadence, NOT wall-clock.',\n    knownGaps: [\n      'Threshold-starvation / philosophy-gate skips are info+skipSentry — EXCLUDED from fingerprint math, shown as a separate starvation-rate line on drill-in.',\n    ],\n  },",
+      "source": {
+        "kind": "feature_registry_ts",
+        "path": "src/lib/admin/feature-registry.ts",
+        "line": 643,
+        "heading": "coachhelm_ai_engine"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c35-observability_manifest",
+      "kind": "observability_manifest",
+      "text": "{\n    key: 'insights_management',\n    label: 'Insights Management',\n    app: 'coachhelm',\n    actions: {\n      'src/app/golf/actions/insight-management.ts': 'ALL',\n      'src/app/golf/actions/insight-evidence.ts': 'ALL',\n      'src/app/golf/actions/insights.ts': [\n        'acknowledgeInsight',\n        'dismissInsight',\n        'reactivateInsight',\n        'resolveInsight',\n        'rateInsight',\n        'acknowledgeComposedInsight',\n        'dismissComposedInsight',\n      ],\n    },\n    primaryTable: 'golf_coach_insights',\n    heartbeatTable: 'golf_coach_insights',\n    tier: 'med',\n    seasonalEmpty: false,\n    healthSignal:\n      'Search/filter/export/bulk ops return promptly; export produces a file.',\n  },",
+      "source": {
+        "kind": "feature_registry_ts",
+        "path": "src/lib/admin/feature-registry.ts",
+        "line": 709,
+        "heading": "insights_management"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c36-observability_manifest",
+      "kind": "observability_manifest",
+      "text": "{\n    key: 'coachhelm_analytics',\n    label: 'CoachHelm Analytics',\n    app: 'coachhelm',\n    actions: {\n      'src/app/golf/actions/coachhelm-analytics.ts': 'ALL',\n      'src/app/golf/actions/player-effectiveness.ts': 'ALL',\n    },\n    primaryTable: 'golf_insight_effectiveness',\n    heartbeatTable: 'golf_insight_effectiveness',\n    tier: 'low',\n    seasonalEmpty: false,\n    healthSignal: 'Effectiveness reads succeed.',\n    knownGaps: [\n      'Sparse table = expected-degraded, NOT an outage (all-zero dashboards do not error).',\n    ],\n  },",
+      "source": {
+        "kind": "feature_registry_ts",
+        "path": "src/lib/admin/feature-registry.ts",
+        "line": 754,
+        "heading": "coachhelm_analytics"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c37-observability_manifest",
+      "kind": "observability_manifest",
+      "text": "{\n    key: 'round_review_ai',\n    label: 'Round Review AI',\n    app: 'coachhelm',\n    actions: {\n      'src/app/golf/actions/round-reviews.ts': 'ALL',\n      'src/app/golf/actions/round-review-system.ts': 'ALL',\n      'src/app/golf/actions/round-recap.ts': 'ALL',\n      'src/app/golf/actions/v3/llm.ts': 'ALL',\n      'src/app/golf/actions/insights.ts': ['generateRoundReview'],\n    },\n    primaryTable: 'golf_round_reviews',\n    heartbeatTable: 'golf_round_reviews',\n    tier: 'med',\n    seasonalEmpty: false,\n    healthSignal: 'Review generation persists without timeout.',\n    knownGaps: [\n      'TWO pipelines (V1/V2 rule-based + v3 LLM) both tagged here so whichever is live is covered; per-action name disambiguates on drill-in.',\n    ],\n  },",
+      "source": {
+        "kind": "feature_registry_ts",
+        "path": "src/lib/admin/feature-registry.ts",
+        "line": 799,
+        "heading": "round_review_ai"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c38-status",
+      "kind": "status",
+      "text": "- active",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 17,
+        "heading": "Status"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c39-current_state",
+      "kind": "current_state",
+      "text": "CoachHelm is the golf intelligence layer. It turns round, shot, standing, player, and team context into coach-facing and player-facing insights, recommendations, narratives, and follow-up surfaces.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 21,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c40-current_state",
+      "kind": "current_state",
+      "text": "The feature currently spans two generations:",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 23,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c41-current_state",
+      "kind": "current_state",
+      "text": "- **V2**: established insight mining, prediction, learning, NLG, post-round triggers, and coach/player feedback loops.\n- **V3**: newer generator framework for composite insights, counterfactuals, player genome, provider ingest, goals, intent, LLM narratives, practice recommendations, qualifying, and chat.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 25,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c42-route",
+      "kind": "route",
+      "text": "- `src/app/golf/(dashboard)/dashboard/coachhelm/**`\n- `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 32,
+        "heading": "Primary Entry Points > Routes"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/(dashboard)/dashboard/coachhelm/**",
+          "src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c43-component",
+      "kind": "component",
+      "text": "- `src/components/golf/coachhelm/**`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 37,
+        "heading": "Primary Entry Points > Components"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/components/golf/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c44-action",
+      "kind": "action",
+      "text": "- `src/app/golf/actions/coachhelm-data.ts`\n- `src/app/golf/actions/coachhelm-analytics.ts`\n- `src/app/golf/actions/insight-delivery.ts`\n- `src/app/golf/actions/insight-management.ts`\n- `src/app/golf/actions/intelligence-dashboard.ts`\n- `src/app/golf/actions/player-feedback.ts`\n- `src/app/golf/actions/v3/**`\n- `src/app/api/cron/coachhelm*.ts`\n- `src/app/api/cron/v3/**`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 41,
+        "heading": "Primary Entry Points > Actions And APIs"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/app/golf/actions/coachhelm-data.ts",
+          "src/app/golf/actions/coachhelm-analytics.ts",
+          "src/app/golf/actions/insight-delivery.ts",
+          "src/app/golf/actions/insight-management.ts",
+          "src/app/golf/actions/intelligence-dashboard.ts",
+          "src/app/golf/actions/player-feedback.ts"
+        ],
+        "globs": [
+          "src/app/golf/actions/v3/**",
+          "src/app/api/cron/coachhelm*.ts",
+          "src/app/api/cron/v3/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c45-service",
+      "kind": "service",
+      "text": "- `src/lib/coachhelm/v2/**`\n- `src/lib/coachhelm/v3/**`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 53,
+        "heading": "Primary Entry Points > Engine Code"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/lib/coachhelm/v2/**",
+          "src/lib/coachhelm/v3/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c47-core_data",
+      "kind": "core_data",
+      "text": "Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary.md` for table lookup.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 69,
+        "heading": "Core Data"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/context/golfhelm-database.md",
+          "memory/glossary.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c48-business_rule",
+      "kind": "business_rule",
+      "text": "- LLM work must never run client-side.\n- Coach-facing insight reads must scope through assigned teams, not broad player access.\n- Player-facing feedback must be tied to the authenticated player and revalidate the affected dashboard surfaces.\n- Coach-to-team ownership is via `golf_team_coach_staff`; do not infer it from `golf_coaches.team_id`.\n- V2/V3 scoring and generator logic should stay pure where designed as pure engine code; Supabase access belongs in loaders, actions, or orchestration boundaries.\n- Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.\n- Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 73,
+        "heading": "Business Rules"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "golf_team_coach_staff",
+          "golf_coaches"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c49-ui_contract",
+      "kind": "ui_contract",
+      "text": "- Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.\n- Player views need clear actionability: what changed, why it matters, and what to do next.\n- Loading states should use skeletons that match final layout.\n- Empty states should stay compact and explain whether there is no data, no permission, or no insight yet. The Ask page's `ProgramOpening` renders a compact honest empty state when the program pulse has no items (2026-08-26) — it must never return nothing and leave the column blank.\n- Mobile views must use the shared app shell, Standard or Action headers, and bottom-nav clearance from `AGENTS.md`.\n- The Ask composer autofocuses only on fine-pointer (desktop) clients (2026-08-26). On touch, no CoachHelm surface may focus a text input on open — iOS answers that focus with a keyboard over an unread page.\n- The phone Ask drawer (`CoachHelmDrawer`) lifts by `--keyboard-height` and the composer drops its home-indicator pad while `body.keyboard-open` (2026-09-02) — the WebView never resizes for the keyboard, so a `bottom-0` drawer put the composer under the keys exactly like the messages screen.\n- A question started on the Brief tab (`CoachIntelligenceHome` → `?q=` → the Ask page) auto-submits exactly once through `PromptComposer`'s own `submit()` (2026-09-02) — it previously only pre-filled the composer, so the coach had to press Send a second time on the page it navigated to. `AskSurface` strips `q` from the URL the moment the submit is kicked off, before the server has minted a conversation, so a refresh or back-navigation in that window cannot resend it. `PromptComposer` also now restores the just-submitted text into the field on a failed turn (never on success) instead of the previous unconditional clear-on-submit, so a failure does not force retyping. See `src/components/golf/coachhelm/chat/PromptComposer.tsx`, `CoachHelmChat.tsx` (`autoSubmitInitialInput`), and `AskSurface.tsx`.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 83,
+        "heading": "UI Contract"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/components/golf/coachhelm/chat/PromptComposer.tsx"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c50-risk",
+      "kind": "risk",
+      "text": "- Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.\n- Safety-net fallback behavior can mask generator failures if logs are ignored.\n- Course-management \"worst holes\" and hole-1 \"warmup\" insights require at\n  least five samples, matching the persisted insight writer's Rule 1\n  validation contract (`upsertInsight` throws `InsightEvidenceRefusal` below\n  the floor). `generateWorstHolesInsights` and `generateWarmupHoleInsight`\n  (`src/lib/coachhelm/v2/mining/course-management.ts`) route that refusal\n  through `isEvidenceRefusal()` and log it as a quiet, non-paging event —\n  the same pattern `v3/composite/synthesis.ts` uses. Before this was wired\n  up, the refusal reached `logServerError` unconditionally and paged as a\n  production incident (fingerprint `ea766422`, \"worst_holes upsert failed\").\n- A completed round's CoachHelm terminal state is written only through the\n  service-only `record_round_coachhelm_terminal_state` RPC. It may update\n  processing metadata but cannot modify score, shots, identity, or status.\n- Round-review feedback and player acknowledgement paths can become stale if revalidation misses player or coach routes.\n- V3 feature surface is expanding quickly; registry/docs must be updated when new generators, tables, or cron routes land.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 94,
+        "heading": "Known Risk Areas"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/lib/coachhelm/v2/mining/course-management.ts"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c51-test",
+      "kind": "test",
+      "text": "- Unit tests under `src/test/coachhelm/**`.\n- Cron/API tests under `src/test/api/cron/coachhelm*.test.ts`.\n- Component tests under `src/test/app/golf/dashboard/coachhelm/**`.\n- Browser validation for changed coach/player surfaces when UI or route behavior changes.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 113,
+        "heading": "Tests To Prefer"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/test/coachhelm/**",
+          "src/test/api/cron/coachhelm*.test.ts",
+          "src/test/app/golf/dashboard/coachhelm/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c52-other",
+      "kind": "other",
+      "text": "- `memory/context/coachhelm-ai.md`\n- `memory/context/golfhelm-features.md`\n- `docs/architecture/coachhelm-evidence-contract.md`\n- `docs/v3-research-golf-domain.md`\n- `docs/v3-testing-standards.md`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 120,
+        "heading": "Related Docs"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/context/coachhelm-ai.md",
+          "memory/context/golfhelm-features.md",
+          "docs/architecture/coachhelm-evidence-contract.md",
+          "docs/v3-research-golf-domain.md",
+          "docs/v3-testing-standards.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c53-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-09-02 — worst-holes/warmup evidence refusals no longer page as errors\n\n- SHA: 8350ad6e0.\n- Change: the catch blocks in `generateWorstHolesInsights` and\n  `generateWarmupHoleInsight`\n  (`src/lib/coachhelm/v2/mining/course-management.ts`) now check\n  `isEvidenceRefusal(err)` before logging. A refusal (`upsertInsight` throwing\n  `InsightEvidenceRefusal` because `evidence.sample_n` is below the Rule 1\n  floor) routes through `logServerEvent` at `warning` severity with\n  `skipSentry: true`; anything else still goes through `logServerError`\n  unchanged.\n- Why: incident fingerprint `ea766422` (\"worst_holes upsert failed\") — the\n  sample-floor refusal is control flow by design (not enough evidence to\n  publish yet), but both catch blocks logged every `upsertInsight` failure\n  through `logServerError` unconditionally, so the refusal paged as a\n  production error. The file's own header comment on\n  `WORST_HOLES_MIN_ROUNDS` already documented this exact failure mode; the\n  catch block itself had never been updated to close it. Mirrors the\n  existing split in `src/lib/coachhelm/v3/composite/synthesis.ts`.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/coachhelm_ai.md",
+        "line": 3,
+        "heading": "worst-holes/warmup evidence refusals no longer page as errors"
+      },
+      "date": "2026-09-02",
+      "sha": "8350ad6e0",
+      "refs": {
+        "paths": [
+          "src/lib/coachhelm/v2/mining/course-management.ts",
+          "src/lib/coachhelm/v3/composite/synthesis.ts"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c54-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-27 — insight notifications no longer deep-link a coach into the player view\n\n- SHA: 1a57943e6.\n- Change: `push.ts` `coachhelm_insight` now picks its URL from an `audience`\n  field instead of hardcoding `/golf/dashboard/coachhelm`; `insights.ts`\n  `triggerPlayerInsightsAfterRound` passes `audience: 'coach'` explicitly.\n  Coaches land on the Signals insights view (`surfaceHref('insights')`, the\n  same destination the shipped FocusAreaCard uses); players keep the player\n  front door. Hrefs come from surface-registry, never hand-written.\n- Why: the only sender resolves the TEAM COACH's user_id, so every \"New\n  CoachHelm Insight\" push deep-linked a coach into a page that renders \"This\n  CoachHelm dashboard is the player view\" with nothing but a button back to\n  Brief — the in-app dead end from the 2026-08-26 owner report, reached\n  through an OS notification and therefore frozen into already-delivered\n  payloads.\n- Watch: `audience` defaults to `'coach'`, which INVERTS the prior behaviour\n  for any sender that omits it. Safe while there is one sender and it is\n  explicit; a player-facing sender MUST pass `audience: 'player'`.\n- Registry: `src/app/golf/actions/insights.ts` was mapped into this feature in\n  the same commit — `insight-*.ts` never matched `insights.ts`, so the largest\n  insight action file in the tree resolved to no feature and every edit to it\n  tripped the context guard.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/coachhelm_ai.md",
+        "line": 23,
+        "heading": "insight notifications no longer deep-link a coach into the player view"
+      },
+      "date": "2026-08-27",
+      "sha": "1a57943e6",
+      "refs": {
+        "paths": [
+          "src/app/golf/actions/insights.ts"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c55-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-26 — Ask surface: no keyboard-on-open, honest empty pulse\n\n- SHA: 596913022.\n- Change: the Ask composer autofocus (CoachHelmChat `variant==='page' &&\n  isEmpty`) now also requires a fine pointer; ProgramOpening renders a\n  compact EmptyState (+ coverage line) instead of `return null` when the\n  pulse has no items. Regression tests: ProgramOpening.empty.test.tsx;\n  feature doc UI-contract updated same day.\n- Why: owner TestFlight report — opening Ask on iPhone popped the keyboard\n  over a page that was mostly blank cream, because an empty pulse left the\n  flex-1 opening region stretching around nothing while the route skeleton\n  had promised a findings list.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/coachhelm_ai.md",
+        "line": 46,
+        "heading": "Ask surface: no keyboard-on-open, honest empty pulse"
+      },
+      "date": "2026-08-26",
+      "sha": "596913022",
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c56-table",
+      "kind": "table",
+      "text": "TABLE golf_insight_exposure",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260621160000_insight_event_ledger.sql",
+        "line": 7,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "golf_insight_exposure"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c57-table",
+      "kind": "table",
+      "text": "TABLE golf_insight_action",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260621160000_insight_event_ledger.sql",
+        "line": 20,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "golf_insight_action"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c58-table",
+      "kind": "table",
+      "text": "TABLE golf_insight_outcome",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260621160000_insight_event_ledger.sql",
+        "line": 32,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "golf_insight_outcome"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c59-rls_policy",
+      "kind": "rls_policy",
+      "text": "POLICY baseball_coach_insights_staff_select",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260624000070_baseball_coach_insights_attribution.sql",
+        "line": 140,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c60-function",
+      "kind": "function",
+      "text": "FUNCTION public",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260720130000_crm_insights_rpc_fixes.sql",
+        "line": 28,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "public"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c61-table",
+      "kind": "table",
+      "text": "TABLE golf_coachhelm_action_runs",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql",
+        "line": 41,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "golf_coachhelm_action_runs"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c62-rls_policy",
+      "kind": "rls_policy",
+      "text": "POLICY coachhelm_action_runs_coach_only",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql",
+        "line": 97,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c63-function",
+      "kind": "function",
+      "text": "FUNCTION record_round_coachhelm_terminal_state",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260824002016_allow_coachhelm_terminal_state.sql",
+        "line": 9,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "record_round_coachhelm_terminal_state"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c64-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.guard_golf_round_lifecycle",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260824002016_allow_coachhelm_terminal_state.sql",
+        "line": 49,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    }
+  ],
+  "superseded_claims": [
+    {
+      "id": "c26-db",
+      "kind": "db",
+      "text": "supabase/migrations/*golf_coachhelm*.sql",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 110,
+        "heading": "code.db"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "supabase/migrations/*golf_coachhelm*.sql"
+        ],
+        "identifiers": []
+      },
+      "verified": "absent",
+      "superseded": {
+        "reason": "ABSENT_FROM_TRACKED_FILES",
+        "confidence": "mechanical",
+        "evidence": "supabase/migrations/*golf_coachhelm*.sql — matches 0 files in `git ls-files` as of c34aa936ec50"
+      }
+    },
+    {
+      "id": "c46-core_data",
+      "kind": "core_data",
+      "text": "- `golf_coach_insights`\n- `golf_insight_evidence`\n- `golf_insight_player_feedback`\n- `golf_insight_generation_log`\n- `golf_insight_effectiveness`\n- `golf_patterns_v2`\n- `golf_predictions`\n- `golf_player_focus_areas`\n- `golf_player_stats_cache`\n- V3 tables such as CoachHelm settings, player genome, ingest, qualifying, budget, chat, and outcome attribution tables.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/coachhelm-ai.md",
+        "line": 58,
+        "heading": "Core Data"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "golf_coach_insights",
+          "golf_insight_evidence",
+          "golf_insight_player_feedback",
+          "golf_insight_generation_log",
+          "golf_insight_effectiveness",
+          "golf_patterns_v2",
+          "golf_predictions",
+          "golf_player_focus_areas",
+          "golf_player_stats_cache"
+        ]
+      },
+      "verified": "not_checked",
+      "superseded": {
+        "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
+        "confidence": "mechanical",
+        "evidence": "golf_insight_evidence not found in src/lib/types/database.ts (golf_insight_evidence already tracked in .doc-schema-baseline.json)"
+      }
+    }
+  ],
+  "sources_consulted": [
+    {
+      "path": "memory/registry.yml",
+      "kind": "registry"
+    },
+    {
+      "path": "memory/features/coachhelm-ai.md",
+      "kind": "feature_doc"
+    },
+    {
+      "path": "memory/ledgers/changes/coachhelm_ai.md",
+      "kind": "ledger_changes"
+    },
+    {
+      "path": "src/lib/admin/feature-registry.ts",
+      "kind": "feature_registry_ts"
+    },
+    {
+      "path": "src/lib/types/database.ts",
+      "kind": "database_types"
+    },
+    {
+      "path": "supabase/migrations/20260526070000_widen_insight_type_check_for_v3_generators.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260528011000_harden_coach_insights_update_grants.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260528041553_fix_coachhelm_settings_preferences_and_insight_types.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260621160000_insight_event_ledger.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260624000070_baseball_coach_insights_attribution.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260624000210_baseball_coachhelm_v10_ranking_and_outcome_ledger.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260624001300_baseball_coachhelm_insight_maturity_counters.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260720130000_crm_insights_rpc_fixes.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260725180000_coachhelm_chat_turn_uniq_total.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260725210000_coachhelm_chat_revoke_anon.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260824002016_allow_coachhelm_terminal_state.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260824003104_pin_coachhelm_terminal_state_search_path.sql",
+      "kind": "migration"
+    }
+  ]
+}

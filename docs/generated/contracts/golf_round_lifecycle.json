@@ -1,0 +1,2046 @@
+{
+  "tool": "contract:resolve",
+  "requested_id": "round_tracking",
+  "feature_id": "golf_round_lifecycle",
+  "resolution": {
+    "via": "feature_registry_key",
+    "note": "'round_tracking' is not a memory/registry.yml feature_id. It is a FeatureKey (src/lib/admin/feature-registry.ts runtime observability vocabulary) owned by feature 'golf_round_lifecycle' via observability.feature_keys. Per ADR-2026-08-30-helm-knowledge-authority.md §3/§4 this is a many-to-one FeatureKey mapping, not a registry alias — the contract below is compiled for 'golf_round_lifecycle', not for a distinct 'round_tracking' feature."
+  },
+  "anchor_sha": "c34aa936ec50",
+  "current_contract": [
+    {
+      "id": "c1-status",
+      "kind": "status",
+      "text": "status: active; criticality: high",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 234,
+        "heading": "golf_round_lifecycle"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c2-owner",
+      "kind": "owner",
+      "text": "owner: product",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 235,
+        "heading": "golf_round_lifecycle"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c3-observability",
+      "kind": "observability",
+      "text": "runtime FeatureKey vocabulary: [round_tracking, course_library]",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 238,
+        "heading": "golf_round_lifecycle"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c4-route",
+      "kind": "route",
+      "text": "src/app/golf/(dashboard)/dashboard/rounds/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 254,
+        "heading": "code.routes"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/(dashboard)/dashboard/rounds/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c5-component",
+      "kind": "component",
+      "text": "src/components/fairway/pages/rounds/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 256,
+        "heading": "code.components"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/components/fairway/pages/rounds/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c6-component",
+      "kind": "component",
+      "text": "src/components/fairway/pages/rounds-new/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 257,
+        "heading": "code.components"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/components/fairway/pages/rounds-new/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c7-component",
+      "kind": "component",
+      "text": "src/components/fairway/pages/rounds-recover/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 258,
+        "heading": "code.components"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/components/fairway/pages/rounds-recover/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c8-component",
+      "kind": "component",
+      "text": "src/components/fairway/pages/rounds-tracking/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 259,
+        "heading": "code.components"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/components/fairway/pages/rounds-tracking/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c9-api",
+      "kind": "api",
+      "text": "src/app/api/golf/rounds/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 261,
+        "heading": "code.api"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/api/golf/rounds/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c10-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/golf.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 263,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/golf.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c11-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/round-*.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 264,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/round-*.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c12-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/shot-analytics.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 265,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/shot-analytics.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c13-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/player-feedback.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 266,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/player-feedback.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c14-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/course-library.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 267,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/course-library.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c15-action",
+      "kind": "action",
+      "text": "src/app/golf/actions/courses.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 268,
+        "heading": "code.actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/courses.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c16-service",
+      "kind": "service",
+      "text": "src/lib/golf/**",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 270,
+        "heading": "code.services"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/lib/golf/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c17-service",
+      "kind": "service",
+      "text": "src/lib/coachhelm/v2/post-round-trigger.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 271,
+        "heading": "code.services"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/lib/coachhelm/v2/post-round-trigger.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c18-service",
+      "kind": "service",
+      "text": "src/lib/coachhelm/v3/llm/round-review.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 272,
+        "heading": "code.services"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/lib/coachhelm/v3/llm/round-review.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c19-db",
+      "kind": "db",
+      "text": "supabase/migrations/*golf_round*.sql",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 274,
+        "heading": "code.db"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "supabase/migrations/*golf_round*.sql"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c20-db",
+      "kind": "db",
+      "text": "supabase/migrations/*golf_shot*.sql",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 275,
+        "heading": "code.db"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "supabase/migrations/*golf_shot*.sql"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c21-db",
+      "kind": "db",
+      "text": "supabase/migrations/*round_review*.sql",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 276,
+        "heading": "code.db"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "supabase/migrations/*round_review*.sql"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c22-test",
+      "kind": "test",
+      "text": "src/app/golf/actions/__tests__/golf-schemas.test.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 278,
+        "heading": "code.tests"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/app/golf/actions/__tests__/golf-schemas.test.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c23-test",
+      "kind": "test",
+      "text": "src/test/coachhelm/v2/post-round-trigger.test.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 279,
+        "heading": "code.tests"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "src/test/coachhelm/v2/post-round-trigger.test.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c25-required_check",
+      "kind": "required_check",
+      "text": "npm run typecheck",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 291,
+        "heading": "review.required_checks"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c26-required_check",
+      "kind": "required_check",
+      "text": "npm run test -- --run src/app/golf/actions/__tests__/golf-schemas.test.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 292,
+        "heading": "review.required_checks"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c27-required_check",
+      "kind": "required_check",
+      "text": "npm run build",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 293,
+        "heading": "review.required_checks"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c28-other",
+      "kind": "other",
+      "text": "declared integrations: supabase, coachhelm_ai, vercel",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 281,
+        "heading": "golf_round_lifecycle"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c29-observability_manifest",
+      "kind": "observability_manifest",
+      "text": "{\n    key: 'round_tracking',\n    label: 'Round Tracking',\n    app: 'golfhelm',\n    actions: {\n      'src/app/golf/actions/round-drafts.ts': 'ALL',\n      'src/app/golf/actions/golf.ts': [\n        'submitGolfRoundComprehensive',\n        'savePartialRound',\n        'deleteInProgressRound',\n        'deleteShot',\n        'updateShot',\n        'getRoundShotDetails',\n      ],\n    },\n    primaryTable: 'golf_rounds',\n    heartbeatTable: 'golf_rounds',\n    tier: 'high',\n    seasonalEmpty: false,\n    healthSignal:\n      'Round submits/partial saves complete; no 42501 on golf_rounds/holes/shots.',\n  },",
+      "source": {
+        "kind": "feature_registry_ts",
+        "path": "src/lib/admin/feature-registry.ts",
+        "line": 176,
+        "heading": "round_tracking"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c30-observability_manifest",
+      "kind": "observability_manifest",
+      "text": "{\n    key: 'course_library',\n    label: 'Course Library',\n    app: 'golfhelm',\n    actions: {\n      'src/app/golf/actions/course-library.ts': 'ALL',\n      'src/app/golf/actions/courses.ts': 'ALL',\n      'src/app/golf/actions/golf.ts': [\n        'getPlayerSavedCourses',\n        'savePlayerCourse',\n        'touchSavedCourse',\n        'getRecentCoursesForPlayer',\n      ],\n    },\n    primaryTable: 'golf_courses',\n    heartbeatTable: 'golf_courses',\n    tier: 'med',\n    seasonalEmpty: false,\n    healthSignal: 'Course/tee CRUD + contribute-from-round succeed.',\n    knownGaps: [\n      'A 42501 cluster on golf_courses UPDATE = the known unapplied-RLS-migration class.',\n    ],\n  },",
+      "source": {
+        "kind": "feature_registry_ts",
+        "path": "src/lib/admin/feature-registry.ts",
+        "line": 481,
+        "heading": "course_library"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c31-status",
+      "kind": "status",
+      "text": "- active",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 16,
+        "heading": "Status"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c32-current_state",
+      "kind": "current_state",
+      "text": "The golf round lifecycle covers creating a round, saving drafts, continuing in-progress rounds, submitting final scoring and shot detail, generating reviews or recaps, and feeding CoachHelm intelligence after the round.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 20,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c33-current_state",
+      "kind": "current_state",
+      "text": "This is one of the highest-risk product areas because a broken write path can lose user-entered golf data, corrupt stats, or feed bad evidence into CoachHelm.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 22,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c34-current_state",
+      "kind": "current_state",
+      "text": "As of 2026-08-22, partial-save child failures preserve the in-progress parent\nround for retry. A player cannot enter tracking until that parent is committed,\nand each completed hole waits for its server checkpoint before the player\nadvances. Every unfinished committed round appears through Continue Round;\nlocal emergency storage is fallback-only and is not a routine library surface.\nAn emergency snapshot that contains the same persisted progress as the server\nis cleared without a recovery prompt. Once all holes have been server\ncheckpointed, app backgrounding does not create a redundant final-scorecard\nsnapshot while the player is deciding whether to submit.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 24,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c35-current_state",
+      "kind": "current_state",
+      "text": "Every newly-entered shot also creates a synchronous browser recovery snapshot\nand a best-effort v2 IndexedDB mirror before the normal network autosave. Those\nunfinished snapshots do not expire by time: they are removed only after the\nserver confirms that same or newer progress, final submission succeeds, or the\nplayer explicitly deletes the round. A partial recovery saves an in-progress\nround and opens Continue Round; it never marks an unfinished round complete.\nWhen a completed-hole checkpoint fails, the player stays on that hole with a\nsingle retry action while the device backup remains intact. Reopening a hole by\nediting or deleting its final holed shot clears its completed-scorecard entry\nbefore the next partial save, so a server snapshot never contains both a\ncompleted score and active shots for that hole.\nThe partial-save server boundary materializes sparse legacy hole entries as\nexplicit uncompleted values before validation, so a cached client cannot reject\na checkpoint merely because it predates the current payload shape. Background\nre-saves do not duplicate a direct checkpoint's player-facing failure state.\nIf a terminal atomic submit commits after its HTTP response is lost (including\nSafari/WKWebView's opaque `Load failed` transport rejection), the action\nconfirms the authenticated player's completed round before returning success;\nan unconfirmed outcome preserves the in-progress round and recovery backup for\nan explicit retry rather than guessing or rebuilding it.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 34,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c36-current_state",
+      "kind": "current_state",
+      "text": "As of 2026-09-02, a device that falls behind the server on a round it is\ntracking (a second device/session/tab wrote to it) can no longer silently\nresync its optimistic-lock token and overwrite the newer server state — both\nround screens now block further writes until the player reloads, with one\nnarrow self-healing exception for a background beacon save's own unreadable\nresponse. A round's start date can no longer be set in the future from\neither round-start screen. Full mechanics for both live in\n`memory/features/shot-tracking.md`, since the RPCs and client guards they\ntouch are shared with shot tracking, not lifecycle-specific.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 55,
+        "heading": "Current State"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/features/shot-tracking.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c37-route",
+      "kind": "route",
+      "text": "- `src/app/golf/(dashboard)/dashboard/rounds/page.tsx`\n- `src/app/golf/(dashboard)/dashboard/rounds/new/**`\n- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/**`\n- `src/app/golf/(dashboard)/dashboard/rounds/[id]/**`\n- `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**`\n- `src/app/golf/(dashboard)/dashboard/rounds/recover/**`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 69,
+        "heading": "Primary Entry Points > Routes"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/app/golf/(dashboard)/dashboard/rounds/page.tsx"
+        ],
+        "globs": [
+          "src/app/golf/(dashboard)/dashboard/rounds/new/**",
+          "src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/**",
+          "src/app/golf/(dashboard)/dashboard/rounds/[id]/**",
+          "src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**",
+          "src/app/golf/(dashboard)/dashboard/rounds/recover/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c38-action",
+      "kind": "action",
+      "text": "- `src/app/golf/actions/golf.ts`\n- `src/app/golf/actions/round-drafts.ts`\n- `src/app/golf/actions/round-recap.ts`\n- `src/app/golf/actions/round-review-system.ts`\n- `src/app/golf/actions/round-reviews.ts`\n- `src/app/golf/actions/shot-analytics.ts`\n- `src/app/golf/actions/player-feedback.ts`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 78,
+        "heading": "Primary Entry Points > Actions"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/app/golf/actions/golf.ts",
+          "src/app/golf/actions/round-drafts.ts",
+          "src/app/golf/actions/round-recap.ts",
+          "src/app/golf/actions/round-review-system.ts",
+          "src/app/golf/actions/round-reviews.ts",
+          "src/app/golf/actions/shot-analytics.ts",
+          "src/app/golf/actions/player-feedback.ts"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c39-service",
+      "kind": "service",
+      "text": "- `src/lib/coachhelm/v2/post-round-trigger.ts`\n- `src/lib/coachhelm/v2/shot-analysis/**`\n- `src/lib/coachhelm/v3/llm/round-review.ts`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 88,
+        "heading": "Primary Entry Points > Related Engine Code"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/lib/coachhelm/v2/post-round-trigger.ts",
+          "src/lib/coachhelm/v3/llm/round-review.ts"
+        ],
+        "globs": [
+          "src/lib/coachhelm/v2/shot-analysis/**"
+        ],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c41-core_data",
+      "kind": "core_data",
+      "text": "Use `memory/context/golfhelm-database.md` for exact columns.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 103,
+        "heading": "Core Data"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/context/golfhelm-database.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c42-business_rule",
+      "kind": "business_rule",
+      "text": "- Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent upserts or a safe stage-and-swap pattern.\n- Child-write failures must preserve the `in_progress` parent round and prior\n  durable children so interruption recovery can retry without data loss.\n- A player may begin tracking only after an `in_progress` parent exists in the\n  database. Completing a hole is a durable database checkpoint; it may not be\n  treated as a fire-and-forget background write.\n- A failed completed-hole checkpoint must be retryable from the affected hole\n  without advancing the player. Retrying retains the original navigation\n  intent; it must not be misclassified as a later score edit.\n- A completed-scorecard slot and an in-progress shot collection for the same\n  hole must never be persisted together. Removing a final hole-out clears the\n  former before the remaining shots are saved as in-progress progress.\n- The durable parent is also the authority for start-time identity such as\n  round type, qualifier link, and qualifier round number. Final submission may\n  use recovery data for scorecard content, but must not let stale client\n  metadata change persisted identity. That identity is immutable **to the\n  round-tracking path** — it is not immutable outright; see the\n  reclassification rules below, which are the one sanctioned way it changes. A legacy missing qualifier\n  round number may be filled only after the database verifies the same entrant,\n  an open qualifier, and an unused valid number. Continue Round obtains those\n  choices from the authenticated server and asks the player to select one at\n  final submit; it never invents a qualifier result from a browser backup.\n- Authenticated users must only create or modify rounds they are allowed to own or coach.\n- Direct database writes cannot create, mutate, or delete a completed round\n  or its child shots. Only the postgres-owned SECURITY DEFINER round RPCs may\n  carry the transaction-local lifecycle marker needed for their atomic write.\n- CoachHelm completion bookkeeping uses a separate service-only RPC that can\n  change exactly `coachhelm_analyzed_at`, `coachhelm_failed_at`, and\n  `coachhelm_failure_reason` on an already completed round; it cannot alter\n  the recorded round, its identity, or its children.\n- Draft and submit behavior must preserve partial progress and recover from interrupted sessions.\n- The protected atomic submit RPC is the only live completion writer. On every\n  RPC failure, application code must preserve the server/device backups and\n  either reconcile a committed result or return the player to retry/recovery;\n  it must never delete and rebuild a saved round graph.\n- Atomic save and submit snapshots must reject any shot group whose hole is not\n  present in the supplied hole snapshot before replacing durable data. A\n  rejected snapshot leaves the existing round in progress and recoverable.\n- Valid local emergency saves remain recoverable until an explicit discard or\n  confirmed completion; recovery data must not expire merely because time has\n  passed.\n- A client-side abort after terminal submit is an unknown transport outcome,\n  not proof of a database rollback. The action may report success only after\n  an authenticated read confirms that exact round is completed; otherwise it\n  must preserve all recovery data and return a retryable result.\n- Browser recovery state is a durable fallback, not a time-limited cache.\n  Normal active snapshots must survive extended interruptions and be cleared\n  only after confirmed server progress, completion, or explicit deletion.\n- Recovery snapshots are owner-bound to the authenticated golf-player record\n  in localStorage and IndexedDB. A shared browser must neither surface another\n  player's shots nor delete that player's valid backup while filtering.\n  Pre-owner snapshots remain recoverable only on an already-authorized\n  Continue Round route for their exact persisted server round.\n- Browser-mirror save and clear operations are causally ordered. A confirmed\n  older save may clear only that version; a later shot snapshot remains\n  recoverable even if browser-database work finishes later.\n- Local recovery UI may appear only when its scorecard or shot data differs\n  from the server's persisted progress; a newer timestamp alone is not proof\n  of unsaved work.\n- Round review and CoachHelm triggers must use committed round data, not stale draft state.\n- Cache invalidation must include player-facing and coach-facing views that reflect the round.\n- Score, hole, shot, lie, and strokes-gained calculations must stay consistent with `docs/v3-research-golf-domain.md`.\n- Completed score history is immutable. Any post-submit derived write must use\n  its explicit protected database capability: strokes gained through\n  `recalculate_round_strokes_gained`, CoachHelm markers through\n  `record_round_coachhelm_terminal_state`, and recap text through\n  `save_round_ai_recap`. App code must never update a completed\n  `golf_rounds` row directly.\n- A lost local round id must not silently merge into an unrelated round, nor\n  silently drop invalid data while reporting success. `savePartialRound`'s\n  no-id branch (2026-09-02) reuses a course/date-matched `in_progress` round\n  only when it is an empty shell or the caller passed explicit recovery/reuse\n  intent, and never salvages a hole that has no durable server row without\n  telling the caller exactly which hole/field is wrong (`hole_invalid`). Full\n  mechanics live in `memory/features/shot-tracking.md`'s save/submit result\n  contract, since the RPCs and TypeScript guards this touches are shared with\n  shot tracking, not lifecycle-specific.\n- A qualifier round number derived server-side (the client sent none) must\n  never re-mint a number the player's own in-progress round already holds —\n  the unique index on `golf_rounds` over `(qualifier_id, player_id,\n  qualifier_round_number)` (migration `20260823000000`) covers `in_progress`\n  rows, not only `completed` ones. `getNextQualifierRoundNumber` and\n  `savePartialRound`'s derivation share one implementation\n  (`src/lib/golf/qualifier-round-number.ts`) for exactly this reason.\n- A device that has fallen behind the server on a round it is tracking must\n  never write to it again until reloaded (2026-09-02, B2/B9). Neither\n  Continue Round's nor New Round's background status poll or explicit save\n  `conflict` handling may adopt the server's `updated_at` into the\n  optimistic-lock token while proving this device is behind — both\n  `savePartialRound` and `submit_round_atomic` are full-snapshot REPLACE, so\n  a stale device that resyncs its lock token can overwrite a genuinely newer\n  server round with its own outdated in-memory holes/shots. The one\n  sanctioned exception is a background beacon save's own unreadable response,\n  self-healed exactly once. Full mechanics (the write-blocking flag, the\n  beacon self-heal window, the Reload UI) live in\n  `memory/features/shot-tracking.md`'s Current State — this is the same\n  optimistic-lock/RPC surface the lost-round-id bullet above shares, not a\n  lifecycle-specific mechanism.\n- A round's date must not be settable in the future from either round-start\n  screen (2026-09-02, B7): the date input caps at the local \"today\" and\n  `validateBeforeStart` (the one gate both New Round entry points share)\n  refuses a future date before `persistRoundStart` ever creates the row —\n  previously only the terminal submit path enforced this, by which point an\n  entire round could already have been tracked under the wrong day. Not yet\n  addressed: an in-progress round already created with a future date before\n  this fix has no in-app way to correct its date; only the block on new\n  future-dated rounds shipped this date, tracked as an explicit gap here\n  rather than silently declared solved.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 107,
+        "heading": "Business Rules"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "docs/v3-research-golf-domain.md",
+          "memory/features/shot-tracking.md",
+          "src/lib/golf/qualifier-round-number.ts"
+        ],
+        "globs": [],
+        "identifiers": [
+          "golf_rounds"
+        ]
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c43-other",
+      "kind": "other",
+      "text": "- **Re-typing a round is not editing it.** Changing `round_type` /\n  `qualifier_id` / `qualifier_round_number` changes what a round COUNTS\n  TOWARD; it does not touch a single stroke. The lifecycle guard's blanket\n  refusal has twice been over-broad for this reason — once for completed\n  rounds (fixed 2026-08-24 after four Guilford players were stranded) and once\n  for unfinished ones (`20260830120000`, APPLIED to production 2026-08-31,\n  recorded in `supabase_migrations.schema_migrations` alongside\n  `20260827060000`, which had also never been applied). Immutability of SCORES\n  is the invariant; immutability of CLASSIFICATION never was.\n- **`public.reclassify_golf_round` is the only sanctioned write path**, and it\n  is a public API: SECURITY DEFINER, granted to `authenticated`, callable\n  directly with any arguments by any signed-in user. Every rule that keeps a\n  qualifier coherent therefore lives IN the function — qualifier exists, is\n  open, the player is entered, and the round-number slot is free. The\n  TypeScript action keeps its own copies so a refusal can be a sentence rather\n  than a SQLSTATE, but the action is not the enforcement and must never be\n  treated as it. (Until `20260830120000` those four checks existed only in the\n  action, so a direct RPC call bypassed all of them.)\n- **A round counts in a qualifier because of `qualifier_id`, not\n  `round_type`.** They are separate columns and both must agree. Setting only\n  the type produces a round that calls itself a qualifier, passes every type\n  check, renders correctly — and never appears in the standings. Converting\n  away from a qualifier clears the linkage rather than orphaning it.\n- **Entry in the qualifier is the tenancy boundary**, not the round's\n  `team_id`. Rows in `golf_qualifier_entries` are coach-managed (all three\n  write policies are `is_golf_team_coach`), so a player cannot forge their way\n  into another program's qualifier. A `team_id` comparison is defence in depth\n  only, and must tolerate a NULL `team_id` — production carries rounds without\n  one, and refusing those would be a regression rather than a fix.\n- **A qualifier round number is a slot, and a slot can be occupied.** Any\n  surface offering a round number must offer only the numbers actually free\n  for that player in that qualifier, and must say so when none are. Offering\n  every number and defaulting to 1 is what the 2026-08-30 \"players still\n  cannot edit round type after the round\" report turned out to be: a player\n  fixing a mis-tapped round has usually already recorded the qualifier's\n  earlier rounds, so 1 is precisely the slot that is not free, and every save\n  failed on the clash check with nothing on screen naming an available number.\n  A control that can only offer a losing move reads as a broken feature, not\n  as a validation.\n- **A coach entering a player IS part of changing the round type.** The\n  qualifier picker used to be built only from `golf_qualifier_entries`, so a\n  player with no entry row saw an EMPTY dropdown — and converting a practice\n  round into a qualifier round is precisely the case where no entry exists\n  yet. Measured 2026-08-31 on one production team, two players held six\n  practice rounds between them and zero entries, so the one operation their\n  coach was asking for was unreachable from the UI. A coach is now offered\n  every open qualifier of their team, and `updateRoundType` creates the entry\n  as part of the save (idempotent — `UNIQUE (qualifier_id, player_id)`).\n  A PLAYER is still offered only qualifiers they are already in, because RLS\n  INSERT on entries is coach-only and offering more would move the same dead\n  end one step later into a silent zero-row write.\n- **Scope the qualifier picker by the ROUND's team, never the viewer's.** They\n  are different questions and they diverge in production: the round detail page\n  grants coach access when the round's PLAYER is a member of the coach's\n  cookie-resolved team, while `reclassify_golf_round` gates the qualifier\n  against `golf_rounds.team_id`. Measured 2026-08-31: 12 rounds carry a\n  `team_id` that is not a membership of their own player, and 8 carry none at\n  all. Offering the viewer's team's qualifiers therefore lets a coach pick one\n  the write then refuses — after the player has been entered into it. Ask the\n  question the enforcement asks.\n- **Enter the player LAST, and take it back if the write is refused.** The\n  entry is created only after the qualifier, team, round-number and slot-clash\n  checks have all passed, immediately before the RPC, and is deleted again if\n  the RPC still refuses on a race. An entry with no round is not harmless: it\n  puts the player on the coach's leaderboard at zero, produced by a save that\n  reported failure.\n- **A CONCLUDED qualifier is still a valid target.** Owner instruction\n  2026-08-31: there is no time limit on correcting what a round counts toward.\n  A round recorded as practice by mistake was always meant to count in that\n  qualifier, and the competition ending does not make the mistake less wrong.\n  `20260831180000` removes the refusal from `reclassify_golf_round`; every\n  other rule it enforces is retained verbatim.\n  - This **moves a published result** — `get_qualifier_leaderboard` recomputes\n    live from `golf_rounds` — so the picker labels such a qualifier\n    `(completed)`, warns before saving, and says so again in the confirmation.\n    Visible, not silent, rather than forbidden.\n  - It could not have been a database-only change. The refusal lived in THREE\n    places: the page filtered completed qualifiers out of the picker, the\n    action refused before ever calling the RPC, and the RPC refused again.\n    Removing only the database check would have changed nothing a coach could\n    see. When a rule appears enforceable in the database, check the layers\n    above it before calling the fix a data fix.\n  - **Submitting and STARTING a round in a completed qualifier are open too**,\n    on the same instruction and in the same change. Opening only submission\n    would have been half a fix: a round must be started before it can be\n    submitted, so `getNextQualifierRoundNumber`'s closed-qualifier refusal\n    would simply have become the new dead end one step earlier. Both guards\n    are gone; `qualifier_closed` now has no producer, which makes the\n    allowlist entry unused rather than wrong.\n  - **What still protects the standings**, and is deliberately untouched: the\n    player must be ENTERED, the round number must be within `num_rounds`, and\n    the slot must be free. Those are the real constraints. The status check\n    only ever protected the clock.\n- **The empty state must name a dead end the READER can act on.** The previous\n  copy told whoever was looking that \"a coach needs to add them to a qualifier\n  first\" — while the coach was the one reading it. That is a loop, not an\n  explanation, and it is what the 2026-08-31 report described.\n- **The live round's type is changed by the PLAYER, on the scoring screen.**\n  Owner decision 2026-08-31, after measuring: NO coach surface anywhere lists\n  or links an in-progress round — all four coach-facing reads in\n  `dashboard-data.ts` filter `.eq('status','completed')`, and every\n  `in_progress` read in `golf.ts` is player-scoped. Letting a coach open one\n  was therefore reachable only by typing a URL, and widened what a coach can\n  touch for no gain; it was reverted the same day. The editor now renders on\n  `/golf/dashboard/rounds/continue/[id]`, which already scopes its round to\n  `player.id`, so it is always the player's own.\n  - Rendered from the SERVER component, outside `ContinueRoundClient`. That\n    component owns live scoring, autosave and recovery; a type picker does not\n    belong inside that state machine.\n  - Player rules apply: only qualifiers the player is already ENTERED in,\n    because RLS makes entry creation coach-only.\n- **A round re-typed mid-play must still submit.** Saving calls\n  `router.refresh()`, which re-runs the page and rebuilds `setupData` — so the\n  qualifier identity the submit path reads is the one just written. But a\n  client that loaded EARLIER still carries the old value, and the submit path\n  used to answer that with *\"not a qualifier round. Ask a coach to update its\n  type\"* — for a change the player had just made themselves, on a round they\n  could then no longer submit. The stale value is now DROPPED, not used to\n  refuse: a client still cannot reclassify through submit, which was the\n  protection that branch existed for.\n- **An unfinished round has to be reachable to be re-typed.** The round detail\n  page redirected every `in_progress` round to the scoring screen before\n  access was even resolved, so the round-type editor did not exist for live\n  rounds on any surface. With the guard also refusing them, the operation was\n  blocked at both ends at once and fixing only the guard would have changed\n  nothing visible. A player still goes to scoring — they want to resume — but\n  a coach gets the detail page.\n- **Submission completes a re-typed round as if it had started that way.** The\n  submit path treats the PERSISTED round as authoritative for its qualifier\n  identity (`effectiveRoundType`/`effectiveQualifierId` are overwritten from\n  the stored row), so a round moved into a qualifier while in progress\n  validates, claims its slot, and refreshes the standings on completion. No\n  extra step is needed at completion time.\n- **Moving a round between qualifiers leaves stored totals stale unless they\n  are refreshed.** `get_qualifier_leaderboard` recomputes live from\n  `golf_rounds`, so a coach's leaderboard is always right; but\n  `golf_qualifier_entries` ALSO carries `score` / `total_score` /\n  `total_to_par` / `rounds_completed`, and `getPlayerQualifiers` renders the\n  player's own card from those. Submitting was the only thing that refreshed\n  them, which was sufficient only while a round's qualifier identity was fixed\n  at creation. `updateRoundType` now refreshes both sides of a move via\n  `updateQualifierEntryStats` (`src/lib/golf/qualifier-standings.ts`, shared\n  with the submit path). Do NOT reach for `public.update_qualifier_leaderboard`\n  for this: it computes the same thing but is not SECURITY DEFINER, so it\n  writes under the caller's RLS and a player-session call silently matches no\n  row — and measured 2026-08-31 nothing in the repo or the database called it,\n  no trigger being wired to it.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 218,
+        "heading": "Business Rules > Reclassification — changing what a round counts toward"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/lib/golf/qualifier-standings.ts"
+        ],
+        "globs": [],
+        "identifiers": [
+          "golf_qualifier_entries",
+          "golf_rounds"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c44-ui_contract",
+      "kind": "ui_contract",
+      "text": "- New round, continue round, review, loading, error, and recovery routes must all be usable on mobile.\n- Draft/recovery screens must clearly distinguish recoverable local/session state from submitted server state.\n- Submission should make progress and failure states visible enough to prevent duplicate or uncertain submits.\n- Empty states should say whether the player has no rounds, no unfinished rounds, or no review yet.\n- Continue Round uses the shared Fairway mobile header, scorecard controls,\n  buttons, and recovery modal. Its save-and-exit action is secondary; the live\n  shot/complete control is the only primary action in the thumb zone.\n- The confirmed-course scorecard editor (`FairwayHoleConfig`) follows the\n  9/18 and Front/Back controls that sit above it on the same screen: a change\n  to the seeded baseline re-seeds the editable holes (compared by content, so\n  the player's own par/yardage edits survive ordinary re-renders), and Start\n  round saves exactly the holes on screen. Before 2026-09-01 the editor seeded\n  once on mount, so \"9 holes · Front 9\" tapped after the course was confirmed\n  still started an 18-hole round (Shenandoah field report).",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 368,
+        "heading": "UI Contract"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c45-risk",
+      "kind": "risk",
+      "text": "- Race conditions between save draft, submit, and recovery.\n- Undo, edit, and delete actions share a local single-flight guard. If the\n  authorized server lookup confirms a shot is already absent, Undo and Delete\n  (where removal IS the intent) reconcile only their stale local reference\n  instead of replaying a destructive delete or leaving the active round\n  blocked. Edit (2026-09-02, B1) is deliberately different: the same\n  server-confirmed-absent signal on an EDIT means the point-update path\n  cannot find the shot by its (rotated) id, not that the shot itself is gone —\n  the edit is applied to local history and persisted through a full-snapshot\n  save instead of being reconciled away. See `memory/features/shot-tracking.md`.\n- Background round-status polling is advisory for TRANSPORT failures — it\n  never decides whether a player can save, continue, or recover a committed\n  round on a transient outage, retrying without a player-facing alarm and\n  reporting only a sustained failure once. As of 2026-09-02 (B2) it is NOT\n  merely advisory for a STALENESS result: it can now block further writes on\n  the active round (see the multi-device business rule above), the same way\n  an explicit save `conflict` does — a stale device must never overwrite\n  newer server holes, whether the staleness was noticed by a poll or a save.\n- Discarding a round races any save already in flight for the same id\n  (2026-09-02, C1): a `round_missing` answer that landed after the delete\n  used to re-create the round. Both round screens now refuse to drop the id\n  or re-create once `handleDeleteRound` has marked the round discarded. See\n  `memory/features/shot-tracking.md`.\n- A qualifier the coach closes between scoring and submit (2026-09-02, C3)\n  leaves the round `in_progress` — `submit_round_atomic` refuses before any\n  write — so the round screens no longer read that refusal as \"round already\n  completed\"; they offer reclassify-to-practice (`updateRoundType`, whose\n  RPC has accepted an `in_progress` round since migration `20260830120000`)\n  as the way out instead of a retry that cannot succeed.\n- Open from the same pass, none started: C2 (the v1 offline drain's\n  unattended auto-submit, and a staleness compare before recovery\n  re-submits), C4 (recovery-snapshot equivalence normalisation — its spec is\n  committed and skipped, the fix is unwritten), the B7 correction path\n  above, and the submit trigger fan-out (migration D).\n- Bad route revalidation after acknowledgement or player feedback.\n- Hook-order or hydration issues in round-entry and review screens.\n- Schema replay drift in Supabase migrations touching round/shot/review tables.\n- Stats cache mismatch after edits or recomputation.\n- Lifecycle migrations that introduce a completed-round guard can strand older\n  direct writers unless their compatible RPC path and regression tests ship in\n  the same release.\n- The post-round AI recap (`round-recap.ts`) must be handed the player's own\n  first name (`golf_players.first_name`, cleaned by `promptSafeName`, falling\n  back to \"the player\") both as a fact and in the third-person rule. Until\n  2026-09-02 the prompt named nobody and offered \"Nick\" as an example, and the\n  model copied the example into a Shenandoah player's stored recap.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 385,
+        "heading": "Known Risk Areas"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/features/shot-tracking.md"
+        ],
+        "globs": [],
+        "identifiers": [
+          "golf_players"
+        ]
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c46-test",
+      "kind": "test",
+      "text": "- Unit tests for schemas and calculation helpers.\n- Action tests for draft, submit, feedback, and revalidation behavior.\n- RLS tests for round and shot ownership.\n- Regression coverage for every explicit completed-round write capability and\n  a migration replay/RLS suite for its grants and security boundary.\n- Playwright smoke for new round, continue round, submit/review, and mobile recovery.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 434,
+        "heading": "Tests To Prefer"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c47-other",
+      "kind": "other",
+      "text": "The round chrome owns the iOS status-bar zone: the Capacitor WKWebView is\nedge-to-edge (`contentInset: 'never'`), so `FairwayScorecardHeader`'s sticky\nbar pads `env(safe-area-inset-top)` (inside the measured element — the\npublished `--scorecard-height` var includes it), and both\n`FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating\nClose fold the inset into their top offsets. Off-iOS these resolve to the\nprior paddings (env() = 0). No lifecycle, autosave, or navigation semantics\nchanged. Context: docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md\n(F-SAFEAREA-02/03/04); change ledger entry of the same date.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 443,
+        "heading": "iOS shell presentation (added 2026-08-26)"
+      },
+      "date": "2026-08-26",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c48-other",
+      "kind": "other",
+      "text": "Addendum (same date, live owner QA): the shared `Segmented` control — used\nacross round entry (front/back nine, 9/18 holes) — gained a dark-scope\naccent-green selected thumb and full-contrast inactive labels\n(`src/components/fairway/controls/segmented.tsx`); light mode unchanged.\nThe push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired\n`warm-*` text tokens that rendered unreadable in dark scope. The new-round hole editor's par chips fire the selection detent as of the same date (§32 gap closed by live bridge-log QA).",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 453,
+        "heading": "iOS shell presentation (added 2026-08-26)"
+      },
+      "date": "2026-08-26",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "src/components/fairway/controls/segmented.tsx"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c49-other",
+      "kind": "other",
+      "text": "- `memory/context/golfhelm-features.md`\n- `memory/context/golfhelm-database.md`\n- `docs/features/SHOT_TRACKING_DATA_FLOW.md`\n- `docs/features/SHOT_TRACKING_VERIFICATION.md`\n- `docs/ROUND_REVIEW_ACCURACY_REPORT.md`\n- `docs/v3-testing-standards.md`",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 462,
+        "heading": "Related Docs"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/context/golfhelm-features.md",
+          "memory/context/golfhelm-database.md",
+          "docs/features/SHOT_TRACKING_DATA_FLOW.md",
+          "docs/features/SHOT_TRACKING_VERIFICATION.md",
+          "docs/ROUND_REVIEW_ACCURACY_REPORT.md",
+          "docs/v3-testing-standards.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c50-other",
+      "kind": "other",
+      "text": "Round entry and tracking chrome are safe-area-native in the Capacitor shell:\n`FairwayScorecardHeader` pads `env(safe-area-inset-top)` (publishing\n`--scorecard-height` inclusive of the inset), both `FairwayNewRoundEntry`\nstep wrappers fold the inset into top padding, and the course-picker close\ncontrol sits below the status bar. The shared `Segmented` control renders an\naccent-green selected thumb in dark scope. Presentation layer only — no\nlifecycle contract change. Ledger: the round-lifecycle file under `memory/ledgers/changes/`\n(2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`\n(course picker, tee step, setup band, and scorecard header captures).",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 471,
+        "heading": "iOS shell chrome (updated 2026-08-26)"
+      },
+      "date": "2026-08-26",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/ledgers/changes/",
+          "docs/audits/evidence/ios-premium-2026-08-25/"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c51-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-26 — a rescued round records as rescued, not failed\n\n- SHA: recorded in the follow-up ledger commit on `feat/bridge-observability`.\n- Change: the submit path marked the flight-trace RPC step failed *before*\n  `attemptDirectSubmitFallback` ran. `finalize()` forces a trace to `failure`\n  whenever any step carries `failure`, so a round the fallback successfully\n  saved was still recorded as a failed submit. The outcome is now deferred\n  until the fallback resolves: on rescue the RPC step is downgraded to a\n  warning, a new `db.direct_submit_fallback` step (requiredness\n  `best_effort`, so it never appears in `missing_required_steps` for the\n  overwhelming majority of submits) records the recovery, and the trace\n  finalizes `success`. Only a fallback that also fails produces `failure`.\n- Also: `persistStart` was awaited without a bound. It now races a 1500ms\n  timeout and degrades to the inert no-op recorder, closing its Sentry span\n  rather than leaking it — the recorder gets switched on mid-incident, which\n  is exactly when a hung diagnostic RPC would be least welcome on a save.\n- Why: the recovered-from-a-transient-failure case is precisely what the new\n  forensics and RCA surfaces exist to explain, and it was the one case the\n  trace described wrongly.\n- Reachability, stated plainly: `attemptDirectSubmitFallback` is currently a\n  stub that always returns failure — neutered after the 2026-08-20\n  round-destruction incident and held there by the no-destructive-write rule —\n  so the rescued path is not reachable through the public action today. The\n  success ordering is therefore proven directly against the real recorder\n  rather than through the action, and both currently-reachable branches keep\n  regression coverage.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 3,
+        "heading": "a rescued round records as rescued, not failed"
+      },
+      "date": "2026-08-26",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c52-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-26 — arm the flight recorder on submit and autosave\n\n- SHA: recorded in the follow-up ledger commit on `feat/bridge-refit`.\n- Change: `submitGolfRoundComprehensive` and `savePartialRound` now start a\n  Helm flight trace, pass the `_helm_trace` key through `p_round_data` so the\n  in-RPC checkpoints arm, record the RPC step, and finalize with the outcome.\n  Failures are always traced; successes follow the recorder's own enable and\n  sampling gates. The recorder is fail-open by construction — every one of its\n  calls swallows internally, so no new failure mode reaches a saving golfer.\n  The same catch paths now stamp `helmTraceId` into the Helm Bridge log\n  context, which is what joins an `admin_events` row to its step-level trace.\n- Also: `golf.ts` branched on an `internal_error` result shape carrying\n  `{error_code, step, detail}` that the current RPC bodies never construct.\n  The handling was tightened to the shapes the RPC actually emits\n  (`success:false` with a message, transport errors, the `busy` single-flight\n  marker) with one defensive fallback branch that logs honestly when it fires.\n- Why: the recorder, its step map, its service-role RPC facades, and the\n  Bridge Trace Explorer were all built and individually tested, but nothing\n  ever called `createHelmFlightRecorder` — so the SQL checkpoints never armed\n  and the explorer listed nothing on real traffic. A round failure could be\n  seen but not located within the transaction.\n- Not yet applied: the recorder's own migration (`20260825200811`) and its new\n  retention migration (`20260826010000`) are R3, owner-applied, and confirmed\n  absent from production. Until they are applied the wiring is inert by\n  design, and the explorer says so rather than showing an empty list.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 30,
+        "heading": "arm the flight recorder on submit and autosave"
+      },
+      "date": "2026-08-26",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c53-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — suppress duplicate recovery after a confirmed scorecard\n\n- SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.\n- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`.\n- Change: Continue Round now compares a local emergency snapshot to the\n  server scorecard before offering recovery, clears only snapshots covered by\n  an acknowledgement, and skips page-hide backup after all holes are durable.\n- Why: iOS backgrounding after a confirmed 18-hole scorecard created a newer\n  but identical fallback that blocked the submission summary with a false\n  \"Recover Unsaved Progress?\" drawer.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 56,
+        "heading": "suppress duplicate recovery after a confirmed scorecard"
+      },
+      "date": "2026-08-22",
+      "sha": "48b41e1c4d8c86f12f5a2becd11454f5bd3899e2",
+      "refs": {
+        "paths": [
+          "memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c54-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — require server-backed start and completed-hole checkpoints\n\n- SHA: `a68d7c299` (implementation commit; amended after ledger stamping).\n- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`.\n- Change: the round parent is persisted before tracking starts, completed-hole\n  writes are acknowledged before the player advances, and Continue Round is\n  the normal unfinished-round recovery surface.\n- Why: transient saves, app backgrounding, or browser closure must not make a\n  started round disappear from the player’s server-backed round list.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 67,
+        "heading": "require server-backed start and completed-hole checkpoints"
+      },
+      "date": "2026-08-22",
+      "sha": "a68d7c299",
+      "refs": {
+        "paths": [
+          "memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c55-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — preserve parent rounds on child-write failure\n\n- SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`.\n- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`.\n- Change: partial-save hole and shot upsert errors retain the `in_progress`\n  parent row and prior durable data; a local snapshot from a missing server\n  round is discoverable through the player recovery path.\n- Why: an active round must remain retryable after a transient save failure,\n  including when a user has returned from sign-in without its local round ID.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 77,
+        "heading": "preserve parent rounds on child-write failure"
+      },
+      "date": "2026-08-22",
+      "sha": "f06c9bf34b72e9b368d49db79fa9c0c88dc0e659",
+      "refs": {
+        "paths": [
+          "memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c56-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — active-round stale-shot reconciliation\n\n- SHA: 31cf3f845f19af7ff962b362837210f333fc4fe5 (implementation repair commit).\n- Incident: `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`.\n- Change: server-side `deleteShot` now returns the stable `shot_not_found`\n  code when the user-scoped lookup finds no row. Undo and Edit Shot use a\n  shared local single-flight guard, reconcile that specific stale reference,\n  and wait for cascading edit writes before releasing the guard.\n- Why: concurrent Undo/Edit actions could apply multiple local-history\n  removals, while an already-completed delete surfaced as a misleading\n  production server error to the golfer.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 87,
+        "heading": "active-round stale-shot reconciliation"
+      },
+      "date": "2026-08-22",
+      "sha": "31cf3f845f19af7ff962b362837210f333fc4fe5",
+      "refs": {
+        "paths": [
+          "memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c57-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — durable checkpoint, recovery, and lifecycle repair\n\n- Release candidate: round-lifecycle reliability promotion (final promoted SHA\n  is recorded in `memory/ledgers/deployments.md`).\n- Change: completed-hole checkpoints retain valid emergency saves without a\n  time expiry; recovery is scoped to the active player and no longer prompts\n  for data already durable on the server. Qualifier setup/manual closure and\n  saved-round identity rules now fail with actionable messages instead of\n  mutating or stranding a player's existing round.\n- Database: restores the protected round save/submit lifecycle contract,\n  replaces the invalid generic active-round DELETE trigger with typed trigger\n  functions, and permits only a coach/player-authorized editorial recap write\n  on completed rounds.\n- Why: a stale migration could break roster/qualifier administration, while\n  older recovery and recap paths could surface misleading errors despite the\n  player's shots being intact.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 99,
+        "heading": "durable checkpoint, recovery, and lifecycle repair"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "memory/ledgers/deployments.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c58-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — atomic snapshot hole-group integrity\n\n- Status: uncommitted local reliability repair; not deployed.\n- Change: `save_partial_round_atomic` and `submit_round_atomic` now reject a\n  snapshot before any replacement work when a shot group names a hole that is\n  absent from `p_holes`. Their former unmatched-hole fallback now raises rather\n  than silently continuing, preserving transaction safety if a future path\n  bypasses the preflight.\n- Why: both RPCs previously returned `success: true` while dropping unmatched\n  shot groups; submit could mark that incomplete graph as completed.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 116,
+        "heading": "atomic snapshot hole-group integrity"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c59-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — preserve all failed submit/checkpoint paths\n\n- Status: uncommitted local reliability repair; not deployed.\n- Change: removes the live direct delete/reinsert submit fallback and retains\n  the protected RPC as the sole completion writer. A client-side abort is\n  read-back reconciled only; every other failure returns the durable\n  server/device recovery path. The auto-save fallback no longer deletes an\n  in-progress parent round if an upsert of a hole or shot fails.\n- Why: a branch divergence reintroduced a legacy fallback that could delete a\n  round graph after an RPC error, while checkpoint cleanup could erase an\n  existing Continue Round record after a transient child-write failure.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 127,
+        "heading": "preserve all failed submit/checkpoint paths"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c60-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — keep Continue Round on the durable checkpoint path\n\n- SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.\n- Change: New Round and Continue Round advance only after a completed-hole\n  save succeeds. A retry preserves the original forward/return intent, and a\n  later shot edit or delete removes its now-invalid completed score before\n  any partial save. The Continue Round surface now uses the compact Fairway\n  course/progress header and a neutral save-and-exit control.\n- Why: active rounds need a single comprehensible persistence path and must\n  never serialize both the old completed version and reopened progress of the\n  same hole.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 138,
+        "heading": "keep Continue Round on the durable checkpoint path"
+      },
+      "date": "2026-08-22",
+      "sha": "4276cec7e2556aa4b1dffc92851ba780d2a67b1a",
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c61-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-23 — owner-bind and order device recovery snapshots\n\n- SHA: pending commit on PR #1604; not deployed.\n- Change: localStorage and IndexedDB snapshots now carry the authenticated\n  golf-player identity, shared-device scans hide but do not delete another\n  player's data, and browser-mirror saves/clears run in causal order.\n  Pre-owner snapshots remain recoverable only for the exact server round after\n  Continue Round has verified that player's ownership.\n- Why: a delayed browser-database clear could erase a newer snapshot, while an\n  unowned shared-device cache could be shown or accidentally re-homed by a\n  recovery fallback.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 150,
+        "heading": "owner-bind and order device recovery snapshots"
+      },
+      "date": "2026-08-23",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked",
+      "pr": "1604"
+    },
+    {
+      "id": "c62-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-23 — protect completed round writes at the database boundary\n\n- SHA: pending PR #1609 merge.\n- Change: completed rounds and their child records reject direct writes. The\n  atomic round RPCs set a transaction-local marker while running as their\n  postgres owner; ordinary application roles cannot use that marker to bypass\n  the guard.\n- Why: a stale client, direct API write, or later feature must not overwrite\n  completed score history or re-target a saved qualifier round.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 162,
+        "heading": "protect completed round writes at the database boundary"
+      },
+      "date": "2026-08-23",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked",
+      "pr": "1609"
+    },
+    {
+      "id": "c63-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — recap persist crosses helm_private as a definer boundary\n\n- SHA: pending commit (migration 20260825233000).\n- Change: `public.save_round_ai_recap` is now SECURITY DEFINER with a pinned\n  search_path; EXECUTE stays revoked from PUBLIC/anon and granted to\n  authenticated + service_role. `helm_private` remains fully locked — no\n  schema grants were added.\n- Why: the invoker wrapper resolved `helm_private.save_round_ai_recap` with\n  the caller's privileges, and 20260825052141's schema lockdown made that\n  impossible for every authenticated user — all production recap persists\n  failed 42501 (Sentry JAVASCRIPT-NEXTJS-PT, 9 users). See incident\n  INC-2026-08-25-recap-persist-schema-permission in this feature's\n  incidents directory.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 172,
+        "heading": "recap persist crosses helm_private as a definer boundary"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c64-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — privilege-contract suite, anon-grant normalization, rollback captures\n\n- SHA: pending commit on fix/save-round-ai-recap-definer-facade.\n- Change: added the lifecycle privilege-contract suite in `supabase/tests/rls/`\n  (25 catalog-level assertions: helm_private schema closure; definer mode,\n  owner, pinned search_path and role grants for the recap pair, heartbeat,\n  submit_round_atomic and save_partial_round_atomic; the lifecycle guard\n  stays private; two surface-wide zero tripwires). Added migration\n  `20260825235900_revoke_anon_from_secdef_admin_helpers.sql` aligning\n  `log_crm_stage_transition()` / `unresolve_admin_event(uuid[])` to\n  production's no-anon contract. Added `supabase/rollbacks/` with the\n  verbatim pre-fix production definition of `public.save_round_ai_recap`.\n- Why: the 20260825233000 outage proved behavioral tests alone cannot be\n  trusted for grant contracts here — local Postgres permitted an\n  invoker-wrapper path production denied (open investigation P1-10).\n  Contracts are now asserted against the catalog, the chain is aligned to\n  the production privilege contract rather than the reverse, and a\n  production rollback never requires git archaeology. Contract source: the\n  live production catalog, read 2026-08-25.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 186,
+        "heading": "privilege-contract suite, anon-grant normalization, rollback captures"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "supabase/tests/rls/",
+          "supabase/rollbacks/"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c65-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-26 — iOS safe-area fixes on round entry + tracking chrome\n\n- What: `FairwayScorecardHeader` sticky bar now pads `env(safe-area-inset-top)`\n  (the Prev/Exit/Next row rendered under the clock/Dynamic Island in the\n  Capacitor shell); `FairwayNewRoundEntry` both step wrappers fold the inset\n  into their top padding; `FairwayCoursePicker`'s floating Close moved below\n  the status-bar zone. Presentation-only — no autosave/navigation/score logic\n  touched; the `--scorecard-height` publish keeps padding inside the measured\n  element so ShotPills sticky offsets stay correct.\n- Why: iOS premium audit 2026-08-25 (docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md,\n  F-SAFEAREA-02/03/04) — the WKWebView is edge-to-edge (`contentInset:\n  'never'`), so shell-less round pages owned the status-bar zone and collided\n  with system UI on the flagship screen. Neutral off-iOS by construction\n  (env() = 0 → prior paddings). SHA: on feat/ios-premium-native-update.\n\n## 2026-08-26 (later, live owner QA) — dark-scope Segmented + push pre-prompt tokens\n\n- What: `segmented.tsx` selected thumb goes accent-600 in dark with\n  full-contrast labels (owner directive during coach QA); `PushPermissionSoftAsk.tsx`\n  headings off retired warm-* tokens (unreadable in dark scope). Presentation\n  only; light mode and all control semantics unchanged. Gates: eslint 0,\n  typecheck 0, controls suite 34/34.\n- Also same date: `FairwayHoleConfig` par chips now fire `fwHaptic('selection')`\n  (grammar §32 gap found by live bridge-log QA — chip toggled silently);\n  yardage typing stays silent. eslint 0 / typecheck 0.\n\n## 2026-08-26 (morning addendum) — dark-mode chrome refinements touching round surfaces\n\n- What: `Segmented` (shared control used by round entry's Front9/Back9 and\n  9/18-hole selectors) gains a dark-scope accent-green selected thumb and\n  full-contrast inactive labels; light mode unchanged. Launch splash gains a\n  dark variant and both grounds are now token-exact to `--fw-color-canvas`,\n  so entering a round from a cold launch no longer flashes off-brand cream.\n- Why: owner directives during live morning QA (\"highlighted should turn\n  green — no contrast\"; \"that cream isn't the right cream\"). Presentation\n  only; no round state machine, autosave, or scoring logic touched.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 206,
+        "heading": "iOS safe-area fixes on round entry + tracking chrome"
+      },
+      "date": "2026-08-26",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c66-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-26 — round summary: Submit Round pinned, always visible\n\n- SHA: f4216fef8.\n- Change: FairwayRoundSummarySheet split into a scrollable stats/scorecard\n  region and a pinned ModalShell.Footer action dock (Go Back / Submit\n  Round) with home-indicator safe-area padding. Previously the whole panel\n  scrolled as one and the flow's primary CTA was simply the last thing in\n  the scroll — off-screen on shorter devices or larger text.\n- Why: sweep finding (wf_07e7042d-6fa, rounds area) — no scroll affordance\n  signalled a CTA below the fold.",
+      "source": {
+        "kind": "ledger_changes",
+        "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+        "line": 243,
+        "heading": "round summary: Submit Round pinned, always visible"
+      },
+      "date": "2026-08-26",
+      "sha": "f4216fef8",
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c67-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-26 — flight-recorder wiring contract\n\n- SHA: recorded in the follow-up ledger commit on `feat/bridge-refit`.\n- Added `golf-round-submit-flight-recorder.test.ts` and\n  `golf-save-partial-round-flight-recorder.test.ts`.\n- Guarantees: the `_helm_trace` payload reaches the RPC argument; a recorder\n  that throws at any stage never fails or alters the save; `helmTraceId`\n  reaches the Bridge log context on the failure path.\n- Verification: the existing round-lifecycle suites were re-run unchanged —\n  inngest routing, save-partial-round, abort-no-destructive-fallback,\n  busy-carveout, and after-chain — alongside the full unit + unit-dom suite\n  (1210 files, 11,120 tests, 0 failures).",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 3,
+        "heading": "flight-recorder wiring contract"
+      },
+      "date": "2026-08-26",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c68-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — confirmed-snapshot recovery contract\n\n- SHA: `48b41e1c4d8c86f12f5a2becd11454f5bd3899e2`.\n- Added `src/lib/utils/emergency-save.test.ts` coverage for acknowledged-save\n  clearing, preservation of a newer concurrent fallback, equivalent server\n  progress with server-generated shot IDs, and non-equivalent scorecards.\n- Verification: targeted emergency-save tests (6), golf schema tests (25),\n  TypeScript, and ESLint passed. The repository-wide static preflight remains\n  blocked by an unrelated unchecked-Supabase-read baseline of 1050 vs 1049.\n  The Vercel production build for the deployed repair passed.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 16,
+        "heading": "confirmed-snapshot recovery contract"
+      },
+      "date": "2026-08-22",
+      "sha": "48b41e1c4d8c86f12f5a2becd11454f5bd3899e2",
+      "refs": {
+        "paths": [
+          "src/lib/utils/emergency-save.test.ts"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c69-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — server checkpoint verification\n\n- SHA: `a68d7c299` (implementation commit; amended after ledger stamping).\n- Coverage: targeted partial-save and round-tracking regressions, typecheck,\n  preflight, and production build for the start and completed-hole checkpoint\n  contract.\n- Guarantees: a committed in-progress parent survives until explicit discard or\n  completion, and a player cannot advance past a completed hole before the\n  server has acknowledged its persisted data.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 27,
+        "heading": "server checkpoint verification"
+      },
+      "date": "2026-08-22",
+      "sha": "a68d7c299",
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c70-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — child-write round preservation contract\n\n- SHA: `f06c9bf34b72e9b368d49db79fa9c0c88dc0e659`.\n- Added action-level regressions for failed hole and shot persistence against\n  an existing recoverable round, plus emergency-save discovery coverage.\n- Guarantees: child-write errors do not erase an in-progress parent; the next\n  retry or device recovery retains the prior durable state.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 37,
+        "heading": "child-write round preservation contract"
+      },
+      "date": "2026-08-22",
+      "sha": "f06c9bf34b72e9b368d49db79fa9c0c88dc0e659",
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c71-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — stale delete recovery contract\n\n- SHA: 31cf3f845f19af7ff962b362837210f333fc4fe5 (implementation repair commit).\n- Added `src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx`.\n- Guarantees: only one local destructive shot mutation can run at a time, and\n  Undo reconciles a server-confirmed `shot_not_found` response instead of\n  leaving the active round blocked.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 45,
+        "heading": "stale delete recovery contract"
+      },
+      "date": "2026-08-22",
+      "sha": "31cf3f845f19af7ff962b362837210f333fc4fe5",
+      "refs": {
+        "paths": [
+          "src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c72-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — recovery and protected-lifecycle regression suite\n\n- Release candidate: round-lifecycle reliability promotion.\n- Added/updated coverage for no-expiry emergency saves, stale recovery prompt\n  suppression, coach-facing active-round roster guards, qualifier manual\n  closure, recap lifecycle writes, checkpoint validation, and the database\n  lifecycle/RLS contracts.\n- Evidence before promotion: focused round tests, local Supabase lifecycle/RLS\n  SQL suites, typecheck, lint, and production build; the release run records\n  final command outcomes against the promoted SHA.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 53,
+        "heading": "recovery and protected-lifecycle regression suite"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c73-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — atomic snapshot integrity regression\n\n- Status: uncommitted local reliability repair; not deployed.\n- Added the atomic snapshot integrity suite in `supabase/tests/rls/`.\n- Guarantees: both atomic RPCs reject an unmatched shot-group/hole pair before\n  replacing data; a rejected partial save keeps its durable shot, and a\n  rejected submit keeps the round in progress with its durable hole and shot.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 64,
+        "heading": "atomic snapshot integrity regression"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "supabase/tests/rls/"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c74-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — failed submission/checkpoint durability\n\n- Status: uncommitted local reliability repair; not deployed.\n- Added regression coverage for a SQL-returned submit RPC failure and a\n  fallback hole-upsert failure against an existing in-progress round.\n- Guarantees: neither condition issues a destructive delete. A committed\n  submit is reconciled by read-back; an uncommitted one remains recoverable,\n  and every prior checkpoint remains visible in Continue Round.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 72,
+        "heading": "failed submission/checkpoint durability"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c75-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-22 — durable checkpoint navigation contract\n\n- SHA: `4276cec7e2556aa4b1dffc92851ba780d2a67b1a`.\n- Coverage: focused UI, recovery, offline-consolidation, mutation, and schema\n  tests exercise retry-on-failure, no navigation before acknowledgement, and\n  clearing a reopened hole's completed state before persistence.\n- Verification: 68 focused tests, TypeScript, ESLint, and the local production\n  build passed. The repository-wide preflight remains blocked only by its\n  unrelated stale unchecked-Supabase-read baseline (1,047 observed vs 1,049\n  expected), which this change intentionally does not rewrite.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 80,
+        "heading": "durable checkpoint navigation contract"
+      },
+      "date": "2026-08-22",
+      "sha": "4276cec7e2556aa4b1dffc92851ba780d2a67b1a",
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c76-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-23 — scoped recovery ownership and ordering contract\n\n- Added localStorage and IndexedDB regressions for shared-device isolation,\n  safe recovery of authorized pre-owner server snapshots, and acknowledged\n  snapshot cleanup that leaves a newer recovery copy intact.\n- Verification: targeted unit coverage, TypeScript, and ESLint are required\n  before merge. The direct-RPC pgTAP suite remains pending a database-enabled\n  runner.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 91,
+        "heading": "scoped recovery ownership and ordering contract"
+      },
+      "date": "2026-08-23",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c77-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-23 — completed-round database guard regression\n\n- The shot-detail visibility RLS fixture keeps its normal player-write scenario\n  in progress, seeds only its history scenario through the postgres-owner\n  lifecycle marker used by the atomic round RPCs, and asserts that a player\n  cannot mutate details on that completed history row.\n- The database suite therefore verifies both sides of the contract on a clean\n  local stack: player-owned in-progress details remain editable and\n  completed-round details remain immutable.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 100,
+        "heading": "completed-round database guard regression"
+      },
+      "date": "2026-08-23",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c78-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-23 — lost terminal-response reconciliation contract\n\n- Added action coverage for an atomic `submit_round_atomic` commit whose HTTP\n  response times out or is reported as Safari/WKWebView `Load failed`. The\n  action confirms the authenticated round's completed state and returns success\n  without executing any destructive fallback.\n- An unconfirmed abort remains safely retryable: its in-progress parent,\n  holes, shots, and persisted recovery backup are left untouched.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 110,
+        "heading": "lost terminal-response reconciliation contract"
+      },
+      "date": "2026-08-23",
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c79-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — recap wrapper guarantee flipped, call-path now exercised\n\n- The round-recap lifecycle pgTAP suite (`supabase/tests/rls/`) previously\n  asserted the public recap\n  endpoint \"remains SECURITY INVOKER\" — that assertion enshrined the 42501\n  schema-permission bug. It now asserts the definer boundary + pinned\n  search_path, and a new test executes the endpoint as the `authenticated`\n  role, proving the call reaches the private implementation instead of dying\n  at the schema boundary. Catalog-only suites cannot catch grant/visibility\n  regressions; the call-path test is the load-bearing guarantee.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 119,
+        "heading": "recap wrapper guarantee flipped, call-path now exercised"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "supabase/tests/rls/"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c80-ledger_entry",
+      "kind": "ledger_entry",
+      "text": "## 2026-08-25 — lifecycle privilege-contract suite\n\n- Added the lifecycle privilege-contract suite in `supabase/tests/rls/`: the\n  privilege contract of the whole lifecycle RPC surface asserted at the\n  catalog level (schema USAGE, EXECUTE grants, owner, definer mode, pinned\n  search_path), plus two zero tripwires — no public definer function is\n  anon-executable, and none is left on default PUBLIC ACLs.\n- Exists because the recap outage passed behavioral testing locally while\n  production denied the same privilege path (P1-10): catalog assertions\n  hold identically in every environment built from this chain, so a grant\n  regression fails CI even where local runtime behavior is lax. This suite\n  is the complement to the call-path test above, not a replacement for it.",
+      "source": {
+        "kind": "ledger_tests",
+        "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+        "line": 130,
+        "heading": "lifecycle privilege-contract suite"
+      },
+      "date": "2026-08-25",
+      "sha": null,
+      "refs": {
+        "paths": [
+          "supabase/tests/rls/"
+        ],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "exists"
+    },
+    {
+      "id": "c81-architecture_decision",
+      "kind": "architecture_decision",
+      "text": "## Decision\n\n### 1. One owner per kind of truth\n\nAuthority runs top-down. When two sources disagree, the higher one wins and the\nlower one is the thing to fix.\n\n<!-- markdownlint-disable MD013 -->\n\n| # | Kind of truth | Authority |\n| --- | --- | --- |\n| 1 | Live / generated mechanism truth | production, `src/lib/types/database.ts`, generated enforcement + tool-authority docs, and the code itself |\n| 2 | Durable repository policy | `AGENTS.md`, then scoped `.claude/rules/*.md` |\n| 3 | Semantic routing — which files belong to which feature | `memory/registry.yml` |\n| 4 | Current feature behaviour | `memory/features/<feature>.md` |\n| 5 | Runtime observability vocabulary | `src/lib/admin/feature-registry.ts` |\n| 6 | Confirmed product defects | `memory/incidents/<feature_id>/INC-*.md` |\n| 7 | Repair execution state | `memory/operations/release-queue.yml` |\n| 8 | Semantic history | `memory/ledgers/changes/**`, `tests/**`, `deployments.md` |\n| 9 | Consciously accepted control limitations | `config/control-plane-gaps.json` |\n| 10 | Architectural decisions | `memory/decisions/ADR-*.md` |\n| 11 | \"Is production healthy right now\" | Mission Control — **synthesis only** |\n| 12 | What was true on a past date | dated snapshots, audits, plans, `docs/archive/**` |\n\n<!-- markdownlint-enable MD013 -->\n\n### 2. Projections summarise; they never become second copies\n\nThis is the load-bearing rule, and the one every failure above violates. A\ngenerated file naming its generator is a projection. A hand-written table\nrestating what a registry holds is a second authority that will drift, and the\ndrift will be invisible because both copies look equally confident.\n\nConcretely: Mission Control reads from the authorities and stores no independent\nnarrative of what an issue is, which feature owns it, or whether it is fixed.\n`docs/HELM_OS.md` maps authorities and duplicates none of their mutable\ncontents.\n\n### 3. Identity and name normalization\n\nOne canonical identifier per semantic feature: the *",
+      "source": {
+        "kind": "adr",
+        "path": "memory/decisions/ADR-2026-08-30-helm-knowledge-authority.md",
+        "line": 1,
+        "heading": "ADR-2026-08-30 — Helm knowledge authority"
+      },
+      "date": "2026-08-30",
+      "sha": "df7bb77fd55d5f9ffa2eb068faa59ec318c6206e",
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked",
+      "adrStatus": "accepted",
+      "adrSupersedes": null
+    },
+    {
+      "id": "c82-rls_policy",
+      "kind": "rls_policy",
+      "text": "POLICY round_reviews_insert_coach",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260602191000_round_reviews_insert_coach_policy.sql",
+        "line": 23,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c83-function",
+      "kind": "function",
+      "text": "FUNCTION recalculate_round_strokes_gained",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260606150000_recalc_sg_sync_golf_rounds.sql",
+        "line": 27,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "recalculate_round_strokes_gained"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c84-rls_policy",
+      "kind": "rls_policy",
+      "text": "POLICY golf_rounds_update_team",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260808150000_golf_rounds_team_write_check.sql",
+        "line": 29,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c85-rls_policy",
+      "kind": "rls_policy",
+      "text": "POLICY golf_rounds_update",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260808150000_golf_rounds_team_write_check.sql",
+        "line": 80,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c86-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.reject_completed_round_child_mutation",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260823213049_harden_golf_round_lifecycle_boundaries.sql",
+        "line": 60,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c87-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.reject_completed_round_detail_mutation",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260823213049_harden_golf_round_lifecycle_boundaries.sql",
+        "line": 109,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c88-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.guard_golf_round_lifecycle",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260823213049_harden_golf_round_lifecycle_boundaries.sql",
+        "line": 156,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c89-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.prevent_active_round_stranding",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260823213049_harden_golf_round_lifecycle_boundaries.sql",
+        "line": 215,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c90-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.reject_completed_round_child_mutation",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+        "line": 64,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c91-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.reject_completed_round_detail_mutation",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+        "line": 111,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c92-function",
+      "kind": "function",
+      "text": "FUNCTION helm_private.guard_golf_round_lifecycle",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+        "line": 160,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c93-function",
+      "kind": "function",
+      "text": "FUNCTION record_round_coachhelm_terminal_state",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+        "line": 275,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "record_round_coachhelm_terminal_state"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c94-function",
+      "kind": "function",
+      "text": "FUNCTION reclassify_golf_round",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+        "line": 309,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "reclassify_golf_round"
+        ]
+      },
+      "verified": "not_checked"
+    },
+    {
+      "id": "c95-function",
+      "kind": "function",
+      "text": "FUNCTION prevent_golf_qualifier_round_cap_regression",
+      "source": {
+        "kind": "migration",
+        "path": "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+        "line": 382,
+        "heading": null
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": []
+      },
+      "verified": "not_checked"
+    }
+  ],
+  "superseded_claims": [
+    {
+      "id": "c24-test",
+      "kind": "test",
+      "text": "e2e/**/round*.spec.ts",
+      "source": {
+        "kind": "registry",
+        "path": "memory/registry.yml",
+        "line": 280,
+        "heading": "code.tests"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [
+          "e2e/**/round*.spec.ts"
+        ],
+        "identifiers": []
+      },
+      "verified": "absent",
+      "superseded": {
+        "reason": "ABSENT_FROM_TRACKED_FILES",
+        "confidence": "mechanical",
+        "evidence": "e2e/**/round*.spec.ts — matches 0 files in `git ls-files` as of c34aa936ec50"
+      }
+    },
+    {
+      "id": "c40-core_data",
+      "kind": "core_data",
+      "text": "- `golf_rounds`\n- `golf_round_holes`\n- `golf_shots`\n- `golf_courses`\n- `golf_holes`\n- `golf_round_reviews`\n- `golf_player_stats_cache`\n- CoachHelm insight/evidence tables when post-round intelligence runs.",
+      "source": {
+        "kind": "feature_doc",
+        "path": "memory/features/golf-round-lifecycle.md",
+        "line": 94,
+        "heading": "Core Data"
+      },
+      "date": null,
+      "sha": null,
+      "refs": {
+        "paths": [],
+        "globs": [],
+        "identifiers": [
+          "golf_rounds",
+          "golf_round_holes",
+          "golf_shots",
+          "golf_courses",
+          "golf_holes",
+          "golf_round_reviews",
+          "golf_player_stats_cache"
+        ]
+      },
+      "verified": "not_checked",
+      "superseded": {
+        "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
+        "confidence": "mechanical",
+        "evidence": "golf_round_holes not found in src/lib/types/database.ts (golf_round_holes already tracked in .doc-schema-baseline.json)"
+      }
+    }
+  ],
+  "sources_consulted": [
+    {
+      "path": "memory/registry.yml",
+      "kind": "registry"
+    },
+    {
+      "path": "memory/features/golf-round-lifecycle.md",
+      "kind": "feature_doc"
+    },
+    {
+      "path": "memory/ledgers/changes/golf_round_lifecycle.md",
+      "kind": "ledger_changes"
+    },
+    {
+      "path": "memory/ledgers/tests/golf_round_lifecycle.md",
+      "kind": "ledger_tests"
+    },
+    {
+      "path": "src/lib/admin/feature-registry.ts",
+      "kind": "feature_registry_ts"
+    },
+    {
+      "path": "src/lib/types/database.ts",
+      "kind": "database_types"
+    },
+    {
+      "path": "memory/decisions/ADR-2026-08-30-helm-knowledge-authority.md",
+      "kind": "adr"
+    },
+    {
+      "path": "supabase/migrations/20260602190000_grant_update_round_reviews_authenticated.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260602191000_round_reviews_insert_coach_policy.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260603040000_grant_update_golf_rounds_authenticated.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260605040000_reaffirm_golf_rounds_update_grants.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260606150000_recalc_sg_sync_golf_rounds.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260607120000_grant_update_golf_rounds_authenticated_tablewide.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260609210000_golf_rounds_update_with_check_and_penalty_backfill.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260808150000_golf_rounds_team_write_check.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260817121500_golf_shots_select_policy_perf.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260821035329_can_read_golf_shot_detail_planner_cost.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260823213049_harden_golf_round_lifecycle_boundaries.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20260825052141_restore_golf_round_lifecycle_contract.sql",
+      "kind": "migration"
+    }
+  ]
+}
