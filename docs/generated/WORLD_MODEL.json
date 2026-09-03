@@ -3599,6 +3599,48 @@
         "severity": "warning",
         "path": "src/lib/baseball/operational-rule-engine.ts",
         "line": 465
+      },
+      {
+        "id": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:authorization_denial_42501",
+        "label": null,
+        "severity": "warning",
+        "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+        "line": 87
+      },
+      {
+        "id": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:privacy_sentinel_sweep",
+        "label": null,
+        "severity": "critical",
+        "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+        "line": 361
+      },
+      {
+        "id": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:schema_mismatch_42703",
+        "label": null,
+        "severity": "critical",
+        "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+        "line": 280
+      },
+      {
+        "id": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:stale_optimistic_lock",
+        "label": null,
+        "severity": "critical",
+        "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+        "line": 308
+      },
+      {
+        "id": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:unique_violation_expected_23505",
+        "label": null,
+        "severity": "warning",
+        "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+        "line": 171
+      },
+      {
+        "id": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:zero_row_update",
+        "label": null,
+        "severity": "critical",
+        "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+        "line": 336
       }
     ],
     "sentrySignals": [
@@ -5934,6 +5976,78 @@
     },
     {
       "source": "admin_platform",
+      "target": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:authorization_denial_42501",
+      "kind": "feature_invariant",
+      "evidence": [
+        {
+          "kind": "source_reference",
+          "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+          "line": 87
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:privacy_sentinel_sweep",
+      "kind": "feature_invariant",
+      "evidence": [
+        {
+          "kind": "source_reference",
+          "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+          "line": 361
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:schema_mismatch_42703",
+      "kind": "feature_invariant",
+      "evidence": [
+        {
+          "kind": "source_reference",
+          "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+          "line": 280
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:stale_optimistic_lock",
+      "kind": "feature_invariant",
+      "evidence": [
+        {
+          "kind": "source_reference",
+          "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+          "line": 308
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:unique_violation_expected_23505",
+      "kind": "feature_invariant",
+      "evidence": [
+        {
+          "kind": "source_reference",
+          "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+          "line": 171
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "invariant:src/lib/observability/supabase/__fixtures__/replay-fixtures.ts:zero_row_update",
+      "kind": "feature_invariant",
+      "evidence": [
+        {
+          "kind": "source_reference",
+          "path": "src/lib/observability/supabase/__fixtures__/replay-fixtures.ts",
+          "line": 336
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "is_super_admin",
       "kind": "feature_rpc",
       "evidence": [
@@ -6003,7 +6117,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/observability/supabase/record-db-error.ts",
-          "line": 88
+          "line": 119
         }
       ]
     },
@@ -14711,12 +14825,27 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 134
+          "line": 16
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 137
+          "line": 18
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-supabase.md",
+          "line": 236
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/observability-supabase.md",
+          "line": 239
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/__tests__/incident-detail.test.ts",
+          "line": 14
         },
         {
           "kind": "import_graph",
@@ -14745,6 +14874,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/database/drift-inputs.ts",
+          "line": 44
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/database/errors.ts",
           "line": 15
         },
@@ -14752,6 +14886,36 @@
           "kind": "import_graph",
           "path": "src/lib/admin/database/errors.ts",
           "line": 16
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 38
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 39
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 44
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 49
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 53
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 58
         },
         {
           "kind": "import_graph",
@@ -14923,6 +15087,11 @@
           "kind": "rpc_call",
           "path": "src/lib/admin/database/errors.ts",
           "line": 170
+        },
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 563
         }
       ]
     },
@@ -14931,6 +15100,11 @@
       "target": "helm_debug_read_db_health_history",
       "kind": "feature_rpc",
       "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 662
+        },
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/database/overview.ts",
@@ -14943,6 +15117,11 @@
       "target": "helm_debug_read_db_lock_incidents",
       "kind": "feature_rpc",
       "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 665
+        },
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/database/locks.ts",
@@ -14967,6 +15146,11 @@
       "target": "helm_debug_read_db_stat_deltas",
       "kind": "feature_rpc",
       "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/incident-detail.ts",
+          "line": 668
+        },
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/database/performance.ts",
