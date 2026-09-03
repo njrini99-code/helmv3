@@ -38,26 +38,10 @@ import {
   buildSupabaseErrorEnvelope,
   type SupabaseErrorEnvelope,
   type SupabaseOperation,
-  type SupabaseRuntime,
   type SupabaseService,
 } from './envelope';
 import { scheduleDbErrorRecording } from './record-db-error';
-
-function hasEdgeRuntimeGlobal(): boolean {
-  return (globalThis as Record<string, unknown>).EdgeRuntime !== undefined;
-}
-
-function resolveRuntime(): SupabaseRuntime {
-  return hasEdgeRuntimeGlobal() ? 'edge' : 'node';
-}
-
-function resolveEnvironment(): string {
-  return (process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'unknown').slice(0, 64);
-}
-
-function resolveReleaseSha(): string | null {
-  return process.env.VERCEL_GIT_COMMIT_SHA?.trim() || null;
-}
+import { resolveEnvironment, resolveReleaseSha, resolveRuntime } from './runtime-context';
 
 export interface MutationIntegrityCheckInput {
   /** Rows the mutation actually affected — `(data ?? []).length` for a

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { createRealtimeStatusObserver } from '@/lib/observability/supabase/observe-realtime-channel';
 
 /**
  * Qualifier leaderboard entry with player info and scoring aggregates
@@ -202,6 +203,16 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     if (!qualifierId) return;
 
     // Set up real-time subscription for qualifier entries (scores/positions)
+    // Observability (brief §12): `.subscribe()` alone is not proof the
+    // channel connected — see observe-realtime-channel.ts's file header for
+    // why this is the one call site in the repo wired to it in this PR.
+    const realtimeObserver = createRealtimeStatusObserver({
+      channelName: 'qualifier_leaderboard',
+      feature: 'qualifier_leaderboard',
+      subscriptionType: 'postgres_changes',
+      sport: 'golf',
+    });
+
     const channel = supabase
       .channel(`qualifier-${qualifierId}`)
       // Listen for entry changes (score updates, position changes)
@@ -260,7 +271,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
           setQualifier((prev) => prev ? { ...prev, ...update } : null);
         }
       )
-      .subscribe();
+      .subscribe(realtimeObserver.onStatus);
 
     return () => {
       supabase.removeChannel(channel);
