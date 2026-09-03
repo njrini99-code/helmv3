@@ -114,6 +114,26 @@ const nextConfig = {
   // was missing the second one). Paths are relative to next.config.mjs
   // (= the repo root, matching `process.cwd()` at runtime in this app).
   outputFileTracingIncludes: {
+    // `drift-inputs.ts` (`src/lib/admin/database/drift-inputs.ts`) reads three
+    // things off disk at request time for /admin/database's schema-drift
+    // diagnosis: the migrations directory listing plus each .sql file, the
+    // HELD register, and the GENERATED types file. The last one is the
+    // non-obvious member — `src/lib/types/database.ts` is imported for its
+    // types everywhere, but this reads it as TEXT, and a type-only import is
+    // erased at build time, so nothing would otherwise put the file in the
+    // bundle. Without these entries both drift axes report `unknown` in a
+    // deployed Bridge, which is honest but useless.
+    //
+    // VERIFIED, not assumed: being uploaded and being traced into the
+    // function bundle are two different gates, and this repo only enforces
+    // the first (check-vercelignore-coverage asks whether must-ignore paths
+    // stay OUT; nothing asserts traced files get IN). Each path below was
+    // run through that script's own matcher and survives .vercelignore.
+    '/admin/database': [
+      './supabase/migrations/*.sql',
+      './supabase/migrations/HELD.md',
+      './src/lib/types/database.ts',
+    ],
     '/admin/engineering': [
       './docs/generated/WORLD_MODEL.json',
       './docs/generated/contracts/**',

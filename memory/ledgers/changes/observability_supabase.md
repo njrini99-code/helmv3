@@ -1,6 +1,129 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Change ledger — observability_supabase
 
+## 2026-09-03 — Phase 3 track D: diagnostics and correlation (schema drift, RLS, release causality, service layers, call budgets, incident detail)
+
+- Branch: `agent/dbobs-p3-diagnostics`, built on the Phase 2 integration tip
+  (Phase 1 + Track A + Track B). Sibling Track C
+  (`agent/dbobs-p2-platform`: Metrics API, advisors, platform rules,
+  on-demand log evidence, alert policy, repo-doctor keys, trace
+  certification) is a separate branch and nothing here imports it.
+- Change: five new PURE modules under
+  `src/lib/observability/supabase/` — `schema-drift.ts`,
+  `authorization-diagnosis.ts`, `release-correlation.ts`,
+  `service-layers.ts`, `call-budgets.ts` — plus two server-only readers
+  (`src/lib/admin/database/incident-detail.ts`, `drift-inputs.ts`) and a
+  single-fingerprint detail surface on `src/app/admin/database/page.tsx`
+  reached by `?incident=<fingerprint>`. Full design:
+  `docs/observability/SUPABASE_DIAGNOSTICS.md`.
+- **No migration.** Every read goes through an RPC that already exists
+  (HELD or not); the drift inputs are repository files plus one bounded
+  on-demand Management API query. No new table, no new facade, no new
+  `HELD.md` row. No existing module was modified other than the Bridge
+  page.
+- Why the three drift axes never collapse: `.claude/rules/shipping.md` §4
+  and `scripts/db/migration-ledger-drift.mjs`'s own header both record that
+  the ledger is not a reliable index of what is live (five local-only
+  migrations verified live in production with no ledger row, 2026-08-26)
+  and that a migration file existing is not evidence the object exists. So
+  `migrationFile` / `ledgerRow` / `generatedTypes` are reported
+  independently, each with its own `unknown`, and an unreadable input is
+  `unknown` rather than `absent`.
+- Why the causal ladder carries no number: PR #1789 fixed a defect in
+  `src/lib/admin/incidents/release-context.ts` where proximity was counted
+  both as the trigger for considering a release and as corroboration for
+  it, producing a false "new after release" at 60% confidence. This module
+  sorts every signal into corroborating (release-side facts, true whether
+  or not the incident occurred) / not-corroborating (restatements of the
+  incident — proximity, occurrence count, SQLSTATE fit alone) /
+  exculpatory (can only lower the rung), emits the rejected signals so a
+  reader sees they were considered, and offers only the rungs
+  unknown / no-signal / possible / likely / reproduced-cause. A numeric
+  confidence would invite the same accumulation.
+- Why `authorization-diagnosis.ts` has no default expectation: nothing in a
+  42501 distinguishes an expected security denial from a defect. Defaulting
+  to "expected" hides defects; defaulting to "unexpected" pages someone for
+  a routine permission check, which the brief's own anti-pattern list
+  names. A caller that states nothing gets UNKNOWN.
+- Deliberately a NEW correlation module rather than a reuse of
+  `admin/incidents/release-context.ts`, for the reason `freshness.ts`
+  already records in that directory for not reusing `sources.ts`: different
+  question, different output vocabulary, and the observability layer must
+  not depend on `src/lib/admin/incidents/**`.
+- Privacy §6: `authorization-diagnosis.ts` does not accept a message,
+  `details` or `hint` at all, so a policy predicate has no code path to
+  travel in — a test passes a sentinel through a widened cast and asserts
+  the serialized output does not contain it. `schema-drift.ts` reads the
+  already-sanitized `normalizedMessage` only to recover an object NAME, and
+  its explanation is built from enumerated axes alone (also tested).
+- Four composition-layer defects found in review AFTER the first eight
+  commits and fixed in a ninth, each with the regression test that would
+  have caught it:
+  1. `recentChange` keyed on `migrationFilenames.length`, so a blind drift
+     read rendered "No migration in this tree names the failing object" — a
+     confident denial, and the DEFAULT condition in a deployed Bridge where
+     the file reads never work. It now derives its state from the drift
+     axis: `unconfigured` for a failure that names no missing object,
+     `blind` when the migrations could not be listed, `empty` only when
+     they were listed and named nothing.
+  2. `postgrestCode` was derived as "the error code whenever sqlstate is
+     null", which swept in `classify.ts`'s message-fallback labels
+     (`unknown_authorization` and friends). Those are SWALLOWED POSTGRES
+     verdicts, and the catch-all branch labelled them "a PostgREST-native
+     code — the request never became a Postgres verdict", contradicting the
+     authorization panel on the same incident. Both sides now require a
+     `PGRST` prefix.
+  3. The applied-ledger read was unconditional, and the page carries an
+     unconditional 60s `AutoRefresh` while being `force-dynamic` — so an
+     "on-demand" query was in fact a once-a-minute poll per open tab.
+     `readSchemaDriftInputs` now takes `includeAppliedLedger`, defaulting
+     false, and `incident-detail.ts` opts in only for a missing-object
+     mechanism (a 42501 says nothing about the ledger).
+  4. Two smaller ones: the commit workflow stage asserted `not-reached` for
+     transport/connection failures where `commit-outcome.ts` says
+     UNKNOWN_COMMIT (now `unknown` for PGRST000-003 and SQLSTATE class 08),
+     and the repair link pointed at `/admin/traces?trace=<id>` when that
+     page takes no `searchParams` at all — it now links the index honestly
+     and carries the trace id in the label.
+- A fifth defect surfaced on re-review of the fix itself: making
+  `recentChange` return `unconfigured` for a non-missing-object failure gave
+  the UI chip "NOT SHIPPED YET" beside a note explaining the section does not
+  apply — a new wrong answer in the slot the old one occupied, on the
+  majority case. `SectionState` gained a distinct `not-applicable`
+  (chip: NOT APPLICABLE), so the distinction lives in the model and the UI
+  needs no special case. `dataInvariant` and `sentryIssue` genuinely ARE
+  unshipped and keep `unconfigured` — pinned by a test that asserts all
+  three at once.
+- Verified after the fixes: `npx tsc --noEmit -p .` clean; `npx eslint
+  <changed files, including src/app/admin/database/page.tsx>
+  --max-warnings 0` clean; `npx vitest run src/lib/observability/supabase
+  src/lib/admin/database src/app/admin/__tests__` — 35 files, 477 tests
+  passing, `admin-gate-coverage.test.ts` included (it is the suite most
+  likely to have an opinion about a page that now reads `searchParams`).
+  Not run, by this track's own constraints: `npm run build`, the full
+  `npm test`, `npm run test:rls`, deno, any docs regeneration script.
+- **NOT VERIFIED / open items:**
+  - `drift-inputs.ts`'s applied-ledger read is credential-gated
+    (`SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`) and `.env.local` is
+    withheld from worktrees, so it has never been observed returning a
+    non-null result. It fails open to `null`, which reads as `unknown`.
+  - `drift-inputs.ts`'s FILE reads do not work on Vercel:
+    `supabase/migrations/**` and `src/lib/types/database.ts` are repository
+    files, not part of a traced serverless function bundle, so in a
+    deployed Bridge both axes report `unknown` and the surface renders
+    UNREADABLE. Fixing that means an `outputFileTracingIncludes` change to
+    `next.config.mjs`, deliberately not made here.
+  - `call-budgets.ts` is NOT WIRED. `helm_debug.db_stat_deltas` has no
+    journey dimension, so nothing in this repo can attribute a DB call to a
+    journey today. The evaluator ships; the collector does not, and a
+    fabricated attribution was rejected as worse than an honest
+    `collecting`.
+  - No Sentry issue fetch, no Flight Recorder read, no data-invariant
+    registry — all three are declared `unconfigured` on the detail surface
+    rather than omitted or rendered as passing.
+  - The Bridge surface was not rendered in a browser; there is no
+    component test for `page.tsx` in this repo's admin suite.
+
 ## 2026-09-03 — Phase 2 track A: locks, table health, pg_cron/pg_net health, connection/rollback rules, telemetry freshness, retention v2, Bridge sections
 
 - Branch: `agent/dbobs-p2-collectors`, built on the merged Phase 1
@@ -76,6 +199,9 @@
   own Status section as a real gap, not silently filled, since adding a
   registry mapping was outside this track's assigned deliverables.
 
+<!-- merged: Track B section appended by the Phase 2 integrator. The
+     duplicate `# Change ledger` H1 that arrived with this merge was removed
+     2026-09-03 (Phase 3 Track F): one document, one title. -->
 <!-- merged: Track B section appended by the Phase 2 integrator -->
 # Change ledger — observability_supabase
 
@@ -290,3 +416,181 @@
   config defect that classifies EXPECTED — a recorded false negative.
   `lib/supabase/middleware.ts` is unwired by choice (local-scope cookie
   clear, no auth-server round-trip, already self-reporting).
+
+## 2026-09-03 — Phase 3 track E: certification, replay fixtures, fault injection, security posture, coverage matrix
+
+- Branch: `agent/dbobs-p3-certification`, built on the Phase 2 integration
+  tip (Phase 1 + track A + track B). Sibling tracks' work (the platform
+  track's trace-cert script and repo-doctor module, the Bridge database
+  page) is NOT on this branch and was neither rebuilt nor modified.
+- Change: this track adds CHECKS, not observability. Six deliverables —
+  a Trace Explorer layer model with the brief's rollback banner
+  (`src/app/admin/traces/trace-explorer-layers.ts` +
+  `TraceExplorerLayerPanel.tsx`, mounted in `TraceTree.tsx`); replay
+  fixtures and a runner (`src/lib/observability/supabase/__fixtures__/`,
+  `scripts/db-observability-replay.mjs`); a certification matrix
+  (`scripts/db-observability-certify.mjs`); a fault-injection suite; a
+  static security-posture check (`scripts/db-observability-security.mjs`);
+  and a GENERATED coverage matrix
+  (`scripts/db-observability-coverage.mjs` ->
+  `docs/observability/SUPABASE_COVERAGE_MATRIX.md`, `--check` supported).
+  Full narrative in `docs/observability/SUPABASE_CERTIFICATION.md`.
+- Production-code changes are three and are all one seam:
+  `RecordDbErrorOptions.client`, threaded through `observe-result.ts` and
+  `integrity.ts` as `recorderClient`. It exists because the recorder was
+  previously testable only via `vi.mock`, and a fixture suite that can only
+  run inside one test framework cannot be run from a runbook. Production
+  call sites never pass it, so `createAdminClient()` remains the only path
+  a request takes. `trace-tree.ts` also gained one additive field
+  (`metadata`), because the step's jsonb is the only place
+  `sentry_trace_id` and the exception checkpoint's `{sqlstate}` live.
+- Why: brief §56–61 (Trace Explorer layers, replay, certification, chaos,
+  security, no generic ingest), §79 (coverage matrix), §80 (acceptance).
+- Verification: `npx tsc --noEmit -p .` clean; targeted
+  `npx eslint <changed files> --max-warnings 0` clean each time;
+  `npx vitest run src/lib/observability scripts` all green; all four new
+  scripts run and their output is recorded in the certification doc. A
+  NEGATIVE CONTROL was run on the replay suite (corrupting one expected
+  bucket and removing one sentinel from the sweep input failed exactly the
+  two tests that should have failed), so it is discriminating rather than
+  vacuous. The two `scripts/lib/__tests__` files are registered in
+  `vitest.config.ts` and were confirmed running from a `--reporter=verbose`
+  run by filename, not inferred from a passing total.
+- Bugs found in this track's OWN checks, all of the same shape and all
+  fixed: (1) a Sentry detector matched `observe-result.ts`'s doc comment
+  saying it does NOT capture, reporting the opposite of the truth — the
+  same failure the platform track hit with its live-proof regex; (2) a
+  §61 detector flagged the CRM calendar route because a COMMENT mentions
+  `error_logs`; (3) the same detector flagged an admin route that returns
+  401 without a session, because it did not distinguish reading a session
+  from enforcing one; (4) a storage-privacy assertion tested `/key/i`
+  against the error CODE, so `NoSuchKey` failed it; (5) one test passed
+  VACUOUSLY because a path helper silently returned `''` and
+  `not.toContain` is true of the empty string. Every source-pattern check
+  now strips comments and carries a positive control.
+- Findings reported, NOT papered over: `buildSupabaseFingerprint` ignores
+  `action`, so two actions on one relation with one code share a dedupe
+  key; and in `observe-result.ts` the durable write sits downstream of the
+  metric call, so a throwing metrics emit would suppress the durable
+  evidence (not reachable today — `metrics.ts` guards its own emits — but
+  the ordering consequence is pinned by a test). Neither was changed:
+  both are behaviour changes to contracts other tracks depend on.
+- Not verified / open: every migration in this program is HELD and
+  unapplied, so every claim about a durable ROW (persistence,
+  occurrence_count collapsing, rollback survival, rows/day, table sizes)
+  is NOT VERIFIED — the DISPATCH is exercised, the row is not. Sentry and
+  Bridge routing for Supabase failures is static-only: it depends on
+  whether the error escapes to an action wrapper. No pgTAP suite was
+  written or run for these migrations. The live catalog is NOT_CONFIGURED
+  (no credential used, no query run). `log-error` is a pre-existing
+  anonymous ingest route lacking auth and a field allow-list — allow-listed
+  with its per-control status printed, an owner decision. Full acceptance
+  table in `docs/observability/SUPABASE_CERTIFICATION.md` §8.
+- Cost: INCREMENTAL RECURRING OBSERVABILITY COST $0. No drain, no
+  continuous ingestion, no new vendor, no scheduled job; every script is
+  static or in-process and none opens a database connection or makes a
+  network request.
+
+## 2026-09-03 — Phase 3 Track F: absence, memory and the operating model
+
+- Branch: `agent/dbobs-p3-intelligence`, built on the Phase 2 integration
+  tip (Phase 1 + Track A + Track B). Sibling Phase 3 tracks C, D and E were
+  building in parallel and are NOT represented here.
+- Change: eight new pure modules under `src/lib/observability/supabase/`,
+  one server-only writer, one tsx CLI, two docs, and NO migration and NO
+  new table.
+  - `db-state.ts` (§67) — `foldDatabaseState` returns GREEN / AMBER / RED /
+    DEGRADED / UNKNOWN plus the evidence that produced it. A required
+    source that is not live can never yield GREEN; RED still beats DEGRADED
+    (DEGRADED is on the observability axis, not the severity axis) with
+    confidence capped at `low`; a stale source's last row contributes a cap
+    and no signals, so a dead collector cannot render as a healthy
+    database. Consumes `FreshnessState` from `freshness.ts` rather than
+    redefining it.
+  - `absence.ts` (§74) — five detectors for signals that STOPPED.
+    `ActivityContext` is a REQUIRED field with three variants, so omitting
+    it is a compile error and an unreadable context yields `unknown`, never
+    `absent`. No sport calendar is hardcoded; an EMPTY season-window list
+    reads `unknown` rather than `quiet`.
+  - `layered-performance.ts` (§73) — request p95 (measured, supplied) vs
+    database shape (aggregates). The database half carries no
+    percentile-shaped field at all and a test asserts that structurally
+    over the output keys; a missing layer yields `request_unknown` /
+    `database_unknown` rather than a clean-looking verdict.
+  - `incident-memory.ts` + `incident-memory-writer.ts` (§75) — writes into
+    `memory/incidents/**`, the store this repo already has. No database
+    table: a store that can disagree with committed state is a second
+    authority for engineering truth. Templates only the contract
+    `scripts/knowledge/check-ledger-integrity.mjs` enforces (read from the
+    checker, not the README prose) plus the nine §75 fields; narrative is
+    caller-supplied. An unmapped feature id and an unreadable registry are
+    both refusals, and an existing file is never overwritten.
+  - `repair-completeness.ts` (§76) — eight criteria, PASS / FAIL / UNKNOWN
+    each, three-valued roll-up, no score and no boolean anywhere in the
+    result (asserted by test). FAIL outranks UNKNOWN; the unknown ids are
+    listed alongside so a failure never swallows them.
+  - `query-explainer.ts` (§69) — the file has NO IMPORTS AT ALL, so "never
+    runs against production automatically" is a property of the import
+    graph rather than a promise. ANALYZE is withheld for every mutating
+    class in every environment and for reads against production;
+    `persistsPlan` is `false`. A non-safe-query-class input is refused and
+    the rejected value is never echoed back.
+  - `repo-mapping.ts` (§70) — envelope feature + object to migration,
+    callers, tests and feature doc, with the registry and migration listing
+    passed in. Resolves a runtime feature KEY through
+    `observability.feature_keys`, not just an exact id. Gaps are reported,
+    never swallowed.
+  - `sentry-contract.ts` (§71–72) — allow-list, not a scrubber: the ten
+    named keys are copied and an eleventh structurally cannot ride along.
+    An allow-listed key with an unsafe value is refused rather than masked
+    (a masked tag is still a series). `helm.trace_id` is the one exemption,
+    the one §6 carves out itself, and gets a shape check instead of the
+    free-text masker. Three trace ids stay separately named and
+    `sentryMatchesW3c` is REPORTED, not assumed.
+  - `docs/observability/SUPABASE_RUNBOOKS.md` (§68) — 42501 and 57014 as
+    ordered steps with the exact command per step, and an explicit section
+    on why raising the statement timeout is never the fix for a 57014.
+  - `docs/observability/SUPABASE_OPERATING_MODEL.md` (§77, §86) — the
+    operating model plus a §86 scoring that marks four criteria NOT MET or
+    NOT VERIFIED with the evidence for each.
+  - `scripts/observability/record-db-incident.ts` — a thin tsx CLI.
+    `tsconfig.json` excludes `scripts/`, so it is lint-covered but NOT
+    type-checked by `npm run typecheck`; it is deliberately small enough to
+    verify by eye and every rule lives in the two `src/` modules.
+- Also changed: `envelope.ts`'s `sanitizeSupabaseFreeText` gained an
+  optional `maxChars` (default unchanged) so a human-read incident record
+  gets more room under identical masking rather than forking a second,
+  weaker redactor. And two prose line-wraps in
+  `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` that began with a
+  plus sign and a space were re-wrapped: markdownlint parsed them as list
+  items, and that
+  pre-existing MD004 regression was what made `npm run markdown:ratchet`
+  fail on this branch's base before Track F wrote anything. Verified by
+  moving the new runbook aside and re-running.
+- Why: brief §67–77 and §86.
+- Verification, every deliverable: `npx tsc --noEmit -p .` exit 0;
+  `npx eslint <changed files> --max-warnings 0` exit 0;
+  `npx vitest run src/lib/observability/supabase src/lib/admin/database`
+  501 passed / 36 files; `npm run markdown:ratchet` exit 0 (30484 → 30465,
+  baseline deliberately NOT updated — that is the integrator's call once
+  every track has landed). Two read-only audits were run for the §86
+  scoring rather than asserting it: `npm run audit:supabase-errors`
+  (baseline 1039 unchecked reads, no regression) and
+  `npm run audit:fail-open` (baseline 51, no regression).
+- Cost: INCREMENTAL RECURRING OBSERVABILITY COST $0. No migration, no new
+  table, no drain, no vendor, no continuous polling, no second incident
+  store, no second trace system.
+- Registry gaps found and NOT closed by this track: two features claim the
+  identical `src/lib/observability/**` glob (`observability_sentry` and
+  `shot_tracking`); no runtime feature key covers the database
+  observability surfaces (`admin_platform`'s only key is
+  `admin_dashboard`); five features declare no `code.db` and four declare
+  no `code.tests`. Listed in full in
+  `docs/observability/SUPABASE_OPERATING_MODEL.md`.
+- Not verified / open: the W3C propagation certification (§14) is modelled
+  but not measured, so "traceable" is a design property here, not an
+  observed one. `db-state.ts` is not mounted on any Bridge surface —
+  `src/app/admin/database/page.tsx` was owned by a sibling track this
+  phase, so no component was added; `foldDatabaseState` is the intended
+  input to a Mission Control header chip. Nothing in Track F is wired into
+  a production call site.
