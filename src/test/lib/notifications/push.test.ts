@@ -25,12 +25,17 @@ vi.mock('@/lib/notifications/email', () => ({
 
 const logServerEventMock = vi.fn(async (..._args: unknown[]) => {});
 const logServerErrorMock = vi.fn(async (..._args: unknown[]) => {});
+const logServerExceptionMock = vi.fn(async (..._args: unknown[]) => {});
 vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: (...args: unknown[]) => logServerEventMock(...args),
   // sendPushNotification now records a delivery failure here. Without this
   // export the mock throws, the outer catch swallows it, and every assertion
   // below fails for a reason that has nothing to do with token pruning.
   logServerError: (...args: unknown[]) => logServerErrorMock(...args),
+  // Sentry coverage-gaps pass: the per-token exception, and the outermost
+  // catch, now call this too. Missing it here would throw synchronously
+  // from inside `void logServerException(...)` at the call site.
+  logServerException: (...args: unknown[]) => logServerExceptionMock(...args),
 }));
 
 type TokenRow = { token: string; platform: string };
@@ -146,10 +151,15 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
       expect.objectContaining({ active: false, failed_count: 131 }),
     );
 
-    // Prune is logged exactly once, at info severity, and never hits Sentry
-    // as an Error issue (message/context first, severity last).
-    expect(logServerEventMock).toHaveBeenCalledTimes(1);
-    const [message, context, severity] = logServerEventMock.mock.calls[0]!;
+    // Two logServerEvent calls now: the invoke-failure signal (Sentry
+    // coverage-gaps pass — every token failure gets a Bridge row,
+    // skipSentry:true so it never becomes a paged Issue) fires first, then
+    // the prune confirmation once deactivation succeeds.
+    expect(logServerEventMock).toHaveBeenCalledTimes(2);
+    const pruneCall = logServerEventMock.mock.calls.find(([msg]) =>
+      String(msg).includes('pruned'),
+    )!;
+    const [message, context, severity] = pruneCall;
     expect(message).toContain('pruned');
     expect(message).toContain('user-1');
     expect(context).toMatchObject({
@@ -157,6 +167,16 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
       userId: 'user-1',
     });
     expect(severity).toBe('info');
+
+    const invokeFailCall = logServerEventMock.mock.calls.find(([msg]) =>
+      String(msg).includes('token invoke failed'),
+    )!;
+    expect(invokeFailCall[1]).toMatchObject({
+      action: 'push.sendPushNotification.tokenInvoke',
+      userId: 'user-1',
+      skipSentry: true,
+    });
+    expect(invokeFailCall[2]).toBe('warning');
   });
 
   it('does NOT deactivate the token on a generic/transient failure (no shouldDeactivateToken flag)', async () => {
@@ -187,7 +207,12 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
     const payload = updateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload).not.toHaveProperty('active');
     expect(payload.failed_count).toBe(3);
-    expect(logServerEventMock).not.toHaveBeenCalled();
+    // No PRUNE log (token wasn't deactivated) — but the invoke failure
+    // itself is now recorded, skipSentry:true so it stays off the Issues
+    // stream (Sentry coverage-gaps pass, row 26 of the coverage matrix).
+    expect(logServerEventMock).toHaveBeenCalledTimes(1);
+    expect(logServerEventMock.mock.calls[0]![0]).toContain('token invoke failed');
+    expect(logServerEventMock.mock.calls[0]![1]).toMatchObject({ skipSentry: true });
   });
 
   it('does not throw and does not deactivate when the failure body is not JSON', async () => {
@@ -212,7 +237,10 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
     const payload = updateSpy.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload).not.toHaveProperty('active');
     expect(payload.failed_count).toBe(1);
-    expect(logServerEventMock).not.toHaveBeenCalled();
+    // Same as the previous test: the raw failure is recorded even though the
+    // body wasn't JSON and no prune decision could be made.
+    expect(logServerEventMock).toHaveBeenCalledTimes(1);
+    expect(logServerEventMock.mock.calls[0]![0]).toContain('token invoke failed');
   });
 
   it('does not log the prune when the deactivating UPDATE itself errors', async () => {
@@ -249,7 +277,11 @@ describe('sendPushNotification — APNs failure-response parsing', () => {
     // so a token that silently fails to deactivate doesn't falsely claim to
     // be pruned in the admin feed / Sentry.
     expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ active: false }));
-    expect(logServerEventMock).not.toHaveBeenCalled();
+    // The prune CONFIRMATION is still gated on the deactivate write
+    // succeeding (unchanged) — only the raw invoke-failure signal fires.
+    expect(logServerEventMock).toHaveBeenCalledTimes(1);
+    expect(logServerEventMock.mock.calls[0]![0]).toContain('token invoke failed');
+    expect(logServerEventMock.mock.calls[0]![0]).not.toContain('pruned');
   });
 });
 

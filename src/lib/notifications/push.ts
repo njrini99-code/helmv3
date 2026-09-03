@@ -25,7 +25,7 @@ import { surfaceHref } from '@/lib/golf/surface-registry';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
 import { gatedDelivery, type DeliveryNotificationKey } from '@/lib/coachhelm/v3/notifications/types';
-import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { recordPush } from '@/lib/observability/metrics';
 import { helmLog } from '@/lib/observability/structured-log';
 
@@ -396,6 +396,23 @@ export async function sendPushNotification(
             /* not JSON — fall through, treated as a transient failure */
           }
           console.error(`Push failed for token ${deviceToken.token.slice(0, 8)}...:`, errorText);
+          // Previously console.error-only: an edge-function-reported delivery
+          // failure for one token had no Bridge row at all — invisible unless
+          // someone happened to be tailing server logs. skipSentry:true keeps
+          // this off the Issues stream (per-token failures are expected and
+          // high-volume; the aggregate "no device accepted" check below still
+          // pages when EVERY token for a user fails).
+          void logServerEvent(
+            `[push] token invoke failed (platform=${deviceToken.platform}, willDeactivate=${shouldDeactivateToken})`,
+            {
+              action: 'push.sendPushNotification.tokenInvoke',
+              featureArea: 'notifications',
+              userId,
+              skipSentry: true,
+              extra: { tokenPrefix: deviceToken.token.slice(0, 8) },
+            },
+            'warning',
+          );
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: currentToken } = await (supabase as any)
@@ -441,6 +458,16 @@ export async function sendPushNotification(
         }
       } catch (err) {
         console.error('Push send error:', err);
+        // Previously console.error-only: an exception thrown while invoking
+        // the edge function (network failure, thrown JSON parse, etc.) for
+        // one token had no Sentry/Bridge signal at all — distinct from the
+        // handled invokeError response path above.
+        void logServerException(err, {
+          action: 'push.sendPushNotification.tokenException',
+          featureArea: 'notifications',
+          userId,
+          extra: { tokenPrefix: deviceToken.token.slice(0, 8), platform: deviceToken.platform },
+        }, 'warning');
       }
     }
 
@@ -464,6 +491,16 @@ export async function sendPushNotification(
     return { success: true };
   } catch (error) {
     console.error('Failed to send push notification:', error);
+    // Previously console.error-only: this is the outermost catch for the
+    // whole call (generatePushPayload throwing, an unhandled Supabase
+    // client error, etc.) — the most severe failure mode in this function
+    // and the one most likely to indicate a real bug, so it reaches Sentry
+    // as an issue rather than a suppressed Bridge-only row.
+    void logServerException(error, {
+      action: 'push.sendPushNotification.uncaught',
+      featureArea: 'notifications',
+      userId,
+    }, 'error');
     recordPushOutcome(type, 'failure', 'exception');
     return {
       success: false,
