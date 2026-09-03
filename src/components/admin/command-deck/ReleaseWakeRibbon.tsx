@@ -1,26 +1,7 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import type { ReleaseWakeSnapshot } from '@/lib/admin/command-deck/release-wake';
-
-const WATCH_LABEL: Readonly<Record<ReleaseWakeSnapshot['watchState'], string>> = {
-  observing: 'OBSERVING',
-  'clean-so-far': 'CLEAN SO FAR',
-  degraded: 'DEGRADED',
-  'regression-detected': 'REGRESSION DETECTED',
-  'rollback-recommended': 'ROLLBACK RECOMMENDED',
-  'proven-healthy': 'PROVEN HEALTHY',
-  unknown: 'UNKNOWN',
-};
-
-const WATCH_TONE: Readonly<Record<ReleaseWakeSnapshot['watchState'], string>> = {
-  observing: 'text-warm-600',
-  'clean-so-far': 'text-accent-700',
-  degraded: 'text-fw-warning-ink',
-  'regression-detected': 'text-fw-danger-ink',
-  'rollback-recommended': 'text-fw-danger-ink',
-  'proven-healthy': 'text-fw-success-ink',
-  unknown: 'text-warm-500',
-};
+import { ReleaseWatchPosturePill } from '@/components/admin/premium';
 
 function formatSha(sha: string | null): string {
   return sha ? sha.slice(0, 7) : 'unknown SHA';
@@ -61,11 +42,9 @@ function Lane({ label, lane, href }: { label: string; lane: ReleaseWakeSnapshot[
 export function ReleaseWakeRibbon({ wake }: { wake: ReleaseWakeSnapshot }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex min-w-0 flex-col items-start gap-0.5">
         <span className="font-fw-mono text-caption tabular-nums text-warm-500">{formatSha(wake.releaseSha)}</span>
-        <span className={cn('text-eyebrow font-bold uppercase tracking-wide', WATCH_TONE[wake.watchState])}>
-          {WATCH_LABEL[wake.watchState]}
-        </span>
+        <ReleaseWatchPosturePill state={wake.watchState} pulse />
         <span className="text-caption text-warm-500">{formatAge(wake.ageHours)}</span>
       </div>
       <div className="flex flex-1 flex-wrap gap-2">

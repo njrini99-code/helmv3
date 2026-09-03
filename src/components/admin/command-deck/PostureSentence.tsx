@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import type { PostureSentence as PostureSentenceModel } from '@/lib/admin/command-deck/posture';
-import { POSTURE_TONE_RAIL } from './tone';
+import { POSTURE_TONE_STATE_TONE } from '@/lib/admin/command-deck/types';
+import { PosturePill } from '@/components/admin/premium';
 
 const TONE_LABEL: Readonly<Record<PostureSentenceModel['tone'], string>> = {
   healthy: 'HEALTHY',
@@ -16,20 +16,24 @@ const TONE_LABEL: Readonly<Record<PostureSentenceModel['tone'], string>> = {
  * `PostureSentence.headline` already joins every clause with " · " — this
  * component renders that string, plus a state-word chip in front of it so
  * the tone is legible before the reader parses any text (never colour
- * alone: the chip carries the same word `TONE_LABEL` states in prose).
+ * alone: the chip carries the same word `TONE_LABEL` states in prose). The
+ * chip itself is `bridge-premium-p1`'s shared `PosturePill` — the tone maps
+ * via `POSTURE_TONE_STATE_TONE` (`command-deck/types.ts`) since this
+ * module's `PostureTone` is a coarser four-value axis than `PosturePill`'s
+ * `StateTone | 'unknown'`, and `PosturePill`'s own `'unknown'` branch
+ * already renders `UnknownValue`'s hatched treatment rather than a plain
+ * pill — exactly the "unknown never equals healthy" distinction this whole
+ * page exists to keep visible.
  */
 export function PostureSentenceBanner({ posture }: { posture: PostureSentenceModel }) {
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl border border-warm-200 bg-surface px-4 py-3">
-      <span
-        className={cn(
-          'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-eyebrow font-bold uppercase tracking-wide',
-          POSTURE_TONE_RAIL[posture.tone],
-          posture.tone === 'unknown' ? 'text-warm-700' : 'text-text-on-accent',
-        )}
+      <PosturePill
+        tone={POSTURE_TONE_STATE_TONE[posture.tone]}
+        reason={posture.tone === 'unknown' ? 'Posture could not be fully determined — a required source is blind or unread this refresh.' : null}
       >
         {TONE_LABEL[posture.tone]}
-      </span>
+      </PosturePill>
       <p className="min-w-0 flex-1 text-sm font-medium text-warm-900">{posture.headline}</p>
       {posture.topIncident?.href ? (
         <Link

@@ -965,17 +965,28 @@ read models — no second incident, attention, release, or self-heal model
   today, not yet the deterministic plain-English title brief §7 describes.
   Wiring `IncidentPresentation` into `attention.ts` is Phase 1's ("Incidents
   + release tracking") territory.
-- **Local primitives, not `premium/*`**: `src/components/admin/command-deck/
-  tone.ts` (a `StateTone`-keyed rail/ink map — the fourth copy of the same
-  small pairing `AttentionQueue.tsx`/`TruthStrip.tsx`/`ChangeTimeline.tsx`
-  each already keep, per `AttentionQueue.tsx`'s own header on why a shared
-  file would be the wrong fix). The sibling `bridge-premium-p1` branch
-  (posture pill / evidence chips / confidence meter / unknown treatment /
-  episode strip primitives under `src/components/admin/premium/*`) had not
-  pushed as of this entry — nothing here duplicates it; swapping to
-  `premium/*` once it lands is a straightforward import change per
-  component, none of which currently exceeds ~40 lines of presentation.
-- **Tests**: 53 vitest cases across 11 files — five fixtures per read model
+- **`premium/*` primitives, merged in**: `bridge-premium-p1`'s
+  `src/components/admin/premium/*` (posture pill / evidence chips /
+  confidence meter / unknown treatment / episode strip / release-relationship
+  label) had not pushed when this Command Deck's read models landed, but
+  pushed before its UI layer was finished — merged in
+  (`git merge --no-edit origin/agent/bridge-premium-p1`, clean, no
+  conflicts) and wired in two places rather than left as local duplicates:
+  `PostureSentence.tsx`'s tone chip now renders `PosturePill` (tone mapped
+  via `POSTURE_TONE_STATE_TONE` in `command-deck/types.ts`, since this
+  module's `PostureTone` is coarser than `PosturePill`'s own
+  `StateTone | 'unknown'`), and `ReleaseWakeRibbon.tsx`'s watch-state chip
+  now renders `ReleaseWatchPosturePill` directly (it already maps every
+  `ReleaseWatchState` to a tone/label/reason exactly matching what this file
+  had hand-rolled). `command-deck/tone.ts` keeps only the `StateTone`-keyed
+  rail/ink map `AttentionStack.tsx` still uses for its row rail — no
+  `premium/*` primitive covers that exact list-row shape, so this is the
+  fourth copy of the same small pairing `AttentionQueue.tsx`/`TruthStrip.tsx`/
+  `ChangeTimeline.tsx` each already keep, not a new one.
+- **Tests**: 54 vitest cases across 11 files (own suite) plus
+  `bridge-premium-p1`'s 38 (`src/components/admin/premium/**`,
+  `src/lib/admin/incidents/__tests__/{genome,release-watch}.test.ts`) — all
+  92 green together after the merge. Own suite: five fixtures per read model
   (healthy / blind source / regression / decision waiting / all-unknown)
   plus render tests (`@testing-library/react`) for every component. No
   dedicated `CommandDeck.tsx` integration test (would need mocking six

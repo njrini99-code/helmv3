@@ -41,7 +41,7 @@ export interface PostureInput {
   /** Null when the self-heal board itself failed to read — distinct from
    *  `false`, which means it read fine and nothing is currently flowing. */
   selfHealActing: boolean | null;
-  releaseWatch: ReleaseWatchState | 'unknown';
+  releaseWatch: ReleaseWatchState;
   releaseSha: string | null;
   /** Null when the decision-inbox source itself failed to read — distinct
    *  from `0`, which means it read fine and nothing is waiting. Same split
@@ -56,7 +56,7 @@ export interface PostureSentence {
   /** The single scannable line — clauses joined with " · ", never a
    *  multi-paragraph summary. */
   headline: string;
-  releaseWatch: ReleaseWatchState | 'unknown';
+  releaseWatch: ReleaseWatchState;
   releaseSha: string | null;
   topIncident: AttentionRow | null;
   selfHealActing: boolean | 'unknown';
@@ -92,7 +92,7 @@ function derivePostureTone(input: PostureInput): PostureTone {
   return 'healthy';
 }
 
-function releaseClause(releaseWatch: ReleaseWatchState | 'unknown', releaseSha: string | null): string {
+function releaseClause(releaseWatch: ReleaseWatchState, releaseSha: string | null): string {
   const sha = shortSha(releaseSha);
   if (releaseWatch === 'unknown') return 'Release state unknown';
   const label = releaseWatch.replace(/_/g, ' ');

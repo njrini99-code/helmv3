@@ -44,7 +44,7 @@ export interface ReleaseWakeSnapshot {
   releaseSha: string | null;
   deployedAt: string | null;
   ageHours: number | null;
-  watchState: ReleaseWatchState | 'unknown';
+  watchState: ReleaseWatchState;
   incidents: readonly WakeIncidentEntry[];
   lanes: {
     incidents: WakeLane;
@@ -120,7 +120,7 @@ export function buildReleaseWake(input: BuildReleaseWakeInput): ReleaseWakeSnaps
     (i) => i.lifecycle.state === 'regressed' && (deployedAtMs === null || Date.parse(i.lastSeen) >= deployedAtMs),
   );
 
-  const watchState: ReleaseWatchState | 'unknown' = classifyReleaseWatch({
+  const watchState: ReleaseWatchState = classifyReleaseWatch({
     releaseDeployedAtMs: deployedAtMs,
     now,
     newIncidentsCount,

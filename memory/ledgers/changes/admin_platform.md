@@ -1714,3 +1714,57 @@ the full per-module description; summarized here for the change record.
   mocking six modules to test an async Server Component this way) — its
   wiring is exercised by `npm run typecheck` plus every constituent
   read-model/component test.
+
+## 2026-09-03 — Command Deck: merged in `bridge-premium-p1`'s shared primitives, swapped two hand-rolled chips
+
+`bridge-premium-p1`'s `src/components/admin/premium/*` had not pushed to
+`origin` when the previous entry was written; it pushed shortly after. Per
+the task's own instruction ("if the primitives you need exist there, merge
+them in and import them"), re-checked with `git fetch origin
+agent/bridge-premium-p1`, found real primitives this time (`PosturePill`,
+`ReleaseWatchPosturePill`, `UnknownValue`, `EvidenceSourceChips`,
+`ConfidenceMeter`, `EpisodeTimelineStrip`, `ReleaseRelationshipLabel`,
+`EvidenceInspector` — 19 files, ~1857 lines), and merged:
+`git merge --no-edit origin/agent/bridge-premium-p1` — clean, no conflicts
+(disjoint file sets; the only shared-directory neighbor is
+`src/lib/admin/incidents/**`, which that branch only ADDED to via two new
+files, `genome.ts`/`release-watch.ts`).
+
+- **`PostureSentence.tsx`**: the hand-rolled tone chip (a `<span>` styled
+  from `POSTURE_TONE_RAIL`) is now `PosturePill`, tone mapped through
+  `POSTURE_TONE_STATE_TONE` (`command-deck/types.ts`) since this module's
+  `PostureTone` (four values) is coarser than `PosturePill`'s
+  `StateTone | 'unknown'` (six). `PosturePill`'s own `'unknown'` branch
+  already renders `UnknownValue`'s hatched treatment rather than a colored
+  pill — a strictly better fit than what was hand-rolled.
+- **`ReleaseWakeRibbon.tsx`**: the hand-rolled `WATCH_LABEL`/`WATCH_TONE`
+  maps (14 lines, duplicating `RELEASE_WATCH_LABEL` from
+  `release-context.ts`) are deleted; the watch-state chip is now
+  `ReleaseWatchPosturePill`, which already maps every `ReleaseWatchState` to
+  the identical label plus a real "why unknown" tooltip this file never had.
+- **`command-deck/tone.ts`**: dropped `POSTURE_TONE_INK`/`POSTURE_TONE_RAIL`/
+  `NODE_STATE_INK`/`NODE_STATE_RAIL` (dead after the `PostureSentence.tsx`
+  swap — `NODE_STATE_*` had been dead from the start, since `SystemOrbit.tsx`
+  needs `var(--fw-*)` CSS strings for SVG fill/stroke, not Tailwind classes,
+  and always built its own separate map). Kept only `TONE_RAIL`/`TONE_INK`
+  (`StateTone`-keyed), still used by `AttentionStack.tsx`'s row rail — no
+  `premium/*` primitive covers that list-row shape.
+- **Cleanup**: `ReleaseWakeSnapshot.watchState` and
+  `PostureInput`/`PostureSentence.releaseWatch` were typed
+  `ReleaseWatchState | 'unknown'`, a redundant union — `ReleaseWatchState`
+  already includes `'unknown'` as one of its seven members. Simplified to
+  `ReleaseWatchState` in both files; no behavior change, caught while
+  wiring `ReleaseWatchPosturePill`'s `state` prop (typed as the bare
+  `ReleaseWatchState`) against the redundant union and confirming they were
+  structurally identical rather than assuming it.
+- **Verified**: `npm run typecheck` (whole repo, exit 0), `npx eslint
+  src/lib/admin/command-deck src/components/admin/command-deck
+  --max-warnings 0` (exit 0), and the combined suite —
+  `npx vitest run --maxWorkers=4 src/lib/admin/command-deck
+  src/components/admin/command-deck src/components/admin/premium
+  src/lib/admin/incidents/__tests__/genome.test.ts
+  src/lib/admin/incidents/__tests__/release-watch.test.ts` — 92/92 green
+  (54 own + 38 from the merged branch), exit code checked independently.
+  No test assertions needed changing: `ReleaseWatchPosturePill` renders the
+  identical label strings (`RELEASE_WATCH_LABEL`) the deleted hand-rolled
+  map used.
