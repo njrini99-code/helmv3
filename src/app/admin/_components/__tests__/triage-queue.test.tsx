@@ -29,6 +29,7 @@ const appItem: TriageItem = {
   errorCode: '42501',
   fingerprint: 'fp-1',
   hasRca: true,
+  isFixture: false,
   description: 'savePartialRound failed',
   report: '# Incident report: savePartialRound failed',
 };
@@ -43,6 +44,7 @@ const sentryItem: TriageItem = {
   errorCode: null,
   fingerprint: null,
   hasRca: false,
+  isFixture: false,
   description: 'TypeError in rounds',
   report: '# Incident report: TypeError in rounds',
 };

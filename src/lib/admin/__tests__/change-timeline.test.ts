@@ -69,6 +69,7 @@ function makeIncident(overrides: Partial<UnifiedIncident> & { id: string }): Uni
     klass: 'defect',
     actionable: true,
     klassReason: 'r',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,

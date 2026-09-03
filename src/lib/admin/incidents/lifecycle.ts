@@ -167,8 +167,29 @@ export function deriveLifecycle(input: LifecycleInput): LifecycleVerdict {
   const { analysis, repair, deployProof, resolution, now } = input;
 
   // 1. A fault that came back after being fixed outranks everything below,
-  //    including an existing resolution — see the module doc.
+  //    including an existing resolution — see the module doc. EXCEPT: when
+  //    the latest RCA analysis for this fingerprint already found
+  //    `not-a-defect`, recurring is expected noise, not a real regression —
+  //    catalogued defect (e). An analysis that hasn't seen the recurrence
+  //    yet still says whatever it said last, which is exactly the point:
+  //    it already explained why this fires, so firing again is not new
+  //    information.
   if (input.regressed) {
+    if (analysis?.category === 'not-a-defect') {
+      const because: LifecycleReasonLine[] = [
+        resolution
+          ? met(`Resolved ${since(resolution.resolvedAt, now)} ago (${resolution.resolvedBy}).`)
+          : met('A prior human resolution exists for this fault.'),
+        met(`Analysis (${since(analysis.generatedAt, now)} ago) already found this is NOT A DEFECT.`),
+        pending(`Observed again ${since(input.lastSeen, now)} ago — expected noise, not a regression.`),
+      ];
+      return verdict(
+        'expected-recurrence',
+        `Recurred ${since(input.lastSeen, now)} ago — analysis already found this is not a defect.`,
+        because,
+      );
+    }
+
     const because: LifecycleReasonLine[] = resolution
       ? [
           met(
@@ -408,9 +429,10 @@ export function needsAttention(state: IncidentLifecycleState): boolean {
  * call (`needs-evidence`, `repairable`). After that comes the queue of
  * incidents automation has not finished with yet — `new` before the
  * in-progress repair pipeline, because nothing has looked at it at all —
- * and the list ends with the two closed outcomes, `not-a-defect` before
- * `resolved` because the latter is the single state this whole model exists
- * to produce.
+ * and the list ends with the three closed outcomes: `expected-recurrence`
+ * (recurred, but the analysis already ruled it out) alongside `not-a-defect`
+ * — neither needs a human — before `resolved`, because the latter is the
+ * single state this whole model exists to produce.
  *
  * This module stays pure — no import-time validation lives here, on
  * purpose: a thrown error at module load would crash every render path that
@@ -433,6 +455,7 @@ export const LIFECYCLE_ATTENTION_ORDER: readonly IncidentLifecycleState[] = [
   'merged',
   'awaiting-deploy',
   'awaiting-proof',
+  'expected-recurrence',
   'not-a-defect',
   'resolved',
 ];

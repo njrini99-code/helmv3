@@ -529,6 +529,14 @@ function buildDraft(
     bucket.appItems.some((i) => i.substatus === 'regressed') ||
     bucket.sentryItems.some((i) => i.substatus === 'regressed');
 
+  // Catalogued defect (h): any contributing app-origin item traced back to a
+  // QA fixture round makes the whole correlated incident a fixture — same
+  // "any occurrence counts" shape `regressed` above uses. `mergeTriage`
+  // already forces that item's `actionable` false; this field only exists so
+  // the card can say WHY (the FIXTURE badge). Sentry-origin items are always
+  // `isFixture: false` — no round-id metadata to match against.
+  const isFixture = bucket.appItems.some((i) => i.isFixture);
+
   const hasStack = bucket.appItems.some((i) => reportHasStackTrace(i.report));
 
   const report =
@@ -573,6 +581,7 @@ function buildDraft(
     klass,
     actionable,
     klassReason,
+    isFixture,
     report,
     regressed,
     hasBlindSource,

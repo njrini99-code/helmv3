@@ -38,6 +38,12 @@ function statusFromFetch<T>(res: AdminFetchResult<T>): { status: SourceStatus; r
     return { status: 'blind', reason: res.error ?? 'not configured' };
   }
   if (res.status === 'error') {
+    // A rate limit that survived one honoured Retry-After retry (see
+    // `fetchSentryIssues`) is transient and usually clears on its own —
+    // worth telling apart from a dead token or an unreachable provider.
+    if (res.degraded) {
+      return { status: 'degraded', reason: 'rate limited' };
+    }
     return { status: 'blind', reason: res.error ?? 'fetch failed' };
   }
   if (res.truncated) {
@@ -303,6 +309,18 @@ function readErrorCode(metadata: unknown): string | null {
  * a BUILD failed — a deployment stuck in ERROR is invisible to an exception
  * tracker because the code never ran. That is what this arm contributes.
  */
+/**
+ * A CANCELED preview deployment is routine — a push superseded by a later
+ * push, or a manual cancel — not a build problem. It is only worth treating
+ * as one on `production`, where a canceled deploy means the intended release
+ * never shipped.
+ */
+function vercelDeploySeverity(state: string, target: string | null): ReliabilitySeverity {
+  if (state === 'ERROR') return 'error';
+  if (state === 'CANCELED' && target !== 'production') return 'info';
+  return 'warning';
+}
+
 export async function collectVercel(windowStartIso: string): Promise<SourceResult> {
   const startedAt = Date.now();
   const res = await fetchVercelDeployments(VERCEL_DEPLOY_LIMIT);
@@ -321,7 +339,7 @@ export async function collectVercel(windowStartIso: string): Promise<SourceResul
     const when = new Date(deploy.createdAt).toISOString();
     return {
       source: 'vercel' as const,
-      severity: deploy.state === 'ERROR' ? ('error' as const) : ('warning' as const),
+      severity: vercelDeploySeverity(deploy.state, deploy.target),
       title: `Deployment ${deploy.state.toLowerCase()}`,
       message: `Deployment ${deploy.uid} on ${deploy.target ?? 'preview'} finished ${deploy.state}`,
       route: null,
