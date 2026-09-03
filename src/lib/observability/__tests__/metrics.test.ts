@@ -164,6 +164,22 @@ describe('sanitizeMetricAttributes', () => {
     ).toEqual({ sport: 'golf' });
   });
 
+  it('privacy sentinel: a secret pushed under token/authorization/cookie never survives the allow-list', () => {
+    // Not PII-shaped by VALUE (no @, no UUID/JWT/URL pattern) — these are
+    // dropped purely because their KEY is outside ALLOWED_METRIC_DIMENSIONS.
+    // Same sentinel string used in structured-log.test.ts and the
+    // instrumentation privacy-sentinel suite, so a grep for it always finds
+    // every place this repo checks the same guarantee.
+    const out = sanitizeMetricAttributes({
+      token: 'sentry-test-secret-DO-NOT-STORE-123',
+      authorization: 'sentry-test-secret-DO-NOT-STORE-123',
+      cookie: 'sentry-test-secret-DO-NOT-STORE-123',
+      feature: 'round_tracking',
+    });
+    expect(JSON.stringify(out)).not.toContain('sentry-test-secret-DO-NOT-STORE-123');
+    expect(out).toEqual({ feature: 'round_tracking' });
+  });
+
   it('never throws on a hostile input shape', () => {
     expect(() =>
       sanitizeMetricAttributes({

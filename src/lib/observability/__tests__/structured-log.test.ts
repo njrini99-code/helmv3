@@ -31,7 +31,7 @@ vi.mock('@sentry/nextjs', () => ({
   },
 }));
 
-import { helmLog } from '../structured-log';
+import { helmLog, enforceLogAttributeAllowlist } from '../structured-log';
 import { METRIC_LOG_REDACTED_FIELD } from '../metrics';
 
 beforeEach(() => {
@@ -163,5 +163,41 @@ describe('helmLog — never throws', () => {
 
   it('never throws even when event is not a string', () => {
     expect(() => helmLog.info(undefined as unknown as string, {})).not.toThrow();
+  });
+});
+
+describe('enforceLogAttributeAllowlist (beforeSendLog second line of defence)', () => {
+  it('sanitizes a raw Sentry.logger.* call the SAME way helmLog would have', () => {
+    // A call site that used Sentry.logger directly (bypassing helmLog) is
+    // exactly the case this hook exists to still catch.
+    const log = {
+      level: 'info' as const,
+      message: 'raw call',
+      attributes: { token: 'sentry-test-secret-DO-NOT-STORE-123', feature: 'round_tracking' },
+    };
+    const out = enforceLogAttributeAllowlist(log);
+    expect(JSON.stringify(out)).not.toContain('sentry-test-secret-DO-NOT-STORE-123');
+    expect(out.attributes).toEqual({ feature: 'round_tracking' });
+  });
+
+  it('preserves level, message, and severityNumber unchanged', () => {
+    const out = enforceLogAttributeAllowlist({
+      level: 'error' as const,
+      message: 'oops',
+      severityNumber: 17,
+      attributes: {},
+    });
+    expect(out).toMatchObject({ level: 'error', message: 'oops', severityNumber: 17 });
+  });
+
+  it('never throws and fails closed on a hostile attributes getter', () => {
+    const hostile = {
+      level: 'warn' as const,
+      message: 'm',
+      get attributes(): Record<string, unknown> { throw new Error('boom'); },
+    };
+    let out: ReturnType<typeof enforceLogAttributeAllowlist>;
+    expect(() => { out = enforceLogAttributeAllowlist(hostile); }).not.toThrow();
+    expect(out!.attributes).toEqual({});
   });
 });

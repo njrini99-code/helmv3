@@ -188,3 +188,70 @@ export const helmLog = {
   warn: (event: string, fields: HelmLogFields = {}) => emit('warn', event, fields),
   error: (event: string, fields: HelmLogFields = {}) => emit('error', event, fields),
 };
+
+// ---------------------------------------------------------------------------
+// beforeSendLog — the second, independent line of defence
+// ---------------------------------------------------------------------------
+
+/**
+ * Applies the SAME secret-key-strip + email-mask + object-cap rules
+ * `helmLog` applies, to an arbitrary attributes bag. Exists so a call site
+ * that reaches `Sentry.logger.*` directly — bypassing `helmLog` — still gets
+ * sanitized, via the `beforeSendLog` hook wired in both instrumentation
+ * entrypoints. Never throws; degrades to `{}` on internal failure.
+ */
+export function sanitizeLogAttributes(attributes: Record<string, unknown> | undefined | null): Record<string, unknown> {
+  try {
+    if (!attributes || typeof attributes !== 'object') return {};
+    let redactedCount = 0;
+    const stripped = dropSecretKeysDeep(attributes, () => {
+      redactedCount += 1;
+    }) as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(stripped)) {
+      const safe = toSafeAttributeValue(value);
+      if (safe !== undefined) out[key] = safe;
+    }
+    if (redactedCount > 0) {
+      for (let i = 0; i < redactedCount; i++) recordLogRedactedField();
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** The minimal shape `beforeSendLog` is called with — see @sentry/core's `Log`. */
+interface SentryLogLike {
+  level: string;
+  message: unknown;
+  attributes?: Record<string, unknown>;
+  severityNumber?: number;
+}
+
+/**
+ * The body of both instrumentation entrypoints' `beforeSendLog` hook.
+ * Rebuilds the log from its NAMED fields (never `{ ...log, attributes }`) for
+ * the same reason `enforceMetricAttributeAllowlist` does in metrics.ts: a
+ * spread would re-evaluate a hostile `attributes` getter a second time,
+ * outside the try/catch that just absorbed its first throw. Fails CLOSED —
+ * an internal sanitization error yields `attributes: {}`, never the
+ * unsanitized originals.
+ */
+export function enforceLogAttributeAllowlist<T extends SentryLogLike>(log: T): T {
+  let rawAttributes: Record<string, unknown> | undefined;
+  try {
+    // Reading the property is what can throw on a hostile getter — kept in
+    // its own try so that failure cannot escape before sanitizeLogAttributes
+    // ever runs.
+    rawAttributes = log.attributes;
+  } catch {
+    rawAttributes = undefined;
+  }
+  return {
+    level: log.level,
+    message: log.message,
+    attributes: sanitizeLogAttributes(rawAttributes),
+    severityNumber: log.severityNumber,
+  } as T;
+}
