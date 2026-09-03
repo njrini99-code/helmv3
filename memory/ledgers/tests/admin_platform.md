@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Admin Platform test ledger
 
 ## 2026-09-02 — Reliability/Bridge catalogued-defect sweep (agent/reliability-bridge-fixes), defects (b), (c), (d), (e), (f), (h)

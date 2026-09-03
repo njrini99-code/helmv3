@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Admin Platform change ledger
 
 ## 2026-09-02 — Correction to (e) and (h): a critical expected-recurrence must still page, and a fixture must still be visible
