@@ -31,7 +31,7 @@ export function parseRegistry(text) {
       continue;
     }
 
-    const entityMatch = line.match(/^  ([a-z0-9_]+):$/);
+    const entityMatch = line.match(/^ {2}([a-z0-9_]+):$/);
     if (entityMatch && top && registry[top]) {
       entityName = entityMatch[1];
       registry[top][entityName] = {};
@@ -43,7 +43,7 @@ export function parseRegistry(text) {
     if (!top || !entityName || !registry[top]) continue;
     const entity = registry[top][entityName];
 
-    const propMatch = line.match(/^    ([a-z_]+):(?:\s+(.+))?$/);
+    const propMatch = line.match(/^ {4}([a-z_]+):(?:\s+(.+))?$/);
     if (propMatch) {
       const key = propMatch[1];
       const value = propMatch[2];
@@ -60,7 +60,7 @@ export function parseRegistry(text) {
 
     if (!group) continue;
 
-    const groupPropMatch = line.match(/^      ([a-z_]+):(?:\s+(.+))?$/);
+    const groupPropMatch = line.match(/^ {6}([a-z_]+):(?:\s+(.+))?$/);
     if (groupPropMatch) {
       const key = groupPropMatch[1];
       const value = groupPropMatch[2];
@@ -73,14 +73,14 @@ export function parseRegistry(text) {
       continue;
     }
 
-    const listAtGroupMatch = line.match(/^      -\s+(.+)$/);
+    const listAtGroupMatch = line.match(/^ {6}-\s+(.+)$/);
     if (listAtGroupMatch) {
       if (!Array.isArray(entity[group])) entity[group] = [];
       entity[group].push(coerceScalar(listAtGroupMatch[1]));
       continue;
     }
 
-    const listAtKeyMatch = line.match(/^        -\s+(.+)$/);
+    const listAtKeyMatch = line.match(/^ {8}-\s+(.+)$/);
     if (listAtKeyMatch && groupKey) {
       if (!Array.isArray(entity[group][groupKey])) entity[group][groupKey] = [];
       entity[group][groupKey].push(coerceScalar(listAtKeyMatch[1]));
@@ -90,9 +90,33 @@ export function parseRegistry(text) {
   return registry;
 }
 
+/**
+ * Bug fixed 2026-09-02, found by `scripts/knowledge/world-model.mjs`'s first
+ * real read of `observability.feature_keys` through this parser: only `[]`
+ * was special-cased, so a non-empty inline array — `feature_keys:
+ * [round_tracking, course_library]`, the form 16 pre-existing registry.yml
+ * entries already use — fell through to the plain-scalar branch and became
+ * the literal STRING `"[round_tracking, course_library]"`. Nothing broke
+ * visibly before this: no `.mjs` consumer (`map-changed-files.mjs`,
+ * `check-doc-coverage.mjs`, `stale-doc-check.mjs`) reads `observability` at
+ * all, only `code`/`docs`/`review`, which every existing registry entry
+ * already writes as multi-line block lists. `world-model.mjs` is the first
+ * one that does, and `for (const key of keys)` over a STRING iterates it
+ * CHARACTER BY CHARACTER — every inline `feature_keys` array in the registry
+ * was silently emitting one bogus single-character "signal" node per
+ * character. `check-feature-registry.ts` never saw this: it parses with real
+ * `js-yaml`, which has always read the same line correctly.
+ */
 function coerceScalar(value) {
   const trimmed = value.trim();
   if (trimmed === '[]') return [];
+  const inlineArray = trimmed.match(/^\[(.*)\]$/);
+  if (inlineArray) {
+    const inner = inlineArray[1].trim();
+    return inner === ''
+      ? []
+      : inner.split(',').map((item) => item.trim().replace(/^['"]|['"]$/g, ''));
+  }
   if (trimmed === 'true') return true;
   if (trimmed === 'false') return false;
   if (/^\d+$/.test(trimmed)) return Number(trimmed);
