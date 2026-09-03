@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { readFile, stat } from 'node:fs/promises';
+import { open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { failed, ok, unconfigured, type AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
@@ -126,16 +126,27 @@ let worldModelCache: { mtimeMs: number; file: WorldModelFile } | null = null;
 
 async function readWorldModel(): Promise<WorldModelFile> {
   const path = join(process.cwd(), WORLD_MODEL_PATH);
-  // Let stat's ENOENT propagate to the caller's catch — same disclosed-gap
-  // handling as before, just moved one level down.
-  const stats = await stat(path);
-  if (worldModelCache && worldModelCache.mtimeMs === stats.mtimeMs) {
-    return worldModelCache.file;
+  // One file handle for BOTH the freshness check and the read. Doing
+  // `stat(path)` and then `readFile(path)` is a time-of-check/time-of-use
+  // race (CodeQL js/file-system-race, high): the path could be replaced
+  // between the two calls and the cache would then be keyed by one file's
+  // mtime while holding another file's bytes. `fstat` on an already-open
+  // descriptor describes exactly the bytes this handle will read.
+  // ENOENT still propagates to the caller's catch — same disclosed-gap
+  // handling as before.
+  const handle = await open(path, 'r');
+  try {
+    const stats = await handle.stat();
+    if (worldModelCache && worldModelCache.mtimeMs === stats.mtimeMs) {
+      return worldModelCache.file;
+    }
+    const raw = await handle.readFile('utf-8');
+    const file = JSON.parse(raw) as WorldModelFile;
+    worldModelCache = { mtimeMs: stats.mtimeMs, file };
+    return file;
+  } finally {
+    await handle.close();
   }
-  const raw = await readFile(path, 'utf-8');
-  const file = JSON.parse(raw) as WorldModelFile;
-  worldModelCache = { mtimeMs: stats.mtimeMs, file };
-  return file;
 }
 
 /** Test-only escape hatch — clears the module-level cache between cases so
