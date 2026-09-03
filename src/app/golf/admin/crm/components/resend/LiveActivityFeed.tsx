@@ -10,6 +10,7 @@ import { getRecentActivityFeed } from '@/app/golf/actions/resend-activity';
 import { EVENT_CONFIG, formatRelative, formatFullTimestamp } from './shared';
 import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
 import { Button, IconButton } from '@/components/ui/button';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 interface LiveActivityFeedProps {
   initialLimit?: number;
@@ -49,7 +50,8 @@ export function LiveActivityFeed({
     if (isPaused) return;
     const supabase = createClient();
 
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel('resend-activity-feed')
       .on(
         'postgres_changes',
@@ -70,8 +72,9 @@ export function LiveActivityFeed({
           });
           setLiveCount((c) => c + 1);
         }
-      )
-      .subscribe();
+      ),
+      { feature: 'golf.crm_resend_activity', channelClass: 'email_events', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);

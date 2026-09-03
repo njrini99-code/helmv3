@@ -35,6 +35,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CLASS_EVENT_TYPE, classTag } from '@/lib/calendar/class-events';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 /** Columns fetched for calendar rendering — keep in sync with the page select. */
 const CALENDAR_EVENT_COLUMNS =
@@ -503,33 +504,40 @@ export function useCalendarRangeEvents({
 
     const supabase = createClient();
     let hasSubscribedBefore = false;
-    const channel = supabase
-      .channel(`calendar-events-${teamId}-${instanceId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'golf_events',
-          filter: `team_id=eq.${teamId}`,
-        },
-        () => {
-          onRealtimeEventRef.current?.();
-          // Keep client-fetched (outside-window) ranges fresh too.
-          refetchVisibleRangeRef.current();
-        },
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          if (hasSubscribedBefore) {
-            // Reconnected after a gap — events may have been missed while the
-            // socket was down. Refresh the server payload AND the visible range.
+    const channel = observeRealtimeChannel(
+      supabase
+        .channel(`calendar-events-${teamId}-${instanceId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'golf_events',
+            filter: `team_id=eq.${teamId}`,
+          },
+          () => {
             onRealtimeEventRef.current?.();
+            // Keep client-fetched (outside-window) ranges fresh too.
             refetchVisibleRangeRef.current();
+          },
+        ),
+      {
+        feature: 'golf.calendar',
+        channelClass: 'golf_events',
+        subscriptionType: 'postgres_changes',
+        onStatus: (status) => {
+          if (status === 'SUBSCRIBED') {
+            if (hasSubscribedBefore) {
+              // Reconnected after a gap — events may have been missed while the
+              // socket was down. Refresh the server payload AND the visible range.
+              onRealtimeEventRef.current?.();
+              refetchVisibleRangeRef.current();
+            }
+            hasSubscribedBefore = true;
           }
-          hasSubscribedBefore = true;
-        }
-      });
+        },
+      },
+    );
 
     return () => {
       void supabase.removeChannel(channel);

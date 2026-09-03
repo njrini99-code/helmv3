@@ -461,3 +461,34 @@ export function recordStorageFailure(input: RecordStorageFailureInput): void {
     error_code: input.errorCode,
   });
 }
+
+/**
+ * Phase 2 Track B addition (Realtime observability, brief §12/§36-39) —
+ * ADDITIVE constant + one record function, same discipline as the Storage
+ * addition above. `metrics.ts` has NO `server-only` marker (confirmed by
+ * reading its own import graph — `flush.ts` and `vercel-wait-until.ts`
+ * neither import `server-only`), so this IS safe to call from the client-side
+ * `realtime.ts` module.
+ */
+export const METRIC_REALTIME_CHANNEL_FAILURE = 'helm.realtime.channel_failure';
+
+interface RecordRealtimeChannelFailureInput {
+  feature: string;
+  /** The realtime channel status string (CHANNEL_ERROR | TIMED_OUT), lower-
+   *  cased onto the `result` dimension. */
+  result: string;
+  environment?: string;
+  runtime?: string;
+}
+
+/** Emits ONLY helm.realtime.channel_failure — call only from `realtime.ts`'s
+ *  CHANNEL_ERROR/TIMED_OUT branch. */
+export function recordRealtimeChannelFailure(input: RecordRealtimeChannelFailureInput): void {
+  safeCount(METRIC_REALTIME_CHANNEL_FAILURE, 1, {
+    feature: input.feature,
+    operation: 'subscribe',
+    result: input.result,
+    environment: input.environment,
+    runtime: input.runtime,
+  });
+}

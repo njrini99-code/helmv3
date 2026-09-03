@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel, RealtimePresenceState, User } from '@supabase/supabase-js';
 import { useVisibilityAwareInterval } from './useVisibilityAwareInterval';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 // ============================================
 // TYPES
@@ -163,7 +164,7 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
       },
     });
 
-    channel
+    const builtChannel = channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState<AdminPresenceInfo>();
         setPresenceState(state);
@@ -178,8 +179,13 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
         if (process.env.NODE_ENV !== 'production') {
           console.debug('[Presence] Left:', leftPresences);
         }
-      })
-      .subscribe(async (status) => {
+      });
+
+    observeRealtimeChannel(builtChannel, {
+      feature: 'admin.presence',
+      channelClass: 'admin_presence',
+      subscriptionType: 'presence',
+      onStatus: async (status) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
           setError(null);
@@ -202,7 +208,8 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
         } else if (status === 'CLOSED') {
           setIsConnected(false);
         }
-      });
+      },
+    });
 
     channelRef.current = channel;
 

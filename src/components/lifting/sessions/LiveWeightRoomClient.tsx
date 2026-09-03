@@ -31,6 +31,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { IconDumbbell, IconCheck, IconAlertCircle, IconUsers, IconRefresh } from '@/components/icons';
 import {
   advanceSessionLifecycle,
@@ -178,7 +179,8 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
     const supabase = supabaseRef.current;
     const suffix = Math.random().toString(36).slice(2, 9);
 
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel(`live-room-${orgId}-${suffix}`)
       .on(
         'postgres_changes',
@@ -203,8 +205,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
         () => {
           startTransition(() => { router.refresh(); });
         },
-      )
-      .subscribe();
+      ),
+      { feature: 'lifting.live_weight_room', channelClass: 'helm_lifting_sessions', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);
