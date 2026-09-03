@@ -200,6 +200,26 @@ alongside (not duplicated here).
 - Job/cron surfaces — `recordJobRun`/Sentry Cron Monitor check-ins
   (`src/lib/observability/cron-monitors.ts`,
   `docs/observability/SENTRY_CRON_MONITORS.md`), added in Deliverable 3.
+- **Coverage-gaps pass (2026-09-03)** — closed the remaining call-site
+  silence Findings §(e) named but Deliverables 1-6 didn't reach:
+  `src/lib/coachhelm/v3/chat/agent-tools.ts`'s five tool-build/read catches
+  (`guarded`/`proposeGated`/`executeGated` + their `create_recurring_practice`
+  twins) now call `logServerError`; `src/lib/notifications/push.ts`'s
+  per-token invoke-failure, per-token thrown-exception, and outermost
+  catches now call `logServerEvent`/`logServerException` (previously
+  console.error-only); `src/app/golf/actions/golf.ts`'s
+  `updateGolfEventImpl`/`deleteGolfEventImpl` outer catches (one fully
+  bare, one ZodError-only) now call `logServerException`, and
+  `updateShotImpl`'s `putt_details`/`approach_miss_details` writes now
+  check the resolved `{error}` instead of swallowing every failure
+  identically to "table doesn't exist" (CRITICAL per Findings — a real
+  write failure previously returned `success:true`);
+  `src/app/api/cron/log-retention/route.ts`'s `runAutoResolve` catch now
+  calls `logServerException` (previously console.error-only, relying
+  solely on the Cron Monitor check-in Deliverable 3 already added for
+  visibility). See `memory/ledgers/changes/observability_sentry.md`'s
+  matching entry and `docs/observability/SENTRY_COVERAGE_MATRIX.md`
+  rows 6, 11, 21, 22, 24, 26 for the corrected per-cell verdicts.
 
 ## Business Rules
 

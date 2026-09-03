@@ -300,3 +300,67 @@
 - Docs: `memory/features/observability-sentry.md`'s Consumers section
   updated in this same session's Deliverable 7 pass (see below) to
   describe this work concretely rather than anticipate it.
+
+## 2026-09-03 — Coverage-gaps pass: closing what Findings §(e) named and Deliverables 1-6 didn't reach
+
+- Branch: `agent/sentry-gaps`. Worked directly from
+  `docs/observability/SENTRY_COVERAGE_MATRIX.md`'s PARTIAL/NO cells and
+  `SENTRY_PHASE_A_FINDINGS.md` §(e)'s ranked list, re-verifying each
+  against current code before touching anything (most of Deliverables
+  1-6's own claims were verified live rather than trusted from the ledger
+  — recorded per-row in the matrix itself).
+- Change: (1) `src/lib/coachhelm/v3/chat/agent-tools.ts` — the five
+  tool-build/read catches Findings §(e) item #11 named
+  (`guarded`/`proposeGated`/`executeGated` + the `create_recurring_practice`
+  twins) now call `logServerError` (warning, `skipSentry` true for expected
+  control-flow classes, `userId: ctx.coach_id` for Sentry user context).
+  `guarded` gained `toolName`/`ctx` params to support this. (2)
+  `src/lib/notifications/push.ts` — the per-token invoke-failure branch
+  now also calls `logServerEvent` (warning, `skipSentry:true` — high-volume/
+  expected, Bridge-only), the per-token thrown-exception catch now calls
+  `logServerException` (warning), the outermost catch now calls
+  `logServerException` (error). All three were console.error-only.
+  `src/test/lib/notifications/push.test.ts` updated: the mock module gained
+  `logServerException`, and 4 existing assertions (one `toHaveBeenCalledTimes(1)`,
+  three `not.toHaveBeenCalled()`) were rewritten to account for the new
+  invoke-failure log call — a deliberate behavior change the old assertions
+  correctly caught. (3) `src/app/golf/actions/golf.ts` — `updateGolfEventImpl`'s
+  outer catch (previously ZodError-only, fell through to a silent generic
+  message) and `deleteGolfEventImpl`'s outer catch (previously fully bare,
+  `catch { ... }` with no error binding at all) now call
+  `logServerException`; the `Failed to update/cancel/delete event` bare-DB-error
+  branches now call `logServerError`. `updateShotImpl`'s `putt_details`/
+  `approach_miss_details` upsert/delete calls (Findings #1, CRITICAL) now
+  read the resolved `{error}` instead of only catching a thrown exception —
+  a real write failure (RLS denial, constraint violation) previously
+  returned `success:true` identically to the table genuinely not existing
+  in this deployment; now only `42P01` (undefined_table) stays silent,
+  everything else logs via `logServerError`/`logServerException`. New test:
+  `src/app/golf/actions/__tests__/golf-event-unexpected-error-telemetry.test.ts`
+  (mocks `resolveCoachTeamIdWithCookie` to throw, asserts both outer
+  catches call `logServerException` with the right action/severity). (4)
+  `src/app/api/cron/log-retention/route.ts` — `runAutoResolve`'s catch now
+  also calls `logServerException` (warning); previously the actual error
+  object never reached Sentry as a captured exception, only as a Cron
+  Monitor check-in status (Deliverable 3) and a bare console.error.
+- Verified, not merely assumed: read `src/proxy.ts` in full (154 lines) —
+  its two `Sentry.captureException` sites are deliberately different
+  failure classes (fail-closed config error vs. fail-open transient
+  session failure) with no missing breadcrumb/user gap, resolving the
+  matrix's prior UNKNOWNs as N/A rather than leaving them unexamined.
+  Confirmed live in code (not from the ledger) that Deliverable 3's cron
+  monitors, Deliverable 4's `/api/health` rewrite, and Deliverable 5's
+  `experimental_telemetry`/`recordAi` wiring are all actually merged to
+  `main` — the coverage matrix's own cells for rows 21/22/24/7 were still
+  describing the PRE-Deliverable code and are corrected in this pass.
+- NOT closed, tracked as open in the PR: Findings §(e) items #4-6, #10,
+  #13-16, #18-20 (lower-severity per that list's own ranking, or read-path
+  rather than write-path catches); the systemic `formatSafeErrorResponse`
+  action-name-threading fix (item #17, ~72 call sites); client-side
+  handled-catch coverage (matrix row 4 — `src/components/**`/`src/hooks/**`
+  were out of every prior pass's audited scope and remain so); Sentry Cron
+  Monitor alert-rule configuration (row 24's Alrt — control-plane, out of
+  scope per this task's hard rules).
+- Docs: `docs/observability/SENTRY_COVERAGE_MATRIX.md` rows 6, 7, 11, 21,
+  22, 24, 26 corrected with today's date; `memory/features/observability-sentry.md`'s
+  Consumers section.

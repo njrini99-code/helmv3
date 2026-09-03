@@ -100,7 +100,7 @@ export function TracerRoundDiagnostic({
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-warm-500">
-        <Loader2 size={14} className="animate-spin" aria-hidden />
+        <Loader2 size={14} className="motion-safe:animate-spin" aria-hidden />
         Loading round diagnostic…
       </div>
     );

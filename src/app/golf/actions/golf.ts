@@ -3576,6 +3576,11 @@ async function updateGolfEventImpl(
       if ((error as { code?: string }).code === '23514') {
         return { success: false, error: 'End time must be after the start time. Adjust the event end as well.' };
       }
+      void logServerError(`updateGolfEvent write failed: ${describeError(error)}`, {
+        action: 'golf.updateGolfEvent.write',
+        featureArea: 'calendar',
+        extra: { eventId },
+      }, 'warning');
       return { success: false, error: 'Failed to update event' };
     }
 
@@ -3664,6 +3669,11 @@ async function updateGolfEventImpl(
       const firstIssue = err.issues[0]?.message;
       return { success: false, error: firstIssue || 'Invalid input data' };
     }
+    // Previously fully silent: any unexpected throw here (not a validation
+    // error, not one of the already-logged read failures above) reached
+    // neither Bridge nor Sentry — a calendar-save critical path with a
+    // real bug would only ever show as a generic user-facing message.
+    void logServerException(err, { action: 'golf.updateGolfEvent.unexpected', featureArea: 'calendar' }, 'error');
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -3790,6 +3800,11 @@ async function deleteGolfEventImpl(
         .select('id');
 
       if (error) {
+        void logServerError(`deleteGolfEvent hard-delete failed: ${describeError(error)}`, {
+          action: 'golf.deleteGolfEvent.hardDelete',
+          featureArea: 'calendar',
+          extra: { eventId },
+        }, 'warning');
         return { success: false, error: 'Failed to delete event' };
       }
 
@@ -3820,6 +3835,11 @@ async function deleteGolfEventImpl(
         .select('id');
 
       if (error) {
+        void logServerError(`deleteGolfEvent soft-cancel failed: ${describeError(error)}`, {
+          action: 'golf.deleteGolfEvent.softCancel',
+          featureArea: 'calendar',
+          extra: { eventId },
+        }, 'warning');
         return { success: false, error: 'Failed to cancel event' };
       }
 
@@ -3975,7 +3995,10 @@ async function deleteGolfEventImpl(
     updateTag(CACHE_TAGS.CALENDAR);
     return { success: true };
 
-  } catch {
+  } catch (err) {
+    // Previously fully bare (no error binding at all) — a calendar-delete
+    // critical path with a real bug had zero Bridge/Sentry signal.
+    void logServerException(err, { action: 'golf.deleteGolfEvent.unexpected', featureArea: 'calendar' }, 'error');
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -9517,52 +9540,75 @@ async function updateShotImpl(
       return { success: false, error: 'Failed to update shot' };
     }
 
-    // Upsert putt miss details (separate table, non-critical)
+    // Upsert putt miss details (separate table, non-critical IF the table is
+    // genuinely absent in this deployment — 42501/23xxx etc. are real
+    // failures the caller believes succeeded (the outer function still
+    // returns success:true) and must not be swallowed identically to
+    // "table doesn't exist". See PHASE_A_FINDINGS.md §(e)#1.
     if (data.putt_miss_tags !== undefined) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sb = supabase as any;
         const clampedDist = data.putt_distance_feet != null ? Math.min(data.putt_distance_feet, 500) : null;
+        let puttError: { code?: string; message?: string } | null = null;
         if (data.putt_miss_tags && data.putt_miss_tags.length > 0) {
-          await sb.from('putt_details').upsert({
+          ({ error: puttError } = await sb.from('putt_details').upsert({
             shot_id: shotId,
             miss_tags: data.putt_miss_tags,
             break_direction: data.putt_break ?? null,
             distance_feet: clampedDist,
             made: data.putt_made ?? false,
-          }, { onConflict: 'shot_id' });
+          }, { onConflict: 'shot_id' }));
         } else if (data.putt_made !== undefined) {
           // Still upsert for made putts (even with empty miss tags) to keep conversion data accurate
-          await sb.from('putt_details').upsert({
+          ({ error: puttError } = await sb.from('putt_details').upsert({
             shot_id: shotId,
             miss_tags: [],
             break_direction: data.putt_break ?? null,
             distance_feet: clampedDist,
             made: data.putt_made,
-          }, { onConflict: 'shot_id' });
+          }, { onConflict: 'shot_id' }));
         }
-      } catch {
-        // Table may not exist — non-critical
+        if (puttError && puttError.code !== '42P01') {
+          void logServerError(
+            `updateShot: putt_details upsert failed (non-fatal, shot save still succeeds): ${puttError.message ?? 'unknown'}`,
+            { action: 'golf.updateShot.puttDetails', errorCode: puttError.code ?? undefined, roundId: shot.round_id, sport: 'golf' },
+            'warning',
+          );
+        }
+      } catch (err) {
+        // Genuine thrown exception (network, etc.) — table-missing (42P01)
+        // never throws here since we now read `.error` above instead.
+        void logServerException(err, { action: 'golf.updateShot.puttDetails', roundId: shot.round_id, sport: 'golf' }, 'warning');
       }
     }
 
-    // Upsert approach miss details (separate table, non-critical)
+    // Upsert approach miss details (separate table, non-critical IF the
+    // table is genuinely absent — same reasoning as putt_details above.
     if (data.approach_miss_direction !== undefined) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sb = supabase as any;
+        let approachError: { code?: string; message?: string } | null = null;
         if (data.approach_miss_direction) {
-          await sb.from('approach_miss_details').upsert({
+          ({ error: approachError } = await sb.from('approach_miss_details').upsert({
             shot_id: shotId,
             miss_direction: data.approach_miss_direction,
             lie_type: toDbLieType(data.approach_miss_lie_type),
-          }, { onConflict: 'shot_id' });
+          }, { onConflict: 'shot_id' }));
         } else {
           // Clear approach miss details if direction was removed
-          await sb.from('approach_miss_details').delete().eq('shot_id', shotId);
+          ({ error: approachError } = await sb.from('approach_miss_details').delete().eq('shot_id', shotId));
         }
-      } catch {
-        // Table may not exist — non-critical
+        if (approachError && approachError.code !== '42P01') {
+          void logServerError(
+            `updateShot: approach_miss_details write failed (non-fatal, shot save still succeeds): ${approachError.message ?? 'unknown'}`,
+            { action: 'golf.updateShot.approachMissDetails', errorCode: approachError.code ?? undefined, roundId: shot.round_id, sport: 'golf' },
+            'warning',
+          );
+        }
+      } catch (err) {
+        void logServerException(err, { action: 'golf.updateShot.approachMissDetails', roundId: shot.round_id, sport: 'golf' }, 'warning');
       }
     }
     void flightRecorder.complete('db.shot_mutation', { observed: { round_id: shot.round_id } });
