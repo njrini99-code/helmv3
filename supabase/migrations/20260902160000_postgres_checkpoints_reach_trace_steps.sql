@@ -110,7 +110,7 @@
 -- SECURITY MODEL, UNCHANGED. Both functions stay SECURITY INVOKER with
 -- their existing search_path and are called only from inside
 -- public.submit_round_atomic / public.save_partial_round_atomic, which are
--- SECURITY DEFINER owned by `postgres` -- the same role that owns
+-- security-definer owned by `postgres` -- the same role that owns
 -- helm_debug.trace_steps (read-only catalog check against production
 -- 2026-09-02: `select pg_get_userbyid(relowner) from pg_class where
 -- oid = 'helm_debug.trace_steps'::regclass` returns `postgres`), so the
@@ -393,7 +393,7 @@ $$;
 -- Grants restated, house convention: CREATE OR REPLACE preserves the ACL
 -- 20260825200811 set (revoked from public; these two are SECURITY INVOKER
 -- so no role is separately granted EXECUTE beyond what already reaches
--- them through the SECURITY DEFINER RPCs that call them), but a migration
+-- them through the security-definer RPCs that call them), but a migration
 -- that touches these functions says so explicitly rather than relying on
 -- it.
 revoke all on function helm_private.trace_checkpoint(

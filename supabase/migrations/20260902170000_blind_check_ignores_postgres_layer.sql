@@ -28,7 +28,7 @@
 -- DEFINER setting, same search_path, same grants, same treatment of a
 -- caller-supplied 'failure' (never upgraded or downgraded).
 --
--- R3 (SECURITY DEFINER). Prepared by an agent; only the owner applies.
+-- R3 (security-definer). Prepared by an agent; only the owner applies.
 -- Fingerprint of the function this replaces, read against the LOCAL stack
 -- 2026-09-02 immediately after applying 20260901140000 (production's own
 -- post-apply fingerprint for that same function, per

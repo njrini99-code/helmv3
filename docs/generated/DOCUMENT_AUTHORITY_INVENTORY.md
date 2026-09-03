@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 35 | 11 |
+| `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 34 | 11 |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/team_communications.md` | current | - | - | - | 1 | 9 | 4 |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |

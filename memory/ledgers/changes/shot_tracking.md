@@ -602,11 +602,11 @@
   `shot_tracking.code.services` (the feature that already owns `golf.ts`, the
   recorder's only caller) and four migration globs
   (`*helm_flight_recorder*`, `*helm_debug*`, `*trace_*`, alongside the
-  existing `*golf_round*`/`*golf_shot*`) to `shot_tracking.code.db`, since
-  none of the four flight-recorder migration filenames matched the prior
-  globs.
-- Tests: new `supabase/tests/rls/golf_flight_recorder_checkpoints.sql` (20
-  assertions) — real `submit_round_atomic`/`save_partial_round_atomic` calls
+  registry's existing globs for round- and shot-related migration files)
+  to `shot_tracking.code.db`, since none of the four flight-recorder
+  migration filenames matched the prior globs.
+- Tests: new flight-recorder checkpoint pgTAP suite (`supabase/tests/rls/`,
+  20 assertions) — real `submit_round_atomic`/`save_partial_round_atomic` calls
   as an authenticated player with a valid `_helm_trace`, asserting substep
   rows carry `parent_step_key`/`layer`/`function_name`/`table_name`; the
   exception variant's own contract (called directly, since triggering it via
@@ -620,10 +620,10 @@
   asks for tracing, never clears it, so an untraced call sharing one test
   transaction with a traced one would otherwise inherit the earlier state —
   not a production concern, since each request there is its own transaction).
-  `supabase/tests/rls/golf_flight_recorder.sql`,
-  `golf_atomic_snapshot_integrity.sql`, `golf_lifecycle_privilege_contracts.sql`
-  and `golf_round_submit_identity.sql` re-run clean against the patched
-  functions (63 assertions, 0 failed). Two assertions were added after a
+  The flight-recorder, atomic-snapshot-integrity, lifecycle-privilege-contracts
+  and round-submit-identity pgTAP suites (`supabase/tests/rls/`) all re-run
+  clean against the patched functions (63 assertions, 0 failed). Two
+  assertions were added after a
   review pass surfaced that the first draft's fail-open and UPSERT-ownership
   claims were each *asserted* but not *discriminated*: (1) the renamed-table
   test originally checked only that the round write still succeeded, which
@@ -639,8 +639,8 @@
   JS-shaped row (`layer = 'supabase'`, `requiredness = 'required'`) and
   confirmed the Postgres UPSERT leaves both fields alone. Added a fifth
   fixture trace exercising exactly that; both fields held. 24 assertions
-  total in `golf_flight_recorder_checkpoints.sql` now, full `test:rls` still
-  74/74 files, 0 failed.
+  total in the flight-recorder checkpoint pgTAP suite now, full `test:rls`
+  still 74/74 files, 0 failed.
 - Confirmed via the Supabase MCP (`execute_sql`, read-only `SELECT`) that
   `helm_debug.trace_steps`, `public.submit_round_atomic`,
   `public.save_partial_round_atomic`, `helm_private.trace_checkpoint` and
@@ -715,8 +715,8 @@
   `psql -f`, `ON_ERROR_STOP=1`, in that order, each followed by an explicit
   `supabase_migrations.schema_migrations` insert. Neither migration is
   applied in production — see `HELD.md`.
-- Extended `supabase/tests/rls/golf_flight_recorder_checkpoints.sql` with a
-  new Test G (4 assertions, built directly against
+- Extended the flight-recorder checkpoint pgTAP suite (`supabase/tests/rls/`)
+  with a new Test G (4 assertions, built directly against
   `helm_debug.trace_runs`/`trace_steps` rather than through the RPCs, since
   the claim under test is `helm_debug_finalize_trace`'s own counting logic):
   a trace with only Postgres-layer steps against a nonzero
