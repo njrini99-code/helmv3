@@ -18,6 +18,7 @@ import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { DEMO_COACHHELM_LANDING_PATH, DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { getDemoCoachCredentials } from '@/lib/demo/config.server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 // posthog capture handled client-side via ?demo=1
 
@@ -547,6 +548,17 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   ]);
 
   if (signInError || !data.session || !data.user) {
+    // The 429/5xx congestion this whole retry path exists for, made visible.
+    // `isTransientAuthError` already decides what the VISITOR is told; this
+    // records what Supabase Auth actually returned so a mass-send burst shows
+    // as a rate, not as a support ticket.
+    observeAuthResult({
+      error: signInError,
+      feature: 'golf_demo_access',
+      action: 'golf.demo_shared_account_sign_in',
+      operation: 'sign_in',
+      sport: 'golf',
+    });
     return {
       success: false,
       error: isTransientAuthError(signInError)
@@ -568,7 +580,19 @@ async function enterDemoImpl(input: EnterDemoInput): Promise<EnterDemoResult> {
   //    a pure extra auth-server round-trip (bad under mass-send load).
   if (data.user.user_metadata?.is_demo !== true) {
     try {
-      await supabase.auth.updateUser({ data: { is_demo: true } });
+      const { error: stampError } = await supabase.auth.updateUser({ data: { is_demo: true } });
+      // Best-effort by design, but not invisible: the demo gates sign every
+      // visitor in from Vercel's shared egress IPs, so a 429 here under a
+      // mass-send burst is precisely the "Auth 429 spike" brief §10 names.
+      // The `catch` below still swallows a thrown failure; this observes the
+      // returned one. Nothing about the control flow changes.
+      observeAuthResult({
+        error: stampError,
+        feature: 'golf_demo_access',
+        action: 'golf.demo_stamp_is_demo',
+        operation: 'other',
+        sport: 'golf',
+      });
     } catch {
       // Worst case the session_expired redirect falls back to /golf/login.
     }

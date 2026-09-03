@@ -36,6 +36,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 import { recordLoginOutcome } from '@/lib/observability/golf-login-outcome';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 export type LoginResult = {
   success: boolean;
@@ -139,6 +140,18 @@ async function loginActionImpl(
   });
 
   if (error || !data.user) {
+    // Additive to `recordLoginOutcome` above, not a replacement: that helper
+    // records the PRODUCT outcome (locked / invalid / rate-limited), this
+    // records the SUPABASE AUTH failure behind it. A wrong password
+    // (`invalid_credentials`) classifies EXPECTED and stays silent; a 429, a
+    // GoTrue 5xx, or the resilient helper's own timeout sentinel does not.
+    observeAuthResult({
+      error,
+      feature: 'golf_auth',
+      action: 'golf.login',
+      operation: 'sign_in',
+      sport: 'golf',
+    });
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
     // Log failed login attempt (fire-and-forget)
@@ -403,6 +416,18 @@ async function signupActionImpl(
   });
 
   if (error) {
+    // `email_exists`, `weak_password` and `validation_failed` all classify
+    // EXPECTED, so the three user-facing branches below stay silent. What
+    // this catches is the fourth case those branches fall through on: a
+    // GoTrue 5xx or a 429 burst that presents to the user as a generic
+    // "Failed to create account".
+    observeAuthResult({
+      error,
+      feature: 'golf_auth',
+      action: 'golf.signup',
+      operation: 'sign_up',
+      sport: 'golf',
+    });
     // Handle Supabase rate limiting with user-friendly message
     if (error.message.includes('security purposes') || error.message.includes('rate limit')) {
       // Extract seconds from error message like "...after 57 seconds"
@@ -832,6 +857,13 @@ async function signupWithStaffInviteActionImpl(
   });
 
   if (error) {
+    observeAuthResult({
+      error,
+      feature: 'golf_auth',
+      action: 'golf.signup_with_staff_invite',
+      operation: 'sign_up',
+      sport: 'golf',
+    });
     if (error.message.includes('security purposes') || error.message.includes('rate limit')) {
       const match = error.message.match(/after (\d+) seconds/);
       return {

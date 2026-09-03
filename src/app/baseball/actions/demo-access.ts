@@ -22,6 +22,7 @@ import {
   isCurrentSessionBaseballDemo,
 } from '@/lib/demo/baseball-config.server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 // ---------------------------------------------------------------------------
 // Input / result types
@@ -578,6 +579,17 @@ async function enterBaseballDemoImpl(
   ]);
 
   if (signInError || !data.session || !data.user) {
+    // The 429/5xx congestion this whole retry path exists for, made visible.
+    // `isTransientAuthError` already decides what the VISITOR is told; this
+    // records what Supabase Auth actually returned so a mass-send burst shows
+    // as a rate, not as a support ticket.
+    observeAuthResult({
+      error: signInError,
+      feature: 'baseball_demo_access',
+      action: 'baseball.demo_shared_account_sign_in',
+      operation: 'sign_in',
+      sport: 'baseball',
+    });
     return {
       success: false,
       error: isTransientAuthError(signInError)
@@ -599,7 +611,19 @@ async function enterBaseballDemoImpl(
   //    pure extra auth-server round-trip (bad under mass-send load).
   if (data.user.user_metadata?.is_demo !== true) {
     try {
-      await supabase.auth.updateUser({ data: { is_demo: true } });
+      const { error: stampError } = await supabase.auth.updateUser({ data: { is_demo: true } });
+      // Best-effort by design, but not invisible: the demo gates sign every
+      // visitor in from Vercel's shared egress IPs, so a 429 here under a
+      // mass-send burst is precisely the "Auth 429 spike" brief §10 names.
+      // The `catch` below still swallows a thrown failure; this observes the
+      // returned one. Nothing about the control flow changes.
+      observeAuthResult({
+        error: stampError,
+        feature: 'baseball_demo_access',
+        action: 'baseball.demo_stamp_is_demo',
+        operation: 'other',
+        sport: 'baseball',
+      });
     } catch {
       // Worst case the session_expired redirect falls back to /baseball/login.
     }

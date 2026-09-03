@@ -80,6 +80,19 @@ export interface ClassifyAuthContext {
    *  authentication unless the caller says otherwise (same "default toward
    *  unexpected" discipline as `classify.ts`). */
   expectedUnauthenticated?: boolean;
+  /** `user_not_found` at this call site is routine because the path is
+   *  DELIBERATELY probed with an address that may not be registered — the
+   *  password-reset request flow is the case this exists for: it answers
+   *  "if an account exists we have emailed it" to every caller on purpose,
+   *  so an unknown address reaching `admin.generateLink` is the anti-
+   *  enumeration design working, not a defect.
+   *
+   *  Added 2026-09-03 by the Auth WIRING pass, additively: `user_not_found`
+   *  was already context-dependent but keyed ONLY on `operation === 'sign_in'`,
+   *  which left no honest way to say "routine here" from a password-reset
+   *  call site without mislabelling its operation. Default false — every
+   *  existing caller classifies exactly as it did before. */
+  expectedMissingUser?: boolean;
 }
 
 export interface AuthClassificationResult {
@@ -125,10 +138,11 @@ function classifyByCode(code: string, ctx: ClassifyAuthContext): CodeResult {
   }
 
   if (code === 'user_not_found') {
-    // Expected: a sign-in probe for an unregistered email. Unexpected: the
-    // SAME code on a path that assumed an authenticated/known user already
-    // exists (e.g. profile lookup mid-session) — that is a real defect.
-    return ctx.operation === 'sign_in'
+    // Expected: a sign-in probe for an unregistered email, or any call site
+    // that declared `expectedMissingUser` (password-reset link minting).
+    // Unexpected: the SAME code on a path that assumed an authenticated/known
+    // user already exists (e.g. profile lookup mid-session) — a real defect.
+    return ctx.operation === 'sign_in' || ctx.expectedMissingUser
       ? { code, severity: 'info', expectedness: 'expected', retryability: 'no', terminal: true }
       : { code, severity: 'warning', expectedness: 'unexpected', retryability: 'no', terminal: true };
   }
@@ -217,6 +231,13 @@ function classifyByStatus(status: number, ctx: ClassifyAuthContext): CodeResult 
       : { code, severity: 'error', expectedness: 'unexpected', retryability: 'no', terminal: true };
   }
   if (status === 400 || status === 422) {
+    return { code, severity: 'info', expectedness: 'expected', retryability: 'no', terminal: true };
+  }
+  // Only when the caller declared it: GoTrue answers a `user_not_found` with
+  // HTTP 404, and a release that omits the `code` field would otherwise land
+  // an anti-enumeration password-reset probe in an actionable bucket. Gated
+  // on the flag, so no existing caller's classification changes.
+  if (status === 404 && ctx.expectedMissingUser) {
     return { code, severity: 'info', expectedness: 'expected', retryability: 'no', terminal: true };
   }
   return { code, severity: 'warning', expectedness: 'unknown', retryability: 'unknown', terminal: true };

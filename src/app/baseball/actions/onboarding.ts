@@ -19,6 +19,7 @@ import {
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -386,6 +387,16 @@ async function signupAndCompleteCoachOnboardingImpl(data: {
   });
 
   if (authError) {
+    // `email_exists` / `user_already_exists` is the resume-onboarding path
+    // below and classifies EXPECTED; what this catches is a GoTrue 5xx or a
+    // 429 that leaves a coach unable to create an account at all.
+    observeAuthResult({
+      error: authError,
+      feature: 'baseball_onboarding',
+      action: 'baseball.signup_and_complete_coach_onboarding',
+      operation: 'sign_up',
+      sport: 'baseball',
+    });
     // Handle rate limit from Supabase
     if (authError.message.includes('security purposes') || authError.message.includes('rate limit')) {
       const match = authError.message.match(/after (\d+) seconds/);
@@ -411,9 +422,20 @@ async function signupAndCompleteCoachOnboardingImpl(data: {
         authedUser?.email?.toLowerCase() === normalizedEmail ? authedUser : null;
 
       if (!ownerUser) {
-        const { data: signInData } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password: data.password,
+        });
+        // A failed ownership proof is ordinary control flow — a wrong password
+        // here means "not the owner", and `invalid_credentials` classifies
+        // EXPECTED. A 429 or 5xx on this probe is not, and it silently blocks
+        // a legitimate abandoned-onboarding retry.
+        observeAuthResult({
+          error: signInError,
+          feature: 'baseball_onboarding',
+          action: 'baseball.onboarding_ownership_proof',
+          operation: 'sign_in',
+          sport: 'baseball',
         });
         ownerUser = signInData?.user ?? null;
       }
