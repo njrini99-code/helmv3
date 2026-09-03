@@ -106,3 +106,45 @@ describe('observeAuthResult', () => {
     expect(() => observeAuthResult({ ...baseInput, error: {} as never })).not.toThrow();
   });
 });
+
+describe('observeAuthResult — expectedMissingUser threads through to the classifier', () => {
+  const resetInput = {
+    feature: 'auth_password_reset',
+    action: 'send_password_reset_link',
+    operation: 'password_reset' as const,
+  };
+
+  it('EXPECTED with the flag: no metric, no log, no durable write', () => {
+    const outcome = observeAuthResult({
+      ...resetInput,
+      expectedMissingUser: true,
+      error: { code: 'user_not_found', status: 404, message: 'User not found' },
+    });
+    expect(outcome.bucket).toBe('expected_control_flow');
+    expect(outcome.envelope).toBeNull();
+    expect(mocks.recordAuth).not.toHaveBeenCalled();
+    expect(mocks.helmLogWarn).not.toHaveBeenCalled();
+    expect(mocks.helmLogError).not.toHaveBeenCalled();
+    expect(mocks.scheduleDbErrorRecording).not.toHaveBeenCalled();
+  });
+
+  it('ACTIONABLE without the flag: the same error is recorded', () => {
+    const outcome = observeAuthResult({
+      ...resetInput,
+      error: { code: 'user_not_found', status: 404, message: 'User not found' },
+    });
+    expect(outcome.bucket).toBe('actionable_warning');
+    expect(mocks.recordAuth).toHaveBeenCalledTimes(1);
+    expect(mocks.scheduleDbErrorRecording).toHaveBeenCalledTimes(1);
+  });
+
+  it('a 429 on that same declared-missing-user path is still recorded', () => {
+    const outcome = observeAuthResult({
+      ...resetInput,
+      expectedMissingUser: true,
+      error: { code: 'over_request_rate_limit', message: 'Too many requests' },
+    });
+    expect(outcome.bucket).toBe('actionable_warning');
+    expect(mocks.recordAuth).toHaveBeenCalledTimes(1);
+  });
+});

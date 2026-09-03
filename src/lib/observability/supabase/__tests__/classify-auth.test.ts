@@ -177,3 +177,52 @@ describe('classifyAuthError — code-first, status/message as fallback only', ()
     expect(() => classifyAuthError({ code: undefined, status: undefined, message: undefined }, baseCtx)).not.toThrow();
   });
 });
+
+/**
+ * `expectedMissingUser` — added 2026-09-03 by the Auth WIRING pass so the
+ * password-reset link minter (`lib/auth/send-password-reset.ts`) can say
+ * "an unregistered address is routine HERE" without mislabelling its
+ * operation as a sign-in. Additive: the flag defaults false, so every
+ * pre-existing caller classifies exactly as it did before.
+ */
+describe('classifyAuthError — expectedMissingUser', () => {
+  const resetCtx = { feature: 'auth_password_reset', action: 'send_password_reset_link', operation: 'password_reset' as const };
+
+  it('user_not_found on a password-reset path is EXPECTED when the caller declares it', () => {
+    const result = classifyAuthError({ code: 'user_not_found', status: 404 }, { ...resetCtx, expectedMissingUser: true });
+    expect(result.expectedness).toBe('expected');
+    expect(result.severity).toBe('info');
+  });
+
+  it('the SAME code on the SAME operation stays UNEXPECTED without the flag — silence is never evidence of routineness', () => {
+    const result = classifyAuthError({ code: 'user_not_found', status: 404 }, resetCtx);
+    expect(result.expectedness).toBe('unexpected');
+    expect(result.severity).toBe('warning');
+  });
+
+  it('the flag does not reclassify anything else — a 429 on the same path is still actionable', () => {
+    const result = classifyAuthError({ code: 'over_request_rate_limit' }, { ...resetCtx, expectedMissingUser: true });
+    expect(result.expectedness).toBe('unexpected');
+    expect(result.severity).toBe('warning');
+  });
+
+  it('the flag does not reclassify a GoTrue 5xx on the same path', () => {
+    const result = classifyAuthError({ code: 'unexpected_failure' }, { ...resetCtx, expectedMissingUser: true });
+    expect(result.expectedness).toBe('unexpected');
+    expect(result.severity).toBe('critical');
+  });
+
+  it('covers the code-less 404 fallback too — a GoTrue release that omits `code` must not page anyone', () => {
+    const withFlag = classifyAuthError({ code: null, status: 404 }, { ...resetCtx, expectedMissingUser: true });
+    expect(withFlag.expectedness).toBe('expected');
+
+    const withoutFlag = classifyAuthError({ code: null, status: 404 }, resetCtx);
+    expect(withoutFlag.expectedness).toBe('unknown');
+  });
+
+  it('sign_in keeps its own pre-existing user_not_found expectedness, flag or no flag', () => {
+    const signInCtx = { feature: 'golf_auth', action: 'golf.login', operation: 'sign_in' as const };
+    expect(classifyAuthError({ code: 'user_not_found' }, signInCtx).expectedness).toBe('expected');
+    expect(classifyAuthError({ code: 'user_not_found' }, { ...signInCtx, expectedMissingUser: true }).expectedness).toBe('expected');
+  });
+});
