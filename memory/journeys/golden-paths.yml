@@ -122,13 +122,27 @@ journeys:
             test_name: "player dashboard renders without an error boundary"
             line: 111
         notes: >
-          This test asserts the route `/golf/dashboard` (root), not
-          `/golf/dashboard/hub`. memory/registry.yml's player_hub entry maps
-          only `dashboard/hub/**` — whether the root dashboard route
-          redirects a player to the hub surface, or is itself a distinct
-          player-landing route outside player_hub's registered globs, was
-          not traced in this pass. Flagged rather than silently mapped;
-          verify before treating this stage's feature_id as exact.
+          Traced 2026-09: the root route file
+          (src/app/golf/(dashboard)/dashboard/page.tsx) does NOT redirect a
+          player to /golf/dashboard/hub. For a player it renders
+          FairwayPlayerDashboard directly and fetches the former standalone
+          Hub page's triage data inline as `hubData` (the file's own "WAVE
+          W2" comment: "fetch the former Hub's triage data ... exactly like
+          the standalone Hub page skipped them before" for a teamless
+          player) — Hub content was merged into the dashboard root, not
+          served from a separate route a player is redirected to. That root
+          page.tsx file is NOT mapped to any feature in memory/registry.yml
+          today (`npm run knowledge:map -- --files
+          "src/app/golf/(dashboard)/dashboard/page.tsx"` returns zero
+          impacted features) — player_hub's only registered route glob is
+          `dashboard/hub/**`, which the root path does not match. feature_id
+          is kept as player_hub here because that is the content this
+          stage's cited e2e test actually observes rendering, not because
+          the file is registry-mapped to it; the missing mapping itself is a
+          separate, real memory/registry.yml gap, disclosed rather than
+          fixed here (fixing it means deciding whether to extend player_hub
+          or coach_dashboard's globs, or add a distinct dashboard-root
+          feature — a registry design call outside this task's scope).
 
   - id: player_start_round
     name: Player configures and starts a new round
