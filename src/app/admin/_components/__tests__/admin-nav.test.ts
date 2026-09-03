@@ -34,11 +34,16 @@ describe('ADMIN_NAV', () => {
       '/admin/releases',
       '/admin/auth',
       '/admin/work',
+      '/admin/lenses/golf',
+      '/admin/lenses/baseball',
+      '/admin/lenses/lifting',
+      '/admin/lenses/teams',
+      '/admin/lenses/users',
       '/admin/billing',
       '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', '3', '0', '8', 'R', 'D', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'V', 'B',
+      '1', '3', '0', '8', 'R', 'X', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'G', 'A', 'P', 'E', 'D', 'V', 'B',
     ]);
   });
 

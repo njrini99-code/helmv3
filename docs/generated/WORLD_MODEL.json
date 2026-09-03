@@ -239,6 +239,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/lenses/**",
+        "pattern": "src/app/admin/lenses/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/lifting/**",
         "pattern": "src/app/admin/lifting/**",
         "category": "routes"
@@ -533,6 +538,11 @@
       {
         "id": "components:src/app/golf/admin/crm/components/**",
         "pattern": "src/app/golf/admin/crm/components/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/components/admin/lenses/**",
+        "pattern": "src/components/admin/lenses/**",
         "category": "components"
       },
       {
@@ -4626,22 +4636,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 133
+          "line": 140
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 335
+          "line": 342
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 355
+          "line": 362
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 560
+          "line": 567
         },
         {
           "kind": "import_graph",
@@ -4800,12 +4810,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 200
+          "line": 207
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 354
+          "line": 361
         }
       ]
     },
@@ -4822,22 +4832,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 134
+          "line": 141
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 201
+          "line": 208
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 364
+          "line": 371
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 446
+          "line": 453
         },
         {
           "kind": "import_graph",
@@ -5290,6 +5300,26 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/lenses/baseball-journey.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/lenses/golf-journey.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/lenses/lifting-flow.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/lenses/teams-ekg.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/observed-action.ts",
           "line": 8
         },
@@ -5316,6 +5346,11 @@
       "target": "baseball_core",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 720
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/expense-category-contract.test.ts",
@@ -5366,6 +5401,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/admin/crm/components/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "components:src/components/admin/lenses/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/admin/lenses/**"
         }
       ]
     },
@@ -6027,6 +6074,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/jobs/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/lenses/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/lenses/**"
         }
       ]
     },
