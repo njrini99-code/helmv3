@@ -259,6 +259,57 @@ describe('GET /api/cron/selfheal-triage', () => {
     expect((hb?.metadata.queue as { analysed: string[] }).analysed).toContain('cause-a');
   });
 
+  it('admin_events collector blind fails the heartbeat with the reason, never a silent 200', async () => {
+    const admin = makeFakeAdmin();
+    fakeAdmin.current = admin.admin;
+
+    mocks.buildTriagePlan.mockReturnValue(
+      plan({
+        sourceHealth: [
+          { source: 'admin_events', status: 'blind', reason: 'PostgREST timeout' },
+          { source: 'sentry', status: 'ok', reason: null },
+          { source: 'supabase', status: 'ok', reason: null },
+          { source: 'vercel', status: 'ok', reason: null },
+        ],
+      }),
+    );
+
+    const res = await GET(req());
+    expect(res.status).toBe(503);
+
+    // No analysis or apply work should have run off a plan built on a blind read.
+    expect(mocks.runRcaForFingerprint).not.toHaveBeenCalled();
+    expect(admin.callLog).not.toContain('update:admin_events:fp-1');
+
+    const hb = await heartbeatOf(admin);
+    expect(hb?.status).toBe('failed');
+    expect(hb?.error_message).toContain('admin_events');
+    expect(hb?.error_message).toContain('PostgREST timeout');
+  });
+
+  it('reliability signals totally blind (every arm blind) fails the heartbeat with the reason', async () => {
+    const admin = makeFakeAdmin();
+    fakeAdmin.current = admin.admin;
+
+    mocks.buildTriagePlan.mockReturnValue(
+      plan({
+        sourceHealth: [
+          { source: 'admin_events', status: 'ok', reason: null },
+          { source: 'sentry', status: 'blind', reason: 'no reliability-snapshot row on record' },
+          { source: 'supabase', status: 'blind', reason: 'no reliability-snapshot row on record' },
+          { source: 'vercel', status: 'blind', reason: 'no reliability-snapshot row on record' },
+        ],
+      }),
+    );
+
+    const res = await GET(req());
+    expect(res.status).toBe(503);
+
+    const hb = await heartbeatOf(admin);
+    expect(hb?.status).toBe('failed');
+    expect(hb?.error_message).toContain('reliability-snapshot');
+  });
+
   it('a blind arm inside an otherwise-healthy snapshot completes, degraded, naming the arm — never fails the heartbeat', async () => {
     const admin = makeFakeAdmin();
     fakeAdmin.current = admin.admin;
