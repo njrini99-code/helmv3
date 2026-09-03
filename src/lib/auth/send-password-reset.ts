@@ -3,6 +3,7 @@ import 'server-only';
 import { Resend } from 'resend';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 /**
  * Password-reset delivery through OUR Resend account, not Supabase's mailer.
@@ -85,6 +86,20 @@ export async function sendPasswordResetEmail(
     });
     // No account for this address is the common, harmless case — the caller
     // still returns its generic "if an account exists" response.
+    //
+    // That collapse is exactly why this call needs observing: a GoTrue 429 or
+    // 5xx is reported to the caller as `'no-account'`, so the user is told
+    // "if an account exists we emailed it", no email is sent, and nothing
+    // anywhere records that the admin API failed. `expectedMissingUser` keeps
+    // the genuine unknown-address case (the anti-enumeration design working)
+    // in the silent EXPECTED bucket.
+    observeAuthResult({
+      error,
+      feature: 'auth_password_reset',
+      action: 'send_password_reset_link',
+      operation: 'password_reset',
+      expectedMissingUser: true,
+    });
     if (error || !data?.properties?.hashed_token) return 'no-account';
 
     // Link straight to OUR reset page carrying the hashed token, instead of

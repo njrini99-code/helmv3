@@ -80,6 +80,9 @@ export interface ObserveAuthResultInput {
   expectedProviderDisabled?: boolean;
   isRateLimitSpike?: boolean;
   expectedUnauthenticated?: boolean;
+  /** See `ClassifyAuthContext.expectedMissingUser` — a `user_not_found` here
+   *  is the anti-enumeration design working, not a defect. */
+  expectedMissingUser?: boolean;
 }
 
 export interface ObserveAuthResultOutcome {
@@ -104,6 +107,7 @@ export function observeAuthResult(input: ObserveAuthResultInput): ObserveAuthRes
       expectedProviderDisabled: input.expectedProviderDisabled,
       isRateLimitSpike: input.isRateLimitSpike,
       expectedUnauthenticated: input.expectedUnauthenticated,
+      expectedMissingUser: input.expectedMissingUser,
     };
     const classification = classifyAuthError(input.error, ctx);
     const bucket = classifyBucket(classification.expectedness, classification.severity);

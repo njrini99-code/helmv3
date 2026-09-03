@@ -223,3 +223,70 @@
   PASS 5/5; `npm run repo:doctor` PASS (1 named WARN for the
   `db_platform_samples` retention gap, 0 FAIL/DRIFT/BLOCKED). No migration
   applied to production — see `supabase/migrations/HELD.md`.
+
+## 2026-09-03 — Phase 2 Track B WIRING pass (Auth + remaining server-side Storage)
+
+- What: connected the two Track B observers that had been built, tested and
+  left unconnected. Track B's own doc recorded the gap honestly
+  (`observeAuthResult` "NOT WIRED into any Auth call site"; Storage wired at
+  6 of 16 sites), and this pass closes it.
+  - **W1 — Auth.** `observeAuthResult` wired into 17 server-side call sites
+    across 9 files: the OAuth/magic-link callback (`exchangeCodeForSession`),
+    golf and baseball login, golf/baseball/lifting sign-up, the golf staff-
+    invite sign-up, the baseball onboarding sign-up and its ownership probe,
+    the baseball change-password reauth and update, both demo gates'
+    shared-account sign-in and `is_demo` stamp, the admin password-reset
+    link minter, and the admin auth-user delete. Full table with the
+    per-site expected-vs-actionable reasoning in
+    `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` §2.
+  - **W2 — Storage.** `observeStorageResult` wired into the 3 remaining
+    server-side sites (`recruiting.ts` purge; `github-feedback.ts` upload
+    and createSignedUrl). Server-side Storage coverage is now complete.
+  - **W3 — Tests.** Two behavioural wired-site tests (`password-reset-
+    observability`, `github-feedback-storage-observability`) proving the
+    return value unchanged on success AND every error path plus the
+    observer's context; one source-content wiring contract
+    (`src/test/observability/supabase-service-wiring.test.ts`) inventorying
+    all 20 sites; classifier/observer coverage for the new flag.
+  - **W4 — Docs.** §2, §3, §7 and §8 of the Track B doc rewritten from
+    "not wired" to what is wired, with the genuine remaining gaps kept.
+- Why: brief §10 (Auth) and §11 (Storage). An observer with no call sites
+  produces no signal, and Track B's §8 named this as its first open item.
+- **One additive change to an existing module**, deliberately narrow:
+  `ClassifyAuthContext.expectedMissingUser` (default false, so no
+  pre-existing caller reclassifies). `user_not_found` was already
+  context-dependent but keyed only on `operation === 'sign_in'`, which left
+  `sendPasswordResetEmail` no honest way to declare that an unregistered
+  address is routine there — it would have had to mislabel its operation.
+  That call site is why the flag exists: it collapses every
+  `admin.generateLink` failure into `'no-account'`, so a GoTrue 429 or 5xx
+  currently tells the user "if an account exists we emailed it", sends
+  nothing, and is recorded nowhere.
+- The decision that mattered most was what NOT to wire. `supabase.auth.getUser()`
+  at the top of a server action is the most common Supabase Auth call in
+  this repo and a null user there is the authorization check working;
+  wiring those is the alert noise brief §7/§82 forbid. The wiring contract
+  test asserts no observed call site is getUser-shaped, so a future pass
+  cannot do it silently.
+- Verification: `npx tsc --noEmit -p .` exit 0; `npx eslint <every changed
+  file> --max-warnings 0` exit 0; `npx vitest run src/lib/observability/supabase
+  src/test/observability/supabase-service-wiring.test.ts
+  src/test/auth/password-reset-observability.test.ts
+  src/lib/admin/__tests__/github-feedback-storage-observability.test.ts` —
+  23 files, 375 tests, exit 0. `node scripts/supabase-error-audit.mjs` exit
+  0, `baseline 1039, no regression`, Storage observed 6 -> 9.
+  Both halves of the wiring contract test were MUTATION-CHECKED rather than
+  assumed: renaming one wired action fails it, and turning one observer call
+  into an assignment fails the standalone-statement assertion with that call
+  site named.
+- Not verified / still open (full list in the Track B doc §8): there is no
+  CLIENT-SAFE Auth or Storage observer, which is now the largest remaining
+  gap on both surfaces — every sign-out, password-reset page, settings
+  email/password change, session-activity hook, and the four client Storage
+  modules are blocked on it. `session_refresh` has no wired call site
+  because no `refreshSession()` call exists in `src` at all (measured: zero
+  hits), so brief §10's "session refresh failures" Bridge card still has no
+  source. `invalid_credentials` on the server-owned demo shared account is a
+  config defect that classifies EXPECTED — a recorded false negative.
+  `lib/supabase/middleware.ts` is unwired by choice (local-scope cookie
+  clear, no auth-server round-trip, already self-reporting).

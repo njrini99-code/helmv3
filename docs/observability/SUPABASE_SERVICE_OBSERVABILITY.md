@@ -69,11 +69,83 @@ recorded as an open item rather than fixed here — extending `recordAuth`
 with a true attempt/success/failure triple is a follow-up for whoever owns
 that Bridge card.
 
-**NOT WIRED into any Auth call site in this pass.** `observeAuthResult`
-exists and is tested, but no `supabase.auth.*` call in `src` has been
-updated to call it. That wiring — deciding, per call site, what `operation`/
-`expectedSessionAbsence`/`expectedUnauthenticated` context applies — is
-scoped as follow-up work, tracked in §8 below.
+**WIRED 2026-09-03 (the Auth wiring pass, W1).** The Track B build left
+`observeAuthResult` with zero call sites; this section now records where it
+actually runs. 17 call sites across 9 server-side files:
+
+| File | Action | `operation` | Why it is actionable |
+| --- | --- | --- | --- |
+| `src/app/auth/callback/route.ts` | `exchange_code_for_session` | `oauth` | A bad state/code after the provider already authenticated the user. `flow_state_expired`/`flow_state_not_found`/`bad_code_verifier` classify EXPECTED, so a stale link stays silent. |
+| `src/app/golf/actions/auth.ts` | `golf.login` | `sign_in` | Additive to `recordLoginOutcome` (product outcome), not a replacement — this records the Auth failure behind it. |
+| | `golf.signup` | `sign_up` | Catches the case the three user-facing branches fall through on: a 429 burst or GoTrue 5xx presented as "Failed to create account". |
+| | `golf.signup_with_staff_invite` | `sign_up` | Same. |
+| `src/app/golf/actions/demo-access.ts` | `golf.demo_shared_account_sign_in` | `sign_in` | The 429/5xx congestion `signInWithPasswordResilient` exists for, made visible as a rate. |
+| | `golf.demo_stamp_is_demo` | `other` | Best-effort `updateUser`, but a mass-send burst throttling it is brief §10's "Auth 429 spike". |
+| `src/app/baseball/actions/auth.ts` | `baseball.login` | `sign_in` | |
+| | `baseball.signup` | `sign_up` | |
+| | `baseball.change_password_reauth` | `sign_in` | A 429/5xx here blocks a password change entirely; a wrong current password is EXPECTED. |
+| | `baseball.change_password_update` | `password_reset` | The caller already proved the current password, so anything but `weak_password`/`same_password` is a fault. |
+| `src/app/baseball/actions/demo-access.ts` | `baseball.demo_shared_account_sign_in` | `sign_in` | |
+| | `baseball.demo_stamp_is_demo` | `other` | |
+| `src/app/baseball/actions/onboarding.ts` | `baseball.signup_and_complete_coach_onboarding` | `sign_up` | `user_already_exists` is the resume path (EXPECTED); a 5xx is not. |
+| | `baseball.onboarding_ownership_proof` | `sign_in` | A wrong password means "not the owner" (EXPECTED); a 429 silently blocks a legitimate abandoned-onboarding retry. |
+| `src/app/lifting/actions/auth.ts` | `lifting.signup` | `sign_up` | The action's only failure signal — it returns the raw GoTrue message and logs nothing. |
+| `src/lib/auth/send-password-reset.ts` | `send_password_reset_link` | `password_reset` | See `expectedMissingUser` below. |
+| `src/app/api/account/delete/route.ts` | `delete_auth_user` | `other` | Unconditionally actionable: every application row is already deleted, so a failure strands a half-deleted account. |
+
+Every call site's return value is byte-for-byte what it was. Two sites
+gained an error binding they did not have (`const { error } = await
+…updateUser(…)` on the two demo stamps, `error: signInError` on the
+onboarding ownership probe); neither returns anything, so nothing
+observable changed. `src/test/observability/supabase-service-wiring.test.ts`
+proves this structurally rather than by assertion: it checks every observer
+call is its own expression statement, so none can be part of a `return`,
+an assignment, a condition or an `await` chain.
+
+**One additive classifier change: `ClassifyAuthContext.expectedMissingUser`.**
+Default false, so no pre-existing caller reclassifies. `user_not_found` was
+already context-dependent but keyed ONLY on `operation === 'sign_in'`,
+which left the password-reset link minter no honest way to say "an
+unregistered address is routine here" — it would have had to mislabel its
+operation as a sign-in. That call site is the reason the flag exists:
+`sendPasswordResetEmail` collapses every `admin.generateLink` failure into
+`'no-account'`, so today a GoTrue 429 or 5xx tells the user "if an account
+exists we emailed it", sends no email, and records nothing anywhere. The
+flag also covers the code-less HTTP 404 fallback, for a GoTrue release that
+omits `code`.
+
+**Deliberately NOT wired, and this is the larger half of the decision.**
+`supabase.auth.getUser()` at the top of a server action is the single most
+common Supabase Auth call in this repo, and a null user there is the
+authorization check working — not an incident. Wiring those would produce
+exactly the alert noise brief §7 and §82 forbid, so none of them is
+observed, and the wiring contract test asserts no observed call site is
+getUser-shaped. Also unwired:
+
+- **Every `'use client'` Auth surface** — `observe-auth.ts` is
+  `server-only`. This is the same genuine gap `upload-course-image.ts` is
+  for Storage (§3), and it is larger: `golf/(auth)/reset-password/page.tsx`
+  (`exchangeCodeForSession`, `verifyOtp`, `updateUser`),
+  `baseball/(auth)/{login,forgot-password,reset-password}/page.tsx`,
+  `lifting/(auth)/{login,forgot-password,reset-password}/page.tsx`,
+  `FairwaySettingsGeneral.tsx` (email change, password change reauth +
+  update), `FairwayDashboardShell.tsx`, `AdminShell.tsx`, `LabShell.tsx`,
+  `use-auth.ts`, `session-activity.ts`. A client-safe Auth observer
+  (parallel to `realtime.ts`'s client-safe design) is the right fix and is
+  not built in this pass.
+- **`src/lib/supabase/middleware.ts`** — its `signOut({ scope: 'local' })`
+  is deliberately a cookie clear with no GoTrue round-trip ("middleware
+  must stay fast and must not depend on auth-server reachability"), and it
+  already reports its own failures to `/api/internal/log-auth-failure`.
+  Pulling the observer's admin-client import graph into the Edge middleware
+  bundle buys nothing.
+
+**Known false negative, recorded rather than papered over.** The demo gates
+sign visitors into a SERVER-OWNED shared account, so an `invalid_credentials`
+there would be a config defect, not a routine wrong password — but the code
+is unconditionally EXPECTED, so it stays silent. Narrowing that would mean
+inverting a default for one call site; the failure mode those paths were
+actually written for (429/5xx congestion) does classify actionable.
 
 ## 3. Storage (B2) — `classify-storage.ts` + `observe-storage.ts`
 
@@ -98,6 +170,8 @@ flow through.
 
 **Wired into (existing `if (error)` branches — return values unchanged):**
 
+Track B (2026-09-03, first pass):
+
 - `src/app/golf/actions/documents.ts` — 2 sites (`delete_document`,
   `delete_document_version`)
 - `src/app/golf/actions/recruit-documents.ts` — 2 sites (upload rollback,
@@ -106,9 +180,30 @@ flow through.
 - `src/app/baseball/actions/video-classes.ts` — 1 site (best-effort clip
   cleanup)
 
-All six use `accessDeniedOnOwnPath: true` (each is deleting/rolling back a
-row the same caller/team owns), so an `AccessDenied` on any of these paths
-IS treated as actionable, not routine.
+The Storage wiring pass (2026-09-03, W2) — every remaining SERVER-SIDE site:
+
+- `src/app/golf/actions/recruiting.ts` — 1 site
+  (`delete_recruit_storage_objects`, `operation: 'delete'`,
+  `bucketClass: 'recruit-documents/recruit_document'`). The recruit row and
+  its document rows are already deleted by this point, so the purge is
+  operating on the caller's own team's objects.
+- `src/lib/admin/github-feedback.ts` — 2 sites
+  (`upload_feedback_screenshot`, `operation: 'upload'`;
+  `sign_feedback_screenshot_url`, `operation: 'download'`), both
+  `bucketClass: ${bucket}/feedback_screenshot` — the configured bucket NAME
+  plus a static object class. The signed-URL site had **no error binding at
+  all**: a failure uploaded the object and then attached an issue with no
+  link, a silent half-failure with no other signal anywhere. Destructuring
+  `error` alongside the existing `data` changes nothing pushed — the
+  attachment is still `data?.signedUrl ?? undefined`. That path's object key
+  is `ben-leah/<ts>/<uuid>-<uploader's filename>`, which is exactly what the
+  `bucketClass` boundary exists to keep out; the wired-site test asserts
+  neither the key nor the filename reaches the observer.
+
+All nine use `accessDeniedOnOwnPath: true` (each is deleting, rolling back
+or writing a path the same caller/team/service-role client owns), so an
+`AccessDenied` on any of these paths IS treated as actionable, not
+routine.
 
 **Deliberately NOT wired:** `src/lib/golf/upload-course-image.ts`. It is
 **client-side** — `createClient()` from `@/lib/supabase/client`, called from
@@ -119,11 +214,18 @@ track's target-file list named, not an oversight — a client-safe Storage
 observer (parallel to `realtime.ts`'s client-safe design) would be the
 right fix, and is not built in this pass.
 
-**Also NOT wired (out of this pass's five target files, real gaps for a
-future pass — full list from B6's coverage audit):**
-`src/app/golf/actions/recruiting.ts`, `src/components/features/video-upload.tsx`,
-`src/hooks/golf/use-message-attachments.ts`, `src/lib/admin/github-feedback.ts`,
-`src/app/baseball/(dashboard)/dashboard/program/ProgramClient.tsx`.
+**Also NOT wired — every remaining site, and every one of them is a client
+module** (`observe-storage.ts` is `server-only`, same constraint as
+`upload-course-image.ts` above):
+`src/components/features/video-upload.tsx` (4 sites — upload, getPublicUrl,
+and two cleanup removes), `src/hooks/golf/use-message-attachments.ts`,
+`src/app/baseball/(dashboard)/dashboard/program/ProgramClient.tsx`. Track B
+listed `recruiting.ts` and `github-feedback.ts` here too; both are wired as
+of W2 above. The one remaining non-client grep hit is a comment in
+`src/test/schema/storage-buckets-tracked.test.ts`, not a call site.
+
+Server-side Storage coverage is therefore complete; what is left is
+entirely the client-observer gap.
 
 ## 4. Realtime (B3) — `realtime.ts`
 
@@ -289,8 +391,8 @@ track:
 
 | Surface | Grep target | Sites | Observed | Notes |
 | --- | --- | --- | --- | --- |
-| Auth | `.auth.` (the brief's OWN literal grep target — deliberately not narrowed to `supabase.auth.`) | 616 | 1 | **Overwhelmingly noise.** `.auth.` matches any object property named `auth`, not just Supabase Auth calls. This is not a real coverage number — B1 has zero production call sites wired yet (§2 above). A real Auth coverage audit needs a narrower pattern (`supabase.auth.`, or specific method names) before this count is trustworthy. |
-| Storage | `storage.from(` | 16 | 6 | Matches §3's wiring exactly. The 10 unobserved are the genuine gaps listed in §3. |
+| Auth | `.auth.` (the brief's OWN literal grep target — deliberately not narrowed to `supabase.auth.`) | 616 | 1 | **Overwhelmingly noise.** `.auth.` matches any object property named `auth`, not just Supabase Auth calls. This is not a real coverage number — B1 had zero production call sites wired at the time of this run (§2 above). A real Auth coverage audit needs a narrower pattern (`supabase.auth.`, or specific method names) before this count is trustworthy. |
+| Storage | `storage.from(` | 16 | 6 | Matches §3's Track B wiring exactly. |
 | Realtime | `.channel(` | 14 | 14 | 100% — matches §4's 11 hooks (several with 2 channels). |
 | Realtime | `.subscribe(` | 4 | 2 | The 2 "unobserved" are CONFIRMED FALSE POSITIVES: `use-push-subscription.ts` and `FairwaySettingsGeneral.tsx` both call `pushManager.subscribe()` (the browser Web Push API), not Supabase Realtime — verified by reading both files. |
 | Edge Functions | `functions.invoke(` | 1 | 1 | 100% — the one site (`push.ts`), matches §5. |
@@ -301,17 +403,46 @@ documented in the script's own header. A file can have one wired call site
 and one bare one and still show fully "observed" by this heuristic; treat
 it as a starting point, not a certification.
 
+**Re-run after the wiring pass (W1/W2), same script, 2026-09-03:**
+
+| Surface | Sites | Observed | Notes |
+| --- | --- | --- | --- |
+| Auth (`.auth.`) | 616 | 19 | Still not a coverage number, for the reason above. It rose from 1 to 19 because the heuristic credits every `.auth.` hit in a file that imports `observeAuthResult` anywhere — those 9 files hold 22 lines containing `.auth.` by a plain `grep -c`, which does not reconcile with 19 and is not worth reconciling: neither number is the answer. The wired count is 17, enumerated in §2 and asserted per call site by `src/test/observability/supabase-service-wiring.test.ts`, which is the certification this heuristic cannot give. |
+| Storage (`storage.from(`) | 16 | 9 | Matches §3. The 7 unobserved are the four client modules named there. |
+| Realtime (`.channel(`) | 14 | 14 | Unchanged. |
+| Realtime (`.subscribe(`) | 4 | 2 | Unchanged — the 2 are the confirmed `pushManager.subscribe()` false positives. |
+| Edge Functions (`functions.invoke(`) | 1 | 1 | Unchanged. |
+
+The same run reports `unchecked Supabase reads: 1039 — OK, baseline 1039,
+no regression`: the wiring pass added error bindings at three sites that
+previously discarded one and removed none.
+
 ## 8. What is left open, end to end
 
-- **Auth: zero production call sites wired.** `observeAuthResult` exists,
-  is tested, and is ready — no `supabase.auth.*` call in `src` has been
-  updated to call it. Candidate call sites: `src/app/golf/actions/auth.ts`
-  (`loginActionImpl`, already instrumented for Sentry workflow metrics via
-  `recordLoginOutcome` per `memory/features/observability-sentry.md` —
-  `observeAuthResult` would be additive to that, not a replacement),
-  sign-up, OAuth callback handlers, session refresh paths.
-- **Storage: one client-side gap** (`upload-course-image.ts`) and five
-  genuinely out-of-scope files (§3) still unwired.
+- **~~Auth: zero production call sites wired.~~ CLOSED 2026-09-03** by the
+  wiring pass — 17 server-side call sites across 9 files, enumerated in §2.
+- **Auth: no client-side observer exists.** This is now the largest single
+  Auth gap, and it is bigger than the Storage one: every sign-out, every
+  password-reset page, the settings email/password change, and the idle
+  session-activity hook are `'use client'` and cannot import a
+  `server-only` module. `realtime.ts` shows the shape a client-safe
+  observer takes; building one is follow-up work.
+- **Auth: `session_refresh` has no wired call site.** Not an omission by
+  choice — supabase-js refreshes tokens internally, and no `refreshSession()`
+  call exists in `src` to wrap. The refresh-failure codes
+  (`refresh_token_not_found`/`refresh_token_already_used`, both
+  `terminal: false`) are classified and reachable through
+  `getUserResilient`'s degraded path, which is not itself observed. Whoever
+  owns brief §10's "session refresh failures" Bridge card needs a signal
+  that does not exist yet.
+- **Auth: one known false negative** — `invalid_credentials` on the
+  server-owned demo shared account is a config defect but classifies
+  EXPECTED (§2).
+- **~~Storage: five out-of-scope files.~~ CLOSED 2026-09-03** — every
+  server-side Storage site is wired. **Still open: the client-side gap**,
+  now four modules (`upload-course-image.ts`, `video-upload.tsx`,
+  `use-message-attachments.ts`, `ProgramClient.tsx`), all blocked on the
+  same missing client-safe observer as Auth above.
 - **Realtime silent-propagation detection: exposed, unused.** No product
   invariant exists yet to hang `createRealtimeActivityMonitor` off.
 - **Edge Functions: not deployed.** Owner action required —
