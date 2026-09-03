@@ -182,6 +182,22 @@ describe('deriveRootIncidentFacts', () => {
     expect(result.rootIncidentCount).toBe(1);
   });
 
+  it('applies the Truth Strip exclusions: expected recurrences and QA fixtures never count', () => {
+    const incidents = [
+      incident('a', { actionable: true, lifecycle: { state: 'new', headline: '', because: [] } }),
+      incident('fixture', { actionable: true, isFixture: true, affectedUsers: 9, affectedUsersKnown: true }),
+      incident('expected', {
+        actionable: true,
+        lifecycle: { state: 'expected-recurrence', headline: '', because: [] },
+        affectedUsers: 4,
+        affectedUsersKnown: true,
+      }),
+    ];
+    const result = deriveRootIncidentFacts(incidents, coverage());
+    expect(result.rootIncidentCount).toBe(1);
+    expect(result.affectedUsers).toBe(incidents[0].affectedUsersKnown ? incidents[0].affectedUsers : 0);
+  });
+
   it('sums affectedUsers only across incidents whose count is KNOWN', () => {
     const incidents = [
       incident('a', { affectedUsers: 5, affectedUsersKnown: true }),

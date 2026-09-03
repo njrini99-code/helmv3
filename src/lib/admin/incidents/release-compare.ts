@@ -139,7 +139,16 @@ export function deriveRootIncidentFacts(
     return { rootIncidentCount: null, affectedUsers: null };
   }
   const actionable = incidents.filter(
-    (i) => i.actionable && i.lifecycle.state !== 'resolved' && i.lifecycle.state !== 'not-a-defect',
+    (i) =>
+      i.actionable &&
+      i.lifecycle.state !== 'resolved' &&
+      i.lifecycle.state !== 'not-a-defect' &&
+      // Mirror truth-strip.ts exactly, including its two count-side exclusions:
+      // a recurrence the analysis already ruled out, and a seeded QA fixture
+      // round. Review 2026-09-03 found these missing while the header above
+      // promised parity with the Incidents cell.
+      i.lifecycle.state !== 'expected-recurrence' &&
+      !i.isFixture,
   );
   const affectedUsers = actionable.reduce((sum, i) => (i.affectedUsersKnown ? sum + i.affectedUsers : sum), 0);
   return { rootIncidentCount: actionable.length, affectedUsers };
