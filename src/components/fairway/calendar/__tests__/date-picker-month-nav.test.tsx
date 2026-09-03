@@ -24,12 +24,32 @@
  * DayPicker) through the popover, which is why it would have caught the
  * original bug: it asserts the caption after a click, not that a handler fired.
  */
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DatePicker } from '../date-picker';
 
-afterEach(() => cleanup());
+// The month arrows are relative to TODAY, and two of these cases assert an
+// absolute date ("September 4th, 2026") reached by clicking `next month` once.
+// That only holds while the real clock says August 2026 — so this file was a
+// date bomb, and it went off early in the east: the shifted-timezone CI matrix
+// runs at Pacific/Kiritimati (UTC+14), where 2026-09-03 19:00 UTC is already
+// 2026-09-04 local, `next month` lands on OCTOBER, and the September 4th button
+// does not exist. It failed there while passing in every other zone, and would
+// have failed everywhere within days.
+//
+// Pinned to mid-August so no UTC offset in the -12..+14 range can push it into
+// another month. `toFake: ['Date']` fakes the clock ONLY — userEvent drives
+// real timers for its pointer sequences and hangs if those are faked too.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-08-15T12:00:00Z'));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
 /** The month/year heading react-day-picker renders in its caption. */
 function currentCaption(): string {
