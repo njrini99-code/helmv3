@@ -138,7 +138,12 @@ function mapHealthRow(raw: RawHealthRow): DbHealthSampleRow {
 
 const COLLECTOR_JOB_TYPES = ['db-health-sampler', 'db-stat-delta', 'db-observability-prune'] as const;
 
-async function fetchCollectorHealth(
+/** Exported so src/lib/admin/database/telemetry.ts (brief §40-48's
+ *  self-monitoring — "collector runtime, DB calls, rows written") can reuse
+ *  the SAME collector-health read this file already does, rather than a
+ *  second query against `background_job_logs` that could silently drift
+ *  from this one. */
+export async function fetchCollectorHealth(
   admin: ReturnType<typeof createAdminClient>,
 ): Promise<CollectorHealth[]> {
   const { data, error } = await admin
