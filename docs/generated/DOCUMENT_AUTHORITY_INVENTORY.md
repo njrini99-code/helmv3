@@ -29,7 +29,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 14 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 19 | 19 | 7 | 9 |
+| `CURRENT_FEATURE` | 19 | 19 | 7 | 11 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 20 | 3 | 6 | 26 |
 | `PROCESS_CONTRACT` | 8 | 3 | 7 | 11 |
@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 64 | 3 | 33 | 184 |
 | `AUDIT_SNAPSHOT` | 81 | 6 | 37 | 132 |
 | `STATE_SNAPSHOT` | 6 | 0 | 5 | 7 |
-| `HISTORY_LEDGER` | 23 | 0 | 5 | 49 |
+| `HISTORY_LEDGER` | 23 | 0 | 5 | 50 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 1 |
 | `INDEX` | 19 | 0 | 6 | 28 |
@@ -158,7 +158,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 5 | 99 | 3 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 5 | 115 | 5 |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -460,7 +460,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` | current | - | - | yes | 0 | 3 | - |
+| `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` | current | - | - | yes | 1 | 3 | - |
 | `docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md` | current | - | - | yes | 0 | 2 | 1 |
 | `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | - | - | yes | 2 | 18 | 1 |
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | 0 | 3 | 1 |
@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 4 | 102 | 11 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 4 | 110 | 12 |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 3 | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 15 | 1 |

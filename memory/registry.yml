@@ -1205,6 +1205,11 @@ features:
       components:
         - src/app/admin/_components/**
         - src/app/golf/admin/crm/components/**
+        # Phase 4 lens dominant-visual components (JourneyFlow,
+        # UserJourneyRibbon, TeamEkgRow, AdoptionMapPanel,
+        # ActivityThreadsPanel) — mapped here 2026-09-03 after `knowledge:map`
+        # resolved src/components/admin/lenses/** to `impactedFeatures: []`.
+        - src/components/admin/lenses/**
       api:
         - src/app/api/admin/**
         # Scoped to these two crons rather than src/app/api/cron/** on purpose:
