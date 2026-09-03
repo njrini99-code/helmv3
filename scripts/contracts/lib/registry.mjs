@@ -19,6 +19,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import yaml from 'js-yaml';
+import { escapeRegExp } from './regex.mjs';
 
 export const REGISTRY_PATH = 'memory/registry.yml';
 
@@ -163,7 +164,7 @@ export function findLineForValue(block, value) {
 /** Find the 1-indexed line number of a `key:` line inside a feature block. */
 export function findLineForKey(block, key) {
   if (!block) return null;
-  const re = new RegExp(`^\\s*${key}:`);
+  const re = new RegExp(`^\\s*${escapeRegExp(key)}:`);
   for (let i = 0; i < block.lines.length; i += 1) {
     if (re.test(block.lines[i])) return block.startLine + i;
   }

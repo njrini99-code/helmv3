@@ -24,6 +24,7 @@
  * passes so a claim's evidence can be inspected independent of the verdict.
  */
 import {
+import { escapeRegExp } from './regex.mjs';
   getFeatureBlock,
   findLineForValue,
   findLineForKey,
@@ -191,7 +192,7 @@ export function claimsFromFeatureRegistry(sources) {
 
   const lines = featureRegistryText.split('\n');
   for (const key of featureKeys) {
-    const keyRe = new RegExp(`key:\\s*['"]${key}['"]`);
+    const keyRe = new RegExp(`key:\\s*['"]${escapeRegExp(key)}['"]`);
     const lineIdx = lines.findIndex((l) => keyRe.test(l));
     if (lineIdx === -1) {
       claims.push(
@@ -412,7 +413,7 @@ export function claimsFromAdrs(sources, canonicalId, featureDocPath) {
   const relevant = [];
   for (const { path, text } of sources.adrFiles) {
     if (!text) continue;
-    const mentionsId = new RegExp(`\\b${canonicalId}\\b`).test(text);
+    const mentionsId = new RegExp(`\\b${escapeRegExp(canonicalId)}\\b`).test(text);
     const mentionsDoc = featureDocPath ? text.includes(featureDocPath) : false;
     if (!mentionsId && !mentionsDoc) continue;
     relevant.push({ path, text });

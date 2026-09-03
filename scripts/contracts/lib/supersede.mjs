@@ -43,6 +43,7 @@
  *                  to the other two tiers in any renderer.
  */
 import { matchGlob } from '../../knowledge/lib/registry.mjs';
+import { escapeRegExp } from './regex.mjs';
 
 /**
  * Curated, TIGHT marker set — deliberately narrower than a bare "no longer",
@@ -182,7 +183,7 @@ export function checkSchemaExistence(claims, sources, registryFeatureIds, log = 
     for (const ident of identifiers) {
       if (registryFeatureIds.has(ident)) continue; // feature id, not a DB object
       if (declaredAbsent.has(ident)) continue; // documented-because-absent
-      const present = new RegExp(`\\b${ident}\\b`).test(databaseTypesText);
+      const present = new RegExp(`\\b${escapeRegExp(ident)}\\b`).test(databaseTypesText);
       if (!present) missing.push(ident);
     }
     if (missing.length === 0) continue;
