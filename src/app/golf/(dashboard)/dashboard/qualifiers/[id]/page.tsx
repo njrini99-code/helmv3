@@ -3,6 +3,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
+import { isUuid } from '@/lib/utils/uuid';
 import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -27,6 +28,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const { data: qualifier } = await supabase
@@ -43,6 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function QualifierDetailPage({ params }: PageProps) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 

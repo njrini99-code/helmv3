@@ -444,9 +444,19 @@ features:
       services:
         - src/lib/offline/**
         - src/lib/coachhelm/v2/shot-analysis/**
+        # src/lib/observability/helm-flight-recorder.ts and
+        # golf-round-flight-workflow.ts had no feature mapping anywhere in
+        # this file before 2026-09-02 -- knowledge:map resolved a change to
+        # either file to zero features, silently skipping the review this
+        # section requires. golf.ts (already mapped, above) is the only
+        # caller of the recorder today, so this is where it belongs.
+        - src/lib/observability/**
       db:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
+        - supabase/migrations/*helm_flight_recorder*.sql
+        - supabase/migrations/*helm_debug*.sql
+        - supabase/migrations/*trace_*.sql
       tests:
         - e2e/golf-round.spec.ts
         - src/app/golf/actions/__tests__/golf-schemas.test.ts

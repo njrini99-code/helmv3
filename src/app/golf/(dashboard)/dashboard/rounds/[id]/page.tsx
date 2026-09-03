@@ -3,6 +3,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
+import { isUuid } from '@/lib/utils/uuid';
 import { Metadata } from 'next';
 import { generateRoundRecap } from '@/app/golf/actions/round-recap';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -16,6 +17,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const { data: round } = await supabase
@@ -85,6 +87,7 @@ export default async function RoundDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 

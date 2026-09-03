@@ -922,13 +922,17 @@ function PulseTrace({
       data-slot="pulse-trace"
       role="img"
       aria-label={summary}
-      className="inline-block align-middle"
+      className="block w-full max-w-[520px]"
       style={{ width, height }}
     >
       <svg
-        width={width}
-        height={height}
+        // Sized by the viewBox and scaled to the column: a fixed 520px SVG in a
+        // ~208px phone column showed 40% of the round and looked complete
+        // (audit 2026-09-02, UI-1).
+        width="100%"
+        height="auto"
         viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
         fill="none"
         aria-hidden="true"
         className="overflow-visible"
