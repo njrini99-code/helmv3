@@ -27,12 +27,16 @@ import {
   ProofGapList,
   ProofLegend,
 } from '../../_components/ProofDots';
-import { fetchIncidentById } from '@/lib/admin/incidents/fetch';
+import { fetchIncidentById, type IncidentBoard } from '@/lib/admin/incidents/fetch';
 import type { UnifiedIncident } from '@/lib/admin/incidents/types';
 import { RcaAnalysisView } from '../_components/RcaAnalysisView';
 import { FieldCopy } from '../_components/FieldCopy';
 import { fetchResolutionArchive } from '@/lib/admin/data/resolutions';
 import { resolveArchivedResolution, RegressionBanner, ResolutionSummary } from '../_components/ResolutionPanels';
+import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incidents/genome';
+import { fetchCurrentReleaseWatch } from '@/lib/admin/incidents/release-watch';
+import { ReleaseRelationshipLabel } from '@/components/admin/premium';
+import { IncidentGenomePanel } from '../_components/IncidentGenomePanel';
 export const dynamic = 'force-dynamic';
 
 const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {
@@ -115,9 +119,50 @@ export default async function FingerprintDetailPage({
    * below still render, and claiming a lifecycle we cannot compute would be
    * worse than showing none.
    */
-  function IncidentCommand({ incident }: { incident: UnifiedIncident }) {
+  async function IncidentCommand({ incident, board }: { incident: UnifiedIncident; board: IncidentBoard }) {
+    const presentation = board.presentations[incident.id];
+    const aliasGroups = buildBoardAliasGroups(board.incidents);
+    const genome = buildIncidentGenome(incident, board.incidents, aliasGroups);
+    // A second, independent read from the same board this render already
+    // has — see release-watch.ts's own header for why this is not a second
+    // authority for deploy history (it reuses release-ledger.ts, never
+    // re-derives it). Fails soft to `unavailableReason` on the panel; never
+    // takes the rest of the page down.
+    const releaseWatch = await fetchCurrentReleaseWatch(board).catch(() => null);
+    const releaseRelationship = releaseWatch?.relationships.get(incident.id) ?? null;
+
     return (
       <section aria-label="Incident command" className="space-y-3">
+        {presentation ? (
+          <Surface padding="sm" className="min-w-0">
+            {/* Not the page's <h1> — that stays the raw fingerprint further
+                down, the one stable identifier every deep link/RCA row/repair
+                artefact actually keys on. This is the human-readable Phase 0
+                title (present.ts), prominent but a step below it in the
+                heading hierarchy. */}
+            <h2 className="break-words text-h3 font-medium text-warm-900 [overflow-wrap:anywhere]">{presentation.title}</h2>
+            {presentation.operationContext ? (
+              <p className="mt-0.5 text-body-sm text-warm-600">{presentation.operationContext}</p>
+            ) : null}
+            <p className="mt-1 break-words font-fw-mono text-caption text-warm-500 [overflow-wrap:anywhere]">
+              {presentation.technicalSignature}
+            </p>
+            <div className="mt-2">
+              <ReleaseRelationshipLabel
+                verdict={
+                  releaseRelationship ?? {
+                    relationship: 'unknown',
+                    confidence: 0,
+                    evidenceFor: [],
+                    evidenceAgainst: [releaseWatch === null ? 'Release watch could not be computed.' : 'No release context for this incident.'],
+                  }
+                }
+                showConfidence
+              />
+            </div>
+          </Surface>
+        ) : null}
+
         <Surface padding="sm" className="min-w-0">
           <LifecycleSpine incident={incident} />
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-warm-200 pt-3">
@@ -132,6 +177,8 @@ export default async function FingerprintDetailPage({
         <Surface padding="sm" className="min-w-0">
           <LifecycleWhy verdict={incident.lifecycle} />
         </Surface>
+
+        <IncidentGenomePanel genome={genome} />
 
         <EvidenceWall sources={incident.sources} />
 
@@ -178,7 +225,7 @@ export default async function FingerprintDetailPage({
               </Link>
               ; what follows is the root-cause analysis the nightly triage wrote for it.
             </InlineNotice>
-            {unified ? <IncidentCommand incident={unified.incident} /> : null}
+            {unified ? <IncidentCommand incident={unified.incident} board={unified.board} /> : null}
             <Surface padding="sm" className="min-w-0">
               <h2 className="border-b border-warm-200 pb-2 text-eyebrow uppercase text-warm-500">
                 Root-cause analysis
@@ -238,7 +285,7 @@ export default async function FingerprintDetailPage({
 
         {resolution ? <ResolutionSummary resolution={resolution} /> : null}
 
-        {unified ? <IncidentCommand incident={unified.incident} /> : null}
+        {unified ? <IncidentCommand incident={unified.incident} board={unified.board} /> : null}
 
         {/* Suspect deploy, elevated: the first thing an operator should read —
             "what shipped right before this started" — not buried in the

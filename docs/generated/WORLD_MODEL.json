@@ -239,6 +239,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/lenses/**",
+        "pattern": "src/app/admin/lenses/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/lifting/**",
         "pattern": "src/app/admin/lifting/**",
         "category": "routes"
@@ -533,6 +538,16 @@
       {
         "id": "components:src/app/golf/admin/crm/components/**",
         "pattern": "src/app/golf/admin/crm/components/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/components/admin/lenses/**",
+        "pattern": "src/components/admin/lenses/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/components/admin/premium/**",
+        "pattern": "src/components/admin/premium/**",
         "category": "components"
       },
       {
@@ -4114,6 +4129,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/incidents/__tests__/release-watch.test.ts",
+          "line": 18
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/incidents/__tests__/truth-strip.test.ts",
           "line": 26
         },
@@ -4626,12 +4646,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 133
-        },
-        {
-          "kind": "feature_doc_contract",
-          "path": "memory/features/admin-platform.md",
-          "line": 335
+          "line": 153
         },
         {
           "kind": "feature_doc_contract",
@@ -4641,7 +4656,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 560
+          "line": 375
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 580
         },
         {
           "kind": "import_graph",
@@ -4800,12 +4820,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 200
+          "line": 220
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 354
+          "line": 374
         }
       ]
     },
@@ -4822,22 +4842,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 134
+          "line": 154
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 201
+          "line": 221
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 364
+          "line": 384
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 446
+          "line": 466
         },
         {
           "kind": "import_graph",
@@ -5290,6 +5310,26 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/lenses/baseball-journey.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/lenses/golf-journey.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/lenses/lifting-flow.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/lenses/teams-ekg.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/observed-action.ts",
           "line": 8
         },
@@ -5316,6 +5356,11 @@
       "target": "baseball_core",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 805
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/expense-category-contract.test.ts",
@@ -5366,6 +5411,30 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/admin/crm/components/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "components:src/components/admin/lenses/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/admin/lenses/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "components:src/components/admin/premium/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/admin/premium/**"
         }
       ]
     },
@@ -6027,6 +6096,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/jobs/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/lenses/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/lenses/**"
         }
       ]
     },
