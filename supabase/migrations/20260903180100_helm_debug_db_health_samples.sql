@@ -327,7 +327,7 @@ grant execute on function public.record_db_health_sample(
 do $$
 declare
   v_read_fn oid := 'public.helm_debug_db_health_snapshot()'::regprocedure;
-  v_write_fn oid := 'public.record_db_health_sample(timestamptz, integer, integer, integer, integer, numeric, integer, integer, integer, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, numeric, text)'::regprocedure;
+  v_write_fn oid := 'public.record_db_health_sample(timestamptz, integer, integer, integer, integer, numeric, integer, integer, integer, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, numeric, text)'::regprocedure;
 begin
   if has_function_privilege('public', v_read_fn, 'EXECUTE')
      or has_function_privilege('anon', v_read_fn, 'EXECUTE')
