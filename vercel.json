@@ -118,6 +118,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/db-table-health",
+      "schedule": "7 * * * *"
+    },
+    {
       "path": "/api/cron/db-observability-prune",
       "schedule": "45 4 * * *"
     },

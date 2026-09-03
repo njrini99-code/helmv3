@@ -23,6 +23,12 @@ import 'server-only';
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import { failed, ok, unconfigured, type AdminFetchResult } from '@/lib/admin/fetch-result';
+import {
+  evaluateConnectionSaturation,
+  evaluateRollbackRate,
+  type ConnectionSaturationResult,
+  type RollbackRateResult,
+} from '@/lib/observability/supabase/health-rules';
 
 type MaybePostgrestError = { code?: string | null; message?: string | null } | null;
 
@@ -71,6 +77,16 @@ export interface DatabaseMissionControlSnapshot {
   latestSample: DbHealthSampleRow | null;
   history: DbHealthSampleRow[];
   collectors: CollectorHealth[];
+  /** Connection-saturation and rollback-rate rules (brief §19, §23),
+   *  Phase 2 track A2 — computed here from the SAME `history` array
+   *  already fetched above, no extra query. Pure evaluators
+   *  (src/lib/observability/supabase/health-rules.ts); this file only
+   *  wires history in most-recent-first order, which
+   *  `helm_debug_read_db_health_history` already returns. */
+  rules: {
+    connectionSaturation: ConnectionSaturationResult;
+    rollbackRate: RollbackRateResult;
+  };
   /** True when the health-sampler migration has not been applied yet — the
    *  Bridge renders a distinct "not shipped" state, never a fabricated GREEN. */
   notApplied: boolean;
@@ -122,7 +138,12 @@ function mapHealthRow(raw: RawHealthRow): DbHealthSampleRow {
 
 const COLLECTOR_JOB_TYPES = ['db-health-sampler', 'db-stat-delta', 'db-observability-prune'] as const;
 
-async function fetchCollectorHealth(
+/** Exported so src/lib/admin/database/telemetry.ts (brief §40-48's
+ *  self-monitoring — "collector runtime, DB calls, rows written") can reuse
+ *  the SAME collector-health read this file already does, rather than a
+ *  second query against `background_job_logs` that could silently drift
+ *  from this one. */
+export async function fetchCollectorHealth(
   admin: ReturnType<typeof createAdminClient>,
 ): Promise<CollectorHealth[]> {
   const { data, error } = await admin
@@ -172,6 +193,10 @@ export async function fetchDatabaseMissionControl(): Promise<AdminFetchResult<Da
     latestSample: history[0] ?? null,
     history,
     collectors,
+    rules: {
+      connectionSaturation: evaluateConnectionSaturation(history),
+      rollbackRate: evaluateRollbackRate(history),
+    },
     notApplied: false,
   });
 }
