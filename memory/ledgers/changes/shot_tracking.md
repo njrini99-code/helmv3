@@ -550,6 +550,194 @@
   `lint:ratchet`, `docs:schema-drift`, `knowledge:check` — the push CI runs
   them.
 
+## 2026-09-02 — Flight Recorder: real per-stage timings, not 0ms placeholders
+
+- SHA: `46ab32534`.
+- Change: `savePartialRound` (both the existing-round and no-id/new-round
+  branches), `submitGolfRoundComprehensive`, `deleteShot` and `updateShot` now
+  construct their `helm-flight-recorder` trace FIRST — before Zod validation,
+  the auth check, and the player lookup — and wrap each of those stages with
+  `start()`/`complete()`/`fail()`/`warn()` instead of retroactively
+  `complete()`-ing them once the recorder finally existed (which produced the
+  0ms-duration steps the live traces showed). The no-id/new-round autosave
+  path, previously uninstrumented end to end, gains `db.create_or_update_draft`,
+  a new `db.shot_details` step (the holes/shots/putt-detail/approach-detail
+  upserts), a new `db.orphan_trim` step, and its own `verify.round/holes/shots`
+  block. `submitGolfRoundComprehensive` gains `verify.round/holes/shots` (it
+  had none before) plus `post.stats`/`post.qualifier_transition`/
+  `post.coachhelm` instrumentation. `deleteShot` -> `golf.shot.delete` and
+  `updateShot` -> `golf.shot.add_or_edit` are wired for the first time.
+  `golf-round-flight-workflow.ts`: every `verify.*` step (including
+  `verify.recovery_state`) is now `best_effort` rather than `required`, so a
+  trace whose write failed before reaching verification is no longer ALSO
+  flagged with missing required steps for reads it never got to attempt.
+  Every action uses an idempotent per-call `endTrace` helper plus an outer
+  `finally` safety net so a branch that returns early — including ones this
+  refit newly gave a trace to, by moving construction earlier — cannot leave
+  a step `started` forever or a trace permanently `pending`.
+- Why: production traces attributed almost none of an autosave's real wall
+  time — the atomic RPC measured correctly, and every surrounding stage
+  (validation, auth, player lookup, the no-id path's own writes, the
+  verification reads) read 0ms because the recorder did not exist yet when
+  those stages ran, or was never wired to them at all. The recorder itself
+  stays fail-open and non-blocking throughout — nothing here gates a save,
+  submit, or shot edit on trace-store availability.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, no regressions against
+  its baseline), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib` (0 failures),
+  `node scripts/knowledge/document-inventory.mjs --check` (0). Not run:
+  `npm run build` (no `.env.local` in this worktree).
+
+## 2026-09-02 — Flight Recorder: recorder writes survive the response returning
+
+- SHA: `58543052f`.
+- Change: `helm-flight-recorder.ts`'s internal `failOpen` — the single choke
+  point every `persistStart`/`persistStep`/`persistFinalize` write passes
+  through — now registers the write's own promise with `vercelWaitUntil`
+  (`src/lib/observability/vercel-wait-until.ts`) before awaiting it, in
+  addition to (not instead of) the existing `await`/`catch`. No call site in
+  `golf.ts` changed; every one still fires `void flightRecorder.x(...)`.
+- Why: every recorder call in `golf.ts` is deliberately unawaited so a trace
+  write can never block the player's save. On Vercel that made the write a
+  race against the function freezing the instant the response returns — a
+  write frozen mid-flight and resumed on a later, unrelated invocation
+  surfaced as an unhandled "fetch failed", reported once by Sentry's
+  Supabase auto-instrumentation on the admin client
+  (`src/lib/supabase/admin.ts`) and reported again by `failOpen`'s own catch
+  whenever it eventually got to run. Registering the write with
+  `vercelWaitUntil` holds the function open until it settles, so the write
+  finishes inside the same invocation it started in and `failOpen`'s catch
+  always gets to run — one handled report, never two. The write stays
+  fail-open and non-blocking to the player's write; `vercelWaitUntil` is
+  additive and a no-op outside Vercel, by its own contract.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date — new cases
+  in `helm-flight-recorder.test.ts` prove `persistStart`/`persistStep`/
+  `persistFinalize` writes are each registered with `vercelWaitUntil`, that a
+  rejecting write still reaches `onRecorderFailure` exactly once (not
+  duplicated by the registration), and that nothing changes outside Vercel
+  or on the caller's side (still fail-open, still never propagates).
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0), `npx vitest run
+  src/lib/observability src/test/golf src/app/golf/actions src/test/lib`
+  (0 failures), `node scripts/knowledge/document-inventory.mjs --check` (0).
+  Not run: `npm run build` (no `.env.local` in this worktree; excluded by
+  this task's own instructions).
+
+## 2026-09-02 — Flight Recorder: three reviewer findings on PR #1769
+
+- SHA: `7c6ae7e8b`.
+- Change, finding 1 (`golf.ts`, `submitGolfRoundComprehensiveImpl`):
+  `post.qualifier_transition` is awaited synchronously on the
+  response-blocking path (see its own comment above the `if
+  (effectiveQualifierId)` block), not deferred into `after()` like
+  `post.stats`/`post.coachhelm` — but every RPC-success branch used to call
+  `endTrace('success')`/`recorder.finalize('success')` immediately, before
+  that block ever ran, so its real duration was silently dropped from
+  `duration_ms`. Fixed by removing every per-branch `endTrace('success')` and
+  the direct `finalize('success')` a rescued `recordRescuedStepOutcome` call
+  made, and finalizing ONCE, in a single `endTrace('success')` placed after
+  the qualifier-transition block — every success-continuation branch
+  (existing-round and new-round RPC success, the already-completed/reconciled
+  carve-outs, and a rescued direct-submit-fallback) now falls through to it
+  instead of finalizing itself. `recordRescuedStepOutcome`
+  (`helm-flight-recorder.ts`) gained a `deferFinalizeOnRescue` option so its
+  rescued branch can record the warn/fallback-complete pair without calling
+  `finalize('success')` itself, defaulting to `false` (identical to the prior
+  contract) for any caller that doesn't pass it. The early-return
+  warning/failure branches (busy, round_missing, RPC failure, an unrescued
+  fallback) are unaffected — they return before the qualifier-transition
+  block runs, so their finalize timing was never wrong.
+- Change, finding 2 (`helm-flight-recorder.ts`, `failOpen`): `const task =
+  write(); vercelWaitUntil(task);` sat OUTSIDE the try block, so a dependency
+  that threw SYNCHRONOUSLY (rather than returning a rejected promise) escaped
+  the fail-open guarantee as an unhandled rejection instead of one handled
+  report through `onRecorderFailure`. Fixed by moving both lines inside the
+  `try`, ahead of the existing `await task`; behavior for the async-rejection
+  case is unchanged.
+- Change, finding 3 (`golf.ts`, `updateShotImpl`): the `db.shot_mutation`
+  failure recorded a hardcoded `errorSummary: 'Failed to update shot'`
+  instead of the real Supabase error. Fixed to record `updateError.code`/
+  `updateError.message`, matching `deleteShot`'s `db.delete_shot` fail() call.
+  The player-facing error message is unchanged.
+- Also: `PERSIST_START_TIMEOUT_MS` stays at 1500ms for submit and autosave
+  (unchanged from main). The refit moved recorder construction ahead of
+  business logic in `deleteShot` and `updateShot`, so those two shot workflows
+  now pass `startTimeoutMs: 300` explicitly via the new optional
+  `StartHelmFlightRecorderInput.startTimeoutMs`; a hung `helm_debug` write
+  can add at most 300ms to a shot edit while a submit keeps the longer bound
+  so a slow-but-alive trace store still records the run.
+- Why: this is a fix-forward on the two 2026-09-02 Flight Recorder entries
+  above, from PR review on `agent/flight-recorder-real-timings` (#1769) — the
+  refit that added real per-stage timing had itself left one response-blocking
+  step's timing outside the window it measures, one fail-open path that could
+  still fail closed on a synchronous throw, and one step whose recorded error
+  didn't match what actually happened.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, 68 warnings, no
+  regressions), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib` (252 files, 2212 passed, 3 skipped,
+  0 failed), `node scripts/knowledge/document-inventory.mjs --check` (0),
+  `npm run docs:path-drift` (0, 1254 references checked, baseline 0). Not
+  run: `npm run build` (excluded by this task's own instructions).
+
+## 2026-09-02 (follow-up) — per-workflow start timeout, CI red on PR #1769
+
+- SHA: `0d223cd50`.
+- Change 1 — `helm-flight-recorder.ts`: `StartHelmFlightRecorderInput` gained
+  an optional `startTimeoutMs`, defaulting to `PERSIST_START_TIMEOUT_MS`
+  (1500ms) when omitted, and used in place of the
+  constant in the `raceAgainstTimeout` call around the start write and in
+  the resulting timeout error/metadata. `deleteShot`/`updateShot`
+  (`golf.shot.delete`, `golf.shot.add_or_edit`) now pass `startTimeoutMs:
+  300` — tighter than the shared default — because their recorder
+  construction sits before any business logic, unlike submit/autosave,
+  where a slower shot-edit budget was never part of the contract before this
+  refit. `submitGolfRoundComprehensive` and `savePartialRound` (both
+  branches) keep the default, unaffected.
+- Change 2 — CI fix, admin tests stale against the workflow declaration
+  change earlier in this branch (`golf-round-flight-workflow.ts`'s
+  `verify.*` steps went from `required` to `best_effort`, see the first
+  2026-09-02 entry above): `trace-tree.test.ts`'s "materialises required
+  steps the trace never recorded" asserted `verify.round/holes/shots`
+  ghosted for `golf.round.submit`, which is no longer true — those steps are
+  no longer diffed against observed steps at all now that they are
+  `best_effort`. Fixed by deriving a fixture that omits `server.player`
+  (still `required`, `SHARED_MUTATION_STEPS`) instead, added an explicit
+  regression test that verify.* do NOT ghost, and hardened "marks missing
+  steps with status missing" (same describe block) with a
+  `length > 0` guard so it cannot silently degrade to a vacuous pass over an
+  empty array the way it already had. `tracer-shared.test.ts`'s "groups by
+  layer... dropping empty lanes" and "ghosts a missing REQUIRED step..." made
+  the same stale assumption for `golf.round.start`'s `verify.round`; fixed by
+  asserting the `verification` lane is genuinely absent (2 lanes, not 3) and
+  distinguishing that from `server.player`'s genuine ghost.
+- Change 3 — CI fix, `npm run audit:supabase-errors` regression (1041 vs
+  baseline 1039, both in `app/golf/actions`): the `verify.shots` read-backs
+  this branch added in `deleteShotImpl`/`updateShotImpl` destructured `data`
+  without binding `error` — a failed read would render as "row confirmed
+  gone" / "row confirmed missing" instead of "read failed, status unknown".
+  Fixed by binding `error` and routing a failed read through the existing
+  `warn('verify.shots', ...)` path instead of reporting a false
+  observed-state; a successful read is unaffected. `audit:fail-open`,
+  `audit:paginated-reads`, and `lint:duplicate-exports` were already clean
+  against their baselines — no fix needed, verified instead.
+- Why: PR #1769 review round two — a follow-up ask (tighter shot-edit
+  timeout) plus two CI failures on the pushed head (5b2b272de) that the
+  earlier local gate runs in this session did not cover: `npx vitest run
+  src/app/admin` and the four audit/lint scripts CI's Lint job runs.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, 68 warnings, no
+  regressions), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib src/app/admin` (304 files, 2631 passed,
+  3 skipped, 0 failed), `npm run audit:supabase-errors` (0, 1039, matches
+  baseline exactly — was 1041), `npm run audit:fail-open` (0, 51, matches
+  baseline), `npm run audit:paginated-reads` (0, 12, matches baseline),
+  `npm run lint:duplicate-exports` (0, 27 known remain, no new). Not run:
+  `npm run build` (excluded by this task's own instructions).
 ## 2026-09-02 — Postgres-side Flight Recorder checkpoints reach helm_debug.trace_steps
 
 - Migration: `supabase/migrations/20260902160000_postgres_checkpoints_reach_trace_steps.sql`
