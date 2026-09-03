@@ -1264,6 +1264,7 @@ features:
       routes:
         - src/app/admin/engineering/**
         - src/app/admin/work-log/**
+        - src/app/admin/lenses/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
         # below (errors/ -> admin_incidents, reliability/ ->
         # admin_reliability_collector, self-heal/ -> admin_selfheal), so a
@@ -1291,6 +1292,11 @@ features:
       components:
         - src/app/admin/_components/**
         - src/app/golf/admin/crm/components/**
+        # Phase 4 lens dominant-visual components (JourneyFlow,
+        # UserJourneyRibbon, TeamEkgRow, AdoptionMapPanel,
+        # ActivityThreadsPanel) — mapped here 2026-09-03 after `knowledge:map`
+        # resolved src/components/admin/lenses/** to `impactedFeatures: []`.
+        - src/components/admin/lenses/**
       api:
         - src/app/api/admin/**
       actions:
