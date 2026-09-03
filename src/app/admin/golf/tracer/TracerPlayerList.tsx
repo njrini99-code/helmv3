@@ -157,7 +157,10 @@ function PlayerRoundsList({ playerId, rounds }: { playerId: string; rounds: Trac
                 </span>
                 <ChevronDown
                   size={14}
-                  className={cn('ml-auto shrink-0 text-warm-400 transition-transform', isExpanded && 'rotate-180')}
+                  className={cn(
+                    'ml-auto shrink-0 text-warm-400 transition-transform motion-reduce:transition-none',
+                    isExpanded && 'rotate-180',
+                  )}
                   aria-hidden
                 />
               </span>

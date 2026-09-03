@@ -3,6 +3,7 @@ import {
   ADMIN_NAV,
   ADMIN_COMMAND_SHORTCUTS,
   hrefForShortcut,
+  RESERVED_LOCAL_SHORTCUTS,
   BRIDGE_BOTTOM_NAV_HREFS,
   BRIDGE_BOTTOM_NAV_LABELS,
 } from '@/app/admin/_components/admin-nav';
@@ -67,6 +68,23 @@ describe('ADMIN_NAV', () => {
       expect(navHrefs.has(shortcut.href), `${shortcut.href} is not a registered admin tab`).toBe(true);
     }
     expect(ADMIN_COMMAND_SHORTCUTS.map((s) => s.href)).not.toContain('/admin/audit');
+  });
+
+  // Regression for Bridge Premium Phase 6: AdminShell's global keydown
+  // handler used to intercept BOTH 'r' and 'R' for "refresh now" before ever
+  // consulting hrefForShortcut, which made Reliability's 'R' tab shortcut
+  // permanently unreachable (Shift+R always refreshed, never navigated).
+  // AdminShell now only reserves the exact keys in RESERVED_LOCAL_SHORTCUTS
+  // (case-sensitive) — this asserts no ADMIN_NAV entry's key can ever fall
+  // into that reserved set again, on either side of a future edit.
+  it('no ADMIN_NAV shortcut collides with a key AdminShell reserves locally', () => {
+    for (const entry of ADMIN_NAV) {
+      expect(
+        RESERVED_LOCAL_SHORTCUTS.has(entry.key),
+        `${entry.href}'s shortcut '${entry.key}' is reserved by AdminShell's local keydown ` +
+          'handler (see RESERVED_LOCAL_SHORTCUTS) and can never navigate there',
+      ).toBe(false);
+    }
   });
 });
 
