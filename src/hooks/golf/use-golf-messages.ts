@@ -7,6 +7,7 @@ import { withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
 import { postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 /** Pause before the single transport-failure retry of a message send. */
 const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
@@ -335,8 +336,8 @@ export function useGolfMessages(conversationId: string) {
             }
           }
         }
-      )
-      .subscribe();
+      );
+    observeRealtimeChannel(channel, { feature: 'golf.messages', channelClass: 'golf_conversation', subscriptionType: 'mixed' });
 
     return () => {
       supabase.removeChannel(channel);
@@ -942,7 +943,8 @@ export function useGolfConversations() {
       }, 300);
     };
 
-    const channel = supabase
+    const channel = observeRealtimeChannel(
+      supabase
       .channel(`golf-conversations:${userId}`)
       .on(
         'postgres_changes',
@@ -969,8 +971,9 @@ export function useGolfConversations() {
             debouncedFetch();
           }
         }
-      )
-      .subscribe();
+      ),
+      { feature: 'golf.messages', channelClass: 'golf_conversations_list', subscriptionType: 'postgres_changes' },
+    );
 
     return () => {
       supabase.removeChannel(channel);

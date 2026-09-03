@@ -127,6 +127,7 @@
     "workspace:clean": "node scripts/workspace-clean.mjs",
     "workspace:clean:apply": "node scripts/workspace-clean.mjs --apply",
     "release:status": "node scripts/release-status.mjs",
+    "audit:healthy-on-error": "node scripts/healthy-on-error-audit.mjs",
     "release:rollback-check": "tsx scripts/release-intel/evaluate-rollback.ts",
     "risk:score": "tsx scripts/release-intel/score-change.ts"
   },

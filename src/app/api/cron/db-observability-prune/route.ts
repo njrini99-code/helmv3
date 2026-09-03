@@ -1,15 +1,27 @@
 /**
- * Retention cron for the Phase 1 observability tables — GET
+ * Retention cron for the observability tables — GET
  * /api/cron/db-observability-prune (brief §27, §40-48)
  *
- * Calls `public.helm_debug_prune_observability(...)`
- * (20260903180300_helm_debug_observability_retention.sql, HELD, service_role
- * EXECUTE only), which prunes `helm_debug.db_error_events` (30d),
- * `db_health_samples` (30d), `db_stat_deltas` (14d), and
- * `db_stat_prior_state` (14d since last seen). Same degrade-cleanly pattern
- * as this repo's other `helm_debug_*` cron routes while the migration is
- * HELD — see `src/app/api/cron/helm-debug-prune/route.ts`'s header for the
- * full reasoning.
+ * Calls `public.helm_debug_prune_observability(...)` — Phase 1
+ * (20260903180300_helm_debug_observability_retention.sql, HELD) created it
+ * with a 4-arg signature pruning `db_error_events` (30d), `db_health_samples`
+ * (30d), `db_stat_deltas` (14d), and `db_stat_prior_state` (14d since last
+ * seen); Phase 2's A6
+ * (20260903191300_helm_debug_observability_retention_v2.sql, HELD)
+ * `CREATE OR REPLACE`s the SAME 4-arg signature (deliberately unchanged —
+ * see that migration's header for why adding parameters would have created
+ * a second, ambiguous overload) to ALSO prune `db_lock_incidents` (30d) and
+ * `db_table_samples` (30d) using fixed internal windows, and returns their
+ * deleted counts alongside the four original ones. This route passes
+ * through whatever the RPC returns rather than naming each key, so it
+ * automatically reflects whichever migration (v1 or v2) is actually applied
+ * — see the two `deleted_db_lock_incidents`/`deleted_db_table_samples` keys
+ * being present-or-absent as the signal for which is live.
+ *
+ * Same degrade-cleanly pattern as this repo's other `helm_debug_*` cron
+ * routes while a migration is HELD — see
+ * `src/app/api/cron/helm-debug-prune/route.ts`'s header for the full
+ * reasoning.
  *
  * Auth: `requireCronAuth`. Schedule: `45 4 * * *` (vercel.json) — daily,
  * off-peak, alongside `helm-debug-prune` (`30 4 * * *`) rather than
@@ -34,6 +46,15 @@ interface PruneResult {
   deleted_db_health_samples: number;
   deleted_db_stat_deltas: number;
   deleted_db_stat_prior_state: number;
+  // Phase 2 A6 keys — present only once
+  // 20260903191300_helm_debug_observability_retention_v2.sql is applied
+  // (it CREATE OR REPLACEs the same 4-arg RPC as Phase 1's function, so the
+  // response shape here depends on which version is live, not on anything
+  // this route passes in).
+  cutoff_lock_incidents?: string;
+  cutoff_table_samples?: string;
+  deleted_db_lock_incidents?: number;
+  deleted_db_table_samples?: number;
 }
 
 type MaybePostgrestError = { code?: string | null; message?: string | null } | null;

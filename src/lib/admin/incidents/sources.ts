@@ -37,12 +37,22 @@ const MINUTE = 60_000;
  *
  * These are EXPECTATIONS, not SLAs. Exceeding one means "this reading is older
  * than you probably assume", which is the operator-relevant fact.
+ *
+ * `database` was added 2026-09-03 alongside the `'database'` enum entry in
+ * `./types.ts` — see that file's header for the consequence this had for
+ * `canClaimAllClear` below. Its reading is produced by
+ * `src/lib/admin/incidents/db-observability-source.ts`, which reads
+ * `src/lib/admin/database/overview.ts`'s `fetchDatabaseMissionControl()` —
+ * itself fed by the 5-minute `db-health-sampler` Vercel cron, so `database`'s
+ * expectation mirrors that cadence the same way `supabase`'s mirrors its own
+ * 3-hourly collector above.
  */
 export const SOURCE_EXPECTED_INTERVAL_MS: Readonly<Record<IncidentSourceName, number>> = {
   app: 1 * MINUTE,
   sentry: 1 * MINUTE,
   vercel: 5 * MINUTE,
   supabase: 180 * MINUTE,
+  database: 5 * MINUTE,
 };
 
 /**
@@ -204,10 +214,25 @@ export function describeBlindness(
   // complete blackout; "incomplete" is a source still delivering some of its
   // signal. Collapsing them would trade one wrong claim for another.
   const partial = rows.filter((r) => r.health === 'partial');
-  if (blind.length === 0 && partial.length === 0) return null;
+  // UNKNOWN sources are named too, as of 2026-09-03. `canClaimAllClear`
+  // requires `unknown === 0`, so an unknown source already BLOCKS the
+  // all-clear — but this function returned null for it, so the beacon
+  // rendered nothing and the queue fell back to copy asserting that a
+  // source "could not be read this refresh". That is false: nothing was
+  // attempted. A degradation with no explanation, or a wrong one, is the
+  // same class of defect as one nothing records.
+  //
+  // Worded distinctly from the other two on purpose. "Could not be read" is
+  // a blackout, "read incompletely" is a partial signal, and "has not
+  // reported yet" is a source that has produced nothing at all — typically
+  // a collector whose migration is not applied, or one that has not yet
+  // written its first sample.
+  const unknown = rows.filter((r) => r.health === 'unknown');
+  if (blind.length === 0 && partial.length === 0 && unknown.length === 0) return null;
 
   const clauses: string[] = [];
   if (blind.length > 0) clauses.push(`${blind.map(describe).join(', ')} could not be read this refresh`);
   if (partial.length > 0) clauses.push(`${partial.map(describe).join(', ')} read incompletely`);
+  if (unknown.length > 0) clauses.push(`${unknown.map(describe).join(', ')} has not reported yet`);
   return `Reliability coverage incomplete — ${clauses.join('; ')}.`;
 }

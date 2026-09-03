@@ -53,7 +53,24 @@ import type { TriageSeverity } from '@/lib/admin/data/triage';
  * renders — a source silently missing from a coverage matrix reads as "we
  * looked and found nothing", which is the exact lie this model exists to stop.
  */
-export const INCIDENT_SOURCES = ['app', 'sentry', 'supabase', 'vercel'] as const;
+/**
+ * `'database'` was added 2026-09-03 (Phase 2 Track C,
+ * `docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md`)
+ * to register this program's own freshness reading —
+ * `src/lib/admin/incidents/db-observability-source.ts` produces it in the
+ * `SourceReading` shape `sources.ts` consumes. Scoped deliberately narrow:
+ * this file and `sources.ts` gained the enum entry, its label, and one
+ * expected-interval entry; NO call site that builds a `readings` array
+ * (e.g. `fetchIncidentBoard` in `fetch.ts`) was touched. Until a Bridge-track
+ * change wires the adapter's reading into that array, EVERY `readings` array
+ * built from a fixed source list is missing a `'database'` entry, so
+ * `buildSourceFreshness` (`sources.ts`) reports it as `health: 'unknown'` by
+ * its own documented fallback — which means `canClaimAllClear` (same file)
+ * can never return `true` again until that wiring lands. This is a KNOWN,
+ * NAMED consequence of the enum edit, not an oversight — see that adapter
+ * file's header for the one-line fix once the Bridge track picks it up.
+ */
+export const INCIDENT_SOURCES = ['app', 'sentry', 'supabase', 'vercel', 'database'] as const;
 export type IncidentSourceName = (typeof INCIDENT_SOURCES)[number];
 
 export const INCIDENT_SOURCE_LABEL: Readonly<Record<IncidentSourceName, string>> = {
@@ -61,6 +78,7 @@ export const INCIDENT_SOURCE_LABEL: Readonly<Record<IncidentSourceName, string>>
   sentry: 'SENTRY',
   supabase: 'SUPABASE',
   vercel: 'VERCEL',
+  database: 'DATABASE',
 };
 
 /**

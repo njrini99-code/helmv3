@@ -104,7 +104,7 @@ export function UnifiedIncidentQueue({
         label="No incidents found in readable sources"
         description={
           blindnessNote ??
-          'At least one source could not be read this refresh, so this is a partial count rather than an all-clear.'
+          'Coverage is incomplete, so this is a partial count rather than an all-clear.'
         }
       />
     );

@@ -94,6 +94,73 @@ features:
         - npm run typecheck
         - npx vitest run src/lib/observability src/instrumentation.ts src/instrumentation-client.ts src/test/observability
 
+  observability_supabase:
+    name: Supabase Database Observability — Zero-Cost Error/Health Control Plane
+    status: active
+    owner: platform
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: >-
+        This module IS the observability layer for Postgres/Supabase (error
+        envelope, health/statement/platform samplers, alert policy, advisor
+        and log-evidence integrations) — instrumenting itself would be
+        circular, the same reasoning observability_sentry above states for
+        the Sentry-side layer.
+    docs:
+      feature: memory/features/observability-supabase.md
+      flows:
+        - docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md
+        - docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md
+        - docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md
+        - docs/observability/SUPABASE_TRACE_PROPAGATION.md
+      ui:
+        - src/app/admin/database/page.tsx
+      business_logic:
+        - docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md
+        - docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md
+      incidents: []
+    code:
+      routes:
+        - src/app/admin/database/**
+      components: []
+      api:
+        - src/app/api/cron/db-health-sampler/**
+        - src/app/api/cron/db-stat-delta/**
+        - src/app/api/cron/db-observability-prune/**
+      actions:
+        - src/app/admin/database/log-evidence-actions.ts
+      services:
+        - src/lib/observability/supabase/**
+        - src/lib/admin/database/**
+        - src/lib/admin/incidents/db-observability-source.ts
+        - scripts/db-observability-trace-cert.mjs
+        - scripts/db-observability-metrics-names.mjs
+        - scripts/repo-doctor/checks/db-observability.mjs
+      db:
+        - supabase/migrations/*helm_debug_db_error_events*.sql
+        - supabase/migrations/*helm_debug_db_health_samples*.sql
+        - supabase/migrations/*helm_debug_db_stat_deltas*.sql
+        - supabase/migrations/*helm_debug_observability_retention*.sql
+        - supabase/migrations/*helm_debug_db_platform_samples*.sql
+      tests:
+        - src/lib/observability/supabase/__tests__/**
+        - src/lib/admin/database/__tests__/**
+        - src/lib/admin/incidents/__tests__/db-observability-source.test.ts
+    integrations:
+      - supabase
+      - sentry
+    review:
+      required_docs:
+        - memory/features/observability-supabase.md
+        - docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md
+        - docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/observability/supabase src/lib/admin/database src/lib/admin/incidents
+        - node scripts/db-observability-trace-cert.mjs
+        - npm run repo:doctor
+
   coachhelm_ai:
     name: CoachHelm AI
     status: active
@@ -1251,6 +1318,15 @@ features:
         - docs/ai-system/selfheal/README.md
         - docs/ai-system/selfheal/repair-contract.md
         - docs/ai-system/FEATURE_FLAGS.md
+        # Phase 2 Track B (2026-09-03): Auth/Storage/Realtime/Edge Function
+        # observability, kept as its own feature doc under the same
+        # src/lib/observability/supabase/** glob this entry already owns
+        # (see the `services:` list below) — listed here as a flow rather
+        # than replacing `docs.feature` above, since admin-platform.md
+        # remains the broader Bridge/admin current-state doc and this is a
+        # narrower current-state doc for one subtree of it.
+        - memory/features/observability-supabase.md
+        - docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md

@@ -26,6 +26,7 @@ import { sendPasswordResetEmail } from '@/lib/auth/send-password-reset';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 export type LoginResult = {
   success: boolean;
@@ -116,6 +117,15 @@ async function loginActionImpl(
   });
 
   if (error || !data.user) {
+    // A wrong password classifies EXPECTED and stays silent; a 429 burst, a
+    // GoTrue 5xx, or the resilient helper's own timeout sentinel does not.
+    observeAuthResult({
+      error,
+      feature: 'baseball_auth',
+      action: 'baseball.login',
+      operation: 'sign_in',
+      sport: 'baseball',
+    });
     // Record failed attempt (database-persisted for lockout)
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
@@ -316,6 +326,13 @@ async function signupActionImpl(
   });
 
   if (error) {
+    observeAuthResult({
+      error,
+      feature: 'baseball_auth',
+      action: 'baseball.signup',
+      operation: 'sign_up',
+      sport: 'baseball',
+    });
     await logServerError(`[Auth] Signup error: ${error.message}`, {
       action: 'auth.signupAction',
       metadata: { email: normalizedEmail, ip },
@@ -561,6 +578,16 @@ async function changePasswordActionImpl(
   });
 
   if (verifyError) {
+    // Re-authentication before a password change. A wrong current password is
+    // `invalid_credentials` (EXPECTED, silent); a 429 or GoTrue 5xx here means
+    // the user cannot change their password at all, which is actionable.
+    observeAuthResult({
+      error: verifyError,
+      feature: 'baseball_auth',
+      action: 'baseball.change_password_reauth',
+      operation: 'sign_in',
+      sport: 'baseball',
+    });
     await logServerError(`[Auth] Password change reauth failed: ${verifyError.message}`, {
       action: 'auth.changePasswordAction',
       metadata: { userId: user.id },
@@ -576,6 +603,16 @@ async function changePasswordActionImpl(
   });
 
   if (updateError) {
+    // The caller already proved the current password one call above, so a
+    // failure here is either routine strength validation (`weak_password`,
+    // `same_password` — both EXPECTED) or a real Auth fault.
+    observeAuthResult({
+      error: updateError,
+      feature: 'baseball_auth',
+      action: 'baseball.change_password_update',
+      operation: 'password_reset',
+      sport: 'baseball',
+    });
     await logServerError(`[Auth] Password change update failed: ${updateError.message}`, {
       action: 'auth.changePasswordAction',
       metadata: { userId: user.id },

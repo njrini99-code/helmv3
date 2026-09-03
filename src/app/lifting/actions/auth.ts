@@ -17,6 +17,7 @@ import { validatePassword } from '@/lib/auth/password-validation';
 import { logServerError } from '@/lib/server-error-logger';
 import { resetSessionIdleMarker } from '@/lib/auth/session-idle-server';
 import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 export type LoginResult = {
   success: boolean;
@@ -135,6 +136,17 @@ export async function liftingSignupAction(
     });
 
     if (error) {
+      // The only failure signal this action has: it returns the raw GoTrue
+      // message to the user and logs nothing. Routine validation
+      // (`email_exists`, `weak_password`) classifies EXPECTED and stays
+      // silent; a 429 or 5xx becomes visible.
+      observeAuthResult({
+        error,
+        feature: 'lifting_auth',
+        action: 'lifting.signup',
+        operation: 'sign_up',
+        sport: 'lifting',
+      });
       return { success: false, error: error.message };
     }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 // ============================================
 // TYPES
@@ -257,7 +258,11 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
 
       channelRef.current = channel;
 
-      channel.subscribe((status) => {
+      observeRealtimeChannel(channel, {
+        feature: 'admin.realtime',
+        channelClass: 'admin_events_api_errors',
+        subscriptionType: 'postgres_changes',
+        onStatus: (status) => {
         if (channelRef.current !== channel) {
           return;
         }
@@ -290,6 +295,7 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
             }, 3000);
           }
         }
+        },
       });
 
     } catch (err) {

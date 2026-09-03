@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { githubIssuesHeaders, githubIssuesRepo, githubIssuesToken } from '@/lib/admin/github-issues-config';
+import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
 import {
   BEN_LEAH_INITIAL_WORKFLOW_LABEL,
   ensureBenLeahGitHubLabels,
@@ -147,11 +148,36 @@ export async function uploadFeedbackAttachments(files: File[]): Promise<Feedback
       contentType: file.type || 'application/octet-stream',
       upsert: false,
     });
+    // The upload failure is surfaced to the reporter only as a `note` string
+    // on the attachment; nothing else records it. `bucketClass` is the
+    // configured bucket NAME plus a static object class — never the object
+    // key, which carries the uploader's own filename.
+    observeStorageResult({
+      error,
+      operation: 'upload',
+      feature: 'admin_bridge_feedback',
+      action: 'upload_feedback_screenshot',
+      bucketClass: `${bucket}/feedback_screenshot`,
+      // Service-role client writing to a path it just minted itself — an
+      // AccessDenied here is a bucket-policy defect, not a routine boundary.
+      accessDeniedOnOwnPath: true,
+    });
     if (error) {
       uploaded.push({ name: file.name, size: file.size, type: file.type, note: `Upload failed: ${error.message}` });
       continue;
     }
-    const { data } = await admin.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 365);
+    const { data, error: signError } = await admin.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 365);
+    // The object uploaded a line above but the issue would carry no link —
+    // a silent half-failure with no other signal. The pushed attachment is
+    // byte-for-byte what it was: `data?.signedUrl ?? undefined`.
+    observeStorageResult({
+      error: signError,
+      operation: 'download',
+      feature: 'admin_bridge_feedback',
+      action: 'sign_feedback_screenshot_url',
+      bucketClass: `${bucket}/feedback_screenshot`,
+      accessDeniedOnOwnPath: true,
+    });
     uploaded.push({ name: file.name, size: file.size, type: file.type, url: data?.signedUrl ?? undefined });
   }
   return uploaded;

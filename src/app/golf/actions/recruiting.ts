@@ -19,6 +19,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
 
 export type RecruitStatus = 'recruiting' | 'watched' | 'offered' | 'committed';
 
@@ -332,6 +333,18 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
       .filter((p): p is string => Boolean(p));
     if (paths.length > 0) {
       const { error: rmError } = await ctx.supabase.storage.from('recruit-documents').remove(paths);
+      observeStorageResult({
+        error: rmError,
+        operation: 'delete',
+        feature: 'recruiting_prospect_tracking',
+        action: 'delete_recruit_storage_objects',
+        bucketClass: 'recruit-documents/recruit_document',
+        sport: 'golf',
+        // The recruit row and its document rows are already gone by this
+        // point, so an AccessDenied here is a denial on the caller's OWN
+        // team's objects — a real RLS/auth defect, not a routine boundary.
+        accessDeniedOnOwnPath: true,
+      });
       if (rmError) {
         await logServerError(
           `deleteRecruit storage purge failed (${paths.length} orphaned objects): ${rmError.message}`,

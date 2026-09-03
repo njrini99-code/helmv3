@@ -234,6 +234,42 @@ describe('describeBlindness — the beacon sentence', () => {
     expect(describeBlindness(rows, new Map())).toBeNull();
   });
 
+  it('names an UNKNOWN source, because unknown already blocks the all-clear and used to be unexplained', () => {
+    // Regression, 2026-09-03. `canClaimAllClear` requires unknown === 0, so
+    // a source that has never reported already degrades every all-clear
+    // surface. This function returned null for that case, so the beacon
+    // rendered nothing and the queue fell back to copy asserting a source
+    // "could not be read this refresh" — false, since nothing was
+    // attempted. The operator saw a degradation with no reason, or a wrong
+    // one.
+    const rows: SourceFreshness[] = INCIDENT_SOURCES.map((source) =>
+      freshnessRow({ source, health: source === 'database' ? 'unknown' : 'reading', state: source === 'database' ? 'unknown' : 'fresh' }),
+    );
+    const reasons = new Map<IncidentSourceName, string | null>([['database', 'collector has not written its first sample']]);
+    const note = describeBlindness(rows, reasons);
+
+    expect(note).not.toBeNull();
+    expect(note).toContain('DATABASE');
+    expect(note).toContain('has not reported yet');
+    expect(note).toContain('collector has not written its first sample');
+    // Wording must stay distinct from the blackout case: nothing failed.
+    expect(note).not.toContain('could not be read');
+  });
+
+  it('keeps blind, partial and unknown in separate clauses rather than collapsing them', () => {
+    const rows: SourceFreshness[] = [
+      freshnessRow({ source: 'app', health: 'reading' }),
+      freshnessRow({ source: 'sentry', health: 'blind', state: 'unknown' }),
+      freshnessRow({ source: 'vercel', health: 'partial' }),
+      freshnessRow({ source: 'database', health: 'unknown', state: 'unknown' }),
+      freshnessRow({ source: 'supabase', health: 'reading' }),
+    ];
+    const note = describeBlindness(rows, new Map())!;
+    expect(note).toContain('SENTRY could not be read this refresh');
+    expect(note).toContain('VERCEL read incompletely');
+    expect(note).toContain('DATABASE has not reported yet');
+  });
+
   it('names each blind source, with its reason when one is known and without the parenthetical when it is not', () => {
     const rows: SourceFreshness[] = [
       freshnessRow({ source: 'app', health: 'reading' }),

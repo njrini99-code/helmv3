@@ -27,6 +27,7 @@ import {
   type CoverageSummary,
   type SourceReading,
 } from './sources';
+import { readDatabaseObservabilitySourceHealth } from './db-observability-source';
 import type {
   IncidentAnalysis,
   IncidentLensCounts,
@@ -547,10 +548,20 @@ export async function fetchIncidentBoard(
   filters: IncidentFeedFilters = { windowHours: DEFAULT_INCIDENT_WINDOW_HOURS },
   now: number = Date.now(),
 ): Promise<IncidentBoard> {
-  const [feed, reliability, deploy] = await Promise.all([
+  const [feed, reliability, deploy, databaseSource] = await Promise.all([
     fetchIncidentFeed(filters),
     readReliability(),
     getProductionDeployAt(now),
+    // Phase 2 Track C added 'database' to INCIDENT_SOURCES; without a reading
+    // here buildSourceFreshness reports it unknown forever and
+    // canClaimAllClear can never return true on any board. Fail-open: a throw
+    // becomes a blind reading rather than failing the whole board.
+    readDatabaseObservabilitySourceHealth().catch((error: unknown) => ({
+      source: 'database' as const,
+      health: 'blind' as const,
+      observedAt: null,
+      reason: error instanceof Error ? error.message : 'database observability source unreadable',
+    })),
   ]);
 
   const nowIso = new Date(now).toISOString();
@@ -574,6 +585,14 @@ export async function fetchIncidentBoard(
     { source: 'app', health: 'reading', reason: null, observedAt: nowIso },
     sentryHealth,
     ...reliability.health,
+    // `SourceReading.reason` is optional; `CorrelationSourceHealth.reason` is
+    // not. Normalize rather than widen the board's own type.
+    {
+      source: databaseSource.source,
+      health: databaseSource.health,
+      observedAt: databaseSource.observedAt ?? null,
+      reason: databaseSource.reason ?? null,
+    },
   ];
 
   // fingerprint -> the admin_events rows in this feed. Built from the triage

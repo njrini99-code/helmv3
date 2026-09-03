@@ -28,6 +28,7 @@ import { gatedDelivery, type DeliveryNotificationKey } from '@/lib/coachhelm/v3/
 import { logServerError, logServerEvent, logServerException } from '@/lib/server-error-logger';
 import { recordPush } from '@/lib/observability/metrics';
 import { helmLog } from '@/lib/observability/structured-log';
+import { observeEdgeInvoke } from '@/lib/observability/supabase/observe-edge';
 
 /**
  * Maps a notification type to the `push_*` preference key that gates it.
@@ -326,6 +327,12 @@ export async function sendPushNotification(
             body: payload.body,
             data: payload.data,
           },
+        });
+        observeEdgeInvoke({
+          error: invokeError,
+          functionName: fn,
+          feature: 'push_notifications',
+          action: 'send_push',
         });
 
         if (invokeError) {

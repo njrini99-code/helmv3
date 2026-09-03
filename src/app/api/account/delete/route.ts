@@ -5,6 +5,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 // =============================================================================
 // SECURITY / CORRECTNESS (Production-Readiness Mission W0a):
@@ -349,6 +350,15 @@ export async function DELETE() {
     const { error: authDeleteError } = await admin.auth.admin.deleteUser(user.id);
 
     if (authDeleteError) {
+      // Unconditionally actionable: every application row has already been
+      // deleted by this point, so a failure here strands a half-deleted
+      // account with a live auth user and no profile.
+      observeAuthResult({
+        error: authDeleteError,
+        feature: 'account_deletion',
+        action: 'delete_auth_user',
+        operation: 'other',
+      });
       return NextResponse.json(
         { error: 'Failed to delete authentication user' },
         { status: 500 }

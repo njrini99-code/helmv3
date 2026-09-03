@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 import { checkRateLimit, formatTimeRemaining } from '@/lib/auth/supabase-rate-limit';
 import { resolveClientIp } from '@/lib/security/client-ip';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
+import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
 // Whitelist of allowed redirect paths to prevent open redirect attacks
 const ALLOWED_REDIRECTS = [
@@ -109,6 +110,17 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
+      // A bad state/code on the OAuth + magic-link callback is a real defect
+      // (brief §10 names it): the user already authenticated with the
+      // provider and still lands back on a login page. `flow_state_expired`/
+      // `flow_state_not_found`/`bad_code_verifier` classify as EXPECTED (a
+      // stale or reused link), so an ordinary expired link stays silent.
+      observeAuthResult({
+        error,
+        feature: 'auth_oauth_callback',
+        action: 'exchange_code_for_session',
+        operation: 'oauth',
+      });
       console.error('[OAuth] Callback error:', {
         error: error.message,
         code: code.substring(0, 10) + '...', // Log partial code for debugging
