@@ -202,8 +202,9 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), checkTimeout);
 
-      // Make a lightweight request
-      const response = await fetch(pingUrl, {
+      // Make a lightweight request. The response itself is intentionally
+      // unused below — see the comment on isConnected.
+      await fetch(pingUrl, {
         method: 'HEAD',
         cache: 'no-store',
         signal: controller.signal,
@@ -211,7 +212,19 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
 
       clearTimeout(timeoutId);
 
-      isConnected = response.ok;
+      // ANY response — including a non-2xx one — proves the request reached
+      // the server and came back, which is exactly what `isConnected`'s own
+      // doc comment above promises ("whether actual network requests
+      // succeed"). Deliberately NOT `response.ok`: that used to double as
+      // this check only because /api/health always returned 200 regardless
+      // of its own DB probe's result. It now returns 503 when the backend's
+      // database is degraded (a real, useful signal for an uptime monitor),
+      // which is NOT evidence this device is offline — keying connectivity
+      // off the status code would make a server-side DB hiccup read as
+      // "you're offline" for every player mid-round. A genuine connectivity
+      // failure (timeout, DNS, no network) never reaches this line at all —
+      // it throws, and the catch block below sets isConnected = false.
+      isConnected = true;
       measuredRtt = Date.now() - startTime;
 
     } catch (error) {
