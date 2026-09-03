@@ -607,6 +607,52 @@
   CircleCI step (`.circleci/config.yml`'s `janitor` and `stryker-coachhelm`
   jobs) BEFORE the expensive work they gate, not left as an unwired script.
 
+## 2026-09-03 — Bridge Premium Observability Phase 2: Command Deck read-model and render tests
+
+53 new vitest cases across 11 files, both auto-picked-up by
+`vitest.config.ts`'s glob projects (`src/**/*.test.ts` -> `unit`,
+`src/**/*.test.tsx` -> `unit-dom`) — no manual wiring needed, unlike the
+`node:test` suites above.
+
+- `src/lib/admin/command-deck/__tests__/{posture,orbit,selfheal-circuit,
+  release-wake,decisions}.test.ts` — 35 cases, five fixtures per read model
+  (healthy, blind source, regression, decision waiting, all-unknown), plus
+  `parseHeldMigrations` pinned against a literal excerpt of the REAL
+  `supabase/migrations/HELD.md` table (copied, not read from disk, so the
+  test stays hermetic against that file changing shape later) — including
+  one row whose status cell is two words ("VERIFIED APPLIED"), the exact
+  kind of format drift the parser must skip rather than mis-classify as
+  `HOLD`.
+- `src/components/admin/command-deck/__tests__/*.test.tsx` — 18 cases,
+  `@testing-library/react` render tests for every new component: the
+  posture banner never shows HEALTHY under blind evidence, the System Orbit
+  renders all 8 node labels with Realtime always Unknown, the Attention
+  Stack's user-impact badge only appears for a row with a known-affected
+  match, the Decision Inbox never shows the calm empty state when
+  unreadable, the Release Wake ribbon's lanes render the em dash (never a
+  bare "0") when the deploy time is unknown, the Self-Heal Circuit summary
+  shows an honest "could not be read" notice rather than a fabricated
+  verdict when the board is null.
+- **Two real bugs caught by writing these tests, both fixed in the same
+  change** (recorded in the change ledger's own "Fixed during review"
+  bullet, restated here because both are load-bearing test guarantees, not
+  incidental fixes): `orbit.ts`'s Jobs node read `'healthy'` by default
+  when the self-heal board itself was unreadable (now gated on a new
+  `selfHealReadable` input); `release-wake.ts`'s `selfHealActions` lane
+  read a confirmed `0` rather than `unknown` when the deploy time itself
+  could not be established. Both are now pinned by their respective
+  all-unknown fixtures.
+- **No dedicated `CommandDeck.tsx` test.** The composition function itself
+  (six `Promise.all`-gathered upstream reads, wired into the six pure
+  builders above) has no integration test — this repo has no established
+  pattern for testing an async Server Component this way (grepped for
+  `render(await ...)` across every `*.test.tsx` file; no hits), and
+  building one would mean mocking six modules with no precedent to follow.
+  Its correctness is covered by `npm run typecheck` (every builder call
+  site's argument shapes checked against the real exported types) plus
+  every constituent read-model and component test above — a real wiring
+  bug (wrong field name, wrong argument) fails typecheck before it would
+  ever reach a runtime test.
 ## 2026-09-03 — Bridge Premium Phase 3: triage tab read models + components
 
 - 71 new pure-logic unit tests across eight `src/lib/admin/triage/

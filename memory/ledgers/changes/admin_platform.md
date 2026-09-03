@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
+
 # Admin Platform change ledger
 
 ## 2026-09-03 — Zero-cost Supabase observability, Phase 1 (foundation): envelope, classifier, out-of-band DB error store, health/stat collectors, `/admin/database`
@@ -104,6 +105,7 @@ master brief lives on a sibling control-plane branch, not yet merged).
   dead entries), `npm run knowledge:map -- --files <one file per new entry>`
   routes each to exactly the intended id, `npm run knowledge:feature-map` /
   `document-inventory.mjs` regenerated clean.
+
 ## 2026-09-03 — Feature-flag registry, never-gate rules, and the expiry CI gate (Phase F.4.2)
 
 New, self-contained module — `config/feature-flags.yml` +
@@ -168,6 +170,7 @@ rollout is booleans only.
   / `scripts/check-feature-flags.mjs` globs added to `admin_platform` in
   `memory/registry.yml`); `npm run docs:check` (all five) clean;
   `actionlint .github/workflows/ci.yml` clean.
+
 ## 2026-09-02 — Golden-path journey registry and Context Retrieval Bench (Bridge Control Plane Phases D.4.1, K.4.2)
 
 Two new pieces of engineering-os tooling, not a change to the Bridge's
@@ -486,6 +489,7 @@ since both change behaviour the first pass shipped.
   (25/25 passing, new cases written failing first), `npm run typecheck`,
   `npm run lint`, `npm run lint:ratchet`, `npm run audit:supabase-errors` all
   green on this change alone.
+
 ## 2026-09-02 — Diagnose moves off the Anthropic-hosted cloud routine onto a Vercel cron
 
 - Branch: `agent/selfheal-diagnose-cron`.
@@ -1404,6 +1408,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   `node scripts/knowledge/document-inventory.mjs --check`,
   `npm run docs:path-drift`, `npm run docs:schema-drift`. `npm run build`
   NOT run locally — CI builds it.
+
 ## 2026-09-02 — Flight Recorder: one observed-step-count definition, undeclared steps, point-in-time durations, downgrade badge, audit script
 
 - SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
@@ -1520,6 +1525,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   111 tests, up from 109). `npm run typecheck` / `lint` / `lint:ratchet` (68
   warnings, no regression) / `audit:supabase-errors` (baseline 1039, no
   regression) all clean.
+
 ## 2026-09-02 — Repair stage's launchd config tracked in the repo, runner captures a failure tail
 
 - SHA: branch `agent/selfheal-repair-hardening`, PR pending.
@@ -1712,6 +1718,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   run correctly with no `node_modules` present at all, which is direct
   evidence typecheck/lint have no missing-import surface to fail on, but is
   not a substitute for actually running them — CI does.
+
 ## 2026-09-03 — Bridge Premium Observability Phase 0: six truth-model read models under incidents/
 
 Implements Phase 0 ("Truth and naming") of the owner's Bridge Premium
@@ -1791,6 +1798,332 @@ the full description of each module; summarized here for the change record.
   file-based truth, since none exists in this repo; the reader depends
   entirely on `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` being present
   in the runtime environment and fails open to `'unknown'` otherwise.
+
+## 2026-09-03 — Bridge Premium Observability Phase 5: Engineering OS (Agent Flight Recorder, Decision Inbox, Charter, blast radius, Work Log)
+
+Implements Phase 5 of the owner's Bridge Premium Observability brief (§29-40,
+§45). One HELD migration, six new read-model modules, two new routes. See
+`memory/features/admin-platform.md`'s "Phase 5 Engineering OS" section for
+the full description of each module; summarized here for the change record.
+
+- **Migration** (`supabase/migrations/20260903150000_helm_debug_agent_runs.sql`,
+  HELD, registered in `HELD.md`, `db-migration-reviewer` review NOT yet
+  performed): `helm_debug.agent_runs` — one table in the already-applied
+  `helm_debug` schema, plus `helm_private.agent_run_safe_payload` and three
+  service-role-only facades (`helm_debug_record_agent_run`/`_list_agent_runs`/
+  `_get_agent_run`). Four-parameter write facade (`p_run_id`, `p_workflow`,
+  `p_status`, `p_payload` jsonb) rather than one parameter per field, so the
+  REVOKE line, GRANT line and ACL tripwire stay in sync by construction. No
+  `workflow` CHECK constraint (unlike the golf recorder's `^golf[.]`) — the
+  writer is fail-open, and a CHECK that rejects an unrecognized value would
+  turn a swallowed insert into a silently blind recorder, the exact failure
+  class `20260901140000`'s header names.
+- **`src/lib/admin/agent-runs/{record,fetch}.ts`** — `record.ts` is a
+  fail-open server-only writer: sanitizes/truncates every string field
+  (600-char cap, strips secret-shaped keys, mirrors the DB-side sanitizer as
+  defense in depth) and never throws — an RPC rejection or error result both
+  route to `onFailure` and resolve normally. `fetch.ts` maps
+  `helm_debug_record_agent_run`/`_list_agent_runs`/`_get_agent_run`
+  RPC results to `AgentRunListRow`/`AgentRunDetail`, reporting the migration's
+  current absence (`42883`/`42P01`/"does not exist") as `unconfigured`, not
+  `error` — matching the established convention for a not-yet-applied
+  `helm_debug_*` RPC.
+- **`src/lib/admin/engineering/{held-migrations,decision-inbox}.ts`** —
+  `parseHeldMigrations` extracts HOLD-status rows from `HELD.md`'s register
+  table (deliberately not a full markdown-table parser: a handful of APPLIED
+  rows carry an embedded literal `|` that breaks naive splitting, but no HOLD
+  row has ever been observed to, and only the migration filename + bolded
+  status token are read before any prose). `buildDecisionInbox` composes
+  those rows with Janitor findings (its machine-readable findings file
+  under `docs/generated`, capped at `janitorLimit`) into
+  `EngineeringDecisionItem[]` — sources kept
+  disjoint from `UnifiedIncident`/`SelfHealStageDetail` on purpose (see the
+  feature-doc section for why: the control-plane plan explicitly says not to
+  build a second Decision Inbox).
+- **`src/lib/admin/engineering/charter.ts`** — three independent
+  `fetch*Charter` functions (mutation gate, resolved contracts, Janitor),
+  each reporting its own artifact's absence without affecting the others.
+- **`src/lib/admin/engineering/blast-radius.ts`** — `computeBlastRadius`:
+  pure breadth-first walk over `WorldModelEdge[]`, capped at 2 hops and 40
+  nodes, flagging an edge `weak` when every piece of its evidence is
+  `import_graph`-only (the same rule `world-model.mjs`'s own `--impact`
+  output uses). `fetchBlastRadius` reads the World Model graph file under
+  `docs/generated` and reports `unconfigured` — it does not exist on
+  `main` as of this change (ships on PR #1785). `formatCausalConfidenceLadder` is pure
+  formatting over `release-context.ts`'s existing `ReleaseRelationshipVerdict`
+  — no second causal engine.
+- **`src/lib/admin/engineering/work-log.ts`** — `buildWorkLogProof`
+  time-buckets each merged `WorkLogEntry` against the earliest
+  `ReleaseCardData` deployed at or after its merge time (ascending-sorted
+  internally regardless of input order); `null` release data yields
+  `shippedInRelease: null` for every row rather than fabricating a match.
+  `buildRepairQuality` filters to PRs claiming a repair
+  (`repairIncidentIds.length > 0`) and labels `stayedFixed` from the
+  shipping release's own verdict tone (`improved`/`worsened`/`unchanged`),
+  or `not-yet-deployed`/`unknown` when there is no release match.
+- **`src/app/admin/engineering/page.tsx`** — five independently
+  `PanelBoundary`-wrapped sections (Decision Inbox, Agent Flight Recorder,
+  Charter & verifier visibility, blast radius + causal confidence, repair
+  quality), each backed 1:1 by the modules above. `?entity=<feature_id>`
+  selects the blast-radius entity (default `admin_platform`).
+- **`src/app/admin/work-log/page.tsx`** + `WorkLogProofCard.tsx` — the
+  change-to-proof PR list, distinct from the existing narrative timeline at
+  `/admin/work`.
+- **Nav**: `ADMIN_NAV` gained two entries (`/admin/engineering` key `G`,
+  `/admin/work-log` key `P`, both Platform section) and `AdminShell.tsx`'s
+  route-icon map gained matching entries (`Bot`, `FileCheck2`);
+  `nav-covers-every-route.test.ts` passes unmodified (both routes are top-
+  level rail entries, no `DETAIL_LEAVES` change needed).
+- **`memory/registry.yml`**: added
+  `supabase/migrations/*helm_debug_agent_runs*.sql` to `admin_platform`'s
+  `db:` globs — the migration's filename also matches `shot_tracking`'s
+  broader `*helm_debug*.sql` glob (a real, accepted double-mapping: that
+  glob correctly covers the GOLF round Flight Recorder's own
+  `helm_debug_retention` file and is not narrowed here, out of scope for
+  this change) but did not match `admin_platform` at all before this entry,
+  the actual owning feature for a Bridge/Engineering-OS table.
+- **Tests**: 74 new tests across eleven files — `agent-runs/__tests__/
+  {record,fetch}.test.ts` (18), `engineering/__tests__/{held-migrations,
+  decision-inbox,charter,blast-radius,work-log}.test.ts` (48), `admin/
+  engineering/__tests__/page.test.tsx` (3), `admin/work-log/__tests__/
+  {page,WorkLogProofCard}.test.tsx` (1 + 6 = 7 — some folded into the 48
+  above by directory; see each file for its own count). All green,
+  `npx vitest run --maxWorkers=4` scoped to the changed directories, plus
+  `src/test/lib/admin/nav-covers-every-route.test.ts` re-run to confirm the
+  nav change didn't regress it.
+- **Verified**: `npm run typecheck` (full project, 0 errors) and
+  `npx eslint --max-warnings 0` on every new/changed file (0 warnings after
+  fixing two `text-[Npx]` arbitrary-value hits and one stale
+  `eslint-disable` comment), each checked independently of the command's
+  own stdout tail, never piped through `tail`.
+- **Not done / owner action needed**: the migration is HELD pending
+  `db-migration-reviewer` review and owner apply — until then, Agent Flight
+  Recorder reads/writes are no-ops (fail-open) and the panel shows
+  `unconfigured`. No live World Model artifact yet (PR #1785 open) — blast
+  radius shows `unconfigured` until it merges. No Janitor findings file
+  committed (by design — regenerate on demand with `npm run janitor`) —
+  Charter's Janitor panel and the Decision Inbox's Janitor half both show
+  the disclosed-gap state until then. No live per-PR CI check-run data in
+  Work Log (would be a new network call outside this deliverable's
+  authorization) — "which gates proved it" is the PR's self-reported
+  verdict plus current gate posture, stated as a scope limit in the code
+  comments and the feature doc, not implied by the field names.
+
+  **CORRECTED below, not edited in place** (per this repo's own convention
+  of leaving prior reasoning legible rather than silently rewriting it):
+  PR #1785 merged into `main` on 2026-09-03, so "No live World Model
+  artifact yet" and "ships on PR #1785" above are stale — see the
+  2026-09-03 review-fixes entry immediately following.
+
+## 2026-09-03 — PR #1790 review fixes (Engineering OS)
+
+Three runtime defects found in review of the entry above, fixed after main
+(including PR #1785's World Model artifact/generator) was merged into the
+branch. Full detail in `memory/features/admin-platform.md`'s "PR #1790
+review fixes" subsection; summarized here for the change record.
+
+1. **`fetch.ts`'s `isUnappliedMigrationError`** only recognized
+   `42883`/`42P01`/a "does not exist" message. PostgREST actually answers a
+   HELD migration's unknown RPC with `PGRST202`, which that classifier
+   never matched — every `/admin/engineering` `AutoRefresh` poll rendered a
+   red "read failed" alert instead of the not-yet-live empty state. Fixed
+   to match `helm-debug-prune/route.ts`'s `isMigrationNotAppliedError`
+   exactly (four codes: `PGRST202`, `42883`, `42P01`, `3F000`).
+2. **Runtime `readFile` calls against `docs/generated/**`/`supabase/
+   migrations/HELD.md`/`config/mutation-gate.json`** were invisible to
+   Next's build-time file tracer (it only follows the static import graph)
+   and `docs/` was fully excluded from the Vercel upload — so even once the
+   artifacts existed, production would never have served them. Fixed:
+   `.vercelignore` carves the three `docs/generated/*` files back in;
+   `next.config.mjs` gained an `outputFileTracingIncludes` entry for
+   `/admin/engineering` naming all five files; `blast-radius.ts` gained a
+   module-level `WORLD_MODEL.json` parse cache keyed by `mtimeMs`.
+3. **`record.ts`'s `buildAgentRunPayload`** spread `sanitizeMetadata(...)`
+   LAST, so a metadata key colliding with a structured column name
+   silently overwrote the clamped value (defeating the confidence cap
+   among others); `sanitizeMetadata` was also top-level-only, so a nested
+   object/array in `metadata` passed through completely unbounded. Fixed:
+   metadata now spreads first; sanitization is recursive with depth (4),
+   per-level key count (40), per-string length (600, unchanged), and total
+   byte budget (32,000) bounds; the RPC call races a 1500ms timeout
+   (`RECORD_AGENT_RUN_TIMEOUT_MS`) matching `helm-flight-recorder.ts`'s
+   `PERSIST_START_TIMEOUT_MS` pattern, so a hung write cannot block the
+   self-heal loop calling this mid-run.
+
+Non-blocking, also fixed: two "SECURITY DEFINER" prose mentions in the
+migration reworded to "security-definer"; stale World-Model-doesn't-exist
+copy updated across `blast-radius.ts`, `page.tsx` and the feature doc; the
+hard-coded illustrative causal-confidence example (a fabricated release SHA
+and confidence number rendered unconditionally on a production surface)
+removed from `/admin/engineering` in favor of a plain-text, no-fabricated-
+numbers explanation; `AgentRunRecord.finishedAt` is now sent in the RPC
+payload (still lands in the row's `metadata`, not the `finished_at` column
+— the migration's own RPC deliberately computes that column from the
+status transition, not a caller-supplied timestamp).
+
+- **Tests added**: `fetch.test.ts` (+3: PGRST202 for both `fetchAgentRuns`
+  and `fetchAgentRun`, 3F000), `blast-radius.test.ts` (+3: cache hit on
+  unchanged mtime, cache miss on changed mtime, ENOENT still reports
+  `unconfigured`), `record.test.ts` (+6: spread-order regression, nested
+  unsafe-key stripping, depth cap, per-level key-count cap, total-byte
+  budget, timeout race both hung and fast-settling).
+- **Verified**: `npm run typecheck`, `npx eslint --max-warnings 0` on
+  changed files, `npx vitest run --maxWorkers=4` for
+  `src/lib/admin/agent-runs`, `src/lib/admin/engineering`,
+  `src/app/admin/engineering`, `src/app/admin/work-log`,
+  `node scripts/sql-lint-ratchet.mjs`,
+  `node scripts/knowledge/document-inventory.mjs --check`,
+  `node scripts/markdown-lint-ratchet.mjs` — all exit 0.
+- **Not verified**: no production deploy exercised the
+  `outputFileTracingIncludes`/`.vercelignore` fix end to end (this repo's
+  own rule: never run `next build`/`npm run build` in a mutation worktree,
+  disk is at the safety floor) — the fix is reasoned from Next.js's
+  documented file-tracing behavior and the exact file paths this code
+  reads, not verified against a real traced function bundle.
+
+## 2026-09-03 — Bridge Premium Observability Phase 2: Helm Command Deck (posture, System Orbit, Attention Stack, Decision Inbox, Release Wake, Self-Heal Circuit summary)
+
+Implements Phase 2 ("Overview Command Deck") of the owner's Bridge Premium
+Observability brief — the upper 40-50% of `/admin`, inserted above every
+existing panel, which is left unchanged. See
+`memory/features/admin-platform.md`'s "Phase 2 Command Deck" section for
+the full per-module description; summarized here for the change record.
+
+- **New read models** (`src/lib/admin/command-deck/`): `posture.ts`
+  (`derivePostureSentence`), `orbit.ts` (`buildSystemOrbit`, the fixed
+  8-node System Orbit — Realtime always `'unknown'`, no evidence source
+  covers it), `selfheal-circuit.ts` (`buildCircuitSummary`, the real
+  3-stage Diagnose/Repair/Close loop, not the brief's idealized 6-stage
+  one), `release-wake.ts` (`buildReleaseWake`, wiring Phase 0's
+  `classifyReleaseWatch`/`classifyReleaseRelationship` against real
+  evidence; latency/invariant lanes honestly `unknown`, no read model backs
+  them), `decisions.ts` + `held-migrations.ts` (`buildDecisionInbox`,
+  sourced from `selectAttention`'s `needs-evidence` rows and
+  `supabase/migrations/HELD.md`'s open `HOLD` rows).
+- **New components** (`src/components/admin/command-deck/`):
+  `PostureSentence.tsx`, `SystemOrbit.tsx` (server-rendered SVG, tokens
+  only, `motion-safe:` pulse; mobile swaps to a stacked node list — no
+  network diagram on a phone, brief §10/§41-43), `AttentionStack.tsx`
+  (top-5 compact sibling of the existing `AttentionQueue`, same
+  `selectAttention` data, user-impact badge via a presentational join onto
+  `UnifiedIncident.affectedUsers`), `DecisionInboxSummary.tsx`,
+  `ReleaseWakeRibbon.tsx`, `SelfHealCircuitSummary.tsx`, and the
+  composition `CommandDeck.tsx`.
+- **Wiring**: `src/app/admin/page.tsx` gained one `PanelBoundary`-wrapped
+  `<CommandDeck />` above the existing "Right now" section. `CommandDeck.tsx`
+  gathers all six upstream reads via one `Promise.all` (all fail-soft; none
+  throw) rather than per-panel fetches — avoids a second live GitHub-API
+  round trip beyond `MissionTruthStrip`'s existing one
+  (`fetchDeployFreshness`/`fetchBriefing` are not React `cache()`-memoised)
+  and buys no independent streaming anyway, since every panel reads the
+  same shared data.
+- **Fixed during review**: `orbit.ts`'s Jobs node defaulted to `'healthy'`
+  when the self-heal board itself was unreadable (only `selfHealStalled`
+  gated it, defaulting `false`) — added `selfHealReadable` to `OrbitInput`
+  so an unread board renders Jobs `'unknown'`, never healthy on silence.
+  `release-wake.ts`'s `selfHealActions` lane was unconditionally
+  `knownLane(...)` even with `deployedAtMs: null` — gated it the same as
+  the other since-deploy lanes so a caller's default `0` (itself only
+  computed because it, too, could not establish the deploy time) reads as
+  unknown, not as a confirmed zero.
+- **Registry**: `memory/registry.yml`'s `admin_platform.code.components`
+  gained `src/components/admin/command-deck/**` — `knowledge:map` resolved
+  it to `impactedFeatures: []` before this entry (verified by direct
+  `knowledge:map -- --files` invocation both before and after the fix).
+  `src/lib/admin/command-deck/**` already resolved via the existing
+  `src/lib/admin/**` glob; no change needed there.
+- **Known gap, not fixed here**: `AttentionRow.headline` (`attention.ts`,
+  outside this task's ownership — Phase 1's territory) still reads
+  `incident.description`, not Phase 0's `IncidentPresentation.title` — the
+  posture sentence and Attention Stack surface the same headline
+  `/admin/errors` shows today, not yet brief §7's deterministic
+  plain-English title.
+- **Shared primitives**: the sibling `bridge-premium-p1` branch (posture
+  pill / evidence chips / confidence meter / unknown-treatment / episode
+  strip under `src/components/admin/premium/*`) had not pushed to
+  `origin` as of this entry (`git fetch` + `git ls-remote` checked at
+  session start and again before finishing). `tone.ts` and every component
+  here are local, small (~40 lines of presentation each) and additive —
+  nothing duplicates `premium/*`; swapping to it later is a straightforward
+  per-component import change.
+- **Tests**: 53 vitest cases across 11 new files (5 read-model files under
+  `src/lib/admin/command-deck/__tests__/`, 6 component-render files under
+  `src/components/admin/command-deck/__tests__/`) — five fixtures per read
+  model (healthy / blind source / regression / decision waiting /
+  all-unknown), render tests via `@testing-library/react` for every
+  component. Full suite run green, exit code checked independently
+  (`npx vitest run --maxWorkers=4 src/lib/admin/command-deck
+  src/components/admin/command-deck`, never piped through `tail`).
+- **Verified**: `npm run typecheck` (whole repo, exit 0, both before and
+  after the render-layer additions) and `npx eslint ... --max-warnings 0`
+  scoped to every new/changed file (one warning fixed — an arbitrary
+  `text-[10px]` replaced with the canonical `text-caption` scale).
+- **Not done**: no live-network verification that `held-migrations.ts`'s
+  `fs.readFile` of `supabase/migrations/HELD.md` survives a real Vercel
+  serverless bundle — this repo has no `outputFileTracingIncludes` entry
+  for it in `next.config.mjs`, and confirming one would need a real
+  `npm run build`, out of this task's gate scope. The read degrades safely
+  either way (`null` -> `readable: false`, never a silently-empty inbox),
+  but the fix (if the read does fail in production) is a `next.config.mjs`
+  entry, not a change to `decisions.ts`'s shape. No dedicated
+  `CommandDeck.tsx` integration test (no established repo precedent for
+  mocking six modules to test an async Server Component this way) — its
+  wiring is exercised by `npm run typecheck` plus every constituent
+  read-model/component test.
+
+## 2026-09-03 — Command Deck: merged in `bridge-premium-p1`'s shared primitives, swapped two hand-rolled chips
+
+`bridge-premium-p1`'s `src/components/admin/premium/*` had not pushed to
+`origin` when the previous entry was written; it pushed shortly after. Per
+the task's own instruction ("if the primitives you need exist there, merge
+them in and import them"), re-checked with `git fetch origin
+agent/bridge-premium-p1`, found real primitives this time (`PosturePill`,
+`ReleaseWatchPosturePill`, `UnknownValue`, `EvidenceSourceChips`,
+`ConfidenceMeter`, `EpisodeTimelineStrip`, `ReleaseRelationshipLabel`,
+`EvidenceInspector` — 19 files, ~1857 lines), and merged:
+`git merge --no-edit origin/agent/bridge-premium-p1` — clean, no conflicts
+(disjoint file sets; the only shared-directory neighbor is
+`src/lib/admin/incidents/**`, which that branch only ADDED to via two new
+files, `genome.ts`/`release-watch.ts`).
+
+- **`PostureSentence.tsx`**: the hand-rolled tone chip (a `<span>` styled
+  from `POSTURE_TONE_RAIL`) is now `PosturePill`, tone mapped through
+  `POSTURE_TONE_STATE_TONE` (`command-deck/types.ts`) since this module's
+  `PostureTone` (four values) is coarser than `PosturePill`'s
+  `StateTone | 'unknown'` (six). `PosturePill`'s own `'unknown'` branch
+  already renders `UnknownValue`'s hatched treatment rather than a colored
+  pill — a strictly better fit than what was hand-rolled.
+- **`ReleaseWakeRibbon.tsx`**: the hand-rolled `WATCH_LABEL`/`WATCH_TONE`
+  maps (14 lines, duplicating `RELEASE_WATCH_LABEL` from
+  `release-context.ts`) are deleted; the watch-state chip is now
+  `ReleaseWatchPosturePill`, which already maps every `ReleaseWatchState` to
+  the identical label plus a real "why unknown" tooltip this file never had.
+- **`command-deck/tone.ts`**: dropped `POSTURE_TONE_INK`/`POSTURE_TONE_RAIL`/
+  `NODE_STATE_INK`/`NODE_STATE_RAIL` (dead after the `PostureSentence.tsx`
+  swap — `NODE_STATE_*` had been dead from the start, since `SystemOrbit.tsx`
+  needs `var(--fw-*)` CSS strings for SVG fill/stroke, not Tailwind classes,
+  and always built its own separate map). Kept only `TONE_RAIL`/`TONE_INK`
+  (`StateTone`-keyed), still used by `AttentionStack.tsx`'s row rail — no
+  `premium/*` primitive covers that list-row shape.
+- **Cleanup**: `ReleaseWakeSnapshot.watchState` and
+  `PostureInput`/`PostureSentence.releaseWatch` were typed
+  `ReleaseWatchState | 'unknown'`, a redundant union — `ReleaseWatchState`
+  already includes `'unknown'` as one of its seven members. Simplified to
+  `ReleaseWatchState` in both files; no behavior change, caught while
+  wiring `ReleaseWatchPosturePill`'s `state` prop (typed as the bare
+  `ReleaseWatchState`) against the redundant union and confirming they were
+  structurally identical rather than assuming it.
+- **Verified**: `npm run typecheck` (whole repo, exit 0), `npx eslint
+  src/lib/admin/command-deck src/components/admin/command-deck
+  --max-warnings 0` (exit 0), and the combined suite —
+  `npx vitest run --maxWorkers=4 src/lib/admin/command-deck
+  src/components/admin/command-deck src/components/admin/premium
+  src/lib/admin/incidents/__tests__/genome.test.ts
+  src/lib/admin/incidents/__tests__/release-watch.test.ts` — 92/92 green
+  (54 own + 38 from the merged branch), exit code checked independently.
+  No test assertions needed changing: `ReleaseWatchPosturePill` renders the
+  identical label strings (`RELEASE_WATCH_LABEL`) the deleted hand-rolled
+  map used.
 
 ## 2026-09-03 — Bridge Premium Observability Phase 1: incident cards, Incident Genome, Release Watch, Evidence Inspector
 
@@ -1887,6 +2220,7 @@ card and detail page.
   header). `ReleaseWatchPanel` lives on `/admin/errors`, not a new
   `/admin/deploys` Release Runway — that full view is Phase 3's territory
   per the brief's own implementation order (§45).
+
 ## 2026-09-03 — App and customer lenses (Bridge Premium Observability Phase 4)
 
 Source: `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`
@@ -1953,6 +2287,7 @@ section for the full per-module description; not restated here.
   pages, not 7, and the team-lead task brief's own fallback instruction
   ("or the routes the brief names if it names them") left no named route
   for either.
+
 ## 2026-09-03 — Bridge Premium Phase 3: triage tabs (Constellation, Braid, Circuit, Waterfall, Heartbeat, Runway)
 
 - **Scope**: eight new pure/server read models under `src/lib/admin/triage/`

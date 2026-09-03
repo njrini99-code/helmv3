@@ -30,12 +30,15 @@ import {
   Search,
   LogOut,
   Recycle,
+  Bot,
+  FileCheck2,
   Route,
   Milestone,
   LineChart,
   Footprints,
   TrendingUp,
   ToggleLeft,
+  Target,
 } from 'lucide-react';
 import {
   AppShell,
@@ -140,6 +143,8 @@ const NAV_ICON_BY_HREF = {
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
+  '/admin/engineering': Bot,
+  '/admin/work-log': FileCheck2,
   '/admin/qualifiers': Trophy,
   // Waypoints, not another alert glyph: this tab's subject is the CORRELATION
   // between three sources, and it sits directly beside Errors in the same
@@ -150,6 +155,10 @@ const NAV_ICON_BY_HREF = {
   // deduped DB errors, query deltas), not cross-source correlation or cron
   // scheduling.
   '/admin/database': Database,
+  // A target, not another gauge: Utilization's Gauge measures ADOPTION, this
+  // tab's subject is a BUDGET against a threshold (how much of the allowance
+  // is consumed) — a second gauge glyph would read as a duplicate of it.
+  '/admin/slo': Target,
   // A closed loop, not another gauge: this tab's subject is a CIRCUIT that
   // either completes or does not, and it sits beside Reliability where a
   // second measurement glyph would read as a variant of it.

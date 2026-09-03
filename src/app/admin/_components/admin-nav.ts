@@ -3,8 +3,11 @@ type AdminHref =
   | '/admin/activity'
   | '/admin/errors'
   | '/admin/traces'
+  | '/admin/engineering'
+  | '/admin/work-log'
   | '/admin/qualifiers'
   | '/admin/reliability'
+  | '/admin/slo'
   | '/admin/database'
   | '/admin/self-heal'
   | '/admin/auth'
@@ -58,6 +61,12 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // shows each source's incidents, this one shows what MORE THAN ONE source
   // agrees on, plus which sources were readable at all.
   { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
+  // Error budgets/golden-path health/silence detection/trace funnels —
+  // Bridge Control Plane Phase D. Distinct from Reliability above: that tab
+  // is the 3-hourly correlated SIGNAL feed; this rolls the same tier
+  // vocabulary up into a rolling-window BUDGET, a golden-path rollup, a
+  // heartbeat-staleness read, and a fleet view of the flight recorder.
+  { label: 'SLO Center', href: '/admin/slo', key: 'O', section: 'Triage', description: 'Error budgets, golden paths, silence detection, trace funnels', meta: 'slo' },
   // Database/Postgres-layer signal, distinct from Reliability: that tab
   // correlates APPLICATION-level signals across three sources every 3
   // hours; this tab is the DATABASE's own state — connections, deduped
@@ -100,6 +109,12 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Releases', href: '/admin/releases', key: 'K', section: 'Platform', description: 'Feature flags and kill switches', meta: 'flags' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
+  // Distinct from the "Work log" tab above: that is the PR-timeline view
+  // (github-pr-timeline.ts entries, problem/fix narrative), this is the
+  // change-to-proof join over the SAME entries (repair verdict, shipped
+  // release, post-deploy delta) — Bridge Premium Phase 5 (Engineering OS).
+  { label: 'Proof Log', href: '/admin/work-log', key: 'Y', section: 'Platform', description: 'PR → release shipped in → post-deploy proof', meta: 'proof' },
+  { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
 
   // LENSES — Bridge Premium Phase 4 (brief §20-27). Journey/flow-shaped
   // dominant visuals over the same underlying data the Apps/Customers tabs

@@ -241,6 +241,33 @@ Then, in order:
    not a regression test — it is decoration, and it proves nothing.
 2. Make the smallest change that makes it pass.
 3. Confirm it now passes, and that you did not weaken it to get there.
+4. **Write the reproduction as a fixture + manifest under `replay/`, as a
+   required output of this repair — not a follow-up task.** This is not a
+   parallel system: `replay/README.md` and `replay/schema/manifest.schema.json`
+   formalize exactly the three steps above. Once the failing test from STEP 1
+   is passing:
+   - Copy the test file (and any other file your fix's regression test needs)
+     into `replay/fixtures/<feature_id>/<replay_id>/`.
+   - Add `replay/manifests/<replay_id>.yml`: `bad_version` is the commit
+     before your fix (its parent, if your fix is one commit), `fixed_version`
+     is your fix's SHA, `fixture` lists the file(s) you copied and where they
+     land in the tree, `test_command` is the exact command that runs your
+     test, `expected: {bad_version: fail, fixed_version: pass}`, and
+     `sanitization: {reviewed: true, contains_production_data: false}` — a
+     manifest cannot land without an explicit sanitization statement; if the
+     test fixture touches real data of any kind, stop and sanitize it first,
+     it does not get an assumed-safe default.
+   - `expected_failure_mode` is usually `missing-export` in this repo: a
+     regression test written against symbols your fix introduces will fail
+     the bad-version run with a module-resolution error, not a thrown
+     assertion. That is a correct, expected reproduction — record it as such
+     rather than treating it as fixture drift.
+   - You do not need to run `replay/runners/run.mjs` yourself as part of this
+     step — STEP 4's gates already prove your test fails-then-passes locally.
+     The manifest is what lets that same proof be re-run later, by anyone,
+     without redoing your investigation.
+   - Skip this step only when the fix has no isolable regression test (e.g. a
+     pure documentation or config change), and say so in your PR body.
 
 ---
 

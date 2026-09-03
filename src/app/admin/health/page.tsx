@@ -13,6 +13,7 @@ import { AttributionCoveragePanel } from './_components/AttributionCoveragePanel
 import { FeatureHealthDetailPanel } from './_components/FeatureHealthDetailPanel';
 import { fetchJobsTab } from '@/lib/admin/data/jobs';
 import { fetchQualifierLogic } from '@/lib/admin/data/qualifier-logic';
+import { fetchReliabilitySnapshot } from '@/lib/admin/data/reliability';
 import { buildHeartbeatMatrix } from '@/lib/admin/triage/heartbeat-matrix';
 import { buildInvariantLattice } from '@/lib/admin/triage/invariant-lattice';
 import { HeartbeatMatrixGrid } from '@/components/admin/triage/HeartbeatMatrixGrid';
@@ -189,22 +190,36 @@ export default async function FeatureHealthPage() {
   }
 
   /**
-   * Heartbeat Matrix + Invariant Lattice (Bridge Premium Phase 3). One
-   * `fetchJobsTab()` call feeds the matrix AND the integrity half of the
-   * lattice — never a second, duplicate 21-query board read for the same
-   * refresh. Failures on either source degrade that source's rows to
-   * `unknown`, never the whole section.
+   * Heartbeat Matrix + Invariant Lattice (Bridge Premium Phase 3, extended
+   * by Control Plane Phase D.4.3). One `fetchJobsTab()` call feeds the
+   * matrix AND the integrity half of the lattice — never a second,
+   * duplicate 21-query board read for the same refresh. The round-graph
+   * invariants come from the reliability collector's own latest snapshot
+   * (recorded every 3h, never re-run at request time — same rule this
+   * whole panel already follows for qualifiers/integrity). Failures on any
+   * one source degrade that source's rows to `unknown`, never the whole
+   * section.
    */
   async function HeartbeatAndInvariantsBody() {
-    const [jobs, qualifierLogic] = await Promise.allSettled([fetchJobsTab(), fetchQualifierLogic()]);
+    const [jobs, qualifierLogic, reliability] = await Promise.allSettled([
+      fetchJobsTab(),
+      fetchQualifierLogic(),
+      fetchReliabilitySnapshot(),
+    ]);
 
     const jobsTab = jobs.status === 'fulfilled' ? jobs.value : null;
     const qualifierRes = qualifierLogic.status === 'fulfilled' ? qualifierLogic.value : null;
+    const reliabilityRes = reliability.status === 'fulfilled' ? reliability.value : null;
+    const roundGraphChecks =
+      reliabilityRes && reliabilityRes.status === 'ok' && reliabilityRes.data
+        ? (reliabilityRes.data.latest?.run?.invariants?.checks ?? null)
+        : null;
 
     const heartbeat = jobsTab ? buildHeartbeatMatrix(jobsTab, Date.now()) : null;
     const lattice = buildInvariantLattice({
       qualifierInvariants: qualifierRes && qualifierRes.status === 'ok' && qualifierRes.data ? qualifierRes.data.invariants : null,
       integrityRows: jobsTab ? jobsTab.integrity : null,
+      roundGraphChecks,
     });
 
     return (

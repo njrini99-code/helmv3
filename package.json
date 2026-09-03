@@ -63,6 +63,12 @@
     "knowledge:world-model:check": "node scripts/knowledge/world-model.mjs --check",
     "knowledge:journeys-check": "node scripts/knowledge/check-journeys.mjs",
     "knowledge:journeys-check:test": "node --test scripts/knowledge/__tests__/check-journeys.test.mjs",
+    "knowledge:invariants-check": "node scripts/knowledge/check-invariants.mjs",
+    "knowledge:invariants-check:test": "node --test scripts/knowledge/__tests__/check-invariants.test.mjs",
+    "knowledge:golden-paths-generate": "node scripts/knowledge/gen-golden-paths.mjs",
+    "knowledge:golden-paths-generate:check": "node scripts/knowledge/gen-golden-paths.mjs --check",
+    "knowledge:event-contracts-check": "node scripts/knowledge/check-event-contracts.mjs",
+    "knowledge:event-contracts-check:test": "node --test scripts/knowledge/__tests__/check-event-contracts.test.mjs",
     "knowledge:bench": "node scripts/knowledge/bench.mjs",
     "knowledge:bench:test": "node --test scripts/knowledge/__tests__/bench.test.mjs",
     "helm-os:check": "npm run docs:check && npm run knowledge:check",
@@ -120,7 +126,9 @@
     "worktrees:retire": "node scripts/worktree-lifecycle.mjs --retire",
     "workspace:clean": "node scripts/workspace-clean.mjs",
     "workspace:clean:apply": "node scripts/workspace-clean.mjs --apply",
-    "release:status": "node scripts/release-status.mjs"
+    "release:status": "node scripts/release-status.mjs",
+    "release:rollback-check": "tsx scripts/release-intel/evaluate-rollback.ts",
+    "risk:score": "tsx scripts/release-intel/score-change.ts"
   },
   "keywords": [],
   "author": "",

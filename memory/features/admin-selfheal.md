@@ -69,6 +69,25 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
 - `scripts/run-selfheal-repair.mjs`, `scripts/lib/selfheal-repair-runner.mjs`,
   `scripts/selfheal-repair-install.sh`, `scripts/selfheal-repair-doctor.mjs`,
   `config/launchd/**` — the Repair stage's outer runner and launchd install.
+- `src/lib/admin/ensemble/verification-ensemble.ts` (2026-09-03,
+  control-plane plan §6 J remainder) — `runVerificationEnsemble`, a
+  REPRODUCER→HEALER→{ADVERSARY, conditional SECURITY, PRODUCT}→JUDGE
+  multi-pass review over an already-produced `RcaAnalysis`, default OFF via
+  the `verification_ensemble` flag (`config/feature-flags.yml`) and
+  provably inert when off (zero `generateObject` calls). Never called
+  automatically by the Diagnose cron — invoked explicitly, on demand.
+- `src/lib/admin/causal/causal-score.ts` — `computeCausalScore`, evidence-
+  weighted causal confidence (wraps `release-context.ts`'s
+  `classifyReleaseRelationship` as one of four components, capped at 0.95,
+  `'unknown'` when no component has evidence).
+- `src/lib/admin/causal/incident-similarity.ts` — `findSimilarIncidents`,
+  reuses `src/lib/admin/incidents/aliases.ts`'s `classifyMergeConfidence`
+  pairwise against a corpus of structurally-fingerprinted incident facts.
+- `src/lib/admin/autonomy/policy.ts` — `computeFeatureAutonomy`, per
+  `feature_id × repair_class` autonomy tier, extending
+  `selfheal-capability.ts`'s `CapabilityState`; capped by a hardcoded
+  `AUTONOMY_CEILING` constant it can never exceed, force-demoted to
+  `observe_only` on any recorded recurrence or verification failure.
 
 ## Core Data
 
@@ -204,6 +223,10 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
 - `src/test/scripts/selfheal-repair-launchd.test.ts`
 - `src/app/api/cron/selfheal-triage/__tests__/route.test.ts`
 - `src/app/api/cron/log-retention/__tests__/route.test.ts`
+- `src/lib/admin/ensemble/__tests__/verification-ensemble.test.ts`,
+  `src/lib/admin/causal/__tests__/causal-score.test.ts`,
+  `src/lib/admin/causal/__tests__/incident-similarity.test.ts`,
+  `src/lib/admin/autonomy/__tests__/policy.test.ts`.
 - Typecheck/build for admin UI changes.
 
 ## Related Docs

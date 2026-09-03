@@ -1,0 +1,36 @@
+schema_version: 1
+replay_id: shot-tracking-stale-delete-2026-08-22
+incident_id: memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md
+feature_id: shot_tracking
+title: >-
+  Overlapping Undo and Edit Shot could act on the same local history; a
+  delete whose row was already absent had no stable reconciliation contract.
+bad_version: d5b9368d1
+fixed_version: 5eececafc930c1d10718371bd2954c9ec32e758c
+fixture:
+  - source: shot-mutation-recovery.test.tsx
+    target: src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx
+test_command: "./node_modules/.bin/vitest run src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Fixture is the repair commit's own regression test: synthetic shot IDs
+    (uuid literal '11111111-...'), mocked server actions, no production
+    rows, PII, tokens, or logs.
+source_incident_status: released
+created_at: "2026-09-03"
+notes: >-
+  Backfilled per Phase G G.4.2. src/hooks/golf/use-shot-state-machine.ts and
+  the sibling hooks it imports (use-edit-shot-modal, use-undo-manager) exist
+  at bad_version, so this is a behavioral reproduction: overlaying the
+  fixed_version test onto bad_version's source exercises the missing
+  single-flight guard between concurrent delete/edit, not a missing-symbol
+  import error. package-lock.json is byte-identical at both SHAs
+  (sha256:54e0187c...) and across all three replays in this corpus, so a
+  single `npm ci` at any one of the six SHAs in this manifest set is valid
+  for all of them — see replay/README.md.
