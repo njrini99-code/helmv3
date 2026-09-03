@@ -2,6 +2,7 @@ import { useReducer, useEffect, useRef } from 'react';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import { lieFromShotResult, computeShotFingerprint, type LieType } from '@/lib/utils/shot-helpers';
 import { logError } from '@/lib/error-logging';
+import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 
 // ============================================================================
 // TYPES
@@ -602,6 +603,7 @@ export function useShotStateMachine({
     const handleSaveSuccess = (fingerprint: string) => {
       lastSavedShotsRef.current = fingerprint;
       dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
+      recordHelmBreadcrumb('golf.round', 'autosave', { action: 'autosave', result: 'success' });
       autoSaveRetryAttemptRef.current = 0;
       // Reset circuit breaker on success
       circuitBreakerFailuresRef.current = 0;

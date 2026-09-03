@@ -28,7 +28,16 @@ export function FairwayRecruitCard({
   const hasContact = Boolean(recruit.email || recruit.phone || recruit.notes);
 
   return (
-    <Surface elevation="border" padding="none" className="overflow-hidden">
+    <Surface
+      elevation="border"
+      padding="none"
+      className="overflow-hidden"
+      // Session Replay masks all text by default (instrumentation-client.ts,
+      // maskAllText: true) — this attribute is defense in depth: a prospect's
+      // name, email, and phone (rendered below) stay masked even if that
+      // default is ever narrowed later.
+      data-sentry-mask=""
+    >
       {/* Intentional raw <button>: the whole card is the click target wrapping
           warm Fairway chrome (Surface/Avatar/StatusPill). Routing through
           <Button> would impose pill-CTA padding/typography. Same exception the

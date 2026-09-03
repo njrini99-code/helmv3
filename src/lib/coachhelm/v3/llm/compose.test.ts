@@ -20,6 +20,12 @@ vi.mock('ai', () => ({
   generateText: (...args: unknown[]) => generateTextMock(...args),
 }));
 
+// --- Sentry AI observability. ---
+const recordAiMock = vi.fn();
+vi.mock('@/lib/observability/metrics', () => ({
+  recordAi: (...args: unknown[]) => recordAiMock(...args),
+}));
+
 // --- Mock budget so we exercise the LLM path (allowed) without DB. ---
 const recordSpendMock = vi.fn().mockResolvedValue(undefined);
 vi.mock('./budget', () => ({
@@ -87,6 +93,7 @@ beforeEach(() => {
   generateTextMock.mockReset();
   recordSpendMock.mockClear();
   anthropicMock.mockClear();
+  recordAiMock.mockClear();
   loggedRows.length = 0;
 });
 
@@ -217,5 +224,78 @@ describe('compose() provider selection', () => {
 
     expect(loggedRows[0]).toBeDefined();
     expect(loggedRows[0]?.model_id).toBe('anthropic/claude-haiku-4-5');
+  });
+});
+
+/**
+ * Sentry AI observability opt-in (Phase A finding §(a)). compose() is the
+ * ONE choke point every v3 LLM call in this codebase routes through — round
+ * review, hero narrative, coach chat's own composers. `req.prompt` can carry
+ * a player's first name (Phase A's own example, hero-narrative.ts) and
+ * evidence values pulled from the round/player's own data — no prompt or
+ * completion belongs in Sentry from any of them.
+ */
+describe('compose() Sentry AI observability', () => {
+  const groundedDraft = { text: 'You took 28 putts today.', usage: { inputTokens: 10, outputTokens: 8 } };
+
+  it('opts generateText into telemetry with recordInputs/recordOutputs explicitly false, functionId keyed by task', async () => {
+    generateTextMock.mockResolvedValueOnce(groundedDraft);
+
+    await compose(baseReq({ task: 'round_review' }), FALLBACK);
+
+    const call = generateTextMock.mock.calls[0]?.[0] as { experimental_telemetry?: unknown };
+    expect(call.experimental_telemetry).toEqual({
+      isEnabled: true,
+      functionId: 'coachhelm.compose.round_review',
+      recordInputs: false,
+      recordOutputs: false,
+    });
+  });
+
+  it('records helm.ai.* success with real token counts once the call completes', async () => {
+    generateTextMock.mockResolvedValueOnce(groundedDraft);
+
+    await compose(baseReq(), FALLBACK);
+
+    expect(recordAiMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feature: 'coachhelm_compose',
+        action: 'v3.llm.compose.round_review',
+        outcome: 'success',
+        inputTokens: 10,
+        outputTokens: 8,
+      }),
+    );
+  });
+
+  it('records helm.ai.* success for EACH attempt, including the citation retry', async () => {
+    generateTextMock
+      .mockResolvedValueOnce({ text: 'You took 42 putts today.', usage: { inputTokens: 10, outputTokens: 8 } })
+      .mockResolvedValueOnce({ text: 'You took 28 putts today.', usage: { inputTokens: 12, outputTokens: 9 } });
+
+    await compose(baseReq(), FALLBACK);
+
+    const successCalls = recordAiMock.mock.calls.filter((c) => (c[0] as { outcome?: string })?.outcome === 'success');
+    expect(successCalls).toHaveLength(2);
+  });
+
+  it('records helm.ai.* failure and still returns the deterministic fallback when the model call throws', async () => {
+    generateTextMock.mockRejectedValueOnce(new Error('provider unavailable'));
+
+    const result = await compose(baseReq(), FALLBACK);
+
+    // The existing safety net (compose()'s own doc comment): generateText
+    // error -> fallback text, used_llm=false. Not previously pinned by a
+    // test in this file.
+    expect(result.text).toBe(FALLBACK);
+    expect(result.used_llm).toBe(false);
+
+    expect(recordAiMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feature: 'coachhelm_compose',
+        action: 'v3.llm.compose.round_review',
+        outcome: 'failure',
+      }),
+    );
   });
 });
