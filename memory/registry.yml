@@ -1233,6 +1233,7 @@ features:
         # change actually touches keeps that check honest.
         - docs/ai-system/selfheal/README.md
         - docs/ai-system/selfheal/repair-contract.md
+        - docs/ai-system/FEATURE_FLAGS.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -1282,6 +1283,16 @@ features:
         - scripts/selfheal-repair-install.sh
         - scripts/selfheal-repair-doctor.mjs
         - config/launchd/**
+        # Feature-flag registry + governance gate (Phase F.4.2,
+        # docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md §4).
+        # config/feature-flags.yml is the source of truth; src/lib/flags/**
+        # is the typed reader (registry.generated.ts is generated, never
+        # hand-edited — see FEATURE_FLAGS.md); scripts/flags/** + the
+        # top-level check script are the generator and the CI expiry gate.
+        - config/feature-flags.yml
+        - src/lib/flags/**
+        - scripts/flags/**
+        - scripts/check-feature-flags.mjs
         # Phase K.4.5 (Engineering OS Intelligence) Janitor generator —
         # mapped here 2026-09-03 after `knowledge:map` resolved
         # scripts/janitor/** to `impactedFeatures: []`. Same precedent as
