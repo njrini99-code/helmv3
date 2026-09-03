@@ -5,14 +5,26 @@ const mocks = vi.hoisted(() => ({
   errors: vi.fn(),
   performance: vi.fn(),
   platform: vi.fn(),
+  platformHistory: vi.fn(),
 }));
 
 vi.mock('../overview', () => ({ fetchDatabaseMissionControl: mocks.overview }));
 vi.mock('../errors', () => ({ fetchDatabaseErrors: mocks.errors }));
 vi.mock('../performance', () => ({ fetchQueryPerformance: mocks.performance }));
-vi.mock('../platform', () => ({ fetchPlatformHealth: mocks.platform }));
+vi.mock('../platform', () => ({ fetchPlatformHealth: mocks.platform, fetchPlatformHistory: mocks.platformHistory }));
 
 import { fetchAlertPolicy } from '../alerts';
+
+/** Two stored samples, which is the minimum `evaluatePlatformRules` needs
+ *  before a "sustained" rule can be judged at all. Tests that care about the
+ *  not-enough-history path override this. */
+function okPlatformHistory(samples: Array<Record<string, unknown>> = [
+  { sampledAt: '2026-09-03T11:50:00.000Z', dbUp: 1, cpuPct: 10, memoryPct: 20 },
+  { sampledAt: '2026-09-03T11:55:00.000Z', dbUp: 1, cpuPct: 11, memoryPct: 21 },
+]) {
+  return { status: 'ok', data: samples, fetchedAt: '2026-09-03T12:00:00.000Z' };
+}
+
 
 function errorGroup(overrides: Record<string, unknown> = {}) {
   return {
@@ -76,6 +88,7 @@ beforeEach(() => {
   mocks.errors.mockResolvedValue(okErrors());
   mocks.performance.mockResolvedValue(okPerformance());
   mocks.platform.mockResolvedValue(okPlatform());
+  mocks.platformHistory.mockResolvedValue(okPlatformHistory());
 });
 
 describe('fetchAlertPolicy', () => {
@@ -199,5 +212,28 @@ describe('fetchAlertPolicy', () => {
     expect(result.status).toBe('ok');
     expect(result.data!.readerHealth.errors).toBe('error');
     expect(result.data!.readerHealth.overview).toBe('ok');
+  });
+
+  it('reports db_unavailable as UNKNOWN, never clear, when the scrape carried no database-up metric', async () => {
+    // The metric allow-list is docs-derived and not live-verified, so an
+    // absent pg_up is expected. Mapping null through `=== 0` would render a
+    // P0 "Database unavailable" as CLEAR over a metric nobody read.
+    mocks.platform.mockResolvedValue(okPlatform({ dbUp: null }));
+    const result = await fetchAlertPolicy();
+    const rule = result.data!.alerts.find((a) => a.rule.id === 'db_unavailable');
+    expect(rule).toBeDefined();
+    expect(rule!.state).not.toBe('clear');
+    expect(rule!.state).toBe('unknown');
+  });
+
+  it('reports sustained_resource_saturation as UNKNOWN when the stored history cannot support a sustained judgement', async () => {
+    // One live reading can never satisfy "sustained", so evaluating it and
+    // reporting clear would be a green over a rule that never ran.
+    mocks.platformHistory.mockResolvedValue({ status: 'unconfigured', data: null, fetchedAt: null, error: 'migration HELD' });
+    const result = await fetchAlertPolicy();
+    const rule = result.data!.alerts.find((a) => a.rule.id === 'sustained_resource_saturation');
+    expect(rule).toBeDefined();
+    expect(rule!.state).not.toBe('clear');
+    expect(rule!.state).toBe('unknown');
   });
 });

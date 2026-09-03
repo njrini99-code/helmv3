@@ -66,7 +66,10 @@ export interface PlatformRuleEvaluation {
 
 const STALE_AFTER_MS = 15 * 60_000;
 const HIGH_THRESHOLD_PCT = 90;
-const CONSECUTIVE_REQUIRED = 2;
+/** Samples that must agree before a rule counts as "sustained". Exported so a
+ *  caller can tell "not enough history to judge" (blind) apart from "judged
+ *  and clear" — a single reading can never satisfy this. */
+export const CONSECUTIVE_REQUIRED = 2;
 
 function parseSampledAt(sampledAt: string): number {
   const ms = Date.parse(sampledAt);

@@ -50,7 +50,7 @@ import 'server-only';
 import { fetchDatabaseMissionControl } from './overview';
 import { fetchDatabaseErrors, type DbErrorFingerprintGroup } from './errors';
 import { fetchQueryPerformance } from './performance';
-import { fetchPlatformHealth } from './platform';
+import { fetchPlatformHealth, fetchPlatformHistory } from './platform';
 import {
   evaluateAlertPolicy,
   detectRetryStorm,
@@ -58,7 +58,7 @@ import {
   type AlertSignal,
   type AlertSignals,
 } from '@/lib/observability/supabase/alert-policy';
-import { evaluatePlatformRules, type PlatformSample } from '@/lib/observability/supabase/platform-rules';
+import { evaluatePlatformRules, type PlatformSample, CONSECUTIVE_REQUIRED as PLATFORM_CONSECUTIVE_REQUIRED } from '@/lib/observability/supabase/platform-rules';
 import { ok, type AdminFetchResult } from '@/lib/admin/fetch-result';
 
 const SCHEMA_DRIFT_CODES = new Set(['42P01', '42703', '42883']);
@@ -94,11 +94,12 @@ export interface AlertPolicySnapshot extends AlertPolicyResult {
 }
 
 export async function fetchAlertPolicy(): Promise<AdminFetchResult<AlertPolicySnapshot>> {
-  const [overview, errors, performance, platform] = await Promise.all([
+  const [overview, errors, performance, platform, history] = await Promise.all([
     fetchDatabaseMissionControl(),
     fetchDatabaseErrors(),
     fetchQueryPerformance(),
     fetchPlatformHealth(),
+    fetchPlatformHistory(),
   ]);
 
   const signals: AlertSignals = {};
@@ -112,19 +113,38 @@ export async function fetchAlertPolicy(): Promise<AdminFetchResult<AlertPolicySn
         : known(true, platform.error ?? 'Supabase Metrics API unreadable');
     signals.sustained_resource_saturation = blind('platform metrics reader unavailable');
   } else {
-    signals.db_unavailable = known(platform.data.dbUp === 0, 'Metrics API reports dbUp = 0');
+    // A NULL dbUp means the metric was not in the scrape at all — the
+    // allow-list is docs-derived and not live-verified, so an absent
+    // `pg_up` is the expected case, not an edge case. Mapping it through
+    // `=== 0` would render a P0 "Database unavailable" as CLEAR over a
+    // metric nobody read. Unknown is blind, never clear.
+    signals.db_unavailable =
+      platform.data.dbUp === null
+        ? blind('Metrics API scrape did not contain a database-up metric')
+        : known(platform.data.dbUp === 0, 'Metrics API reports dbUp = 0');
     signals.metrics_api_unreadable = known(false);
 
-    const sample: PlatformSample = {
+    const live: PlatformSample = {
       sampledAt: platform.data.sampledAt,
       dbUp: platform.data.dbUp,
       cpuPct: platform.data.cpuPct,
       memoryPct: platform.data.memoryPct,
     };
-    const platformRuleEval = evaluatePlatformRules([sample]);
+    // "Sustained" is defined over CONSECUTIVE samples, so a single live
+    // reading can never satisfy it and would report clear forever. Use the
+    // stored ring, with the live sample appended as the newest point.
+    const ring: PlatformSample[] =
+      history.status === 'ok' && history.data ? [...history.data, live] : [live];
+    const platformRuleEval = evaluatePlatformRules(ring);
     const saturationCandidates = platformRuleEval.candidates.filter((c) => c.rule !== 'db_down');
-    signals.sustained_resource_saturation =
-      platformRuleEval.freshness === 'fresh'
+    const enoughForSustained = ring.length >= PLATFORM_CONSECUTIVE_REQUIRED;
+    signals.sustained_resource_saturation = !enoughForSustained
+      ? blind(
+          history.status === 'unconfigured'
+            ? 'platform-sample history not shipped yet (migration HELD) — sustained saturation cannot be evaluated from one reading'
+            : `only ${ring.length} platform sample(s) available; sustained saturation needs at least ${PLATFORM_CONSECUTIVE_REQUIRED}`,
+        )
+      : platformRuleEval.freshness === 'fresh'
         ? known(saturationCandidates.length > 0, saturationCandidates.map((c) => c.message).join('; '))
         : blind(`platform sample freshness: ${platformRuleEval.freshness}`);
   }
