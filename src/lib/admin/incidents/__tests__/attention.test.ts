@@ -131,6 +131,28 @@ describe('selectAttention — one row per incident, at its worst reason', () => 
   });
 });
 
+// Catalogued defect (e): `expected-recurrence` correctly stops the
+// regression alarm from firing, but a CRITICAL fault must not go silent
+// simply because the alarm it would otherwise have triggered under no
+// longer applies — an LLM-authored "NOT A DEFECT" verdict must never be
+// able to silence a critical, still-unresolved fault outright.
+describe('selectAttention — a critical expected-recurrence is still critical', () => {
+  it('produces a CRITICAL row for a critical, unresolved expected-recurrence incident', () => {
+    const inc = incident('a', {
+      severity: 'critical',
+      actionable: true,
+      lifecycle: {
+        state: 'expected-recurrence',
+        headline: 'Recurred 14 minutes ago — analysis already found this is not a defect.',
+        because: [],
+      },
+    });
+    const rows = selectAttention({ incidents: [inc], stages: [], coverage: coverage(), now: NOW });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.reason).toBe('critical');
+  });
+});
+
 describe('selectAttention — a failed read is never treated as a fact to act on', () => {
   it('does not produce repairable-untouched when repair.status is unknown', () => {
     // A failed GitHub lookup is not evidence that no repair was attempted.

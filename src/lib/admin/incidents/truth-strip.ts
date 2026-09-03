@@ -134,10 +134,12 @@ export function buildTruthStrip(input: TruthStripInput): TruthCell[] {
       i.actionable &&
       i.lifecycle.state !== 'resolved' &&
       i.lifecycle.state !== 'not-a-defect' &&
-      // Same exclusion lens.ts's 'actionable' lens applies — expected noise
-      // from a recurrence the analysis already ruled out. See catalogued
-      // defect (e).
-      i.lifecycle.state !== 'expected-recurrence',
+      // Same exclusions lens.ts's 'actionable' lens applies: expected noise
+      // from a recurrence the analysis already ruled out (defect (e)), and a
+      // seeded QA fixture round (defect (h)) — `actionable` itself stays
+      // whatever the classifier decided, so this is the count-side exclusion.
+      i.lifecycle.state !== 'expected-recurrence' &&
+      !i.isFixture,
   );
   const regressions = incidents.filter((i) => i.lifecycle.state === 'regressed');
   const critical = actionable.filter((i) => i.severity === 'critical');

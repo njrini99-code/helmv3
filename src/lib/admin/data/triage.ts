@@ -106,11 +106,16 @@ export interface TriageItem {
   fingerprint: string | null;
   /**
    * This incident's evidence traces back to a QA fixture round —
-   * `qa-fixture-rounds.ts`. Never a production defect; the Errors tab shows
-   * a FIXTURE badge and `actionable` is forced `false` regardless of what
-   * `classifyIncident` said, so it drops out of the actionable count too.
-   * Sentry-origin items are always `false` — a Sentry issue carries no
-   * round-id metadata to match against.
+   * `qa-fixture-rounds.ts`. Never a production defect: the Errors tab shows
+   * a FIXTURE badge for it, and it is excluded from every "actionable count"
+   * site (`lens.ts`'s `actionable` lens, `truth-strip.ts`, `errors/page.tsx`'s
+   * `shownActionable`, `incident-feed.ts`'s `actionableGroups`) — each keyed
+   * on THIS field. `actionable` itself is deliberately left as
+   * `classifyIncident`'s real verdict, unforced: forcing it false here would
+   * remove the row from `matchesKind`'s default view entirely, which is
+   * exactly the visibility the FIXTURE badge exists to provide. Sentry-origin
+   * items are always `false` — a Sentry issue carries no round-id metadata
+   * to match against.
    */
   isFixture: boolean;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
@@ -404,12 +409,16 @@ export function mergeTriage(input: {
       actionName,
       route,
       klass: classification.klass,
-      // A QA fixture round is never actionable, regardless of what the
-      // message/severity classifier decided — the whole point is that this
-      // is known seeded data, not a production defect. Overrides the
-      // classifier's verdict rather than feeding isFixture into it, so
-      // klassReason stays an honest account of what the TEXT said.
-      actionable: isFixture ? false : classification.actionable,
+      // Left as the classifier's real verdict — NOT forced false for a
+      // fixture. Forcing it here used to remove the row from the default
+      // feed entirely (`matchesKind`'s `kind === undefined -> actionable`
+      // default), which defeated the task's other half: "label ... in the
+      // incident feed" requires the row to actually render there. The
+      // exclusion from "the actionable COUNT" happens at each count site
+      // instead (`lens.ts`, `truth-strip.ts`, `errors/page.tsx`'s
+      // shownActionable, `incident-feed.ts`'s actionableGroups), keyed on
+      // `isFixture` — so the row is visible, badged, and simply not tallied.
+      actionable: classification.actionable,
       klassReason: classification.reason,
       hasDegradedMessage: classification.hasDegradedMessage,
       errorCode,

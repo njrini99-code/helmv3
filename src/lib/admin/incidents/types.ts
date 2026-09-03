@@ -525,10 +525,13 @@ export interface UnifiedIncident {
   /**
    * This incident's evidence traces back to a seeded QA fixture round —
    * `src/lib/admin/qa-fixture-rounds.ts`. Never a production defect: the
-   * Incidents tab shows a FIXTURE badge, and `actionable` is already forced
-   * `false` for it upstream (`mergeTriage`) so it drops out of the
-   * actionable count too — this field exists for the badge, not to
-   * re-derive the exclusion.
+   * Incidents tab shows a FIXTURE badge for it, and every "actionable count"
+   * site excludes it explicitly on this field (`lens.ts`, `truth-strip.ts`,
+   * `errors/page.tsx`'s `shownActionable`). `actionable` itself is left as
+   * whatever `classifyIncident` actually decided — deliberately NOT forced
+   * `false` — because doing so would drop the row out of `matchesKind`'s
+   * default view (`kind === undefined -> incident.actionable`) and make the
+   * badge undiscoverable, which defeats the reason it exists.
    */
   isFixture: boolean;
 

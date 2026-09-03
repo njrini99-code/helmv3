@@ -85,9 +85,15 @@ describe('mergeTriage', () => {
   // Catalogued defect (h): an incident whose evidence traces to a seeded QA
   // fixture round (supabase/migrations/20260901120000_..._zero_scored_holes.sql)
   // must be flagged `isFixture: true` and forced `actionable: false` —
-  // regardless of what the message/severity classifier decided — so it
-  // never counts as a production defect an operator needs to act on.
-  it('flags an app-origin item as isFixture and forces actionable: false when its metadata.roundId matches a QA fixture round', () => {
+  // regardless of what the message/severity classifier decided — but
+  // `actionable` is left as the classifier's own real verdict. Forcing it
+  // false here would remove the row from the default incident feed entirely
+  // (`matchesKind`'s `kind === undefined -> actionable` default), defeating
+  // the other half of the ask — "label ... in the incident feed" requires
+  // the row to actually render there, badged. The exclusion from the
+  // actionable COUNT happens at each count site instead, keyed on
+  // `isFixture` — see triage.ts's comment on this field.
+  it('flags an app-origin item as isFixture, WITHOUT touching actionable', () => {
     const items = mergeTriage({
       sentryIssues: [],
       appEvents: [
@@ -98,7 +104,14 @@ describe('mergeTriage', () => {
         }),
       ],
     });
-    expect(items[0]).toMatchObject({ isFixture: true, actionable: false });
+    expect(items[0]).toMatchObject({ isFixture: true });
+    // The fixture message classifies as an ordinary defect, same as any
+    // other row with this title/message — `isFixture` did not change it.
+    const plain = mergeTriage({
+      sentryIssues: [],
+      appEvents: [appEvent({ id: 'e2', fingerprint: 'fp-plain' })],
+    });
+    expect(items[0]!.actionable).toBe(plain[0]!.actionable);
   });
 
   it('a normal round id (or no roundId at all) is never isFixture', () => {

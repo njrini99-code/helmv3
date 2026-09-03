@@ -376,18 +376,23 @@ describe('correlateIncidents — merged scalars', () => {
 // false, and this pins that the fold-in step carries `isFixture` through
 // AND does not accidentally resurrect `actionable` while doing it.
 describe('correlateIncidents — QA fixture rounds', () => {
-  it('carries isFixture: true through when the contributing app item is a fixture, and keeps actionable false', () => {
+  it('carries isFixture: true through unchanged, WITHOUT touching actionable', () => {
+    // actionable is left as whatever the upstream TriageItem carried —
+    // mergeTriage deliberately never forces it false for a fixture, or the
+    // row would drop out of the default feed entirely and the FIXTURE badge
+    // would have nothing left to badge. See triage.ts's isFixture doc
+    // comment.
     const fixtureRow = appItem({
       key: 'app:fp-fixture',
       fingerprint: 'fp-fixture',
       isFixture: true,
-      actionable: false,
-      klassReason: 'QA fixture round — never treated as a defect.',
+      actionable: true,
+      klassReason: 'Unexpected failure (severity-derived)',
     });
     const drafts = correlateIncidents(input({ triage: [fixtureRow] }));
     expect(drafts).toHaveLength(1);
     expect(drafts[0]!.isFixture).toBe(true);
-    expect(drafts[0]!.actionable).toBe(false);
+    expect(drafts[0]!.actionable).toBe(true);
   });
 
   it('is false for an ordinary app item', () => {
@@ -400,7 +405,6 @@ describe('correlateIncidents — QA fixture rounds', () => {
       key: 'app:fp-joined',
       fingerprint: 'fp-joined',
       isFixture: true,
-      actionable: false,
       route: '/joined',
       title: 'Joined fault',
     });

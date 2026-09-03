@@ -59,6 +59,7 @@ function incident(
     klass: 'defect',
     actionable: true,
     klassReason: 'r',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,
@@ -136,6 +137,15 @@ describe('lens membership', () => {
 
   it('all includes everything, including non-defects', () => {
     expect(applyLens(board(), 'all')).toHaveLength(board().length);
+  });
+
+  it("a QA fixture round stays actionable/true (visible in the default feed) but never counts in the 'actionable' lens", () => {
+    const fixture = incident({ id: 'fixture', state: 'new', isFixture: true, actionable: true });
+    const ids = applyLens([...board(), fixture], 'actionable').map((i) => i.id);
+    expect(ids).not.toContain('fixture');
+    // Still visible under 'all' — the badge exists to be seen, not hidden.
+    const allIds = applyLens([...board(), fixture], 'all').map((i) => i.id);
+    expect(allIds).toContain('fixture');
   });
 
   it("expected-recurrence lands in its own lens, never in 'regressions' or 'actionable'", () => {

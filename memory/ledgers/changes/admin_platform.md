@@ -1,5 +1,50 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Correction to (e) and (h): a critical expected-recurrence must still page, and a fixture must still be visible
+
+Two follow-up fixes to the same session's own defect-(e) and defect-(h)
+commits, found by a stronger-model review before the branch was handed off —
+recorded as their own entries rather than folded silently into the originals,
+since both change behaviour the first pass shipped.
+
+- **(e) — `attention.ts`'s `UNRESOLVED_STATES` now includes
+  `'expected-recurrence'`.** The first pass left it out (matching
+  `'not-a-defect'`, which it is NOT the same as). Consequence: a CRITICAL,
+  still-unresolved fault whose latest analysis said NOT A DEFECT produced NO
+  attention row at all — rule 1 (regression) no longer matched by design,
+  and rule 2 (critical) requires `UNRESOLVED_STATES.has(state)`, which it
+  didn't. An LLM-authored `suggestedFix` string was able to silence a
+  critical fault outright, not merely soften the regression-specific alarm
+  it was wrong about. Fixed by including the state in `UNRESOLVED_STATES`
+  while keeping it OUT of `NEEDS_ATTENTION_STATES` — the regression alarm
+  stays gone, but rule 2 can still fire for one.
+- **(h) — `mergeTriage` no longer forces `actionable: false` for a fixture;
+  the exclusion moved to each count site.** The first pass forced it at the
+  source, which removed the row from `matchesKind`'s default view entirely
+  (`kind === undefined -> incident.actionable`) — the fixture vanished into
+  "N held back" and the FIXTURE badge nobody would ever see it on became the
+  literal opposite of the task's ask ("label them... in the incident feed").
+  `actionable` is now left as `classifyIncident`'s real verdict; the
+  exclusion from "the actionable COUNT" happens explicitly, keyed on
+  `isFixture`, at `lens.ts`'s `actionable` lens, `truth-strip.ts`'s
+  `actionable` cell, `errors/page.tsx`'s `shownActionable`, and
+  `incident-feed.ts`'s `actionableGroups` (the last one because
+  `overview.ts` and `errors/page.tsx` both render that exact field and would
+  otherwise disagree).
+- **Verified**: new failing-first case in `attention.test.ts` (critical
+  expected-recurrence produces a `critical` row); a new case in
+  `truth-strip.test.ts` and `lens.test.ts` pinning the fixture exclusion at
+  each site; a new case in `incident-feed.test.ts` (verified red against a
+  temporarily-reverted fix, then restored); `correlate.test.ts` and
+  `triage.test.ts`'s fixture cases updated to assert `actionable` is left
+  untouched rather than forced false. Full ripple:
+  `src/lib/admin src/lib/reliability src/app/admin` 1748/1748 passing.
+  `npm run typecheck`, `lint`, `lint:ratchet`, `audit:supabase-errors` (1039
+  baseline, no regression) all green, and `npm run build` run once (network
+  sandbox disabled) confirming a clean webpack compile + TypeScript pass —
+  see `memory/ledgers/tests/admin_platform.md` for what it did and did not
+  prove.
+
 ## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (h) — QA fixture rounds get a FIXTURE badge and drop out of the actionable count
 
 - SHA: pending (branch `agent/reliability-bridge-fixes`, defect (h) — the

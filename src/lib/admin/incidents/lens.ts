@@ -32,7 +32,13 @@ export function matchesLens(incident: UnifiedIncident, lens: IncidentLens): bool
         // Expected noise, same as 'not-a-defect' — the analysis already
         // ruled this recurrence out, so it does not belong in "what needs
         // work" either. See catalogued defect (e).
-        incident.lifecycle.state !== 'expected-recurrence'
+        incident.lifecycle.state !== 'expected-recurrence' &&
+        // A QA fixture round is known seeded data, not a production defect —
+        // catalogued defect (h). `actionable` itself is left untouched
+        // (still whatever the classifier decided) so the row stays visible
+        // in the default feed with its FIXTURE badge; this is the count-side
+        // exclusion.
+        !incident.isFixture
       );
     case 'reliability':
       // Corroborated, OR witnessed by a non-app observer. The second clause

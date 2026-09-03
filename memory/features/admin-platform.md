@@ -162,13 +162,18 @@ them would have broken those routes, not the dead one.
   and never had a resolution to regress from in the first place; keeping
   them separate lets a lens count "this specifically recurred after being
   fixed" apart from "this was never a defect". Neutral tone, not danger; not
-  in `NEEDS_ATTENTION_STATES`; treated as `offLoop('done', …)` by
-  `selfheal-flow.ts`, same as `not-a-defect`; excluded from the `actionable`
-  lens and the Truth Strip's `actionable` count, same as `not-a-defect`. The
-  `regressions` lens (`incident.lifecycle.state === 'regressed'`) needed no
-  change — the state itself no longer produces `'regressed'` for these, so
-  the exclusion is automatic — and a new `expected-recurrence` lens counts
-  them apart.
+  in `NEEDS_ATTENTION_STATES` (so the REGRESSION-specific alarm is gone);
+  treated as `offLoop('done', …)` by `selfheal-flow.ts`, same as
+  `not-a-defect`; excluded from the `actionable` lens and the Truth Strip's
+  `actionable` count, same as `not-a-defect`. The `regressions` lens
+  (`incident.lifecycle.state === 'regressed'`) needed no change — the state
+  itself no longer produces `'regressed'` for these, so the exclusion is
+  automatic — and a new `expected-recurrence` lens counts them apart.
+  **It IS still in `attention.ts`'s `UNRESOLVED_STATES`**, deliberately unlike
+  `not-a-defect` — an LLM-authored "NOT A DEFECT" `suggestedFix` string must
+  never be able to silence a CRITICAL, still-unresolved fault outright; only
+  the specific "this is a regression" alarm it was wrong about is what goes
+  quiet. Rule 2 (critical) still fires for one, same as any other open state.
 - **Auto-resolution requires a production DEPLOY after the last occurrence, not
   merely silence.** A nightly cron is silent 23 hours a day and a seasonal
   feature for months. When the deploy timestamp is unreadable, nothing is
@@ -379,34 +384,40 @@ them would have broken those routes, not the dead one.
   at. A control that does nothing is worse than a missing one: it teaches the
   operator the queue is curated when it is not. Counts shown beside a filter
   are measured over the list that filter actually narrows.
-- **A QA fixture round is never a production defect, and says so.**
-  `supabase/migrations/20260901120000_integrity_completed_round_zero_scored_holes.sql`
-  names four `golf_rounds` ids as seeded fixtures (owner decision 2026-09-02:
-  KEPT, not removed) — `src/lib/admin/qa-fixture-rounds.ts` carries a literal
-  copy of that exact array (nothing at runtime can read a `.sql` file), and
+- **A QA fixture round is labelled, visibly, and excluded only from the
+  actionable COUNT — never hidden.** `supabase/migrations/
+  20260901120000_integrity_completed_round_zero_scored_holes.sql` names four
+  `golf_rounds` ids as seeded fixtures (owner decision 2026-09-02: KEPT, not
+  removed) — `src/lib/admin/qa-fixture-rounds.ts` carries a literal copy of
+  that exact array (nothing at runtime can read a `.sql` file), and
   `qa-fixture-rounds.test.ts` reads the migration itself and asserts the two
   match, so they cannot drift silently. `mergeTriage` (`triage.ts`) matches
   each app-origin bucket's rows against it via `extractRoundId(row.metadata)`
   — `metadata.roundId` is a top-level key, same shape as `route`/`action`,
   written by `normalizeContext` from `ObservedActionContext.roundId` — and
   when ANY row in the bucket names a fixture round, sets `TriageItem.
-  isFixture: true` and forces `actionable: false`, overriding whatever
-  `classifyIncident` decided from the text alone. Forcing `actionable` at
-  THIS single source, rather than adding a parallel exclusion at every
-  downstream consumer, is what keeps the fixture out of every actionable
-  count that already gates on it — the Incidents tab's `shownActionable`, the
-  `actionable`/default-kind lens, and the Truth Strip's `actionable` cell —
-  with no separate check needed at any of them. `correlate.ts` carries
-  `isFixture` through onto `UnifiedIncident` (`bucket.appItems.some(i =>
-  i.isFixture)`) purely so the card can say WHY: `UnifiedIncidentCard`
-  renders a FIXTURE chip, second priority right after the lifecycle chip
+  isFixture: true`. **`actionable` is deliberately LEFT UNTOUCHED** —
+  whatever `classifyIncident` decided from the text stands. An earlier
+  version of this forced `actionable: false` at the source, which silently
+  dropped the row out of `matchesKind`'s default view (`kind === undefined ->
+  incident.actionable`) — the row vanished into "N held back" and the FIXTURE
+  badge that exists to explain it became undiscoverable. The two asks —
+  "label it in the feed" and "exclude it from the actionable count" — are
+  answered separately: the row renders, badged, in the default feed; the
+  EXCLUSION happens explicitly at every count site instead, keyed on
+  `isFixture`: `lens.ts`'s `actionable` lens, `truth-strip.ts`'s `actionable`
+  cell, `errors/page.tsx`'s `shownActionable`, and `incident-feed.ts`'s
+  `summarizeIncidentFeed`/`actionableGroups` (the last one because
+  `overview.ts` and `errors/page.tsx` both render that exact field and must
+  agree). `correlate.ts` carries `isFixture` through onto `UnifiedIncident`
+  (`bucket.appItems.some(i => i.isFixture)`); `UnifiedIncidentCard` renders a
+  neutral-tone FIXTURE chip, second priority right after the lifecycle chip
   (a fact about the DATA outranks everything derived from it, including
-  outranking the blind-source chip under the 5-chip cap) — neutral tone, not
-  a `StateChip` on lifecycle itself, because the lifecycle machinery still
-  describes this incident honestly; the fixture flag is an orthogonal fact
-  layered on top, not a reclassification. Sentry-origin items are always
-  `isFixture: false` — a Sentry issue carries no round-id metadata to match
-  against.
+  outranking the blind-source chip under the 5-chip cap) — not a `StateChip`
+  on lifecycle itself, because the lifecycle machinery still describes this
+  incident honestly; the fixture flag is an orthogonal fact layered on top,
+  not a reclassification. Sentry-origin items are always `isFixture: false`
+  — a Sentry issue carries no round-id metadata to match against.
 - The overnight digest (`/api/cron/admin-digest` → `build-digest.ts`) NAMES
   only actionable, non-degradation incident groups — the Errors tab's default
   view — and COUNTS the rest as "Not listed: N handled degradations · N quiet
