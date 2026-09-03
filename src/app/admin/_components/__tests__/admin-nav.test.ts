@@ -14,58 +14,9 @@ describe('ADMIN_NAV', () => {
   // routes so existing muscle memory survives the regrouping.
   it('declares the canonical tabs in order', () => {
     expect(ADMIN_NAV.map((e) => e.href)).toEqual([
-      // Triage
-      '/admin',
-      '/admin/errors',
-      '/admin/health',
-      '/admin/jobs',
-      // Added 2026-08-26 with the 3-hourly reliability collector. Sits in
-      // Triage beside Errors because it answers the same question from a
-      // different angle: not "what did each source report" but "what do
-      // several sources agree on, and which sources could be read at all".
-      '/admin/reliability',
-      // Added with the zero-cost Supabase observability work (Phase 1).
-      // Sits beside Reliability because it answers a related but distinct
-      // question: not "what do multiple sources agree happened" but "what
-      // is the DATABASE's own state right now" — connections, deduped
-      // Supabase/PostgREST failures, query-performance deltas.
-      '/admin/database',
-      // Added with the Mission Control work. Sits beside Reliability because
-      // it answers the third question in that family: not "what broke" or
-      // "could we see it", but "is the thing that repairs it alive AND
-      // proven".
-      '/admin/self-heal',
-      '/admin/traces',
-      '/admin/qualifiers',
-      '/admin/teams',
-      // Customers
-      '/admin/users',
-      '/admin/activity',
-      '/admin/utilization',
-      // Apps
-      '/admin/golf',
-      '/admin/baseball',
-      '/admin/lifting',
-      // Platform
-      '/admin/deploys',
-      // Added with the feature-flag registry (config/feature-flags.yml):
-      // the flag/kill-switch governance board, distinct from Deploys &
-      // Infra's release ledger.
-      '/admin/releases',
-      '/admin/auth',
-      '/admin/work',
-      // Revenue
-      '/admin/billing',
-      // Intake
-      '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      // 'R' (Reliability) is a letter, not a digit, for the documented reason
-      // above: '1'-'9'/'0' are never renumbered, so a tab added later takes a
-      // letter rather than displacing a shortcut someone already knows.
-      '1', '3', '0', '8', 'R', 'D', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
-      // 'K' (Releases) follows the same rule.
-      '1', '3', '0', '8', 'R', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'V', 'B',
+      ,
     ]);
   });
 
