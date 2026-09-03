@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # Sentry coverage matrix — current state (Phase A)
 
 ## How this table was measured
