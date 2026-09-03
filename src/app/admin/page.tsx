@@ -145,6 +145,11 @@ async function PostureBoards() {
       label: 'Active users today',
       value: kpis.activeUsersToday,
       href: '/admin/users',
+      // value === null means the count QUERY failed, not that the product had
+      // a quiet day — KpiTile's generic starved copy ("log more data") would
+      // say the opposite of what happened.
+      starvedTitle: 'Active-user count unavailable',
+      starvedDescription: 'The users.last_seen count could not be read. This is not zero activity.',
       source: 'users.last_seen since UTC midnight.',
       freshness: watcher.find((w) => w.label === 'Login events'),
     },
@@ -313,7 +318,7 @@ function SavedCommandViews({ kpis }: { kpis: OverviewKpis }) {
       href: '/admin/users?attention=demo',
       label: 'Demo Readiness',
       icon: Users,
-      metric: `${kpis.activeUsersToday} active`,
+      metric: kpis.activeUsersToday === null ? 'count unavailable' : `${kpis.activeUsersToday} active`,
       detail: 'Accounts, team filters, roster status for walkthroughs',
     },
     {

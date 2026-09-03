@@ -38,7 +38,12 @@ export interface OverviewKpis {
    *  Named for what it actually counts (was "Auth failures 24h", which
    *  overclaimed every non-failure security action as a failure). */
   securityEvents24h: number;
-  activeUsersToday: number;
+  /** null when the `users` count read FAILED — never 0. A failed read and a
+   *  genuinely empty day are different facts, and the Command Deck's Users
+   *  orbit node has an unknown branch that only this null can reach. Collapsing
+   *  the failure to 0 painted that node healthy, reading "0 today", while the
+   *  real state was that nobody could count. */
+  activeUsersToday: number | null;
   activityToday: { golf: number; baseball: number; lifting: number };
   lastDeploy: { state: string; ageMinutes: number } | null;
 }
@@ -240,7 +245,7 @@ export const fetchOverviewSnapshot = cache(async () => {
     sentryStatus: incidentFeed24h.sentry.status,
     incidentGroups24h: incidentFeed24h.counts.totalGroups,
     securityEvents24h: security24h.count ?? 0,
-    activeUsersToday: activeToday.count ?? 0,
+    activeUsersToday: activeToday.error ? null : (activeToday.count ?? null),
     activityToday: {
       golf: golfToday.count ?? 0,
       baseball: baseballToday.count ?? 0,
