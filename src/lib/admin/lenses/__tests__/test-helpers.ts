@@ -22,7 +22,13 @@ export interface MockResult {
   count?: number | null;
 }
 
-function chainable(getResult: () => MockResult): unknown {
+/** One recorded chained-method call — `{ method: 'gte', args: ['created_at', '2026-...'] }`. */
+export interface RecordedCall {
+  method: string;
+  args: unknown[];
+}
+
+function chainable(getResult: () => MockResult, calls?: RecordedCall[]): unknown {
   const resolved: MockResult = { data: [], error: null, count: null, ...getResult() };
   const handler: ProxyHandler<object> = {
     get(_target, prop) {
@@ -33,7 +39,13 @@ function chainable(getResult: () => MockResult): unknown {
       // Any other property access (.eq, .in, .gte, .not, .order, .limit,
       // .maybeSingle, .select, ...) returns a function that keeps the SAME
       // chain alive — the terminal `await` is what actually resolves it.
-      return (..._args: unknown[]) => proxy;
+      // Recorded (method name + args) when a caller passed a `calls` sink,
+      // so a test can assert on the real range/gte/order arguments a query
+      // chain used, not just its final resolved data.
+      return (...args: unknown[]) => {
+        calls?.push({ method: String(prop), args });
+        return proxy;
+      };
     },
   };
   const proxy = new Proxy({}, handler);
@@ -56,8 +68,24 @@ function chainable(getResult: () => MockResult): unknown {
  *   import { fetchGolfJourneyLens } from '../golf-journey';
  *
  *   beforeEach(() => { for (const k of Object.keys(perTable)) delete perTable[k]; });
+ *
+ * `callLog` (optional) — pass a `Record<string, RecordedCall[][]>` to also
+ * capture the exact chained calls each `.from(table)` invocation made (one
+ * `RecordedCall[]` per invocation, in order), so a test can assert on the
+ * real `.range()`/`.gte()`/`.order()` arguments a pagination loop used —
+ * not just the data it resolved to:
+ *
+ *   const callLog: Record<string, RecordedCall[][]> = {};
+ *   createAdminClient: () => queueMockAdminClient(perTable, callLog),
+ *   ...
+ *   const [page1Calls, page2Calls] = callLog['golf_rounds'];
+ *   expect(page1Calls).toContainEqual({ method: 'range', args: [0, 999] });
+ *   expect(page2Calls).toContainEqual({ method: 'range', args: [1000, 1999] });
  */
-export function queueMockAdminClient(perTable: Record<string, Array<() => MockResult>>) {
+export function queueMockAdminClient(
+  perTable: Record<string, Array<() => MockResult>>,
+  callLog?: Record<string, RecordedCall[][]>,
+) {
   const cursors: Record<string, number> = {};
   return {
     from: (table: string) => {
@@ -65,7 +93,12 @@ export function queueMockAdminClient(perTable: Record<string, Array<() => MockRe
       const i = cursors[table] ?? 0;
       cursors[table] = i + 1;
       const next = queue[i];
-      return chainable(next ?? (() => ({ data: [], error: null, count: 0 })));
+      let calls: RecordedCall[] | undefined;
+      if (callLog) {
+        calls = [];
+        (callLog[table] ??= []).push(calls);
+      }
+      return chainable(next ?? (() => ({ data: [], error: null, count: 0 })), calls);
     },
   };
 }

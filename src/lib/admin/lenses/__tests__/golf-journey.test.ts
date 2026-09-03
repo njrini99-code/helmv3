@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { queueMockAdminClient, type MockResult } from './test-helpers';
+import { queueMockAdminClient, type MockResult, type RecordedCall } from './test-helpers';
 
 const perTable: Record<string, Array<() => MockResult>> = {};
+const callLog: Record<string, RecordedCall[][]> = {};
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => queueMockAdminClient(perTable),
+  createAdminClient: () => queueMockAdminClient(perTable, callLog),
 }));
 
 import { fetchGolfJourneyLens } from '../golf-journey';
@@ -35,6 +36,7 @@ function findStage<T extends { id: string }>(stages: readonly T[], id: string): 
 describe('fetchGolfJourneyLens', () => {
   beforeEach(() => {
     for (const k of Object.keys(perTable)) delete perTable[k];
+    for (const k of Object.keys(callLog)) delete callLog[k];
   });
 
   it('reports a genuine zero (not null) on an empty platform, and a null success rate rather than 0/0', async () => {
@@ -153,5 +155,36 @@ describe('fetchGolfJourneyLens', () => {
     const login = findStage(lens.stages, 'authenticate');
     expect(login.metric.attempts).toBeNull();
     expect(login.metric.completions).toBeNull();
+  });
+
+  it('actually calls .range() for each page and .order() on the unique id column — not just resolving to the right data by coincidence', async () => {
+    perTable['admin_events'] = adminEventsDefaults();
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({ id: `r${i}`, status: 'in_progress', created_at: 'c', updated_at: null }));
+    const page2 = [{ id: 'r1000', status: 'in_progress', created_at: 'c', updated_at: null }];
+    perTable['golf_rounds'] = [() => ({ data: page1, error: null }), () => ({ data: page2, error: null })];
+
+    await fetchGolfJourneyLens(new Date('2026-09-03T00:00:00Z'));
+
+    const [page1Calls, page2Calls] = callLog['golf_rounds']!;
+    expect(page1Calls).toContainEqual({ method: 'range', args: [0, 999] });
+    expect(page2Calls).toContainEqual({ method: 'range', args: [1000, 1999] });
+    // Ordered by the primary key, never a repeating column — the property
+    // fetchAllRowsResult's pagination contract depends on for stable page
+    // boundaries.
+    expect(page1Calls).toContainEqual({ method: 'order', args: ['id', { ascending: true }] });
+  });
+
+  it('a page-2 error is not silently swallowed into a partial success — the whole read degrades to null', async () => {
+    perTable['admin_events'] = adminEventsDefaults();
+    // Page 1 returns EXACTLY 1000 rows (the boundary that forces a second
+    // page to be fetched at all) so page 2 actually runs and can fail.
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({ id: `r${i}`, status: 'in_progress', created_at: 'c', updated_at: null }));
+    perTable['golf_rounds'] = [() => ({ data: page1, error: null }), () => ({ error: { message: 'page 2 timeout' } })];
+
+    const lens = await fetchGolfJourneyLens(new Date('2026-09-03T00:00:00Z'));
+
+    expect(findStage(lens.stages, 'start_round').metric.attempts).toBeNull();
+    expect(lens.degradedNote).toContain('golf_rounds read failed');
+    expect(lens.degradedNote).toContain('page 2 timeout');
   });
 });
