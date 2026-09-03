@@ -13,7 +13,13 @@ import type { FlightTraceRun } from '@/app/admin/actions/golf-tracer';
 import { LocalTime } from '../_components/LocalTime';
 import { flightStepStatusTone, FLIGHT_REQUIREDNESS_LABEL } from '../golf/tracer/tracer-shared';
 import { buildTraceTree, type TraceStepNode } from './trace-tree';
-import { EM_DASH, displayValue, durationBarPercent, deriveTraceTotalMs } from './trace-view-helpers';
+import {
+  EM_DASH,
+  displayValue,
+  durationBarPercent,
+  deriveTraceTotalMs,
+  resolveTotalDurationMs,
+} from './trace-view-helpers';
 
 /**
  * The containment tree.
@@ -190,14 +196,28 @@ function StepRow({
           </Badge>
         )}
 
+        {/* Observed, but not part of this workflow's own declared step set —
+            e.g. a postgres-layer checkpoint child. Calm, informational tone
+            (not danger): the step running is not itself a problem, only
+            un-diffed against the workflow definition. */}
+        {node.isUndeclared && (
+          <Badge tone="neutral" variant="outline" size="sm">
+            undeclared
+          </Badge>
+        )}
+
         {node.errorCode && (
           <span className="shrink-0 font-fw-mono text-caption text-fw-danger-ink">{node.errorCode}</span>
         )}
 
         <DurationBar durationMs={node.durationMs} totalMs={totalMs} tone={tone} />
 
-        <span className="w-16 shrink-0 text-right font-fw-mono text-caption tabular-nums text-warm-500">
-          {node.durationMs !== null ? `${node.durationMs.toLocaleString()} ms` : EM_DASH}
+        <span className="w-20 shrink-0 text-right font-fw-mono text-caption tabular-nums text-warm-500">
+          {node.isPointInTime
+            ? 'point-in-time'
+            : node.durationMs !== null
+              ? `${node.durationMs.toLocaleString()} ms`
+              : EM_DASH}
         </span>
       </span>
     </button>
@@ -272,7 +292,13 @@ function StepDetail({ node }: { node: TraceStepNode }) {
           />
           <DetailRow
             label="duration"
-            value={node.durationMs !== null ? `${node.durationMs.toLocaleString()} ms` : EM_DASH}
+            value={
+              node.isPointInTime
+                ? 'point-in-time'
+                : node.durationMs !== null
+                  ? `${node.durationMs.toLocaleString()} ms`
+                  : EM_DASH
+            }
           />
         </DetailGroup>
 
@@ -293,6 +319,14 @@ function StepDetail({ node }: { node: TraceStepNode }) {
         <p className="rounded-md border border-dashed border-warm-300 bg-warm-100/40 px-3 py-2 text-caption leading-4 text-warm-600">
           Required by the workflow; never recorded — expected after an
           upstream failure, not a second independent fault.
+        </p>
+      )}
+
+      {node.isUndeclared && (
+        <p className="rounded-md border border-warm-200 bg-warm-50/60 px-3 py-2 text-caption leading-4 text-warm-600">
+          This step ran and was recorded, but its key is not part of this
+          workflow&apos;s declared step set — not a fault, just un-diffed
+          against the expected pipeline.
         </p>
       )}
     </div>
@@ -423,8 +457,10 @@ export function TraceTree({
     );
   }
 
-  const stepsObserved = tree.flat.filter((n) => !n.isMissing).length;
-  const totalDurationMs = run?.duration_ms ?? null;
+  // The tree's own count, not a re-derived filter — see TraceTree.observedStepCount's
+  // doc comment for why this must be the single definition.
+  const stepsObserved = tree.observedStepCount;
+  const totalDurationMs = resolveTotalDurationMs(run);
 
   // Reference scale for the proportional duration bars (see trace-view-helpers).
   const totalMs = deriveTraceTotalMs(

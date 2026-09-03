@@ -56,6 +56,25 @@ export interface TraceStepNode {
   observed: unknown;
   /** True when the workflow expected this step and the trace never recorded it. */
   isMissing: boolean;
+  /**
+   * True when this step WAS observed but its key is not in the declared
+   * workflow definition — e.g. a postgres-layer checkpoint child the trace
+   * checkpoints migration writes under an RPC that only declares itself, not
+   * its children. Always false on a synthesised missing node (the opposite
+   * condition: declared but never observed). When the workflow itself is
+   * unrecognised, every observed step is treated as undeclared — nothing was
+   * declared to check against, so nothing observed can be "declared" either.
+   */
+  isUndeclared: boolean;
+  /**
+   * True when the row recorded only `finished_at` with no `started_at` — a
+   * single-moment checkpoint (e.g. `helm_private.trace_checkpoint`), not a
+   * step that ran for a measurable span. Distinct from a step with no timing
+   * at all (which is either a genuinely instantaneous success or, for a
+   * synthesised node, one that never ran) so the UI can say "point-in-time"
+   * rather than reading identically to "no data".
+   */
+  isPointInTime: boolean;
   depth: number;
   children: TraceStepNode[];
 }
@@ -109,6 +128,19 @@ function asRequiredness(value: string | null): FlightStepRequiredness {
   }
 }
 
+/**
+ * The row's own `metadata` jsonb column, when it's a real object. Rows
+ * written by `helm_private.trace_exception_checkpoint` carry
+ * `{ sqlstate, message }` there (never a top-level `error_code` column), so
+ * `errorCode` below falls back to it rather than reading only the column.
+ */
+function metadataOf(row: Record<string, unknown>): Record<string, unknown> {
+  const value = row.metadata;
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 /** Elapsed time, preferring the recorded value and falling back to timestamps. */
 function elapsed(row: Record<string, unknown>): number | null {
   const recorded = num(row, 'duration_ms');
@@ -123,23 +155,29 @@ function elapsed(row: Record<string, unknown>): number | null {
 function normalize(row: Record<string, unknown>): TraceStepNode | null {
   const key = str(row, 'step_key');
   if (!key) return null;
+  const metadata = metadataOf(row);
+  const startedAt = str(row, 'started_at');
+  const finishedAt = str(row, 'finished_at');
   return {
     key,
     parentKey: str(row, 'parent_step_key'),
     layer: asLayer(str(row, 'layer')),
     status: asStatus(str(row, 'status')),
     requiredness: asRequiredness(str(row, 'requiredness')),
-    startedAt: str(row, 'started_at'),
-    finishedAt: str(row, 'finished_at'),
+    startedAt,
+    finishedAt,
     durationMs: elapsed(row),
     functionName: str(row, 'function_name'),
     triggerName: str(row, 'trigger_name'),
     tableName: str(row, 'table_name'),
-    errorCode: str(row, 'error_code'),
+    errorCode: str(row, 'error_code') ?? str(metadata, 'sqlstate') ?? str(metadata, 'failure_code'),
     errorSummary: str(row, 'error_summary'),
     expected: row.expected ?? null,
     observed: row.observed ?? null,
     isMissing: false,
+    // Overwritten in buildTraceTree once the declared-key set is known.
+    isUndeclared: false,
+    isPointInTime: startedAt === null && finishedAt !== null,
     depth: 0,
     children: [],
   };
@@ -187,6 +225,11 @@ function missingNode(
     expected: null,
     observed: null,
     isMissing: true,
+    // A synthesised node is DECLARED by construction (it comes from the
+    // workflow definition itself) — the opposite condition from undeclared.
+    isUndeclared: false,
+    // A step that never ran has no timing at all, point-in-time or otherwise.
+    isPointInTime: false,
     depth: 0,
     children: [],
   };
@@ -197,6 +240,18 @@ export interface TraceTree {
   /** Flattened depth-first, for rendering and for counting. */
   flat: TraceStepNode[];
   missingRequiredCount: number;
+  /**
+   * The count of rows that were actually observed (survived `normalize()`),
+   * BEFORE synthesised missing nodes are appended — i.e. `observed.length`,
+   * never `flat.length` (which also includes missing nodes) and never
+   * recomputed by filtering `flat` for `!isMissing` (same number, but this is
+   * the one named, tested definition; the KPI strip reads this field so it
+   * can never silently diverge from it). This is the same fact
+   * `helm_debug_finalize_trace` computes server-side as `v_observed` — see
+   * `reconcileObservedStepCount` in trace-view-helpers.ts, which reconciles
+   * an opened trace's run row against this same count.
+   */
+  observedStepCount: number;
   /** The first failed step in depth-first order — where reality diverged. */
   failureKey: string | null;
 }
@@ -217,7 +272,8 @@ export function buildTraceTree(
   const observedKeys = new Set(observed.map((n) => n.key));
 
   const synthesised: TraceStepNode[] = [];
-  if (isKnownWorkflow(workflow)) {
+  const known = isKnownWorkflow(workflow);
+  if (known) {
     for (const def of getGolfRoundWorkflowDefinition(workflow)) {
       // `async` steps are legitimately still in flight when the trace is read,
       // and a conditional step that correctly did not apply is not a failure —
@@ -227,6 +283,22 @@ export function buildTraceTree(
       if (observedKeys.has(def.key)) continue;
       synthesised.push(missingNode(def.key, def.layer, def.requiredness, observedKeys));
     }
+  }
+
+  // Undeclared = observed but not in the workflow's own declared-key set — the
+  // condition a future postgres-layer checkpoint child hits by construction,
+  // since golf.round.submit (for example) declares only the top-level RPC
+  // key, never its in-transaction children. Only meaningful when the workflow
+  // is one this build actually knows; an unrecognised workflow declared
+  // nothing, so nothing observed under it is "undeclared" any more than
+  // anything else is — it's simply un-diffed.
+  if (known) {
+    const declaredKeys = new Set(getGolfRoundWorkflowDefinition(workflow).map((def) => def.key));
+    for (const node of observed) {
+      node.isUndeclared = !declaredKeys.has(node.key);
+    }
+  } else {
+    for (const node of observed) node.isUndeclared = true;
   }
 
   const all = [...observed, ...synthesised];
@@ -256,10 +328,26 @@ export function buildTraceTree(
   };
   walk(roots, 0);
 
+  // Rescue sweep: a genuine mutual cycle (A's parent is B, B's parent is A —
+  // or a longer ring) leaves every member attached as someone ELSE's child
+  // and none ever lands in `roots`, so the walk above never reaches any of
+  // them. That is exactly the failure this module's own header comment rules
+  // out — "the tree would be quietly, plausibly wrong" — so promote whatever
+  // is still unvisited to an additional root and walk from there too. This
+  // never fires on real (acyclic) data: everything is already reachable from
+  // the roots computed above.
+  for (const node of all) {
+    if (!seen.has(node)) {
+      roots.push(node);
+      walk([node], 0);
+    }
+  }
+
   return {
     roots,
     flat,
     missingRequiredCount: flat.filter((n) => n.isMissing).length,
+    observedStepCount: observed.length,
     failureKey: flat.find((n) => n.status === 'failure')?.key ?? null,
   };
 }

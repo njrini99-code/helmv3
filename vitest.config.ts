@@ -274,6 +274,14 @@ export default defineConfig({
             // The unit project's own timeout, and the removal of the
             // hand-maintained count above, must not silently revert.
             'scripts/__tests__/vitest-sweep-timeout.test.mjs',
+            // Pure summarization functions behind `npm run flight-recorder:audit`
+            // (scripts/flight-recorder-audit.mjs) — the read-only script that
+            // proves the two in-flight Flight Recorder branches actually wrote
+            // real timings and postgres checkpoints after deploy. Named here for
+            // the same reason as its scripts/lib/__tests__ neighbours above (no
+            // scripts/** glob — this repo runs everything through vitest, never
+            // `node --test`, so an unlisted file here executes nowhere at all).
+            'scripts/lib/__tests__/flight-recorder-audit-lib.test.ts',
           ],
           exclude: [
             'node_modules',
