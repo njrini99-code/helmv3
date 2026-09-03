@@ -273,6 +273,17 @@ is a second thing to keep true.
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/admin_selfheal.md`
 
+## `admin_replay_lab`
+
+**Admin Replay Lab** · active · criticality medium · owner platform
+
+- **Behaviour:** `memory/features/admin-replay-lab.md`
+- **Code:** `src/components/admin/replay/**`, `replay/**`, `src/lib/admin/replay/**`, `src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts`
+- **Telemetry:** none. Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/self-heal) reads a bundled generated index, not a runtime telemetry source.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** no ledger yet
+
 ## `team_access_control`
 
 **Team Access Control And RLS** · active · criticality high · owner platform

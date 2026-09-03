@@ -1593,6 +1593,47 @@ features:
         - npx vitest run src/test/scripts/run-selfheal-repair.test.ts src/test/scripts/selfheal-repair-launchd.test.ts
         - npm run build
 
+  admin_replay_lab:
+    name: Admin Replay Lab
+    status: active
+    owner: platform
+    criticality: medium
+    observability:
+      feature_keys: []
+      reason: "Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/self-heal) reads a bundled generated index, not a runtime telemetry source."
+    docs:
+      feature: memory/features/admin-replay-lab.md
+      flows:
+        - replay/README.md
+        - docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md
+        - docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md
+        - docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md
+      business_logic: []
+      incidents: []
+    code:
+      routes: []
+      components:
+        - src/components/admin/replay/**
+      api: []
+      actions: []
+      services:
+        - replay/**
+        - src/lib/admin/replay/**
+      db: []
+      tests:
+        - src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts
+    integrations: []
+    review:
+      required_docs:
+        - memory/features/admin-replay-lab.md
+        - replay/README.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts
+        - node --check replay/runners/run.mjs
+        - node --check replay/runners/manifest.mjs
+        - node --check replay/runners/gen-coverage-index.mjs
+
   team_access_control:
     name: Team Access Control And RLS
     status: active

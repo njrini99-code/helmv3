@@ -85,6 +85,12 @@
     "archive",
     "scripts",
     "supabase/functions",
-    ".next"
+    ".next",
+    // replay/fixtures/**/*.test.ts(x) are inert snapshots of a repair's own
+    // regression test, copied verbatim from a historical commit — their
+    // relative imports (e.g. '../qualifier-lifecycle') resolve only once
+    // replay/runners/run.mjs overlays them into a worktree checked out at
+    // that commit, not in place under replay/fixtures/. See replay/README.md.
+    "replay/fixtures"
   ]
 }
