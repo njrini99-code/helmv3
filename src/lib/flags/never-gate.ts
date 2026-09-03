@@ -17,8 +17,10 @@ import type { FlagDefinition } from './types';
  * `scripts/flags/__tests__/lib.test.mjs` both assert against the same
  * fixture data so the two copies cannot drift silently.
  *
- * Matching is deliberately broad — a substring match on word-start
- * fragments, not a fixed phrase list — biasing toward REJECTING a flag
+ * Matching is a case-insensitive substring match over a vocabulary of auth,
+ * authorization/tenancy and persistence terms (synonyms included: login,
+ * session, sso, password, credential, policy, role, save, submit, ...),
+ * biasing toward REJECTING a flag
  * whose purpose merely mentions one of these concepts in passing. That
  * mirrors this repo's stated risk philosophy (`docs/ai-system/
  * CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §F.7: "a risk score
@@ -26,7 +28,17 @@ import type { FlagDefinition } from './types';
  * merely annoying"). A legitimate flag whose purpose text collides with a
  * fragment (e.g. "author") should be reworded, not exempted.
  */
-export const NEVER_GATE_KEYWORDS = ['auth', 'rls', 'tenan', 'member', 'persist'] as const;
+export const NEVER_GATE_KEYWORDS = [
+  // Authentication and session identity
+  'auth', 'login', 'log_in', 'log-in', 'signin', 'sign_in', 'sign-in', 'signup', 'sign_up', 'sign-up',
+  'logout', 'session', 'sso', 'oauth', 'oidc', 'saml', 'password', 'passcode', 'credential', 'token',
+  'mfa', '2fa', 'otp', 'magic_link', 'magic-link', 'access_code', 'access-code', 'jwt', 'cookie',
+  // Authorization, tenancy and membership
+  'rls', 'row_level', 'row-level', 'row level', 'policy', 'policies', 'permission', 'role', 'rbac',
+  'tenan', 'tenant', 'org_', 'organization', 'membership', 'member', 'team_scope', 'super_admin', 'superadmin',
+  // Required persistence
+  'persist', 'durable', 'autosave', 'auto_save', 'auto-save', 'save', 'submit', 'write_path', 'write-path', 'commit',
+] as const;
 
 export interface NeverGateHit {
   keyword: (typeof NEVER_GATE_KEYWORDS)[number];

@@ -24,7 +24,17 @@ import { readFileSync } from 'node:fs';
 import yaml from 'js-yaml';
 
 // Mirrors src/lib/flags/never-gate.ts NEVER_GATE_KEYWORDS.
-export const NEVER_GATE_KEYWORDS = ['auth', 'rls', 'tenan', 'member', 'persist'];
+export const NEVER_GATE_KEYWORDS = [
+  // Authentication and session identity
+  'auth', 'login', 'log_in', 'log-in', 'signin', 'sign_in', 'sign-in', 'signup', 'sign_up', 'sign-up',
+  'logout', 'session', 'sso', 'oauth', 'oidc', 'saml', 'password', 'passcode', 'credential', 'token',
+  'mfa', '2fa', 'otp', 'magic_link', 'magic-link', 'access_code', 'access-code', 'jwt', 'cookie',
+  // Authorization, tenancy and membership
+  'rls', 'row_level', 'row-level', 'row level', 'policy', 'policies', 'permission', 'role', 'rbac',
+  'tenan', 'tenant', 'org_', 'organization', 'membership', 'member', 'team_scope', 'super_admin', 'superadmin',
+  // Required persistence
+  'persist', 'durable', 'autosave', 'auto_save', 'auto-save', 'save', 'submit', 'write_path', 'write-path', 'commit',
+];
 
 export const VALID_TYPES = ['release', 'experiment', 'operations_kill_switch', 'temporary_migration'];
 export const VALID_STATUSES = ['active', 'archived'];

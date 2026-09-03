@@ -118,6 +118,20 @@ describe('validateFlag — never-gate', () => {
     });
   }
 
+  for (const [feature_id, purpose] of [
+    ['ops_login_kill_switch', 'Kills the login flow when suspicious activity is detected.'],
+    ['ops_session_kill_switch', 'Disables session validation during an incident.'],
+    ['ops_sso_kill_switch', 'Bypasses SSO/credential checks for a partner rollout.'],
+    ['ops_password_reset_kill', 'Disables the password reset requirement temporarily.'],
+    ['ops_rls_off', 'Turns off row level security checks for a migration.'],
+    ['ops_skip_round_save', 'Skips the round save on submit so the demo stays fast.'],
+  ]) {
+    test(`rejects the auth/RLS/persistence kill switch ${feature_id} (2026-09-03 review probes)`, () => {
+      const issues = validateFlag(baseFlag({ feature_id, purpose, type: 'operations_kill_switch', kill_switch_behavior: 'off' }), { now: NOW });
+      assert.ok(issues.some((i) => i.rule === 'never_gate'), `expected never_gate for ${feature_id}`);
+    });
+  }
+
   test('rejects a feature_id containing a never-gate keyword even with an innocuous purpose', () => {
     const issues = validateFlag(baseFlag({ feature_id: 'auth_experiment', purpose: 'Totally fine.' }), { now: NOW });
     assert.ok(issues.some((i) => i.rule === 'never_gate' && i.detail.includes('feature_id')));

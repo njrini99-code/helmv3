@@ -89,8 +89,12 @@ ADR above; mirrors `GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` §14-15's
 kill-switch contract ("never auth, data-corruption concealment, critical
 observability, RLS, required persistence").
 
-Enforced by substring match on word-start fragments (`auth`, `rls`,
-`tenan`, `member`, `persist`) against both `feature_id` and `purpose`,
+Enforced by case-insensitive substring match over a vocabulary of auth,
+authorization/tenancy and persistence terms (`auth`, `login`, `signin`,
+`signup`, `session`, `sso`, `oauth`, `password`, `credential`, `token`,
+`mfa`, `rls`, `policy`, `permission`, `role`, `tenant`, `organization`,
+`membership`, `persist`, `autosave`, `save`, `submit`, ... — the list in
+`never-gate.ts` is authoritative) against both `feature_id` and `purpose`,
 case-insensitive — `src/lib/flags/never-gate.ts` is the TypeScript source of
 truth for the keyword list; `scripts/flags/lib.mjs` mirrors it verbatim
 because Node scripts here run un-transpiled and cannot import `.ts`
@@ -99,9 +103,12 @@ directly. Both are covered by the same fixture-style tests
 `scripts/flags/__tests__/lib.test.mjs`) so the two copies cannot drift
 silently.
 
-This is deliberately broad, not a fixed phrase list — a legitimate flag
-whose purpose text happens to contain a fragment (e.g. "author") should be
-reworded, not exempted. That bias toward rejection matches this repo's
+This is deliberately over-inclusive: the first version shipped five fragments
+and a review on 2026-09-03 showed `ops_login_kill_switch`, `ops_session_kill_switch`,
+`ops_sso_kill_switch` and `ops_password_reset_kill` all passing it, so the
+vocabulary now carries the synonyms. A legitimate flag whose purpose text
+happens to contain a fragment (e.g. "author", "commit", "saved you a click")
+should be reworded, not exempted — there is no exemption field on purpose. That bias toward rejection matches this repo's
 stated risk philosophy (`CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md`
 §F.7: "a risk score wrong in the low direction is dangerous; wrong in the
 high direction is merely annoying").
