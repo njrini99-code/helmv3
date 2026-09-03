@@ -1,5 +1,25 @@
 # Change ledger — coachhelm_ai
 
+## 2026-09-02 — worst-holes/warmup evidence refusals no longer page as errors
+
+- SHA: 8350ad6e0.
+- Change: the catch blocks in `generateWorstHolesInsights` and
+  `generateWarmupHoleInsight`
+  (`src/lib/coachhelm/v2/mining/course-management.ts`) now check
+  `isEvidenceRefusal(err)` before logging. A refusal (`upsertInsight` throwing
+  `InsightEvidenceRefusal` because `evidence.sample_n` is below the Rule 1
+  floor) routes through `logServerEvent` at `warning` severity with
+  `skipSentry: true`; anything else still goes through `logServerError`
+  unchanged.
+- Why: incident fingerprint `ea766422` ("worst_holes upsert failed") — the
+  sample-floor refusal is control flow by design (not enough evidence to
+  publish yet), but both catch blocks logged every `upsertInsight` failure
+  through `logServerError` unconditionally, so the refusal paged as a
+  production error. The file's own header comment on
+  `WORST_HOLES_MIN_ROUNDS` already documented this exact failure mode; the
+  catch block itself had never been updated to close it. Mirrors the
+  existing split in `src/lib/coachhelm/v3/composite/synthesis.ts`.
+
 ## 2026-08-27 — insight notifications no longer deep-link a coach into the player view
 
 - SHA: 1a57943e6.
