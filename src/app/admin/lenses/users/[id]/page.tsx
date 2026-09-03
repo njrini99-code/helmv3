@@ -5,11 +5,19 @@ import { UserJourneyRibbon } from '@/components/admin/lenses/UserJourneyRibbon';
 import { Surface, InlineNotice } from '@/components/fairway';
 import { PanelBoundary } from '../../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../../_components/PanelSkeletons';
+import { PanelNoData } from '../../../_components/PanelStates';
 
 export const dynamic = 'force-dynamic';
 
 async function UserRibbonBody({ userId }: { userId: string }) {
   const ribbon = await fetchUserJourneyRibbon(userId);
+
+  // Same contract as src/app/admin/users/[id]/page.tsx: an id that resolves
+  // to no `users` row must say so explicitly, not render a full ribbon of
+  // honest nulls that reads as "a real user with no data".
+  if (!ribbon.found) {
+    return <PanelNoData label="User not found" description={`No user with id ${userId}.`} />;
+  }
 
   return (
     <div className="space-y-6">

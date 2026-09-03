@@ -11,6 +11,7 @@ function stage(overrides: Partial<RibbonStage> = {}): RibbonStage {
 function ribbon(stages: RibbonStage[]): RibbonData {
   return {
     subjectRef: 'u1',
+    found: true,
     stages,
     incidents: { count: 2, recentTitles: ['boom'] },
     sessions: { count: 3 },

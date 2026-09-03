@@ -47,6 +47,14 @@ export interface RibbonStage {
 export interface UserJourneyRibbon {
   /** The subject id the caller passed in — never an email or a name. */
   subjectRef: string;
+  /** False when no `users` row resolves for `subjectRef` — the caller MUST
+   *  check this before rendering the ribbon. Without it, an unknown/deleted
+   *  id silently renders as a real user with every stage honestly null,
+   *  which reads as "a real person with no data" rather than "this id does
+   *  not exist" (the two are different findings, and this field is the only
+   *  thing that tells them apart — every other field looks the same either
+   *  way). */
+  found: boolean;
   stages: RibbonStage[];
   incidents: { count: number | null; recentTitles: readonly string[] };
   /** Login-event count as a session-count proxy — noted as such, not a true
@@ -150,6 +158,7 @@ export async function fetchUserJourneyRibbon(userId: string, now: Date = new Dat
 
   return {
     subjectRef: userId,
+    found: detail.user !== null,
     stages,
     incidents: {
       count: detail.errorEvents.length,

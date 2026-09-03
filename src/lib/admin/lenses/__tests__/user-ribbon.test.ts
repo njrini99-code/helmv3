@@ -89,4 +89,17 @@ describe('fetchUserJourneyRibbon', () => {
     const ribbon = await fetchUserJourneyRibbon('u1');
     expect(ribbon.threadHref).toBe('/admin/thread/user/u1');
   });
+
+  it('found is true for a real user', async () => {
+    const ribbon = await fetchUserJourneyRibbon('u1');
+    expect(ribbon.found).toBe(true);
+  });
+
+  it('found is false when no users row resolves for the id — the caller must not render a full ribbon of honest nulls as if it were a real, data-poor user', async () => {
+    userDetail = { user: null, memberships: [], recentActivity: [], authEvents: [], errorEvents: [] };
+
+    const ribbon = await fetchUserJourneyRibbon('does-not-exist');
+
+    expect(ribbon.found).toBe(false);
+  });
 });
