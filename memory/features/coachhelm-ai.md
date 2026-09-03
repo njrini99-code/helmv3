@@ -92,10 +92,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 - Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.
 - Safety-net fallback behavior can mask generator failures if logs are ignored.
-- Course-management "worst holes" insights require at least five samples,
-  matching the persisted insight writer's validation contract. Smaller samples
-  are intentionally skipped rather than surfacing a validation warning after a
-  player submits a round.
+- Course-management "worst holes" and hole-1 "warmup" insights require at
+  least five samples, matching the persisted insight writer's Rule 1
+  validation contract (`upsertInsight` throws `InsightEvidenceRefusal` below
+  the floor). `generateWorstHolesInsights` and `generateWarmupHoleInsight`
+  (`src/lib/coachhelm/v2/mining/course-management.ts`) route that refusal
+  through `isEvidenceRefusal()` and log it as a quiet, non-paging event —
+  the same pattern `v3/composite/synthesis.ts` uses. Before this was wired
+  up, the refusal reached `logServerError` unconditionally and paged as a
+  production incident (fingerprint `ea766422`, "worst_holes upsert failed").
 - A completed round's CoachHelm terminal state is written only through the
   service-only `record_round_coachhelm_terminal_state` RPC. It may update
   processing metadata but cannot modify score, shots, identity, or status.
