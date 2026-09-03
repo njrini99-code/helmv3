@@ -898,6 +898,20 @@ assumed it would:
   error-with-retry card, never the whole console going blank), on top of the
   root `/admin/loading.tsx` + `/admin/error.tsx` fallback for anything above
   panel level.
+  **Narrow-viewport (375px) render tests:** the brief's own escape clause
+  applies to the eleven triage/lens `page.tsx` files themselves — each is an
+  `async` server component doing its own `createClient()` + query, not
+  renderable through RTL without reimplementing its data layer as a mock, so
+  no new per-page 375px test was added. The chrome those pages mount inside
+  already carries dedicated narrow-viewport regression coverage that admin
+  inherits for free: `FairwayBottomNav.test.tsx` pins the 320/390px
+  fallback-to-center-on-overflow and `min-w-0` floor fixes (#899/#905) for
+  the exact bottom nav `AdminShell` renders via `BRIDGE_BOTTOM_NAV_HREFS`,
+  and `AppShell.compact-viewport.test.tsx` pins the icon-rail/scroll-
+  affordance behavior at 768-1023px width and 390px-tall mobile-landscape
+  that `AdminShell` also inherits unmodified. No admin-specific layout
+  diverges from that shared chrome, so no separate 375px suite was
+  duplicated on top of it.
 - **Performance — verified clean, no fix needed.** Every Phase 3/4 read-model
   fetcher (`fetchReleaseRunway`, `fetchSelfHealCircuit`, the five lens
   fetchers, `fetchTeamsEkgLens`) is called at most once per page render (the
@@ -912,6 +926,21 @@ assumed it would:
   `docs/generated/**` artifact per request the way Phase 5's
   `WORLD_MODEL.json` mtime cache does; nothing analogous exists on `main`
   today.
+  **Performance budget for triage/lens read models, stated so a future
+  change can be checked against it rather than re-derived:** (1) a read
+  model returns only the compact typed shape its panel renders — never a
+  raw provider payload (Sentry event bodies, Vercel deployment JSON, cron
+  run logs) forwarded to the client wholesale; (2) each read-model function
+  is called at most once per server render of the page that uses it, with
+  request-scoped dedup living at the shared primitive layer
+  (`cachedIncidentBoard` and peers) via React `cache()`, not re-implemented
+  per fetcher; (3) any list backed by a table with unbounded growth is
+  either paginated or explicitly capped with the cap surfaced to the user
+  (`adoption-map.ts`'s 500-user cap + `roleCoverageNote`), never silently
+  truncated; (4) no per-request re-parse of a large generated artifact —
+  this repo's only instance of that pattern, Phase 5's `WORLD_MODEL.json`
+  mtime cache, has no analogue on `main` today because no admin read model
+  reads a `docs/generated/**` file at request time.
 - **Accessibility — colour contrast verified clean; automated axe coverage
   BLOCKED, documented rather than worked around.** No `text-accent-500`
   usage anywhere in `src/app/admin` or `src/components/admin` (the token
