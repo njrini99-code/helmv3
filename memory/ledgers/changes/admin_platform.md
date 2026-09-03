@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
+
 # Admin Platform change ledger
 
 ## 2026-09-03 — Zero-cost Supabase observability, Phase 1 (foundation): envelope, classifier, out-of-band DB error store, health/stat collectors, `/admin/database`
@@ -104,6 +105,7 @@ master brief lives on a sibling control-plane branch, not yet merged).
   dead entries), `npm run knowledge:map -- --files <one file per new entry>`
   routes each to exactly the intended id, `npm run knowledge:feature-map` /
   `document-inventory.mjs` regenerated clean.
+
 ## 2026-09-03 — Feature-flag registry, never-gate rules, and the expiry CI gate (Phase F.4.2)
 
 New, self-contained module — `config/feature-flags.yml` +
@@ -168,6 +170,7 @@ rollout is booleans only.
   / `scripts/check-feature-flags.mjs` globs added to `admin_platform` in
   `memory/registry.yml`); `npm run docs:check` (all five) clean;
   `actionlint .github/workflows/ci.yml` clean.
+
 ## 2026-09-02 — Golden-path journey registry and Context Retrieval Bench (Bridge Control Plane Phases D.4.1, K.4.2)
 
 Two new pieces of engineering-os tooling, not a change to the Bridge's
@@ -486,6 +489,7 @@ since both change behaviour the first pass shipped.
   (25/25 passing, new cases written failing first), `npm run typecheck`,
   `npm run lint`, `npm run lint:ratchet`, `npm run audit:supabase-errors` all
   green on this change alone.
+
 ## 2026-09-02 — Diagnose moves off the Anthropic-hosted cloud routine onto a Vercel cron
 
 - Branch: `agent/selfheal-diagnose-cron`.
@@ -1404,6 +1408,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   `node scripts/knowledge/document-inventory.mjs --check`,
   `npm run docs:path-drift`, `npm run docs:schema-drift`. `npm run build`
   NOT run locally — CI builds it.
+
 ## 2026-09-02 — Flight Recorder: one observed-step-count definition, undeclared steps, point-in-time durations, downgrade badge, audit script
 
 - SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
@@ -1520,6 +1525,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   111 tests, up from 109). `npm run typecheck` / `lint` / `lint:ratchet` (68
   warnings, no regression) / `audit:supabase-errors` (baseline 1039, no
   regression) all clean.
+
 ## 2026-09-02 — Repair stage's launchd config tracked in the repo, runner captures a failure tail
 
 - SHA: branch `agent/selfheal-repair-hardening`, PR pending.
@@ -1712,6 +1718,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   run correctly with no `node_modules` present at all, which is direct
   evidence typecheck/lint have no missing-import surface to fail on, but is
   not a substitute for actually running them — CI does.
+
 ## 2026-09-03 — Bridge Premium Observability Phase 0: six truth-model read models under incidents/
 
 Implements Phase 0 ("Truth and naming") of the owner's Bridge Premium
@@ -1973,6 +1980,7 @@ status transition, not a caller-supplied timestamp).
   disk is at the safety floor) — the fix is reasoned from Next.js's
   documented file-tracing behavior and the exact file paths this code
   reads, not verified against a real traced function bundle.
+
 ## 2026-09-03 — Bridge Premium Observability Phase 2: Helm Command Deck (posture, System Orbit, Attention Stack, Decision Inbox, Release Wake, Self-Heal Circuit summary)
 
 Implements Phase 2 ("Overview Command Deck") of the owner's Bridge Premium
@@ -2116,6 +2124,7 @@ files, `genome.ts`/`release-watch.ts`).
   No test assertions needed changing: `ReleaseWatchPosturePill` renders the
   identical label strings (`RELEASE_WATCH_LABEL`) the deleted hand-rolled
   map used.
+
 ## 2026-09-03 — Bridge Premium Observability Phase 1: incident cards, Incident Genome, Release Watch, Evidence Inspector
 
 **What**: wired the Phase 0 truth models (previous entry) into `/admin/errors`
@@ -2211,6 +2220,7 @@ card and detail page.
   header). `ReleaseWatchPanel` lives on `/admin/errors`, not a new
   `/admin/deploys` Release Runway — that full view is Phase 3's territory
   per the brief's own implementation order (§45).
+
 ## 2026-09-03 — App and customer lenses (Bridge Premium Observability Phase 4)
 
 Source: `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`
@@ -2277,6 +2287,7 @@ section for the full per-module description; not restated here.
   pages, not 7, and the team-lead task brief's own fallback instruction
   ("or the routes the brief names if it names them") left no named route
   for either.
+
 ## 2026-09-03 — Bridge Premium Phase 3: triage tabs (Constellation, Braid, Circuit, Waterfall, Heartbeat, Runway)
 
 - **Scope**: eight new pure/server read models under `src/lib/admin/triage/`

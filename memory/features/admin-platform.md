@@ -1,5 +1,6 @@
 <!-- markdownlint-disable MD004 MD007 MD012 MD013 MD022 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
+
 # Feature: Admin Platform
 
 > Split 2026-09-02 into this shared shell plus three sub-capability docs —
@@ -833,6 +834,7 @@ computes the DB column's `finished_at` from the status transition itself,
 by design — a caller cannot claim an arbitrary finish time — but the
 caller-supplied value at least reaches the row's `metadata` blob now
 instead of being silently dropped by `buildAgentRunPayload`).
+
 ## Phase 2 Command Deck (Bridge Premium Observability, 2026-09-03)
 
 `src/lib/admin/command-deck/**` (six pure/mostly-pure modules) and
@@ -935,6 +937,7 @@ read models — no second incident, attention, release, or self-heal model
   modules with no established precedent in this repo for testing an async
   Server Component this way) — its wiring is exercised by `npm run
   typecheck` plus each constituent read model's/component's own tests.
+
 ## Phase 1 wiring — incident cards, Incident Genome, Release Watch, Evidence Inspector (2026-09-03)
 
 The six Phase 0 modules above were pure and unwired until this entry. Two
@@ -1012,6 +1015,7 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
   and opens it via an `onInspect` callback (an "Inspect" button in the
   card's footer). Corrected 2026-09-03 (PR #1789 review) — this entry
   previously said the opposite, stale from before that wiring landed.
+
 ## Phase 4 lenses (Bridge Premium Observability, 2026-09-03)
 
 Seven new pure read models under `src/lib/admin/lenses/`, five small
@@ -1112,6 +1116,7 @@ posture pill, evidence chips, confidence meter) had not landed on
 did not exist on `origin` yet) — `src/components/admin/lenses/*` builds its
 own minimal confidence/status indicators inline, each file's header noting
 it as a candidate for replacement once that branch lands.
+
 ## Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)
 
 Eight new pure/server read models under `src/lib/admin/triage/` feeding the
