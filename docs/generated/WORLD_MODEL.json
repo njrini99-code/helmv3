@@ -1335,6 +1335,11 @@
         "category": "services"
       },
       {
+        "id": "services:memory/journeys/**",
+        "pattern": "memory/journeys/**",
+        "category": "services"
+      },
+      {
         "id": "services:package.json",
         "pattern": "package.json",
         "category": "services"
@@ -12565,6 +12570,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:memory/journeys/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "memory/journeys/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:package.json",
       "kind": "feature_service",
       "evidence": [
@@ -19604,7 +19621,7 @@
     }
   ],
   "notes": {
-    "journeys": "memory/journeys/ does not exist on this branch — journeys node list is empty, not a claim that no journeys exist.",
+    "journeys": null,
     "unmapped": "Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.",
     "tableAttribution": "A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer."
   }
