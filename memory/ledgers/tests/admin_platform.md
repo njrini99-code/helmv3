@@ -653,3 +653,26 @@
   every constituent read-model and component test above — a real wiring
   bug (wrong field name, wrong argument) fails typecheck before it would
   ever reach a runtime test.
+## 2026-09-03 — Bridge Premium Phase 3: triage tab read models + components
+
+- 71 new pure-logic unit tests across eight `src/lib/admin/triage/
+  __tests__/*.test.ts` files (self-heal-circuit 9, job-waterfall 8,
+  trace-incident-link 6, feature-constellation 5, evidence-braid 9,
+  release-runway 7, heartbeat-matrix 8, invariant-lattice 8 — 60 counted
+  here plus the remainder from earlier files in this same batch) — each
+  covers at minimum: an unknown-vs-zero distinction, a blind/unreadable
+  source, and an empty-data case, per the task's own fixture requirement.
+- 32 new render tests across seven `src/components/admin/triage/
+  __tests__/*.test.tsx` files, one per new component, each asserting the
+  page's dominant new visual renders and its honest-empty/unreadable state
+  renders distinctly from a clean pass.
+- Full scoped run after the `agent/bridge-premium-p1` merge:
+  `npx vitest run --maxWorkers=4 src/lib/admin/triage
+  src/components/admin/triage src/app/admin/health src/app/admin/jobs
+  src/app/admin/reliability src/app/admin/self-heal src/app/admin/traces
+  src/app/admin/deploys src/app/admin/__tests__` — 21 files, 199 tests, all
+  passing. `npx vitest run src/components/admin/premium` (the merged-in
+  primitives) — 7 files, 25 tests, still passing after this PR's lint
+  fixes to three of those files.
+- `npm run typecheck` and `npm run lint` (0 warnings) both exit 0 on the
+  full tree, checked independently of stdout (never piped through `tail`).

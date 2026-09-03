@@ -26,6 +26,15 @@ import { fetchCaptureQuality } from '@/lib/admin/data/capture-quality';
 import { RailRow, RowHead, FactLine, RowFoot, StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
 import type { CorrelatedSignal, SourceStatus } from '@/lib/reliability/types';
+import { fetchFeatureHealth } from '@/lib/admin/data/feature-health';
+import { buildFeatureConstellation } from '@/lib/admin/triage/feature-constellation';
+import { buildEvidenceBraid } from '@/lib/admin/triage/evidence-braid';
+import { fetchFlightRecorderLinkedIncidentIds } from '@/lib/admin/triage/trace-incident-link';
+import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
+import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
+import { FeatureConstellationGrid } from '@/components/admin/triage/FeatureConstellationGrid';
+import { EvidenceBraidTimeline } from '@/components/admin/triage/EvidenceBraidTimeline';
+import type { FeatureKey } from '@/lib/admin/feature-registry';
 import {
   buildCoverageMatrix,
   corroboratedCount,
@@ -650,8 +659,70 @@ async function ReliabilityPanel() {
   );
 }
 
-export default async function ReliabilityPage() {
+/**
+ * Feature Constellation + Evidence Braid (Bridge Premium Phase 3). Own
+ * PanelBoundary — a feature-health or trace-store failure here must not take
+ * the reliability collector panel above it down.
+ */
+async function FeatureConstellationSection({ selectedKey }: { selectedKey: string | null }) {
+  const { features, degraded, degradedReason } = await fetchFeatureHealth();
+  if (degraded) {
+    return <PanelStale label="Feature health pipeline degraded" error={degradedReason ?? undefined} />;
+  }
+
+  const constellation = buildFeatureConstellation(features);
+  const resolvedKey = (selectedKey && constellation.nodes.some((n) => n.key === selectedKey)
+    ? selectedKey
+    : (constellation.nodes[0]?.key ?? null)) as FeatureKey | null;
+
+  const [incidentBoard, flightRecorderLinkedIds] = resolvedKey
+    ? await (async () => {
+        const board = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+        const linked = await fetchFlightRecorderLinkedIncidentIds(board.incidents);
+        return [board, linked] as const;
+      })()
+    : [null, null];
+
+  const braid =
+    resolvedKey && incidentBoard
+      ? buildEvidenceBraid({
+          featureId: resolvedKey,
+          incidents: incidentBoard.incidents,
+          now: Date.now(),
+          flightRecorderLinkedIds,
+        })
+      : null;
+
+  return (
+    <div className="space-y-4">
+      <FeatureConstellationGrid view={constellation} selectedKey={resolvedKey} />
+      {braid ? (
+        <div className="mt-4 border-t border-warm-200 pt-4">
+          <Eyebrow as="h3" tone="tertiary">
+            Evidence braid — {constellation.nodes.find((n) => n.key === resolvedKey)?.label ?? resolvedKey}
+          </Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            The six evidence sources, bucketed over this feature&rsquo;s incident window. A highlighted column is
+            multiple sources corroborating the same window.
+          </p>
+          <div className="mt-3">
+            <EvidenceBraidTimeline view={braid} />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default async function ReliabilityPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = await searchParams;
+  const featureParam = params.feature;
+  const selectedKey = typeof featureParam === 'string' ? featureParam : null;
 
   return (
     <div className="space-y-5">
@@ -665,6 +736,20 @@ export default async function ReliabilityPage() {
           This tab reports; it does not fix.
         </p>
       </div>
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Feature constellation</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            Every feature, sized by occurrence volume among its own top signatures, coloured by posture. Select one
+            to see its evidence braid below.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Feature constellation" skeleton={<PanelPageSkeleton rows={4} />}>
+              <FeatureConstellationSection selectedKey={selectedKey} />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
       <PanelBoundary title="Reliability" skeleton={<PanelPageSkeleton />}>
         <ReliabilityPanel />
       </PanelBoundary>

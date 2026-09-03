@@ -728,6 +728,103 @@ read models — no second incident, attention, release, or self-heal model
   modules with no established precedent in this repo for testing an async
   Server Component this way) — its wiring is exercised by `npm run
   typecheck` plus each constituent read model's/component's own tests.
+## Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)
+
+Eight new pure/server read models under `src/lib/admin/triage/` feeding the
+six existing core triage tabs — no new tables, no new migration, per the
+owner brief's Phase 3 scope (`docs/ai-system/briefs/
+BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`, §15-19, §28, §45). This
+doc is the one `memory/registry.yml` maps the whole surface to — no separate
+`admin-reliability-collector`/`admin-selfheal` feature doc exists in this
+repo (checked directly before writing this entry); the Phase 3 dispatch
+named those filenames but they were never created, matching the "no
+separate observability/reliability key exists" note already on this file's
+Phase 0 entry above.
+
+- **`self-heal-circuit.ts`** (`/admin/self-heal`) — pure merge of the
+  existing `SelfHealBoard` (runtime + capability) with `selfheal-flow.ts`'s
+  per-stage throughput (waiting/stalled/oldest-wait), plus a
+  newly-surfaced repair-quality link. `data/selfheal.ts` gained one
+  additive field, `SelfHealBoard.repairLink: RepairPrLink | null` (the
+  newest PR naming an incident), computed from the work-log read that file
+  already performs. `budget` is reported as an explicit `{ tracked: false
+  }` on every stage — no per-stage budget concept exists anywhere in this
+  codebase's self-heal code (checked directly), and this codebase does not
+  fabricate a number nobody computed.
+- **`job-waterfall.ts`** (`/admin/jobs`) — projects the existing
+  `CronBoardRow[]` board onto one shared timeline (real start offset + real
+  duration per run), rather than `RecentRunsStrip`'s sparse per-job tick
+  row. No new I/O.
+- **`heartbeat-matrix.ts`** (`/admin/health`) — the SAME `CronBoardRow[]`
+  board, projected differently: each job bucketed into its own cadence
+  windows (completed/failed/running/missed/unknown per window), answering
+  "is the rhythm intact" rather than "what happened, run by run". A window
+  still in progress with no run yet reads `unknown`, never a fabricated
+  `missed`.
+- **`invariant-lattice.ts`** (`/admin/health`) — checked both brief-named
+  sources directly: `scripts/check-schema-invariants.sh` and
+  `npm run test:business` are CI-only and persist NO outcome anywhere this
+  codebase can read (no table, no `docs/generated` file, no `admin_events`
+  row) — their lattice rows are honestly `unknown` on every single request,
+  not a placeholder waiting to be wired. The two sources with a real
+  outcome: `qualifier-invariants.ts`'s `evaluateQualifierInvariants` (the
+  established "read model over already-fetched rows" idiom, already wired
+  into `/admin/qualifiers`) and the nightly `admin_events` integrity rows
+  (`source='integrity'`, via `jobs.ts`'s exported `parseIntegrityRows`). A
+  failing integrity row is always `severity: 'critical'` — a silent
+  data-integrity violation outranks an ordinary warning.
+- **`feature-constellation.ts`** (`/admin/reliability`) — nodes from the
+  existing `fetchFeatureHealth()`, sized by occurrence volume among each
+  feature's own `topSignatures` (the closest real number to "traffic" that
+  `FeatureHealth`'s OUTPUT type exposes — the classifier's internal
+  `FeatureHealthInputs.events24h` is not returned to callers). Edges:
+  checked for a `WORLD_MODEL.json` file under `docs/generated` (absent on this branch) and
+  `memory/registry.yml` (present, but its `integrations` list names
+  EXTERNAL systems only — `github_actions`, `codex` — never
+  feature-to-feature edges) before falling back to a real, mechanically
+  derived signal: two features sharing a `primaryTable`/`heartbeatTable` in
+  `FEATURE_REGISTRY` (`src/lib/admin/feature-registry.ts`, the actual
+  runtime registry `feature-health.ts` classifies against — distinct from
+  `memory/registry.yml`). Rendered as a grid, never a force-directed graph
+  (brief §44).
+- **`evidence-braid.ts`** (`/admin/reliability`) — the six
+  `EVIDENCE_COVERAGE_SOURCES` from Phase 0's `coverage.ts` (built and
+  tested in Phase 0, imported by nothing until this entry), bucketed over
+  time for a selected feature's incidents. Sentry/Supabase/Vercel read off
+  `UnifiedIncident.sources`; GitHub off `UnifiedIncident.repair`;
+  Flight Recorder off a new conservative trace-to-incident correlator
+  (below); Jobs always reads `unknown` — no incident-to-background-job
+  linkage exists anywhere in this codebase.
+- **`trace-incident-link.ts`** (`/admin/traces` + `/admin/reliability`) —
+  links a `FlightTraceRun` to the `UnifiedIncident` it belongs to ONLY when
+  an incident's `IncidentSourceEvidence.ref` literally equals the trace's
+  `round_id` — never from a workflow-name or time-window guess (the brief
+  explicitly forbids that class of merge for incident correlation, §8).
+  Most traces will honestly show no link until sources reliably carry
+  round refs. `/admin/traces` itself needed no waterfall rebuild —
+  `trace-tree.ts`'s containment tree already carries real per-step timings;
+  this module only adds the missing incident-title hookup.
+- **`release-runway.ts`** (`/admin/deploys`) — wires `release-ledger.ts`'s
+  ordered release cards to Phase 0's `release-context.ts`
+  (`RuntimeIdentityTriplet`, the seven-state `classifyReleaseWatch`) —
+  fully built and tested in Phase 0, imported by nothing until this entry.
+  The DB migration head is only ever `'known'` for the LIVE release (no
+  per-release history exists — a past release never gets today's head
+  backdated onto it). Rollback is never recommended:
+  `classifyReleaseWatch` requires `rollbackRecommended` as an EXTERNAL
+  input the caller decides, no evidence source in this codebase scores
+  that decision, and this module always passes `false` — a regression
+  reaches `'regression-detected'` and stops there.
+
+Shared primitives from `agent/bridge-premium-p1`
+(`src/components/admin/premium/*`) landed mid-Phase-3 and were merged in;
+`ReleaseRunwayStrip.tsx` was refactored to use `ReleaseWatchPosturePill`
+instead of a local tone table. The other five triage components
+(`SelfHealCircuitSummary`, `JobExecutionWaterfall`, `FeatureConstellationGrid`,
+`EvidenceBraidTimeline`, `HeartbeatMatrixGrid`, `InvariantLatticeGrid`)
+remain local under `src/components/admin/triage/` — none of `premium/`'s
+seven primitives (posture pill aside) match a timeline/waterfall/matrix
+layout shape, so nothing else there was a duplicate to replace.
 
 ## Known Risk Areas
 

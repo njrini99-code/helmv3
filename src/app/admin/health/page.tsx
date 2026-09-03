@@ -3,7 +3,7 @@ import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/fea
 import type { FeatureHealth } from '@/lib/admin/data/feature-health';
 import { fetchFeatureHealthDetail } from '@/lib/admin/data/feature-health-detail';
 import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
-import { Eyebrow, Skeleton } from '@/components/fairway';
+import { Eyebrow, Skeleton, Surface } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -11,6 +11,12 @@ import { FeatureDotGrid } from '../_components/FeatureDotGrid';
 import { LocalTime } from '../_components/LocalTime';
 import { AttributionCoveragePanel } from './_components/AttributionCoveragePanel';
 import { FeatureHealthDetailPanel } from './_components/FeatureHealthDetailPanel';
+import { fetchJobsTab } from '@/lib/admin/data/jobs';
+import { fetchQualifierLogic } from '@/lib/admin/data/qualifier-logic';
+import { buildHeartbeatMatrix } from '@/lib/admin/triage/heartbeat-matrix';
+import { buildInvariantLattice } from '@/lib/admin/triage/invariant-lattice';
+import { HeartbeatMatrixGrid } from '@/components/admin/triage/HeartbeatMatrixGrid';
+import { InvariantLatticeGrid } from '@/components/admin/triage/InvariantLatticeGrid';
 
 export const dynamic = 'force-dynamic';
 
@@ -182,6 +188,47 @@ export default async function FeatureHealthPage() {
     );
   }
 
+  /**
+   * Heartbeat Matrix + Invariant Lattice (Bridge Premium Phase 3). One
+   * `fetchJobsTab()` call feeds the matrix AND the integrity half of the
+   * lattice — never a second, duplicate 21-query board read for the same
+   * refresh. Failures on either source degrade that source's rows to
+   * `unknown`, never the whole section.
+   */
+  async function HeartbeatAndInvariantsBody() {
+    const [jobs, qualifierLogic] = await Promise.allSettled([fetchJobsTab(), fetchQualifierLogic()]);
+
+    const jobsTab = jobs.status === 'fulfilled' ? jobs.value : null;
+    const qualifierRes = qualifierLogic.status === 'fulfilled' ? qualifierLogic.value : null;
+
+    const heartbeat = jobsTab ? buildHeartbeatMatrix(jobsTab, Date.now()) : null;
+    const lattice = buildInvariantLattice({
+      qualifierInvariants: qualifierRes && qualifierRes.status === 'ok' && qualifierRes.data ? qualifierRes.data.invariants : null,
+      integrityRows: jobsTab ? jobsTab.integrity : null,
+    });
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <Eyebrow as="h3" tone="tertiary">
+            Heartbeat matrix
+          </Eyebrow>
+          {heartbeat ? (
+            <HeartbeatMatrixGrid view={heartbeat} />
+          ) : (
+            <p className="text-sm text-warm-500">Could not read the job board this refresh.</p>
+          )}
+        </div>
+        <div>
+          <Eyebrow as="h3" tone="tertiary">
+            Invariant lattice
+          </Eyebrow>
+          <InvariantLatticeGrid view={lattice} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <AutoRefresh />
@@ -224,6 +271,20 @@ export default async function FeatureHealthPage() {
           </PanelBoundary>
         </div>
       </div>
+      <Surface padding="sm">
+        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+          Heartbeat &amp; invariants
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-warm-500">
+          Did every critical job run on schedule, and is the data it maintains still consistent — read from what has
+          already been recorded, never from re-running a check at request time.
+        </p>
+        <div className="mt-3">
+          <PanelBoundary title="Heartbeat &amp; invariants" skeleton={<Skeleton className="h-40 w-full rounded-xl" />}>
+            <HeartbeatAndInvariantsBody />
+          </PanelBoundary>
+        </div>
+      </Surface>
     </div>
   );
 }

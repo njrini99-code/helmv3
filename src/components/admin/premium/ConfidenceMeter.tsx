@@ -64,6 +64,7 @@ export function ConfidenceMeter({ value, label, size = 'md', className }: Confid
           <span
             key={i}
             className={cn(
+              'rounded-sm',
               size === 'sm' ? 'h-2 w-1' : 'h-2.5 w-1.5',
               i < filledSegments ? 'bg-fw-warning' : 'bg-warm-200',
             )}
