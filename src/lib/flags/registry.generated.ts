@@ -46,4 +46,21 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     kill_switch_behavior: "Off: no helm_debug_start_trace / helm_debug_record_trace_step / helm_debug_finalize_trace RPCs are called from the golf round action path. The round mutation itself is unaffected — this switch only controls whether it is observed. Changed by setting HELM_FLIGHT_RECORDER_ENABLED at the environment level (deploy-time, not a runtime toggle); auditable via the Vercel environment-variable change log.",
     cleanup_plan: "No planned removal — permanent ops tooling. This registry entry documents the existing toggle; it does not wire the call sites, which sit outside this PR's file-ownership boundary. Wiring is left to the Sentry session that owns those two files.",
   },
+  {
+    feature_id: "verification_ensemble",
+    owner: "platform (Bridge)",
+    purpose: "Runs a multi-pass adversarial/security/product review chain over an already-produced root-cause analysis before it reaches the repair queue; default off, no recurring cost.",
+    type: "operations_kill_switch",
+    status: "active",
+    created_at: "2026-09-03",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: "Off (the default everywhere): runVerificationEnsemble returns status: 'disabled' immediately, before resolving a model provider or calling generateObject — zero additional model calls beyond today's single Diagnose call. On: adds up to four more model calls (ADVERSARY, conditional SECURITY, PRODUCT, JUDGE) per invocation, on the same Anthropic account Diagnose already uses. Changed by editing this file's environment block and running npm run flags:generate; auditable via git history on config/feature-flags.yml.",
+    cleanup_plan: "No planned removal — permanent ops lever gating a genuinely optional verification pass, not a migration bridge.",
+  },
 ] as const;

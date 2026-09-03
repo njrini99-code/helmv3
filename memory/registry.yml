@@ -1496,8 +1496,16 @@ features:
       actions: []
       services:
         - src/lib/reliability/**
+        # Phase F remainder (control-plane plan §4 F.4.1/F.4.3): change-risk
+        # scoring + rollback recommendation. A narrower glob than
+        # src/lib/admin/** (admin_platform's blanket catch-all) —
+        # most-specific-glob-wins per this file's own documented resolution
+        # rule (see the src/lib/admin/** comment on admin_platform).
+        - src/lib/admin/release-intel/**
+        - scripts/release-intel/**
       db: []
-      tests: []
+      tests:
+        - src/lib/admin/release-intel/__tests__/**
     integrations:
       - supabase
       - sentry
@@ -1508,7 +1516,7 @@ features:
         - docs/OBSERVABILITY.md
       required_checks:
         - npm run typecheck
-        - npx vitest run src/lib/reliability src/app/admin/reliability
+        - npx vitest run src/lib/reliability src/app/admin/reliability src/lib/admin/release-intel
         - npm run build
 
   admin_selfheal:
@@ -1550,10 +1558,24 @@ features:
         - scripts/selfheal-repair-doctor.mjs
         - config/launchd/**
         - docs/ai-system/selfheal/**
+        # Phase J remainder (control-plane plan §6 J.4.2-J.4.4): verification
+        # ensemble (default OFF via the verification_ensemble flag —
+        # config/feature-flags.yml), causal-confidence scoring, incident
+        # similarity (over src/lib/admin/incidents/aliases.ts's structural
+        # fingerprints), and earned-autonomy policy. Narrower globs than
+        # src/lib/admin/** (admin_platform's blanket catch-all) —
+        # most-specific-glob-wins per this file's own documented resolution
+        # rule.
+        - src/lib/admin/ensemble/**
+        - src/lib/admin/causal/**
+        - src/lib/admin/autonomy/**
       db: []
       tests:
         - src/test/scripts/run-selfheal-repair.test.ts
         - src/test/scripts/selfheal-repair-launchd.test.ts
+        - src/lib/admin/ensemble/__tests__/**
+        - src/lib/admin/causal/__tests__/**
+        - src/lib/admin/autonomy/__tests__/**
     integrations:
       - supabase
       - sentry
@@ -1565,6 +1587,7 @@ features:
       required_checks:
         - npm run typecheck
         - npx vitest run src/test/scripts/run-selfheal-repair.test.ts src/test/scripts/selfheal-repair-launchd.test.ts
+        - npx vitest run src/lib/admin/ensemble src/lib/admin/causal src/lib/admin/autonomy
         - npm run build
 
   team_access_control:

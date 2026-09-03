@@ -256,7 +256,7 @@ is a second thing to keep true.
 **Admin Reliability Collector** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-reliability-collector.md`
-- **Code:** `src/app/admin/reliability/**`, `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`
+- **Code:** `src/app/admin/reliability/**`, `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`, `src/lib/admin/release-intel/**`, `scripts/release-intel/**` … and 1 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -267,7 +267,7 @@ is a second thing to keep true.
 **Admin Self-Heal** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-selfheal.md`
-- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 10 more in the registry
+- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 16 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

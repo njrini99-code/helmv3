@@ -45,6 +45,20 @@ blind-source notice, the severity mix, run history and the raw snapshot.
   `sources.ts` (`collectSentry`, `collectSupabase`, `collectVercel`),
   `normalize.ts` (`correlateSignals`, `correlationSignature`), `resolution.ts`,
   `types.ts`.
+- `src/lib/admin/release-intel/**` (2026-09-03, control-plane plan §4 F
+  remainder) — `risk-score.ts` (pure change-risk tier + itemized reasons),
+  `rollback.ts` (pure KEEP/WATCH/PAUSE_ROLLOUT/ROLLBACK_RECOMMENDED/UNKNOWN
+  verdict over `reliability-snapshot` window summaries), `read-model.ts`
+  (server-only: `fetchRollbackRecommendation()` for the live release via
+  Supabase + `fetchReleaseLedger()`; `fetchPendingReleaseRisk()` for queued
+  release-queue items via defensive reads of `memory/registry.yml` and
+  `docs/generated/WORLD_MODEL.json` — degrades to `unconfigured` if either
+  file is unreadable at runtime, never crashes). `scripts/release-intel/**`
+  — `score-change.ts` (`npm run risk:score`), `evaluate-rollback.ts` (`npm
+  run release:rollback-check`), both read-only and non-executing (never
+  calls a deploy/rollback API). Renders on `/admin/deploys` as a new
+  "Release intelligence" panel
+  (`src/app/admin/deploys/_components/ReleaseIntelPanel.tsx`).
 
 ## Core Data
 
@@ -178,6 +192,8 @@ blind-source notice, the severity mix, run history and the raw snapshot.
 - `src/lib/reliability/__tests__/sources.test.ts` — the self-feeding-read
   guard, asserted at the query level where it actually lives.
 - `src/app/admin/reliability/__tests__/reliability-view.test.ts`
+- `src/lib/admin/release-intel/__tests__/risk-score.test.ts`,
+  `src/lib/admin/release-intel/__tests__/rollback.test.ts`.
 - Typecheck/build for admin UI changes.
 
 ## Related Docs
