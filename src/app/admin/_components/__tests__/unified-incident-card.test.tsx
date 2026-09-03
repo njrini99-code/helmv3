@@ -69,6 +69,7 @@ const baseIncident: UnifiedIncident = {
   klass: 'defect',
   actionable: true,
   klassReason: 'Unexpected failure (severity-derived)',
+  isFixture: false,
   analysis: null,
   repair: null,
   deployProof: null,
@@ -136,6 +137,69 @@ describe('UnifiedIncidentCard — lifecycle chip', () => {
     const chip = screen.getByText(LIFECYCLE_LABEL.merged);
     expect(chip.className).not.toContain('fw-success');
     expect(chip.className).toContain('fw-warning');
+  });
+});
+
+describe('UnifiedIncidentCard — fixture badge (catalogued defect (h))', () => {
+  it('renders a FIXTURE chip when the incident traces to a QA fixture round', () => {
+    render(<UnifiedIncidentCard incident={{ ...baseIncident, isFixture: true }} series={null} />);
+    expect(screen.getByText('FIXTURE')).toBeInTheDocument();
+  });
+
+  it('renders no FIXTURE chip for an ordinary incident', () => {
+    render(<UnifiedIncidentCard incident={baseIncident} series={null} />);
+    expect(screen.queryByText('FIXTURE')).not.toBeInTheDocument();
+  });
+
+  it('the fixture chip outranks the blind-source chip under the 5-chip cap', () => {
+    // Six chips are eligible at once here (lifecycle, fixture, corroboration,
+    // RCA, PR, blind source) — one more than the cap, so this also pins which
+    // one loses: a fixture is a fact about the DATA, and outranks a source
+    // read failure for an operator's attention.
+    const loaded: UnifiedIncident = {
+      ...baseIncident,
+      isFixture: true,
+      corroboration: 3,
+      analysis: {
+        category: 'fix-here',
+        probableCause: 'x',
+        suggestedFix: 'y',
+        confidence: 'high',
+        suspectFiles: [],
+        relatedFingerprints: [],
+        model: 'test-model',
+        generatedAt: '2026-08-27T00:00:00Z',
+        repairVerdict: 'not-reviewed',
+      },
+      repair: {
+        status: 'pr-open',
+        prNumber: 42,
+        prUrl: 'https://github.com/org/repo/pull/42',
+        branch: 'agent/fix',
+        checks: null,
+        mergedAt: null,
+        mergeSha: null,
+        note: null,
+      },
+      sources: [
+        ...baseIncident.sources,
+        {
+          source: 'sentry',
+          health: 'blind',
+          reason: 'Sentry API timed out',
+          occurrences: null,
+          firstSeen: null,
+          lastSeen: null,
+          ref: null,
+          permalink: null,
+          summary: null,
+        },
+      ],
+    };
+    render(<UnifiedIncidentCard incident={loaded} series={null} />);
+    expect(screen.getAllByTestId('unified-incident-chip')).toHaveLength(5);
+    expect(screen.getByText('FIXTURE')).toBeInTheDocument();
+    expect(screen.queryByText('SOURCE BLIND')).not.toBeInTheDocument();
   });
 });
 

@@ -51,6 +51,7 @@ function baseIncident(id: string): UnifiedIncident {
     klass: 'defect',
     actionable: true,
     klassReason: 'r',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,

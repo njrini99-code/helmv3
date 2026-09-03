@@ -11,10 +11,12 @@ import {
   extractActionName,
   extractCollapsedCount,
   extractRoute,
+  extractRoundId,
   extractErrorCode,
 } from '@/lib/admin/incident-report';
 import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
 import { resolveFeatureId } from '@/lib/reliability/normalize';
+import { isQaFixtureRoundId } from '@/lib/admin/qa-fixture-rounds';
 
 export type TriageSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -102,6 +104,15 @@ export interface TriageItem {
    * hand to someone else. Null for Sentry rows, whose identity is shortId.
    */
   fingerprint: string | null;
+  /**
+   * This incident's evidence traces back to a QA fixture round —
+   * `qa-fixture-rounds.ts`. Never a production defect; the Errors tab shows
+   * a FIXTURE badge and `actionable` is forced `false` regardless of what
+   * `classifyIncident` said, so it drops out of the actionable count too.
+   * Sentry-origin items are always `false` — a Sentry issue carries no
+   * round-id metadata to match against.
+   */
+  isFixture: boolean;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
   report: string;
 }
@@ -297,6 +308,8 @@ export function mergeTriage(input: {
     errorCode: null,
     fingerprint: null,
     hasRca: false,
+    // Sentry issues carry no round-id metadata — never a fixture match.
+    isFixture: false,
     report: buildIncidentReport({
       title: issue.title,
       message: issue.culprit ?? issue.title,
@@ -349,6 +362,11 @@ export function mergeTriage(input: {
     const errorCode =
       mostRecentFirst.map((r) => extractErrorCode(r.metadata)).find((c) => c !== null) ?? null;
 
+    // Catalogued defect (h): any row in the bucket naming a QA fixture round
+    // makes the whole grouped incident a fixture — same "any occurrence
+    // counts" reasoning `regressed` below already uses.
+    const isFixture = bucket.rows.some((r) => isQaFixtureRoundId(extractRoundId(r.metadata)));
+
     const classification = classifyIncident({
       title: last.title,
       message: last.message,
@@ -386,12 +404,18 @@ export function mergeTriage(input: {
       actionName,
       route,
       klass: classification.klass,
-      actionable: classification.actionable,
+      // A QA fixture round is never actionable, regardless of what the
+      // message/severity classifier decided — the whole point is that this
+      // is known seeded data, not a production defect. Overrides the
+      // classifier's verdict rather than feeding isFixture into it, so
+      // klassReason stays an honest account of what the TEXT said.
+      actionable: isFixture ? false : classification.actionable,
       klassReason: classification.reason,
       hasDegradedMessage: classification.hasDegradedMessage,
       errorCode,
       fingerprint: fp,
       hasRca: input.analyzedFingerprints?.has(fp) ?? false,
+      isFixture,
       report: buildIncidentReport({
         title: last.title,
         message: last.message,

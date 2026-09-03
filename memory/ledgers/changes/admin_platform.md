@@ -1,5 +1,55 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (h) — QA fixture rounds get a FIXTURE badge and drop out of the actionable count
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (h) — the
+  last of the six-defect sweep).
+- **New `src/lib/admin/qa-fixture-rounds.ts`**: `QA_FIXTURE_ROUND_IDS`, a
+  literal copy of the four ids
+  `supabase/migrations/20260901120000_integrity_completed_round_zero_scored_holes.sql`
+  names as seeded fixtures (owner decision 2026-09-02: KEPT), plus
+  `isQaFixtureRoundId`. Copied rather than read at runtime — nothing in this
+  code path can read a `.sql` file — so `qa-fixture-rounds.test.ts` instead
+  reads the migration itself and asserts the constant still matches it
+  exactly, closing the drift gap a hand-maintained copy would otherwise open.
+- **New `extractRoundId` in `incident-report.ts`**: `metadata.roundId`, a
+  TOP-LEVEL key (same shape as the existing `extractRoute`/`extractActionName`
+  — `normalizeContext` in `server-error-logger.ts` writes it from
+  `ObservedActionContext.roundId`).
+- **`mergeTriage` (`triage.ts`) sets `TriageItem.isFixture` and forces
+  `actionable: false` at the source.** Any row in an app-origin bucket naming
+  a QA fixture round makes the whole grouped item a fixture — same
+  "any-occurrence-counts" shape `regressed` already uses — and its
+  `actionable` is forced `false` regardless of what `classifyIncident`
+  decided from the message/severity text alone. Forcing it HERE, once,
+  rather than adding a parallel exclusion at every downstream consumer, is
+  what keeps a fixture out of every actionable count that already gates on
+  `.actionable`: the Incidents tab's `shownActionable`, the default-kind
+  facet (`matchesKind`), and the Truth Strip's `actionable` cell all needed
+  NO additional change. Sentry-origin items are always `isFixture: false` — a
+  Sentry issue carries no round-id metadata to match against.
+- **`correlate.ts` carries `isFixture` onto `UnifiedIncident`** (new field,
+  `bucket.appItems.some(i => i.isFixture)`) purely so the card can explain
+  WHY — the exclusion itself already happened upstream.
+  `UnifiedIncidentCard.tsx` renders a neutral-tone FIXTURE chip, SECOND
+  priority (right after the lifecycle chip, ahead of stalled/corroboration/
+  RCA/PR/blind-source) — a fact about the data outranks everything derived
+  from it, including outranking the blind-source chip under the 5-chip cap.
+- **Verified**: `qa-fixture-rounds.test.ts` (3/3, including the drift guard
+  against the live migration file); a new `extractRoundId` case in
+  `incident-report.test.ts` (failing-first); three new `mergeTriage` cases in
+  `triage.test.ts` pinning `isFixture`/forced `actionable: false`
+  (failing-first — all three were red against the pre-fix code); three new
+  `correlateIncidents` cases in `correlate.test.ts`; three new
+  `UnifiedIncidentCard` cases in `unified-incident-card.test.tsx` (chip
+  renders, does not render for an ordinary incident, and outranks the
+  blind-source chip under the cap). Full ripple:
+  `src/lib/admin src/lib/reliability src/app/admin` 1745/1745 passing
+  (six pre-existing `TriageItem`/`UnifiedIncident` test fixtures across five
+  files needed the new required field added — a compile-time gap TS itself
+  surfaced, all fixed). `npm run typecheck`, `lint`, `lint:ratchet`,
+  `audit:supabase-errors` (1039 baseline, no regression) all green.
+
 ## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (e) — a fingerprint the analysis already ruled NOT A DEFECT stops re-triggering as a regression
 
 - SHA: pending (branch `agent/reliability-bridge-fixes`, defect (e) of the

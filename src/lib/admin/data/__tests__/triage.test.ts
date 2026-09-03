@@ -82,6 +82,42 @@ describe('mergeTriage', () => {
     expect(items[0]).toMatchObject({ feature: 'round_review_ai' });
   });
 
+  // Catalogued defect (h): an incident whose evidence traces to a seeded QA
+  // fixture round (supabase/migrations/20260901120000_..._zero_scored_holes.sql)
+  // must be flagged `isFixture: true` and forced `actionable: false` —
+  // regardless of what the message/severity classifier decided — so it
+  // never counts as a production defect an operator needs to act on.
+  it('flags an app-origin item as isFixture and forces actionable: false when its metadata.roundId matches a QA fixture round', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({
+          id: 'e1',
+          fingerprint: 'fp-fixture',
+          metadata: { roundId: '0b000000-0000-4000-b000-000000000001' },
+        }),
+      ],
+    });
+    expect(items[0]).toMatchObject({ isFixture: true, actionable: false });
+  });
+
+  it('a normal round id (or no roundId at all) is never isFixture', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({ id: 'e1', fingerprint: 'fp-real', metadata: { roundId: 'real-round-1' } }),
+        appEvent({ id: 'e2', fingerprint: 'fp-none', metadata: {} }),
+      ],
+    });
+    expect(items.find((i) => i.key === 'app:fp-real')).toMatchObject({ isFixture: false });
+    expect(items.find((i) => i.key === 'app:fp-none')).toMatchObject({ isFixture: false });
+  });
+
+  it('a Sentry-origin item is never isFixture — it carries no round-id metadata', () => {
+    const items = mergeTriage({ sentryIssues: [sentryIssue({})], appEvents: [] });
+    expect(items[0]).toMatchObject({ isFixture: false });
+  });
+
   it('stays null when the culprit maps to nothing in the advisory map, same as a missing culprit', () => {
     const items = mergeTriage({
       sentryIssues: [

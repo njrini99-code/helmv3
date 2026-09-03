@@ -48,6 +48,7 @@ function incident(id: string, gaps: ProofGap[], description = `incident ${id}`):
     klass: 'defect',
     actionable: true,
     klassReason: 'r',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,

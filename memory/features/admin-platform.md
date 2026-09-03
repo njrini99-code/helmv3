@@ -379,6 +379,34 @@ them would have broken those routes, not the dead one.
   at. A control that does nothing is worse than a missing one: it teaches the
   operator the queue is curated when it is not. Counts shown beside a filter
   are measured over the list that filter actually narrows.
+- **A QA fixture round is never a production defect, and says so.**
+  `supabase/migrations/20260901120000_integrity_completed_round_zero_scored_holes.sql`
+  names four `golf_rounds` ids as seeded fixtures (owner decision 2026-09-02:
+  KEPT, not removed) — `src/lib/admin/qa-fixture-rounds.ts` carries a literal
+  copy of that exact array (nothing at runtime can read a `.sql` file), and
+  `qa-fixture-rounds.test.ts` reads the migration itself and asserts the two
+  match, so they cannot drift silently. `mergeTriage` (`triage.ts`) matches
+  each app-origin bucket's rows against it via `extractRoundId(row.metadata)`
+  — `metadata.roundId` is a top-level key, same shape as `route`/`action`,
+  written by `normalizeContext` from `ObservedActionContext.roundId` — and
+  when ANY row in the bucket names a fixture round, sets `TriageItem.
+  isFixture: true` and forces `actionable: false`, overriding whatever
+  `classifyIncident` decided from the text alone. Forcing `actionable` at
+  THIS single source, rather than adding a parallel exclusion at every
+  downstream consumer, is what keeps the fixture out of every actionable
+  count that already gates on it — the Incidents tab's `shownActionable`, the
+  `actionable`/default-kind lens, and the Truth Strip's `actionable` cell —
+  with no separate check needed at any of them. `correlate.ts` carries
+  `isFixture` through onto `UnifiedIncident` (`bucket.appItems.some(i =>
+  i.isFixture)`) purely so the card can say WHY: `UnifiedIncidentCard`
+  renders a FIXTURE chip, second priority right after the lifecycle chip
+  (a fact about the DATA outranks everything derived from it, including
+  outranking the blind-source chip under the 5-chip cap) — neutral tone, not
+  a `StateChip` on lifecycle itself, because the lifecycle machinery still
+  describes this incident honestly; the fixture flag is an orthogonal fact
+  layered on top, not a reclassification. Sentry-origin items are always
+  `isFixture: false` — a Sentry issue carries no round-id metadata to match
+  against.
 - The overnight digest (`/api/cron/admin-digest` → `build-digest.ts`) NAMES
   only actionable, non-degradation incident groups — the Errors tab's default
   view — and COUNTS the rest as "Not listed: N handled degradations · N quiet

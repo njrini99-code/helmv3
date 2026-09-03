@@ -522,6 +522,15 @@ export interface UnifiedIncident {
   klass: IncidentClass;
   actionable: boolean;
   klassReason: string;
+  /**
+   * This incident's evidence traces back to a seeded QA fixture round —
+   * `src/lib/admin/qa-fixture-rounds.ts`. Never a production defect: the
+   * Incidents tab shows a FIXTURE badge, and `actionable` is already forced
+   * `false` for it upstream (`mergeTriage`) so it drops out of the
+   * actionable count too — this field exists for the badge, not to
+   * re-derive the exclusion.
+   */
+  isFixture: boolean;
 
   analysis: IncidentAnalysis | null;
   repair: IncidentRepair | null;
