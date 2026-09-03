@@ -25,7 +25,7 @@ is a second thing to keep true.
 **Feature Awareness System** · active · criticality high · owner platform
 
 - **Behaviour:** `docs/ai-system/helmv3-ai-codebase-intelligence.md`
-- **Code:** `scripts/knowledge/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json`, `AGENTS.md`, `CLAUDE.md`
+- **Code:** `scripts/knowledge/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json`, `AGENTS.md` … and 1 more in the registry
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
