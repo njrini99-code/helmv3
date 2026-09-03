@@ -157,11 +157,11 @@ export function classifySelfHealStage(
   lastRun: { started_at: string; status: string; metadata?: unknown } | null,
   now: Date,
 ): CronBoardStatus {
-  return classifyCronStatus(
-    { jobType: stage.jobType, path: stage.contract, cadenceMinutes: stage.cadenceMinutes },
-    lastRun,
-    now,
-  );
+  // classifyCronStatus only ever reads cadenceMinutes (see its own signature
+  // comment in cron-registry.ts) — narrowed here to match, so this call site
+  // doesn't need to fabricate a jobType/path this stage's own type doesn't
+  // carry under those names.
+  return classifyCronStatus({ cadenceMinutes: stage.cadenceMinutes }, lastRun, now);
 }
 
 export type SelfHealLoopStatus = CronBoardStatus | 'unknown';
