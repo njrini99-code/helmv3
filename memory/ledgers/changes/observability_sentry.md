@@ -1,4 +1,8 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
+<!-- schema-drift-absent: golf_action, baseball_action -->
+<!-- `golf_action`/`baseball_action` below are Sentry metric `feature`
+     dimension LITERALS, not database objects — see
+     memory/features/observability-sentry.md's own marker for why. -->
 # Change ledger — observability_sentry
 
 ## 2026-09-02 — client "maximum observability" build: profiling, replay privacy, third-party filter, feedback, breadcrumbs, feature tags
@@ -129,3 +133,170 @@
   refuses personal-token Bearer auth; golf coach-role coverage — needs a
   `GOLFHELM_COACH_EMAIL`/`PASSWORD` secret) live in
   `docs/observability/SENTRY_SNAPSHOTS.md`.
+
+## 2026-09-02 — Phase C, Deliverable 1: withSentryConfig's discarded third argument
+
+- Branch: `agent/sentry-max-server`. SHA: `c23cbb947`.
+- Change: `withSentryConfig(nextConfig, sentryBuildOptions)` in
+  `next.config.mjs` was called with THREE positional arguments; the
+  installed `@sentry/nextjs@10.71.0` signature has exactly two, so the
+  third — six real options including the ad-blocker-safe tunnel route and
+  `hideSourceMaps` — was silently discarded every build. Extracted the
+  merged options object into `src/lib/sentry-build-options.mjs`'s
+  `buildSentryBuildOptions()` (unit-testable outside `next.config.mjs`'s
+  non-TS pipeline), fixed `hideSourceMaps: true` (not a real 10.71.0
+  option) to `sourcemaps: { deleteSourcemapsAfterUpload: true }`, and
+  deliberately set `automaticVercelMonitors: false` (would build-time-
+  inject a second, independent Vercel Cron Monitor mechanism alongside
+  Deliverable 3's per-job `captureCheckIn` calls — see that entry).
+- A later merge (`f6efd45bd`, below) reconciled this with an independent
+  inline fix from another phase that kept both bugs; `applicationKey`
+  became a parameter of `buildSentryBuildOptions` (default `'helm-web'`)
+  so `next.config.mjs` can pass it explicitly, keeping the literal
+  Phase D's `sentry-application-key.test.ts` greps for in that file's own
+  raw text without editing that test.
+- Docs: `docs/observability/SENTRY_PHASE_A_FINDINGS.md` §(h).
+
+## 2026-09-02 — Phase C, Deliverable 2: four duplicate-capture bugs
+
+- Branch: `agent/sentry-max-server`. SHA: `1698732c7`.
+- Change: (1) `register-process-error-handlers.ts` — process-level
+  `uncaughtException`/`unhandledRejection` handlers now check
+  `isAlreadyBridgeLogged` before writing a second admin_events row for an
+  error the request-scoped handler already captured. (2)
+  `global-error.tsx` — the same marker-gating, plus a fix so the boundary's
+  own `console.error` breadcrumb doesn't fire for an error already logged.
+  (3) `instrumentation.ts`'s `sharedIgnoreErrors` gained the three Lifting
+  control-flow error classes (`LiftingUnauthorizedError`/
+  `LiftingNoOrgError`/`LiftingForbiddenError`) that were reaching Sentry as
+  full Errors despite being expected auth/access rejections. (4)
+  `onRequestError` now computes `alreadyLogged` once and gates
+  `Sentry.captureRequestError` on `!alreadyLogged`, closing the last
+  double-capture path.
+- Docs: `docs/observability/SENTRY_PHASE_A_FINDINGS.md` §(a)/(b)/(c)/(d).
+
+## 2026-09-02 — Phase C, Deliverable 3: Sentry Cron Monitor check-ins
+
+- Branch: `agent/sentry-max-server`. SHA: `d8de018dd`; correctness
+  follow-ups from an advisor review of this and Deliverable 1: `974f9ff27`.
+- Change: new `src/lib/observability/cron-monitors.ts`
+  (`shouldEmitCronCheckIns`, `resolveCronMonitorSlug`,
+  `resolveCronMonitorConfig` — never returns undefined; unregistered jobs
+  get a conservative 30-day-interval fallback config rather than silently
+  achieving nothing, `startCronCheckIn`/`finishCronCheckIn`, all fail-open)
+  wired into `recordJobRun` (Vercel crons, `src/lib/admin/job-log.ts`, all
+  3 exit paths — success, resolved 4xx/5xx Response, thrown error),
+  `withBridgeLogging` (Inngest, `src/lib/inngest/functions.ts`), and a new
+  dependency-injectable `scripts/lib/sentry-cron-checkin.mjs` for the
+  launchd Repair script (`scripts/run-selfheal-repair.mjs`), which cannot
+  import TS/`@/`-aliased modules. `src/lib/admin/cron-registry.ts` gained a
+  required `schedule: string` field (the exact vercel.json crontab string)
+  on every `CronRegistryEntry`, contract-tested byte-exact against
+  `vercel.json` so a monitor's expected schedule in Sentry can never
+  quietly disagree with what Vercel actually runs.
+- The correctness follow-up (`974f9ff27`) flipped
+  `automaticVercelMonitors` from an initially-shipped `true` back to
+  `false` after re-reading the installed SDK's own build-time source
+  showed it would inject a second, duplicate Cron Monitor mechanism — see
+  Deliverable 1's entry.
+- Docs: `docs/observability/SENTRY_CRON_MONITORS.md` (full job table,
+  monitor slug conventions, the `automaticVercelMonitors:false` decision
+  record).
+- Follow-up owed and NOT done in this phase: `memory/features/
+  admin-platform.md` was not updated for the cron check-in wiring at the
+  time — closed in this same session's Deliverable 7 pass (see that
+  entry below).
+
+## 2026-09-02 — Phase C, Deliverable 4: /api/health readiness probe
+
+- Branch: `agent/sentry-max-server`. SHA: `00fceaa03`.
+- Change: rewrote `src/app/api/health/route.ts` — bounded Supabase query
+  via `.abortSignal(AbortSignal.timeout(2500))` on
+  `.from('users').select('id').limit(1)`, honest HTTP status
+  (200 only when `status: 'healthy'`, else 503 for `'degraded'`), a
+  60-second-throttled `logServerError` on the degraded branch (never
+  logged every poll), and a response body of `{status, database, release,
+  timestamp, responseTimeMs}` — dropped the previous `deploymentId` field
+  in favor of `release` (`NEXT_PUBLIC_SENTRY_RELEASE ??
+  VERCEL_GIT_COMMIT_SHA ?? 'unknown'`), with no sensitive fields.
+- Every real consumer of the old `deploymentId` field was found and fixed
+  in the same commit: `scripts/warm-edge.ts`,
+  `StaleDeploymentRecoveryScript.tsx`, `src/app/layout.tsx`'s
+  `x-deployment-id` meta tag. Also fixed a latent bug found while auditing
+  consumers: `src/hooks/golf/use-connection-status.ts` was conflating
+  `response.ok` with reachability — any response (including a 503 from
+  this exact route) proves the network path works, so `isConnected` now
+  reads `true` for any response that arrives at all.
+- Docs: none dedicated; `docs/observability/SENTRY_PHASE_A_FINDINGS.md`
+  §(k)/(l) cover the original findings this addressed.
+
+## 2026-09-02 — Phase C, Deliverable 5: AI observability, all 5 production call sites
+
+- Branch: `agent/sentry-max-server`. SHA: `0113043b6`.
+- Change: per-call `experimental_telemetry: { isEnabled: true, functionId,
+  recordInputs: false, recordOutputs: false }` opt-in at every production
+  Vercel AI SDK call site — `src/app/api/coachhelm/v3/chat/stream/route.ts`
+  (`streamText`, `functionId: 'coachhelm.chat'`), both `generateObject`
+  calls in `src/lib/golf/schedule-vision.ts` (extraction + day-
+  verification), `src/lib/admin/rca.ts`'s `generateObject`, and
+  `src/lib/coachhelm/v3/llm/compose.ts`'s `runLlmAttempt` (`generateText`,
+  restructured with a try/catch to add per-attempt telemetry + recordAi).
+  Flipped the global `Sentry.vercelAIIntegration({recordInputs: false,
+  recordOutputs: false})` default in `instrumentation.ts` to match — Phase
+  A found it configured with BOTH flags `true` while being structurally
+  inert (no call site opted in), one line away from recording every
+  prompt/output body the moment any of them did.
+  `Sentry.setConversationId(convId)` added to the chat-stream route (the
+  only call site with a stable, opaque, non-user-derived thread id).
+  `recordAi()` (metrics.ts) called on both success and failure at all 5
+  sites.
+- Docs: `docs/observability/SENTRY_PHASE_A_FINDINGS.md` §(a) (the
+  recordInputs/recordOutputs finding).
+
+## 2026-09-02/03 — merge + Deliverable 6: re-merge and round-lifecycle/wrapper metrics
+
+- SHA: `f6efd45bd` (re-merge of `origin/agent/sentry-max-observability`,
+  required before Deliverable 6 per this phase's own directive — resolved
+  4 conflicts: `next.config.mjs` kept the Deliverable 1 extracted-helper
+  approach over an independent inline fix that still carried both bugs;
+  `src/instrumentation.ts` kept both phases' imports and de-duplicated a
+  `beforeSendMetric`/`beforeSendLog` key that auto-merge had landed twice
+  from non-conflicting hunks; `src/lib/admin/cron-registry.ts` added the
+  incoming `selfheal-triage` entry's required `schedule` field, verified
+  byte-for-byte against `vercel.json` rather than trusting the incoming
+  comment; `docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md` resolved by
+  regeneration).
+- SHA `922360b34` (Deliverable 6, part 1): `createHelmFlightRecorder`'s
+  `finalize()` (`src/lib/observability/helm-flight-recorder.ts`) now emits
+  `recordWorkflow` (feature `golf_round_lifecycle`) + one `helmLog` line
+  from all three of its return paths — the real recorder, the
+  disabled-mode no-op, and the start-timeout degrade path — covering all
+  four flight-recorder workflows (`golf.round.submit`/`.autosave`,
+  `golf.shot.delete`/`.add_or_edit`) from one change; deliberately NOT
+  gated behind the recorder's own production opt-in, since that gate is a
+  helm_debug DB-persistence decision and gating the Sentry metric behind
+  it too would make it mostly silent exactly where it matters.
+  `attachHelmTrace(traceId)` now runs at construction. `deleteInProgressRoundImpl`
+  ("recover" — `src/app/golf/actions/golf.ts`) gained a local
+  `recordDiscardRoundOutcome` helper at its 6 return branches
+  (`outcome:'stale_round_state'`, not `'db_error'`, for the ordinary
+  already-finished/removed race). `loginActionImpl`
+  (`src/app/golf/actions/auth.ts`) calls `recordLoginOutcome` — moved into
+  its own module, `src/lib/observability/golf-login-outcome.ts`, after a
+  first attempt at exporting it directly from `auth.ts` broke that file's
+  `'use server'` constraint (every export must be an async Server Action)
+  and was caught by `coverage-contract.observability.test.ts` before it
+  shipped. `sendPushNotification` (`src/lib/notifications/push.ts`) records
+  `recordPush` only for calls that attempted a device delivery; the
+  opted-out/no-devices returns log at `helmLog.info` without calling
+  `recordPush`, so the attempt counter isn't inflated by non-attempts.
+- SHA `bbc474178` (Deliverable 6, part 2): `withGolfAction`/
+  `withBaseballAction`/`withLiftingAction`
+  (`src/lib/{golf,baseball,lifting}/with-*-action.ts`) each call
+  `recordWorkflow` at their success/expected-error/unexpected-error exit
+  points, dimensioned by `sport`+`action` only (fixed `feature` literal
+  per wrapper — `golf_action`/`baseball_action`/`lifting_action` — never a
+  per-call identity dimension).
+- Docs: `memory/features/observability-sentry.md`'s Consumers section
+  updated in this same session's Deliverable 7 pass (see below) to
+  describe this work concretely rather than anticipate it.

@@ -73,7 +73,7 @@ user-agent header, monitor slug = the RAW `vercel.json` path
 `maxRuntime` hardcoded to 12 hours regardless of the job. That is a second
 monitor covering the same job as `cron-monitors.ts`'s own per-job
 `captureCheckIn` call — the exact duplicate-capture shape Phase A findings
-#4-#6 (fixed elsewhere in this same deliverable set) exist to eliminate, not
+\#4-#6 (fixed elsewhere in this same deliverable set) exist to eliminate, not
 recreate one option away. Kept `false` so `cron-monitors.ts` stays the
 single, tested authority. See `src/lib/sentry-build-options.mjs`'s own header
 for the full trace through the SDK source, and

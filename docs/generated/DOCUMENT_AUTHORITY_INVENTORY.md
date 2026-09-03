@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
 | `CURRENT_FEATURE` | 20 | 20 | 7 | 8 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
-| `GENERATED_TRUTH` | 15 | 3 | 5 | 22 |
+| `GENERATED_TRUTH` | 15 | 3 | 5 | 23 |
 | `PROCESS_CONTRACT` | 8 | 3 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
@@ -158,15 +158,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 3 | 83 | 2 |
-| `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 3 | 88 | 2 |
+| `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 13 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | - | 3 | 25 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
-| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 2 | 25 | 2 |
+| `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 2 | 28 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
-| `memory/features/observability-sentry.md` | current | yes | - | - | 3 | 22 | - |
+| `memory/features/observability-sentry.md` | current | yes | - | - | 4 | 28 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 1 | 13 | - |
@@ -255,7 +255,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 9 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 135 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 136 | 1 |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 28 | 3 | - |
@@ -427,7 +427,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 1 | 28 | 7 |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | 0 | 0 | - |
 | `docs/features/coachhelm/COACHHELM_ENGINE_AUDIT_2026-03-11.md` | current | - | - | - | 0 | 19 | - |
-| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 0 | 35 | 5 |
+| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 1 | 35 | 5 |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/NAV_ISSUES.md` | current | - | - | - | 0 | 0 | - |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/README.md` | current | - | - | - | 0 | 0 | - |
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/coach/ERRORS.md` | current | - | - | - | 0 | 2 | - |
@@ -473,7 +473,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 1 | 6 | 2 |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 2 | 14 | - |
+| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 4 | 37 | - |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
@@ -590,8 +590,8 @@ them would bury everything above.
 | `docs/guides/PLAYWRIGHT_SETUP_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
-| `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 0 | 21 | 7 |
-| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 0 | 10 | - |
+| `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 0 | 22 | 7 |
+| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 3 | 10 | - |
 | `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 2 | 6 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
 | `docs/observability/SENTRY_SNAPSHOTS.md` | current | - | - | - | 1 | 4 | - |
