@@ -585,7 +585,14 @@ export async function fetchIncidentBoard(
     { source: 'app', health: 'reading', reason: null, observedAt: nowIso },
     sentryHealth,
     ...reliability.health,
-    databaseSource,
+    // `SourceReading.reason` is optional; `CorrelationSourceHealth.reason` is
+    // not. Normalize rather than widen the board's own type.
+    {
+      source: databaseSource.source,
+      health: databaseSource.health,
+      observedAt: databaseSource.observedAt ?? null,
+      reason: databaseSource.reason ?? null,
+    },
   ];
 
   // fingerprint -> the admin_events rows in this feed. Built from the triage
