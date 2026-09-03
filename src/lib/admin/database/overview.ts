@@ -69,7 +69,12 @@ export interface DbHealthSampleRow {
 
 export interface CollectorHealth {
   jobType: string;
-  lastStatus: 'completed' | 'failed' | 'never_run';
+  /** 'unknown' is NOT 'never_run'. never_run is a fact about the collector —
+   *  the log was read and holds no row for it. unknown means the LOG READ
+   *  failed, so nothing is known about the collector at all. Collapsing the
+   *  second into the first turns a failed query into a confident claim that a
+   *  job has never executed. */
+  lastStatus: 'completed' | 'failed' | 'never_run' | 'unknown';
   lastRunAt: string | null;
 }
 
@@ -154,7 +159,14 @@ export async function fetchCollectorHealth(
     .limit(60);
 
   if (error || !data) {
-    return COLLECTOR_JOB_TYPES.map((jobType) => ({ jobType, lastStatus: 'never_run', lastRunAt: null }));
+    // The background_job_logs read itself failed. We know nothing about any
+    // collector — reporting 'never_run' here would assert that three jobs have
+    // never executed on the strength of a query that did not return.
+    return COLLECTOR_JOB_TYPES.map((jobType) => ({
+      jobType,
+      lastStatus: 'unknown' as const,
+      lastRunAt: null,
+    }));
   }
 
   return COLLECTOR_JOB_TYPES.map((jobType) => {
