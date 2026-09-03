@@ -16,10 +16,32 @@
  * reactComponentAnnotation) as a discarded third. JavaScript does not error
  * on an extra call-site argument — it is simply never bound to anything and
  * never read. Concretely, that meant: no ad-blocker-safe `/monitoring`
- * tunnel, no automatic Vercel Cron Monitor check-ins, fewer client source
- * maps uploaded than intended, and no JSX component names in stack traces —
- * despite every one of those lines looking like it was doing something.
- * Full writeup: `docs/observability/SENTRY_PHASE_A_FINDINGS.md` §(h).
+ * tunnel, fewer client source maps uploaded than intended, and no JSX
+ * component names in stack traces — despite every one of those lines looking
+ * like it was doing something. Full writeup:
+ * `docs/observability/SENTRY_PHASE_A_FINDINGS.md` §(h).
+ *
+ * `automaticVercelMonitors` is the one option from that list this file
+ * deliberately does NOT re-enable, despite Phase A naming it among the
+ * casualties. Read live from the installed SDK's own source
+ * (`node_modules/@sentry/nextjs/build/cjs/server/vercelCronsMonitoring.js`,
+ * `.../config/withSentryConfig/getFinalConfigObjectUtils.js`): once this
+ * argument-position bug was fixed, turning it on would build-time-inject a
+ * SECOND, independent Vercel Cron Monitor mechanism — span-wrapped, gated on
+ * a `vercel-cron` user-agent header, keyed by the RAW `vercel.json` path as
+ * its monitor slug (`/api/cron/log-retention`), `maxRuntime` hardcoded to 12
+ * hours — running alongside the manual, per-job `captureCheckIn` calls
+ * `src/lib/observability/cron-monitors.ts` already makes through
+ * `recordJobRun` (dashed slug `api-cron-log-retention`, the real per-job
+ * cadence/margin/max-runtime, and coverage of the "resolved 4xx/5xx Response
+ * without throwing" failure shape this app's crons actually use — unverified
+ * either way for the automatic span-based path). Two monitors covering one
+ * job is the exact duplicate-capture shape the rest of this deliverable set
+ * (Phase A findings #4-#6) spent its own effort eliminating; leaving this
+ * `false` keeps `cron-monitors.ts` the single, tested authority instead of
+ * quietly recreating that shape one option away. See
+ * `docs/observability/SENTRY_CRON_MONITORS.md` §2 for the live decision
+ * record.
  *
  * `hideSourceMaps` is additionally NOT A REAL OPTION in 10.71.0 at all, even
  * in the right argument position — grepped every `.d.ts` under
@@ -92,8 +114,10 @@ export function buildSentryBuildOptions({ org, project, authToken, release }) {
     // Tree-shake Sentry logger statements
     disableLogger: true,
 
-    // Auto-instrument Vercel Cron Monitors
-    automaticVercelMonitors: true,
+    // Deliberately false — src/lib/observability/cron-monitors.ts is the
+    // single Cron Monitor authority. See this file's header comment and
+    // docs/observability/SENTRY_CRON_MONITORS.md §2 for why.
+    automaticVercelMonitors: false,
 
     // React component annotations make stack traces show JSX component names
     reactComponentAnnotation: { enabled: true },

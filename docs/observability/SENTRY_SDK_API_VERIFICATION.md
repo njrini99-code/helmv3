@@ -56,8 +56,28 @@ on the server entry. "Method" in the table records which resolved which.
 | `profileSessionSampleRate` | `@sentry/node-core` `types.d.ts:88`, `@sentry/node` `types.d.ts:35` | YES | Types (server) | "Profiling is enabled if either this or `profilesSampleRate` is defined. If both are defined, `profilesSampleRate` is [used]" (doc comment, `node-core/build/types/types.d.ts:73`). `src/instrumentation.ts:260` sets `profileSessionSampleRate` only — `profilesSampleRate` is never set, so this is the value that governs. |
 | `profileLifecycle` | `@sentry/node-core` `types.d.ts:97`, `@sentry/node` `types.d.ts:46` | YES — `'manual' \| 'trace'` | Types (server) | `src/instrumentation.ts:261` sets `'trace'`. |
 | `Sentry.metrics` (`count`/`gauge`/`distribution`) | `@sentry/core` `build/types/metrics/public-api.d.ts` | YES | Runtime (`Object.keys(s.metrics)` → `['count','distribution','gauge']`) | **No `metrics.set`** in this version — only three functions, not four. Any plan referencing a `set`/counter-with-reset shape is wrong for 10.71.0. |
-| `enableMetrics` (init option) | `@sentry/core` `build/types/types/options.d.ts:549` (top-level), `:399` (deprecated nested under `_experiments`) | YES | Types (server+client, `@sentry/core` shared) | Not set anywhere in `src/instrumentation.ts` / `src/instrumentation-client.ts` today — `Sentry.metrics.*` calls would currently be dropped client-side unless this is turned on (confirm exact drop-vs-buffer behavior before relying on it in Phase B). |
-| `beforeSendMetric` | `@sentry/core` `options.d.ts:573` (top-level), `:412` (deprecated `_experiments` form) | YES | Types (server) | Same file as `enableMetrics`; not configured today. |
+| `enableMetrics` (init option) | `@sentry/core` `build/types/types/options.d.ts:549` (top-level), `:399` (deprecated nested under `_experiments`) | YES | Types (server+client, `@sentry/core` shared); **runtime behavior corrected by Phase C** — see the note below the table. | Wired in `src/instrumentation.ts` as of Phase C (both Node and Edge `Sentry.init` calls); `src/instrumentation-client.ts` (Phase D) still needs the matching line. |
+| `beforeSendMetric` | `@sentry/core` `options.d.ts:573` (top-level), `:412` (deprecated `_experiments` form) | YES | Types (server) | Wired in `src/instrumentation.ts` as of Phase C to `metrics.ts`'s `enforceMetricAttributeAllowlist` — the function existed since Phase B but was unreachable from `Sentry.init` until now. |
+
+**Correction to this row, Phase C (2026-09-02):** this table originally
+claimed "`Sentry.metrics.*` calls would currently be dropped client-side
+unless this is turned on" — that claim was never independently confirmed
+against the installed runtime, only inferred from the option existing and
+being unset. Read live,
+`node_modules/@sentry/core/build/cjs/metrics/internal.js`'s
+`_INTERNAL_captureMetric`:
+
+```js
+const metricsEnabled = enableMetrics ?? _experiments?.enableMetrics ?? true;
+```
+
+Metrics **default to enabled** when `enableMetrics` is unset — confirmed with
+a live `node -e` run against the installed `@sentry/nextjs` (10.71.0) that
+intercepted the transport's `send()` call: `Sentry.metrics.count(...)` sent a
+real `trace_metric` envelope item with no `enableMetrics` option set at all.
+The option is now set explicitly anyway (belt-and-suspenders against a
+future SDK default change), but Phase C's metric call sites were NOT blocked
+on this the way the original claim implied they would be.
 | `Sentry.logger` (`.trace/.debug/.info/.warn/.error/.fatal/.fmt`) | `@sentry/core`, re-exported nextjs server (`index.d.ts:120`) and client (`browser/build/npm/types/index.d.ts:25`, via `@sentry/core/browser`) | YES | Runtime (`Object.keys(s.logger)` → `['fmt','debug','error','fatal','info','trace','warn']`) | Requires `enableLogs: true` on `Sentry.init` to actually ship — **and that IS set**, `src/instrumentation.ts:256` and `src/instrumentation-client.ts:66` both set `enableLogs: true`. `Sentry.logger.*` calls would work today if any existed (grep found none in `src/`). |
 | `beforeSendLog` | `@sentry/core` `options.d.ts:543` (top-level) | YES | Types (server+client) | Not configured. |
 | `feedbackIntegration` / `feedbackAsyncIntegration` | `@sentry/browser`, via `@sentry/feedback` (`build/npm/types/index.d.ts:1,13`) | YES — client only, but see gotcha | Types (client) | **`instrumentation-client.ts:87-92`'s own comment is stale for 10.71.0.** It says "`feedbackIntegration` was moved out of @sentry/nextjs v10.x — it now lives in `@sentry-internal/feedback`". The *actual* installed package is `@sentry/feedback` (public, not `@sentry-internal/feedback`), and `@sentry/browser`'s own index **re-exports it directly** (`feedbackSyncIntegration as feedbackIntegration`, line 13) — so `Sentry.feedbackIntegration(...)` is callable from the existing `import * as Sentry from '@sentry/nextjs'` with no extra import needed. Whoever wrote that comment was right that calling it used to crash init; they were not right about why or about the current fix. |

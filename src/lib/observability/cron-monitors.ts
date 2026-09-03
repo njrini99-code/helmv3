@@ -29,14 +29,25 @@
  * still gets a stable, collision-resistant slug even without a registered
  * path.
  *
- * MONITOR CONFIG. Only attached when the jobType resolves to a real
- * CRON_REGISTRY entry — inventing a crontab schedule for a job that isn't
- * actually Vercel-scheduled (an Inngest function, a launchd job, a
- * manually-triggered route, or a sub-step like `selfheal-close` that runs
- * inside another job's single invocation) would tell Sentry to expect a
- * cadence nothing guarantees, producing false "missed check-in" alerts. Those
- * jobs still check in — Sentry just doesn't second-guess when the next one
- * should arrive.
+ * MONITOR CONFIG. Every check-in carries one — never omitted. The installed
+ * SDK's own "upsert" behavior only creates/attaches a monitor when
+ * `monitorConfig` is present on the check-in
+ * (docs.sentry.io/product/monitors-and-alerts/monitors/crons/getting-started/http/:
+ * "you can skip creating a monitor manually... and instead create or update
+ * (upsert) a monitor through a check-in" — gated on including
+ * `monitor_config` in the payload); Sentry's own docs do not state what
+ * happens to a check-in for an unknown slug with NO config, and that
+ * ambiguity is exactly the failure mode this file refuses to risk —
+ * instrumentation that silently achieves nothing is worse than no
+ * instrumentation, because it reports success. So a jobType with a real
+ * `CRON_REGISTRY` entry gets its real crontab schedule; everything else (an
+ * Inngest function id, a launchd job, a manually-triggered route, or a
+ * sub-step like `selfheal-close` that runs inside another job's single
+ * invocation) gets a deliberately GENEROUS fallback interval
+ * (`FALLBACK_SCHEDULE_DAYS`) wide enough that no legitimate gap in usage
+ * should ever trip a false "missed check-in" — it exists to guarantee the
+ * monitor gets created and the check-in lands, not to assert a cadence
+ * nothing guarantees.
  *
  * GATING. Skipped by default outside a real Vercel production/preview
  * deployment (test runs, CI, a laptop `next dev`) so a local test run never
@@ -47,9 +58,19 @@ import * as Sentry from '@sentry/nextjs';
 import { CRON_REGISTRY } from '@/lib/admin/cron-registry';
 import { getRuntimeEnv } from '@/lib/telemetry-gate';
 
-/** Sane defaults when a job has no better basis for either value. */
+/** Sane defaults when a Vercel-scheduled job has no better basis for either value. */
 const DEFAULT_CHECKIN_MARGIN_MINUTES = 5;
 const DEFAULT_MAX_RUNTIME_MINUTES = 30;
+
+/**
+ * The fallback schedule for a jobType with no real CRON_REGISTRY cadence —
+ * generous enough that no legitimate gap between runs of an event-triggered
+ * or manually-triggered job should ever produce a false missed-check-in
+ * alert, while still catching genuine total silence over a month.
+ */
+const FALLBACK_SCHEDULE_DAYS = 30;
+const FALLBACK_CHECKIN_MARGIN_MINUTES = 60;
+const FALLBACK_MAX_RUNTIME_MINUTES = 120;
 
 export type CronCheckInStatus = 'ok' | 'error';
 
@@ -88,17 +109,26 @@ export function resolveCronMonitorSlug(jobType: string): string {
 }
 
 /**
- * A crontab-schedule MonitorConfig for a jobType with a real CRON_REGISTRY
- * entry; `undefined` otherwise (see the "MONITOR CONFIG" note above for why
- * that is deliberate, not a gap).
+ * A MonitorConfig for every jobType — never `undefined` (see the "MONITOR
+ * CONFIG" note above for why omitting it is a real risk, not a style
+ * choice). A jobType with a real `CRON_REGISTRY` entry gets its actual
+ * crontab schedule; anything else gets the deliberately generous
+ * `FALLBACK_SCHEDULE_DAYS` interval.
  */
-export function resolveCronMonitorConfig(jobType: string): CronMonitorConfig | undefined {
+export function resolveCronMonitorConfig(jobType: string): CronMonitorConfig {
   const entry = CRON_REGISTRY.find((e) => e.jobType === jobType);
-  if (!entry) return undefined;
+  if (entry) {
+    return {
+      schedule: { type: 'crontab', value: entry.schedule },
+      checkinMargin: DEFAULT_CHECKIN_MARGIN_MINUTES,
+      maxRuntime: DEFAULT_MAX_RUNTIME_MINUTES,
+      timezone: 'UTC',
+    };
+  }
   return {
-    schedule: { type: 'crontab', value: entry.schedule },
-    checkinMargin: DEFAULT_CHECKIN_MARGIN_MINUTES,
-    maxRuntime: DEFAULT_MAX_RUNTIME_MINUTES,
+    schedule: { type: 'interval', value: FALLBACK_SCHEDULE_DAYS, unit: 'day' },
+    checkinMargin: FALLBACK_CHECKIN_MARGIN_MINUTES,
+    maxRuntime: FALLBACK_MAX_RUNTIME_MINUTES,
     timezone: 'UTC',
   };
 }

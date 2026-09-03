@@ -44,6 +44,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 
 import { register, onRequestError } from '@/instrumentation';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
+import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 
 const baseRequest = { path: '/golf/dashboard', method: 'GET', headers: {} };
 const baseErrorContext = {
@@ -121,5 +122,42 @@ describe('onRequestError — captureRequestError respects __helmBridgeLogged', (
     const err = new Error('never logged before');
     await onRequestError(err, baseRequest, baseErrorContext);
     expect(mocks.logServerException).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * enableMetrics/beforeSendMetric wiring. Read live from the installed SDK's
+ * own source (node_modules/@sentry/core/build/cjs/metrics/internal.js):
+ * `metricsEnabled = enableMetrics ?? _experiments?.enableMetrics ?? true` —
+ * metrics already send with the option unset, contradicting
+ * docs/observability/SENTRY_SDK_API_VERIFICATION.md's claim that they
+ * "would currently be dropped". Set explicitly anyway (belt-and-suspenders
+ * against a future SDK default change) and beforeSendMetric wired to
+ * metrics.ts's own dimension-allowlist enforcer — its header says this hook
+ * is "the second, independent line of defence against a PII leak" and was
+ * built un-wired; this pins that it is actually reachable from Sentry.init,
+ * not just exported.
+ */
+describe('Sentry.init — metrics enabled, second-line PII defence wired', () => {
+  beforeEach(() => {
+    mocks.init.mockClear();
+  });
+
+  it('enables metrics and wires beforeSendMetric on the Node runtime', async () => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs');
+    await register();
+    const opts = mocks.init.mock.calls[0]![0];
+    expect(opts.enableMetrics).toBe(true);
+    expect(opts.beforeSendMetric).toBe(enforceMetricAttributeAllowlist);
+    vi.unstubAllEnvs();
+  });
+
+  it('enables metrics and wires beforeSendMetric on the Edge runtime too', async () => {
+    vi.stubEnv('NEXT_RUNTIME', 'edge');
+    await register();
+    const opts = mocks.init.mock.calls[0]![0];
+    expect(opts.enableMetrics).toBe(true);
+    expect(opts.beforeSendMetric).toBe(enforceMetricAttributeAllowlist);
+    vi.unstubAllEnvs();
   });
 });

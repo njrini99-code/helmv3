@@ -100,9 +100,18 @@ describe('resolveCronMonitorConfig', () => {
     expect(config?.schedule).toEqual({ type: 'crontab', value: '10 */4 * * *' });
   });
 
-  it('returns undefined for an unregistered jobType — never invents a schedule', () => {
-    expect(resolveCronMonitorConfig('selfheal-close')).toBeUndefined();
-    expect(resolveCronMonitorConfig('onCoachHelmRoundSubmitted')).toBeUndefined();
+  it('falls back to a generous 30-day interval for an unregistered jobType — never omits monitorConfig', () => {
+    // The SDK's own "upsert" behavior only creates/attaches a monitor when
+    // monitorConfig is present on the check-in — Sentry's docs never state
+    // what an unconfigured check-in against an unknown slug does, and this
+    // file refuses to risk instrumentation that silently achieves nothing.
+    for (const jobType of ['selfheal-close', 'onCoachHelmRoundSubmitted']) {
+      const config = resolveCronMonitorConfig(jobType);
+      expect(config).toBeDefined();
+      expect(config.schedule).toEqual({ type: 'interval', value: 30, unit: 'day' });
+      expect(config.checkinMargin).toBe(60);
+      expect(config.maxRuntime).toBe(120);
+    }
   });
 });
 

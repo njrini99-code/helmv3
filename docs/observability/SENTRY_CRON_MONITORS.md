@@ -30,17 +30,54 @@ alert exists for, and exactly the gap this deliverable closes.
 
 ## 2. Mechanism, by trigger type
 
-| Trigger | Wired via | Slug convention | Schedule attached? |
+| Trigger | Wired via | Slug convention | Monitor schedule |
 | --- | --- | --- | --- |
-| Vercel cron (`vercel.json`) | `recordJobRun` → `src/lib/observability/cron-monitors.ts` | `api-cron-<path>` (slashes to dashes), derived from the route path | YES, from `CRON_REGISTRY.schedule` — byte-identical to `vercel.json`, contract-tested |
-| A `recordJobRun` call with no `CRON_REGISTRY` entry (manual-trigger-only route, or a sub-step inside another job's single invocation) | Same `cron-monitors.ts`, same `recordJobRun` | `job-<jobType>` | NO — inventing a cadence nothing guarantees would produce false "missed check-in" alerts |
-| Inngest function (`src/lib/inngest/functions.ts`) | The shared `withBridgeLogging(fnId, run)` wrapper every function routes through | `job-<function id>` (no `CRON_REGISTRY` entry — Inngest scheduling isn't `vercel.json`) | NO, same reasoning as above |
-| launchd Repair job (`scripts/run-selfheal-repair.mjs`) | `scripts/lib/sentry-cron-checkin.mjs` — a standalone, dependency-injectable equivalent of `cron-monitors.ts` (that module can't be imported from a bare Node script: no `@/` path alias / Next bundler outside `next build`/`next dev`) | `job-selfheal-repair` | YES, hand-built (`{type:'interval', value:1, unit:'day'}`, `checkinMargin:15`) matching `selfheal-registry.ts`'s `cadenceMinutes: DAILY` for this job |
+| Vercel cron (`vercel.json`) | `recordJobRun` → `src/lib/observability/cron-monitors.ts` | `api-cron-<path>` (slashes to dashes), derived from the route path | The REAL crontab schedule, from `CRON_REGISTRY.schedule` — byte-identical to `vercel.json`, contract-tested |
+| A `recordJobRun` call with no `CRON_REGISTRY` entry (manual-trigger-only route, or a sub-step inside another job's single invocation) | Same `cron-monitors.ts`, same `recordJobRun` | `job-<jobType>` | A deliberately generous 30-day fallback interval (see below) |
+| Inngest function (`src/lib/inngest/functions.ts`) | The shared `withBridgeLogging(fnId, run)` wrapper every function routes through | `job-<function id>` (no `CRON_REGISTRY` entry — Inngest scheduling isn't `vercel.json`) | Same 30-day fallback |
+| launchd Repair job (`scripts/run-selfheal-repair.mjs`) | `scripts/lib/sentry-cron-checkin.mjs` — a standalone, dependency-injectable equivalent of `cron-monitors.ts` (that module can't be imported from a bare Node script: no `@/` path alias / Next bundler outside `next build`/`next dev`) | `job-selfheal-repair` | Hand-built (`{type:'interval', value:1, unit:'day'}`, `checkinMargin:15`) matching `selfheal-registry.ts`'s `cadenceMinutes: DAILY` for this job |
+
+**Every check-in carries a `monitorConfig` — never omitted.** Sentry's own
+"upsert" mechanism only creates/attaches a monitor when `monitor_config` is
+present on the check-in payload (per
+`docs.sentry.io/product/monitors-and-alerts/monitors/crons/getting-started/http/`);
+what happens to a check-in for a slug Sentry has never seen with NO config is
+not documented, and that ambiguity is exactly the risk `cron-monitors.ts`
+refuses to take — instrumentation that silently achieves nothing is worse
+than none, because it reports success. So a `jobType` with a real
+`CRON_REGISTRY` entry gets its actual crontab schedule (5-minute
+`checkinMargin`, 30-minute `maxRuntime`); everything else gets a
+deliberately GENEROUS fallback — a 30-day interval, 60-minute margin,
+120-minute max runtime — wide enough that no legitimate gap in usage (an
+Inngest function that goes quiet during an off-season, a manually-triggered
+route nobody has run this week) should trip a false "missed check-in". The
+fallback exists to guarantee the monitor gets created and the check-in
+lands, not to assert a cadence nothing guarantees.
 
 Every check-in call in all four paths is **fail-open**: a Sentry outage, a
 malformed slug, a thrown SDK call — none of it can affect the wrapped job's
 own outcome, timing, or exit code. See each module's own header comment for
 the specific guarantee.
+
+**Why `automaticVercelMonitors` is `false`, not `true`, in
+`src/lib/sentry-build-options.mjs`.** Phase A named it among the casualties
+of the `withSentryConfig` argument-position bug and its fix folded the option
+name back into the second argument, as instructed — but read live against
+the installed SDK's own build-time source
+(`node_modules/@sentry/nextjs/build/cjs/server/vercelCronsMonitoring.js` and
+`.../config/withSentryConfig/getFinalConfigObjectUtils.js`), turning it on
+would inject a SECOND, independent Cron Monitor mechanism at Vercel build
+time: span-wrapped around each cron route, gated on a `vercel-cron`
+user-agent header, monitor slug = the RAW `vercel.json` path
+(`/api/cron/log-retention`, not this file's dashed `api-cron-log-retention`),
+`maxRuntime` hardcoded to 12 hours regardless of the job. That is a second
+monitor covering the same job as `cron-monitors.ts`'s own per-job
+`captureCheckIn` call — the exact duplicate-capture shape Phase A findings
+#4-#6 (fixed elsewhere in this same deliverable set) exist to eliminate, not
+recreate one option away. Kept `false` so `cron-monitors.ts` stays the
+single, tested authority. See `src/lib/sentry-build-options.mjs`'s own header
+for the full trace through the SDK source, and
+`src/lib/__tests__/sentry-build-options.test.ts` for the pinning test.
 
 **Gating.** `recordJobRun`/Inngest check-ins default OFF outside a real
 Vercel production/preview deployment (`shouldEmitCronCheckIns()` in
@@ -99,15 +136,14 @@ than guessing.
 
 ## 4. `recordJobRun` calls with no Vercel schedule
 
-These still get a check-in (slug `job-<jobType>`), but no `monitorConfig` —
-see §2 for why. Sentry records occurrences and duration whenever they run; it
-never alerts on a missed cadence for these, because none is guaranteed.
+These still get a check-in (slug `job-<jobType>`), with the generous 30-day
+fallback `monitorConfig` described in §2 — never no config at all.
 
 | `jobType` | What it actually is |
 | --- | --- |
 | `selfheal-close` | A sub-step INSIDE `log-retention`'s single invocation (`runAutoResolve` in that route), not itself Vercel-scheduled — it is Self-Heal's Close-stage heartbeat, deliberately reported separately from `log-retention`'s own success so retention succeeding is never read as evidence about Close. |
 | `v3-weekly-coach-email` | Not yet in `vercel.json` — the route's own header comment says "Schedule: configured in vercel.json (operational follow-up)", i.e. scheduling it is a known open item, not an oversight this deliverable should silently paper over. |
-| `v3-genome-backfill-oneshot` | A deliberate one-shot manual backfill ("Used once after the schema lands to seed the vector for everyone") — never meant to recur, so a Cron Monitor schedule would be actively wrong for it. |
+| `v3-genome-backfill-oneshot` | A deliberate one-shot manual backfill ("Used once after the schema lands to seed the vector for everyone") — accepted trade-off: Cron Monitors assume recurrence, so this job's monitor will eventually read "missed" once the fallback interval elapses after its one real run, and that is left as-is rather than adding more special-casing for a monitor nobody is expected to watch closely. `background_job_logs` (recordJobRun's own row) remains the primary record of whether it ran. |
 | `v3-ingest-sync` | Not in `vercel.json`; no comment stating why. Flagged as an open question, same as Phase A left it — not resolved by this deliverable. |
 
 ## 5. Known gap this deliverable did NOT close
@@ -130,12 +166,16 @@ forward as an open question, not silently dropped.
 | `inngest-health-probe` | event: `helm/health.ping` | `job-inngest-health-probe` |
 | `coachhelm-round-submitted` | event: `coachhelm/round.submitted` | `job-coachhelm-round-submitted` |
 
-Only `weekly-health-ping` has an actual cadence; the other two are
-event-triggered and have no expected schedule by design, matching §2's
-"no `monitorConfig` when there is no guaranteed cadence" rule. All three
-route through the shared `withBridgeLogging` wrapper, so the check-in and the
-existing Bridge error logging stay in one place rather than being duplicated
-per function.
+Only `weekly-health-ping` has an actual cadence — it still resolves through
+`resolveCronMonitorConfig`'s CRON_REGISTRY lookup only, so even it currently
+gets the 30-day fallback rather than its real weekly cron, since
+CRON_REGISTRY is Vercel-scoped by design (see §1's naming: it's
+contract-tested against `vercel.json` and Inngest scheduling isn't
+`vercel.json`). The other two Inngest functions are event-triggered and have
+no expected schedule at all. All three get the same generous 30-day fallback
+either way — see §2 — and all three route through the shared
+`withBridgeLogging` wrapper, so the check-in and the existing Bridge error
+logging stay in one place rather than being duplicated per function.
 
 `isInngestConfigured()` failing (both `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY`
 have been rejected in production per this session's own tracked state — not

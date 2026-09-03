@@ -48,8 +48,21 @@ describe('buildSentryBuildOptions — a single merged options object', () => {
     expect(opts.widenClientFileUpload).toBe(true);
     expect(opts.tunnelRoute).toBe('/monitoring');
     expect(opts.disableLogger).toBe(true);
-    expect(opts.automaticVercelMonitors).toBe(true);
     expect(opts.reactComponentAnnotation).toEqual({ enabled: true });
+  });
+
+  it('sets automaticVercelMonitors to false — cron-monitors.ts is the single Cron Monitor authority', () => {
+    // Deliberately false, not a leftover default: the installed SDK's own
+    // build-time source (vercelCronsMonitoring.js /
+    // getFinalConfigObjectUtils.js) shows `true` here would build-time-inject
+    // a SECOND, independent Cron Monitor mechanism (raw-path monitor slugs,
+    // a hardcoded 12h maxRuntime) running alongside the per-job
+    // captureCheckIn calls recordJobRun already makes — the same
+    // duplicate-capture shape the rest of this mission's Phase A findings
+    // (#4-#6) exist to eliminate, not recreate. See this module's own header
+    // comment and docs/observability/SENTRY_CRON_MONITORS.md §2.
+    const opts = asFn(baseParams);
+    expect(opts.automaticVercelMonitors).toBe(false);
   });
 
   it('does NOT set hideSourceMaps — not a real 10.71.0 option', () => {

@@ -23,6 +23,7 @@ import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { resolveServerEnvironment } from '@/lib/sentry-environment';
+import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
@@ -269,6 +270,25 @@ export async function register() {
       // Enable Sentry SDK structured logs (separate from error events).
       enableLogs: true,
 
+      // Sentry Metrics (Sentry.metrics.count/gauge/distribution — Phase C's
+      // helm.workflow.*/helm.ai.*/helm.job.* catalogue, metrics.ts). Set
+      // explicitly rather than relying on the installed SDK's own default:
+      // read live from node_modules/@sentry/core/build/cjs/metrics/internal.js
+      // (`metricsEnabled = enableMetrics ?? _experiments?.enableMetrics ??
+      // true`) and confirmed by an actual captured envelope, metrics already
+      // send with this option absent — contradicting
+      // docs/observability/SENTRY_SDK_API_VERIFICATION.md's claim that they
+      // "would currently be dropped" unset. Kept explicit anyway so the
+      // intent survives a future SDK default change, same reasoning as
+      // `sourcemaps.deleteSourcemapsAfterUpload` in sentry-build-options.mjs.
+      enableMetrics: true,
+      // The second, independent PII/cardinality defence metrics.ts's own
+      // header describes: re-applies its dimension allowlist to every metric
+      // event regardless of which call site (or future call site) emitted
+      // it. Wired here because this file owns server-side Sentry.init;
+      // instrumentation-client.ts (Phase D) needs the matching line.
+      beforeSendMetric: enforceMetricAttributeAllowlist,
+
       // Page loads stay sampled; db.* spans are kept at 1.0 — see makeTracesSampler.
       tracesSampler: makeTracesSampler(isDev),
       profileSessionSampleRate: isDev ? 0 : 0.3,
@@ -330,6 +350,11 @@ export async function register() {
         Sentry.captureConsoleIntegration({ levels: ['error'] }),
       ],
       enableLogs: true,
+      // Same rationale as the Node block above — kept identical on both
+      // runtimes since a metric call could in principle originate from
+      // Edge/proxy code.
+      enableMetrics: true,
+      beforeSendMetric: enforceMetricAttributeAllowlist,
       tracesSampler: makeTracesSampler(isDev),
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,

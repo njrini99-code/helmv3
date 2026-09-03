@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
 | `ARCHIVE` | 1196 | 0 | 419 | 527 |
-| `UNKNOWN` | 95 | 4 | 41 | 141 |
+| `UNKNOWN` | 96 | 4 | 41 | 141 |
 
 ## Files
 
@@ -586,6 +586,7 @@ them would bury everything above.
 | `docs/guides/PLAYWRIGHT_SETUP_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 0 | 21 | 7 |
+| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 0 | 10 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 0 | 4 | - |
 | `docs/observability/SENTRY_SUPABASE_TRACING.md` | current | - | - | yes | 0 | 2 | - |
 | `docs/operations/2026-05-27-baseball-tables-scope.md` | current | - | - | - | 1 | 3 | - |
