@@ -22,10 +22,11 @@ const mocks = vi.hoisted(() => ({
   init: vi.fn(),
   captureRequestError: vi.fn(),
   logServerException: vi.fn(async () => {}),
+  vercelAIIntegration: vi.fn((opts: unknown) => ({ name: 'VercelAI', opts })),
 }));
 vi.mock('@sentry/nextjs', () => ({
   init: mocks.init,
-  vercelAIIntegration: () => ({ name: 'VercelAI' }),
+  vercelAIIntegration: mocks.vercelAIIntegration,
   consoleLoggingIntegration: () => ({ name: 'ConsoleLogging' }),
   captureConsoleIntegration: () => ({ name: 'CaptureConsole' }),
   captureRequestError: mocks.captureRequestError,
@@ -158,6 +159,37 @@ describe('Sentry.init — metrics enabled, second-line PII defence wired', () =>
     const opts = mocks.init.mock.calls[0]![0];
     expect(opts.enableMetrics).toBe(true);
     expect(opts.beforeSendMetric).toBe(enforceMetricAttributeAllowlist);
+    vi.unstubAllEnvs();
+  });
+});
+
+/**
+ * vercelAIIntegration — recordInputs/recordOutputs default flipped to false
+ * (Phase A finding, docs/observability/SENTRY_PHASE_A_FINDINGS.md §(a)): this
+ * integration was fully configured with recordInputs/recordOutputs:true
+ * while being structurally inert (no call site opted in via
+ * experimental_telemetry.isEnabled) — one flag away from recording every AI
+ * call's prompt/output bodies simultaneously the moment any call site opted
+ * in, including a schedule screenshot's raw image bytes and a coach chat
+ * prompt carrying a player's first name. Phase C's five real call sites all
+ * opt in individually with their own recordInputs/recordOutputs:false; this
+ * pins the matching safe default for the global integration, so a FUTURE
+ * call site that opts into telemetry without repeating those two flags
+ * inherits "do not record" rather than "record everything".
+ */
+describe('Sentry.init — vercelAIIntegration defaults to NOT recording prompts/outputs', () => {
+  beforeEach(() => {
+    mocks.init.mockClear();
+    mocks.vercelAIIntegration.mockClear();
+  });
+
+  it('calls vercelAIIntegration with recordInputs:false, recordOutputs:false', async () => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs');
+    await register();
+    expect(mocks.vercelAIIntegration).toHaveBeenCalledWith({
+      recordInputs: false,
+      recordOutputs: false,
+    });
     vi.unstubAllEnvs();
   });
 });

@@ -253,11 +253,30 @@ export async function register() {
         ...(!isDev && profilingIntegration ? [profilingIntegration] : []),
         // Auto-instruments Vercel AI SDK calls (generateText/streamText/
         // generateObject). Captures model, latency, errors, and — when the
-        // call sets experimental_telemetry — token usage and prompt/output
-        // bodies. CoachHelm and round-recap go through the AI SDK.
+        // call sets experimental_telemetry.isEnabled:true — token usage and
+        // (subject to these two flags) prompt/output bodies. CoachHelm chat,
+        // round-recap composition, and the class-schedule vision importer
+        // all go through the AI SDK.
+        //
+        // recordInputs/recordOutputs:false — Phase A finding
+        // (docs/observability/SENTRY_PHASE_A_FINDINGS.md §(a)): this
+        // integration was fully configured with BOTH flags `true` while
+        // being structurally inert (no call site set
+        // `experimental_telemetry.isEnabled`), one line away from recording
+        // prompt/output bodies at every call site simultaneously the moment
+        // any of them opted in. Phase C's five production call sites (chat
+        // stream, schedule-vision's two vision calls, RCA, compose()) all
+        // now opt in individually with recordInputs/recordOutputs:false of
+        // their own — this is the matching SAFE DEFAULT for the global
+        // integration, so a future call site that opts into telemetry
+        // without also setting these two explicitly inherits "do not
+        // record" rather than "record everything", which is what let a
+        // schedule screenshot's raw image bytes and a coach chat prompt
+        // carrying a player's first name both sit one flag away from
+        // Sentry.
         Sentry.vercelAIIntegration({
-          recordInputs: true,
-          recordOutputs: true,
+          recordInputs: false,
+          recordOutputs: false,
         }),
         // Forward server console.log/warn/error to Sentry → Explore → Logs
         // (separate stream from issues). Catches anything we log via console
