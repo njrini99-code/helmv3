@@ -153,13 +153,24 @@ the short pointer; that doc is the reference.
 ### The four service classifiers (all in `src/lib/observability/supabase/`)
 
 - `classify-auth.ts` / `observe-auth.ts` — Auth (`AuthApiError.code` →
-  status → message). Not wired into any production Auth call site yet.
+  status → message). Wired 2026-09-03 into the actionable server-side call
+  sites — sign-in, sign-up, the OAuth/magic-link callback, password change,
+  the demo gates, the admin password-reset link minter and the admin
+  auth-user delete. Deliberately NOT wired into `supabase.auth.getUser()`,
+  the standard authorization check at the top of a server action, where a
+  null user is ordinary control flow. `ClassifyAuthContext.expectedMissingUser`
+  lets an anti-enumeration path declare that `user_not_found` is routine
+  there. No CLIENT-safe Auth observer exists, so every `'use client'`
+  sign-out/reset/settings surface is still unobserved.
 - `classify-storage.ts` / `observe-storage.ts` — Storage (`StorageApiError.code`).
   `AccessDenied` deliberately defaults EXPECTED (inverted from
   `classify.ts`'s `42501` convention — Storage buckets are single-owner
-  paths where cross-tenant denial is routine). Wired into 6 sites across 4
-  server actions (golf/baseball document delete + recruit-document
-  upload-rollback/delete).
+  paths where cross-tenant denial is routine). Wired into every SERVER-SIDE
+  site: golf/baseball document delete, recruit-document upload-rollback and
+  delete, the baseball clip cleanup, the recruit storage purge, and the
+  Bridge feedback screenshot upload + signing. The remaining unobserved
+  sites are all client modules, blocked on the same missing client-safe
+  observer as Auth.
 - `realtime.ts` — client-safe (no `server-only` anywhere in its import
   graph), wraps `channel.subscribe()`. `CLOSED` deliberately NOT treated as
   a failure (ambiguous: fires on both a forced close and an ordinary
