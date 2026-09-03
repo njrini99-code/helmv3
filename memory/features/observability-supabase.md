@@ -20,6 +20,14 @@
   still resolves to no key. That, and the other registry gaps Track F
   surfaced, are recorded in
   `docs/observability/SUPABASE_OPERATING_MODEL.md`.
+- active build, two phases so far, both HELD at the database layer (no
+  migration in either phase has been applied to production — see
+  `supabase/migrations/HELD.md`)
+- platform infrastructure, not a product feature — this doc exists so a
+  reader touching `helm_debug.*`, `src/lib/observability/supabase/**`, or
+  `src/lib/admin/database/**` has one place to start; add a
+  `memory/registry.yml` mapping the next time this area is touched (none
+  exists yet — a real gap this doc is flagging, not silently filling)
 
 ## Current State
 

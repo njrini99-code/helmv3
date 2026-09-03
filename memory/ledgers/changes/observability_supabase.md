@@ -202,6 +202,8 @@
 <!-- merged: Track B section appended by the Phase 2 integrator. The
      duplicate `# Change ledger` H1 that arrived with this merge was removed
      2026-09-03 (Phase 3 Track F): one document, one title. -->
+<!-- merged: Track B section appended by the Phase 2 integrator -->
+# Change ledger — observability_supabase
 
 ## 2026-09-03 — Phase 2 Track B: Auth/Storage/Realtime/Edge Function observability, retry-outcome model, coverage audit
 
