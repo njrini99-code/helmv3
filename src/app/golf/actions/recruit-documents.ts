@@ -18,6 +18,7 @@ import { logServerError } from '@/lib/server-error-logger';
 // Category vocabulary lives in a plain module — a 'use server' file may only
 // export async functions, so the const array cannot be exported from here.
 import { RECRUIT_DOC_CATEGORIES, type RecruitDocCategory } from './recruit-documents-categories';
+import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 import { describeError } from '@/lib/utils/describe-error';
@@ -210,6 +211,14 @@ async function uploadRecruitDocumentImpl(
     if (insertError) {
       // Roll back the orphaned storage object so a failed insert doesn't leak a file.
       const { error: rollbackError } = await supabase.storage.from(BUCKET).remove([objectName]);
+      observeStorageResult({
+        error: rollbackError,
+        operation: 'delete',
+        feature: 'recruiting_prospect_tracking',
+        action: 'upload_recruit_document_rollback',
+        bucketClass: 'recruit-documents/recruit_document',
+        accessDeniedOnOwnPath: true,
+      });
       if (rollbackError) {
         await logServerError(
           `uploadRecruitDocument rollback failed (orphaned object ${objectName}): ${rollbackError.message}`,
@@ -312,6 +321,14 @@ async function deleteRecruitDocumentImpl(documentId: string): Promise<ActionResu
 
     if (doc.storage_path) {
       const { error: rmError } = await supabase.storage.from(BUCKET).remove([doc.storage_path]);
+      observeStorageResult({
+        error: rmError,
+        operation: 'delete',
+        feature: 'recruiting_prospect_tracking',
+        action: 'delete_recruit_document',
+        bucketClass: 'recruit-documents/recruit_document',
+        accessDeniedOnOwnPath: true,
+      });
       if (rmError) {
         await logServerError(
           `deleteRecruitDocument storage remove failed (orphaned object ${doc.storage_path}): ${rmError.message}`,

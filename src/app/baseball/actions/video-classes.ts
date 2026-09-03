@@ -44,6 +44,7 @@ import {
 import { resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 import { appendTimelineEvent } from '@/lib/baseball/timeline-writer';
 import { normalizeConfidence } from '@/lib/baseball/source-record';
+import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
 import {
   detectClassConflictsForPlayer,
   conflictToSignalSeverity,
@@ -461,7 +462,15 @@ export const deleteMyVideo = withBaseballAction(
       const parts = row.url.split('/');
       const filePath = parts.slice(-2).join('/');
       if (filePath) {
-        await supabase.storage.from('baseball_videos').remove([filePath]);
+        const { error: removeError } = await supabase.storage.from('baseball_videos').remove([filePath]);
+        observeStorageResult({
+          error: removeError,
+          operation: 'delete',
+          feature: 'video_classes',
+          action: 'delete_video_storage_object',
+          bucketClass: 'baseball_videos/player_clip',
+          accessDeniedOnOwnPath: true,
+        });
       }
     }
 

@@ -12,6 +12,7 @@ import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveMimeType } from '@/lib/storage/mime';
+import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
 
 // Type helper for golf_document_versions table (until types are regenerated)
 interface DocumentVersionRow {
@@ -646,7 +647,15 @@ async function deleteDocumentImpl(documentId: string): Promise<{ success: boolea
     // Delete from storage (all versions)
     if (versions && versions.length > 0) {
       const paths = versions.map(v => v.storage_path);
-      await supabase.storage.from('documents').remove(paths);
+      const { error: removeError } = await supabase.storage.from('documents').remove(paths);
+      observeStorageResult({
+        error: removeError,
+        operation: 'delete',
+        feature: 'documents',
+        action: 'delete_document_storage_objects',
+        bucketClass: 'documents/document_version',
+        accessDeniedOnOwnPath: true,
+      });
     }
 
     // Delete document (cascade will delete versions)
@@ -1523,7 +1532,15 @@ async function deleteVersionImpl(
 
     // Delete from storage
     if (version.storage_path) {
-      await supabase.storage.from('documents').remove([version.storage_path]);
+      const { error: removeError } = await supabase.storage.from('documents').remove([version.storage_path]);
+      observeStorageResult({
+        error: removeError,
+        operation: 'delete',
+        feature: 'documents',
+        action: 'delete_document_version_storage_object',
+        bucketClass: 'documents/document_version',
+        accessDeniedOnOwnPath: true,
+      });
     }
 
     // Delete version record

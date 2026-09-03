@@ -210,6 +210,14 @@ export const METRIC_AUTH_ATTEMPT = 'helm.auth.attempt';
 export const METRIC_AUTH_FAILURE = 'helm.auth.failure';
 
 /**
+ * Phase 2 Track B addition (Storage observability, brief §11/§36-39) — an
+ * ADDITIVE constant + one record function only, matching this file's
+ * existing helm.db.failure/helm.auth.failure shape. This file is owned by
+ * another track; nothing above this comment was touched.
+ */
+export const METRIC_STORAGE_FAILURE = 'helm.storage.failure';
+
+/**
  * Not part of the six named families above — `structured-log.ts` needs
  * exactly one counter (how often it silently drops a secret-shaped field),
  * and this file is where every Helm metric name lives, full stop. Kept here
@@ -424,4 +432,32 @@ export function recordAuth(input: RecordAuthInput): void {
 /** Bumped by structured-log.ts every time it silently drops a secret-shaped field. */
 export function recordLogRedactedField(dims: Record<string, unknown> = {}): void {
   safeCount(METRIC_LOG_REDACTED_FIELD, 1, dims);
+}
+
+interface RecordStorageFailureInput {
+  feature: string;
+  action: string;
+  errorCode?: string;
+  sport?: string;
+  environment?: string;
+  operation?: string;
+  runtime?: string;
+}
+
+/**
+ * Emits ONLY helm.storage.failure — same shape as `recordDbFailure` (no
+ * attempt/success counterpart; call only from a Storage error branch). Added
+ * for `observe-storage.ts` (Phase 2 Track B); this file has no other
+ * knowledge of Storage.
+ */
+export function recordStorageFailure(input: RecordStorageFailureInput): void {
+  safeCount(METRIC_STORAGE_FAILURE, 1, {
+    feature: input.feature,
+    action: input.action,
+    sport: input.sport,
+    environment: input.environment,
+    operation: input.operation,
+    runtime: input.runtime,
+    error_code: input.errorCode,
+  });
 }
