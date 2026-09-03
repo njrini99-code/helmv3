@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -82,7 +83,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
       if (error) throw error;
       setLogs((data || []) as ContactLog[]);
     } catch (err) {
-      console.error('Failed to fetch logs:', err);
+      console.error('Failed to fetch logs:', describeError(err));
     } finally {
       setLoading(false);
     }
@@ -142,7 +143,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
       fetchLogs();
       onUpdate();
     } catch (err) {
-      console.error('Failed to add log:', err);
+      console.error('Failed to add log:', describeError(err));
     } finally {
       setSubmitting(false);
     }

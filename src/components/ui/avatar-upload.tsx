@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logError } from '@/lib/error-logging';
@@ -128,7 +129,7 @@ export function AvatarUpload({
         (err instanceof Error && err.name === 'AbortError') ||
         /\babort(ed)?\b/i.test(message);
 
-      console.error('Upload error:', err);
+      console.error('Upload error:', describeError(err));
       setError(
         wasAborted
           ? 'Upload was interrupted. Choose the photo again to retry.'

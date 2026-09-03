@@ -63,7 +63,7 @@ async function saveComparisonImpl(params: SaveComparisonParams) {
     .single();
 
   if (insertError) {
-    console.error('Error saving comparison:', insertError);
+    console.error('Error saving comparison:', describeError(insertError));
     return { error: 'Failed to save comparison' };
   }
 
@@ -102,7 +102,7 @@ async function deleteComparisonImpl(comparisonId: string) {
     .eq('coach_id', coach.id);
 
   if (deleteError) {
-    console.error('Error deleting comparison:', deleteError);
+    console.error('Error deleting comparison:', describeError(deleteError));
     return { error: 'Failed to delete comparison' };
   }
 
@@ -151,7 +151,7 @@ async function getSavedComparisonsImpl() {
     .order('created_at', { ascending: false });
 
   if (fetchError) {
-    console.error('Error fetching comparisons:', fetchError);
+    console.error('Error fetching comparisons:', describeError(fetchError));
     return { error: 'Failed to fetch comparisons', comparisons: [] as SavedComparison[] };
   }
 
@@ -332,7 +332,7 @@ async function searchRecruitablePlayersImpl(
 
   const { data, error } = await queryBuilder;
   if (error) {
-    console.error('Error searching recruitable players:', error);
+    console.error('Error searching recruitable players:', describeError(error));
     return [];
   }
 
@@ -380,7 +380,7 @@ async function getComparablePlayersImpl(ids: string[]): Promise<Player[]> {
     .in('id', ids);
 
   if (error) {
-    console.error('Error fetching comparable players:', error);
+    console.error('Error fetching comparable players:', describeError(error));
     return [];
   }
 

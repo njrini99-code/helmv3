@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -299,7 +300,7 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
       });
 
     } catch (err) {
-      console.error('Failed to connect to realtime channel:', err);
+      console.error('Failed to connect to realtime channel:', describeError(err));
       setConnectionState('error');
       setError(err instanceof Error ? err : new Error('Failed to connect'));
       setIsConnected(false);

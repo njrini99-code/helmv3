@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useId, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logError } from '@/lib/error-logging';
@@ -221,7 +222,7 @@ export function ScheduleEventModal({
       onSuccess();
       onClose();
     } catch (err) {
-      console.error('Failed to save event:', err);
+      console.error('Failed to save event:', describeError(err));
       setError(err instanceof Error ? err.message : 'Failed to save event');
       logError(
         err instanceof Error ? err : new Error(String(err)),
@@ -248,7 +249,7 @@ export function ScheduleEventModal({
       onSuccess();
       onClose();
     } catch (err) {
-      console.error('Failed to delete event:', err);
+      console.error('Failed to delete event:', describeError(err));
       setError(err instanceof Error ? err.message : 'Failed to delete event');
       logError(
         err instanceof Error ? err : new Error(String(err)),

@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback } from 'react';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/app/golf/actions/golf';
 
@@ -111,7 +112,7 @@ export function useNotifications({
         console.error('Failed to mark notification as read:', result.error);
       }
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      console.error('Error marking notification as read:', describeError(err));
     }
   }, []);
 
@@ -130,7 +131,7 @@ export function useNotifications({
         console.error('Failed to mark all notifications as read:', result.error);
       }
     } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+      console.error('Error marking all notifications as read:', describeError(err));
     }
   }, []);
 

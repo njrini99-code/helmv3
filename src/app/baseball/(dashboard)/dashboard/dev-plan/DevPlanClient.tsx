@@ -28,6 +28,7 @@
 //      so the row layout is visually unchanged).
 // =============================================================================
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useState, useCallback, useTransition, useMemo } from 'react';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -345,7 +346,7 @@ export default function DevPlanClient() {
       const data = await getActiveDevPlan(player.id);
       setPlan(data);
     } catch (err) {
-      console.error('Error fetching dev plan:', err);
+      console.error('Error fetching dev plan:', describeError(err));
       setError('Failed to load your development plan');
     } finally {
       setIsLoading(false);

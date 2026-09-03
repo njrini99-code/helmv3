@@ -1134,7 +1134,7 @@ class CoachHelmIntelligence {
         });
       }
     } catch (error) {
-      console.error('[CoachHelm] Error generating team pattern insights:', error);
+      console.error('[CoachHelm] Error generating team pattern insights:', describeError(error));
       await logServerError(
         `CoachHelm orchestrator failed generating team pattern insights: ${describeError(error)}`,
         { action: 'coachhelm.orchestrator.generateTeamPatternInsights', featureArea: 'coachhelm' }
@@ -2009,7 +2009,7 @@ class CoachHelmIntelligence {
       this._statsCache.set(playerId, stats);
       return stats;
     } catch (error) {
-      console.error('[CoachHelm] Error fetching player stats:', error);
+      console.error('[CoachHelm] Error fetching player stats:', describeError(error));
       await logServerError(
         `CoachHelm orchestrator failed fetching player stats: ${describeError(error)}`,
         { action: 'coachhelm.orchestrator.fetchPlayerStats', featureArea: 'coachhelm', playerId }
@@ -2059,7 +2059,7 @@ class CoachHelmIntelligence {
         insights.push(composedInsight);
       }
     } catch (error) {
-      console.error('[CoachHelm] Error generating correlation insights:', error);
+      console.error('[CoachHelm] Error generating correlation insights:', describeError(error));
       await logServerError(
         `CoachHelm orchestrator failed generating correlation insights: ${describeError(error)}`,
         { action: 'coachhelm.orchestrator.generateCorrelationInsights', featureArea: 'coachhelm', playerId }

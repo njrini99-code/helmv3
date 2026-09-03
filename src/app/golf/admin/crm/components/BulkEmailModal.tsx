@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -207,7 +208,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
         // Fail-open on the LIST check only — email_status (checked separately,
         // synchronously, below) still gates every known-bad address. A transient
         // fetch failure here must not wedge the modal shut.
-        console.error('Failed to load suppression list:', err);
+        console.error('Failed to load suppression list:', describeError(err));
       })
       .finally(() => {
         if (!cancelled) setSuppressionsLoading(false);
@@ -312,7 +313,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
       setSubject(result.subject);
       setBody(result.body);
     } catch (err) {
-      console.error('Personalization failed:', err);
+      console.error('Personalization failed:', describeError(err));
       setError('AI personalization failed. You can still edit and send manually.');
     } finally {
       setPersonalizing(false);
@@ -355,7 +356,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
       }
       setPersonalizedDrafts(drafts);
     } catch (err) {
-      console.error('Bulk personalization failed:', err);
+      console.error('Bulk personalization failed:', describeError(err));
       setError('AI personalization failed for some coaches. Standard merge tags will be used as fallback.');
     } finally {
       setPersonalizing(false);

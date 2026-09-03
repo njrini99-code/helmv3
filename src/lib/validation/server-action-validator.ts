@@ -9,6 +9,7 @@
  * - Mass assignment vulnerabilities
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { z } from 'zod';
 import { logServerException } from '@/lib/server-error-logger';
 
@@ -162,7 +163,7 @@ export function formatSafeErrorResponse(error: unknown): {
   // (golf.ts, tasks.ts, announcements.ts, recurring-events.ts, etc.) — wiring
   // logServerException here means every catch using formatSafeErrorResponse
   // now reaches Sentry with the original stack preserved.
-  console.error('[Server Action] Unexpected error:', error);
+  console.error('[Server Action] Unexpected error:', describeError(error));
   void logServerException(
     error,
     {

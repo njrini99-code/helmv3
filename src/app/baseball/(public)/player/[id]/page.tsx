@@ -1,3 +1,4 @@
+import { describeError } from '@/lib/utils/describe-error';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
@@ -141,7 +142,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
     .eq('player_id', id);
 
   if (recruitingInterestsError) {
-    console.error('[player/[id]] Failed to fetch baseball_recruiting_interests:', recruitingInterestsError);
+    console.error('[player/[id]] Failed to fetch baseball_recruiting_interests:', describeError(recruitingInterestsError));
   }
 
   if (error || !player) {

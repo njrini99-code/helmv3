@@ -14,6 +14,7 @@
  * - Conflict resolution based on timestamps
  */
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   openDatabase,
@@ -134,7 +135,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
           }
         }
       } catch (error) {
-        console.error('Failed to initialize offline storage:', error);
+        console.error('Failed to initialize offline storage:', describeError(error));
         logError(
           error instanceof Error ? error : new Error(String(error)),
           {
@@ -340,7 +341,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
       onSyncComplete?.(!hadError, syncedCount);
 
     } catch (error) {
-      console.error('Sync failed:', error);
+      console.error('Sync failed:', describeError(error));
       logError(
         error instanceof Error ? error : new Error(String(error)),
         {

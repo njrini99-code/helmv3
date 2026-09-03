@@ -6,7 +6,7 @@ import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfM
 import { withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
-import { postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
+import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 /** Pause before the single transport-failure retry of a message send. */
@@ -190,7 +190,7 @@ export function useGolfMessages(conversationId: string) {
     // the existing message list untouched so a transient blip doesn't blank a
     // thread the user was already reading.
     if (fetchError) {
-      console.error('[useGolfMessages] Failed to load messages:', fetchError);
+      console.error('[useGolfMessages] Failed to load messages:', describeError(fetchError));
       logError(
         toPostgrestError(fetchError),
         {
@@ -218,7 +218,7 @@ export function useGolfMessages(conversationId: string) {
     try {
       await markGolfMessagesAsRead(conversationId);
     } catch (err) {
-      console.error('[useGolfMessages] Failed to mark messages as read:', err);
+      console.error('[useGolfMessages] Failed to mark messages as read:', describeError(err));
       logError(
         err instanceof Error ? err : new Error(String(err)),
         { component: 'useGolfMessages', action: 'mark-messages-as-read', sport: 'golf', conversationId },

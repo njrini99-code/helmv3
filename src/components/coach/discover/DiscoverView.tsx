@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -414,7 +415,7 @@ export function DiscoverView({
         }
       }
     } catch (error) {
-      console.error('Error updating watchlist:', error);
+      console.error('Error updating watchlist:', describeError(error));
       toast.error('Failed to update watchlist', error instanceof Error ? error.message : 'Please try again.');
       logError(
         error instanceof Error ? error : new Error('Failed to update watchlist'),

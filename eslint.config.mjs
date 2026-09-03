@@ -18,6 +18,7 @@ import noArbitraryBgWhite from "./eslint-rules/no-arbitrary-bg-white.mjs";
 import noUncheckedSupabaseError from "./eslint-rules/no-unchecked-supabase-error.mjs";
 import noEmptyCollectionOnError from "./eslint-rules/no-empty-collection-on-error.mjs";
 import noHealthyValueOnError from "./eslint-rules/no-healthy-value-on-error.mjs";
+import noRawErrorInConsole from "./eslint-rules/no-raw-error-in-console.mjs";
 import noUncheckedPaginatedRead from "./eslint-rules/no-unchecked-paginated-read.mjs";
 
 // Downgrade every `error`-severity rule in a flat-config rules object to
@@ -118,6 +119,7 @@ export default tseslint.config(
           "no-unchecked-supabase-error": noUncheckedSupabaseError,
           "no-empty-collection-on-error": noEmptyCollectionOnError,
           "no-healthy-value-on-error": noHealthyValueOnError,
+          "no-raw-error-in-console": noRawErrorInConsole,
           "no-unchecked-paginated-read": noUncheckedPaginatedRead,
         },
       },
@@ -135,6 +137,7 @@ export default tseslint.config(
       "jsx-a11y/click-events-have-key-events": "warn",
 
       // W0 canonical design-system rules (synthesis §5), shipped as warnings.
+      "helm/no-raw-error-in-console": "error",
       "helm/no-raw-button": "warn",
       "helm/no-raw-input": "warn",
       "helm/no-arbitrary-text-px": "warn",

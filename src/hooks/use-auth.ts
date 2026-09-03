@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
@@ -85,7 +86,7 @@ async function loadAuthUser(supabase: Client): Promise<void> {
         }
       }
     } catch (error) {
-      console.error('[useAuth] Error fetching user:', error);
+      console.error('[useAuth] Error fetching user:', describeError(error));
     } finally {
       // ALWAYS resolve loading — this is a global flag, never gated on the mount
       // state of whichever component happened to kick off the fetch.

@@ -1,5 +1,6 @@
 'use client';
 
+import { describeError } from '@/lib/utils/describe-error';
 import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -138,7 +139,7 @@ export function QuickActionsPanel({
       onRefreshEvents?.();
       onClose();
     } catch (err) {
-      console.error('Failed to schedule:', err);
+      console.error('Failed to schedule:', describeError(err));
       logError(
         err instanceof Error ? err : new Error(String(err)),
         { component: 'QuickActionsPanel', action: 'schedule-crm-event', sport: 'golf', coachId: coach.id },
@@ -172,7 +173,7 @@ export function QuickActionsPanel({
       onUpdate(updates);
       onClose();
     } catch (err) {
-      console.error('Failed to log contact:', err);
+      console.error('Failed to log contact:', describeError(err));
       toast.error('Failed to log contact', err instanceof Error ? err.message : 'Please try again.');
       logError(
         err instanceof Error ? err : new Error(String(err)),
@@ -190,7 +191,7 @@ export function QuickActionsPanel({
       onUpdate({ notes: noteForm || null });
       onClose();
     } catch (err) {
-      console.error('Failed to save note:', err);
+      console.error('Failed to save note:', describeError(err));
       logError(
         err instanceof Error ? err : new Error(String(err)),
         { component: 'QuickActionsPanel', action: 'save-note', sport: 'golf', coachId: coach.id },

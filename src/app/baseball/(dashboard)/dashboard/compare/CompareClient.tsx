@@ -17,6 +17,7 @@
 // `/compare?players=<id>` URL for one) had zero eligibility check.
 // =============================================================================
 
+import { describeError } from '@/lib/utils/describe-error';
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button, IconButton } from '@/components/ui/button';
@@ -155,7 +156,7 @@ function CompareContent() {
         if (searchRequestRef.current !== requestId) return; // stale — a newer search is in flight
         setSearchResults(data || []);
       } catch (error) {
-        console.error('Error searching players:', error);
+        console.error('Error searching players:', describeError(error));
         if (searchRequestRef.current !== requestId) return;
         setSearchResults([]);
       } finally {
