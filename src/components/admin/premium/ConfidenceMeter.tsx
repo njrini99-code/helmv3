@@ -38,7 +38,6 @@ export interface ConfidenceMeterProps {
 
 export function ConfidenceMeter({ value, label, size = 'md', className }: ConfidenceMeterProps) {
   if (process.env.NODE_ENV !== 'production' && value >= 1) {
-    // eslint-disable-next-line no-console -- deliberate dev-only guard rail, see module header
     console.warn(
       `ConfidenceMeter received confidence >= 1 (${value}). Nothing in this system should ever be fully certain from ` +
         'correlation alone — clamping the display, but the caller should be fixed.',
@@ -65,14 +64,14 @@ export function ConfidenceMeter({ value, label, size = 'md', className }: Confid
           <span
             key={i}
             className={cn(
-              'rounded-[1px]',
+              'rounded-sm',
               size === 'sm' ? 'h-2 w-1' : 'h-2.5 w-1.5',
               i < filledSegments ? 'bg-fw-warning' : 'bg-warm-200',
             )}
           />
         ))}
       </span>
-      <span className={cn('font-fw-mono tabular-nums', size === 'sm' ? 'text-[11px]' : 'text-caption', tone)}>
+      <span className={cn('font-fw-mono tabular-nums', size === 'sm' ? 'text-eyebrow' : 'text-caption', tone)}>
         {percent}%{label ? ` ${label}` : ''}
       </span>
     </span>

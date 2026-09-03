@@ -8,6 +8,7 @@ import type { UnifiedIncident } from '@/lib/admin/incidents/types';
 import type { IncidentPresentation } from '@/lib/admin/incidents/present';
 import type { IncidentGenome } from '@/lib/admin/incidents/genome';
 import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
+import { EvidenceInspector, type EvidenceInspectorData } from '@/components/admin/premium';
 import { PanelAllClear, PanelNoData } from './PanelStates';
 import { UnifiedIncidentCard } from './UnifiedIncidentCard';
 
@@ -83,6 +84,15 @@ export function UnifiedIncidentQueue({
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(new Set());
   const [errors, setErrors] = useState<ReadonlyMap<string, string>>(new Map());
   const [, startTransition] = useTransition();
+  // The shared Evidence Inspector (brief §13) — ONE instance for the whole
+  // queue, not one per card. Each card only builds its own data and calls
+  // `onInspect`; this is where it actually opens.
+  const [inspectorData, setInspectorData] = useState<EvidenceInspectorData | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  function openInspector(data: EvidenceInspectorData) {
+    setInspectorData(data);
+    setInspectorOpen(true);
+  }
 
   const visible = incidents.filter((incident) => !hiddenIds.has(incident.id));
 
@@ -184,12 +194,22 @@ export function UnifiedIncidentQueue({
         presentation={presentations?.[incident.id]}
         genome={genomeByIncident?.get(incident.id)}
         releaseRelationship={releaseRelationships?.get(incident.id) ?? (releaseRelationships ? null : undefined)}
+        onInspect={openInspector}
       />
     );
   }
 
+  const inspector = (
+    <EvidenceInspector data={inspectorData} open={inspectorOpen} onOpenChange={setInspectorOpen} />
+  );
+
   if (!grouped) {
-    return <ul className="divide-y divide-warm-200/60">{visible.map(card)}</ul>;
+    return (
+      <>
+        <ul className="divide-y divide-warm-200/60">{visible.map(card)}</ul>
+        {inspector}
+      </>
+    );
   }
 
   // An empty severity never renders a heading. An always-present "Critical 0"
@@ -200,16 +220,19 @@ export function UnifiedIncidentQueue({
   })).filter((b) => b.rows.length > 0);
 
   return (
-    <div className="divide-y divide-warm-200">
-      {buckets.map(({ severity, rows }) => (
-        <section key={severity} className="py-1 first:pt-0 last:pb-0">
-          <h3 className="sticky top-0 z-10 flex items-baseline gap-2 bg-warm-50/95 py-1.5 text-eyebrow uppercase tracking-widest text-warm-500 backdrop-blur">
-            {SEVERITY_HEADING[severity]}
-            <span className="font-fw-mono tabular-nums text-warm-400">{rows.length}</span>
-          </h3>
-          <ul className="divide-y divide-warm-200/60">{rows.map(card)}</ul>
-        </section>
-      ))}
-    </div>
+    <>
+      <div className="divide-y divide-warm-200">
+        {buckets.map(({ severity, rows }) => (
+          <section key={severity} className="py-1 first:pt-0 last:pb-0">
+            <h3 className="sticky top-0 z-10 flex items-baseline gap-2 bg-warm-50/95 py-1.5 text-eyebrow uppercase tracking-widest text-warm-500 backdrop-blur">
+              {SEVERITY_HEADING[severity]}
+              <span className="font-fw-mono tabular-nums text-warm-400">{rows.length}</span>
+            </h3>
+            <ul className="divide-y divide-warm-200/60">{rows.map(card)}</ul>
+          </section>
+        ))}
+      </div>
+      {inspector}
+    </>
   );
 }

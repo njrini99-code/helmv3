@@ -42,7 +42,10 @@ import { BulkResolveButton } from '../_components/BulkResolveButton';
 import { ErrorsFilterBar, type ActiveFilter, type FilterGroup } from './_components/ErrorsFilterBar';
 import { HowToReadIncidents } from './_components/HowToReadIncidents';
 import { ArchivePanel } from './_components/ArchivePanel';
+import { ReleaseWatchPanel } from './_components/ReleaseWatchPanel';
 import { loadErrorsPageData } from './_data';
+import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incidents/genome';
+import { fetchCurrentReleaseWatch } from '@/lib/admin/incidents/release-watch';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -426,6 +429,18 @@ export default async function ErrorsPage({
     const lensed = applyIncidentFacets(board.incidents, lens, filters.kind);
     const allClearAllowed = canClaimAllClear(board.coverage);
 
+    // Phase 1 — Incident Genome + Release Watch (brief §8/§9/§14).
+    // `fetchCurrentReleaseWatch` fails soft to an `unavailableReason` — never
+    // takes the queue down with it. Alias grouping runs over the FULL board
+    // (not just `lensed`) so a card's "same root cause" answer never depends
+    // on which lens happens to be selected; the Genome itself is only
+    // computed for rows this render actually shows.
+    const releaseWatch = await fetchCurrentReleaseWatch({ incidents: board.incidents, coverage: board.coverage });
+    const aliasGroups = buildBoardAliasGroups(board.incidents);
+    const genomeByIncident = new Map(
+      lensed.map((incident) => [incident.id, buildIncidentGenome(incident, board.incidents, aliasGroups)] as const),
+    );
+
     // The two surfaces, separately. Counting INCIDENTS rather than raw rows is
     // deliberate: an incident is one production cause, so twelve Sentry events
     // of one fault are one thing wrong, not twelve. Worth knowing before
@@ -577,6 +592,8 @@ export default async function ErrorsPage({
 
         <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
 
+        <ReleaseWatchPanel releaseWatch={releaseWatch} />
+
         {/* 1. THE canonical list. One incident per production cause, every
             source that saw it attached, and no second copy of it anywhere on
             this page — which is the entire point of the read model behind it. */}
@@ -684,6 +701,9 @@ export default async function ErrorsPage({
               canClaimAllClear={allClearAllowed}
               blindnessNote={board.blindnessNote}
               checkedAt={board.computedAt}
+              presentations={board.presentations}
+              genomeByIncident={genomeByIncident}
+              releaseRelationships={releaseWatch.relationships}
             />
           </div>
           <p className="mt-3 text-caption text-warm-500">

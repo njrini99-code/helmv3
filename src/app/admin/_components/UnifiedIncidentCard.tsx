@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Sparkles, GitPullRequest, CloudOff, CheckCheck, ChevronRight, FlaskConical } from 'lucide-react';
+import { Sparkles, GitPullRequest, CloudOff, CheckCheck, ChevronRight, FlaskConical, Layers } from 'lucide-react';
 import { Button, Sparkline } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import {
@@ -23,7 +23,12 @@ import { deriveIncidentFlow, FLOW_STAGE_TITLE } from '@/lib/admin/selfheal-flow'
 import type { IncidentPresentation } from '@/lib/admin/incidents/present';
 import type { IncidentGenome } from '@/lib/admin/incidents/genome';
 import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
-import { SourceConfidenceRing, ReleaseRelationshipLabel, EpisodeTimelineStrip } from '@/components/admin/premium';
+import {
+  SourceConfidenceRing,
+  ReleaseRelationshipLabel,
+  EpisodeTimelineStrip,
+  type EvidenceInspectorData,
+} from '@/components/admin/premium';
 import { routeLabel } from './IncidentCard';
 import { LocalTime } from './LocalTime';
 import { CopyReportButton } from './CopyReportButton';
@@ -140,6 +145,35 @@ function affectedUsersLabel(incident: Pick<UnifiedIncident, 'affectedUsers' | 'a
   if (!incident.affectedUsersKnown) return 'unknown user';
   const n = incident.affectedUsers;
   return `${n} user${n === 1 ? '' : 's'}`;
+}
+
+/** Assemble the shared Evidence Inspector's narrow data shape from what this
+ *  card already has in hand — no second fetch on open (brief §13). */
+function buildEvidenceInspectorData(
+  incident: UnifiedIncident,
+  presentation: IncidentPresentation,
+  genome: IncidentGenome,
+  releaseRelationship: ReleaseRelationshipVerdict | null | undefined,
+): EvidenceInspectorData {
+  return {
+    id: incident.id,
+    title: presentation.title,
+    technicalSignature: presentation.technicalSignature,
+    operationContext: presentation.operationContext,
+    severity: incident.severity,
+    lifecycle: incident.lifecycle,
+    firstSeen: incident.firstSeen,
+    lastSeen: incident.lastSeen,
+    occurrences: incident.occurrences,
+    affectedUsers: incident.affectedUsers,
+    affectedUsersKnown: incident.affectedUsersKnown,
+    releaseRelationship: releaseRelationship ?? null,
+    evidenceCoverage: genome.evidenceCoverage,
+    episodes: genome.episodes.episodes,
+    episodesIncomplete: genome.episodes.timelineIncomplete,
+    repair: incident.repair,
+    linkTarget: incident.linkTarget,
+  };
 }
 
 /** Registry key -> label, built once. A key the registry does not know
@@ -361,6 +395,12 @@ export function UnifiedIncidentCard({
    *  "release relationship unknown" state, never silently omitted, so an
    *  operator can tell "no release context yet" apart from "not shown". */
   releaseRelationship,
+  /** Opens the ONE shared Evidence Inspector `UnifiedIncidentQueue` owns —
+   *  see the header note by `inspectorData` below for why this card never
+   *  mounts its own Sheet instance. The "Inspect" trigger only renders when
+   *  both this and `inspectorData` (built from `presentation` + `genome`)
+   *  are available. */
+  onInspect,
 }: {
   incident: UnifiedIncident;
   series: number[] | null;
@@ -369,10 +409,18 @@ export function UnifiedIncidentCard({
   presentation?: IncidentPresentation;
   genome?: IncidentGenome;
   releaseRelationship?: ReleaseRelationshipVerdict | null;
+  onInspect?: (data: EvidenceInspectorData) => void;
 }) {
   const path = routeLabel(incident.route);
   const primary = primarySource(incident.sources);
   const anyBlind = incident.sources.some((s) => s.health === 'blind');
+  // The shared Evidence Inspector (brief §13) is ONE instance owned by
+  // `UnifiedIncidentQueue`, not one per card — a per-row Sheet instance for
+  // every incident in a long list is exactly the payload brief §41 asks to
+  // avoid. This card only builds the data and hands it up via `onInspect`.
+  // Only buildable once both a presentation and a genome are actually in
+  // hand, so the trigger never opens a half-empty drawer.
+  const inspectorData = presentation && genome ? buildEvidenceInspectorData(incident, presentation, genome, releaseRelationship) : null;
   // Against the board's own clock, not `Date.now()`: this is a client
   // component, and a stall verdict that flips between server and client
   // render is a hydration mismatch wearing a warning chip. `computedAt` is
@@ -626,6 +674,18 @@ export function UnifiedIncidentCard({
         <ProofDots proof={incident.proof} size="sm" />
 
         {genome ? <SourceConfidenceRing coverage={genome.evidenceCoverage} size={22} className="shrink-0" /> : null}
+
+        {inspectorData && onInspect ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={`Inspect evidence: ${inspectorData.title}`}
+            onClick={() => onInspect(inspectorData)}
+          >
+            <Layers size={13} aria-hidden />
+          </Button>
+        ) : null}
 
         <CopyReportButton variant="icon" report={incident.report} label={`Copy incident report: ${incident.title}`} />
 
