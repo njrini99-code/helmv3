@@ -664,11 +664,18 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
   (`fetchReleaseLedger`), rather than re-deriving deploy data — a second
   Vercel/deploy reader would be the second authority `types.ts`'s own
   header warns against. `classifyIncidentReleaseRelationship` (pure,
-  tested) uses only `firstSeen` vs. deploy time and whether the incident's
-  feature shows a worsening delta in `ReleaseCardData.topFeatureDeltas` —
-  the one real corroborating signal this codebase has; every other
-  `ReleaseRelationshipEvidence` field (code-in-trace-changed, cohort
-  signals, replay reproduction) is passed `null`, never guessed.
+  tested) uses only `firstSeen` vs. deploy time and the incident's own
+  lifecycle-derived occurrence trend — EVERY `ReleaseRelationshipEvidence`
+  corroboration field (feature-delta, code-in-trace-changed, cohort
+  signals, replay reproduction) is passed `null`, never guessed. Corrected
+  2026-09-03 (PR #1789 second review): this used to say the feature's
+  `topFeatureDeltas` worsening delta was "the one real corroborating
+  signal this codebase has" and was wired as `featureChangedInRelease`.
+  That was circular — a new incident's own first occurrences are what move
+  its own feature's delta positive, so it was proximity measuring itself,
+  not independent evidence — and has been removed; see `release-watch.ts`'s
+  `classifyIncidentReleaseRelationship` header for the full account. A
+  proximity-only incident now correctly resolves to `'no-causal-signal'`.
   `fetchCurrentReleaseWatch` (I/O, untested per the `fetchDeployFreshness`
   convention) always passes `dbSourceBlind: true` into
   `buildReleaseComparison` — journey success rate, DB p95 and invariant

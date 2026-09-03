@@ -99,10 +99,12 @@ describe('ReleaseWatchPanel', () => {
         })}
       />,
     );
-    // metricRow renders UnknownInline whenever metric.current === null OR
-    // state === 'unknown' — root incidents' current (5) is a real number so
-    // it renders, but with no "unchanged from N" baseline clause attached.
+    // metricRow gates on metric.current === null alone (fixed alongside
+    // defect #2) — root incidents' current (5) is a real number so it
+    // renders, with a "(baseline unknown)" clause rather than a silently
+    // omitted or fabricated "unchanged from N".
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.queryByText(/unchanged from/)).not.toBeInTheDocument();
+    expect(screen.getAllByText('baseline unknown').length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -49,7 +49,15 @@ function metricRow(label: string, metric: ComparisonMetric, unit: (v: number) =>
             <span className="ml-1.5 text-caption font-normal text-warm-500">
               {stateWord[metric.state]} from {unit(metric.baseline)}
             </span>
-          ) : null}
+          ) : (
+            // Say so, don't go silent: a known current value with an
+            // unmeasured baseline is a different fact from "we know both and
+            // they matched" — silently omitting the clause would read as
+            // "nothing more to say" rather than "we don't know the baseline".
+            <span className="ml-1.5 text-caption font-normal text-warm-500">
+              (<UnknownInline label="baseline unknown" />)
+            </span>
+          )}
         </p>
       )}
     </div>

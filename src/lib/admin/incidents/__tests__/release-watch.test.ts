@@ -10,7 +10,10 @@ import {
   newFingerprintsTotalFor,
   toBaselineSnapshotFacts,
   toCurrentSnapshotFacts,
+  classifyReleaseWatch,
+  type ReleaseRelationshipInput,
 } from '../release-watch';
+import { PROVEN_HEALTHY_WINDOW_MS, type ReleaseWatchEvidence } from '../release-context';
 import type { UnifiedIncident } from '../types';
 import type { ReleaseCardData } from '@/lib/admin/data/release-ledger';
 import type { CoverageSummary } from '../sources';
@@ -91,6 +94,22 @@ describe('classifyIncidentReleaseRelationship', () => {
     });
     expect(verdict.relationship).toBe('no-causal-signal');
   });
+
+  it('ReleaseRelationshipInput can never regain a feature-delta corroboration key (type-level pin)', () => {
+    // The runtime test above ("never fabricates new-after-release...") calls
+    // classifyIncidentReleaseRelationship WITHOUT any feature-delta field, so
+    // it would pass equally well against a reverted module that re-added
+    // `featureRegressedInRelease` as an OPTIONAL field left unset — it proves
+    // "no evidence given -> no-causal-signal", not "the field is gone". This
+    // pins the actual fix: if `featureRegressedInRelease` (or any same-shaped
+    // key) is ever reintroduced on ReleaseRelationshipInput, HasFeatureDeltaKey
+    // resolves to `true` and the `const` assignment below fails to COMPILE
+    // (caught by `npx tsc --noEmit`, before any test runs), not just at
+    // runtime.
+    type HasFeatureDeltaKey = 'featureRegressedInRelease' extends keyof ReleaseRelationshipInput ? true : false;
+    const hasFeatureDeltaKey: HasFeatureDeltaKey = false;
+    expect(hasFeatureDeltaKey).toBe(false);
+  });
 });
 
 describe('newFingerprintsTotalFor', () => {
@@ -112,6 +131,46 @@ describe('newFingerprintsTotalFor', () => {
 
   it('is 0, never null-crashing, when there is no current card', () => {
     expect(newFingerprintsTotalFor(null)).toBe(0);
+  });
+});
+
+describe('newFingerprintsTotalFor feeding classifyReleaseWatch (PR #1789 second review)', () => {
+  function watchEvidence(overrides: Partial<ReleaseWatchEvidence> = {}): ReleaseWatchEvidence {
+    return {
+      releaseDeployedAtMs: Date.parse('2026-09-01T00:00:00Z'),
+      now: Date.parse('2026-09-01T00:00:00Z') + PROVEN_HEALTHY_WINDOW_MS + 1,
+      newIncidentsCount: 0,
+      regressedIncidentsCount: 0,
+      rollbackRecommended: false,
+      sourceCoverageBlind: false,
+      ...overrides,
+    };
+  }
+
+  it('a release with real new fingerprints and no regression must never read proven-healthy or clean-so-far', () => {
+    // Regression test for the defect fix #3 exposed: with every
+    // classifyIncidentReleaseRelationship corroboration field null (see that
+    // function's own header), 'new-after-release' became structurally
+    // unreachable, so a `newIncidentsCount` sourced from counting
+    // relationships was ALWAYS 0 — classifyReleaseWatch's
+    // `newIncidentsCount > 0 -> 'degraded'` rule went permanently dead, and a
+    // release with real new fingerprints fell through to 'clean-so-far' /
+    // 'proven-healthy' (a green pill) purely because enough wall-clock time
+    // had passed, regardless of the fingerprints panel showing "N new"
+    // alongside it. newIncidentsCount must come from the real,
+    // release-ledger-derived fingerprint count (newFingerprintsTotalFor),
+    // not from the relationship classifier.
+    const card = releaseCard({ newFingerprintsSince: 23 });
+    const state = classifyReleaseWatch(watchEvidence({ newIncidentsCount: newFingerprintsTotalFor(card) }));
+    expect(state).toBe('degraded');
+    expect(state).not.toBe('proven-healthy');
+    expect(state).not.toBe('clean-so-far');
+  });
+
+  it('a release with zero new fingerprints and no regression correctly reaches proven-healthy after the window', () => {
+    const card = releaseCard({ newFingerprintsSince: 0 });
+    const state = classifyReleaseWatch(watchEvidence({ newIncidentsCount: newFingerprintsTotalFor(card) }));
+    expect(state).toBe('proven-healthy');
   });
 });
 

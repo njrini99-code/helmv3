@@ -302,9 +302,6 @@ export async function fetchCurrentReleaseWatch(board: {
     );
   }
 
-  const newIncidentsCount = Array.from(relationships.values()).filter(
-    (r) => r.relationship === 'new-after-release',
-  ).length;
   const regressedIncidentsCount = Array.from(relationships.values()).filter(
     (r) => r.relationship === 'regressed-after-release',
   ).length;
@@ -312,7 +309,21 @@ export async function fetchCurrentReleaseWatch(board: {
   const watchEvidence: ReleaseWatchEvidence = {
     releaseDeployedAtMs: currentCard?.createdAt ?? null,
     now,
-    newIncidentsCount,
+    // NOT a count of relationships classified 'new-after-release' — that is
+    // now structurally always 0 (see classifyIncidentReleaseRelationship's
+    // own header: every corroboration field is null, so evidenceFor is
+    // always empty and 'new-after-release' is unreachable). Reusing it here
+    // would make classifyReleaseWatch's `newIncidentsCount > 0 -> 'degraded'`
+    // rule (release-context.ts) permanently dead code — the watch would fall
+    // through to 'clean-so-far'/'proven-healthy' after the proof window
+    // REGARDLESS of how many new fingerprints actually appeared, which
+    // PosturePill would then render as a green "PROVEN HEALTHY" directly
+    // above a "N new fingerprints since this release" count > 0. Fixed
+    // 2026-09-03 (PR #1789 second review): this is release-ledger.ts's
+    // uncapped newFingerprintsSince, the same real count the panel prints,
+    // and what this field's name actually promises — "new since this
+    // release", not "new AND release-caused".
+    newIncidentsCount: newFingerprintsTotalFor(currentCard),
     regressedIncidentsCount,
     // No rollback-recommendation model exists yet in this codebase (that is
     // Phase 3's "rollback intelligence", brief §28) — never true here.
@@ -332,6 +343,14 @@ export async function fetchCurrentReleaseWatch(board: {
     }),
     includedPrs: [],
     watchEvidence,
+    // TRUNCATED SAMPLE, NOT THE TOTAL — release-ledger.ts caps
+    // newFingerprintSamples at 5 by design (a display sample, not a count).
+    // Nothing renders this array as a list today (no current caller maps
+    // over context.newFingerprints), but if one does, it MUST NOT infer a
+    // total from `.length` — that was exactly defect #1 (PR #1789 review),
+    // now fixed via the separate, uncapped `newFingerprintsTotal` field on
+    // `CurrentReleaseWatch`. A future caller wanting the true count reads
+    // that field, never this array's length.
     newFingerprints: currentCard?.newFingerprintSamples.map((f) => f.fingerprint) ?? [],
     regressedFingerprints: Array.from(relationships.entries())
       .filter(([, r]) => r.relationship === 'regressed-after-release')
