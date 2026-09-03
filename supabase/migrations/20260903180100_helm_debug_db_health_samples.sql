@@ -244,7 +244,7 @@ revoke execute on function public.helm_debug_db_health_snapshot() from public,
 anon,
 authenticated;
 grant execute on function public.helm_debug_db_health_snapshot()
-  to service_role;
+to service_role;
 
 revoke execute on function public.record_db_health_sample(
     timestamptz,
