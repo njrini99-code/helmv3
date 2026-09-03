@@ -73,7 +73,7 @@ const VALID_SIGNAL_TYPES = new Set(['e2e', 'flight_recorder', 'span', 'metric', 
 const VALID_BUILD_STATUS = new Set(['live', 'planned_not_merged']);
 const SNAKE_CASE = /^[a-z][a-z0-9_]*$/;
 
-export function validateJourneysDoc(doc, { registryFeatureIds, repoRoot, readFileText, fileTracked }) {
+export function validateJourneysDoc(doc, { registryFeatureIds, readFileText, fileTracked }) {
   const problems = [];
   const fail = (where, detail) => problems.push(`${where}: ${detail}`);
 
@@ -176,7 +176,7 @@ export function validateJourneysDoc(doc, { registryFeatureIds, repoRoot, readFil
 
       stage.observable_signals.forEach((signal, signalIndex) => {
         const signalWhere = `${stageWhere}.observable_signals[${signalIndex}]`;
-        validateSignal(signal, signalWhere, journey, fail, { repoRoot, readFileText, fileTracked });
+        validateSignal(signal, signalWhere, journey, fail, { readFileText, fileTracked });
       });
     });
   });
@@ -184,7 +184,7 @@ export function validateJourneysDoc(doc, { registryFeatureIds, repoRoot, readFil
   return problems;
 }
 
-function validateSignal(signal, where, journey, fail, { repoRoot, readFileText, fileTracked }) {
+function validateSignal(signal, where, journey, fail, { readFileText, fileTracked }) {
   if (!VALID_SIGNAL_TYPES.has(signal?.type)) {
     fail(where, `type must be one of ${[...VALID_SIGNAL_TYPES].join('|')}, got ${JSON.stringify(signal?.type)}`);
     return;
