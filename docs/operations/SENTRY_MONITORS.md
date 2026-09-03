@@ -90,10 +90,10 @@ mode this build was told to avoid).
 | `9711163` | `451027` | Helm P1 — production unhandled error rate | `environment:production handled:no` | 1h | 25 | 10 | 10 |
 | `9711158` | `451026` | Helm P1 — Postgres privilege errors (42501) | `environment:production pg_error_code:42501` | 1h | 5 | 1 | 1 |
 | `9711164` | `451028` | Helm P1 — CoachHelm errors | `environment:production feature:coachhelm*` | 1h | 10 | 3 | 3 |
-| `9711170` | `451030` | Helm P1 — golf round submit/autosave terminal failure rate | `action:golf_round_submit` on `dataset: events_analytics_platform`, `aggregate: sum(helm.workflow.failure)` | 1h | 10 | 3 | 3 |
+| `9711646` | `451030` | Helm P1 — golf round submit/autosave terminal failure rate | `feature:round_tracking` on `dataset: events_analytics_platform`, `aggregate: sum(helm.workflow.failure)` | 1h | 10 | 3 | 3 |
 
 Verification: `GET /organizations/helm-xs/workflows/3937972/` →
-`"detectorIds": ["7702315", "9711163", "9711158", "9711164", "9711170"]`.
+`"detectorIds": ["7702315", "9711163", "9711158", "9711164", "9711646"]`.
 
 **All thresholds above are PROVISIONAL.** They were set from a short lookback
 window at build time (2026-09-02/03) and must be revisited after ~2 weeks
@@ -117,13 +117,13 @@ of real production volume:
   vs. 7 for the literal, and — critically — the **live subscription query
   itself accepts the wildcard** (confirmed by the successful `201` on
   creation, not just the preview). Critical=10/warning=3 per hour.
-- `action:golf_round_submit` / `sum(helm.workflow.failure)` (detector
-  `9711170`): **this metric has zero data as of build time** — Phase C/D
+- `feature:round_tracking` / `sum(helm.workflow.failure)` (detector
+  `9711646`): **this metric has zero data as of build time** — Phase C/D
   code that emits `helm.workflow.*` metrics has not shipped to production
   yet. The subscription was still accepted (`201`) because
   `events_analytics_platform` (EAP/spans) is schema-flexible and does not
   validate that an attribute name has ever been seen. The query
-  `action:golf_round_submit` is a **best guess** at the tag value Phase
+  `feature:round_tracking` is a **best guess** at the tag value Phase
   C/D's code will actually emit for golf round submit/autosave — cross-check
   against the shipped code's `action` values once Phase C/D lands, and edit
   the detector's `dataSources[0].queryObj.snubaQuery.query` if the real value
@@ -192,7 +192,7 @@ events total across 90 days) — revisit if volume changes materially.
 
 | Workflow id | Name | Frequency | Action | Detectors attached |
 |---|---|---|---|---|
-| `3937972` | Helm — notify owner on metric monitor incidents | 60 min | email → user `4202373` (njrini99@gmail.com) | `7702315`, `9711163`, `9711158`, `9711164`, `9711170` (all P1) |
+| `3937972` | Helm — notify owner on metric monitor incidents | 60 min | email → user `4202373` (njrini99@gmail.com) | `7702315`, `9711163`, `9711158`, `9711164`, `9711646` (all P1) |
 | `3937991` | Helm — P2 digest | 1440 min (daily) | email → user `4202373` | `9711165` |
 | `3021134` | Send a notification for high priority issues (Sentry default) | — | email → issue owners | `6533345` (Issue Stream, built-in) |
 | `3653843` | Notify Suggested Assignees (Sentry default) | — | email → suggested assignees | `6533345` (Issue Stream, built-in) |
@@ -262,7 +262,7 @@ POST /api/0/organizations/helm-xs/alert-rules/
 {
   "name": "Helm P1 — golf round submit/autosave terminal failure rate",
   "dataset": "events_analytics_platform",
-  "query": "action:golf_round_submit",
+  "query": "feature:round_tracking",
   "aggregate": "sum(helm.workflow.failure)",
   "thresholdType": 0,
   "resolveThreshold": 3.0,
@@ -506,7 +506,7 @@ see the `replay` widgetType rejection above.
 Every object created in this build can be removed with a `DELETE`:
 
 ```
-DELETE /api/0/organizations/helm-xs/detectors/<id>/      # 9711158, 9711163, 9711164, 9711165, 9711170, 9711171
+DELETE /api/0/organizations/helm-xs/detectors/<id>/      # 9711158, 9711163, 9711164, 9711165, 9711646, 9711171
 DELETE /api/0/organizations/helm-xs/workflows/<id>/       # 3937991 (P2 digest)
 DELETE /api/0/organizations/helm-xs/dashboards/<id>/       # 9931246, 9931247, 9931248, 9931249, 9931306
 ```
@@ -519,3 +519,11 @@ by Sentry) — no need to unlink first.
 Alert-rule ids (`451026`–`451030`) are the legacy-view identifiers for the
 same objects as their detector ids above; deleting the detector removes both
 views. There is no separate cleanup needed for the alert-rule id.
+
+> Detector ids are not stable across query edits. The workflow-engine `PUT
+> /organizations/helm-xs/detectors/<id>/` returns 200 but ignores `dataSource`,
+> and the legacy `PUT /alert-rules/<id>/` refuses ("cannot be modified with the
+> legacy API"). To change a metric detector's query: `POST /alert-rules/` a new
+> rule (creates a detector + an auto workflow), `PUT` the new detector's
+> `workflowIds` to the shared owner-notify workflow, `DELETE` the auto workflow,
+> then `DELETE` the old detector. 2026-09-03: 9711170 → 9711646 this way.

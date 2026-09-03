@@ -8,6 +8,7 @@ import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, 
 import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
+import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 import { getRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import {
@@ -1319,6 +1320,7 @@ export default function ContinueRoundClient({
 
       // Show success celebration — the overlay auto-navigates to round review
       setCompletedRoundId(result.data.roundId || roundId);
+      recordHelmBreadcrumb('golf.round', 'submit', { action: 'submit', result: 'success' });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to submit round';
       if (isRecoverableRoundSubmitError(message)) {
