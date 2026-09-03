@@ -29,7 +29,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 13 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 22 | 22 | 9 | 15 |
+| `CURRENT_FEATURE` | 20 | 20 | 7 | 9 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 16 | 3 | 5 | 22 |
 | `PROCESS_CONTRACT` | 8 | 3 | 7 | 11 |
@@ -159,8 +159,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-platform.md` | current | yes | - | yes | 4 | 101 | 3 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 4 | 101 | 3 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 4 | 101 | 3 |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -270,8 +268,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 7 | 8 | - |
-| `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 5 | 11 | 2 |
+| `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 5 | 8 | - |
+| `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 3 | 11 | 2 |
 | `docs/ai-system/selfheal/triage-contract.md` | current | - | - | yes | 1 | 8 | - |
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 2 | 7 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 11 | 7 |
@@ -304,7 +302,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | 3 | 0 | - |
+| `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | 1 | 0 | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | - | - | yes | 3 | 89 | 20 |
 | `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 3 | 40 | 4 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | - | - | yes | 1 | 0 | - |
@@ -375,7 +373,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 5 | 0 | - |
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 6 | 19 | 6 |
-| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 5 | 13 | 1 |
+| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 3 | 13 | 1 |
 | `docs/UIUX_AUDIT.md` | current | - | - | - | 2 | 0 | - |
 | `docs/audits/AUTONOMOUS_RUN_STATUS_2026-07-01.md` | current | - | - | yes | 1 | 9 | 2 |
 | `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 7 | 12 | 2 |
@@ -558,11 +556,11 @@ them would bury everything above.
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 26 |
-| `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 3 | 21 | 20 |
+| `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 1 | 21 | 20 |
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 6 | 8 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
-| `docs/OBSERVABILITY.md` | current | yes | - | yes | 4 | 6 | - |
+| `docs/OBSERVABILITY.md` | current | yes | - | yes | 2 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
 | `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 3 | 7 | - |
@@ -602,7 +600,7 @@ them would bury everything above.
 | `docs/observability/SENTRY_SNAPSHOTS.md` | current | - | - | - | 1 | 4 | - |
 | `docs/observability/SENTRY_SUPABASE_TRACING.md` | current | yes | - | yes | 1 | 2 | - |
 | `docs/observability/SENTRY_TELEMETRY_TAXONOMY.md` | current | yes | - | yes | 2 | 8 | - |
-| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | - | - | yes | 4 | 4 | - |
+| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | - | - | yes | 2 | 4 | - |
 | `docs/operations/2026-05-27-baseball-tables-scope.md` | current | - | - | - | 1 | 3 | - |
 | `docs/operations/2026-05-27-v3-w35-diagnosis.md` | current | - | - | - | 2 | 5 | - |
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | 1 |
@@ -649,7 +647,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 9 | 8 | 1 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 7 | 8 | 1 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
