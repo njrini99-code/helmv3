@@ -1345,6 +1345,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/contracts/**",
+        "pattern": "scripts/contracts/**",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/knowledge/**",
         "pattern": "scripts/knowledge/**",
         "category": "services"
@@ -12699,6 +12704,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "package.json"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/contracts/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/contracts/**"
         }
       ]
     },
