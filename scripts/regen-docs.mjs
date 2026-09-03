@@ -107,7 +107,7 @@ function extractTopLevelKeys(src, blockName) {
   }
   const blockText = src.slice(blockStart, i);
   const keys = [];
-  const re = /^      ([a-z_][a-z0-9_]*):\s*[\{\(]/gm;
+  const re = /^ {6}([a-z_][a-z0-9_]*):\s*[\{\(]/gm;
   let m;
   while ((m = re.exec(blockText)) !== null) {
     keys.push(m[1]);

@@ -298,6 +298,43 @@ jobs:
         continue-on-error: true
         run: npm run knowledge:globs
 
+      # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
+      # 2026-09-02 alongside the generator itself. Without this step the
+      # committed artifact could go stale on the very next registry.yml edit
+      # and nothing would notice: `.claude/rules/quality-gates.md`'s own rule
+      # is "a script in package.json with no workflow step is not a gate,"
+      # and `npm run knowledge:world-model:check` sat exactly there until
+      # this step was added in the same change that introduced it.
+      - name: World Model graph is current
+        id: world_model
+        continue-on-error: true
+        run: npm run knowledge:world-model:check
+
+      # The other direction from "Feature router against the tree" above:
+      # that step fails when a registry entry points at a path that no
+      # longer exists, this one fails when a tracked file under a directory
+      # the registry itself claims to fully cover (src/app/admin,
+      # src/lib/admin — see check-registry-orphans.mjs's module doc-comment
+      # for exactly what earns a directory that claim) maps to zero
+      # features. Added 2026-09-03 after the admin_platform split shipped
+      # with exactly this defect: src/app/admin/__tests__/** fell through
+      # every named routes/tests glob and mapped to no feature at all.
+      - name: Registry claims full coverage of what it says it does
+        id: registry_orphans
+        continue-on-error: true
+        run: npm run knowledge:orphans-check
+
+      # The orphan checker's OWN test — pure-logic fixtures via node:test,
+      # no real git/filesystem (see the file's header). Wired here rather
+      # than left as a script nothing invokes, which is the exact "gate that
+      # cannot fail is not a gate" pattern `.claude/rules/quality-gates.md`
+      # calls out — `knowledge:journeys-check:test` and `knowledge:bench:test`
+      # sit unwired today as a live example of the failure mode this step
+      # avoids repeating.
+      - name: Registry orphan checker's own tests
+        id: registry_orphans_test
+        continue-on-error: true
+        run: npm run knowledge:orphans-check:test
       # Feature-flag registry governance (config/feature-flags.yml).
       # `flags:check` chains three things: registry.generated.ts is current
       # relative to the YAML (non-mutating drift comparison, same pattern as
