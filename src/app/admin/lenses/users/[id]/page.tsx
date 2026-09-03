@@ -5,17 +5,24 @@ import { UserJourneyRibbon } from '@/components/admin/lenses/UserJourneyRibbon';
 import { Surface, InlineNotice } from '@/components/fairway';
 import { PanelBoundary } from '../../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../../_components/PanelSkeletons';
-import { PanelNoData } from '../../../_components/PanelStates';
+import { PanelNoData, PanelStale } from '../../../_components/PanelStates';
 
 export const dynamic = 'force-dynamic';
 
 async function UserRibbonBody({ userId }: { userId: string }) {
   const ribbon = await fetchUserJourneyRibbon(userId);
 
-  // Same contract as src/app/admin/users/[id]/page.tsx: an id that resolves
-  // to no `users` row must say so explicitly, not render a full ribbon of
-  // honest nulls that reads as "a real user with no data".
-  if (!ribbon.found) {
+  // `found` is tri-state and the two non-true cases are NOT interchangeable:
+  // `false` is a CONFIRMED absence (malformed id, or a clean existence
+  // check that found no row) — same contract as
+  // src/app/admin/users/[id]/page.tsx:66. `null` is a FAILED existence
+  // check (timeout, connection fault) — rendering that as "not found" would
+  // be a fabricated negative, exactly the defect this tri-state exists to
+  // prevent. See UserJourneyRibbon.found's doc comment in user-ribbon.ts.
+  if (ribbon.found === null) {
+    return <PanelStale label="User lookup" error={ribbon.degradedNote ?? undefined} />;
+  }
+  if (ribbon.found === false) {
     return <PanelNoData label="User not found" description={`No user with id ${userId}.`} />;
   }
 

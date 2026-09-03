@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchUserDetail } from '@/lib/admin/data/users';
 import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
+import { isUuid } from '@/lib/utils/uuid';
 
 /**
  * User Journey Ribbon lens (brief §20-27: "Users: ... User Journey Ribbon on
@@ -47,14 +48,25 @@ export interface RibbonStage {
 export interface UserJourneyRibbon {
   /** The subject id the caller passed in — never an email or a name. */
   subjectRef: string;
-  /** False when no `users` row resolves for `subjectRef` — the caller MUST
-   *  check this before rendering the ribbon. Without it, an unknown/deleted
-   *  id silently renders as a real user with every stage honestly null,
-   *  which reads as "a real person with no data" rather than "this id does
-   *  not exist" (the two are different findings, and this field is the only
-   *  thing that tells them apart — every other field looks the same either
-   *  way). */
-  found: boolean;
+  /**
+   * Tri-state — the caller MUST check this before rendering the ribbon,
+   * and MUST render the three states differently:
+   *   - `true`  — a `users` row confirmed to exist for `subjectRef`.
+   *   - `false` — CONFIRMED absent: either `subjectRef` is not even
+   *     UUID-shaped (gated before any query reaches the database — a
+   *     malformed id can never match a stored uuid) or a direct existence
+   *     check succeeded and found no row.
+   *   - `null`  — UNKNOWN: the existence check itself failed (timeout,
+   *     connection fault, ...). This is NOT the same as `false`.
+   *     `fetchUserDetail()` (reused below for events/activity) does not
+   *     check its own `users` query's error and collapses both cases to
+   *     `user: null` — that collapse is exactly what `found` exists to
+   *     undo, via a dedicated existence check with its own error capture.
+   *     Render `null` as "temporarily unavailable" (e.g. `PanelStale`),
+   *     never as "not found" (`PanelNoData`) — a transient read failure is
+   *     not evidence the user doesn't exist.
+   */
+  found: boolean | null;
   stages: RibbonStage[];
   incidents: { count: number | null; recentTitles: readonly string[] };
   /** Login-event count as a session-count proxy — noted as such, not a true
@@ -70,11 +82,44 @@ export interface UserJourneyRibbon {
   degradedNote: string | null;
 }
 
+/** Shared shape for every early-return path (malformed id / confirmed
+ *  absent / existence check unreadable) — none of them have real stage or
+ *  activity data to show, so none of them should compute any. */
+function emptyRibbon(userId: string, found: boolean | null, now: Date, degradedNote: string | null): UserJourneyRibbon {
+  return {
+    subjectRef: userId,
+    found,
+    stages: [],
+    incidents: { count: null, recentTitles: [] },
+    sessions: { count: null },
+    release: { sha: null, sinceIso: null },
+    flagsCohort: { note: 'Not tracked — this codebase has no feature-flag/cohort assignment table to read from.' },
+    traceReplayAvailable: false,
+    threadHref: `/admin/thread/user/${userId}`,
+    generatedAt: now.toISOString(),
+    degradedNote,
+  };
+}
+
 export async function fetchUserJourneyRibbon(userId: string, now: Date = new Date()): Promise<UserJourneyRibbon> {
   const admin = createAdminClient();
   const degraded: string[] = [];
 
-  const [detail, roundSubmittedRes, aiGenRes, releaseLedger] = await Promise.all([
+  // Malformed ids never match a stored uuid — a deterministic "not found",
+  // and gated BEFORE any query reaches the database rather than surfacing
+  // as a 22P02 "invalid input syntax for type uuid" that would otherwise
+  // masquerade as "unreadable" (the #1767 [id]-page convention).
+  if (!isUuid(userId)) {
+    return emptyRibbon(userId, false, now, null);
+  }
+
+  const [existsRes, detail, roundSubmittedRes, aiGenRes, releaseLedger] = await Promise.all([
+    // A DEDICATED existence check with its OWN error capture.
+    // fetchUserDetail()'s internal `users` query (reused below for
+    // events/activity) does NOT check its error — a timeout or connection
+    // fault there resolves `user: null` identically to a genuinely absent
+    // id, which is exactly the collapse `found` must not repeat.
+    admin.from('users').select('id').eq('id', userId).maybeSingle(),
     fetchUserDetail(userId),
     admin
       .from('admin_events')
@@ -92,6 +137,17 @@ export async function fetchUserJourneyRibbon(userId: string, now: Date = new Dat
       .limit(1),
     fetchReleaseLedger(),
   ]);
+
+  const found: boolean | null = existsRes.error ? null : existsRes.data !== null;
+  if (existsRes.error) {
+    // Unreadable, not absent — return early rather than building stages
+    // off `detail`, whose own `user: null` on this same failure mode is
+    // exactly what this check exists to not trust.
+    return emptyRibbon(userId, null, now, `user existence check failed: ${existsRes.error.message}`);
+  }
+  if (!found) {
+    return emptyRibbon(userId, false, now, null);
+  }
 
   if (roundSubmittedRes.error) degraded.push(`round_submitted read failed: ${roundSubmittedRes.error.message}`);
   if (aiGenRes.error) degraded.push(`ai_generation read failed: ${aiGenRes.error.message}`);
@@ -158,7 +214,7 @@ export async function fetchUserJourneyRibbon(userId: string, now: Date = new Dat
 
   return {
     subjectRef: userId,
-    found: detail.user !== null,
+    found: true,
     stages,
     incidents: {
       count: detail.errorEvents.length,
