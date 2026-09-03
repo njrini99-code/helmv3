@@ -228,11 +228,18 @@ describe('submitGolfRoundComprehensive — direct-submit fallback ordering (exis
     expect(result.success).toBe(false);
 
     const methodOrder = recorderCalls.map((c) => `${c.method}:${c.stepKey ?? ''}`);
-    // start happens when the RPC is invoked; fail/finalize must come AFTER
-    // that same step's next call sequence — critically, `fail` is still the
-    // terminal outcome here only because the fallback (attempted in between)
-    // did not rescue the write, not because it was skipped.
+    // The recorder is constructed before Zod/auth/player (2026-09-02), so
+    // those three complete before the RPC step even starts. `fail`/`finalize`
+    // must come AFTER db.submit_round_atomic's own start — critically, `fail`
+    // is still the terminal outcome here only because the fallback (attempted
+    // in between) did not rescue the write, not because it was skipped.
     expect(methodOrder).toEqual([
+      'start:server.validation',
+      'complete:server.validation',
+      'start:server.auth',
+      'complete:server.auth',
+      'start:server.player',
+      'complete:server.player',
       'start:db.submit_round_atomic',
       'fail:db.submit_round_atomic',
       'finalize:failure',
@@ -257,6 +264,12 @@ describe('submitGolfRoundComprehensive — direct-submit fallback ordering (new 
 
     const methodOrder = recorderCalls.map((c) => `${c.method}:${c.stepKey ?? ''}`);
     expect(methodOrder).toEqual([
+      'start:server.validation',
+      'complete:server.validation',
+      'start:server.auth',
+      'complete:server.auth',
+      'start:server.player',
+      'complete:server.player',
       'start:db.submit_round_atomic',
       'fail:db.submit_round_atomic',
       'finalize:failure',

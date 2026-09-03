@@ -23,7 +23,7 @@ import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { reconcileRepairRun } from './lib/selfheal-repair-runner.mjs';
+import { reconcileRepairRun, truncateTail } from './lib/selfheal-repair-runner.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RUN_BOUNDED = resolve(HERE, 'run-bounded.mjs');
@@ -88,6 +88,11 @@ function productionStore() {
           timeout: input.timeout,
           child_exit: input.childExit,
           heartbeat_source: 'runner-fallback',
+          // Redacted + truncated by reconcileRepairRun before it ever reaches
+          // here. Combined stdout+stderr, one tail — see that function's doc
+          // comment for why one field rather than two. Only present when the
+          // child actually produced captureable output before dying.
+          ...(input.childOutputTail ? { child_output_tail: input.childOutputTail } : {}),
         },
       });
       if (error) return { ok: false, error: error.message };
@@ -96,17 +101,58 @@ function productionStore() {
   };
 }
 
+// A bounded combined tail of the child's stdout+stderr, kept ONLY so a
+// runner-level failure can explain itself (metadata.child_output_tail). The
+// 06:40 2026-09-02 failure's fallback heartbeat carried no stderr at all, so
+// the board could only say "child exited 1" — nothing about WHY. This buffer
+// is trimmed on every chunk rather than kept unbounded and truncated once, so
+// a chatty child cannot grow this process's memory across a 30-minute run.
+const TAIL_KEEP_BYTES = 4096;
+let outputTail = '';
+function appendTail(chunk) {
+  outputTail += chunk.toString('utf8');
+  if (Buffer.byteLength(outputTail, 'utf8') > TAIL_KEEP_BYTES * 2) {
+    outputTail = truncateTail(outputTail, TAIL_KEEP_BYTES);
+  }
+}
+
 const runId = randomUUID();
 const startedAt = new Date().toISOString();
 process.stderr.write(`[run-selfheal-repair] run_id=${runId} timeout=${timeoutSeconds}s\n`);
 
+// stdin stays inherited — untouched, this exact path is proven to exit 0
+// under launchd. stdout/stderr are piped so this process can capture a tail
+// for the failure heartbeat, but every byte is still forwarded to this
+// process's own stdout/stderr in real time, so `>> bridge-rca-repair.log
+// 2>&1` in the plist sees the SAME output it always has — piping captures,
+// it does not replace, the log.
 const child = spawn('node', [RUN_BOUNDED, String(timeoutSeconds), ...command], {
-  stdio: 'inherit',
+  stdio: ['inherit', 'pipe', 'pipe'],
   env: { ...process.env, HELM_REPAIR_RUN_ID: runId },
 });
+child.stdout.on('data', (chunk) => {
+  process.stdout.write(chunk);
+  appendTail(chunk);
+});
+child.stderr.on('data', (chunk) => {
+  process.stderr.write(chunk);
+  appendTail(chunk);
+});
 
-child.on('exit', async (code, signal) => {
-  const childExit = code ?? (signal ? 128 : 1);
+// Reconcile on 'close', not 'exit': 'exit' can fire before the piped stdout/
+// stderr streams have finished flushing, which would race the tail capture
+// against the last chunk the child ever wrote — exactly the chunk most likely
+// to explain a failure. 'close' fires once the streams are done. Bound the
+// wait regardless: run-bounded.mjs's child is `detached: true` (a new process
+// group) so a straggler grandchild could in principle keep a pipe's write end
+// open after the direct child we spawned has exited; a grace timer means a
+// hung pipe degrades to "reconcile with whatever tail we have", never to
+// "never reconcile at all".
+const CLOSE_GRACE_MS = 5000;
+let reconciled = false;
+async function finish(childExit) {
+  if (reconciled) return;
+  reconciled = true;
   const completedAt = new Date().toISOString();
 
   const result = await reconcileRepairRun({
@@ -114,6 +160,7 @@ child.on('exit', async (code, signal) => {
     childExit,
     startedAt,
     completedAt,
+    childOutputTail: outputTail || undefined,
     store: productionStore(),
   });
 
@@ -127,4 +174,13 @@ child.on('exit', async (code, signal) => {
     process.stderr.write(`[run-selfheal-repair] fallback write FAILED: ${result.error}\n`);
   }
   process.exit(childExit);
+}
+
+child.on('exit', (code, signal) => {
+  const childExit = code ?? (signal ? 128 : 1);
+  const graceTimer = setTimeout(() => finish(childExit), CLOSE_GRACE_MS);
+  child.once('close', () => {
+    clearTimeout(graceTimer);
+    finish(childExit);
+  });
 });

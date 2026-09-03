@@ -336,6 +336,64 @@ them would have broken those routes, not the dead one.
   were never eligible to carry. `SELF_REFERENTIAL_SOURCES` is the single set;
   `rca_analysis` rows need no matching check because they are already outside
   `queryAppErrorEvents`'s `event_type='error'` filter.
+- **"Steps observed" has exactly one definition, and only one place fixes it
+  up.** The fleet-list RPC (`helm_debug_list_traces`) and the per-trace tree
+  (`trace-tree.ts`'s `buildTraceTree`) each carry their own count over the
+  same underlying fact — the list's is a DB-stored counter, the tree's is
+  computed live over the steps array it was actually handed — and the two can
+  disagree for a trace finalized before the 2026-09-01
+  `helm_debug_finalize_trace` migration, or one still mid-flight.
+  `TraceTree.observedStepCount` is the one named, tested definition
+  (`observed.length`, before synthesised missing nodes); `bridgeGetFlightTrace`
+  reconciles a trace's `observed_step_count` against it via
+  `reconcileObservedStepCount` the moment that trace is OPENED. This fixes the
+  number for whichever trace is open, not for the other rows still sitting in
+  the fleet list — that needs a `helm_debug_list_traces` migration change and
+  stays a known, documented gap.
+- **An observed step can be undeclared, and that is not the same as missing.**
+  `TraceStepNode.isUndeclared` marks a step that WAS recorded but whose key
+  isn't in the workflow's own declared-step set (`golf-round-flight-workflow.ts`)
+  — the shape every postgres-layer checkpoint child the trace-checkpoints
+  migration writes will have, since e.g. `golf.round.submit` declares only its
+  top-level RPC key, never the in-transaction children already observed under
+  it. `isMissing` stays the opposite condition (declared, never observed);
+  neither ever overlaps the other on the same node. A step recording only
+  `finished_at` (a single-moment checkpoint, not a measured span) is
+  `isPointInTime` and renders "point-in-time" rather than reading identically
+  to a step with no data at all. `errorCode` falls back to
+  `metadata.sqlstate`/`metadata.failure_code` when the `error_code` column is
+  empty, matching what `helm_private.trace_exception_checkpoint` actually
+  writes.
+- **`buildTraceTree` never silently drops a node, cycles included.**
+  `parent_step_key` is free text written by three separate producers (server,
+  collector, RPC), so a genuine mutual cycle is possible; every member of one
+  used to be attached as some OTHER member's child and none of them ever
+  reached `roots`, so the whole cycle vanished from the rendered tree with no
+  error. `observedStepCount` (above) was already immune, since it counts the
+  raw observed array rather than the walked tree — this closes the same gap
+  for the tree itself, via a rescue sweep that promotes any still-unvisited
+  node to an additional root after the normal walk. No cycle has been
+  observed in a real trace; this is defensive, matching the module's own
+  stated design principle.
+- **A downgraded trace's badge only ever appears once you open it.**
+  `helm_debug_finalize_trace` (since the applied
+  `20260901140000_trace_cannot_claim_success_while_blind.sql`) writes
+  `status_downgraded_from`/`status_downgraded_reason` into a run's `metadata`
+  when it silently downgrades a caller-claimed `success`. `helm_debug_get_trace`
+  returns that metadata in full; `helm_debug_list_traces` explicitly SELECTs a
+  fixed column list that omits it. So the warning `InlineNotice` in
+  `TracesClient.tsx` can only ever render on the opened trace's detail panel —
+  never as a fleet-list row badge — without a list-RPC migration change.
+- **`npm run flight-recorder:audit`** (`scripts/flight-recorder-audit.mjs` +
+  `scripts/lib/flight-recorder-audit-lib.mjs`) is the read-only, post-deploy
+  check that the two in-flight timing/checkpoint branches actually wrote real
+  data: runs/steps/distinct-step-keys/steps-with-identity/zero-step-runs/
+  downgraded-runs over the last 24h. It calls the same two `helm_debug_*` RPCs
+  the app uses — `helm_debug` sits outside PostgREST's exposed schema list, so
+  an ordinary Supabase table client cannot reach `trace_runs`/`trace_steps`
+  under any key, service-role included. `helm_debug_list_traces` hard-caps at
+  200 rows server-side with no offset/cursor; the script logs (never silently
+  drops) the case where that cap may have truncated the true 24h population.
 - **Reliability is a lens, not a second queue.** `/admin/reliability` keeps
   source health, the blind-source notice, the severity mix, run history and
   the raw snapshot — removing those was never the goal. What it must not do
@@ -584,6 +642,36 @@ them would have broken those routes, not the dead one.
   and the Self-heal page. Counts only on the Overview: a stalled incident
   already earns its attention row, and a third list is the split this read
   model exists to remove.
+- **The Repair stage's launchd config is tracked in the repo, not only on the
+  owner's Mac.** `config/launchd/com.helm.bridge-rca-repair.plist` is the
+  source of truth for `~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`;
+  `npm run selfheal:repair:install` installs/reloads it and
+  `npm run selfheal:repair:doctor` checks it end to end — installed and
+  byte-identical to the repo copy, loaded (`launchctl print`), the env file's
+  variable names present, the `claude` binary and prompt file resolve, the
+  `-p` argument does not start with `-` or `$(`, and the newest production
+  `selfheal-repair` heartbeat is fresh (<26h) and not a runner failure. This
+  closes the 2026-09-02 fire that failed in 0.6s: the plist passed SKILL.md's
+  raw YAML-frontmatter text as `claude -p`'s argument and the CLI parsed the
+  leading `---` as an unknown option, exiting before writing anything. The
+  outer runner (`scripts/run-selfheal-repair.mjs`) now pipes the child's
+  stdout/stderr (forwarding every byte to its own stdout/stderr in real time,
+  so the plist's `>> log 2>&1` still sees the same output) and, on a
+  runner-level failure, redacts and truncates (`redactSecrets`/`truncateTail`
+  in `scripts/lib/selfheal-repair-runner.mjs`) the child's last ~4KB into the
+  fallback heartbeat's `metadata.child_output_tail`, so a future failure like
+  this one explains itself on `/admin/selfheal` instead of reading only
+  "child exited 1". A static vitest
+  (`src/test/scripts/selfheal-repair-launchd.test.ts`) parses every plist
+  under `config/launchd/**` and fails if the `-p` argument trap, a missing
+  `--strict-mcp-config`, or a wrong `--mcp-config` target ever regresses.
+  `redactSecrets`'s per-pattern replacement is keyed on an explicit
+  `keyGroup` flag stored on each `SECRET_PATTERNS` entry, not inferred from
+  whether the replace callback's second argument is truthy — a zero-capture
+  pattern's second callback argument is `String.replace`'s numeric match
+  OFFSET, not a capture group, and treating it as one produced a mangled
+  `"<offset>=[REDACTED]"` for any secret not located at index 0 of the
+  matched text.
 - **Lens counts are measured over the faceted list.** `countLensesForKind`
   counts through the same `matchesKind` predicate `applyIncidentFacets`
   narrows with, so the number beside a lens equals what clicking it shows

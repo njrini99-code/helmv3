@@ -3,6 +3,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
+import { isUuid } from '@/lib/utils/uuid';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -14,6 +15,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const { data: player } = await supabase
@@ -34,6 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PlayerProfilePage({ params }: PageProps) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 

@@ -23,6 +23,7 @@
  */
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
+import { isUuid } from '@/lib/utils/uuid';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -147,6 +148,7 @@ export default async function PlayerGamePage({
   params: Promise<{ playerId: string }>;
 }) {
   const { playerId } = await params;
+  if (!isUuid(playerId)) notFound();
 
   // Coach-only surface. Players hit the legacy Hub/CoachHelm views.
   const session = await getGolfSessionProfile();

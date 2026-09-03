@@ -56,21 +56,49 @@ describe('buildTraceTree — containment', () => {
 });
 
 describe('buildTraceTree — steps that never ran', () => {
+  // `verify.round`/`verify.holes`/`verify.shots` were 'required' in
+  // golf.round.submit's declaration when this suite was first written, so
+  // REAL_STEPS (which never records them — the transaction died first) used
+  // to ghost all three. As of 2026-09-02 they are 'best_effort' (see
+  // golf-round-flight-workflow.ts's own comment: a failed or short
+  // verification read must not inflate missing-required counts), so
+  // REAL_STEPS alone no longer has ANY genuinely missing required step —
+  // server.validation/auth/player and db.submit_round_atomic all ran. This
+  // fixture drops `server.player` (still required, SHARED_MUTATION_STEPS) to
+  // keep exercising real ghosting rather than letting these tests degrade
+  // into vacuously passing over an empty `missing` array.
+  const STEPS_MISSING_A_REQUIRED_STEP = REAL_STEPS.filter((s) => s.step_key !== 'server.player');
+
   it('materialises required steps the trace never recorded', () => {
     // This is the feature that makes the tool a debugger rather than a log
-    // viewer. verify.* never ran because the transaction died; omitting them
-    // would read as "nothing further was needed".
-    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    // viewer: a required step the trace never recorded must not read as
+    // "nothing further was needed".
+    const tree = buildTraceTree(STEPS_MISSING_A_REQUIRED_STEP, 'golf.round.submit');
     const missing = tree.flat.filter((n) => n.isMissing).map((n) => n.key);
-    expect(missing).toContain('verify.round');
-    expect(missing).toContain('verify.holes');
-    expect(missing).toContain('verify.shots');
+    expect(missing).toContain('server.player');
     expect(tree.missingRequiredCount).toBe(missing.length);
   });
 
-  it('marks missing steps with status "missing", never a quiet success', () => {
+  it('does NOT ghost verify.round/holes/shots — they are best_effort, not required', () => {
+    // Regression guard for the requiredness change itself: a short or failed
+    // verification read must not inflate missing-required counts even when
+    // (as here) it genuinely never ran.
     const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
-    for (const node of tree.flat.filter((n) => n.isMissing)) {
+    const missing = tree.flat.filter((n) => n.isMissing).map((n) => n.key);
+    expect(missing).not.toContain('verify.round');
+    expect(missing).not.toContain('verify.holes');
+    expect(missing).not.toContain('verify.shots');
+    expect(tree.missingRequiredCount).toBe(0);
+  });
+
+  it('marks missing steps with status "missing", never a quiet success', () => {
+    const tree = buildTraceTree(STEPS_MISSING_A_REQUIRED_STEP, 'golf.round.submit');
+    const missingNodes = tree.flat.filter((n) => n.isMissing);
+    // Guards against this test silently degrading to a vacuous pass over an
+    // empty array the way it did when the fixture above stopped producing
+    // any missing steps at all.
+    expect(missingNodes.length).toBeGreaterThan(0);
+    for (const node of missingNodes) {
       expect(node.status).toBe('missing');
       expect(node.durationMs).toBeNull();
     }
@@ -125,6 +153,32 @@ describe('buildTraceTree — robustness against real-world data', () => {
     expect(tree.flat.length).toBeLessThanOrEqual(2);
   });
 
+  it('renders BOTH nodes of a genuine mutual cycle rather than dropping them', () => {
+    // A -> parent b, B -> parent a: neither ever resolves as a root under the
+    // ordinary containment walk (each is pushed into the OTHER's children),
+    // so without a rescue sweep for unvisited nodes both vanish from `flat`
+    // silently — exactly the failure mode this module's own header comment
+    // says a debugging tool must never have. observedStepCount stays correct
+    // either way (it counts the raw observed array, never the walked tree),
+    // so this pins the tree/render side of the same guarantee.
+    const cyclic = [
+      { step_key: 'a', parent_step_key: 'b', layer: 'postgres', status: 'success', requiredness: 'required' },
+      { step_key: 'b', parent_step_key: 'a', layer: 'postgres', status: 'success', requiredness: 'required' },
+    ];
+    const tree = buildTraceTree(cyclic, 'unknown');
+    expect(tree.flat.map((n) => n.key).sort()).toEqual(['a', 'b']);
+  });
+
+  it('survives a longer mutual cycle (three nodes) without dropping any', () => {
+    const cyclic = [
+      { step_key: 'a', parent_step_key: 'c', layer: 'postgres', status: 'success', requiredness: 'required' },
+      { step_key: 'b', parent_step_key: 'a', layer: 'postgres', status: 'success', requiredness: 'required' },
+      { step_key: 'c', parent_step_key: 'b', layer: 'postgres', status: 'success', requiredness: 'required' },
+    ];
+    const tree = buildTraceTree(cyclic, 'unknown');
+    expect(tree.flat.map((n) => n.key).sort()).toEqual(['a', 'b', 'c']);
+  });
+
   it('treats an unrecognised status as a warning, never as success', () => {
     const weird = [{ step_key: 'x', layer: 'postgres', status: 'banana', requiredness: 'required' }];
     expect(buildTraceTree(weird, 'unknown').flat[0]!.status).toBe('warning');
@@ -141,5 +195,150 @@ describe('buildTraceTree — robustness against real-world data', () => {
   it('ignores rows with no step_key rather than rendering a blank node', () => {
     const junk = [{ layer: 'postgres', status: 'success' }, ...REAL_STEPS];
     expect(buildTraceTree(junk, 'unknown').flat.length).toBe(REAL_STEPS.length);
+  });
+});
+
+describe('buildTraceTree — observedStepCount', () => {
+  it('counts exactly the observed rows, never the synthesised missing ones', () => {
+    // A declared REQUIRED step the trace never observed (server.player is
+    // dropped from the fixture here) is synthesised as missing — it must not
+    // inflate this count. verify.* are best_effort since the 2026-09-02
+    // real-timings refit, so they no longer stand in as the missing step.
+    // This is the single definition the list RPC's own observed_step_count
+    // column is reconciled against in bridgeGetFlightTrace.
+    const withoutPlayer = REAL_STEPS.filter((row) => row.step_key !== 'server.player');
+    const tree = buildTraceTree(withoutPlayer, 'golf.round.submit');
+    expect(tree.observedStepCount).toBe(withoutPlayer.length);
+    expect(tree.missingRequiredCount).toBe(1);
+  });
+
+  it('increments when an undeclared-but-observed row is present', () => {
+    const withExtra = [
+      ...REAL_STEPS,
+      {
+        step_key: 'db.submit_round_atomic.checkpoint_extra',
+        parent_step_key: 'db.submit_round_atomic',
+        layer: 'postgres',
+        status: 'success',
+        requiredness: 'best_effort',
+        duration_ms: 4,
+        function_name: 'submit_round_atomic',
+        table_name: 'golf_shots',
+      },
+    ];
+    expect(buildTraceTree(withExtra, 'golf.round.submit').observedStepCount).toBe(REAL_STEPS.length + 1);
+  });
+});
+
+describe('buildTraceTree — undeclared observed steps', () => {
+  it('marks an observed row nested under a declared parent as undeclared, not missing', () => {
+    // db.submit_round_atomic.lock_round etc. are already observed today and
+    // already nest correctly (see the containment describe block above) —
+    // but golf.round.submit's own workflow definition declares ONLY the
+    // top-level db.submit_round_atomic key, so every one of those children is,
+    // by definition, not in the declared step set. A future postgres-layer
+    // checkpoint (the db checkpoints migration) writes exactly this shape.
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    const child = tree.flat.find((n) => n.key === 'db.submit_round_atomic.lock_round')!;
+    expect(child.isUndeclared).toBe(true);
+    expect(child.isMissing).toBe(false);
+  });
+
+  it('does not count an undeclared observed row in missingRequiredCount', () => {
+    // Baseline: one declared required step (server.player) is missing.
+    const withoutPlayer = REAL_STEPS.filter((row) => row.step_key !== 'server.player');
+    const baseline = buildTraceTree(withoutPlayer, 'golf.round.submit').missingRequiredCount;
+    expect(baseline).toBe(1);
+    // An observed row the workflow never declared is 'undeclared', not
+    // 'missing', so the count must not move.
+    const withUndeclared = [
+      ...withoutPlayer,
+      { step_key: 'db.submit_round_atomic.checkpoint_extra', parent_step_key: 'db.submit_round_atomic', layer: 'postgres', status: 'success', requiredness: 'required', duration_ms: 4 },
+    ];
+    expect(buildTraceTree(withUndeclared, 'golf.round.submit').missingRequiredCount).toBe(baseline);
+  });
+
+  it('leaves a declared, top-level, actually-observed step as not undeclared', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    const rpc = tree.flat.find((n) => n.key === 'db.submit_round_atomic')!;
+    expect(rpc.isUndeclared).toBe(false);
+  });
+
+  it('never marks a synthesised missing node as undeclared', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    for (const node of tree.flat.filter((n) => n.isMissing)) {
+      expect(node.isUndeclared).toBe(false);
+    }
+  });
+
+  it('for an unknown workflow, treats every observed row as undeclared (nothing was declared to check against)', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'some.workflow.from.the.future');
+    expect(tree.flat.every((n) => n.isUndeclared)).toBe(true);
+  });
+});
+
+describe('buildTraceTree — point-in-time steps and metadata error fallback', () => {
+  it('flags a row with only finished_at as point-in-time, with no duration', () => {
+    const checkpointOnly = [{
+      step_key: 'db.checkpoint_only',
+      layer: 'postgres',
+      status: 'success',
+      requiredness: 'best_effort',
+      finished_at: '2026-09-01T00:00:00.000Z',
+    }];
+    const node = buildTraceTree(checkpointOnly, 'unknown').flat[0]!;
+    expect(node.isPointInTime).toBe(true);
+    expect(node.durationMs).toBeNull();
+  });
+
+  it('does not flag a synthesised missing node as point-in-time', () => {
+    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    for (const node of tree.flat.filter((n) => n.isMissing)) {
+      expect(node.isPointInTime).toBe(false);
+    }
+  });
+
+  it('does not flag a row with both started_at and finished_at as point-in-time', () => {
+    const timed = [{
+      step_key: 'x', layer: 'postgres', status: 'success', requiredness: 'required',
+      started_at: '2026-08-27T10:00:00.000Z', finished_at: '2026-08-27T10:00:00.250Z',
+    }];
+    expect(buildTraceTree(timed, 'unknown').flat[0]!.isPointInTime).toBe(false);
+  });
+
+  it('reads a SQLSTATE from metadata.sqlstate when error_code column is absent, matching trace_exception_checkpoint', () => {
+    // trace_exception_checkpoint (helm_private, see the flight recorder
+    // migration) writes { sqlstate, message } inside metadata, never a
+    // top-level error_code column.
+    const row = [{
+      step_key: 'db.submit_round_atomic.exception',
+      layer: 'postgres',
+      status: 'failure',
+      requiredness: 'required',
+      metadata: { sqlstate: '40001', message: 'could not serialize access' },
+    }];
+    const node = buildTraceTree(row, 'unknown').flat[0]!;
+    expect(node.errorCode).toBe('40001');
+  });
+
+  it('prefers a real error_code column over the metadata fallback', () => {
+    const row = [{
+      step_key: 'x', layer: 'postgres', status: 'failure', requiredness: 'required',
+      error_code: '23505', metadata: { sqlstate: '40001' },
+    }];
+    expect(buildTraceTree(row, 'unknown').flat[0]!.errorCode).toBe('23505');
+  });
+
+  it('falls back to metadata.failure_code when sqlstate is absent too', () => {
+    const row = [{
+      step_key: 'x', layer: 'postgres', status: 'failure', requiredness: 'required',
+      metadata: { failure_code: 'BLOCKED' },
+    }];
+    expect(buildTraceTree(row, 'unknown').flat[0]!.errorCode).toBe('BLOCKED');
+  });
+
+  it('is unaffected by a non-object metadata value', () => {
+    const row = [{ step_key: 'x', layer: 'postgres', status: 'failure', requiredness: 'required', metadata: 'not an object' }];
+    expect(buildTraceTree(row, 'unknown').flat[0]!.errorCode).toBeNull();
   });
 });

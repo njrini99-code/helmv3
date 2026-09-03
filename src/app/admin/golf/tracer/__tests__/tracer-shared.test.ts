@@ -41,26 +41,36 @@ describe('buildFlightWaterfall', () => {
     const lanes = buildFlightWaterfall('golf.round.start', [
       row({ step_key: 'server.validation', status: 'success' }),
       row({ step_key: 'server.auth', status: 'success' }),
+      row({ step_key: 'server.player', status: 'success' }),
       row({ step_key: 'db.create_draft', layer: 'supabase', requiredness: 'required', status: 'failure', error_code: 'P0001', error_summary: 'boom' }),
     ]);
 
-    expect(lanes.map((l) => l.layer)).toEqual(['server_action', 'supabase', 'verification']);
+    // Only two lanes, not three: `verify.round` is 'best_effort' in
+    // golf.round.start's declaration (2026-09-02 — verification steps no
+    // longer inflate missing-required counts, see
+    // golf-round-flight-workflow.ts's own comment), so an unrecorded
+    // verify.round is never ghosted. Its `verification` lane is therefore
+    // genuinely empty and correctly dropped — this IS the "dropping empty
+    // lanes" behaviour this test names, not a lane populated by a ghost.
+    expect(lanes.map((l) => l.layer)).toEqual(['server_action', 'supabase']);
     // FLIGHT_LAYER_ORDER itself carries client/next before server_action —
     // confirms the filter preserves that canonical ordering rather than
     // e.g. sorting alphabetically or by first-seen.
     const orderIndex = (layer: string) => FLIGHT_LAYER_ORDER.indexOf(layer as (typeof FLIGHT_LAYER_ORDER)[number]);
     expect(orderIndex('server_action')).toBeLessThan(orderIndex('supabase'));
-    expect(orderIndex('supabase')).toBeLessThan(orderIndex('verification'));
   });
 
   it('ghosts a missing REQUIRED step in its canonical position, not shuffled to the end', () => {
     const lanes = buildFlightWaterfall('golf.round.start', [
       row({ step_key: 'server.validation', status: 'success' }),
       row({ step_key: 'server.auth', status: 'success' }),
-      // server.player (required) never recorded.
+      // server.player (required, SHARED_MUTATION_STEPS) never recorded.
       row({ step_key: 'db.create_draft', layer: 'supabase', status: 'failure', error_code: 'P0001', error_summary: 'boom' }),
-      // verify.round (required) never recorded either — the trace stopped
-      // after the failed write, exactly the gap this feature exists to show.
+      // verify.round never recorded either, but it is 'best_effort' as of
+      // 2026-09-02 (was 'required') — it must NOT ghost. Asserted below by
+      // the verification lane's absence, distinguishing a genuine ghost
+      // (server.player, still required) from a step that correctly renders
+      // as simply not there.
     ]);
 
     const serverLane = lanes.find((l) => l.layer === 'server_action')!;
@@ -72,9 +82,7 @@ describe('buildFlightWaterfall', () => {
     expect(ghost.startedAt).toBeNull();
     expect(ghost.elapsedMs).toBeNull();
 
-    const verificationLane = lanes.find((l) => l.layer === 'verification')!;
-    expect(verificationLane.segments).toHaveLength(1);
-    expect(verificationLane.segments[0]).toMatchObject({ key: 'verify.round', isGhost: true, status: 'missing' });
+    expect(lanes.find((l) => l.layer === 'verification')).toBeUndefined();
   });
 
   it('never ghosts a missing conditional/best-effort/async step — it is simply omitted', () => {

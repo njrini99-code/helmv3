@@ -529,3 +529,45 @@
   0 before the Errors page rewrite, re-run after it (result recorded in the
   PR). The page test (`errors/__tests__/page.test.tsx`) covers
   `loadErrorsPageData` only, by design, and is unchanged.
+
+## 2026-09-02 — Flight Recorder: canonical observed-step-count, undeclared/point-in-time step states, audit-lib pure functions
+
+- SHA: branch `agent/tracer-gaps`, PR pending.
+- New/extended, each written red before its fix (TDD): `trace-tree.test.ts`
+  gains cases for `observedStepCount` (equals the normalized input length,
+  including on a fixture with a genuine `parent_step_key` cycle — the
+  existing cycle case only asserted an upper bound, which passed even when
+  a cyclic node was silently dropped from the flattened output),
+  `isUndeclared` (true for the fixture's postgres-layer children of a
+  declared parent, and for every observed row under an unrecognised
+  workflow), `isPointInTime` (true only for `finished_at` present /
+  `started_at` absent / no `duration_ms`), and the `metadata.sqlstate` /
+  `metadata.failure_code` fallback chain for `errorCode`.
+  `trace-view-helpers.test.ts` gains `resolveTotalDurationMs` (pinned to
+  `run.duration_ms`, with a regression case guarding against it ever being
+  reimplemented as a sum of step durations) and `extractStatusDowngrade`
+  (reads the two downgrade keys from a run's `metadata`, returns `null` on
+  absent/malformed metadata).
+  `scripts/lib/__tests__/flight-recorder-audit-lib.test.ts` (new, 19 cases)
+  covers the pure summarization functions the new audit script calls:
+  window filtering, distinct-step-key counting, identity-carrying-step
+  counting, zero-step-run and downgraded-run detection, and the 200-row-cap
+  truncation warning.
+- Guarantees now covered:
+  - **The fleet-list step count and the per-trace tree's step count are
+    computed from one named field**, `TraceTree.observedStepCount` — a test
+    fails if the KPI strip is ever re-derived inline instead of reading it.
+  - **A trace's total duration is never resummed from its steps.** Point-in-time
+    and postgres-checkpoint child steps exist specifically so a naive sum would
+    double-count nested time; `resolveTotalDurationMs`'s test pins the
+    single-source-of-truth read from `run.duration_ms`.
+  - **An observed-but-undeclared step (e.g. a postgres checkpoint child) is
+    never confused with a missing (declared-but-unobserved) one** — the two
+    booleans are asserted mutually exclusive on every fixture node.
+  - **The audit script's counts are labelled as a floor, never presented as
+    exact, once the list RPC's 200-row cap is hit** — tested directly against
+    `coverageNotGuaranteed`'s boundary condition (199 vs 200 vs 201 returned
+    rows).
+- Verification: `npx vitest run src/app/admin/traces scripts/lib` — 6 files,
+  109 tests, all passing. `npm run typecheck` / `npm run lint` / `npm run
+  lint:ratchet` (68 warnings, no regression) all clean on the full tree.

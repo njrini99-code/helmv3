@@ -146,6 +146,13 @@ Calendar renders views
 - Event detail needs visible status, attendee/RSVP state, documents, and conflict warnings where relevant.
 - Empty states should distinguish no events from filtered-out events.
 - The header should avoid stacking multiple utility rows; lower-priority controls should move into sheets/menus.
+- The Agenda anchors "Today" into view only when earlier buckets are visible
+  above it and the range genuinely changes; on a fresh load past buckets are
+  collapsed, "Today" already heads the list, and nothing scrolls — the old
+  unconditional anchor pushed the masthead 130–386px off-screen (mobile audit
+  2026-09-02, UI-2/UI-3). The event editor scrolls its own error banner into
+  view (`role="alert"`) so an end-before-start rejection is never rendered
+  above the fold of a scrolled modal (UI-5 / P1-8).
 
 ## Known Risk Areas
 

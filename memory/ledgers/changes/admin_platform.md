@@ -1083,3 +1083,239 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
 - **Verified**: see the tests ledger entry of the same date. `npm run build`
   NOT run — the volume reported 0 GiB free at the time and a cold `.next`
   costs up to 5.7 GiB; no `'use server'` surface changed.
+
+## 2026-09-02 — Flight Recorder: one observed-step-count definition, undeclared steps, point-in-time durations, downgrade badge, audit script
+
+- SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
+  outside the two in-flight Flight Recorder branches
+  (`agent/flight-recorder-real-timings`, `agent/flight-recorder-db-checkpoints`)
+  — no edit to `src/app/golf/actions/golf.ts`,
+  `src/lib/observability/golf-round-flight-workflow.ts`,
+  `src/lib/observability/helm-flight-recorder.ts`, or any
+  `supabase/migrations/*flight*`/`*trace_steps*` file.
+- **What**: `trace-tree.ts`'s `TraceTree` gains `observedStepCount` as the one
+  named definition of "steps actually observed" (`observed.length`, before
+  synthesised missing nodes) — the KPI strip in `TraceTree.tsx` now reads this
+  field instead of re-deriving `tree.flat.filter(!isMissing).length` inline,
+  so the fleet-list count and the tree's own count can no longer silently
+  read as two different numbers for an OPENED trace.
+  `bridgeGetFlightTrace` (`golf-tracer.ts`) reconciles a trace's
+  `observed_step_count` against its own fetched steps array on open via the
+  new `reconcileObservedStepCount` helper — this only fixes the count once a
+  trace is opened; unopened fleet-list rows still show the DB's own
+  (possibly-stale-pre-2026-09-01-migration) stored counter, a documented scope
+  boundary rather than a full fix (closing it needs a `helm_debug_list_traces`
+  migration change, out of scope here).
+  `TraceStepNode` gains `isUndeclared` (an OBSERVED step whose key is not in
+  the workflow's own declared-key set — verified against
+  `golf-round-flight-workflow.ts` that `golf.round.submit` declares only the
+  top-level `db.submit_round_atomic` key, never its in-transaction children,
+  so every postgres-layer checkpoint child the db-checkpoints migration will
+  start writing hits this by construction) and `isPointInTime` (a row with
+  `finished_at` but no `started_at` — a single-moment checkpoint, rendered as
+  "point-in-time" rather than reading identically to "no data at all").
+  `errorCode` now falls back to `metadata.sqlstate` then `metadata.failure_code`
+  when the `error_code` column is empty, matching the shape
+  `helm_private.trace_exception_checkpoint` actually writes.
+  `trace-view-helpers.ts` gains `resolveTotalDurationMs` (named wrapper around
+  `run.duration_ms`, replacing an inline expression, explicitly documented
+  against ever becoming a sum of step durations — which would double-count
+  time inside nested postgres checkpoint children) and
+  `extractStatusDowngrade` (reads `status_downgraded_from`/
+  `status_downgraded_reason` from a run's `metadata`, matching the exact keys
+  `20260901140000_trace_cannot_claim_success_while_blind.sql` writes).
+  `TracesClient.tsx` renders that downgrade as a warning `InlineNotice` — only
+  ever on the opened trace's detail panel, never the fleet-list row, since
+  `helm_debug_list_traces`'s fixed column list omits `metadata` entirely
+  (a real scope boundary, not an oversight).
+  `missing_required_step_count` was checked against the task's "expose it"
+  wording and found already fully exposed (required field on
+  `FlightTraceRun`, already rendered in `TracesClient.tsx` and
+  `trace-fleet.ts`) — no gap, no change made.
+  New: `scripts/flight-recorder-audit.mjs` +
+  `scripts/lib/flight-recorder-audit-lib.mjs` (`npm run flight-recorder:audit`)
+  — a read-only script over the two `helm_debug_*` RPCs (the only reachable
+  path for a service-role key; `helm_debug` is outside PostgREST's exposed
+  schema list) reporting runs/steps/distinct-step-keys/steps-with-identity/
+  zero-step-runs/downgraded-runs for the last 24h, with an explicit warning
+  when `helm_debug_list_traces`'s 200-row cap may have truncated the window.
+- **Why**: the list RPC's DB-stored `observed_step_count` and the tree's own
+  live count over the fetched steps array are two independently-maintained
+  numbers over the same fact, and can disagree for a trace finalized before
+  the 2026-09-01 finalize-function migration or one still in progress — a
+  debugging tool showing two different counts for the same trace undermines
+  trust in both. The db-checkpoints branch is about to start writing observed
+  postgres-layer rows nested under RPCs whose workflow definitions were never
+  updated to declare them; without `isUndeclared` those rows read as
+  regular declared children with no signal that the workflow model hasn't
+  caught up. The audit script is what proves, after both in-flight branches
+  deploy, that real timings and postgres checkpoints actually started
+  landing — before this track there was no way to check that without reading
+  the database by hand.
+- **Not done, deliberately**: the fleet-list row's `observed_step_count` and
+  the downgrade badge are both scoped to the OPENED trace's detail panel only
+  — fixing either for unopened list rows needs a `helm_debug_list_traces`
+  migration change, which is out of scope for this track (the migration files
+  it would touch are the two in-flight branches' territory).
+- **Verified**: `npm run typecheck`, targeted `eslint --max-warnings 0` on
+  every touched file, `npm run lint:ratchet` (no regression against the
+  tracked baseline), `npm run audit:supabase-errors` (no regression against
+  the tracked baseline), the admin_platform registry's required checks
+  (`src/test/lib/cron/auth.test.ts`, `src/test/api/cron/shared-auth.test.ts`),
+  and the full `unit` vitest project (every file, no regressions). New tests
+  written first and confirmed failing before each implementation
+  (`src/app/admin/traces/__tests__/trace-tree.test.ts`,
+  `src/app/admin/traces/__tests__/trace-view-helpers.test.ts`,
+  `scripts/lib/__tests__/flight-recorder-audit-lib.test.ts`) — the last one
+  registered by exact name in `vitest.config.ts`'s unit project include array,
+  the repo's documented convention for `scripts/lib/__tests__` files, without
+  which it would run under nothing. `npm run build` NOT yet run as of this
+  entry — see the commit history for whether it was run before merge; a
+  `'use server'` surface (`golf-tracer.ts`) changed, so it is required before
+  merge per CLAUDE.md.
+
+## 2026-09-02 — Flight Recorder: a genuine parent_step_key cycle no longer silently vanishes from the rendered tree
+
+- SHA: branch `agent/tracer-gaps`, PR pending. Follow-up to the same day's
+  "one observed-step-count definition" entry above.
+- **What**: `buildTraceTree`'s containment loop pushes every node into either
+  `roots` or its resolved parent's `children` array; a genuine mutual cycle
+  (A's parent is B, B's parent is A, or a longer ring) left every member
+  attached as some OTHER member's child and none ever reached `roots`, so
+  the depth-first walk never visited any of them — the whole cycle vanished
+  from `tree.flat` with no error. Fixed with a rescue sweep: after the
+  normal walk, any node still unvisited is promoted to an additional root
+  and walked from there too. A no-op on every acyclic trace this repo has
+  ever recorded.
+- **Why**: this module's own header comment states the guarantee directly —
+  "the tree would be quietly, plausibly wrong" is exactly what a debugging
+  tool must never be — and `observedStepCount` being correct (fixed earlier
+  today) does not by itself guarantee the *rendered tree* still shows every
+  node; this closes the same gap on the render side. `parent_step_key` is
+  free text written by three separate producers (server, collector, RPC), so
+  a cycle, while never observed in production, is not impossible.
+- **Verified**: two new tests (2-node and 3-node mutual cycles asserting the
+  exact surviving node set) written first and confirmed red (`flat: []` on
+  both) before the fix; full touched-directory suite green after (6 files,
+  111 tests, up from 109). `npm run typecheck` / `lint` / `lint:ratchet` (68
+  warnings, no regression) / `audit:supabase-errors` (baseline 1039, no
+  regression) all clean.
+## 2026-09-02 — Repair stage's launchd config tracked in the repo, runner captures a failure tail
+
+- SHA: branch `agent/selfheal-repair-hardening`, PR pending.
+- **What**: `config/launchd/com.helm.bridge-rca-repair.plist` added (copied
+  byte-identical from the live agent, `cmp` verified) so the launchd config
+  driving the Repair stage is diffable in git instead of living only on the
+  owner's Mac. `scripts/selfheal-repair-install.sh` installs/reloads it
+  (`plutil -lint`, `launchctl bootout`/`bootstrap`, `launchctl print`).
+  `scripts/selfheal-repair-doctor.mjs` verifies the whole chain read-only:
+  plist installed and byte-identical, job loaded, `~/.config/helm/selfheal.env`
+  carries both required variable names (never reads/prints a value), the
+  `claude` binary and prompt `SKILL.md` resolve, the `-p` argument does not
+  start with `-`/`$(`, and the newest production `selfheal-repair` heartbeat
+  is <26h old and not a runner failure. New npm scripts
+  `selfheal:repair:install` / `selfheal:repair:doctor`.
+  `scripts/run-selfheal-repair.mjs` now pipes the child's stdout/stderr
+  (`stdio: ['inherit', 'pipe', 'pipe']`, still forwarding every byte live so
+  the plist's `>> log 2>&1` sees the same output as before) and reconciles on
+  `'close'` rather than `'exit'` (bounded by a 5s grace timer against a
+  detached grandchild holding a pipe open), so the last ~4KB the child wrote
+  is available when the runner writes a fallback heartbeat. Two new pure
+  exports in `scripts/lib/selfheal-repair-runner.mjs` — `redactSecrets`
+  (JWT-shaped and key/token/secret/password assignment-like patterns) and
+  `truncateTail` (keep the last N bytes) — are applied to that captured text
+  before it is written to `metadata.child_output_tail` on a runner-failure
+  row; `reconcileRepairRun`'s existing result shape is unchanged (new field
+  only on the inserted row, never on the returned result).
+- **Why**: the 06:40 2026-09-02 scheduled Repair fire failed in 0.6s because
+  the live plist passed `SKILL.md`'s raw text — opening with YAML `---`
+  frontmatter — as the `claude -p` argument, and the CLI parsed `---` as an
+  unknown option before writing anything. The fallback heartbeat carried no
+  stderr, so `/admin/selfheal` could only say "child exited 1", not why. The
+  commander hand-patched and reloaded the live plist (prompt now prefixed
+  with a sentence); this change makes the repo the source of truth for that
+  fix and makes a future occurrence of the same failure self-explaining.
+- **Tests**: `src/test/scripts/selfheal-repair-launchd.test.ts` (new) parses
+  every plist under `config/launchd/**` and fails if the `-p` frontmatter
+  trap, a missing `--strict-mcp-config`, or a wrong `--mcp-config` target ever
+  regresses (the `--mcp-config` file's actual JSON content is checked only
+  when that machine-local path exists, since it lives outside the repo and
+  outside any CI runner — `it.skipIf`, same pattern as
+  `check-helm-bridge-env.test.ts`'s "CI without secrets" skip). Extended
+  `src/test/scripts/run-selfheal-repair.test.ts`: `redactSecrets`/
+  `truncateTail` unit cases, a `childOutputTail` case using `toMatchObject`
+  (existing `toEqual` result-shape assertions untouched), and an end-to-end
+  case that spawns the real runner script against a fixture child that writes
+  a marker to stderr and exits immediately, asserting the marker is still
+  forwarded live to this process's stderr and that reconcile completes after
+  `close` without hanging.
+- **knowledge:map gap closed**: these paths (`scripts/run-selfheal-repair.mjs`,
+  `scripts/lib/selfheal-repair-runner.mjs`, `scripts/selfheal-repair-install.sh`,
+  `scripts/selfheal-repair-doctor.mjs`, `config/launchd/**`,
+  `docs/ai-system/selfheal/**`) resolved to `impactedFeatures: []` before this
+  change — added to `admin_platform` in `memory/registry.yml`
+  (`services`/`docs`) alongside `src/lib/admin/**` and `src/lib/reliability/**`,
+  the same feature's existing Bridge/self-heal code.
+- **Not done**: the SKILL.md prompt text itself was not changed — the
+  commander's live fix (a leading sentence before `$(cat ...)`) is what the
+  repo copy now carries, verbatim.
+- **Verified**: `npm run typecheck`, `npm run lint`, `npm run lint:ratchet`,
+  targeted vitest (`run-selfheal-repair.test.ts`,
+  `selfheal-repair-launchd.test.ts`, `scripts-no-committed-secrets.test.mjs`),
+  `shellcheck` on the new `.sh`, `npm run audit:supabase-errors`,
+  `npm run knowledge:map`/`knowledge:globs`, `plutil -lint` on the committed
+  plist, `cmp` against the live installed plist. `npm run build` NOT run —
+  no `'use server'` surface changed.
+
+## 2026-09-02 — Repair-stage hardening review: redactSecrets mis-bound String.replace's offset argument as a capture group
+
+- SHA: local commit on `agent/selfheal-repair-hardening`, not yet merged.
+- **`redactSecrets` in `scripts/lib/selfheal-repair-runner.mjs` leaked a
+  numeric match offset into the fallback heartbeat instead of redacting
+  cleanly** (HIGH). `SECRET_PATTERNS[0]`, the JWT-shaped regex, has zero
+  capturing groups. `String.replace`'s callback signature for a
+  zero-capture-group pattern is `(match, offset, wholeString)` — so
+  `out.replace(pattern, (match, group1) => group1 ? \`${group1}=[REDACTED]\`
+  : '[REDACTED]')` bound the match's numeric OFFSET to `group1`, which is
+  truthy for any match not at index 0. A JWT appearing mid-line (the realistic
+  shape — claude's `stream-json --verbose` output rarely starts a line with
+  the secret) was replaced with a mangled `"18=[REDACTED]"` instead of a
+  clean `"[REDACTED]"`. The full match text was still replaced either way —
+  no actual secret bytes reached `background_job_logs.metadata.child_output_tail`
+  — but the redaction contract ("a captured tail never leaks a credential,
+  cleanly") was violated, and the corrupted text (a stray numeric offset with
+  no operational meaning) is what a future on-call would have read.
+- **Why the existing tests missed it**: the direct unit test asserted
+  `not.toContain(jwt)` / `toContain('[REDACTED]')` — both still true of the
+  mangled `"18=[REDACTED]"` string, since it contains neither the JWT nor
+  breaks the substring `[REDACTED]`. The integration-style
+  `reconcileRepairRun` test placed its JWT immediately after
+  `SUPABASE_SERVICE_ROLE_KEY=`, so the second (key/value) pattern's own
+  correct second pass overwrote the first pass's garbage — pattern-ordering
+  coincidence, not a passing proof.
+- **Fix**: `SECRET_PATTERNS` entries now carry an explicit `keyGroup: boolean`
+  telling `redactSecrets` which replacement shape to use, instead of the
+  callback inferring it from whether its second argument is truthy. This
+  makes the offset-as-group-1 class of bug structurally impossible regardless
+  of how many capturing groups a future pattern adds.
+- **Tests**: added to `src/test/scripts/run-selfheal-repair.test.ts` — an
+  exact-string assertion for a JWT mid-line (fails on the old code with
+  `18=[REDACTED]`, the discriminating case `toContain` could not catch), a
+  JWT at offset 0 (the one input that accidentally worked before the fix, to
+  guard against a regression in the other direction), a JWT with no
+  `KEY=`-shaped prefix (so the second pattern's pass cannot mask a
+  regression in the first), and a quoted `KEY="value"` assignment (proves the
+  key-group branch still redacts cleanly with no dangling quote).
+- **A separate finding from the same review** — that a prior report's
+  `commit_shas[0]` cited a fabricated 40-char SHA
+  (`791fb7105ee0c1e5e0dc1a8c1b0e8a5a4c9c4c1a`) instead of the real commit
+  (`git rev-parse 791fb7105` → `791fb7105b22dad1cfd87341ac9f611f91ddbaa9`,
+  confirmed present; the fabricated one 404s via `git cat-file -t`) — is a
+  defect in that report's text, not in any tracked file. No code, doc, or
+  test change was made for it.
+- **Verified**: `npx vitest run src/test/scripts/run-selfheal-repair.test.ts
+  src/test/scripts/selfheal-repair-launchd.test.ts --project unit` — 28/28
+  pass (2 new failing pre-fix, both pass post-fix). `npm run typecheck` and
+  `npm run lint` exit 0. `npm run lint:ratchet` run separately (long-running
+  full-repo scan); see commit message for its result. `npm run build` NOT
+  run — no `'use server'` surface changed.

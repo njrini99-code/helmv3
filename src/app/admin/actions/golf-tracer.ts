@@ -11,6 +11,7 @@ import {
   type TracerRoundDiagnosticData,
 } from '@/app/golf/actions/admin-tracer-data';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { reconcileObservedStepCount, extractStatusDowngrade } from '@/app/admin/traces/trace-view-helpers';
 
 type TraceRpcClient = {
   rpc(name: string, args: Record<string, unknown>): Promise<{
@@ -37,6 +38,19 @@ export type FlightTraceRun = {
    */
   expected_step_count?: number | null;
   observed_step_count?: number | null;
+  /**
+   * Present only on the DETAIL RPC's row (`helm_debug_get_trace`), never on
+   * the fleet-list RPC's (`helm_debug_list_traces` explicitly SELECTs a fixed
+   * column list that omits `metadata`, so it has nothing to read these from).
+   * Set by `helm_debug_finalize_trace` (see
+   * 20260901140000_trace_cannot_claim_success_while_blind.sql) when it
+   * silently downgrades a caller-claimed 'success' to 'warning' because the
+   * run was demonstrably blind. `bridgeGetFlightTrace` extracts these from
+   * the row's own `metadata` and attaches them here; a trace never downgraded
+   * (or finalized before that migration) simply won't carry them.
+   */
+  status_downgraded_from?: string;
+  status_downgraded_reason?: string;
 };
 
 export type FlightTraceDetail = {
@@ -89,7 +103,25 @@ export async function bridgeGetFlightTrace(traceId: string): Promise<FlightTrace
   const data = await traceRpc('helm_debug_get_trace', { p_trace_id: traceId });
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
   const detail = data as Partial<FlightTraceDetail>;
-  return detail.run && Array.isArray(detail.steps) ? detail as FlightTraceDetail : null;
+  if (!detail.run || !Array.isArray(detail.steps)) return null;
+
+  // Reconcile the DB's own (possibly-stale) counter against the steps array
+  // this same response just returned, so a trace once opened can never show
+  // a different "steps observed" number in its KPI strip than in its tree —
+  // see reconcileObservedStepCount's doc comment for the full reasoning and
+  // its documented scope boundary (unopened fleet-list rows are unaffected).
+  const reconciledRun = reconcileObservedStepCount(detail.run, detail.steps.length);
+
+  // status_downgraded_from/reason live only inside the run's own `metadata`
+  // column, which helm_debug_get_trace returns in full (to_jsonb(r)).
+  const downgrade = extractStatusDowngrade((detail.run as Record<string, unknown>).metadata);
+
+  return {
+    run: downgrade
+      ? { ...reconciledRun, status_downgraded_from: downgrade.from, status_downgraded_reason: downgrade.reason }
+      : reconciledRun,
+    steps: detail.steps,
+  };
 }
 
 export async function bridgeGetTracerRoundDiagnostic(
