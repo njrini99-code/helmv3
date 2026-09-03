@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 import { describeError } from '@/lib/utils/describe-error';
+import { startCronCheckIn, finishCronCheckIn } from '@/lib/observability/cron-monitors';
 
 /**
  * Capture class #4 — cron/job outcomes into background_job_logs (the empty
@@ -20,9 +21,21 @@ import { describeError } from '@/lib/utils/describe-error';
  * board reads that table). Only FAILURES also write an admin_events
  * `source='cron'` row via logServerEvent — successes stay out of the event
  * feed, since the routes already log their own summaries.
+ *
+ * Also emits a Sentry Cron Monitor check-in around every run
+ * (src/lib/observability/cron-monitors.ts): `in_progress` at entry, `ok`/
+ * `error` at each exit path below. This is the ONLY mechanism in the
+ * codebase that can detect a job that never runs at all — Vercel's scheduler
+ * silently failing to invoke it, the deployment paused, or a crash before
+ * this function's own try even starts — which background_job_logs cannot,
+ * since a job that never ran also never writes a row. Check-in calls are
+ * fail-open (never throw) and gated off outside a real Vercel deployment; see
+ * cron-monitors.ts.
  */
 export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Promise<T> {
   const startedAt = new Date();
+  const checkInId = startCronCheckIn(jobType);
+  const elapsedMs = () => Date.now() - startedAt.getTime();
   try {
     const result = await fn();
     // A resolved (not thrown) Response/NextResponse with a 4xx/5xx status is
@@ -39,11 +52,13 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
           'error',
         ),
       );
+      finishCronCheckIn(jobType, checkInId, 'error', elapsedMs());
       return result;
     }
     const metadata =
       result instanceof Response ? await extractOutcomeMetadata(result) : null;
     await writeRow(jobType, 'completed', startedAt, null, metadata);
+    finishCronCheckIn(jobType, checkInId, 'ok', elapsedMs());
     return result;
   } catch (err) {
     // A cron that fetches an unreachable upstream throws with the gateway's
@@ -59,6 +74,7 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
         'error',
       ),
     );
+    finishCronCheckIn(jobType, checkInId, 'error', elapsedMs());
     throw err;
   }
 }

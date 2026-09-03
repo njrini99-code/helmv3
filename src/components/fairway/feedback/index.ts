@@ -13,6 +13,8 @@
  *   InsufficientData  — the HONEST "not enough data yet" state (no fake zeros).
  *   Skeleton (+kit)   — shape-matched shimmer placeholders, never spinners.
  *   OnboardingStep    — numbered progressive step card (+ OnboardingSteps stepper).
+ *   ReportProblemButton — opens Sentry's programmatic feedback form (no
+ *                        floating widget); falls back to mailto + toast.
  * ========================================================================== */
 
 export { ToastStack, fairwayToast } from './ToastStack';
@@ -50,3 +52,6 @@ export type {
 
 export { toneStyle, TONES } from './tone';
 export type { FeedbackTone, ToneStyle } from './tone';
+
+export { ReportProblemButton } from './ReportProblemButton';
+export type { ReportProblemButtonProps } from './ReportProblemButton';

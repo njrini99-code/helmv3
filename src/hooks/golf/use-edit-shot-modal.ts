@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 import { updateShot, deleteShot, type ActionResult, type ShotUpdateData } from '@/app/golf/actions/golf';
 import { deriveLieAfter, calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
+import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 import type { ShotTrackingState, ShotAction, EditFormData } from './use-shot-state-machine';
 
 interface UseEditShotModalParams {
@@ -216,6 +217,7 @@ export function useEditShotModal({
       }
 
       dispatch({ type: 'EDIT_SAVE_COMPLETE', payload: { updatedHistory } });
+      recordHelmBreadcrumb('golf.shot', 'shot-edit-save', { action: 'edit', result: 'success' });
 
       // Keep the parent scorecard coherent for BOTH outcomes. An edit can turn
       // the final holed shot back into an in-progress shot; retaining the old
