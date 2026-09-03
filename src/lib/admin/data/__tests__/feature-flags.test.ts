@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { fetchFeatureFlags, rolloutStatusFor } from '../feature-flags';
 import type { FlagDefinition } from '@/lib/flags/types';
+import { FLAG_REGISTRY } from '@/lib/flags/registry.generated';
 
 const NOW = new Date('2026-09-03T00:00:00Z');
 
@@ -31,10 +32,18 @@ function synthFlag(overrides: Partial<FlagDefinition> = {}): FlagDefinition {
  * schema coverage.
  */
 describe('fetchFeatureFlags', () => {
-  it('returns both seeded flags with a computed rolloutStatus for each', () => {
+  // Derived from FLAG_REGISTRY rather than pinned to a literal list. The
+  // literal version read ['coachhelm_v2_availability', 'flight_recorder'] and
+  // went red the moment a third flag was registered — a legitimate change
+  // failing a gate that was only ever asserting "nobody added a flag". The
+  // contract worth holding is that fetchFeatureFlags surfaces EVERY
+  // registered flag and computes a status for each, which is what this now
+  // says, and it still fails if the read model drops or invents one.
+  it('returns every registered flag with a computed rolloutStatus for each', () => {
     const { flags } = fetchFeatureFlags(new Date('2026-09-03T00:00:00Z'));
     const ids = flags.map((f) => f.feature_id).sort();
-    expect(ids).toEqual(['coachhelm_v2_availability', 'flight_recorder']);
+    expect(ids).toEqual([...FLAG_REGISTRY].map((f) => f.feature_id).sort());
+    expect(ids.length).toBeGreaterThan(0);
     for (const flag of flags) {
       expect(['active', 'expiring_soon', 'expired', 'archived', 'no_expiry']).toContain(flag.rolloutStatus);
     }
@@ -51,10 +60,18 @@ describe('fetchFeatureFlags', () => {
     }
   });
 
+  // Asserts the ordering PROPERTY, not one frozen sequence. Every seed flag
+  // currently shares a created_at, so a literal expectation here was really
+  // only testing the alpha tiebreak while looking like it tested the sort —
+  // and it broke on the next flag either way.
   it('sorts newest-created first, feature_id as the tiebreaker', () => {
     const { flags } = fetchFeatureFlags(new Date('2026-09-03T00:00:00Z'));
-    // Both seed flags share created_at, so this pins the tiebreak: alpha order.
-    expect(flags.map((f) => f.feature_id)).toEqual(['coachhelm_v2_availability', 'flight_recorder']);
+    const dates = flags.map((f) => f.created_at);
+    expect([...dates].sort().reverse()).toEqual(dates);
+    for (let i = 1; i < flags.length; i++) {
+      if (flags[i].created_at !== flags[i - 1].created_at) continue;
+      expect(flags[i - 1].feature_id < flags[i].feature_id).toBe(true);
+    }
   });
 
   it('countsByStatus sums to the total flag count', () => {
