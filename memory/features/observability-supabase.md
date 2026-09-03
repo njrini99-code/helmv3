@@ -99,6 +99,48 @@ migration reads `unconfigured`, never a fabricated green result.
   tables on fixed internal 30-day windows. A new sizes/self-monitoring
   facade covers all six `helm_debug` observability tables.
 
+### Phase 3 track D (brief §34, §40-43, §48, §53, §68)
+
+Diagnostics and correlation — the layer that turns "what failed" into "what it
+means and what changed". Full design:
+`docs/observability/SUPABASE_DIAGNOSTICS.md`. **No migration**: every read goes
+through an RPC that already exists, so this phase adds no table, no facade and
+no `HELD.md` row.
+
+- Pure evaluators, all in `src/lib/observability/supabase/`:
+  - `schema-drift.ts` — maps a missing-object failure (42P01/42703/42883/
+    3F000 and the PostgREST 20x schema-cache family) to a verdict, keeping
+    THREE axes independent with three separate `unknown`s: does the TREE
+    create it, does the LEDGER record it, do the TYPES mention it. The
+    ledger is explicitly not authoritative about what is live, and every
+    unreadable input is `unknown` rather than `absent`.
+  - `authorization-diagnosis.ts` — EXPECTED_SECURITY_DENIAL vs
+    UNEXPECTED_PRODUCT_FAILURE vs UNKNOWN, plus the §68 42501 runbook
+    pruned by RPC/table surface. No default expectation: only the call site
+    knows, so silence is UNKNOWN. The input type cannot carry a message,
+    so a policy predicate has no path to the output.
+  - `release-correlation.ts` — the causal ladder (unknown / no-signal /
+    possible / likely / reproduced-cause) with every signal sorted into
+    corroborating (release-side facts) / not-corroborating (restatements of
+    the incident, emitted so a reader sees they were rejected) /
+    exculpatory. Proximity alone tops out at `possible`;
+    `reproduced-cause` needs experimental evidence. No numeric confidence.
+  - `service-layers.ts` — observed layer vs likely origin layer, with
+    ambiguity as an explicit answer (PGRST003, a bare 5xx) rather than a
+    coin flip. A five-character SQLSTATE is a Postgres verdict wherever it
+    surfaced.
+  - `call-budgets.ts` — measure-before-enforce per-journey call budgets,
+    `baseline_status: 'collecting' | 'ready'`, median baseline, no
+    per-journey constant anywhere. NOT WIRED: `db_stat_deltas` has no
+    journey dimension.
+- Bridge readers: `src/lib/admin/database/incident-detail.ts` (composes one
+  fingerprint's detail; every section carries its own
+  ok/empty/unconfigured/blind state) and `drift-inputs.ts` (the I/O half
+  behind `schema-drift.ts`; degrades to unreadable, never to empty).
+- Bridge page addition: a single-fingerprint detail surface at
+  `/admin/database?incident=<fingerprint>`, linked from each error-group
+  row. The admin gate still runs before any data access.
+
 ## Tests
 
 Unit-level TypeScript fixtures against every pure evaluator listed above
@@ -122,6 +164,25 @@ integration, Advisor integration, on-demand log evidence, Trace Explorer
 extension and replay fixtures, alert policy/paging. None of these are
 silently absent — each stays an explicit NOT VERIFIED / not-yet-built item
 rather than an assumed "done."
+
+Phase 3 track D adds its own, all recorded rather than assumed:
+
+- `call-budgets.ts` has no collector. `helm_debug.db_stat_deltas` carries
+  `queryid` / `safe_query_class` / `source_class` and no journey dimension,
+  so nothing in this repo can attribute a DB call to a journey today.
+- `drift-inputs.ts` reads `supabase/migrations/**` and
+  `src/lib/types/database.ts` from disk. Those are repository files, not
+  part of a traced serverless function bundle, so in a DEPLOYED Bridge both
+  drift axes report `unknown`. An `outputFileTracingIncludes` change to
+  `next.config.mjs` would fix it and was deliberately not made.
+- The applied-migration-ledger read is credential-gated and NOT VERIFIED —
+  `.env.local` is withheld from worktrees, so it has never been observed
+  returning a non-null result. It fails open to `null`.
+- No data-invariant registry is wired to a fingerprint, and the Sentry
+  issue is not fetched on the detail surface. Both are declared
+  `unconfigured` there rather than omitted or rendered as passing.
+- `identity.httpStatus` on the detail surface is structurally null: the
+  error store has no HTTP column. It renders "not captured".
 
 <!-- merged: Track B section appended by the Phase 2 integrator -->
 # Feature: Supabase Service Observability (Auth / Storage / Realtime / Edge Functions)
