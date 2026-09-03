@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 24 features, 66 routes, 41 components, 27 apis, 91 actions, 52 services, 47 tests, 128 tables, 136 rpcs, 24 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 935 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 24 features, 66 routes, 41 components, 27 apis, 91 actions, 53 services, 47 tests, 128 tables, 136 rpcs, 24 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 940 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -39,7 +39,7 @@ Admin Platform · active · criticality high · owner platform
 
 Admin Reliability Collector · active · criticality high · owner platform
 
-- **Relations:** 6 doc/structurally-evidenced, 2 import-graph-only (weak)
+- **Relations:** 6 doc/structurally-evidenced, 0 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 0
@@ -49,7 +49,7 @@ Admin Reliability Collector · active · criticality high · owner platform
 
 Admin Self-Heal · active · criticality high · owner platform
 
-- **Relations:** 5 doc/structurally-evidenced, 2 import-graph-only (weak)
+- **Relations:** 5 doc/structurally-evidenced, 1 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `resolve_admin_event`
 - **Test surfaces:** 2
@@ -209,7 +209,7 @@ Settings And Preferences · active · criticality medium · owner product
 
 Shot Tracking · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** `helm_debug_finalize_trace`, `helm_debug_record_trace_step`, `helm_debug_start_trace`
 - **Test surfaces:** 4
@@ -264,7 +264,7 @@ Team Operations · active · criticality high · owner product
 | `inngest:coachhelm-round-submitted` | inngest | _unmapped_ |
 | `inngest:inngest-health-probe` | inngest | _unmapped_ |
 | `inngest:weekly-health-ping` | inngest | _unmapped_ |
-| `launchd:config/launchd/com.helm.bridge-rca-repair.plist` | launchd | `admin_selfheal` |
+| `launchd:config/launchd/com.helm.bridge-rca-repair.plist` | launchd | `admin_platform` |
 | `vercel_cron:/api/cron/admin-digest` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-calibration` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-insight-lifecycle` | vercel_cron | `coach_intelligence_triage` |
@@ -293,12 +293,12 @@ Team Operations · active · criticality high · owner product
 | Source | Target | Evidence |
 | --- | --- | --- |
 | `admin_incidents` | `admin_platform` | feature_doc_contract, import_graph |
-| `admin_incidents` | `admin_reliability_collector` | feature_doc_contract, import_graph |
+| `admin_incidents` | `admin_reliability_collector` | feature_doc_contract |
 | `admin_incidents` | `admin_selfheal` | feature_doc_contract, import_graph |
 | `admin_incidents` | `auth_onboarding_join` | import_graph (weak) |
 | `admin_incidents` | `player_coachhelm_development` | import_graph (weak) |
 | `admin_platform` | `admin_incidents` | feature_doc_contract, import_graph |
-| `admin_platform` | `admin_reliability_collector` | feature_doc_contract, import_graph |
+| `admin_platform` | `admin_reliability_collector` | feature_doc_contract |
 | `admin_platform` | `admin_selfheal` | feature_doc_contract, import_graph |
 | `admin_platform` | `auth_onboarding_join` | import_graph (weak) |
 | `admin_platform` | `baseball_core` | import_graph (weak) |
@@ -306,13 +306,11 @@ Team Operations · active · criticality high · owner product
 | `admin_platform` | `golf_round_lifecycle` | import_graph (weak) |
 | `admin_platform` | `player_hub` | import_graph (weak) |
 | `admin_platform` | `shot_tracking` | import_graph (weak) |
-| `admin_reliability_collector` | `admin_incidents` | feature_doc_contract, import_graph |
-| `admin_reliability_collector` | `admin_platform` | feature_doc_contract, import_graph |
+| `admin_reliability_collector` | `admin_incidents` | feature_doc_contract |
+| `admin_reliability_collector` | `admin_platform` | feature_doc_contract |
 | `admin_reliability_collector` | `coachhelm_ai` | feature_doc_contract |
-| `admin_reliability_collector` | `shot_tracking` | import_graph (weak) |
 | `admin_selfheal` | `admin_incidents` | feature_doc_contract, import_graph |
 | `admin_selfheal` | `admin_platform` | feature_doc_contract, import_graph |
-| `admin_selfheal` | `admin_reliability_collector` | import_graph (weak) |
 | `admin_selfheal` | `auth_onboarding_join` | import_graph (weak) |
 | `auth_onboarding_join` | `admin_platform` | import_graph (weak) |
 | `auth_onboarding_join` | `baseball_core` | import_graph (weak) |

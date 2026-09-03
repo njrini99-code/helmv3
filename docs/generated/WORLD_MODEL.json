@@ -1350,6 +1350,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/janitor/**",
+        "pattern": "scripts/janitor/**",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/knowledge/**",
         "pattern": "scripts/knowledge/**",
         "category": "services"
@@ -3970,6 +3975,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/incidents/__tests__/correlate.test.ts",
+          "line": 3
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/incidents/__tests__/lens.test.ts",
           "line": 28
         },
@@ -3990,6 +4000,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/incidents/correlate.ts",
+          "line": 43
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/incidents/fetch.ts",
           "line": 4
         },
@@ -4007,6 +4022,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/incidents/fetch.ts",
           "line": 14
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/incidents/fetch.ts",
+          "line": 15
         },
         {
           "kind": "import_graph",
@@ -4049,21 +4069,6 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
           "line": 261
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/incidents/__tests__/correlate.test.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/incidents/correlate.ts",
-          "line": 43
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/incidents/fetch.ts",
-          "line": 15
         }
       ]
     },
@@ -4482,22 +4487,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 37
+          "line": 38
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 109
+          "line": 110
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 149
+          "line": 174
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 354
+          "line": 379
         },
         {
           "kind": "import_graph",
@@ -4573,6 +4578,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/github-pr-timeline.ts",
           "line": 18
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/reliability/normalize.ts",
+          "line": 10
         }
       ]
     },
@@ -4596,37 +4606,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 38
+          "line": 39
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 142
+          "line": 167
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 148
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/data/reliability.ts",
-          "line": 14
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/data/reliability.ts",
-          "line": 15
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/data/resolutions.ts",
-          "line": 5
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/data/triage.ts",
-          "line": 18
+          "line": 173
         }
       ]
     },
@@ -4638,27 +4628,27 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 39
+          "line": 40
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 110
+          "line": 111
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 143
+          "line": 168
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 158
+          "line": 183
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 240
+          "line": 265
         },
         {
           "kind": "import_graph",
@@ -5734,6 +5724,78 @@
     },
     {
       "source": "admin_platform",
+      "target": "services:config/launchd/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "config/launchd/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/janitor/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/janitor/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/lib/selfheal-repair-runner.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/lib/selfheal-repair-runner.mjs"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/run-selfheal-repair.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/run-selfheal-repair.mjs"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/selfheal-repair-doctor.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/selfheal-repair-doctor.mjs"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/selfheal-repair-install.sh",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/selfheal-repair-install.sh"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "services:src/lib/admin/**",
       "kind": "feature_service",
       "evidence": [
@@ -5753,6 +5815,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/cron/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:src/lib/reliability/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/reliability/**"
         }
       ]
     },
@@ -5782,6 +5856,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/schedule-bridge-write.ts",
           "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/reliability/normalize.ts",
+          "line": 11
         }
       ]
     },
@@ -5850,11 +5929,6 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 147
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/normalize.ts",
-          "line": 10
         }
       ]
     },
@@ -5872,46 +5946,6 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 8
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/__tests__/normalize.test.ts",
-          "line": 12
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/__tests__/sources.test.ts",
-          "line": 56
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/__tests__/sources.test.ts",
-          "line": 57
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/collect.ts",
-          "line": 26
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/sources.ts",
-          "line": 19
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/sources.ts",
-          "line": 20
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/sources.ts",
-          "line": 21
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/sources.ts",
-          "line": 22
         }
       ]
     },
@@ -5960,18 +5994,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/reliability/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_reliability_collector",
-      "target": "shot_tracking",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/lib/reliability/normalize.ts",
-          "line": 11
         }
       ]
     },
@@ -6133,6 +6155,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/auto-resolve.ts",
+          "line": 144
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/rca-run.ts",
           "line": 23
         },
@@ -6145,18 +6172,6 @@
           "kind": "import_graph",
           "path": "src/lib/admin/selfheal-registry.ts",
           "line": 39
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "admin_reliability_collector",
-      "kind": "feature_relation",
-      "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/lib/admin/auto-resolve.ts",
-          "line": 144
         }
       ]
     },
@@ -13749,7 +13764,7 @@
     },
     {
       "source": "launchd:config/launchd/com.helm.bridge-rca-repair.plist",
-      "target": "admin_selfheal",
+      "target": "admin_platform",
       "kind": "job_feature",
       "evidence": [
         {
