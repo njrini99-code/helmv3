@@ -1460,6 +1460,7 @@ features:
     code:
       routes:
         - src/app/admin/reliability/**
+        - src/app/admin/releases/**
       components: []
       api:
         # Scoped to this one cron rather than src/app/api/cron/** on purpose:

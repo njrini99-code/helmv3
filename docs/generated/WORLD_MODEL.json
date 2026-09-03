@@ -244,6 +244,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/releases/**",
+        "pattern": "src/app/admin/releases/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/reliability/**",
         "pattern": "src/app/admin/reliability/**",
         "category": "routes"
@@ -6070,6 +6075,18 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
           "line": 39
+        }
+      ]
+    },
+    {
+      "source": "admin_reliability_collector",
+      "target": "routes:src/app/admin/releases/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/releases/**"
         }
       ]
     },
