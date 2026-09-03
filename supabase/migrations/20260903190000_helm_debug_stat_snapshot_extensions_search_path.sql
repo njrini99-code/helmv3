@@ -29,8 +29,7 @@
 -- rather than CREATE OR REPLACE precisely so this migration cannot silently
 -- change classification logic it does not mention.
 
-alter function public.helm_debug_stat_statements_snapshot(integer)
-  set search_path = pg_catalog, extensions, helm_debug;
+alter function public.helm_debug_stat_statements_snapshot(integer) set search_path = pg_catalog, extensions, helm_debug;  -- noqa: LT05,PRS
 
 -- Tripwire: the grant surface must be exactly what 20260903180200 left behind.
 -- ALTER FUNCTION ... SET does not touch ACLs; this asserts that rather than
