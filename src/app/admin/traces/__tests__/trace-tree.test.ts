@@ -125,6 +125,32 @@ describe('buildTraceTree — robustness against real-world data', () => {
     expect(tree.flat.length).toBeLessThanOrEqual(2);
   });
 
+  it('renders BOTH nodes of a genuine mutual cycle rather than dropping them', () => {
+    // A -> parent b, B -> parent a: neither ever resolves as a root under the
+    // ordinary containment walk (each is pushed into the OTHER's children),
+    // so without a rescue sweep for unvisited nodes both vanish from `flat`
+    // silently — exactly the failure mode this module's own header comment
+    // says a debugging tool must never have. observedStepCount stays correct
+    // either way (it counts the raw observed array, never the walked tree),
+    // so this pins the tree/render side of the same guarantee.
+    const cyclic = [
+      { step_key: 'a', parent_step_key: 'b', layer: 'postgres', status: 'success', requiredness: 'required' },
+      { step_key: 'b', parent_step_key: 'a', layer: 'postgres', status: 'success', requiredness: 'required' },
+    ];
+    const tree = buildTraceTree(cyclic, 'unknown');
+    expect(tree.flat.map((n) => n.key).sort()).toEqual(['a', 'b']);
+  });
+
+  it('survives a longer mutual cycle (three nodes) without dropping any', () => {
+    const cyclic = [
+      { step_key: 'a', parent_step_key: 'c', layer: 'postgres', status: 'success', requiredness: 'required' },
+      { step_key: 'b', parent_step_key: 'a', layer: 'postgres', status: 'success', requiredness: 'required' },
+      { step_key: 'c', parent_step_key: 'b', layer: 'postgres', status: 'success', requiredness: 'required' },
+    ];
+    const tree = buildTraceTree(cyclic, 'unknown');
+    expect(tree.flat.map((n) => n.key).sort()).toEqual(['a', 'b', 'c']);
+  });
+
   it('treats an unrecognised status as a warning, never as success', () => {
     const weird = [{ step_key: 'x', layer: 'postgres', status: 'banana', requiredness: 'required' }];
     expect(buildTraceTree(weird, 'unknown').flat[0]!.status).toBe('warning');

@@ -328,6 +328,21 @@ export function buildTraceTree(
   };
   walk(roots, 0);
 
+  // Rescue sweep: a genuine mutual cycle (A's parent is B, B's parent is A —
+  // or a longer ring) leaves every member attached as someone ELSE's child
+  // and none ever lands in `roots`, so the walk above never reaches any of
+  // them. That is exactly the failure this module's own header comment rules
+  // out — "the tree would be quietly, plausibly wrong" — so promote whatever
+  // is still unvisited to an additional root and walk from there too. This
+  // never fires on real (acyclic) data: everything is already reachable from
+  // the roots computed above.
+  for (const node of all) {
+    if (!seen.has(node)) {
+      roots.push(node);
+      walk([node], 0);
+    }
+  }
+
   return {
     roots,
     flat,
