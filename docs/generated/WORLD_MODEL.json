@@ -1332,6 +1332,11 @@
         "category": "services"
       },
       {
+        "id": "services:config/feature-flags.yml",
+        "pattern": "config/feature-flags.yml",
+        "category": "services"
+      },
+      {
         "id": "services:config/launchd/**",
         "pattern": "config/launchd/**",
         "category": "services"
@@ -1352,8 +1357,18 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/check-feature-flags.mjs",
+        "pattern": "scripts/check-feature-flags.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/contracts/**",
         "pattern": "scripts/contracts/**",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/flags/**",
+        "pattern": "scripts/flags/**",
         "category": "services"
       },
       {
@@ -1519,6 +1534,11 @@
       {
         "id": "services:src/lib/fairway/haptics.ts",
         "pattern": "src/lib/fairway/haptics.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:src/lib/flags/**",
+        "pattern": "src/lib/flags/**",
         "category": "services"
       },
       {
@@ -4514,22 +4534,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 110
+          "line": 118
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 302
+          "line": 310
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 322
+          "line": 330
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 527
+          "line": 535
         },
         {
           "kind": "import_graph",
@@ -4638,12 +4658,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 167
+          "line": 175
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 321
+          "line": 329
         }
       ]
     },
@@ -4660,22 +4680,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 111
+          "line": 119
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 168
+          "line": 176
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 331
+          "line": 339
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 413
+          "line": 421
         },
         {
           "kind": "import_graph",
@@ -5778,6 +5798,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "services:config/feature-flags.yml",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "config/feature-flags.yml"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "services:config/launchd/**",
       "kind": "feature_service",
       "evidence": [
@@ -5785,6 +5817,30 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "config/launchd/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/check-feature-flags.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/check-feature-flags.mjs"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:scripts/flags/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/flags/**"
         }
       ]
     },
@@ -5869,6 +5925,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/cron/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "services:src/lib/flags/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/flags/**"
         }
       ]
     },
