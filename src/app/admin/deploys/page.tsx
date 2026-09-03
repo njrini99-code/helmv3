@@ -15,6 +15,8 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { Surface, Inset, StatTile, StatusPill, SkeletonList, type FwStatusTone } from '@/components/fairway';
 import { ShowMoreList } from './_components/ShowMoreList';
 import { ReleaseLedger } from './_components/ReleaseLedger';
+import { fetchReleaseRunway } from '@/lib/admin/triage/release-runway';
+import { ReleaseRunwayStrip } from '@/components/admin/triage/ReleaseRunwayStrip';
 
 /** Phone card list (below `md`) shows this many deploys before "Show more" —
  *  keeps the default view inside the ~3-screen-height scroll budget (Mobile
@@ -388,12 +390,29 @@ async function WebVitals() {
   );
 }
 
+async function ReleaseRunwaySection() {
+  const runway = await fetchReleaseRunway();
+  if (runway.status !== 'ok' || !runway.data) {
+    return <PanelStale label="Release runway" error={runway.error ?? 'unknown error'} />;
+  }
+  return <ReleaseRunwayStrip view={runway.data} />;
+}
+
 export default async function DeploysPage() {
   await requireSuperAdmin();
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
       <CurrentBuildCard />
+
+      <Surface padding="sm">
+        <SectionLabel>Release runway</SectionLabel>
+        <div className="mt-3">
+          <PanelBoundary title="Release runway" skeleton={<SkeletonList rows={3} />}>
+            <ReleaseRunwaySection />
+          </PanelBoundary>
+        </div>
+      </Surface>
 
       <Surface padding="sm">
         <SectionLabel>Release ledger</SectionLabel>
