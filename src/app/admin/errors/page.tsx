@@ -45,7 +45,7 @@ import { ArchivePanel } from './_components/ArchivePanel';
 import { ReleaseWatchPanel } from './_components/ReleaseWatchPanel';
 import { loadErrorsPageData } from './_data';
 import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incidents/genome';
-import { fetchCurrentReleaseWatch } from '@/lib/admin/incidents/release-watch';
+import { fetchCurrentReleaseWatch, emptyReleaseWatch } from '@/lib/admin/incidents/release-watch';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -430,12 +430,21 @@ export default async function ErrorsPage({
     const allClearAllowed = canClaimAllClear(board.coverage);
 
     // Phase 1 — Incident Genome + Release Watch (brief §8/§9/§14).
-    // `fetchCurrentReleaseWatch` fails soft to an `unavailableReason` — never
-    // takes the queue down with it. Alias grouping runs over the FULL board
-    // (not just `lensed`) so a card's "same root cause" answer never depends
-    // on which lens happens to be selected; the Genome itself is only
-    // computed for rows this render actually shows.
-    const releaseWatch = await fetchCurrentReleaseWatch({ incidents: board.incidents, coverage: board.coverage });
+    // `fetchCurrentReleaseWatch` itself fails soft to an `unavailableReason`
+    // for the ordinary "ledger unconfigured" case; the outer `.catch()` is
+    // defense against a genuinely unexpected throw — a Release Watch that
+    // could not be computed must never blank the rest of the Incidents
+    // queue behind it. Alias grouping runs over the FULL board (not just
+    // `lensed`) so a card's "same root cause" answer never depends on which
+    // lens happens to be selected; the Genome itself is only computed for
+    // rows this render actually shows.
+    const releaseWatch = await fetchCurrentReleaseWatch({ incidents: board.incidents, coverage: board.coverage }).catch(
+      (err: unknown) =>
+        emptyReleaseWatch(
+          err instanceof Error ? `Release watch failed: ${err.message}` : 'Release watch failed unexpectedly.',
+          board.coverage.anyBlind,
+        ),
+    );
     const aliasGroups = buildBoardAliasGroups(board.incidents);
     const genomeByIncident = new Map(
       lensed.map((incident) => [incident.id, buildIncidentGenome(incident, board.incidents, aliasGroups)] as const),

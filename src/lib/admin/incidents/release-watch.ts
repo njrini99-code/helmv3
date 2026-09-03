@@ -143,6 +143,46 @@ function toSnapshotFacts(
 }
 
 /**
+ * A Release Watch that honestly says nothing could be determined —
+ * shared by `fetchCurrentReleaseWatch`'s own soft-fail branches and by any
+ * caller that wraps it in a `.catch()` for defense in depth (server
+ * components must never let one provider failure blank the whole page).
+ * Never throws, never guesses a SHA or a deploy time.
+ */
+export function emptyReleaseWatch(reason: string, coverageBlind: boolean = false): CurrentReleaseWatch {
+  const appSha = process.env.VERCEL_GIT_COMMIT_SHA?.trim() || null;
+  const context = buildReleaseContext({
+    releaseSha: appSha ?? 'unknown',
+    deployedAt: null,
+    baselineReleaseSha: null,
+    runtimeIdentity: buildRuntimeIdentityTriplet({
+      appSha,
+      dbMigrationHead: null,
+      dbMigrationHeadState: 'unknown',
+    }),
+    includedPrs: [],
+    watchEvidence: {
+      releaseDeployedAtMs: null,
+      now: Date.now(),
+      newIncidentsCount: 0,
+      regressedIncidentsCount: 0,
+      rollbackRecommended: false,
+      sourceCoverageBlind: coverageBlind,
+    },
+    newFingerprints: [],
+    regressedFingerprints: [],
+  });
+  return {
+    context,
+    relationships: new Map(),
+    comparison: null,
+    currentCard: null,
+    baselineCard: null,
+    unavailableReason: reason,
+  };
+}
+
+/**
  * Build the whole Release Watch for the current production release.
  *
  * `board.incidents`/`board.coverage` should be the SAME board the Incidents
