@@ -29,7 +29,9 @@ const STATS_SKELETON = (
   </div>
 );
 
-const TEAM_FILTER_SKELETON = <div className="h-10 w-full animate-pulse rounded-fw-sm bg-surface-sunken sm:w-56" />;
+const TEAM_FILTER_SKELETON = (
+  <div className="h-10 w-full rounded-fw-sm bg-surface-sunken motion-safe:animate-pulse sm:w-56" />
+);
 
 export default async function ActivityPage({
   searchParams,
