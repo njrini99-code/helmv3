@@ -93,6 +93,7 @@ import {
 } from '@/lib/baseball/player-access';
 import { BaseballDisabledSourceError } from '@/lib/baseball/import-source-enabled';
 import { isCurrentSessionBaseballDemo } from '@/lib/demo/baseball-config.server';
+import { recordWorkflow } from '@/lib/observability/metrics';
 
 // -----------------------------------------------------------------------------
 // Public error types
@@ -364,6 +365,13 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
     // read whatever they resolve to, from either the success or catch path.
     let resolvedCapabilityList: readonly BaseballCapability[] | null = null;
     let resolvedCapabilityTag: string | null = null;
+
+    // helm.workflow.* (Deliverable 6) — sport/action dimensions ONLY, same
+    // "generic wrapper, no per-call identity dimension" rule
+    // withGolfAction's own metric follows: this wraps 60+ distinct baseball
+    // actions, and a roundId/teamId/playerId dimension here would be
+    // unbounded cardinality on a Sentry-side metric index key.
+    const startedAt = Date.now();
 
     return Sentry.withScope(async (scope) => {
       // Stable scope identity for every trace emitted from this action.
@@ -650,6 +658,14 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           message: `done ${name}`,
           level: 'info',
         });
+        recordWorkflow({
+          feature: 'baseball_action',
+          action: name,
+          outcome: 'success',
+          durationMs: Date.now() - startedAt,
+          sport: 'baseball',
+          runtime: process.env.NEXT_RUNTIME,
+        });
         return result;
       } catch (error) {
         // Expected control-flow throws (auth/context/capability) are re-raised
@@ -672,6 +688,21 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
             },
             'warning',
           );
+          // outcome carries the specific expected-error class name (e.g.
+          // 'BaseballUnauthorizedError') rather than a flat 'failure' — same
+          // "transient/expected must read distinctly from terminal" split
+          // withGolfAction's own metric uses, and cheap here since these are
+          // typed classes: the `if` above already narrowed `error` to their
+          // union, so `.name` is exactly the constructor's own name (see
+          // each class's `this.name = '...'` assignment above).
+          recordWorkflow({
+            feature: 'baseball_action',
+            action: name,
+            outcome: error.name,
+            durationMs: Date.now() - startedAt,
+            sport: 'baseball',
+            runtime: process.env.NEXT_RUNTIME,
+          });
           throw error;
         }
 
@@ -716,6 +747,15 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         await logServerException(normalized, {
           ...buildTraceContext(false),
           fingerprint: ['server_action', feature, name],
+        });
+
+        recordWorkflow({
+          feature: 'baseball_action',
+          action: name,
+          outcome: 'failure',
+          durationMs: Date.now() - startedAt,
+          sport: 'baseball',
+          runtime: process.env.NEXT_RUNTIME,
         });
 
         throw new BaseballActionError();

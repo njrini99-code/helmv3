@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   logServerException: vi.fn(async (..._args: unknown[]) => undefined),
   logServerError: vi.fn(async (..._args: unknown[]) => undefined),
   logServerEvent: vi.fn(async (..._args: unknown[]) => undefined),
+  recordWorkflow: vi.fn(),
   scope: {
     setTag: vi.fn(),
     setUser: vi.fn(),
@@ -27,6 +28,8 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerError: mocks.logServerError,
   logServerEvent: mocks.logServerEvent,
 }));
+
+vi.mock('@/lib/observability/metrics', () => ({ recordWorkflow: mocks.recordWorkflow }));
 
 vi.mock('@sentry/nextjs', () => ({
   withScope: (fn: (scope: typeof mocks.scope) => unknown) => fn(mocks.scope),
@@ -334,5 +337,89 @@ describe('captureGolfActionError', () => {
     expect(mocks.logServerException).toHaveBeenCalledTimes(1);
     const [, , severity] = mocks.logServerException.mock.calls[0]! as unknown[];
     expect(severity).toBe('warning');
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Deliverable 6 (Sentry max-observability, Phase C) — helm.workflow.* via
+// recordWorkflow, sport/action dimensions ONLY (never roundId/playerId/teamId
+// — this wrapper is generic across every golf action it wraps, and a per-call
+// identity dimension would be unbounded cardinality on a metric index key).
+// -----------------------------------------------------------------------------
+describe('withGolfAction — helm.workflow.* metric', () => {
+  it('records outcome:"success" with sport/action dimensions when fn resolves', async () => {
+    const action = withGolfAction(
+      'listGolfAnnouncements',
+      { featureArea: 'golf-announcements' },
+      async () => ({ success: true as const }),
+    );
+
+    await action();
+
+    expect(mocks.recordWorkflow).toHaveBeenCalledTimes(1);
+    expect(mocks.recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'listGolfAnnouncements',
+        outcome: 'success',
+        sport: 'golf',
+        durationMs: expect.any(Number),
+      }),
+    );
+  });
+
+  it('records outcome:"failure" with the classified errorCode for an unexpected throw', async () => {
+    const action = withGolfAction(
+      'saveGolfRoundHole',
+      { featureArea: 'golf-round-tracking' },
+      async () => {
+        throw new Error('database write failed');
+      },
+    );
+
+    await expect(action()).rejects.toBeInstanceOf(GolfActionError);
+
+    expect(mocks.recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'saveGolfRoundHole', outcome: 'failure' }),
+    );
+  });
+
+  it('records the classified severity (not a flat "failure") for an expected/benign throw', async () => {
+    // classifySoftFailure treats "Unauthorized"-shaped messages as an
+    // expected control-flow failure (severity !== 'error') — same
+    // expected/benign distinction the surrounding catch block already uses
+    // to decide sanitize-vs-rethrow, reused here for the metric's `result`
+    // dimension so a transient/expected outcome never reads identically to
+    // a genuine one, even though both bucket under helm.workflow.failure at
+    // the metric-name level (recordWorkflow's own outcome!=='success' rule).
+    const action = withGolfAction(
+      'getPlayerRoundHistory',
+      { featureArea: 'golf-round-tracking' },
+      async () => {
+        throw new Error('Unauthorized');
+      },
+    );
+
+    await expect(action()).rejects.toThrow('Unauthorized');
+
+    const call = mocks.recordWorkflow.mock.calls.find(
+      (c) => (c[0] as { action?: string }).action === 'getPlayerRoundHistory',
+    );
+    expect(call).toBeDefined();
+    expect((call![0] as { outcome: string }).outcome).not.toBe('failure');
+  });
+
+  it('never carries a roundId/playerId/teamId dimension — sport/action only', async () => {
+    const action = withGolfAction(
+      'saveGolfRoundHole',
+      { featureArea: 'golf-round-tracking', contextFrom: () => ({ roundId: 'r-1', playerId: 'p-1', teamId: 't-1' }) },
+      async () => ({ success: true as const }),
+    );
+
+    await action();
+
+    const call = mocks.recordWorkflow.mock.calls[0]![0] as Record<string, unknown>;
+    expect(call).not.toHaveProperty('roundId');
+    expect(call).not.toHaveProperty('playerId');
+    expect(call).not.toHaveProperty('teamId');
   });
 });
