@@ -18,7 +18,12 @@ type AdminHref =
   | '/admin/deploys'
   | '/admin/health'
   | '/admin/teams'
-  | '/admin/billing';
+  | '/admin/billing'
+  | '/admin/lenses/golf'
+  | '/admin/lenses/baseball'
+  | '/admin/lenses/lifting'
+  | '/admin/lenses/teams'
+  | '/admin/lenses/users';
 
 export interface AdminNavEntry {
   label: string;
@@ -84,6 +89,18 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '9', section: 'Platform', description: 'Vercel releases and web insight' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
+
+  // LENSES — Bridge Premium Phase 4 (brief §20-27). Journey/flow-shaped
+  // dominant visuals over the same underlying data the Apps/Customers tabs
+  // above already surface — see each page's own header comment for what it
+  // reuses vs. adds. Deliberately in Platform per that brief's routing, not
+  // Apps/Customers, so it reads as an operating-model lens rather than a
+  // second app tab competing with Golf/Baseball/Lift Lab/Teams/Users above.
+  { label: 'Golf journey lens', href: '/admin/lenses/golf', key: 'G', section: 'Platform', description: 'Golf Journey River — funnel + incidents' },
+  { label: 'Baseball journey lens', href: '/admin/lenses/baseball', key: 'A', section: 'Platform', description: 'Baseball journeys — funnel + incidents' },
+  { label: 'Lift Lab flow lens', href: '/admin/lenses/lifting', key: 'P', section: 'Platform', description: 'Program Execution Flow, fully durable' },
+  { label: 'Teams EKG lens', href: '/admin/lenses/teams', key: 'E', section: 'Platform', description: 'Team EKG + release impact + adoption' },
+  { label: 'Users journey lens', href: '/admin/lenses/users', key: 'D', section: 'Platform', description: 'Directory + per-user Journey Ribbon' },
 
   // REVENUE — zero inbound links repo-wide before this entry.
   { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },

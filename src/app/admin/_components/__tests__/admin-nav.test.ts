@@ -44,6 +44,12 @@ describe('ADMIN_NAV', () => {
       '/admin/deploys',
       '/admin/auth',
       '/admin/work',
+      // Platform — Phase 4 lenses (added 2026-09-03)
+      '/admin/lenses/golf',
+      '/admin/lenses/baseball',
+      '/admin/lenses/lifting',
+      '/admin/lenses/teams',
+      '/admin/lenses/users',
       // Revenue
       '/admin/billing',
       // Intake
@@ -53,7 +59,7 @@ describe('ADMIN_NAV', () => {
       // 'R' (Reliability) is a letter, not a digit, for the documented reason
       // above: '1'-'9'/'0' are never renumbered, so a tab added later takes a
       // letter rather than displacing a shortcut someone already knows.
-      '1', '3', '0', '8', 'R', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'V', 'B',
+      '1', '3', '0', '8', 'R', 'S', 'F', 'Q', 'T', '7', '2', 'U', '5', '6', 'L', '9', '4', 'W', 'G', 'A', 'P', 'E', 'D', 'V', 'B',
     ]);
   });
 
