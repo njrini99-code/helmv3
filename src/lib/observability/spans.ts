@@ -41,6 +41,24 @@ export const RUNTIME = 'runtime';
 export const OP_SERVER_ACTION = 'function.server_action';
 export const OP_ROUND_STAGE = 'golf.round.stage';
 
+/**
+ * Workflow-level ops for Phase C's instrumentation pass. Each names ONE
+ * complete user-facing operation (as opposed to `OP_ROUND_STAGE`, which
+ * names an internal phase within one). Kept here, not invented at each call
+ * site, for the same reason every other constant in this file is a constant:
+ * a typo in a raw string compiles; a typo in an import does not.
+ */
+export const OP_ROUND_CREATE = 'golf.round.create';
+export const OP_ROUND_AUTOSAVE = 'golf.round.autosave';
+export const OP_ROUND_SUBMIT = 'golf.round.submit';
+export const OP_SHOT_PERSIST = 'golf.shot.persist';
+export const OP_ROUND_RECOVER = 'golf.round.recover';
+export const OP_COACHHELM_REQUEST = 'coachhelm.request';
+export const OP_COACHHELM_PERSIST = 'coachhelm.persist';
+export const OP_JOB_RUN = 'job.run';
+export const OP_PUSH_DELIVER = 'push.deliver';
+export const OP_AUTH_ATTEMPT = 'auth.attempt';
+
 /** The feature key shared by every round/shot tracking surface. */
 export const FEATURE_ROUND_TRACKING = 'round_tracking';
 
@@ -220,4 +238,49 @@ export async function roundStage<T>(
       }
     },
   );
+}
+
+/**
+ * The outcome taxonomy for Phase C's workflow-level spans (`OP_ROUND_CREATE`,
+ * `OP_COACHHELM_REQUEST`, `OP_JOB_RUN`, etc.) — a SUPERSET of
+ * `RoundStageOutcome`, deliberately not an alias of it. `RoundStageOutcome` is
+ * locked to what `classifyAutosaveOutcome`/`roundStage` actually distinguish
+ * today; widening it here to add `permission_denied`/`conflict`/
+ * `provider_failed`/`not_found`/`unknown` would let every existing `roundStage`
+ * call site silently accept an outcome the taxonomy tests never exercised.
+ * Two names, two contracts, one shared spelling for the eight members they
+ * hold in common.
+ */
+export type WorkflowOutcome =
+  | RoundStageOutcome
+  | 'permission_denied'
+  | 'conflict'
+  | 'provider_failed'
+  | 'not_found'
+  | 'unknown';
+
+/**
+ * Records a workflow span's terminal outcome the same way at every call
+ * site: `result` always gets set from `outcome`, and any extra attributes
+ * (typically `error_code`) are attached through `safeAttributes` so a
+ * null/undefined value never becomes the literal string "undefined" in
+ * Sentry's UI.
+ *
+ * No-ops on a missing span (sampled-out or already-ended) and never throws —
+ * observability must not be able to break the workflow it is describing.
+ */
+export function finishWorkflowSpan(
+  span: Sentry.Span | undefined,
+  outcome: WorkflowOutcome,
+  extra?: Record<string, SpanAttributeValue>,
+): void {
+  if (!span) return;
+  try {
+    span.setAttribute(RESULT, outcome);
+    for (const [key, value] of Object.entries(safeAttributes(extra ?? {}))) {
+      span.setAttribute(key, value);
+    }
+  } catch {
+    // Never let a telemetry write break the workflow it is describing.
+  }
 }

@@ -533,4 +533,25 @@ describe('recordRescuedStepOutcome', () => {
 
     expect(calls.at(-1)).toMatchObject({ kind: 'finalize', payload: { status: 'failure' } });
   });
+
+  /**
+   * Phase B's correlation.ts brief asked for the flight recorder's run
+   * metadata to carry the Sentry trace id "when one is active" — this
+   * ALREADY happens (see baseMetadata's `sentry_trace_id`/`root_span_id`
+   * spread above, unchanged by this file) because `startInactiveSpan`
+   * inherits the ambient trace when one exists, so the span this recorder
+   * constructs already IS the correlated span. Locking it here so a future
+   * refactor of `defaultDependencies`/`createHelmFlightRecorder` cannot drop
+   * it silently — there was no assertion on this before.
+   */
+  it('carries the Sentry span ids the recorder constructed into the persisted start metadata', async () => {
+    const { dependencies, calls } = fakeDependencies();
+    await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    const start = calls.find((c) => c.kind === 'start');
+    expect(start?.payload.metadata).toMatchObject({
+      sentry_trace_id: 'sentry-trace',
+      root_span_id: 'sentry-span',
+    });
+  });
 });
