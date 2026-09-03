@@ -1354,20 +1354,29 @@ async function updateAnnouncementImpl(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { data: coach } = await supabase
+    // Bind `error` on every read (audit:supabase-errors): a failed read must
+    // not render as "no coach" / "no announcement". PGRST116 is PostgREST's
+    // zero-rows code for .single() — that one IS the not-found case.
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
+    if (coachError && coachError.code !== 'PGRST116') {
+      return { success: false, error: 'Failed to load coach profile' };
+    }
     if (!coach) return { success: false, error: 'Coach not found' };
 
     // Load the announcement's team so we can authorize by team access —
     // identical shape to deleteAnnouncement's own lookup just below it.
-    const { data: ann } = await supabase
+    const { data: ann, error: annError } = await supabase
       .from('golf_announcements')
       .select('id, team_id')
       .eq('id', announcementId)
       .single();
+    if (annError && annError.code !== 'PGRST116') {
+      return { success: false, error: 'Failed to load announcement' };
+    }
 
     if (!ann) {
       return { success: false, error: 'Announcement not found' };
