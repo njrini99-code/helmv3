@@ -29,16 +29,16 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 14 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 24 | 24 | 9 | 16 |
+| `CURRENT_FEATURE` | 24 | 24 | 9 | 15 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
-| `GENERATED_TRUTH` | 21 | 3 | 6 | 26 |
+| `GENERATED_TRUTH` | 23 | 3 | 6 | 26 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 64 | 5 | 33 | 179 |
 | `AUDIT_SNAPSHOT` | 82 | 6 | 38 | 137 |
 | `STATE_SNAPSHOT` | 6 | 1 | 5 | 7 |
-| `HISTORY_LEDGER` | 28 | 0 | 5 | 54 |
+| `HISTORY_LEDGER` | 28 | 0 | 5 | 56 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 0 |
 | `INDEX` | 20 | 1 | 7 | 28 |
@@ -159,7 +159,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | 1 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 11 | 122 | 8 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 11 | 123 | 7 |
 | `memory/features/admin-reliability-collector.md` | current | yes | - | - | 5 | 16 | - |
 | `memory/features/admin-replay-lab.md` | current | yes | - | - | 1 | 10 | 1 |
 | `memory/features/admin-selfheal.md` | current | yes | - | yes | 6 | 27 | - |
@@ -261,6 +261,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 166 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 0 | 107 | 3 |
@@ -467,7 +469,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` | current | - | - | yes | 1 | 3 | - |
+| `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` | current | - | - | yes | 2 | 3 | - |
 | `docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md` | current | - | - | yes | 1 | 2 | 1 |
 | `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | yes | - | yes | 3 | 18 | 1 |
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | 0 | 3 | 1 |
@@ -481,7 +483,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
 | `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 132 | 16 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 136 | 18 |
 | `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | 1 | 4 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |

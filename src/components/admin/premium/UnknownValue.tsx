@@ -37,8 +37,8 @@ export interface UnknownValueProps extends Omit<HTMLAttributes<HTMLSpanElement>,
 }
 
 const SIZE_CLASS: Readonly<Record<'sm' | 'md', string>> = {
-  sm: 'h-5 px-1.5 text-[11px] gap-1',
-  md: 'h-6 px-2 text-[12px] gap-1.5',
+  sm: 'h-5 px-1.5 text-eyebrow gap-1',
+  md: 'h-6 px-2 text-caption gap-1.5',
 };
 
 /** A faint diagonal hatch, warm-toned, low-contrast enough to read as texture
