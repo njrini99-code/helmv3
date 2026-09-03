@@ -502,6 +502,36 @@ them would have broken those routes, not the dead one.
   and the Self-heal page. Counts only on the Overview: a stalled incident
   already earns its attention row, and a third list is the split this read
   model exists to remove.
+- **The Repair stage's launchd config is tracked in the repo, not only on the
+  owner's Mac.** `config/launchd/com.helm.bridge-rca-repair.plist` is the
+  source of truth for `~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`;
+  `npm run selfheal:repair:install` installs/reloads it and
+  `npm run selfheal:repair:doctor` checks it end to end — installed and
+  byte-identical to the repo copy, loaded (`launchctl print`), the env file's
+  variable names present, the `claude` binary and prompt file resolve, the
+  `-p` argument does not start with `-` or `$(`, and the newest production
+  `selfheal-repair` heartbeat is fresh (<26h) and not a runner failure. This
+  closes the 2026-09-02 fire that failed in 0.6s: the plist passed SKILL.md's
+  raw YAML-frontmatter text as `claude -p`'s argument and the CLI parsed the
+  leading `---` as an unknown option, exiting before writing anything. The
+  outer runner (`scripts/run-selfheal-repair.mjs`) now pipes the child's
+  stdout/stderr (forwarding every byte to its own stdout/stderr in real time,
+  so the plist's `>> log 2>&1` still sees the same output) and, on a
+  runner-level failure, redacts and truncates (`redactSecrets`/`truncateTail`
+  in `scripts/lib/selfheal-repair-runner.mjs`) the child's last ~4KB into the
+  fallback heartbeat's `metadata.child_output_tail`, so a future failure like
+  this one explains itself on `/admin/selfheal` instead of reading only
+  "child exited 1". A static vitest
+  (`src/test/scripts/selfheal-repair-launchd.test.ts`) parses every plist
+  under `config/launchd/**` and fails if the `-p` argument trap, a missing
+  `--strict-mcp-config`, or a wrong `--mcp-config` target ever regresses.
+  `redactSecrets`'s per-pattern replacement is keyed on an explicit
+  `keyGroup` flag stored on each `SECRET_PATTERNS` entry, not inferred from
+  whether the replace callback's second argument is truthy — a zero-capture
+  pattern's second callback argument is `String.replace`'s numeric match
+  OFFSET, not a capture group, and treating it as one produced a mangled
+  `"<offset>=[REDACTED]"` for any secret not located at index 0 of the
+  matched text.
 - **Lens counts are measured over the faceted list.** `countLensesForKind`
   counts through the same `matchesKind` predicate `applyIncidentFacets`
   narrows with, so the number beside a lens equals what clicking it shows

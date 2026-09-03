@@ -40,7 +40,9 @@ writes a row there.
 
 **Repair** — heartbeat `selfheal-repair`. A launchd agent on the owner's Mac
 (`~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`), daily 06:40
-local. Follows [`repair-contract.md`](repair-contract.md).
+local, installed from the repo-tracked `config/launchd/com.helm.bridge-rca-repair.plist`
+via `npm run selfheal:repair:install` and checked with
+`npm run selfheal:repair:doctor`. Follows [`repair-contract.md`](repair-contract.md).
 
 **Close** — heartbeat `log-retention`. A Vercel cron:
 `src/app/api/cron/log-retention/route.ts` → `src/lib/admin/auto-resolve.ts`.
