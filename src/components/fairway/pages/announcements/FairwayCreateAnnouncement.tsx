@@ -189,10 +189,14 @@ export interface AnnouncementFormSheetProps {
   open: boolean;
   onOpenChange: (next: boolean) => void;
   mode: AnnouncementFormMode;
-  players: Player[];
-  documents: DocumentLite[];
-  /** Team id for direct upload. Null (no team, or edit mode) hides upload. */
-  teamId: string | null;
+  /** Recipient targeting (create mode only — the "Send to" section doesn't
+   *  render in edit mode). Optional so an edit-mode caller (the coach card)
+   *  isn't forced to thread the full roster down just to open the sheet. */
+  players?: Player[];
+  /** Attachment picker (create mode only). Optional for the same reason. */
+  documents?: DocumentLite[];
+  /** Team id for direct upload (create mode only). Null hides upload. */
+  teamId?: string | null;
   /** Required when mode === 'edit'. */
   announcementId?: string;
   /** Required when mode === 'edit' — prefills title/body/urgency/ack. */
@@ -210,9 +214,9 @@ export function AnnouncementFormSheet({
   open,
   onOpenChange,
   mode,
-  players,
-  documents,
-  teamId,
+  players = [],
+  documents = [],
+  teamId = null,
   announcementId,
   initialValues,
   onSaved,
@@ -462,8 +466,12 @@ export function AnnouncementFormSheet({
       // Primary multi-field create flow — open to full working height, not the
       // 50% half-collapsed peek detent the bottom-sheet default applies (P274).
       peek={false}
-      title="New announcement"
-      description="Share schedule changes, news, and updates with your team."
+      title={isEdit ? 'Edit announcement' : 'New announcement'}
+      description={
+        isEdit
+          ? "Update the title, message, priority, or acknowledgement requirement."
+          : 'Share schedule changes, news, and updates with your team.'
+      }
       dismissible={!loading}
       hideClose={loading}
     >
@@ -504,104 +512,117 @@ export function AnnouncementFormSheet({
             />
           </FormField>
 
-          {/* ── Send to ─────────────────────────────────────────────────────── */}
-          <FormField
-            label="Send to"
-            help={
-              isAllTeam
-                ? `All ${players.length} ${players.length === 1 ? 'player' : 'players'} on the team`
-                : `${recipientCount} ${recipientCount === 1 ? 'player' : 'players'} selected`
-            }
-          >
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={isAllTeam ? 'primary' : 'secondary'}
-                  leftIcon={<IconUsers size={14} />}
-                  onClick={() => {
-                    setRecipientPlayerIds(null);
-                    setShowPlayerPicker(false);
-                    setPlayerSearch('');
-                  }}
-                >
-                  All team
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={!isAllTeam ? 'primary' : 'secondary'}
-                  leftIcon={<IconUser size={14} />}
-                  onClick={() => {
-                    if (isAllTeam) setRecipientPlayerIds([]);
-                    setShowPlayerPicker((s) => !s);
-                  }}
-                >
-                  {`Select${!isAllTeam && recipientPlayerIds!.length > 0 ? ` (${recipientPlayerIds!.length})` : ''}`}
-                </Button>
-              </div>
+          {/* ── Send to (create only — recipients aren't editable; see the
+              note on updateAnnouncement in announcements.ts) ────────────── */}
+          {!isEdit && (
+            <FormField
+              label="Send to"
+              help={
+                isAllTeam
+                  ? `All ${players.length} ${players.length === 1 ? 'player' : 'players'} on the team`
+                  : `${recipientCount} ${recipientCount === 1 ? 'player' : 'players'} selected`
+              }
+            >
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={isAllTeam ? 'primary' : 'secondary'}
+                    leftIcon={<IconUsers size={14} />}
+                    onClick={() => {
+                      setRecipientPlayerIds(null);
+                      setShowPlayerPicker(false);
+                      setPlayerSearch('');
+                    }}
+                  >
+                    All team
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={!isAllTeam ? 'primary' : 'secondary'}
+                    leftIcon={<IconUser size={14} />}
+                    onClick={() => {
+                      if (isAllTeam) setRecipientPlayerIds([]);
+                      setShowPlayerPicker((s) => !s);
+                    }}
+                  >
+                    {`Select${!isAllTeam && recipientPlayerIds!.length > 0 ? ` (${recipientPlayerIds!.length})` : ''}`}
+                  </Button>
+                </div>
 
-              {showPlayerPicker && !isAllTeam && (
-                <div className="overflow-hidden rounded-fw-md border border-border-subtle bg-surface">
-                  <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2">
-                    <IconSearch size={15} className="flex-shrink-0 text-text-tertiary" />
-                    {/* eslint-disable-next-line helm/no-raw-input -- borderless inline search inside a custom bordered picker; the Fairway Input carries its own surface */}
-                    <input
-                      type="search"
-                      value={playerSearch}
-                      onChange={(e) => setPlayerSearch(e.target.value)}
-                      placeholder="Search players…"
-                      aria-label="Search players"
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      spellCheck={false}
-                      className="w-full bg-transparent font-fw-sans text-body-sm text-text-primary outline-none placeholder:text-text-tertiary"
-                    />
-                    {(recipientPlayerIds?.length ?? 0) > 0 && (
-                      <span className="flex-shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary">
-                        {recipientPlayerIds!.length} selected
-                      </span>
-                    )}
-                  </div>
-                  <div className="max-h-48 overflow-y-auto p-1.5">
-                    <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-2">
-                      {filteredPlayers.map((player) => {
-                        const isSel = (recipientPlayerIds || []).includes(player.id);
-                        return (
-                          <label
-                            key={player.id}
-                            className={cn(
-                              'flex cursor-pointer items-center gap-2.5 rounded-fw-sm px-2.5 py-2 transition-colors',
-                              isSel ? 'bg-accent-50/60' : 'hover:bg-surface-sunken',
-                            )}
-                          >
-                            <Checkbox checked={isSel} onCheckedChange={() => togglePlayer(player.id)} />
-                            <span
+                {showPlayerPicker && !isAllTeam && (
+                  <div className="overflow-hidden rounded-fw-md border border-border-subtle bg-surface">
+                    <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2">
+                      <IconSearch size={15} className="flex-shrink-0 text-text-tertiary" />
+                      {/* eslint-disable-next-line helm/no-raw-input -- borderless inline search inside a custom bordered picker; the Fairway Input carries its own surface */}
+                      <input
+                        type="search"
+                        value={playerSearch}
+                        onChange={(e) => setPlayerSearch(e.target.value)}
+                        placeholder="Search players…"
+                        aria-label="Search players"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        className="w-full bg-transparent font-fw-sans text-body-sm text-text-primary outline-none placeholder:text-text-tertiary"
+                      />
+                      {(recipientPlayerIds?.length ?? 0) > 0 && (
+                        <span className="flex-shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary">
+                          {recipientPlayerIds!.length} selected
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-48 overflow-y-auto p-1.5">
+                      <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-2">
+                        {filteredPlayers.map((player) => {
+                          const isSel = (recipientPlayerIds || []).includes(player.id);
+                          return (
+                            <label
+                              key={player.id}
                               className={cn(
-                                'truncate font-fw-sans text-body-sm',
-                                isSel ? 'font-medium text-accent-700' : 'text-text-secondary',
+                                'flex cursor-pointer items-center gap-2.5 rounded-fw-sm px-2.5 py-2 transition-colors',
+                                isSel ? 'bg-accent-50/60' : 'hover:bg-surface-sunken',
                               )}
                             >
-                              {player.first_name || ''} {player.last_name || ''}
-                            </span>
-                          </label>
-                        );
-                      })}
+                              <Checkbox checked={isSel} onCheckedChange={() => togglePlayer(player.id)} />
+                              <span
+                                className={cn(
+                                  'truncate font-fw-sans text-body-sm',
+                                  isSel ? 'font-medium text-accent-700' : 'text-text-secondary',
+                                )}
+                              >
+                                {player.first_name || ''} {player.last_name || ''}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {filteredPlayers.length === 0 && (
+                        <p className="py-3 text-center font-fw-sans text-body-sm text-text-tertiary">
+                          No players found
+                        </p>
+                      )}
                     </div>
-                    {filteredPlayers.length === 0 && (
-                      <p className="py-3 text-center font-fw-sans text-body-sm text-text-tertiary">
-                        No players found
-                      </p>
-                    )}
                   </div>
-                </div>
-              )}
-            </div>
-          </FormField>
+                )}
+              </div>
+            </FormField>
+          )}
 
-          {/* ── Attachments + acknowledgement + tasks ───────────────────────── */}
-          <FormSection title="Options" description="Attachments, acknowledgement, and tasks.">
+          {/* ── Acknowledgement (both modes) + attachments/tasks (create only —
+              see the note on updateAnnouncement in announcements.ts: changing
+              them means delete-then-reinsert of junction rows, which isn't
+              editable here) ──────────────────────────────────────────────── */}
+          <FormSection
+            title="Options"
+            description={
+              isEdit
+                ? "Whether players must confirm they've read this update."
+                : 'Attachments, acknowledgement, and tasks.'
+            }
+          >
             <div className="flex flex-col gap-4">
               <Switch
                 checked={requiresAcknowledgement}
@@ -614,7 +635,7 @@ export function AnnouncementFormSheet({
                   Previously this whole section was hidden when the team had no
                   library documents yet, which read as "announcements can't have
                   attachments" — the exact confusion a coach reported. */}
-              {(teamId !== null || documents.length > 0) && (
+              {!isEdit && (teamId !== null || documents.length > 0) && (
                 <div className="flex flex-col gap-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-fw-sans text-body-sm font-medium text-text-primary">
@@ -739,7 +760,8 @@ export function AnnouncementFormSheet({
                 </div>
               )}
 
-              {/* Inline tasks */}
+              {/* Inline tasks (create only) */}
+              {!isEdit && (
               <div className="flex flex-col gap-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-fw-sans text-body-sm font-medium text-text-primary">
@@ -829,29 +851,41 @@ export function AnnouncementFormSheet({
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </FormSection>
         </Sheet.Body>
 
-        {/* ── Footer: live summary + actions ──────────────────────────────────── */}
+        {/* ── Footer: live summary (create only — recipients/docs/tasks aren't
+            edit-mode concepts) + actions ──────────────────────────────────── */}
         <Sheet.Footer className="flex-row items-center justify-between">
           <span className="flex min-w-0 items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
-            <IconUsers size={13} className="flex-shrink-0 text-accent-600" />
-            <span className="truncate tabular-nums">
-              {recipientCount} {recipientCount === 1 ? 'player' : 'players'}
-              {selectedDocumentIds.length > 0 &&
-                ` · ${selectedDocumentIds.length} doc${selectedDocumentIds.length !== 1 ? 's' : ''}`}
-              {inlineTasks.length > 0 &&
-                ` · ${inlineTasks.length} task${inlineTasks.length !== 1 ? 's' : ''}`}
-              {requiresAcknowledgement && ' · ack'}
-            </span>
+            {!isEdit && (
+              <>
+                <IconUsers size={13} className="flex-shrink-0 text-accent-600" />
+                <span className="truncate tabular-nums">
+                  {recipientCount} {recipientCount === 1 ? 'player' : 'players'}
+                  {selectedDocumentIds.length > 0 &&
+                    ` · ${selectedDocumentIds.length} doc${selectedDocumentIds.length !== 1 ? 's' : ''}`}
+                  {inlineTasks.length > 0 &&
+                    ` · ${inlineTasks.length} task${inlineTasks.length !== 1 ? 's' : ''}`}
+                  {requiresAcknowledgement && ' · ack'}
+                </span>
+              </>
+            )}
           </span>
           <div className="flex flex-shrink-0 items-center gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm" busy={loading} leftIcon={<IconSend size={14} />}>
-              Post
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              busy={loading}
+              leftIcon={isEdit ? <IconCheck size={14} /> : <IconSend size={14} />}
+            >
+              {isEdit ? 'Save changes' : 'Post'}
             </Button>
           </div>
         </Sheet.Footer>
