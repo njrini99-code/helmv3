@@ -12,6 +12,11 @@ function signal(severity: CorrelatedSignal['severity']): CorrelatedSignal {
     route: null,
     errorCode: null,
     count: 1,
+    // Added when CorrelatedSignal gained countIsFloor: false means the count
+    // is a real measurement, matching normalize.ts's
+    // `countIsFloor: raw.countBasis === 'unknown'`. This fixture sets an
+    // explicit count of 1, so it is not a floor.
+    countIsFloor: false,
     firstSeen: '2026-09-01T00:00:00Z',
     lastSeen: '2026-09-01T00:00:00Z',
     sources: [],

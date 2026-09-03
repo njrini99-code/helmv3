@@ -69,8 +69,11 @@ describe('fetchFeatureFlags', () => {
     const dates = flags.map((f) => f.created_at);
     expect([...dates].sort().reverse()).toEqual(dates);
     for (let i = 1; i < flags.length; i++) {
-      if (flags[i].created_at !== flags[i - 1].created_at) continue;
-      expect(flags[i - 1].feature_id < flags[i].feature_id).toBe(true);
+      const prev = flags[i - 1];
+      const cur = flags[i];
+      if (!prev || !cur) continue;
+      if (cur.created_at !== prev.created_at) continue;
+      expect(prev.feature_id < cur.feature_id).toBe(true);
     }
   });
 
