@@ -68,6 +68,10 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
+vi.mock('@/lib/golf/qualifier-standings', () => ({
+  updateQualifierEntryStats: vi.fn(async () => {}),
+}));
+
 let recorderShouldReject = false;
 type RecorderCall = { method: string; stepKey?: string; input?: unknown };
 let recorderCalls: RecorderCall[];
@@ -269,6 +273,67 @@ describe('submitGolfRoundComprehensive — flight recorder never fails or blocks
     // recorder activity never altered the business outcome above.
     expect(recorderCalls.some((c) => c.method === 'fail' && c.stepKey === 'db.submit_round_atomic')).toBe(true);
     expect(recorderCalls.some((c) => c.method === 'finalize' && c.stepKey === 'failure')).toBe(true);
+  });
+});
+
+describe('submitGolfRoundComprehensive — post.qualifier_transition timing', () => {
+  it('records post.qualifier_transition before the trace is finalized', async () => {
+    // post.qualifier_transition is awaited synchronously on the response-
+    // blocking path (see golf.ts's comment on the `if (effectiveQualifierId)`
+    // block), not deferred into after() like post.stats/post.coachhelm. Its
+    // start/complete calls must therefore be recorded BEFORE finalize() is
+    // called, or the trace's duration_ms silently drops this real work off
+    // the reported window. recorderCalls captures the exact ORDER these
+    // methods are invoked (not when their underlying writes resolve), which
+    // is what's under test here — no artificial delay needed.
+    const QUALIFIER_ID = 'qualifier-1';
+    tables = {
+      golf_players: [{ id: 'player-1', user_id: 'u-p1' }],
+      golf_team_members: [],
+      golf_rounds: [{
+        id: ROUND_ID,
+        player_id: 'player-1',
+        status: 'in_progress',
+        draft_data: null,
+        qualifier_id: QUALIFIER_ID,
+        qualifier_round_number: 1,
+      }],
+      golf_holes: [],
+      golf_shots: [],
+      golf_qualifiers: [{ id: QUALIFIER_ID, status: 'in_progress', num_rounds: 1 }],
+      golf_qualifier_entries: [{ id: 'entry-1', qualifier_id: QUALIFIER_ID, player_id: 'player-1' }],
+    };
+    fake = createFakeSupabase({
+      user: { id: 'u-p1' },
+      tables,
+      rpc: {
+        submit_round_atomic: async () => ({
+          data: { success: true, round_id: ROUND_ID, warnings: [] },
+          error: null,
+        }),
+      },
+    });
+
+    const result = await submitGolfRoundComprehensive(makeRoundInput(), ROUND_ID);
+
+    expect(result.success).toBe(true);
+
+    const transitionIndex = recorderCalls.findIndex(
+      (c) => (c.method === 'complete' || c.method === 'warn') && c.stepKey === 'post.qualifier_transition',
+    );
+    const finalizeIndex = recorderCalls.findIndex((c) => c.method === 'finalize');
+
+    expect(transitionIndex).toBeGreaterThanOrEqual(0);
+    expect(finalizeIndex).toBeGreaterThanOrEqual(0);
+    expect(transitionIndex).toBeLessThan(finalizeIndex);
+
+    // Guards against the failure mode this restructure could introduce if
+    // the `traceEnded` guard ever slipped: exactly one finalize call, with
+    // the correct status — not a first one at the old (wrong) spot plus a
+    // second one after the qualifier transition.
+    const finalizeCalls = recorderCalls.filter((c) => c.method === 'finalize');
+    expect(finalizeCalls).toHaveLength(1);
+    expect(finalizeCalls[0]?.stepKey).toBe('success');
   });
 });
 

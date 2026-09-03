@@ -91,7 +91,7 @@ is a second thing to keep true.
 **Shot Tracking** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/shot-tracking.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/new/**`, `src/app/golf/(dashboard)/dashboard/rounds/continue/**`, `src/app/golf/(dashboard)/dashboard/rounds/recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**` … and 13 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/new/**`, `src/app/golf/(dashboard)/dashboard/rounds/continue/**`, `src/app/golf/(dashboard)/dashboard/rounds/recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**` … and 17 more in the registry
 - **Telemetry:** none — covered by `golf_round_lifecycle`. Shot entry is instrumented as part of round_tracking; no separate FeatureKey exists. High criticality with no key of its own is a real observability limit, recorded here rather than hidden by inventing one.
 - **Incidents:** `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`, `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`, `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`, `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md`
 - **Repair units:** `confirmed-snapshot-recovery-prompt-2026-08-22` (verified_in_production)
@@ -223,7 +223,7 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/**`, `src/app/golf/admin/**`, `src/app/admin/_components/**`, `src/app/golf/admin/crm/components/**`, `src/app/api/admin/**`, `src/app/api/cron/reliability-triage/**` … and 13 more in the registry
+- **Code:** `src/app/admin/**`, `src/app/golf/admin/**`, `src/app/admin/_components/**`, `src/app/golf/admin/crm/components/**`, `src/app/api/admin/**`, `src/app/api/cron/reliability-triage/**` … and 18 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
 - **Incidents:** `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
