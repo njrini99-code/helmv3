@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Change ledger — feature_awareness_system
 
 ## 2026-09-03 — Active Contract Compiler (`npm run contract:resolve`)

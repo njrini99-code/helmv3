@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # docs/generated/contracts/
 
 This README is hand-written, not generated — only the `<feature_id>.json` and
