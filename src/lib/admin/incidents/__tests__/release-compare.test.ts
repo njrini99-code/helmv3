@@ -184,7 +184,12 @@ describe('deriveRootIncidentFacts', () => {
 
   it('applies the Truth Strip exclusions: expected recurrences and QA fixtures never count', () => {
     const incidents = [
-      incident('a', { actionable: true, lifecycle: { state: 'new', headline: '', because: [] } }),
+      incident('a', {
+        actionable: true,
+        lifecycle: { state: 'new', headline: '', because: [] },
+        affectedUsers: 2,
+        affectedUsersKnown: true,
+      }),
       incident('fixture', { actionable: true, isFixture: true, affectedUsers: 9, affectedUsersKnown: true }),
       incident('expected', {
         actionable: true,
@@ -195,7 +200,7 @@ describe('deriveRootIncidentFacts', () => {
     ];
     const result = deriveRootIncidentFacts(incidents, coverage());
     expect(result.rootIncidentCount).toBe(1);
-    expect(result.affectedUsers).toBe(incidents[0].affectedUsersKnown ? incidents[0].affectedUsers : 0);
+    expect(result.affectedUsers).toBe(2);
   });
 
   it('sums affectedUsers only across incidents whose count is KNOWN', () => {
