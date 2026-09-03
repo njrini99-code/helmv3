@@ -401,10 +401,28 @@ resolution, the atomic Supabase RPC, read-only round/hole/shot verification,
 qualifier transition, stats invalidation, and CoachHelm post-round work.
 
 The private `helm_debug` schema stores the visual tree through service-role
-facades only. The atomic RPCs additionally emit `HELM_TRACE` PostgreSQL log
-checkpoints, so Docker's optional `npm run trace:db` collector can preserve the
-last database checkpoint after a business transaction rolls back. Production
-recording remains opt-in; tracing cannot block a player save or submit.
+facades only. Until 2026-09-02, the atomic RPCs' own Postgres-side checkpoints
+(`helm_private.trace_checkpoint`, called from inside `submit_round_atomic` and
+`save_partial_round_atomic` at each substep) did exactly one thing: `RAISE LOG`
+a `HELM_TRACE` line, with nothing in production collecting Postgres logs.
+Measured that day: 1313 production trace runs, 2420 steps, zero of them
+carrying `function_name`/`table_name`/`trigger_name` -- every step ever
+recorded was written by the Server Action side, never the database side, so
+`src/app/admin/traces/trace-tree.ts` had never once rendered a Postgres-layer
+child under an RPC node. `supabase/migrations/20260902160000_postgres_checkpoints_reach_trace_steps.sql`
+(HELD, not yet applied -- see `supabase/migrations/HELD.md`) closes that: each
+checkpoint now
+also UPSERTs a fail-open, best-effort row into `helm_debug.trace_steps`
+(layer `postgres`, `function_name`/`table_name` derived from the step key),
+wrapped in its own `BEGIN...EXCEPTION WHEN OTHERS...END` so a broken insert
+can never fail or slow the round write. This does NOT make the exception path
+durable: both RPCs' own handler ends in a bare `RAISE`, so on every current
+call site an uncaught error still aborts the whole request transaction and
+discards every write made during it, including the new exception-checkpoint
+row -- `RAISE LOG` remains the only record of a failed round write that
+survives that rollback. Docker's optional `npm run trace:db` collector still
+exists for exactly that reason. Production recording remains opt-in; tracing
+cannot block a player save or submit.
 
 **The recorder is constructed before Zod, auth, and the player lookup on every
 wired action** (`savePartialRound`'s existing-round AND no-id/new-round

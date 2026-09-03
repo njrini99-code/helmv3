@@ -162,18 +162,18 @@ function environmentForTrace(value: string | undefined): string {
  * only guards against a REJECTION; a hang that never settles at all would
  * still block the caller forever without this.
  *
- * Lowered from 1500ms to 500ms (2026-09-02, flight-recorder real-timings
- * reviewer fix): the real-per-stage-timing refit moved recorder construction
- * — which awaits this bounded write — BEFORE any business logic in
- * `deleteShot`, `updateShot`, and `savePartialRound`'s new-round branch (it
- * already led `submitGolfRoundComprehensive`). A hung `helm_debug` write now
- * stalls the start of every one of those actions, not only submit, and
- * exactly during the mid-incident window described above — when a player
- * can least afford extra latency on a shot edit or autosave. 500ms is still
- * generous for a healthy same-region Supabase RPC (typically tens of ms) and
- * caps the worst case those newly-affected call sites can add.
+ * The default stays at 1500ms for `submitGolfRoundComprehensive` and
+ * `savePartialRound` (the same bound main shipped with). The real-per-stage-
+ * timing refit (2026-09-02) moved recorder construction — which awaits this
+ * bounded write — BEFORE any business logic in `deleteShot` and `updateShot`
+ * too, paths that previously paid nothing for the recorder. Those two shot
+ * workflows therefore pass `startTimeoutMs: 300` explicitly (see
+ * `StartHelmFlightRecorderInput.startTimeoutMs`): a hung `helm_debug` write
+ * can add at most 300ms to a shot edit, while a submit or autosave keeps the
+ * longer bound so a slow-but-alive trace store still gets its run row during
+ * the incidents traces exist for.
  */
-export const PERSIST_START_TIMEOUT_MS = 500;
+export const PERSIST_START_TIMEOUT_MS = 1500;
 
 /**
  * Resolves 'settled' once `promise` settles, or 'timeout' after `ms` —
