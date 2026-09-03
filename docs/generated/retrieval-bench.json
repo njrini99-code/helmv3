@@ -1,0 +1,304 @@
+{
+  "goldSet": {
+    "schema_version": "1.0.0",
+    "frozen_at": "2026-09-02",
+    "frozen_against_commit": "c34aa936e"
+  },
+  "perTask": [
+    {
+      "id": "INC-2026-08-22-end-date-closed-qualifier-early",
+      "gold_feature": "qualifiers",
+      "predicted_features": [
+        "golf_round_lifecycle"
+      ],
+      "feature_recall_hit": false,
+      "wrong_features": [
+        "golf_round_lifecycle"
+      ],
+      "gold_file_recall": 0.5,
+      "gold_files_total": 2,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 45000,
+      "total_feature_doc_chars": 45000,
+      "included_doc_count": 12,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-26-error-rate-hourly-never-written",
+      "gold_feature": "admin_platform",
+      "predicted_features": [
+        "admin_platform",
+        "team_access_control"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [
+        "team_access_control"
+      ],
+      "gold_file_recall": 0.6666666666666666,
+      "gold_files_total": 3,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 23255,
+      "total_feature_doc_chars": 78255,
+      "included_doc_count": 19,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback",
+      "gold_feature": "golf_round_lifecycle",
+      "predicted_features": [
+        "golf_round_lifecycle",
+        "qualifiers",
+        "shot_tracking"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [
+        "qualifiers"
+      ],
+      "gold_file_recall": 0,
+      "gold_files_total": 2,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 15000,
+      "total_feature_doc_chars": 65000,
+      "included_doc_count": 16,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-30-account-deletion-still-cascades-golf-history",
+      "gold_feature": "golf_round_lifecycle",
+      "predicted_features": [],
+      "feature_recall_hit": false,
+      "wrong_features": [],
+      "gold_file_recall": 0,
+      "gold_files_total": 6,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 0,
+      "included_doc_count": 3,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-25-recap-persist-schema-permission",
+      "gold_feature": "golf_round_lifecycle",
+      "predicted_features": [
+        "team_access_control"
+      ],
+      "feature_recall_hit": false,
+      "wrong_features": [
+        "team_access_control"
+      ],
+      "gold_file_recall": 1,
+      "gold_files_total": 3,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 38255,
+      "total_feature_doc_chars": 38255,
+      "included_doc_count": 11,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge",
+      "gold_feature": "admin_platform",
+      "predicted_features": [],
+      "feature_recall_hit": false,
+      "wrong_features": [],
+      "gold_file_recall": 0,
+      "gold_files_total": 4,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 0,
+      "included_doc_count": 3,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-22-delete-shot-stale-id",
+      "gold_feature": "shot_tracking",
+      "predicted_features": [
+        "golf_round_lifecycle",
+        "qualifiers",
+        "shot_tracking"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [
+        "qualifiers"
+      ],
+      "gold_file_recall": 0,
+      "gold_files_total": 3,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 15000,
+      "total_feature_doc_chars": 65000,
+      "included_doc_count": 16,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-22-confirmed-snapshot-recovery-prompt",
+      "gold_feature": "shot_tracking",
+      "predicted_features": [],
+      "feature_recall_hit": false,
+      "wrong_features": [],
+      "gold_file_recall": 0,
+      "gold_files_total": 2,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 0,
+      "included_doc_count": 3,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-22-partial-save-round-deletion",
+      "gold_feature": "shot_tracking",
+      "predicted_features": [
+        "golf_round_lifecycle",
+        "qualifiers",
+        "shot_tracking"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [
+        "qualifiers"
+      ],
+      "gold_file_recall": 0,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 15000,
+      "total_feature_doc_chars": 65000,
+      "included_doc_count": 16,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-25-atomic-snapshot-hole-mismatch",
+      "gold_feature": "shot_tracking",
+      "predicted_features": [
+        "team_access_control"
+      ],
+      "feature_recall_hit": false,
+      "wrong_features": [
+        "team_access_control"
+      ],
+      "gold_file_recall": 1,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 38255,
+      "total_feature_doc_chars": 38255,
+      "included_doc_count": 11,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-25-completed-round-sg-capability",
+      "gold_feature": "golf_round_lifecycle",
+      "predicted_features": [
+        "team_access_control"
+      ],
+      "feature_recall_hit": false,
+      "wrong_features": [
+        "team_access_control"
+      ],
+      "gold_file_recall": 1,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 38255,
+      "total_feature_doc_chars": 38255,
+      "included_doc_count": 11,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    }
+  ],
+  "aggregate": {
+    "task_count": 11,
+    "feature_recall": 0.36363636363636365,
+    "wrong_feature_rate": 0.7272727272727273,
+    "gold_file_recall": 0.37878787878787873,
+    "gold_file_recall_sample_size": 11,
+    "recall_at_5_full": 0.18181818181818182,
+    "recall_at_10_full": 0.18181818181818182,
+    "recall_at_5_feature_docs_only": 0.18181818181818182,
+    "recall_at_10_feature_docs_only": 0.18181818181818182,
+    "irrelevant_token_rate": 0.5265807583945314,
+    "stale_context_rate": 0,
+    "historical_analogue_retrieval_rate": 0
+  }
+}
