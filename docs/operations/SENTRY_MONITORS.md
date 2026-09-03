@@ -526,4 +526,4 @@ views. There is no separate cleanup needed for the alert-rule id.
 > legacy API"). To change a metric detector's query: `POST /alert-rules/` a new
 > rule (creates a detector + an auto workflow), `PUT` the new detector's
 > `workflowIds` to the shared owner-notify workflow, `DELETE` the auto workflow,
-> then `DELETE` the old detector. 2026-09-03: 9711170 → 9712025 this way.
+> then `DELETE` the old detector. 2026-09-03: 9711170 → 9711646 → 9712025 this way; the final query `feature:golf_round_lifecycle` is what Phase C's flight-recorder finalize emits (`recordWorkflow({ feature: 'golf_round_lifecycle', action: <workflow> })` for `golf.round.submit`, `golf.round.autosave`, `golf.shot.delete`, `golf.shot.add_or_edit`).
