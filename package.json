@@ -24,6 +24,7 @@
     "coachhelm:regen": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/regen-coachhelm-from-corrected-stats.ts",
     "control-plane:verify": "node scripts/control-plane-verify.mjs",
     "control-plane:verify:static": "node scripts/control-plane-verify.mjs --static",
+    "contract:resolve": "node scripts/contracts/resolve.mjs",
     "db:drift:check": "node scripts/db/check-supabase-drift.mjs",
     "db:ledger-drift": "node scripts/db/migration-ledger-drift.mjs",
     "db:types": "bash scripts/gen-db-types.sh",
