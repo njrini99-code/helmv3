@@ -24,11 +24,16 @@ import type { StateTone } from '@/lib/admin/incidents/types';
  *  place on the page that must resolve to ONE word, not a per-source matrix. */
 export type PostureTone = 'healthy' | 'degraded' | 'critical' | 'unknown';
 
-export const POSTURE_TONE_STATE_TONE: Readonly<Record<PostureTone, StateTone>> = {
+/** `unknown` maps to the literal `'unknown'`, not `StateTone`'s `'neutral'`
+ *  — `PosturePill`'s own `tone` prop is `StateTone | 'unknown'` precisely so
+ *  a truly-unread posture renders its hatched `UnknownValue` treatment
+ *  instead of a plain gray pill indistinguishable from "nothing to report".
+ *  Folding this case into `'neutral'` here would silently defeat that. */
+export const POSTURE_TONE_STATE_TONE: Readonly<Record<PostureTone, StateTone | 'unknown'>> = {
   healthy: 'success',
   degraded: 'warning',
   critical: 'danger',
-  unknown: 'neutral',
+  unknown: 'unknown',
 };
 
 /** Orbit node identity — the brief's §11 list (6-9 major nodes), fixed and

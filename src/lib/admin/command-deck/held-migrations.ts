@@ -4,19 +4,19 @@
  * `decisions.ts` stays 100% pure and importable from a vitest node
  * environment with no filesystem dependency.
  *
- * KNOWN GAP, stated rather than hidden: this repo has no
- * `outputFileTracingIncludes` entry for `supabase/migrations/HELD.md` in
- * `next.config.mjs`, and Next.js's production output file tracing only
- * bundles files it can see imported or explicitly included — a plain markdown
- * file read via `fs` at runtime is not guaranteed to ship with a Vercel
- * serverless function. This was NOT verified against a real build (the
- * worktree gate rules for this task explicitly exclude `npm run build`), so
- * this function is written to degrade safely rather than assumed to work:
- * ANY read failure (ENOENT included) returns `null`, and
- * `buildDecisionInbox` already treats `heldMigrations: null` as
- * `readable: false`, not as an empty, all-clear list. If a production HELD.md
- * read starts failing, the fix is a `next.config.mjs` `outputFileTracingIncludes`
- * entry for `supabase/migrations/HELD.md`, not a change to this file's shape.
+ * `next.config.mjs` carries an `outputFileTracingIncludes` entry for
+ * `/admin` -> `supabase/migrations/HELD.md` so Vercel's output file tracing
+ * ships this plain markdown file with the serverless function even though
+ * nothing here `import`s it. That entry was NOT verified against a real
+ * Vercel build (the worktree gate rules for this task explicitly exclude
+ * `npm run build` — disk-space constrained; CI's `next-build` job is the
+ * first real check of it). So this function still degrades safely rather
+ * than trusting the tracing entry: ANY read failure (ENOENT included)
+ * returns `null`, and `buildDecisionInbox` already treats
+ * `heldMigrations: null` as `readable: false`, not as an empty, all-clear
+ * list. If a production HELD.md read ever fails despite the tracing entry,
+ * re-check the glob in `next.config.mjs` first — this file's shape is
+ * already correct for either outcome.
  */
 
 import 'server-only';

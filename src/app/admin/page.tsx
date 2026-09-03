@@ -13,7 +13,7 @@ import {
 import { fetchTriageQueue } from '@/lib/admin/data/triage';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
-import { fetchBriefing } from '@/lib/admin/data/briefing';
+import { cachedBriefing } from '@/lib/admin/data/briefing';
 import { AdminStatusBanner } from './_components/AdminStatusBanner';
 import { KpiTile } from './_components/KpiTile';
 import { KpiSourceNote } from './_components/KpiSourceNote';
@@ -29,7 +29,7 @@ import { ADMIN_COMMAND_SHORTCUTS } from './_components/admin-nav';
 import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
 import { buildTruthStrip } from '@/lib/admin/incidents/truth-strip';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
-import { fetchDeployFreshness } from '@/lib/admin/deploy-freshness';
+import { cachedDeployFreshness } from '@/lib/admin/deploy-freshness';
 import { cachedSelfHealBoard } from '@/lib/admin/data/selfheal';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { TruthStrip } from './_components/TruthStrip';
@@ -555,7 +555,7 @@ async function MissionTruthStrip() {
   const [board, loop, deploy] = await Promise.all([
     cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
     cachedSelfHealBoard(),
-    fetchDeployFreshness(),
+    cachedDeployFreshness(),
   ]);
 
   const now = Date.now();
@@ -658,7 +658,7 @@ async function AttentionPanel() {
   const [board, loop, briefing] = await Promise.all([
     cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS),
     cachedSelfHealBoard(),
-    fetchBriefing(),
+    cachedBriefing(),
   ]);
   const now = Date.now();
   const stages = loop.status === 'ok' ? (loop.data?.stages ?? []) : [];

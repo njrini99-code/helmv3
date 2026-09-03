@@ -89,6 +89,37 @@ describe('derivePostureSentence', () => {
     expect(result.headline).not.toMatch(/Production healthy/);
   });
 
+  it('REGRESSION: self-heal board unreadable, nothing else flagged -> tone unknown, never healthy (previously only evidenceBlind/canClaimAllClear were checked, so this exact combination fell through to "healthy")', () => {
+    const result = derivePostureSentence(
+      baseInput({
+        // Every OTHER input says "all clear" — canClaimAllClear true,
+        // evidence not blind, no attention row — the old code returned
+        // 'healthy' here purely because it never looked at selfHealActing.
+        canClaimAllClear: true,
+        evidenceBlind: false,
+        topAttention: null,
+        selfHealActing: null,
+      }),
+    );
+    expect(result.tone).toBe('unknown');
+    expect(result.tone).not.toBe('healthy');
+    expect(result.headline).not.toMatch(/Production healthy/);
+  });
+
+  it('REGRESSION: release-watch unreadable, nothing else flagged -> tone unknown, never healthy', () => {
+    const result = derivePostureSentence(
+      baseInput({
+        canClaimAllClear: true,
+        evidenceBlind: false,
+        topAttention: null,
+        selfHealActing: false,
+        releaseWatch: 'unknown',
+      }),
+    );
+    expect(result.tone).toBe('unknown');
+    expect(result.tone).not.toBe('healthy');
+  });
+
   it('decision inbox unreadable: decisionCount null -> "Decisions unknown", never a fabricated calm "No decisions" claim', () => {
     const result = derivePostureSentence(baseInput({ decisionCount: null }));
     expect(result.headline).toContain('Decisions unknown');

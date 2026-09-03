@@ -32,7 +32,7 @@ describe('SystemOrbit', () => {
     expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
   });
 
-  it('the SVG carries an accessible label naming every node and its state', () => {
+  it('the SVG is a labeled group (not role="img") naming every node and its state, since it holds real focusable links', () => {
     const snapshot = buildSystemOrbit({
       incidents: [],
       freshness: freshnessRows(),
@@ -44,7 +44,12 @@ describe('SystemOrbit', () => {
       now: NOW,
     });
     render(<SystemOrbit snapshot={snapshot} />);
-    const img = screen.getByRole('img', { name: /Helm System Orbit/ });
-    expect(img.getAttribute('aria-label')).toContain('Realtime Unknown');
+    // role="img" would assert every descendant is flattened, non-interactive
+    // content, which is false here (each linked node is a real `<a>`) — so
+    // this must resolve as an accessible GROUP, not an image.
+    const group = screen.getByRole('group', { name: /Helm System Orbit/ });
+    expect(group.tagName.toLowerCase()).toBe('svg');
+    expect(screen.queryByRole('img', { name: /Helm System Orbit/ })).toBeNull();
+    expect(screen.getByText(/Realtime Unknown/, { selector: 'title' })).toBeInTheDocument();
   });
 });

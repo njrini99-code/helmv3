@@ -29,6 +29,8 @@
 // the network read lives in `fetchDeployFreshness` and fails soft to `unknown`.
 // =============================================================================
 
+import { cache } from 'react';
+
 export interface DeployFreshnessInput {
   /** Sha production is serving. `undefined` when it cannot be determined. */
   deployedSha: string | undefined;
@@ -168,3 +170,14 @@ export async function fetchDeployFreshness(now: Date = new Date()): Promise<Depl
     return classifyDeployFreshness({ deployedSha: undefined, behindBy: null, deployedAt: null, now });
   }
 }
+
+/** React `cache()`-memoised per request — same convention as
+ *  `cachedIncidentBoard`/`cachedSelfHealBoard`. `/admin`'s `page.tsx` and the
+ *  Command Deck (`CommandDeck.tsx`) both call this within the SAME request;
+ *  every real call site (both of those, plus the admin-digest cron route)
+ *  calls with either zero arguments or an explicit `now` it computed itself
+ *  — the cron route runs in its own separate request, so its explicit `now`
+ *  never collides with this memo. Both `/admin` call sites pass zero
+ *  arguments, so within that one request the memo key never varies and the
+ *  redundant GitHub API round trip is what this removes. */
+export const cachedDeployFreshness = cache((now?: Date) => fetchDeployFreshness(now));

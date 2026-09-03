@@ -89,6 +89,15 @@ function derivePostureTone(input: PostureInput): PostureTone {
   if (input.evidenceBlind || !input.canClaimAllClear) {
     return input.evidenceBlind ? 'unknown' : 'degraded';
   }
+  // Nothing is flagged in the attention queue and the incident board can
+  // claim all-clear — but that claim is about incidents only. An unreadable
+  // self-heal board, or a release-relationship verdict that never resolved,
+  // are independent evidence gaps the all-clear claim does not cover. Either
+  // one still blind means the honest tone is 'unknown', never 'healthy':
+  // "nothing is wrong" and "we could not check" are different claims.
+  if (input.selfHealActing === null || input.releaseWatch === 'unknown') {
+    return 'unknown';
+  }
   return 'healthy';
 }
 

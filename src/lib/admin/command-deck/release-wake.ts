@@ -32,6 +32,11 @@ export interface WakeIncidentEntry {
   severity: UnifiedIncident['severity'];
   relationship: ReleaseRelationship;
   affectedUsers: number;
+  /** False when the source incident's own affected-user count is unread —
+   *  `affectedUsers` is `0` in that case for display purposes only, and
+   *  must never be folded into a confirmed total (see `userImpact` lane
+   *  below: any entry with this `false` forces the whole lane `unknown`). */
+  affectedUsersKnown: boolean;
 }
 
 export interface WakeLane {
@@ -111,6 +116,7 @@ export function buildReleaseWake(input: BuildReleaseWakeInput): ReleaseWakeSnaps
       severity: incident.severity,
       relationship: verdict.relationship,
       affectedUsers: incident.affectedUsersKnown ? incident.affectedUsers : 0,
+      affectedUsersKnown: incident.affectedUsersKnown,
     };
   });
 
@@ -134,6 +140,11 @@ export function buildReleaseWake(input: BuildReleaseWakeInput): ReleaseWakeSnaps
     return incident !== undefined && SQLSTATE_RE.test(incident.errorCode ?? '');
   });
   const userImpactTotal = sinceDeploy.reduce((sum, e) => sum + e.affectedUsers, 0);
+  // A total is only ever as confirmed as its worst-known addend: one
+  // since-deploy incident with an unread affected-user count means the sum
+  // above silently substituted 0 for it, so the LANE must say "unknown",
+  // never present that substitution as a confirmed count.
+  const userImpactUnknown = sinceDeploy.some((e) => !e.affectedUsersKnown);
 
   return {
     releaseSha: input.releaseSha,
@@ -143,7 +154,12 @@ export function buildReleaseWake(input: BuildReleaseWakeInput): ReleaseWakeSnaps
     incidents: sinceDeploy,
     lanes: {
       incidents: deployedAtMs === null ? unknownLane('Release deploy time unknown') : knownLane(newIncidentsCount),
-      userImpact: deployedAtMs === null ? unknownLane('Release deploy time unknown') : knownLane(userImpactTotal),
+      userImpact:
+        deployedAtMs === null
+          ? unknownLane('Release deploy time unknown')
+          : userImpactUnknown
+            ? unknownLane('One or more since-deploy incidents have an unread affected-user count')
+            : knownLane(userImpactTotal),
       databaseErrors:
         deployedAtMs === null ? unknownLane('Release deploy time unknown') : knownLane(databaseErrorEntries.length),
       latency: unknownLane('Query Pulse (brief §37) is not wired yet'),

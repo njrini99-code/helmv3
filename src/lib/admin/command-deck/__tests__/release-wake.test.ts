@@ -62,6 +62,30 @@ describe('buildReleaseWake', () => {
     expect(result.lanes.incidents.count).toBe(0);
   });
 
+  it('REGRESSION: an unknown affected-user count on a since-deploy incident makes the userImpact lane unknown, never a fabricated total (previously summed unknown counts as 0 and reported a confirmed clean number)', () => {
+    const unknownImpact = incident('unk-1', {
+      firstSeen: new Date(DEPLOY_AT + 3600_000).toISOString(),
+      lastSeen: new Date(DEPLOY_AT + 3600_000).toISOString(),
+      affectedUsers: 0,
+      affectedUsersKnown: false,
+    });
+    const result = buildReleaseWake(baseInput({ incidents: [unknownImpact] }));
+    expect(result.lanes.userImpact.unknown).toBe(true);
+    expect(result.lanes.userImpact.count).toBe(0);
+  });
+
+  it('a known affected-user count on a since-deploy incident still produces a confirmed userImpact total', () => {
+    const knownImpact = incident('known-1', {
+      firstSeen: new Date(DEPLOY_AT + 3600_000).toISOString(),
+      lastSeen: new Date(DEPLOY_AT + 3600_000).toISOString(),
+      affectedUsers: 7,
+      affectedUsersKnown: true,
+    });
+    const result = buildReleaseWake(baseInput({ incidents: [knownImpact] }));
+    expect(result.lanes.userImpact.unknown).toBe(false);
+    expect(result.lanes.userImpact.count).toBe(7);
+  });
+
   it('latency and invariants lanes are always honestly unknown — no read model backs them yet', () => {
     const result = buildReleaseWake(baseInput());
     expect(result.lanes.latency.unknown).toBe(true);

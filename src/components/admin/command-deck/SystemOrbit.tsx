@@ -93,15 +93,27 @@ function OrbitNodeGlyph({ node, index, total }: { node: OrbitNode; index: number
   );
 }
 
+const ORBIT_TITLE_ID = 'helm-system-orbit-title';
+
 function OrbitSvg({ snapshot }: { snapshot: OrbitSnapshot }) {
   const total = snapshot.nodes.length;
   return (
     <svg
       viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
-      role="img"
-      aria-label={`Helm System Orbit: ${snapshot.nodes.map((n) => `${n.label} ${n.stateWord}`).join(', ')}`}
+      // `role="img"` asserts every descendant is flattened, non-interactive
+      // content — false here, since each node with an `href` renders a real
+      // focusable `<a>` (its own `aria-label` below). `role="group"` with
+      // `aria-labelledby` names the collection as a whole while leaving each
+      // link individually reachable and labeled by assistive tech, instead
+      // of an `<svg role="img">` that either hides the links entirely or
+      // announces them inconsistently depending on the screen reader.
+      role="group"
+      aria-labelledby={ORBIT_TITLE_ID}
       className="mx-auto h-auto w-full max-w-[420px]"
     >
+      <title id={ORBIT_TITLE_ID}>
+        {`Helm System Orbit: ${snapshot.nodes.map((n) => `${n.label} ${n.stateWord}`).join(', ')}`}
+      </title>
       {/* Thin dependency lines from each node to the hub — "thin line = known
           dependency" (brief §4). Deliberately not brightened per-incident yet
           (that needs incident-selection state, out of Phase 2's scope). */}

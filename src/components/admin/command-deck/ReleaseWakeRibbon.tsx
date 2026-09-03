@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import type { ReleaseWakeSnapshot } from '@/lib/admin/command-deck/release-wake';
-import { ReleaseWatchPosturePill } from '@/components/admin/premium';
+import { ReleaseWatchPosturePill, UnknownInline } from '@/components/admin/premium';
 
 function formatSha(sha: string | null): string {
   return sha ? sha.slice(0, 7) : 'unknown SHA';
@@ -15,14 +14,18 @@ function formatAge(ageHours: number | null): string {
 }
 
 function Lane({ label, lane, href }: { label: string; lane: ReleaseWakeSnapshot['lanes']['incidents']; href?: string }) {
-  const value = lane.unknown ? '—' : lane.count;
   const content = (
     <div className="flex min-w-[92px] flex-col items-center gap-0.5 rounded-lg bg-surface-sunken px-2.5 py-2">
       <span className="text-eyebrow uppercase text-warm-500">{label}</span>
-      <span className={cn('font-fw-mono text-lg tabular-nums', lane.unknown ? 'text-warm-400' : 'text-warm-900')}>
-        {value}
-      </span>
-      {lane.unknown ? <span className="text-center text-caption leading-tight text-warm-400">unknown</span> : null}
+      {lane.unknown ? (
+        // Same shared "unknown" treatment as every other Bridge Premium
+        // surface (`UnknownInline`, `premium/UnknownValue.tsx`) — a
+        // hand-rolled muted `text-warm-400` count here would let this one
+        // lane drift from the rest of the page's unknown vocabulary.
+        <UnknownInline reason={lane.unknownReason} />
+      ) : (
+        <span className="font-fw-mono text-lg tabular-nums text-warm-900">{lane.count}</span>
+      )}
     </div>
   );
   if (!href || lane.unknown) return content;
