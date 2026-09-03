@@ -221,6 +221,45 @@ describe('collectVercel — build failures only, which Sentry cannot see', () =>
     expect(result.status).toBe('blind');
     expect(result.signals).toEqual([]);
   });
+
+  it('classifies a CANCELED preview deployment as info, not a problem', async () => {
+    vi.mocked(fetchVercelDeployments).mockResolvedValue({
+      status: 'ok',
+      data: [
+        { uid: 'dep-canceled-preview', state: 'CANCELED', createdAt: 1756170000000, target: 'preview' },
+      ] as never,
+      fetchedAt: '2026-08-26T02:00:00.000Z',
+    });
+    const result = await collectVercel(ANY_WINDOW);
+    expect(result.signals).toHaveLength(1);
+    expect(result.signals[0]!.severity).toBe('info');
+  });
+
+  it('classifies a CANCELED deployment with no target the same as a non-production one', async () => {
+    vi.mocked(fetchVercelDeployments).mockResolvedValue({
+      status: 'ok',
+      data: [
+        { uid: 'dep-canceled-null-target', state: 'CANCELED', createdAt: 1756170000000, target: null },
+      ] as never,
+      fetchedAt: '2026-08-26T02:00:00.000Z',
+    });
+    const result = await collectVercel(ANY_WINDOW);
+    expect(result.signals).toHaveLength(1);
+    expect(result.signals[0]!.severity).toBe('info');
+  });
+
+  it('still escalates a CANCELED production deployment', async () => {
+    vi.mocked(fetchVercelDeployments).mockResolvedValue({
+      status: 'ok',
+      data: [
+        { uid: 'dep-canceled-prod', state: 'CANCELED', createdAt: 1756170000000, target: 'production' },
+      ] as never,
+      fetchedAt: '2026-08-26T02:00:00.000Z',
+    });
+    const result = await collectVercel(ANY_WINDOW);
+    expect(result.signals).toHaveLength(1);
+    expect(result.signals[0]!.severity).toBe('warning');
+  });
 });
 
 // ---------------------------------------------------------------------------

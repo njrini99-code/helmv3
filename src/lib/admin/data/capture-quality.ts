@@ -49,6 +49,11 @@ export const CAPTURE_FIELD_LABEL: Readonly<Record<CaptureField, string>> = {
 export interface CaptureFieldCoverage {
   field: CaptureField;
   present: number;
+  /**
+   * This field's own denominator. Equal to `CaptureQualityReport.rows` for
+   * every field except 'user', which excludes cron/system rows that could
+   * never have carried a user_id — see `SELF_REFERENTIAL_SOURCES`.
+   */
   total: number;
   /**
    * Present as a fraction of total. Null when total is 0 — never coerced to
@@ -69,7 +74,12 @@ export interface CaptureQualityWeakSource {
 
 export interface CaptureQualityReport {
   fields: CaptureFieldCoverage[];
-  /** Rows analysed. The denominator every ratio above is computed against. */
+  /**
+   * Rows analysed. The denominator every field's ratio is computed against —
+   * EXCEPT 'user': that field carries its own smaller `total`, excluding
+   * cron/system rows that could never have carried a user_id. See
+   * `CaptureFieldCoverage.total` and `SELF_REFERENTIAL_SOURCES`.
+   */
   rows: number;
   windowHours: number;
   /** Emitters (grouped by `source`) with the WEAKEST capture, worst first. */
@@ -100,6 +110,33 @@ function presentFields(row: AppTriageEventRow): ReadonlySet<CaptureField> {
 const WEAKEST_SOURCES_LIMIT = 5;
 
 /**
+ * Rows written by a cron/machine writer, never by a request a human made.
+ *
+ * `job-log.ts`'s `recordJobRun` writes `source: 'cron'` on every `Cron
+ * failed: <jobType>` row — including the reliability collector's own —  and
+ * `deploy-marker.ts` writes `source: 'system'` (though a deploy marker is
+ * `event_type: 'deploy'`, already outside `queryAppErrorEvents`'s
+ * `event_type='error'` filter, so it never actually reaches this analyser;
+ * kept here anyway so the set states the whole self-referential vocabulary
+ * in one place rather than only the half that happens to matter today).
+ * `rca_analysis` rows are excluded the same way, structurally, by that same
+ * upstream `event_type='error'` filter — no separate check is needed for
+ * them here, and adding one would be a guard that can never fire.
+ *
+ * These rows are real, correctly-instrumented errors — a cron failure
+ * legitimately carries an error code, a stack, a route, an action — so they
+ * stay in `rows` and every other field's denominator. Only 'user' is
+ * structurally impossible for them: a cron invocation has no session to
+ * resolve a user from, so counting them against 'user' coverage blames a
+ * call site for something no call site could ever do.
+ */
+const SELF_REFERENTIAL_SOURCES: ReadonlySet<string> = new Set(['cron', 'system']);
+
+function isSelfReferentialRow(row: AppTriageEventRow): boolean {
+  return typeof row.source === 'string' && SELF_REFERENTIAL_SOURCES.has(row.source);
+}
+
+/**
  * PURE. No I/O, no clock beyond the injected `now` — everything the caller
  * needs to reproduce a report byte-for-byte in a test.
  */
@@ -118,26 +155,42 @@ export function analyzeCaptureQuality(
 
   const presentCounts = new Map<CaptureField, number>(CAPTURE_FIELDS.map((f) => [f, 0]));
   const sourceStats = new Map<string, { rows: number; missing: number; sampleTitle: string }>();
+  // The 'user' field's own denominator — a SUBSET of `scoped`, never the
+  // full `scoped.length` every other field uses. See
+  // `SELF_REFERENTIAL_SOURCES` above.
+  let userEligibleCount = 0;
 
   for (const row of scoped) {
     const present = presentFields(row);
+    const userEligible = !isSelfReferentialRow(row);
+    if (userEligible) userEligibleCount += 1;
+
     for (const field of CAPTURE_FIELDS) {
+      if (field === 'user' && !userEligible) continue;
       if (present.has(field)) {
         presentCounts.set(field, (presentCounts.get(field) ?? 0) + 1);
       }
     }
 
+    // A self-referential row is never "missing" credit for the one field it
+    // could never have carried — its weakest-emitter score reflects only the
+    // fields it was actually eligible to capture.
+    const eligibleFieldCount = userEligible ? CAPTURE_FIELDS.length : CAPTURE_FIELDS.length - 1;
+    const presentAmongEligible = userEligible
+      ? present.size
+      : present.size - (present.has('user') ? 1 : 0);
     const sourceKey = row.source ?? 'unknown';
     const stats = sourceStats.get(sourceKey) ?? { rows: 0, missing: 0, sampleTitle: row.title };
     stats.rows += 1;
-    stats.missing += CAPTURE_FIELDS.length - present.size;
+    stats.missing += eligibleFieldCount - presentAmongEligible;
     sourceStats.set(sourceKey, stats);
   }
 
   const total = scoped.length;
   const fields: CaptureFieldCoverage[] = CAPTURE_FIELDS.map((field) => {
     const present = presentCounts.get(field) ?? 0;
-    return { field, present, total, ratio: total === 0 ? null : present / total };
+    const fieldTotal = field === 'user' ? userEligibleCount : total;
+    return { field, present, total: fieldTotal, ratio: fieldTotal === 0 ? null : present / fieldTotal };
   });
 
   const weakestSources: CaptureQualityWeakSource[] = Array.from(sourceStats.entries())

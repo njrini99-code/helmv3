@@ -59,6 +59,7 @@ function incident(
     klass: 'defect',
     actionable: true,
     klassReason: 'r',
+    isFixture: false,
     analysis: null,
     repair: null,
     deployProof: null,
@@ -83,6 +84,10 @@ function board(): UnifiedIncident[] {
     incident({ id: 'repairable', state: 'repairable' }),
     incident({ id: 'evidence', state: 'needs-evidence' }),
     incident({ id: 'regressed', state: 'regressed' }),
+    // Catalogued defect (e): recurred after a resolution, but the latest
+    // analysis already found `not-a-defect` — expected noise, counted apart
+    // from 'regressions'.
+    incident({ id: 'noise', state: 'expected-recurrence' }),
     incident({ id: 'proof', state: 'awaiting-proof', proofGaps: [gap('awaiting-traffic')] }),
     incident({ id: 'closed', state: 'resolved' }),
     incident({ id: 'expected', state: 'not-a-defect', actionable: false }),
@@ -132,6 +137,27 @@ describe('lens membership', () => {
 
   it('all includes everything, including non-defects', () => {
     expect(applyLens(board(), 'all')).toHaveLength(board().length);
+  });
+
+  it("a QA fixture round stays actionable/true (visible in the default feed) but never counts in the 'actionable' lens", () => {
+    const fixture = incident({ id: 'fixture', state: 'new', isFixture: true, actionable: true });
+    const ids = applyLens([...board(), fixture], 'actionable').map((i) => i.id);
+    expect(ids).not.toContain('fixture');
+    // Still visible under 'all' — the badge exists to be seen, not hidden.
+    const allIds = applyLens([...board(), fixture], 'all').map((i) => i.id);
+    expect(allIds).toContain('fixture');
+  });
+
+  it("expected-recurrence lands in its own lens, never in 'regressions' or 'actionable'", () => {
+    const regressionIds = applyLens(board(), 'regressions').map((i) => i.id);
+    expect(regressionIds).toContain('regressed');
+    expect(regressionIds).not.toContain('noise');
+
+    const noiseIds = applyLens(board(), 'expected-recurrence').map((i) => i.id);
+    expect(noiseIds).toEqual(['noise']);
+
+    const actionableIds = applyLens(board(), 'actionable').map((i) => i.id);
+    expect(actionableIds).not.toContain('noise');
   });
 
   it('a blind-only source does not count as an observation for the reliability lens', () => {

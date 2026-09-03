@@ -157,6 +157,31 @@ them would have broken those routes, not the dead one.
   incident reappear — the correct failure direction for a feature whose job is
   hiding things. `reopened_count` survives a re-resolve, so "fixed three times
   already" cannot be laundered.
+- **A regression whose analysis already says NOT A DEFECT is expected
+  recurrence, not a regression.** `deriveLifecycle` rule 1
+  (`src/lib/admin/incidents/lifecycle.ts`) checks `analysis?.category ===
+  'not-a-defect'` before returning `'regressed'` — the analysis already
+  explained why this fingerprint fires (e.g. an access denial that is
+  SUPPOSED to keep happening), so its recurrence is not new information and
+  must not re-alarm an operator with the single loudest signal this system
+  produces. Lands in the dedicated `'expected-recurrence'` lifecycle state
+  (`INCIDENT_LIFECYCLE_STATES`) instead — distinct from the pre-existing
+  `'not-a-defect'` state, which is the classifier's verdict (`!actionable`)
+  and never had a resolution to regress from in the first place; keeping
+  them separate lets a lens count "this specifically recurred after being
+  fixed" apart from "this was never a defect". Neutral tone, not danger; not
+  in `NEEDS_ATTENTION_STATES` (so the REGRESSION-specific alarm is gone);
+  treated as `offLoop('done', …)` by `selfheal-flow.ts`, same as
+  `not-a-defect`; excluded from the `actionable` lens and the Truth Strip's
+  `actionable` count, same as `not-a-defect`. The `regressions` lens
+  (`incident.lifecycle.state === 'regressed'`) needed no change — the state
+  itself no longer produces `'regressed'` for these, so the exclusion is
+  automatic — and a new `expected-recurrence` lens counts them apart.
+  **It IS still in `attention.ts`'s `UNRESOLVED_STATES`**, deliberately unlike
+  `not-a-defect` — an LLM-authored "NOT A DEFECT" `suggestedFix` string must
+  never be able to silence a CRITICAL, still-unresolved fault outright; only
+  the specific "this is a regression" alarm it was wrong about is what goes
+  quiet. Rule 2 (critical) still fires for one, same as any other open state.
 - **Auto-resolution requires a production DEPLOY after the last occurrence, not
   merely silence.** A nightly cron is silent 23 hours a day and a seasonal
   feature for months. When the deploy timestamp is unreadable, nothing is
@@ -307,6 +332,41 @@ them would have broken those routes, not the dead one.
   succeeded — a short trace is not a failed one, and a combined "46 problems"
   figure would be false. `trace-fleet.ts` counts them separately;
   `stepCoverage` returns null rather than inventing a denominator.
+- **A Sentry rate limit gets one honoured retry before it counts as blind.**
+  `fetchSentryIssues` (`src/lib/admin/sentry-api.ts`) waits out the 429's
+  `Retry-After` (capped at 30s; a sane default when the header is absent)
+  and retries exactly once. If the retry also fails, the envelope is marked
+  `degraded: true` rather than a bare error. The Reliability tab's
+  `SourceStatus` (`src/lib/reliability/types.ts`) carries this through as its
+  own `'degraded'` value — ranked worse than `partial` but better than
+  `blind` in `worstStatus`, since a rate limit "usually clears on its own"
+  (the same wording `integration-health.ts`'s `KIND_COPY` already used for
+  this fault kind) — with reason `'rate limited'`. Scoped to the Reliability
+  tab only: the Incidents tab's separate `SourceHealth` union
+  (`src/lib/admin/incidents/types.ts`) has no `degraded` member and a
+  degraded reliability arm folds into its existing `'blind'` there, which is
+  the conservative direction and consistent with "no all-clear while a
+  required source is blind".
+- **A canceled preview deployment is not a build problem.** `collectVercel`
+  rates a `CANCELED` Vercel deployment `info` unless its `target` is
+  `production`, where a canceled deploy means the intended release never
+  shipped and stays `warning`. A superseded or manually-canceled preview
+  build is routine noise, not a reliability signal.
+- **The capture-quality panel's 'user' field excludes rows that could never
+  have carried a user.** `analyzeCaptureQuality` (`src/lib/admin/data/
+  capture-quality.ts`) measures how completely `admin_events` rows were
+  instrumented — but a `source: 'cron'` row (`job-log.ts`'s `Cron failed:
+  <jobType>`, including the reliability collector's own) or `source:
+  'system'` row (`deploy-marker.ts`) is a machine invocation with no session
+  to resolve a user from, not an under-instrumented call site. Counting them
+  against the 'user' field's denominator understated capture quality for a
+  gap no call site could ever close. They stay in `rows` and every OTHER
+  field's denominator (error-code/stack/route/feature/action) — a cron
+  failure legitimately carries all five — and stay eligible to rank as a
+  weakest emitter on those five, just never penalised for the one field they
+  were never eligible to carry. `SELF_REFERENTIAL_SOURCES` is the single set;
+  `rca_analysis` rows need no matching check because they are already outside
+  `queryAppErrorEvents`'s `event_type='error'` filter.
 - **"Steps observed" has exactly one definition, and only one place fixes it
   up.** The fleet-list RPC (`helm_debug_list_traces`) and the per-trace tree
   (`trace-tree.ts`'s `buildTraceTree`) each carry their own count over the
@@ -413,6 +473,40 @@ them would have broken those routes, not the dead one.
   at. A control that does nothing is worse than a missing one: it teaches the
   operator the queue is curated when it is not. Counts shown beside a filter
   are measured over the list that filter actually narrows.
+- **A QA fixture round is labelled, visibly, and excluded only from the
+  actionable COUNT — never hidden.** `supabase/migrations/
+  20260901120000_integrity_completed_round_zero_scored_holes.sql` names four
+  `golf_rounds` ids as seeded fixtures (owner decision 2026-09-02: KEPT, not
+  removed) — `src/lib/admin/qa-fixture-rounds.ts` carries a literal copy of
+  that exact array (nothing at runtime can read a `.sql` file), and
+  `qa-fixture-rounds.test.ts` reads the migration itself and asserts the two
+  match, so they cannot drift silently. `mergeTriage` (`triage.ts`) matches
+  each app-origin bucket's rows against it via `extractRoundId(row.metadata)`
+  — `metadata.roundId` is a top-level key, same shape as `route`/`action`,
+  written by `normalizeContext` from `ObservedActionContext.roundId` — and
+  when ANY row in the bucket names a fixture round, sets `TriageItem.
+  isFixture: true`. **`actionable` is deliberately LEFT UNTOUCHED** —
+  whatever `classifyIncident` decided from the text stands. An earlier
+  version of this forced `actionable: false` at the source, which silently
+  dropped the row out of `matchesKind`'s default view (`kind === undefined ->
+  incident.actionable`) — the row vanished into "N held back" and the FIXTURE
+  badge that exists to explain it became undiscoverable. The two asks —
+  "label it in the feed" and "exclude it from the actionable count" — are
+  answered separately: the row renders, badged, in the default feed; the
+  EXCLUSION happens explicitly at every count site instead, keyed on
+  `isFixture`: `lens.ts`'s `actionable` lens, `truth-strip.ts`'s `actionable`
+  cell, `errors/page.tsx`'s `shownActionable`, and `incident-feed.ts`'s
+  `summarizeIncidentFeed`/`actionableGroups` (the last one because
+  `overview.ts` and `errors/page.tsx` both render that exact field and must
+  agree). `correlate.ts` carries `isFixture` through onto `UnifiedIncident`
+  (`bucket.appItems.some(i => i.isFixture)`); `UnifiedIncidentCard` renders a
+  neutral-tone FIXTURE chip, second priority right after the lifecycle chip
+  (a fact about the DATA outranks everything derived from it, including
+  outranking the blind-source chip under the 5-chip cap) — not a `StateChip`
+  on lifecycle itself, because the lifecycle machinery still describes this
+  incident honestly; the fixture flag is an orthogonal fact layered on top,
+  not a reclassification. Sentry-origin items are always `isFixture: false`
+  — a Sentry issue carries no round-id metadata to match against.
 - The overnight digest (`/api/cron/admin-digest` → `build-digest.ts`) NAMES
   only actionable, non-degradation incident groups — the Errors tab's default
   view — and COUNTS the rest as "Not listed: N handled degradations · N quiet
@@ -517,6 +611,25 @@ them would have broken those routes, not the dead one.
   `src/app/baseball/actions/lift-onboarding.ts`, not the Lift Lab one). Every
   alias must resolve to a registered key and never shadow one —
   `src/lib/admin/__tests__/feature-aliases.test.ts`.
+- **An un-scoped Sentry issue still gets an ADVISORY feature tag, not `null`.**
+  `mergeTriage` (`src/lib/admin/data/triage.ts`) only ever had a per-BATCH
+  feature (`sentryTagHint`, set only when the caller actually scoped the fetch
+  by a Sentry tag) — every other Sentry issue landed `feature: null` and the
+  feature lens on `/admin/errors` grouped them all as "unknown". It now falls
+  back, per issue, to `resolveFeatureId(issue.culprit)` — the same advisory
+  route/feature map `src/lib/reliability/normalize.ts` exports for the
+  Reliability tab's own correlation pass (moved there from `collect.ts` so
+  both callers share one pure implementation; `collectSentry` in
+  `sources.ts` already passes `issue.culprit` as `route` into this same
+  function). The batch-level hint still wins when present — it is honest,
+  Sentry-tag-scoped attribution; the per-issue fallback is a GUESS from a
+  route string, which is why it only fires in the hint's absence. `culprit` is
+  the only per-issue location `SentryIssue` carries — there is no
+  transaction/url field on it. Not every value `resolveFeatureId` returns is a
+  `FEATURE_REGISTRY` key (see its own doc comment for which three of six
+  aren't); an unregistered tag still renders, unlinked, in
+  `UnifiedIncidentCard` — strictly better than the "unknown" bucket this
+  fixes issues out of.
 - **Credential values are validated by SHAPE, in one module.** Every one of
   the eight Bridge values in the local `.env.local` was exactly 11 characters,
   which cleared the old `length >= 10` floor in both
