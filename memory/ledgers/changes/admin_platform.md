@@ -1823,6 +1823,72 @@ card and detail page.
   header). `ReleaseWatchPanel` lives on `/admin/errors`, not a new
   `/admin/deploys` Release Runway — that full view is Phase 3's territory
   per the brief's own implementation order (§45).
+## 2026-09-03 — App and customer lenses (Bridge Premium Observability Phase 4)
+
+Source: `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`
+§20-27 (resolves in this checkout, on `main`). Seven new pure read models
+(`src/lib/admin/lenses/*.ts`), five new Fairway-token components
+(`src/components/admin/lenses/*.tsx`), and six new pages
+(`src/app/admin/lenses/**`) — see the feature doc's new "Phase 4 lenses"
+section for the full per-module description; not restated here.
+
+- **Reuse audit performed before writing anything**: `/admin/teams`
+  (`pulse-grid.ts` + `EkgSparkline`), `/admin/utilization`
+  (`feature-adoption.ts` + `AdoptionHeatGrid`) and
+  `/admin/thread/[entity]/[id]` (`entity-thread.ts`) already ship
+  substantially what the brief describes for Teams EKG, the Adoption Map
+  and semantic threads. `teams-ekg.ts` and `adoption-map.ts` wrap those
+  existing functions rather than re-querying `admin_events`;
+  `activity-threads.ts` links to the existing thread page instead of
+  rebuilding it. The five new `/admin/lenses/*` routes are net-new and sit
+  alongside the pre-existing `/admin/{golf,baseball,lifting,teams,users}`
+  tabs, which were NOT edited or retired — that overlap is disclosed to the
+  owner in the PR body, not resolved here.
+- **`admin_events` cannot fund a usage funnel** — it is overwhelmingly a
+  failure/soft-failure log (`withAdminObserved`'s own contract). Every
+  attempts/completions number in this phase is sourced from a durable
+  domain table (`golf_rounds`, `helm_lifting_*`, `baseball_players`,
+  `baseball_developmental_plans`) or is honestly `null`; the only
+  admin_events rows treated as usage are the confirmed genuine
+  positive-signal writers (`logLogin`/`logSignup`/`logRoundSubmitted`/
+  `logAIGeneration`).
+- **`memory/registry.yml`**: added `src/components/admin/lenses/**` under
+  `admin_platform.code.components` — `knowledge:map` resolved it to
+  `impactedFeatures: []` before this change (the existing
+  `src/app/admin/**`/`src/lib/admin/**` globs already covered the read
+  models and pages). `node scripts/check-registry-globs.mjs` passes (0
+  dead entries) after the addition.
+- **`ADMIN_NAV`** (`src/app/admin/_components/admin-nav.ts`): 5 new entries
+  under Platform (`/admin/lenses/{golf,baseball,lifting,teams,users}`),
+  keys `G`/`A`/`P`/`E`/`D` — every digit 1-9/0 and every previously-used
+  letter shortcut was already taken. `/admin/lenses/users/[id]` is a
+  `DETAIL_LEAVES` entry in `nav-covers-every-route.test.ts` (same pattern
+  as `/admin/users/[id]`), not a nav entry. `AdminShell.tsx`'s
+  `NAV_ICON_BY_HREF` map got 5 matching icons
+  (`Route`/`Milestone`/`TrendingUp`/`LineChart`/`Footprints`) — the map is
+  exhaustively typed over `AdminHref`, so `tsc` catches a missing entry.
+- **Tests**: 32 read-model tests (`src/lib/admin/lenses/__tests__/`, one
+  file per module) via a shared queued-chainable Supabase-client mock
+  (`test-helpers.ts` — handles modules that call `.from('admin_events')`
+  multiple times in one `Promise.all` with different expected results per
+  call, which the codebase's existing single-chain mock pattern does not);
+  17 render tests (`src/components/admin/lenses/*.test.tsx`,
+  `@testing-library/react`). Both suites plus the three nav-consistency
+  tests and the per-export `requireSuperAdmin` gate-coverage test ran
+  green together (97 tests, 16 files) after the nav-registry commit.
+- **Verified**: `npx tsc --noEmit -p .` (repo-wide, 0 errors) and
+  `npx eslint <changed paths> --max-warnings 0` (0 warnings — fixed 8
+  `helm/no-arbitrary-text-px` violations to the canonical `text-caption`
+  scale) after every commit, each checked independently of the command's
+  own stdout tail.
+- **Not done**: no live-browser smoke check of the six pages (super-admin
+  gate + no local credentials available, same limitation the Phase 0 entry
+  above and the AI-availability test file both record); `AdoptionMapPanel`/
+  `ActivityThreadsPanel` are supporting panels embedded in the Teams lens
+  page rather than standalone routes, since the brief names 5 top-level
+  pages, not 7, and the team-lead task brief's own fallback instruction
+  ("or the routes the brief names if it names them") left no named route
+  for either.
 ## 2026-09-03 — Bridge Premium Phase 3: triage tabs (Constellation, Braid, Circuit, Waterfall, Heartbeat, Runway)
 
 - **Scope**: eight new pure/server read models under `src/lib/admin/triage/`

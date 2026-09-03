@@ -4,10 +4,37 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Activity, AlertTriangle, KeyRound, Flag, CircleDot,
-  Users, Timer, Rocket, HeartPulse, ExternalLink, MessageSquarePlus, Gauge, SearchCheck, ScrollText,
-  Radar, CreditCard, GitBranch, Trophy, Waypoints,
-  RefreshCw, Dumbbell, Search, LogOut, Recycle, ToggleLeft,
+  LayoutDashboard,
+  Activity,
+  AlertTriangle,
+  KeyRound,
+  Flag,
+  CircleDot,
+  Users,
+  Timer,
+  Rocket,
+  HeartPulse,
+  ExternalLink,
+  MessageSquarePlus,
+  Gauge,
+  SearchCheck,
+  ScrollText,
+  Radar,
+  CreditCard,
+  GitBranch,
+  Trophy,
+  Waypoints,
+  RefreshCw,
+  Dumbbell,
+  Search,
+  LogOut,
+  Recycle,
+  Route,
+  Milestone,
+  LineChart,
+  Footprints,
+  TrendingUp,
+  ToggleLeft,
 } from 'lucide-react';
 import {
   AppShell,
@@ -132,6 +159,11 @@ const NAV_ICON_BY_HREF = {
   '/admin/health': HeartPulse,
   '/admin/teams': Radar,
   '/admin/billing': CreditCard,
+  '/admin/lenses/golf': Route,
+  '/admin/lenses/baseball': Milestone,
+  '/admin/lenses/lifting': TrendingUp,
+  '/admin/lenses/teams': LineChart,
+  '/admin/lenses/users': Footprints,
 } as const;
 
 /**
