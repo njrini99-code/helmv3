@@ -33,66 +33,66 @@ create schema if not exists helm_debug;
 revoke all on schema helm_debug from public;
 
 create table if not exists helm_debug.db_stat_prior_state (
-  queryid text primary key,
-  last_seen_at timestamptz not null default clock_timestamp(),
-  stats_reset_at timestamptz,
-  calls bigint not null,
-  total_exec_ms numeric not null,
-  rows bigint not null,
-  shared_blks_hit bigint not null,
-  shared_blks_read bigint not null,
-  temp_blks_read bigint not null,
-  temp_blks_written bigint not null,
-  wal_bytes bigint not null,
-  -- Rolling baseline (brief §17) — a simple online mean/max, not a full
-  -- distribution. `baseline_status` starts 'collecting' and only becomes
-  -- 'established' once `sample_count` clears a minimum (enforced in
-  -- TypeScript, src/lib/observability/supabase/query-regression.ts) — a
-  -- judgment call on "sufficient samples" the brief leaves to the
-  -- implementation.
-  mean_exec_ms_baseline numeric,
-  max_exec_ms_baseline numeric,
-  rows_per_call_baseline numeric,
-  sample_count integer not null default 0,
-  baseline_status text not null default 'collecting'
+    queryid text primary key,
+    last_seen_at timestamptz not null default clock_timestamp(),
+    stats_reset_at timestamptz,
+    calls bigint not null,
+    total_exec_ms numeric not null,
+    rows bigint not null,
+    shared_blks_hit bigint not null,
+    shared_blks_read bigint not null,
+    temp_blks_read bigint not null,
+    temp_blks_written bigint not null,
+    wal_bytes bigint not null,
+    -- Rolling baseline (brief §17) — a simple online mean/max, not a full
+    -- distribution. `baseline_status` starts 'collecting' and only becomes
+    -- 'established' once `sample_count` clears a minimum (enforced in
+    -- TypeScript, src/lib/observability/supabase/query-regression.ts) — a
+    -- judgment call on "sufficient samples" the brief leaves to the
+    -- implementation.
+    mean_exec_ms_baseline numeric,
+    max_exec_ms_baseline numeric,
+    rows_per_call_baseline numeric,
+    sample_count integer not null default 0,
+    baseline_status text not null default 'collecting'
     check (baseline_status in ('collecting', 'established'))
 );
 
 create table if not exists helm_debug.db_stat_deltas (
-  id bigint generated always as identity primary key,
-  sampled_at timestamptz not null default clock_timestamp(),
-  stats_reset_at timestamptz,
-  queryid text not null,
-  safe_query_class text not null,
-  source_class text not null check (source_class in (
-    'helm_product', 'supabase_realtime', 'pg_net_job', 'pg_cron_job',
-    'observability', 'unknown'
-  )),
-  calls_delta bigint,
-  total_exec_ms_delta numeric,
-  mean_exec_ms_window numeric,
-  max_exec_ms_observed numeric,
-  rows_delta bigint,
-  wal_bytes_delta bigint,
-  shared_blks_hit_delta bigint,
-  shared_blks_read_delta bigint,
-  temp_blks_read_delta bigint,
-  temp_blks_written_delta bigint,
-  -- Regression evaluation for this window, computed in TypeScript
-  -- (query-regression.ts) and stored alongside the delta it was computed
-  -- from, so the Bridge never has to re-derive it from raw counters.
-  regression_flags text[] not null default '{}',
-  baseline_status text not null default 'collecting'
+    id bigint generated always as identity primary key,
+    sampled_at timestamptz not null default clock_timestamp(),
+    stats_reset_at timestamptz,
+    queryid text not null,
+    safe_query_class text not null,
+    source_class text not null check (source_class in (
+        'helm_product', 'supabase_realtime', 'pg_net_job', 'pg_cron_job',
+        'observability', 'unknown'
+    )),
+    calls_delta bigint,
+    total_exec_ms_delta numeric,
+    mean_exec_ms_window numeric,
+    max_exec_ms_observed numeric,
+    rows_delta bigint,
+    wal_bytes_delta bigint,
+    shared_blks_hit_delta bigint,
+    shared_blks_read_delta bigint,
+    temp_blks_read_delta bigint,
+    temp_blks_written_delta bigint,
+    -- Regression evaluation for this window, computed in TypeScript
+    -- (query-regression.ts) and stored alongside the delta it was computed
+    -- from, so the Bridge never has to re-derive it from raw counters.
+    regression_flags text[] not null default '{}',
+    baseline_status text not null default 'collecting'
     check (baseline_status in ('collecting', 'established'))
 );
 
 create index if not exists db_stat_deltas_sampled_at_idx
-  on helm_debug.db_stat_deltas (sampled_at desc);
+on helm_debug.db_stat_deltas (sampled_at desc);
 create index if not exists db_stat_deltas_queryid_idx
-  on helm_debug.db_stat_deltas (queryid, sampled_at desc);
+on helm_debug.db_stat_deltas (queryid, sampled_at desc);
 create index if not exists db_stat_deltas_regression_idx
-  on helm_debug.db_stat_deltas (sampled_at desc)
-  where regression_flags <> '{}';
+on helm_debug.db_stat_deltas (sampled_at desc)
+where regression_flags <> '{}';
 
 revoke all on all tables in schema helm_debug from public;
 revoke all on all sequences in schema helm_debug from public;
@@ -101,7 +101,9 @@ revoke all on all sequences in schema helm_debug from public;
 -- exactly those queryids (never the whole prior-state table). No query TEXT
 -- in the return value — only `safe_query_class`, computed here from a
 -- bounded prefix of the text and then discarded.
-create or replace function public.helm_debug_stat_statements_snapshot(p_limit integer default 50)
+create or replace function public.helm_debug_stat_statements_snapshot(
+    p_limit integer default 50
+)
 returns jsonb
 language plpgsql
 security definer
@@ -168,10 +170,10 @@ $$;
 -- Bridge) and the refreshed prior-state/baseline row per queryid (internal
 -- bookkeeping) — both computed in TypeScript from the snapshot above.
 create or replace function public.record_db_stat_snapshot(
-  p_sampled_at timestamptz,
-  p_stats_reset_at timestamptz,
-  p_delta_rows jsonb,
-  p_prior_state_rows jsonb
+    p_sampled_at timestamptz,
+    p_stats_reset_at timestamptz,
+    p_delta_rows jsonb,
+    p_prior_state_rows jsonb
 )
 returns integer
 language plpgsql
@@ -259,11 +261,23 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_debug_stat_statements_snapshot(integer) from public, anon, authenticated;
-grant execute on function public.helm_debug_stat_statements_snapshot(integer) to service_role;
+revoke execute on function public.helm_debug_stat_statements_snapshot(
+    integer
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_debug_stat_statements_snapshot(
+    integer
+) to service_role;
 
-revoke execute on function public.record_db_stat_snapshot(timestamptz, timestamptz, jsonb, jsonb) from public, anon, authenticated;
-grant execute on function public.record_db_stat_snapshot(timestamptz, timestamptz, jsonb, jsonb) to service_role;
+revoke execute on function public.record_db_stat_snapshot(
+    timestamptz, timestamptz, jsonb, jsonb
+) from public,
+anon,
+authenticated;
+grant execute on function public.record_db_stat_snapshot(
+    timestamptz, timestamptz, jsonb, jsonb
+) to service_role;
 
 do $$
 declare
@@ -296,7 +310,7 @@ end $$;
 -- (so a regression that happened between two Bridge page loads is not lost
 -- the moment a fresh, unflagged window is written).
 create or replace function public.helm_debug_read_db_stat_deltas(
-  p_regression_lookback_hours integer default 24
+    p_regression_lookback_hours integer default 24
 )
 returns jsonb
 language plpgsql
@@ -336,8 +350,14 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_debug_read_db_stat_deltas(integer) from public, anon, authenticated;
-grant execute on function public.helm_debug_read_db_stat_deltas(integer) to service_role;
+revoke execute on function public.helm_debug_read_db_stat_deltas(
+    integer
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_debug_read_db_stat_deltas(
+    integer
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_debug_read_db_stat_deltas(integer)'::regprocedure;

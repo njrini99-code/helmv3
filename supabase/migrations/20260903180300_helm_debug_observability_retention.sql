@@ -1,4 +1,5 @@
--- Helm Debug — retention for the Phase 1 observability tables (brief §27, §40-48)
+-- Helm Debug — retention for the Phase 1 observability tables
+-- (brief §27, §40-48)
 --
 -- RISK TIER: R3. HELD — see supabase/migrations/HELD.md. Same shape as
 -- 20260826010000_helm_debug_retention.sql — a dedicated prune function, not
@@ -24,13 +25,14 @@
 -- pattern (helm-debug-prune) is a Vercel cron route calling the RPC, which
 -- src/app/api/cron/db-observability-prune/route.ts follows.
 --
--- ROLLBACK: DROP FUNCTION public.helm_debug_prune_observability(integer, integer);
+-- ROLLBACK:
+-- DROP FUNCTION public.helm_debug_prune_observability(integer, integer);
 
 create or replace function public.helm_debug_prune_observability(
-  p_error_events_retention_days integer default 30,
-  p_health_samples_retention_days integer default 30,
-  p_stat_deltas_retention_days integer default 14,
-  p_prior_state_retention_days integer default 14
+    p_error_events_retention_days integer default 30,
+    p_health_samples_retention_days integer default 30,
+    p_stat_deltas_retention_days integer default 14,
+    p_prior_state_retention_days integer default 14
 )
 returns jsonb
 language plpgsql
@@ -88,9 +90,13 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_debug_prune_observability(integer, integer, integer, integer)
+revoke execute on function public.helm_debug_prune_observability(
+    integer, integer, integer, integer
+)
 from public, anon, authenticated;
-grant execute on function public.helm_debug_prune_observability(integer, integer, integer, integer)
+grant execute on function public.helm_debug_prune_observability(
+    integer, integer, integer, integer
+)
 to service_role;
 
 do $$

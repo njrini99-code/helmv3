@@ -26,57 +26,57 @@ create schema if not exists helm_debug;
 revoke all on schema helm_debug from public;
 
 create table if not exists helm_debug.db_health_samples (
-  id bigint generated always as identity primary key,
-  sampled_at timestamptz not null default clock_timestamp(),
-  stats_reset_at timestamptz,
-  -- Absolute values at sample time — the baseline the NEXT sample's delta
-  -- computation diffs against (read back by helm_debug_db_health_snapshot()).
-  connections_total integer not null,
-  connections_active integer not null,
-  connections_idle_in_tx integer not null,
-  connections_waiting_lock integer not null,
-  connections_pct_max numeric(5, 2),
-  longest_active_ms integer,
-  longest_idle_in_tx_ms integer,
-  longest_lock_wait_ms integer,
-  xact_commit bigint not null,
-  xact_rollback bigint not null,
-  deadlocks bigint not null,
-  conflicts bigint not null,
-  tup_returned bigint not null,
-  tup_fetched bigint not null,
-  tup_inserted bigint not null,
-  tup_updated bigint not null,
-  tup_deleted bigint not null,
-  temp_files bigint not null,
-  temp_bytes bigint not null,
-  blks_read bigint not null,
-  blks_hit bigint not null,
-  db_size_bytes bigint not null,
-  -- Deltas vs the previous sample — null on the very first sample (no prior
-  -- row) or when a counter reset was detected (see collector_status).
-  xact_commit_delta bigint,
-  xact_rollback_delta bigint,
-  deadlocks_delta bigint,
-  conflicts_delta bigint,
-  tup_returned_delta bigint,
-  tup_fetched_delta bigint,
-  tup_inserted_delta bigint,
-  tup_updated_delta bigint,
-  tup_deleted_delta bigint,
-  temp_files_delta bigint,
-  temp_bytes_delta bigint,
-  blks_read_delta bigint,
-  blks_hit_delta bigint,
-  cache_hit_ratio numeric(6, 4),
-  collector_version text not null default '1',
-  -- 'ok' | 'first_sample' | 'reset_detected' | 'degraded' — never silently
-  -- 'ok' when something optional could not be read (brief §26, §40-48).
-  collector_status text not null default 'ok'
+    id bigint generated always as identity primary key,
+    sampled_at timestamptz not null default clock_timestamp(),
+    stats_reset_at timestamptz,
+    -- Absolute values at sample time — the baseline the NEXT sample's delta
+    -- computation diffs against (read back by helm_debug_db_health_snapshot()).
+    connections_total integer not null,
+    connections_active integer not null,
+    connections_idle_in_tx integer not null,
+    connections_waiting_lock integer not null,
+    connections_pct_max numeric(5, 2),
+    longest_active_ms integer,
+    longest_idle_in_tx_ms integer,
+    longest_lock_wait_ms integer,
+    xact_commit bigint not null,
+    xact_rollback bigint not null,
+    deadlocks bigint not null,
+    conflicts bigint not null,
+    tup_returned bigint not null,
+    tup_fetched bigint not null,
+    tup_inserted bigint not null,
+    tup_updated bigint not null,
+    tup_deleted bigint not null,
+    temp_files bigint not null,
+    temp_bytes bigint not null,
+    blks_read bigint not null,
+    blks_hit bigint not null,
+    db_size_bytes bigint not null,
+    -- Deltas vs the previous sample — null on the very first sample (no prior
+    -- row) or when a counter reset was detected (see collector_status).
+    xact_commit_delta bigint,
+    xact_rollback_delta bigint,
+    deadlocks_delta bigint,
+    conflicts_delta bigint,
+    tup_returned_delta bigint,
+    tup_fetched_delta bigint,
+    tup_inserted_delta bigint,
+    tup_updated_delta bigint,
+    tup_deleted_delta bigint,
+    temp_files_delta bigint,
+    temp_bytes_delta bigint,
+    blks_read_delta bigint,
+    blks_hit_delta bigint,
+    cache_hit_ratio numeric(6, 4),
+    collector_version text not null default '1',
+    -- 'ok' | 'first_sample' | 'reset_detected' | 'degraded' — never silently
+    -- 'ok' when something optional could not be read (brief §26, §40-48).
+    collector_status text not null default 'ok'
 );
 
 create index if not exists db_health_samples_sampled_at_idx
-  on helm_debug.db_health_samples (sampled_at desc);
+on helm_debug.db_health_samples (sampled_at desc);
 
 revoke all on all tables in schema helm_debug from public;
 revoke all on all sequences in schema helm_debug from public;
@@ -161,44 +161,44 @@ end;
 $$;
 
 create or replace function public.record_db_health_sample(
-  p_stats_reset_at timestamptz,
-  p_connections_total integer,
-  p_connections_active integer,
-  p_connections_idle_in_tx integer,
-  p_connections_waiting_lock integer,
-  p_connections_pct_max numeric,
-  p_longest_active_ms integer,
-  p_longest_idle_in_tx_ms integer,
-  p_longest_lock_wait_ms integer,
-  p_xact_commit bigint,
-  p_xact_rollback bigint,
-  p_deadlocks bigint,
-  p_conflicts bigint,
-  p_tup_returned bigint,
-  p_tup_fetched bigint,
-  p_tup_inserted bigint,
-  p_tup_updated bigint,
-  p_tup_deleted bigint,
-  p_temp_files bigint,
-  p_temp_bytes bigint,
-  p_blks_read bigint,
-  p_blks_hit bigint,
-  p_db_size_bytes bigint,
-  p_xact_commit_delta bigint,
-  p_xact_rollback_delta bigint,
-  p_deadlocks_delta bigint,
-  p_conflicts_delta bigint,
-  p_tup_returned_delta bigint,
-  p_tup_fetched_delta bigint,
-  p_tup_inserted_delta bigint,
-  p_tup_updated_delta bigint,
-  p_tup_deleted_delta bigint,
-  p_temp_files_delta bigint,
-  p_temp_bytes_delta bigint,
-  p_blks_read_delta bigint,
-  p_blks_hit_delta bigint,
-  p_cache_hit_ratio numeric,
-  p_collector_status text default 'ok'
+    p_stats_reset_at timestamptz,
+    p_connections_total integer,
+    p_connections_active integer,
+    p_connections_idle_in_tx integer,
+    p_connections_waiting_lock integer,
+    p_connections_pct_max numeric,
+    p_longest_active_ms integer,
+    p_longest_idle_in_tx_ms integer,
+    p_longest_lock_wait_ms integer,
+    p_xact_commit bigint,
+    p_xact_rollback bigint,
+    p_deadlocks bigint,
+    p_conflicts bigint,
+    p_tup_returned bigint,
+    p_tup_fetched bigint,
+    p_tup_inserted bigint,
+    p_tup_updated bigint,
+    p_tup_deleted bigint,
+    p_temp_files bigint,
+    p_temp_bytes bigint,
+    p_blks_read bigint,
+    p_blks_hit bigint,
+    p_db_size_bytes bigint,
+    p_xact_commit_delta bigint,
+    p_xact_rollback_delta bigint,
+    p_deadlocks_delta bigint,
+    p_conflicts_delta bigint,
+    p_tup_returned_delta bigint,
+    p_tup_fetched_delta bigint,
+    p_tup_inserted_delta bigint,
+    p_tup_updated_delta bigint,
+    p_tup_deleted_delta bigint,
+    p_temp_files_delta bigint,
+    p_temp_bytes_delta bigint,
+    p_blks_read_delta bigint,
+    p_blks_hit_delta bigint,
+    p_cache_hit_ratio numeric,
+    p_collector_status text default 'ok'
 )
 returns bigint
 language plpgsql
@@ -240,88 +240,91 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_debug_db_health_snapshot() from public, anon, authenticated;
-grant execute on function public.helm_debug_db_health_snapshot() to service_role;
+revoke execute on function public.helm_debug_db_health_snapshot() from public,
+anon,
+authenticated;
+grant execute on function public.helm_debug_db_health_snapshot()
+  to service_role;
 
 revoke execute on function public.record_db_health_sample(
-  timestamptz,
-  integer,
-  integer,
-  integer,
-  integer,
-  numeric,
-  integer,
-  integer,
-  integer,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  numeric,
-  text
+    timestamptz,
+    integer,
+    integer,
+    integer,
+    integer,
+    numeric,
+    integer,
+    integer,
+    integer,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    numeric,
+    text
 ) from public, anon, authenticated;
 grant execute on function public.record_db_health_sample(
-  timestamptz,
-  integer,
-  integer,
-  integer,
-  integer,
-  numeric,
-  integer,
-  integer,
-  integer,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  bigint,
-  numeric,
-  text
+    timestamptz,
+    integer,
+    integer,
+    integer,
+    integer,
+    numeric,
+    integer,
+    integer,
+    integer,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    numeric,
+    text
 ) to service_role;
 
 do $$
@@ -351,7 +354,9 @@ end $$;
 -- READ facade for the Bridge (src/lib/admin/database/overview.ts) — same
 -- reasoning as helm_debug_read_db_error_events in the sibling migration:
 -- helm_debug is not PostgREST-exposed, so an RPC is the only read path.
-create or replace function public.helm_debug_read_db_health_history(p_limit integer default 50)
+create or replace function public.helm_debug_read_db_health_history(
+    p_limit integer default 50
+)
 returns jsonb
 language sql
 stable
@@ -367,8 +372,14 @@ as $$
   ) t
 $$;
 
-revoke execute on function public.helm_debug_read_db_health_history(integer) from public, anon, authenticated;
-grant execute on function public.helm_debug_read_db_health_history(integer) to service_role;
+revoke execute on function public.helm_debug_read_db_health_history(
+    integer
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_debug_read_db_health_history(
+    integer
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_debug_read_db_health_history(integer)'::regprocedure;
