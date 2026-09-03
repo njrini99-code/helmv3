@@ -6,6 +6,7 @@ import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { TracesClient } from './TracesClient';
+import { fetchTraceIncidentLinks } from '@/lib/admin/triage/trace-incident-link';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,14 @@ async function TracesPanel() {
     );
   }
 
-  return <TracesClient traces={traces} />;
+  // Conservative, ref-matched trace -> incident linking (Bridge Premium
+  // Phase 3) — see trace-incident-link.ts's header for why this deliberately
+  // does not guess from a workflow name or a time window alone. Failing soft
+  // to "no links" rather than taking the whole panel down: a trace page that
+  // cannot show incident titles is still a working trace page.
+  const incidentLinks = await fetchTraceIncidentLinks(traces).catch(() => ({}));
+
+  return <TracesClient traces={traces} incidentLinks={incidentLinks} />;
 }
 
 export default async function TracesPage() {

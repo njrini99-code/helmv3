@@ -1727,3 +1727,42 @@ the full description of each module; summarized here for the change record.
   file-based truth, since none exists in this repo; the reader depends
   entirely on `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` being present
   in the runtime environment and fails open to `'unknown'` otherwise.
+
+## 2026-09-03 — Bridge Premium Phase 3: triage tabs (Constellation, Braid, Circuit, Waterfall, Heartbeat, Runway)
+
+- **Scope**: eight new pure/server read models under `src/lib/admin/triage/`
+  (`self-heal-circuit.ts`, `job-waterfall.ts`, `heartbeat-matrix.ts`,
+  `invariant-lattice.ts`, `feature-constellation.ts`, `evidence-braid.ts`,
+  `trace-incident-link.ts`, `release-runway.ts`) feeding six existing pages
+  (`/admin/health`, `/admin/jobs`, `/admin/reliability`, `/admin/self-heal`,
+  `/admin/traces`, `/admin/deploys`) — see the feature doc's "Phase 3 triage
+  tabs" section for what each module reads and every honest gap it
+  documents rather than fabricates (untracked self-heal budget, unknown
+  schema/business-contract invariants, no-edge-source constellation
+  fallback, unlinked flight-recorder/jobs evidence, no rollback
+  recommendation).
+- **Additive-only data-layer change**: `data/selfheal.ts`'s `SelfHealBoard`
+  gained `repairLink: RepairPrLink | null` — the newest PR naming an
+  incident, sourced from the work-log read that file already performs.
+  Nothing else in `src/lib/admin/data/` or `src/lib/admin/incidents/`
+  changed.
+- **Merged `agent/bridge-premium-p1`** (shared `src/components/admin/
+  premium/*` primitives) mid-task once it landed. `ReleaseRunwayStrip.tsx`
+  refactored to import `ReleaseWatchPosturePill` instead of keeping a local
+  tone table — the one direct 1:1 match among p1's seven primitives.
+  Fixed six pre-existing lint warnings in the merged-in `premium/*` files
+  (arbitrary Tailwind values, one unused eslint-disable) so the merge did
+  not carry lint debt into this PR's gate.
+- **Verified**: `npm run typecheck` and `npm run lint` (0 warnings) on the
+  full tree after the merge, exit code checked independently of stdout.
+  `npx vitest run --maxWorkers=4` across every new triage module/component
+  test plus the six touched pages' existing suites plus the merged-in
+  `premium/*` suite — all green (see the tests ledger entry below for
+  counts).
+- **Not done**: no live per-release migration-head history (accepted,
+  documented in release-runway.ts's own header); no incident-to-
+  background-job linkage for the Evidence Braid's `jobs` lane (reads
+  `unknown` honestly); Feature Constellation edges are a shared-table
+  fallback, not a true dependency graph, since neither
+  `WORLD_MODEL.json` under `docs/generated` nor `memory/registry.yml` carries
+  feature-to-feature edges in this repo today.
