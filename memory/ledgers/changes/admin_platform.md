@@ -1461,8 +1461,8 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   `reason`/`closes_when` field shape: that file's own `$comment` says
   "Nothing may be listed here to make a red verifier green... Adding one is
   a decision, not a repair" — an automated finding is a PROPOSAL, not a
-  decision a human has made. `docs/generated/janitor-findings.json` and
-  `docs/generated/JANITOR_REPORT.md` say this explicitly in their own
+  decision a human has made. `janitor-findings.json` (same directory, gitignored) and
+  `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) say this explicitly in their own
   headers.
 - **Verified**: `npm run test:janitor` (`node --test
   scripts/janitor/__tests__/*.test.mjs`) — 52/52 pass, covering every

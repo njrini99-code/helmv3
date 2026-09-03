@@ -67,8 +67,8 @@ them would have broken those routes, not the dead one.
 - `src/lib/cron/**`
 - `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor
   entropy-report generator. Read-only: it never modifies source files, only
-  writes `docs/generated/JANITOR_REPORT.md` and
-  `docs/generated/janitor-findings.json`. Scans the entropy classes
+  writes `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) and
+  `janitor-findings.json` (same directory, gitignored). Scans the entropy classes
   (duplicate helpers, dead flags, stale docs, orphan routes, deprecated
   APIs, stale TODOs, oversized modules, unused tests, mock inflation,
   duplicate telemetry, missing feature mappings, abandoned experiments)
