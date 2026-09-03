@@ -1180,6 +1180,13 @@ features:
       flows:
         - docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md
         - docs/BI_DASHBOARD_ARCHITECTURE.md
+        # Literal paths, not a glob: document-inventory.mjs's `routed` check is
+        # an exact-string Set membership test against each real file, so a
+        # glob string here is never `.has()`-equal to an expanded path and
+        # silently reports these docs as unrouted. Listing the two files this
+        # change actually touches keeps that check honest.
+        - docs/ai-system/selfheal/README.md
+        - docs/ai-system/selfheal/repair-contract.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -1217,6 +1224,17 @@ features:
         # change rather than merely record.
         - src/lib/admin/**
         - src/lib/reliability/**
+        # The self-heal loop's REPAIR-stage runner and its launchd config —
+        # mapped here 2026-09-02 after `knowledge:map` resolved these paths to
+        # `impactedFeatures: []`. The Bridge (self-heal loop) lives under
+        # admin_platform alongside src/lib/admin/** and src/lib/reliability/**
+        # above; the runner and its config are the same feature's Repair
+        # stage, not a separate one.
+        - scripts/run-selfheal-repair.mjs
+        - scripts/lib/selfheal-repair-runner.mjs
+        - scripts/selfheal-repair-install.sh
+        - scripts/selfheal-repair-doctor.mjs
+        - config/launchd/**
       db:
         - supabase/migrations/*admin*.sql
         - supabase/migrations/*crm*.sql

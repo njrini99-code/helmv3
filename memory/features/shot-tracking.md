@@ -424,6 +424,72 @@ survives that rollback. Docker's optional `npm run trace:db` collector still
 exists for exactly that reason. Production recording remains opt-in; tracing
 cannot block a player save or submit.
 
+**The recorder is constructed before Zod, auth, and the player lookup on every
+wired action** (`savePartialRound`'s existing-round AND no-id/new-round
+branches, `submitGolfRoundComprehensive`, `deleteShot`, `updateShot`), not
+after — a stage cannot report its own timing to a recorder that does not exist
+yet. Every started step reaches a terminal transition (complete/warn/fail) on
+every exit path, backed by a per-action idempotent `endTrace` guard plus a
+`finally`-block safety net, so a branch that returns early can never leave a
+step stuck `started` or a trace permanently `pending` in
+`helm_debug.trace_runs`. `verify.round`/`verify.holes`/`verify.shots` (and
+`verify.recovery_state`) are `best_effort`, not `required` — they still run,
+still get `start()`+`complete()` so their real duration is visible, but a
+short or failed read no longer counts against a trace's required-step
+coverage. The no-id/new-round autosave branch — a sequence of separate round
+trips, not one atomic RPC — additionally reports `db.create_or_update_draft`
+(the round row), `db.shot_details` (the holes/shots/putt-detail/approach-detail
+upserts), and `db.orphan_trim`, none of which had a call site before. One
+known gap: because construction now precedes the player lookup,
+`trace_runs.player_id`/`team_id` are null for every trace (the persisted
+columns are extracted once, from construction-time metadata) — per-step
+metadata on `server.auth`/`server.player` still carries `user_id`/`player_id`
+for correlation.
+
+`post.qualifier_transition` (2026-09-02, reviewer fix) is awaited
+synchronously, on the response-blocking path, NOT deferred into `after()`
+despite its `background` layer label in `golf-round-flight-workflow.ts` — its
+`start()`/`complete()`/`warn()` calls wrap `updateQualifierEntryStats` and
+`advanceQualifierOnRoundSubmit` in place. `submitGolfRoundComprehensiveImpl`
+finalizes every success path (the direct RPC success, the
+already-completed/reconciled carve-outs, and a rescued
+direct-submit-fallback) through ONE shared `endTrace('success')` call placed
+AFTER that block, not inside each branch — every one of those branches falls
+through to it instead of finalizing itself, and
+`recordRescuedStepOutcome`'s `deferFinalizeOnRescue` option is what lets the
+rescued-fallback branch defer its own finalize the same way. Before this fix,
+each branch finalized immediately on its own RPC success, so
+`post.qualifier_transition`'s real duration was silently dropped from
+`duration_ms` even though it ran before the response was sent — the same bug
+class the rest of this section closes. `post.stats` and `post.coachhelm` are
+genuinely different: both are declared `async` and their actual work is
+deferred into `after()`, which runs only after the response has already gone
+out, so their start()/complete() calls (issued before `after()` is
+registered, completed/failed inside its callback) correctly land AFTER the
+trace's own reported total-duration window — the alternative, deferring
+`finalize()` itself into the background tail, would leave the player-facing
+trace open long after the response has already been sent.
+
+Every call site above fires the recorder with `void flightRecorder.x(...)` —
+deliberately unawaited, so a trace write can never block the player's save.
+The write itself (`persistStart`/`persistStep`/`persistFinalize` in
+`helm-flight-recorder.ts`, routed through the module's internal `failOpen`)
+is now registered with `vercelWaitUntil`
+(`src/lib/observability/vercel-wait-until.ts`) before it is awaited, so the
+Vercel runtime holds the function open until that write settles instead of
+freezing mid-flight the instant the response returns. Before this, an
+in-flight persistence RPC frozen by the platform and resumed on a later,
+unrelated invocation surfaced as an unhandled "fetch failed" that Sentry's
+Supabase auto-instrumentation on the admin client
+(`src/lib/supabase/admin.ts`) reported once, while `failOpen`'s own catch —
+which never got the chance to run before the freeze — reported the same
+underlying failure again whenever it eventually resumed. Keeping the write
+inside the same invocation it started in means `failOpen`'s catch always
+runs, so a failure now reaches Sentry through exactly one handled path. The
+write stays fail-open and non-blocking to the player's write throughout;
+`vercelWaitUntil` is additive (a no-op outside Vercel, by its own contract)
+and never changes what the caller awaits.
+
 ## Business Rules
 
 - Do not lose user-entered shots. Save/submit/recover paths must be idempotent and interruption-tolerant.
