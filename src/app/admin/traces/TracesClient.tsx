@@ -131,6 +131,15 @@ export function TracesClient({ traces }: { traces: readonly FlightTraceRun[] }) 
               </span>
             )}
           </div>
+          {/* Only ever present on the DETAIL response — helm_debug_get_trace
+              returns the run's full metadata, helm_debug_list_traces does
+              not — so this can only ever appear once a trace is opened. See
+              the doc comment on FlightTraceRun's status_downgraded_from. */}
+          {detail?.run.status_downgraded_from && (
+            <InlineNotice tone="warning" title={`Claimed ${detail.run.status_downgraded_from}, downgraded`}>
+              {detail.run.status_downgraded_reason}
+            </InlineNotice>
+          )}
           {/* Says what the CODE contains — checkable — and nothing about the live
               value of HELM_FLIGHT_RECORDER_ENABLED, which is a deploy-time
               environment fact this page cannot read. An earlier draft asserted
