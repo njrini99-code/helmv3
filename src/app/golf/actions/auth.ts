@@ -35,6 +35,7 @@ import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
+import { recordLoginOutcome } from '@/lib/observability/golf-login-outcome';
 
 export type LoginResult = {
   success: boolean;
@@ -70,6 +71,14 @@ function sanitizeRef(raw: string | null | undefined): string | undefined {
 
 /**
  * Golf-specific login with rate limiting and account lockout protection
+ *
+ * Calls `recordLoginOutcome` (src/lib/observability/golf-login-outcome.ts —
+ * `helm.auth.*` + one `helmLog` line) at each of this function's EXISTING
+ * return branches below, no new branches added and no control flow changed
+ * at any call site. That helper lives in its own module rather than here
+ * because this file opens with `'use server'`, under which every export
+ * must be an async Server Action — see that module's header for what
+ * exporting a synchronous helper from here broke.
  */
 async function loginActionImpl(
   email: string,
@@ -88,6 +97,7 @@ async function loginActionImpl(
   const lockoutStatus = await checkAccountLockout(normalizedEmail);
   if (lockoutStatus.locked && lockoutStatus.lockedUntil) {
     // Security: Account is locked due to too many failed attempts
+    recordLoginOutcome('account_locked');
     return {
       success: false,
       error: formatLockoutMessage(lockoutStatus.lockedUntil),
@@ -102,6 +112,7 @@ async function loginActionImpl(
 
   if (!emailRateLimit.allowed) {
     const remaining = formatTimeRemaining(emailRateLimit.resetAt - Date.now());
+    recordLoginOutcome('rate_limited_email');
     return {
       success: false,
       error: `Too many login attempts. Please try again in ${remaining}.`,
@@ -112,6 +123,7 @@ async function loginActionImpl(
 
   if (!ipRateLimit.allowed) {
     const remaining = formatTimeRemaining(ipRateLimit.resetAt - Date.now());
+    recordLoginOutcome('rate_limited_ip');
     return {
       success: false,
       error: `Too many login attempts from this location. Please try again in ${remaining}.`,
@@ -138,6 +150,7 @@ async function loginActionImpl(
 
     // Security: Failed login attempt recorded
     if (lockoutResult.locked && lockoutResult.lockedUntil) {
+      recordLoginOutcome('account_locked');
       return {
         success: false,
         error: formatLockoutMessage(lockoutResult.lockedUntil),
@@ -149,6 +162,7 @@ async function loginActionImpl(
         ? ` (${lockoutResult.remainingAttempts} attempts remaining)`
         : '';
 
+    recordLoginOutcome('invalid_credentials');
     return {
       success: false,
       error: `Invalid email or password${attemptsWarning}`,
@@ -196,6 +210,7 @@ async function loginActionImpl(
   // wins over this default — the client only falls back to `redirectTo` when
   // no returnTo is present (see golf-sign-in-form.tsx).
   if (isSuperAdminUserId(data.user.id, process.env.SUPER_ADMIN_USER_IDS)) {
+    recordLoginOutcome('success');
     return {
       success: true,
       redirectTo: '/admin',
@@ -229,6 +244,7 @@ async function loginActionImpl(
 
   // Admin users go straight to the admin command center
   if (userData?.role === 'admin') {
+    recordLoginOutcome('success');
     return {
       success: true,
       redirectTo: resolveAdminPostLoginPath(true),
@@ -264,6 +280,7 @@ async function loginActionImpl(
 
   revalidatePath('/golf/dashboard');
 
+  recordLoginOutcome('success');
   return {
     success: true,
     redirectTo,

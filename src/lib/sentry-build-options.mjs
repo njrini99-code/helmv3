@@ -78,11 +78,17 @@
  *   setCommits: { auto: boolean, ignoreMissing: boolean, ignoreEmpty: boolean },
  *   deploy: { env: string },
  * }} params.release
+ * @param {string} [params.applicationKey] Defaults to 'helm-web'. Accepted as
+ *   a parameter (rather than only hardcoded below) so next.config.mjs can
+ *   pass the literal explicitly, keeping the string that
+ *   src/lib/security/__tests__/sentry-application-key.test.ts greps for
+ *   directly readable out of next.config.mjs's own raw text — see that
+ *   file's call site for why.
  * @returns {Record<string, unknown>} the single `sentryBuildOptions` object,
  *   ready to pass as `withSentryConfig(nextConfig, sentryBuildOptions)`'s
  *   second argument.
  */
-export function buildSentryBuildOptions({ org, project, authToken, release }) {
+export function buildSentryBuildOptions({ org, project, authToken, release, applicationKey = 'helm-web' }) {
   return {
     // https://github.com/getsentry/sentry-webpack-plugin#options
     silent: true,
@@ -124,7 +130,8 @@ export function buildSentryBuildOptions({ org, project, authToken, release }) {
 
     // Identifies this app's own bundle to `thirdPartyErrorFilterIntegration`
     // (client-side, instrumentation-client.ts) so it can tell "this repo's
-    // code threw" from "a third-party script threw".
-    applicationKey: 'helm-web',
+    // code threw" from "a third-party script threw". Defaults to 'helm-web'
+    // above; next.config.mjs passes it explicitly.
+    applicationKey,
   };
 }
