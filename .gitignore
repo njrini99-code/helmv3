@@ -309,3 +309,9 @@ _staging-snapshot/
 # `npm run janitor` locally to read them.
 docs/generated/JANITOR_REPORT.md
 docs/generated/janitor-findings.json
+# UI-audit viewport screenshots. The 2026-09-02 sweep produced 10.4 MB of
+# .jpg captures; line 89 already excludes *.png for the same reason, and the
+# .jpg half was simply never covered. The audit markdown is the durable
+# artifact and IS committed — the images are regenerable evidence that was
+# blocking a clean working tree on main.
+docs/ui-audits/**/*.jpg
