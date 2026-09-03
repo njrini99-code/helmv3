@@ -1,5 +1,59 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Golden-path journey registry and Context Retrieval Bench (Bridge Control Plane Phases D.4.1, K.4.2)
+
+Two new pieces of engineering-os tooling, not a change to the Bridge's
+runtime behavior — recorded here because both are Bridge-surface
+control-plane work and this feature (`admin_platform`) is, per the Bridge
+control-plane implementation plan (2026-09-03, finding #8; that plan
+document lives on the `agent/sentry-max-controlplane` branch and is not yet
+merged to `main` as of this entry, so it is described here rather than
+path-cited — citing an unmerged branch's path from this ledger would read as
+a resolvable reference and trip `docs:path-drift`), the one `feature_id` the
+entire Bridge surface maps under.
+
+- **`memory/journeys/golden-paths.yml`** — a thin index over EXISTING
+  `e2e/*.spec.ts` coverage and the live Flight Recorder workflow/step-key
+  vocabulary in `src/app/golf/actions/golf.ts`, seeding the 8 golden paths
+  named in the Bridge Track C task (`player_login_hub`, `player_start_round`,
+  `player_resume_round`, `player_submit_round`, `coach_view_player_stats`,
+  `coach_view_coachhelm_insight`, `coach_create_event`, `player_rsvp_event`).
+  Three journeys (`player_submit_round`, `coach_create_event`,
+  `player_rsvp_event`) are marked `status: collecting` rather than seeded
+  with invented e2e coverage — no current e2e spec submits a round, creates
+  a calendar event, or RSVPs to one; each gap is documented in the journey's
+  own stage notes as a real product/test-infra gap, not an oversight.
+  `scripts/knowledge/check-journeys.mjs` validates every citation
+  structurally (feature ids resolve against `memory/registry.yml`, e2e
+  `test_name` strings are found verbatim in their `spec_path`, Flight
+  Recorder `workflow`/`step_key` strings are found verbatim in their
+  `source_path`) — `npm run knowledge:journeys-check`.
+- **`scripts/knowledge/bench.mjs`** — the Context Retrieval Bench K.4.2
+  describes: scores the current `knowledge:map`/`knowledge:context` CLIs
+  against a frozen gold set (`scripts/knowledge/bench/gold-set.v1.json`)
+  hand-curated from all `memory/incidents/**/INC-*.md` files that existed at
+  freeze time. Its first run surfaced genuine `memory/registry.yml` coverage
+  gaps this ledger entry does NOT attempt to fix (out of this task's scope,
+  and fixing a registry gap that this bench itself surfaced, inside the same
+  change that adds the bench, would make the bench's own first-run numbers
+  unverifiable against what a reviewer can reproduce) — see
+  `docs/generated/RETRIEVAL_BENCH.md`'s "Reading these numbers" section for
+  the specific files and features involved. `npm run knowledge:bench`
+  regenerates the report; no CI caller was added (K.7 says read early scores
+  as directional, not a hard gate, until the incident corpus grows, and the
+  plan does not name a trigger condition for this specific check).
+
+**Verified**: `node --test scripts/knowledge/__tests__/check-journeys.test.mjs
+scripts/knowledge/__tests__/bench.test.mjs` — 26/26 pass. `npm run
+knowledge:journeys-check` — PASS, every citation in the journey registry
+resolved against this worktree. `npm run knowledge:bench` — ran clean against
+the real gold set (see `docs/generated/RETRIEVAL_BENCH.md` for the numbers).
+`npm run typecheck` and `npm run lint` NOT run in this pass — this worktree's
+`node_modules` is a symlink to the canonical checkout's, per
+`AGENTS.md`/`.claude/rules/autonomy.md`'s worktree-dependency policy (this
+task explicitly said not to install dependencies); CI runs both for real.
+`npm run build` NOT run — no `'use server'` surface changed.
+
 ## 2026-09-02 — Correction to (e) and (h): a critical expected-recurrence must still page, and a fixture must still be visible
 
 Two follow-up fixes to the same session's own defect-(e) and defect-(h)
