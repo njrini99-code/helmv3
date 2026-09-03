@@ -60,7 +60,19 @@ function bucketsReferencedInSource(): Map<string, string[]> {
   const found = new Map<string, string[]>();
   for (const file of walk(SRC_DIR)) {
     // Tests mock storage with throwaway names; they address no real bucket.
-    if (/(^|[\\/])(__tests__|test)[\\/]/.test(file) || /\.(test|spec)\.tsx?$/.test(file)) continue;
+    // `__fixtures__` is the same category and is skipped for the same reason,
+    // plus a specific collision: the observability program uses `bucket` for a
+    // CLASSIFICATION (`expected_control_flow` / `actionable_warning` /
+    // `actionable_error` / `critical_error`, see
+    // `src/lib/observability/supabase/observe-result.ts`), which BUCKET_OPTION
+    // below cannot tell apart from a storage bucket id. Those four are not
+    // storage at all, and renaming the field in the fixtures would make them
+    // diverge from the API they exist to exercise.
+    if (
+      /(^|[\\/])(__tests__|__fixtures__|test)[\\/]/.test(file) ||
+      /\.(test|spec)\.tsx?$/.test(file)
+    )
+      continue;
     const text = readFileSync(file, 'utf8');
     for (const re of [STORAGE_FROM, BUCKET_OPTION]) {
       re.lastIndex = 0;
