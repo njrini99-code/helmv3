@@ -31,7 +31,7 @@ export function parseRegistry(text) {
       continue;
     }
 
-    const entityMatch = line.match(/^  ([a-z0-9_]+):$/);
+    const entityMatch = line.match(/^ {2}([a-z0-9_]+):$/);
     if (entityMatch && top && registry[top]) {
       entityName = entityMatch[1];
       registry[top][entityName] = {};
@@ -43,7 +43,7 @@ export function parseRegistry(text) {
     if (!top || !entityName || !registry[top]) continue;
     const entity = registry[top][entityName];
 
-    const propMatch = line.match(/^    ([a-z_]+):(?:\s+(.+))?$/);
+    const propMatch = line.match(/^ {4}([a-z_]+):(?:\s+(.+))?$/);
     if (propMatch) {
       const key = propMatch[1];
       const value = propMatch[2];
@@ -60,7 +60,7 @@ export function parseRegistry(text) {
 
     if (!group) continue;
 
-    const groupPropMatch = line.match(/^      ([a-z_]+):(?:\s+(.+))?$/);
+    const groupPropMatch = line.match(/^ {6}([a-z_]+):(?:\s+(.+))?$/);
     if (groupPropMatch) {
       const key = groupPropMatch[1];
       const value = groupPropMatch[2];
@@ -73,14 +73,14 @@ export function parseRegistry(text) {
       continue;
     }
 
-    const listAtGroupMatch = line.match(/^      -\s+(.+)$/);
+    const listAtGroupMatch = line.match(/^ {6}-\s+(.+)$/);
     if (listAtGroupMatch) {
       if (!Array.isArray(entity[group])) entity[group] = [];
       entity[group].push(coerceScalar(listAtGroupMatch[1]));
       continue;
     }
 
-    const listAtKeyMatch = line.match(/^        -\s+(.+)$/);
+    const listAtKeyMatch = line.match(/^ {8}-\s+(.+)$/);
     if (listAtKeyMatch && groupKey) {
       if (!Array.isArray(entity[group][groupKey])) entity[group][groupKey] = [];
       entity[group][groupKey].push(coerceScalar(listAtKeyMatch[1]));
