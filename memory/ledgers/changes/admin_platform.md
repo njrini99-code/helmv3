@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Admin Platform change ledger
 
 ## 2026-09-02 — Golden-path journey registry and Context Retrieval Bench (Bridge Control Plane Phases D.4.1, K.4.2)
