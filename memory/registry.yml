@@ -1451,6 +1451,18 @@ integrations:
     code:
       - sentry.*
       - src/instrumentation*.ts
+      # Client "maximum observability" build (2026-09-02/03): the pure
+      # options builder instrumentation-client.ts's Sentry.init() reads
+      # (profiling/replay sample rates, ignoreErrors), the in-app feedback
+      # button, and the shared breadcrumb helper. `npm run knowledge:map`
+      # walks the `features:` map only, not this `integrations:` section —
+      # these three files legitimately impacted ZERO product features (they
+      # are platform observability infra, same reasoning as
+      # `feature_awareness_system` above), which is why they are listed
+      # HERE rather than added to an unrelated feature's `code.services`.
+      - src/lib/sentry-client-options.ts
+      - src/components/fairway/feedback/ReportProblemButton.tsx
+      - src/lib/observability/client-breadcrumbs.ts
     criticality: medium
   datadog:
     docs: docs/OBSERVABILITY.md

@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
 | `ARCHIVE` | 1196 | 0 | 419 | 527 |
-| `UNKNOWN` | 96 | 6 | 42 | 141 |
+| `UNKNOWN` | 98 | 6 | 42 | 143 |
 
 ## Files
 
@@ -166,7 +166,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 23 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 2 | 25 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
-| `memory/features/observability-sentry.md` | current | yes | - | - | 1 | 14 | - |
+| `memory/features/observability-sentry.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 25 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 1 | 13 | - |
@@ -471,7 +471,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 1 | 6 | 2 |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 1 | 7 | - |
+| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 1 | 12 | - |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
@@ -586,8 +586,10 @@ them would bury everything above.
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | 0 | 0 | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/PLAYWRIGHT_SETUP_GUIDE.md` | current | - | - | - | 0 | 0 | - |
-| `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 0 | - |
+| `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
+| `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 0 | 21 | 7 |
+| `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 2 | 6 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
 | `docs/observability/SENTRY_SUPABASE_TRACING.md` | current | yes | - | yes | 1 | 2 | - |
 | `docs/observability/SENTRY_TELEMETRY_TAXONOMY.md` | current | yes | - | yes | 2 | 8 | - |

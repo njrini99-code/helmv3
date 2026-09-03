@@ -2,7 +2,8 @@ import * as Sentry from '@sentry/nextjs';
 import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
-import { resolveClientEnvironment } from '@/lib/sentry-environment';
+import { buildClientSentryOptions } from '@/lib/sentry-client-options';
+import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
 
@@ -21,51 +22,37 @@ function isConsoleOriginEvent(event: Sentry.ErrorEvent): boolean {
 }
 
 const isDev = process.env.NODE_ENV === 'development';
-const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
-// The browser cannot read `VERCEL` (Next only inlines NEXT_PUBLIC_*), and
-// next.config.mjs bakes NEXT_PUBLIC_VERCEL_ENV from VERCEL_ENV || NODE_ENV at
-// BUILD time — so a local `next build` ships the literal string "production"
-// in the bundle. The only signal that can still tell the truth at runtime is
-// where the browser actually is; a deployed host never matches.
-const environment = resolveClientEnvironment(
+
+// All the non-integration, non-beforeSend options (dsn, release, environment,
+// sample rates, ignoreErrors, tracePropagationTargets) are computed by a pure
+// function so they can be unit-tested without booting the SDK — see
+// src/lib/sentry-client-options.ts / src/lib/__tests__/sentry-client-options.test.ts.
+const clientOptions = buildClientSentryOptions(
   {
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    NEXT_PUBLIC_SENTRY_RELEASE: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+    VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA,
+    // The browser cannot read `VERCEL` (Next only inlines NEXT_PUBLIC_*), and
+    // next.config.mjs bakes NEXT_PUBLIC_VERCEL_ENV from VERCEL_ENV || NODE_ENV
+    // at BUILD time — so a local `next build` ships the literal string
+    // "production" in the bundle. `resolveClientEnvironment` (inside
+    // buildClientSentryOptions) downgrades that using the hostname passed
+    // below, which is the only signal that can still tell the truth at
+    // runtime.
     NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
     VERCEL_ENV: process.env.VERCEL_ENV,
     NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE: process.env.NEXT_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE,
+    NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE:
+      process.env.NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE,
   },
   typeof window === 'undefined' ? undefined : window.location.hostname,
 );
 
-const supabaseTraceTarget = (() => {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin;
-  } catch {
-    return null;
-  }
-})();
-
 Sentry.init({
-  dsn,
-
-  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA,
-
-  // Never enable debug — it floods the console
-  debug: false,
-  // Required for Supabase JS OpenTelemetry propagation. Keep the target list
-  // narrow so browser traces do not leak to unrelated third-party requests.
-  propagateTraceparent: true,
-  tracePropagationTargets: [
-    'localhost',
-    /^\//,
-    ...(supabaseTraceTarget ? [supabaseTraceTarget] : []),
-  ],
-
-  // 20% in prod keeps trace cost sane while still surfacing slow paths.
-  // 10% in dev to reduce overhead.
-  tracesSampleRate: isDev ? 0.1 : 0.2,
-
-  // Enable Sentry SDK structured logs (separate from error events).
-  enableLogs: true,
+  ...clientOptions,
 
   // Second, independent line of defence beyond metrics.ts's/
   // structured-log.ts's own sanitization at the call site — see
@@ -74,17 +61,44 @@ Sentry.init({
   beforeSendMetric: enforceMetricAttributeAllowlist,
   beforeSendLog: enforceLogAttributeAllowlist,
 
-  // Capture 100% of sessions with errors, 10% of all sessions (prod only)
-  replaysOnErrorSampleRate: 1.0,
-  replaysSessionSampleRate: isDev ? 0 : 0.1,
-
   integrations: typeof window !== 'undefined' ? [
-    // Skip replay in dev — it records DOM mutations and adds overhead
+    // Skip replay in dev — it records DOM mutations and adds overhead.
+    // Privacy: mask every text node and every input value (never capture
+    // request/response bodies or auth headers — `networkDetailAllowUrls` is
+    // deliberately left unset, so Replay's network tab stays empty rather
+    // than risking a captured header). `blockAllMedia: false` is a kept,
+    // deliberate choice; `mask` additionally covers roster/recruiting
+    // containers by a stable `data-sentry-mask` attribute as defense in
+    // depth if `maskAllText` is ever narrowed later.
     ...(!isDev ? [Sentry.replayIntegration({
       maskAllText: true,
+      maskAllInputs: true,
       blockAllMedia: false,
+      mask: ['[data-sentry-mask]'],
     })] : []),
     Sentry.browserTracingIntegration(),
+    // Browser UI (JS Self-Profiling) — sampled at
+    // clientOptions.profileSessionSampleRate / profileLifecycle: 'trace'
+    // (see src/lib/sentry-client-options.ts for why `profilesSampleRate`
+    // itself is never set). Requires the `Document-Policy: js-profiling`
+    // response header, already present for every route in next.config.mjs
+    // `headers()`. Chromium-only API — Safari/iOS sessions never profile
+    // regardless of sample rate; that is a platform limit, not a bug here.
+    Sentry.browserProfilingIntegration(),
+    // Release health (crash-free session rate) — a session starts on load
+    // and on every navigation (`lifecycle: 'route'`, the default).
+    Sentry.browserSessionIntegration(),
+    // Auto-captures failed fetch/XHR calls (default: 5xx only, see
+    // node_modules/@sentry/browser/build/npm/types/integrations/
+    // httpclient.d.ts) as breadcrumbs/events. No request/response body or
+    // header capture exists on this integration's option surface, so
+    // defaults cannot leak auth headers or bodies.
+    Sentry.httpClientIntegration(),
+    // Browser Reporting API — surfaces crash/deprecation/intervention
+    // reports the browser itself generates (distinct from CSP violation
+    // reports, which this app does not currently route through a
+    // report-to/report-uri endpoint).
+    Sentry.reportingObserverIntegration(),
     // Forward client console.log/.warn/.error to Sentry → Explore → Logs
     // (separate stream from issues). Catches anything that goes through
     // console rather than Sentry.captureException.
@@ -93,15 +107,42 @@ Sentry.init({
     // error boundary console.errors, hydration warnings, unhandled promise
     // rejections that get logged but not thrown.
     Sentry.captureConsoleIntegration({ levels: ['error'] }),
-    // Note: feedbackIntegration was moved out of @sentry/nextjs in v10.x —
-    // it now lives in @sentry-internal/feedback. Calling
-    // Sentry.feedbackIntegration({...}) at runtime evaluates to
-    // undefined({...}) which crashes the entire client SDK init and
-    // starves the project of events. Re-add by importing from
-    // @sentry-internal/feedback directly if we want the widget back.
+    // Drops (or tags) events whose stack is entirely third-party script.
+    // `applicationKey: 'helm-web'` in next.config.mjs's withSentryConfig
+    // marks first-party modules at build time — PRODUCTION BUILDS ONLY:
+    // withSentryConfig itself is skipped in dev (next.config.mjs `isDev`
+    // branch), so in dev no frame ever carries the marker and every frame
+    // would read as third-party — this integration is gated the same way
+    // replay is gated above, for the same reason.
+    ...(!isDev ? [Sentry.thirdPartyErrorFilterIntegration({
+      filterKeys: ['helm-web'],
+      behaviour: 'drop-error-if-contains-third-party-frames',
+    })] : []),
+    // Programmatic feedback form only — `autoInject: false` means NO
+    // floating widget is injected. Opened via the `ReportProblemButton`
+    // component (src/components/fairway/feedback/ReportProblemButton.tsx)
+    // calling `Sentry.getFeedback()?.createForm()`.
+    //
+    // A comment here previously said `Sentry.feedbackIntegration` "moved out
+    // of @sentry/nextjs in v10.x" into `@sentry-internal/feedback` and would
+    // crash the SDK if called. Re-verified at RUNTIME (not just against
+    // .d.ts files, which is what missed it the first time) against the
+    // installed @sentry/nextjs 10.71.0: `node -e "import('@sentry/nextjs')..."`
+    // resolves `feedbackIntegration` as a real function all the way through
+    // the actual export chain this file uses — @sentry/nextjs's
+    // `index.client.js` (`export * from '@sentry/react'`) -> @sentry/react's
+    // `index.js` (`export * from '@sentry/browser'`) -> @sentry/browser's
+    // prod bundle, which exports `feedbackSyncIntegration as feedbackIntegration`
+    // from `@sentry/feedback` directly. That crash was real for an older
+    // @sentry/nextjs v10.x minor; it does not describe this one.
+    Sentry.feedbackIntegration({
+      autoInject: false,
+      showBranding: false,
+      colorScheme: 'system',
+      isEmailRequired: false,
+      isNameRequired: false,
+    }),
   ] : [],
-
-  environment,
 
   // Scrub PII from error payloads + auto-tag every event with the sport
   // derived from URL path. Helm handles recruiting + roster data, so we drop
@@ -164,6 +205,13 @@ Sentry.init({
     // get their own buckets (rather than falling into 'marketing') since
     // both carry meaningfully different error populations than the public
     // marketing/landing surfaces.
+    //
+    // This is a DIFFERENT, coarser axis than error-trace-classification.ts's
+    // `classifyTraceSurface` (golf | baseball | shared | null) — it has no
+    // admin/lifting/marketing buckets of its own — and Sentry alert rules /
+    // saved searches key on these exact `sport` tag values. Do not replace
+    // this with classifyTraceSurface; that would silently re-bucket events
+    // under saved searches built against the values below.
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
       const sport = path.startsWith('/admin') ? 'admin'
@@ -172,55 +220,26 @@ Sentry.init({
         : path.startsWith('/golf') ? 'golf'
         : 'marketing';
       event.tags = { ...event.tags, sport };
+
+      // `feature` is the finer-grained tag error-logging.ts's `logError()`
+      // already attaches (via this SAME `classifyTraceSurface`, promoted to
+      // a real Sentry tag by its `Sentry.withScope` "remaining keys become
+      // tags" loop) for errors routed through the ~140 boundary components.
+      // Events that reach Sentry WITHOUT going through `logError` — a raw
+      // uncaught exception, a console.error not already bridge-logged and
+      // picked up by captureConsoleIntegration above — never got a `feature`
+      // tag at all. Reusing the existing classifier here closes that gap
+      // instead of building a second one.
+      const { feature } = classifyTraceSurface(path);
+      if (feature) {
+        event.tags.feature = feature;
+      }
     }
     // Mask email addresses in message / extra / contexts / exception values.
     // The scrubbing above covers only the request envelope; the free-text fields
     // are where addresses actually appear.
     return redactEventPii(event);
   },
-
-  // Filter out noisy errors
-  ignoreErrors: [
-    // Browser extensions
-    /^chrome-extension:\/\//,
-    /^moz-extension:\/\//,
-    // Network errors that aren't actionable (message varies by browser)
-    'Network request failed',
-    'Failed to fetch',
-    'Load failed',
-    /network\s*error/i,
-    /NetworkError/i,
-    'TypeError: cancelled',
-    // User-initiated navigation
-    'AbortError',
-    // ResizeObserver — benign, fires when layout settles
-    /ResizeObserver loop/,
-    // CefSharp's JavaScript bridge emits this when an embedded-browser host
-    // tears down a bound object before a queued callback runs. It originates
-    // outside our application bundle and is not actionable in Helm.
-    /Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/,
-    // Stale deployment assets are already handled by the global one-shot
-    // ChunkLoadError recovery mounted in app/layout.tsx. Keep the recovered
-    // exception from becoming an issue while preserving all other errors.
-    /ChunkLoadError/i,
-    /Loading (?:CSS )?chunk \d+ failed/i,
-    // Dev-only Next.js server-action hash mismatches.
-    // These fire after any HMR rebuild that changes a server-action file:
-    // the client bundle still references the old action ID and a polled
-    // request 404s. Pure dev artifact — production action hashes are
-    // baked at build time and never drift.
-    'UnrecognizedActionError',
-    /Server Action ".*" was not found on the server/,
-    /Failed to find Server Action/,
-    // Dev-only Turbopack HMR module-factory invalidation. Happens when a
-    // dependency module gets replaced mid-flight; the next render has a
-    // stale closure. Resolves on the following render — not actionable.
-    /module factory is not available/,
-    /It might have been deleted in an HMR update/,
-    // 2026-05-17: CSP allowlist for va.vercel-scripts.com was added in
-    // next.config.mjs (Plan 08 / audit Finding 9 + B-MED-1). Removing the
-    // ignoreErrors mask so real CSP failures surface again.
-  ],
 });
 
 // Required by @sentry/nextjs v8+ for App Router navigation tracing.
