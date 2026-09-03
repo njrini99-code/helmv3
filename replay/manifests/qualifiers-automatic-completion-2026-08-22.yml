@@ -1,0 +1,45 @@
+schema_version: 1
+replay_id: qualifiers-automatic-completion-2026-08-22
+incident_id: memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md
+feature_id: qualifiers
+title: >-
+  The qualifier lifecycle reconciler treated end_date as an automatic
+  player lockout and could mark an active qualifier completed while
+  entrants still had rounds remaining.
+bad_version: 45a87e70c
+fixed_version: 82aaa3bf7c26fe7b956f6310e9f7f18ac6029323
+fixture:
+  - source: qualifier-lifecycle.test.ts
+    target: src/lib/golf/__tests__/qualifier-lifecycle.test.ts
+test_command: "./node_modules/.bin/vitest run src/lib/golf/__tests__/qualifier-lifecycle.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Fixture is the repair commit's own regression test over a pure lifecycle
+    transition function with literal status-string inputs. No production
+    rows, PII, tokens, or logs.
+source_incident_status: production data repaired; permanent manual-close-only code deployed and verified
+created_at: "2026-09-03"
+notes: >-
+  Backfilled per Phase G G.4.2. `getQualifierAutomaticTransition` (the
+  fixed_version's replacement API — only 'upcoming' -> 'in_progress' is ever
+  automatic, and it always returns null otherwise) does not exist at
+  bad_version; `git show 45a87e70c:src/lib/golf/qualifier-lifecycle.ts`
+  exports only `hasQualifierEndDatePassed`, the exact date-lockout function
+  the incident's root cause names. Overlaying the fixed_version test at
+  bad_version therefore fails with a module-resolution error (no such
+  exported member) rather than an assertion — the expected and correct
+  failure mode: it proves no "never closes automatically" invariant existed
+  to check in the old code, which is the incident's own finding
+  ("Removed automatic completion from the lifecycle entirely"). This
+  manifest covers only the automatic-completion defect (STEP 3 of the
+  incident's Repair section); the same incident's later Shenandoah
+  round-count write-gap and its atomic num_rounds fix are a separate,
+  R3-adjacent DB-write change not covered by this fixture.
+  package-lock.json is byte-identical across all three replays in this
+  corpus (sha256:54e0187c...) — see replay/README.md.

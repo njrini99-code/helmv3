@@ -99,6 +99,41 @@ const nextConfig = {
     minimumCacheTTL: 60, // Cache images for 60 seconds
   },
 
+  // Bridge Premium Phase 5 (Engineering OS, PR #1790): the /admin/engineering
+  // page's read models (src/lib/admin/engineering/{blast-radius,charter,
+  // decision-inbox}.ts) call `readFile(join(process.cwd(), '<repo path>'))`
+  // against these five repo files at request time. Next's build-time file
+  // tracer only follows the static import graph to decide what a route's
+  // serverless function bundle carries — a computed `readFile` argument is
+  // invisible to it, so without an explicit include here the panels would
+  // read `unconfigured` in production forever even once the underlying
+  // migration/World-Model PRs land, because the files were traced OUT of the
+  // bundle despite being present in the Vercel upload (see the matching
+  // carve-out in .vercelignore's docs/ exclusion — being uploaded and being
+  // traced into the function bundle are two different gates, and this repo
+  // was missing the second one). Paths are relative to next.config.mjs
+  // (= the repo root, matching `process.cwd()` at runtime in this app).
+  outputFileTracingIncludes: {
+    '/admin/engineering': [
+      './docs/generated/WORLD_MODEL.json',
+      './docs/generated/contracts/**',
+      './docs/generated/janitor-findings.json',
+      './supabase/migrations/HELD.md',
+      './config/mutation-gate.json',
+    ],
+  // `held-migrations.ts` (`src/lib/admin/command-deck/held-migrations.ts`)
+  // reads `supabase/migrations/HELD.md` via `fs` at request time from
+  // `/admin` — output file tracing only bundles files it can see imported
+  // or explicitly listed here, so a Vercel serverless function is not
+  // otherwise guaranteed to ship a plain markdown file read this way. If
+  // this glob is ever wrong, `held-migrations.ts`'s own `fetchHeldMigrations`
+  // still degrades safely (any read failure returns `null`, and
+  // `buildDecisionInbox` treats that as `readable: false`, never an empty
+  // all-clear inbox) — this entry closes the gap, it isn't load-bearing for
+  // correctness.
+    '/admin': ['./supabase/migrations/HELD.md'],
+  },
+
   // Experimental features
   experimental: {
     // Enable server actions.

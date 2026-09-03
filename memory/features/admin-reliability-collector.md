@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD004 MD007 MD012 MD013 MD022 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
+
 # Feature: Admin Reliability Collector
 
 > Carved out of `memory/features/admin-platform.md` 2026-09-02 as part of the
@@ -25,6 +26,20 @@ Vercel cron, three-hourly, that runs three fault-isolated collector arms
 cron-board row per run. `/admin/reliability` renders source health, the
 blind-source notice, the severity mix, run history and the raw snapshot.
 
+Since 2026-09-03 (Bridge Control Plane Phase D.4.3) the same run also
+executes a FOURTH, independently fault-isolated arm — the executable
+invariant runner (`src/lib/reliability/invariants/run-checks.ts`) — via a
+SEPARATE `Promise.allSettled` run concurrently alongside the 3-source array,
+not folded into it (`ReliabilitySource`/`sourceNames` stays a closed
+3-element union). Its result lands on the new, OPTIONAL
+`ReliabilityRun.invariants` field — absent on any row written before this
+shipped, and deliberately not a `version` bump, since `parseRun`
+(`src/lib/admin/data/reliability.ts`) only requires `version === 1`. See
+`memory/features/admin-slo.md` for the invariants themselves and the
+downstream read (`/admin/health`'s Invariant Lattice, `/admin/slo`'s error
+budget — a NEW derived view over `error-budget.ts`, likewise owned by
+`admin_slo`, not this feature).
+
 ## Primary Entry Points
 
 ### Routes
@@ -45,6 +60,24 @@ blind-source notice, the severity mix, run history and the raw snapshot.
   `sources.ts` (`collectSentry`, `collectSupabase`, `collectVercel`),
   `normalize.ts` (`correlateSignals`, `correlationSignature`), `resolution.ts`,
   `types.ts`.
+- `src/lib/admin/release-intel/**` (2026-09-03, control-plane plan §4 F
+  remainder) — `risk-score.ts` (pure change-risk tier + itemized reasons),
+  `rollback.ts` (pure KEEP/WATCH/PAUSE_ROLLOUT/ROLLBACK_RECOMMENDED/UNKNOWN
+  verdict over `reliability-snapshot` window summaries), `read-model.ts`
+  (server-only: `fetchRollbackRecommendation()` for the live release via
+  Supabase + `fetchReleaseLedger()`; `fetchPendingReleaseRisk()` for queued
+  release-queue items via defensive reads of `memory/registry.yml` and
+  `docs/generated/WORLD_MODEL.json` — degrades to `unconfigured` if either
+  file is unreadable at runtime, never crashes). `scripts/release-intel/**`
+  — `score-change.ts` (`npm run risk:score`), `evaluate-rollback.ts` (`npm
+  run release:rollback-check`), both read-only and non-executing (never
+  calls a deploy/rollback API). Renders on `/admin/deploys` as a new
+  "Release intelligence" panel
+  (`src/app/admin/deploys/_components/ReleaseIntelPanel.tsx`).
+  `types.ts`, `error-budget.ts` (`computeErrorBudgets()` — a pure rolling-window
+  read over this feature's own `reliability-snapshot` history, consumed by
+  `admin_slo`), `invariants/**` (the Phase D.4.3 fourth arm: `run-checks.ts`,
+  `round-graph-invariants.ts`, `round-graph-data.ts`).
 
 ## Core Data
 
@@ -177,7 +210,14 @@ blind-source notice, the severity mix, run history and the raw snapshot.
   semantics and cross-source correlation.
 - `src/lib/reliability/__tests__/sources.test.ts` — the self-feeding-read
   guard, asserted at the query level where it actually lives.
+- `src/lib/reliability/__tests__/error-budget.test.ts` — the honesty contract
+  (unreadable/blind windows never read `'ok'`, floor accounting).
+- `src/lib/reliability/invariants/__tests__/*.test.ts` — the round-graph
+  checks' pure logic, the timeout/error-degrades-to-unknown runner contract,
+  and a read-only-by-construction source check.
 - `src/app/admin/reliability/__tests__/reliability-view.test.ts`
+- `src/lib/admin/release-intel/__tests__/risk-score.test.ts`,
+  `src/lib/admin/release-intel/__tests__/rollback.test.ts`.
 - Typecheck/build for admin UI changes.
 
 ## Related Docs

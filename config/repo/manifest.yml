@@ -108,7 +108,16 @@ vercel:
     - audit/
     - tools/
     - routes/
-    - docs/
+    # docs/ was one wholesale entry until 2026-09-03. It stopped being true when
+    # /admin/engineering began reading three generated files at request time, so
+    # `.vercelignore` now excludes `docs/*` and carves those three back in. The
+    # directory-wide exclusion still holds for everything else — a new docs
+    # subdirectory is excluded the moment it appears, without an entry here —
+    # and these three are named because they carry ~97% of the weight and a
+    # future carve-out must not quietly re-include them.
+    - docs/qa/
+    - docs/archive/
+    - docs/audits/
     - deno.lock
     - node_modules/
     - .next/

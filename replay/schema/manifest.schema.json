@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "helmv3-replay-manifest-v1",
+  "title": "Incident Replay Manifest",
+  "description": "Formalizes what the Repair stage's STEP 3 already does ad hoc: check out a bad SHA, apply the regression test the repair introduced, prove it fails, then prove it passes at the fixed SHA. See replay/README.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "replay_id",
+    "incident_id",
+    "feature_id",
+    "title",
+    "bad_version",
+    "fixed_version",
+    "fixture",
+    "test_command",
+    "expected",
+    "sanitization",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "replay_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case, unique. Matches the manifest and proof file basenames."
+    },
+    "incident_id": {
+      "type": "string",
+      "description": "Repo-relative path to the memory/incidents/**/INC-*.md this replay backfills."
+    },
+    "feature_id": {
+      "type": "string",
+      "description": "memory/registry.yml feature key this incident belongs to."
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "bad_version": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$",
+      "description": "Commit SHA before the repair. The replay must reproduce the failure here."
+    },
+    "fixed_version": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$",
+      "description": "Commit SHA that repaired the incident. The replay must pass here."
+    },
+    "fixture": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "target"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Path relative to replay/fixtures/<feature_id>/<replay_id>/."
+          },
+          "target": {
+            "type": "string",
+            "description": "Repo-relative path the runner overlays this file onto in the worktree, at both bad_version and fixed_version."
+          }
+        }
+      }
+    },
+    "test_command": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shell command run from the worktree root, e.g. './node_modules/.bin/vitest run <path>'. Must never invoke build, deploy, or a write path."
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bad_version", "fixed_version"],
+      "properties": {
+        "bad_version": { "const": "fail" },
+        "fixed_version": { "const": "pass" }
+      }
+    },
+    "expected_failure_mode": {
+      "type": "string",
+      "enum": ["assertion", "missing-export", "type-error", "runtime-error"],
+      "description": "Why bad_version is expected to fail, recorded so a run.mjs pass/fail is checked against an explanation, not just an exit code. 'missing-export' is common in this repo: STEP 3 writes the test against symbols the repair itself introduces."
+    },
+    "sanitization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewed", "contains_production_data"],
+      "properties": {
+        "reviewed": { "const": true, "description": "A manifest can only land after an explicit sanitization review. No assumed-safe default." },
+        "contains_production_data": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "source_incident_status": { "type": "string" },
+    "created_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "notes": { "type": "string" }
+  }
+}

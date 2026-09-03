@@ -1338,6 +1338,8 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
+        - src/app/admin/engineering/**
+        - src/app/admin/work-log/**
         - src/app/admin/database/**
         - src/app/admin/lenses/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
@@ -1374,6 +1376,14 @@ features:
         # resolved src/components/admin/premium/** to impactedFeatures: [].
         - src/components/admin/premium/**
         - src/app/golf/admin/crm/components/**
+        # Bridge Premium Phase 2 Command Deck UI — `knowledge:map` resolved
+        # `src/components/admin/command-deck/**` to `impactedFeatures: []`
+        # before this line. Same precedent as `src/lib/admin/**` below: this
+        # is the Bridge/admin_platform surface's own component tree, not a
+        # separate feature, just outside `src/app/admin/_components/**`
+        # because Fairway primitives for a shared, sibling-branch component
+        # library live under `src/components/**`, not `src/app/**`.
+        - src/components/admin/command-deck/**
         # Phase 4 lens dominant-visual components (JourneyFlow,
         # UserJourneyRibbon, TeamEkgRow, AdoptionMapPanel,
         # ActivityThreadsPanel) — mapped here 2026-09-03 after `knowledge:map`
@@ -1463,6 +1473,15 @@ features:
         # not a closed gap.
         - scripts/janitor/**
       db:
+        # Agent Flight Recorder (Bridge Premium Phase 5, Engineering OS) —
+        # mapped here 2026-09-03 after `knowledge:map` resolved this file to
+        # shot_tracking (a false positive off shot_tracking's own broader
+        # `*helm_debug*.sql` glob, which correctly covers the GOLF round
+        # trace recorder/retention files) and team_access_control, but not
+        # admin_platform. This table is a Bridge/Engineering-OS record of
+        # autonomous Claude runs, not a golf-round trace — a narrower glob
+        # than shot_tracking's, so it does not touch that feature's mapping.
+        - supabase/migrations/*helm_debug_agent_runs*.sql
         - supabase/migrations/*admin*.sql
         - supabase/migrations/*crm*.sql
         - supabase/migrations/*audit*.sql
@@ -1579,8 +1598,16 @@ features:
       actions: []
       services:
         - src/lib/reliability/**
+        # Phase F remainder (control-plane plan §4 F.4.1/F.4.3): change-risk
+        # scoring + rollback recommendation. A narrower glob than
+        # src/lib/admin/** (admin_platform's blanket catch-all) —
+        # most-specific-glob-wins per this file's own documented resolution
+        # rule (see the src/lib/admin/** comment on admin_platform).
+        - src/lib/admin/release-intel/**
+        - scripts/release-intel/**
       db: []
-      tests: []
+      tests:
+        - src/lib/admin/release-intel/__tests__/**
     integrations:
       - supabase
       - sentry
@@ -1591,7 +1618,47 @@ features:
         - docs/OBSERVABILITY.md
       required_checks:
         - npm run typecheck
-        - npx vitest run src/lib/reliability src/app/admin/reliability
+        - npx vitest run src/lib/reliability src/app/admin/reliability src/lib/admin/release-intel
+        - npm run build
+
+  admin_slo:
+    name: Admin SLO Center
+    status: active
+    owner: platform
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: "A synthesis layer — reads background_job_logs, get_feature_health() and helm_debug_list_traces; writes nothing of its own, so it has no admin_events feature tag."
+      covered_by: admin_platform
+    docs:
+      feature: memory/features/admin-slo.md
+      business_logic:
+        - docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md
+      incidents: []
+    code:
+      routes:
+        - src/app/admin/slo/**
+      # src/components/admin/slo/** is reserved (this feature's rendering
+      # lives inline in page.tsx, matching admin_qualifiers's own
+      # convention) — not globbed here since an empty glob fails
+      # check-registry-globs; add it back the moment a file lands there.
+      components: []
+      api: []
+      actions: []
+      services:
+        - src/lib/admin/slo/**
+      db: []
+      tests: []
+    integrations:
+      - supabase
+    review:
+      required_docs:
+        - memory/features/admin-slo.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/admin/slo src/lib/reliability/__tests__/error-budget.test.ts src/lib/reliability/invariants
+        - npm run knowledge:invariants-check
+        - npm run knowledge:golden-paths-generate:check
         - npm run build
 
   admin_selfheal:
@@ -1633,10 +1700,24 @@ features:
         - scripts/selfheal-repair-doctor.mjs
         - config/launchd/**
         - docs/ai-system/selfheal/**
+        # Phase J remainder (control-plane plan §6 J.4.2-J.4.4): verification
+        # ensemble (default OFF via the verification_ensemble flag —
+        # config/feature-flags.yml), causal-confidence scoring, incident
+        # similarity (over src/lib/admin/incidents/aliases.ts's structural
+        # fingerprints), and earned-autonomy policy. Narrower globs than
+        # src/lib/admin/** (admin_platform's blanket catch-all) —
+        # most-specific-glob-wins per this file's own documented resolution
+        # rule.
+        - src/lib/admin/ensemble/**
+        - src/lib/admin/causal/**
+        - src/lib/admin/autonomy/**
       db: []
       tests:
         - src/test/scripts/run-selfheal-repair.test.ts
         - src/test/scripts/selfheal-repair-launchd.test.ts
+        - src/lib/admin/ensemble/__tests__/**
+        - src/lib/admin/causal/__tests__/**
+        - src/lib/admin/autonomy/__tests__/**
     integrations:
       - supabase
       - sentry
@@ -1648,7 +1729,49 @@ features:
       required_checks:
         - npm run typecheck
         - npx vitest run src/test/scripts/run-selfheal-repair.test.ts src/test/scripts/selfheal-repair-launchd.test.ts
+        - npx vitest run src/lib/admin/ensemble src/lib/admin/causal src/lib/admin/autonomy
         - npm run build
+
+  admin_replay_lab:
+    name: Admin Replay Lab
+    status: active
+    owner: platform
+    criticality: medium
+    observability:
+      feature_keys: []
+      reason: "Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/self-heal) reads a bundled generated index, not a runtime telemetry source."
+    docs:
+      feature: memory/features/admin-replay-lab.md
+      flows:
+        - replay/README.md
+        - docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md
+        - docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md
+        - docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md
+      business_logic: []
+      incidents: []
+    code:
+      routes: []
+      components:
+        - src/components/admin/replay/**
+      api: []
+      actions: []
+      services:
+        - replay/**
+        - src/lib/admin/replay/**
+      db: []
+      tests:
+        - src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts
+    integrations: []
+    review:
+      required_docs:
+        - memory/features/admin-replay-lab.md
+        - replay/README.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts
+        - node --check replay/runners/run.mjs
+        - node --check replay/runners/manifest.mjs
+        - node --check replay/runners/gen-coverage-index.mjs
 
   team_access_control:
     name: Team Access Control And RLS
