@@ -200,13 +200,16 @@ describe('buildTraceTree — robustness against real-world data', () => {
 
 describe('buildTraceTree — observedStepCount', () => {
   it('counts exactly the observed rows, never the synthesised missing ones', () => {
-    // golf.round.submit synthesises verify.round/verify.holes/verify.shots as
-    // missing (never observed) against REAL_STEPS — those must not inflate
-    // this count. This is the single definition the list RPC's own
-    // observed_step_count column is reconciled against in bridgeGetFlightTrace.
-    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
-    expect(tree.observedStepCount).toBe(REAL_STEPS.length);
-    expect(tree.missingRequiredCount).toBeGreaterThan(0);
+    // A declared REQUIRED step the trace never observed (server.player is
+    // dropped from the fixture here) is synthesised as missing — it must not
+    // inflate this count. verify.* are best_effort since the 2026-09-02
+    // real-timings refit, so they no longer stand in as the missing step.
+    // This is the single definition the list RPC's own observed_step_count
+    // column is reconciled against in bridgeGetFlightTrace.
+    const withoutPlayer = REAL_STEPS.filter((row) => row.step_key !== 'server.player');
+    const tree = buildTraceTree(withoutPlayer, 'golf.round.submit');
+    expect(tree.observedStepCount).toBe(withoutPlayer.length);
+    expect(tree.missingRequiredCount).toBe(1);
   });
 
   it('increments when an undeclared-but-observed row is present', () => {
@@ -242,8 +245,17 @@ describe('buildTraceTree — undeclared observed steps', () => {
   });
 
   it('does not count an undeclared observed row in missingRequiredCount', () => {
-    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
-    expect(tree.missingRequiredCount).toBe(3); // verify.round, verify.holes, verify.shots
+    // Baseline: one declared required step (server.player) is missing.
+    const withoutPlayer = REAL_STEPS.filter((row) => row.step_key !== 'server.player');
+    const baseline = buildTraceTree(withoutPlayer, 'golf.round.submit').missingRequiredCount;
+    expect(baseline).toBe(1);
+    // An observed row the workflow never declared is 'undeclared', not
+    // 'missing', so the count must not move.
+    const withUndeclared = [
+      ...withoutPlayer,
+      { step_key: 'db.submit_round_atomic.checkpoint_extra', parent_step_key: 'db.submit_round_atomic', layer: 'postgres', status: 'success', requiredness: 'required', duration_ms: 4 },
+    ];
+    expect(buildTraceTree(withUndeclared, 'golf.round.submit').missingRequiredCount).toBe(baseline);
   });
 
   it('leaves a declared, top-level, actually-observed step as not undeclared', () => {
