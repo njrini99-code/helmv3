@@ -8,7 +8,9 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchSelfHealBoard, type SelfHealStageDetail } from '@/lib/admin/data/selfheal';
 import type { CapabilityEvidence } from '@/lib/admin/selfheal-capability';
 import { SELFHEAL_RUNNER_LABEL } from '@/lib/admin/selfheal-registry';
-import { Surface, StatusPill, InlineNotice, Eyebrow } from '@/components/fairway';
+import { Surface, InlineNotice, Eyebrow } from '@/components/fairway';
+import { buildSelfHealCircuit } from '@/lib/admin/triage/self-heal-circuit';
+import { SelfHealCircuitSummary } from '@/components/admin/triage/SelfHealCircuitSummary';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelStale } from '../_components/PanelStates';
@@ -17,7 +19,6 @@ import { LocalTime } from '../_components/LocalTime';
 import {
   SelfHealCircuit,
   RunHistoryHeatmap,
-  VERDICT_TONE,
   formatStageAge,
   deriveSchedulePosition,
 } from './_components/SelfHealCircuit';
@@ -254,17 +255,29 @@ async function SelfHealBody() {
 
   const board = result.data;
 
+  // The full circuit (Bridge Premium Phase 3) merges this same board with the
+  // throughput/stall counts `FlowBody` below reads independently — one more
+  // `cachedIncidentBoard` call, which is React-`cache()`-memoised per request,
+  // so this does not add a second incident-board fetch.
+  const incidentBoard = await cachedIncidentBoard(DEFAULT_INCIDENT_WINDOW_HOURS);
+  const circuit = buildSelfHealCircuit(board, summarizeFlow(incidentBoard.incidents, Date.now()));
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusPill tone={VERDICT_TONE[board.verdict.tone]} dot size="md">
-          {board.verdict.label}
-        </StatusPill>
-        <span className="text-sm text-warm-600">{board.verdict.detail}</span>
-      </div>
+      <Surface padding="sm">
+        <Eyebrow as="h2">Circuit — at a glance</Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          Per stage: is it running, is it proven, what is waiting on it right now, what it last did, and its newest
+          repair PR. Budget is reported honestly as untracked — nothing in this codebase measures a per-stage budget
+          today.
+        </p>
+        <div className="mt-3">
+          <SelfHealCircuitSummary view={circuit} />
+        </div>
+      </Surface>
 
       <Surface padding="sm">
-        <Eyebrow as="h2">Circuit</Eyebrow>
+        <Eyebrow as="h2">Circuit — detail</Eyebrow>
         <p className="mt-1 text-xs text-warm-500">
           Runtime (is it on schedule) and capability (has it ever produced its output) for each stage, in order.
         </p>
