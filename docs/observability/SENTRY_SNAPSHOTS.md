@@ -298,15 +298,35 @@ migration, no data, no other job references this one.
 
 ## 10. Base build status
 
-As of this writing: **partial.** This session had local access to
-`GOLFHELM_PLAYER_EMAIL` / `GOLFHELM_PLAYER_PASSWORD` and
+**Not seeded locally — skipped deliberately.** This session had local
+access to `GOLFHELM_PLAYER_EMAIL` / `GOLFHELM_PLAYER_PASSWORD` and
 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (present in
-`.env.local`) but NOT `E2E_BASEBALL_COACH_*` / `E2E_BASEBALL_PLAYER_*`
-(GitHub Actions secrets only, not mirrored locally) — so a local
-`npm run build` + `npm run start` + capture run could produce and manually
-upload the public + golf-player subset of images (9 of 15 screens), but not
-the baseball subset. See the commit message / PR description this doc
-shipped with for whether that manual upload happened and what Sentry URL it
-printed; if it did not run to completion, CI's first successful
-`push: main` run creates the base build from scratch — nothing here needs
-to be re-run manually for that to happen, it is what the workflow does.
+`.env.local`, not `E2E_BASEBALL_COACH_*` / `E2E_BASEBALL_PLAYER_*`, which
+are GitHub Actions secrets only), so a local `npm run build` +
+`npm run start` + capture run could in principle have produced and
+manually uploaded the public + golf-player subset (9 of 15 screens).
+
+Two attempts were made and both were abandoned before completion:
+
+1. A first `npm run build` failed at the prerender step
+   (`Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.`) — a bug in
+   this session's own local verification script, which exported
+   `.env.local`'s `KEY="value"` lines with the literal surrounding quote
+   characters still attached to the value. Fixed (switched to sourcing the
+   file, which lets bash's own assignment parsing strip the quotes) and
+   confirmed fixed by inspection before retrying — **this bug was local-only
+   and never affected the actual CI workflow**, which reads
+   `secrets.NEXT_PUBLIC_SUPABASE_URL` directly with no shell quoting step
+   in between.
+2. The retry was killed mid-build after the team lead flagged that this
+   worktree's `.next` had grown to 6 GB and was the largest process on a
+   16 GB machine running five other concurrent agent sessions. Per that
+   guidance, the local pass was abandoned rather than restarted a third
+   time, `.next` / `test-results` / `playwright-report` were deleted, and
+   this doc records the skip instead of a manufactured result.
+
+**Nothing here blocks the workflow.** CI's first successful `push: main`
+run creates the base build from scratch — that is what the workflow does
+on every push to `main` regardless of whether a local seed ever ran (see
+§1, "Why a base build needs `push: main` too"). No manual step is needed to
+make that happen.
