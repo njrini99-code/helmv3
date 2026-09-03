@@ -19,7 +19,7 @@
 -- table, RPC-gated and service-role only, reusing the golf Flight
 -- Recorder's storage pattern
 -- (a private schema PostgREST cannot see, reached only through
--- SECURITY DEFINER facades) rather than a jsonb blob bolted onto
+-- security-definer facades) rather than a jsonb blob bolted onto
 -- `background_job_logs`. This is a record of autonomous Claude runs
 -- (Diagnose/Repair today; any future workflow tomorrow) — charter,
 -- hypotheses considered, context loaded, tools used, files changed,
@@ -141,7 +141,7 @@ $$;
 revoke all on function helm_private.agent_run_safe_payload(jsonb) from public;
 
 -- The public wrapper is the only write gateway for the private schema. It
--- is SECURITY DEFINER by design: PostgREST cannot expose helm_debug, and
+-- is security-definer by design: PostgREST cannot expose helm_debug, and
 -- the service-role-only API keeps agent-run capture fail-open and out of
 -- the caller's own transaction. Four parameters, not one per field -- a
 -- wide parameter list has to be retyped identically in the REVOKE line,

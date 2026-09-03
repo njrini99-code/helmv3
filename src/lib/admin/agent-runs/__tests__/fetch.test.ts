@@ -51,6 +51,37 @@ describe('fetchAgentRuns', () => {
     expect(result.data).toBeNull();
   });
 
+  it('reports unconfigured (not error) for PGRST202 — the actual PostgREST error while the migration is HELD', async () => {
+    // Regression test for PR #1790 review item 1: while
+    // helm_debug_agent_runs is HELD, PostgREST cannot resolve the RPC name
+    // at ALL and answers PGRST202, not 42883/42P01 (those only fire once
+    // the function exists but helm_debug's tables don't — a later stage of
+    // the same HELD rollout). Before this fix, fetchAgentRuns returned
+    // failed(...) for this exact shape and /admin/engineering rendered a
+    // red role="alert" "read failed" panel every 60s AutoRefresh poll
+    // instead of the not-yet-live PanelNoData state.
+    rpcImpl = async () => ({
+      data: null,
+      error: {
+        code: 'PGRST202',
+        message:
+          'Could not find the function public.helm_debug_list_agent_runs(p_limit, p_status, p_workflow) in the schema cache',
+      },
+    });
+    const result = await fetchAgentRuns();
+    expect(result.status).toBe('unconfigured');
+    expect(result.data).toBeNull();
+  });
+
+  it('reports unconfigured for 3F000 (invalid_schema_name) — the function exists but helm_debug does not yet', async () => {
+    rpcImpl = async () => ({
+      data: null,
+      error: { code: '3F000', message: 'schema "helm_debug" does not exist' },
+    });
+    const result = await fetchAgentRuns();
+    expect(result.status).toBe('unconfigured');
+  });
+
   it('reports unconfigured when the RPC call itself throws a "does not exist" error', async () => {
     rpcImpl = async () => {
       throw new Error('relation "helm_debug.agent_runs" does not exist');
@@ -75,6 +106,15 @@ describe('fetchAgentRuns', () => {
 });
 
 describe('fetchAgentRun', () => {
+  it('reports unconfigured (not error) for PGRST202, matching fetchAgentRuns', async () => {
+    rpcImpl = async () => ({
+      data: null,
+      error: { code: 'PGRST202', message: 'Could not find the function public.helm_debug_get_agent_run(p_run_id) in the schema cache' },
+    });
+    const result = await fetchAgentRun('r1');
+    expect(result.status).toBe('unconfigured');
+  });
+
   it('returns ok(null) when no row matches the run id', async () => {
     rpcImpl = async () => ({ data: {}, error: null });
     const result = await fetchAgentRun('missing');

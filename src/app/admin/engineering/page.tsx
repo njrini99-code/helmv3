@@ -2,7 +2,7 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchDecisionInbox, type EngineeringDecisionItem } from '@/lib/admin/engineering/decision-inbox';
 import { fetchAgentRuns } from '@/lib/admin/agent-runs/fetch';
 import { fetchMutationGateCharter, fetchContractsCharter, fetchJanitorCharter } from '@/lib/admin/engineering/charter';
-import { fetchBlastRadius, formatCausalConfidenceLadder } from '@/lib/admin/engineering/blast-radius';
+import { fetchBlastRadius } from '@/lib/admin/engineering/blast-radius';
 import { fetchRepairQuality, type RepairStayedFixed } from '@/lib/admin/engineering/work-log';
 import { Eyebrow, InlineNotice, StatusPill, Surface, Skeleton, SkeletonList, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
@@ -211,20 +211,6 @@ async function CharterBody() {
 
 // ── Blast radius + causal confidence ────────────────────────────────────
 
-const EXAMPLE_CONFIDENCE_LADDER = formatCausalConfidenceLadder(
-  {
-    relationship: 'new-after-release',
-    confidence: 0.86,
-    evidenceFor: [
-      'began 4m after deploy',
-      'affected feature changed in this release',
-      'failing RPC changed in this release',
-    ],
-    evidenceAgainst: ['external provider latency also elevated'],
-  },
-  '8e4c5b7d',
-);
-
 async function BlastRadiusBody({ entityId }: { entityId: string }) {
   const result = await fetchBlastRadius(entityId);
 
@@ -236,8 +222,8 @@ async function BlastRadiusBody({ entityId }: { entityId: string }) {
         </p>
         {result.status === 'unconfigured' ? (
           <PanelNoData
-            label="Helm World Model not yet available"
-            description="docs/generated/WORLD_MODEL.json ships on PR #1785 — this panel resolves once it merges."
+            label="Helm World Model unreadable"
+            description="Run `npm run knowledge:world-model` to regenerate docs/generated/WORLD_MODEL.json."
           />
         ) : result.status === 'error' || !result.data ? (
           <InlineNotice tone="danger" title="Blast radius read failed">{result.error}</InlineNotice>
@@ -266,20 +252,15 @@ async function BlastRadiusBody({ entityId }: { entityId: string }) {
         )}
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Causal confidence — example (illustrative, not live incident data)
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Causal confidence</p>
         <p className="mt-1 text-xs text-warm-500">
-          Renders `release-context.ts`&apos;s existing `classifyReleaseRelationship` verdict as an evidence ladder.
-          Confidence is never 1.0 from correlation alone.
+          <code className="font-fw-mono">formatCausalConfidenceLadder</code> renders an evidence ladder
+          (&ldquo;LIKELY CAUSED BY RELEASE … confidence NN%, + evidence, − counter-evidence&rdquo;) from
+          `release-context.ts`&apos;s existing <code className="font-fw-mono">classifyReleaseRelationship</code>{' '}
+          verdict — confidence is never 1.0 from correlation alone. This panel has no live incident selected to
+          run it against yet — per-incident causal confidence renders on the incident detail view once that
+          selection exists (Phase 1). No fabricated numbers are shown here in the meantime.
         </p>
-        <ul className="mt-2 space-y-1 font-fw-mono text-xs">
-          {EXAMPLE_CONFIDENCE_LADDER.map((line, i) => (
-            <li key={i} className={i === 0 ? 'font-semibold text-text-primary' : 'text-warm-600'}>
-              {line}
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );

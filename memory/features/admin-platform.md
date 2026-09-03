@@ -686,17 +686,24 @@ the owner's Bridge Premium Observability brief §29-40/§45 (Phase 5) and
 - **Blast radius + causal confidence**
   (`src/lib/admin/engineering/blast-radius.ts`). `computeBlastRadius` is a
   bounded 1-2 hop breadth-first walk over the Helm World Model graph
-  (`docs/generated/WORLD_MODEL.json` — does not exist on `main` as of this
-  entry) — a lightweight CONSUMER of that already-materialized graph, not
-  a reimplementation of the World Model generator's own `--impact` engine
-  (`world-model.mjs` under `scripts/knowledge` also does not exist on
-  `main` yet; registry parsing, critical-feature scoring, journey attribution
-  stay exactly where they live once it lands). Both ship on
-  `agent/bridge-worldmodel` (PR #1785, open) —
-  `fetchBlastRadius` reports `unconfigured` until that merges.
+  (`docs/generated/WORLD_MODEL.json`, produced by `scripts/knowledge/
+  world-model.mjs`) — a lightweight CONSUMER of that already-materialized
+  graph, not a reimplementation of the World Model generator's own
+  `--impact` engine (registry parsing, critical-feature scoring, journey
+  attribution stay exactly where they live). Both landed on `main` via
+  PR #1785 (2026-09-03) — `fetchBlastRadius` still reports `unconfigured`
+  if the file is ever absent/unreadable, and is served in production via a
+  dedicated `outputFileTracingIncludes` entry in `next.config.mjs` (Next's
+  build-time file tracer cannot see a dynamic `readFile` path on its own —
+  see the PR #1790 review fixes note below) plus a module-level parse cache
+  keyed by the file's `mtimeMs`, so a `force-dynamic` page polled by
+  `AutoRefresh` does not re-parse a multi-MB graph on every request.
   `formatCausalConfidenceLadder` is pure formatting only, over
   `release-context.ts`'s existing `classifyReleaseRelationship` verdict
-  (Phase 0, above) — deliberately no second causal-confidence engine.
+  (Phase 0, above) — deliberately no second causal-confidence engine. The
+  `/admin/engineering` page does not call it yet (no live incident is
+  selected on that page to run it against) — it renders once wired to a
+  real per-incident view (Phase 1).
 - **Work Log proof + repair quality**
   (`src/lib/admin/engineering/work-log.ts`). `buildWorkLogProof` composes
   `fetchWorkLog()` (GitHub PRs) and `fetchReleaseLedger()` (Vercel deploys
@@ -713,6 +720,76 @@ the owner's Bridge Premium Observability brief §29-40/§45 (Phase 5) and
   (`ReleaseCardData.verdict`), not per-fingerprint episode tracking (a
   Phase 1 concept — `episodes.ts` above — this file has no access path
   to without a second incident-fetching pipeline).
+
+### PR #1790 review fixes (2026-09-03)
+
+Three runtime defects found in review, after main (including PR #1785's
+World Model) was merged into the branch:
+
+1. `fetch.ts`'s `isUnappliedMigrationError` recognized only `42883`/`42P01`
+   or a "does not exist" message — but while the migration is HELD,
+   PostgREST answers the unknown RPC with `PGRST202` ("Could not find the
+   function … in the schema cache"), a shape that classifier never
+   matched. Every `AutoRefresh` poll on `/admin/engineering` therefore
+   returned `failed(...)` and rendered a red `role="alert"` panel instead
+   of the not-yet-live `PanelNoData` state. Fixed to match
+   `src/app/api/cron/helm-debug-prune/route.ts`'s
+   `isMigrationNotAppliedError` exactly (same four codes: `PGRST202`,
+   `42883`, `42P01`, `3F000`; same message fallbacks).
+2. `blast-radius.ts`, `charter.ts` and `decision-inbox.ts` all
+   `readFile(join(process.cwd(), 'docs/...'))` at request time, but
+   `.vercelignore` excluded all of `docs/` from the Vercel upload and
+   `next.config.mjs` carried no `outputFileTracingIncludes` — so even once
+   the underlying artifacts existed, a production build's file tracer
+   would never have carried them into the serverless function bundle
+   (being uploaded and being traced into the bundle are two separate
+   gates; this repo was missing the second one for a dynamic `readFile`
+   call, which the tracer's static import-graph analysis cannot see).
+   Fixed: `.vercelignore` carves out `docs/generated/WORLD_MODEL.json`,
+   `docs/generated/contracts/` and the Janitor's machine-readable findings
+   file (also under `docs/generated`, not committed by design)
+   from the `docs/` exclusion; `next.config.mjs` adds a matching
+   `outputFileTracingIncludes` entry for `/admin/engineering` covering
+   those three plus `supabase/migrations/HELD.md` and
+   `config/mutation-gate.json`. `blast-radius.ts` additionally gained a
+   module-level parse cache for `WORLD_MODEL.json`, keyed by the file's
+   `mtimeMs`, so a `force-dynamic` page polled every 60s does not
+   re-`JSON.parse` a multi-MB graph on every request.
+3. `record.ts`'s `buildAgentRunPayload` spread `sanitizeMetadata(input.
+   metadata)` LAST, so a caller-supplied metadata key sharing a structured
+   column's name (e.g. `{ metadata: { confidence: 1 } }`) silently
+   overwrote the clamped/capped value — defeating the 0.95 confidence cap
+   and every other clamp in one move. `sanitizeMetadata` was also
+   top-level-only: a nested object or array passed through completely
+   unbounded, since neither `helm_private.agent_run_safe_payload`'s
+   strip-list (also top-level-only) nor `clampString`'s per-string cap
+   reaches inside a nested structure. Fixed: metadata now spreads FIRST
+   (structured fields win); sanitization is recursive with four
+   independent bounds threaded through every nesting level (max depth 4,
+   max 40 keys per object level, the existing 600-char per-string cap, and
+   a shared 32,000-byte total-size budget across the whole subtree); the
+   RPC call is raced against a 1500ms timeout
+   (`RECORD_AGENT_RUN_TIMEOUT_MS`, matching `helm-flight-recorder.ts`'s
+   `PERSIST_START_TIMEOUT_MS` pattern) so a hung write can no longer block
+   the self-heal loop that calls this mid-run — on timeout the underlying
+   promise keeps running in the background (no true JS cancellation) and
+   `onFailure` is told instead of the caller hanging.
+
+Non-blocking items also addressed: two "SECURITY DEFINER" prose mentions in
+the migration reworded to "security-definer" (the semgrep trap is on the
+literal two-word uppercase SQL-keyword phrase in a comment, not the SQL
+statement itself); stale "does not exist on `main`"/"PR #1785 …  open"
+copy updated now that #1785 merged; the illustrative causal-confidence
+example (a fabricated release SHA and confidence number, `8e4c5b7d`/86%,
+rendered unconditionally on a production surface) removed from
+`/admin/engineering` in favor of a plain-text explanation with no invented
+numbers, since this page has no live incident selected to run the
+formatter against yet; `AgentRunRecord.finishedAt` is now actually sent in
+the RPC payload (the migration's own `helm_debug_record_agent_run` still
+computes the DB column's `finished_at` from the status transition itself,
+by design — a caller cannot claim an arbitrary finish time — but the
+caller-supplied value at least reaches the row's `metadata` blob now
+instead of being silently dropped by `buildAgentRunPayload`).
 
 ## Known Risk Areas
 

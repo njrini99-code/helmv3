@@ -1837,3 +1837,75 @@ the full description of each module; summarized here for the change record.
   authorization) — "which gates proved it" is the PR's self-reported
   verdict plus current gate posture, stated as a scope limit in the code
   comments and the feature doc, not implied by the field names.
+
+  **CORRECTED below, not edited in place** (per this repo's own convention
+  of leaving prior reasoning legible rather than silently rewriting it):
+  PR #1785 merged into `main` on 2026-09-03, so "No live World Model
+  artifact yet" and "ships on PR #1785" above are stale — see the
+  2026-09-03 review-fixes entry immediately following.
+
+## 2026-09-03 — PR #1790 review fixes (Engineering OS)
+
+Three runtime defects found in review of the entry above, fixed after main
+(including PR #1785's World Model artifact/generator) was merged into the
+branch. Full detail in `memory/features/admin-platform.md`'s "PR #1790
+review fixes" subsection; summarized here for the change record.
+
+1. **`fetch.ts`'s `isUnappliedMigrationError`** only recognized
+   `42883`/`42P01`/a "does not exist" message. PostgREST actually answers a
+   HELD migration's unknown RPC with `PGRST202`, which that classifier
+   never matched — every `/admin/engineering` `AutoRefresh` poll rendered a
+   red "read failed" alert instead of the not-yet-live empty state. Fixed
+   to match `helm-debug-prune/route.ts`'s `isMigrationNotAppliedError`
+   exactly (four codes: `PGRST202`, `42883`, `42P01`, `3F000`).
+2. **Runtime `readFile` calls against `docs/generated/**`/`supabase/
+   migrations/HELD.md`/`config/mutation-gate.json`** were invisible to
+   Next's build-time file tracer (it only follows the static import graph)
+   and `docs/` was fully excluded from the Vercel upload — so even once the
+   artifacts existed, production would never have served them. Fixed:
+   `.vercelignore` carves the three `docs/generated/*` files back in;
+   `next.config.mjs` gained an `outputFileTracingIncludes` entry for
+   `/admin/engineering` naming all five files; `blast-radius.ts` gained a
+   module-level `WORLD_MODEL.json` parse cache keyed by `mtimeMs`.
+3. **`record.ts`'s `buildAgentRunPayload`** spread `sanitizeMetadata(...)`
+   LAST, so a metadata key colliding with a structured column name
+   silently overwrote the clamped value (defeating the confidence cap
+   among others); `sanitizeMetadata` was also top-level-only, so a nested
+   object/array in `metadata` passed through completely unbounded. Fixed:
+   metadata now spreads first; sanitization is recursive with depth (4),
+   per-level key count (40), per-string length (600, unchanged), and total
+   byte budget (32,000) bounds; the RPC call races a 1500ms timeout
+   (`RECORD_AGENT_RUN_TIMEOUT_MS`) matching `helm-flight-recorder.ts`'s
+   `PERSIST_START_TIMEOUT_MS` pattern, so a hung write cannot block the
+   self-heal loop calling this mid-run.
+
+Non-blocking, also fixed: two "SECURITY DEFINER" prose mentions in the
+migration reworded to "security-definer"; stale World-Model-doesn't-exist
+copy updated across `blast-radius.ts`, `page.tsx` and the feature doc; the
+hard-coded illustrative causal-confidence example (a fabricated release SHA
+and confidence number rendered unconditionally on a production surface)
+removed from `/admin/engineering` in favor of a plain-text, no-fabricated-
+numbers explanation; `AgentRunRecord.finishedAt` is now sent in the RPC
+payload (still lands in the row's `metadata`, not the `finished_at` column
+— the migration's own RPC deliberately computes that column from the
+status transition, not a caller-supplied timestamp).
+
+- **Tests added**: `fetch.test.ts` (+3: PGRST202 for both `fetchAgentRuns`
+  and `fetchAgentRun`, 3F000), `blast-radius.test.ts` (+3: cache hit on
+  unchanged mtime, cache miss on changed mtime, ENOENT still reports
+  `unconfigured`), `record.test.ts` (+6: spread-order regression, nested
+  unsafe-key stripping, depth cap, per-level key-count cap, total-byte
+  budget, timeout race both hung and fast-settling).
+- **Verified**: `npm run typecheck`, `npx eslint --max-warnings 0` on
+  changed files, `npx vitest run --maxWorkers=4` for
+  `src/lib/admin/agent-runs`, `src/lib/admin/engineering`,
+  `src/app/admin/engineering`, `src/app/admin/work-log`,
+  `node scripts/sql-lint-ratchet.mjs`,
+  `node scripts/knowledge/document-inventory.mjs --check`,
+  `node scripts/markdown-lint-ratchet.mjs` — all exit 0.
+- **Not verified**: no production deploy exercised the
+  `outputFileTracingIncludes`/`.vercelignore` fix end to end (this repo's
+  own rule: never run `next build`/`npm run build` in a mutation worktree,
+  disk is at the safety floor) — the fix is reasoned from Next.js's
+  documented file-tracing behavior and the exact file paths this code
+  reads, not verified against a real traced function bundle.

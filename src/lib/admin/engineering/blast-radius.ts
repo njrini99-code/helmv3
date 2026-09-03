@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { failed, ok, unconfigured, type AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
@@ -16,10 +16,14 @@ import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-c
  * (registry parsing, critical-feature scoring, journey attribution). That
  * engine stays exactly where it lives; this file only reads its output.
  *
- * The artifact does not exist on `main` as of this PR (it ships on
- * `agent/bridge-worldmodel`, PR #1785, still open) — `fetchBlastRadius`
- * reports `unconfigured` until that lands, which is the disclosed-gap
- * behavior the brief's "unknown never renders as healthy" rule requires.
+ * `docs/generated/WORLD_MODEL.json` and `scripts/knowledge/world-model.mjs`
+ * both landed on `main` via PR #1785 (2026-09-03), merged into this branch —
+ * `fetchBlastRadius` reads the real graph now. It still reports
+ * `unconfigured` if the file is ever absent or unreadable (a fresh
+ * checkout before the first `npm run knowledge:world-model` regen, a build
+ * that traced it out — see the `outputFileTracingIncludes` entry in
+ * next.config.mjs), which is the disclosed-gap behavior the brief's
+ * "unknown never renders as healthy" rule requires either way.
  */
 
 export interface WorldModelEdge {
@@ -104,14 +108,49 @@ export function computeBlastRadius(edges: readonly WorldModelEdge[], entityId: s
   return { entityId, nodes, entityFound: true, truncated };
 }
 
+const WORLD_MODEL_PATH = 'docs/generated/WORLD_MODEL.json';
+
+/**
+ * Module-level parse cache, keyed by the file's own `mtimeMs`. `/admin/
+ * engineering` is `force-dynamic` (no page-level cache) and the World Model
+ * graph can run to several MB once #1785 lands — re-reading and
+ * `JSON.parse`-ing it on every `AutoRefresh` poll (every request, per
+ * serverless instance) is wasted work for a file that changes only when a
+ * new deploy regenerates it. `stat()` is a cheap syscall every request;
+ * the file itself is only re-read when its `mtimeMs` moves, which happens
+ * at most once per process lifetime in practice (a fresh Vercel invocation
+ * gets a fresh module scope anyway, so this caches within one warm
+ * instance's lifetime, not across deploys).
+ */
+let worldModelCache: { mtimeMs: number; file: WorldModelFile } | null = null;
+
+async function readWorldModel(): Promise<WorldModelFile> {
+  const path = join(process.cwd(), WORLD_MODEL_PATH);
+  // Let stat's ENOENT propagate to the caller's catch — same disclosed-gap
+  // handling as before, just moved one level down.
+  const stats = await stat(path);
+  if (worldModelCache && worldModelCache.mtimeMs === stats.mtimeMs) {
+    return worldModelCache.file;
+  }
+  const raw = await readFile(path, 'utf-8');
+  const file = JSON.parse(raw) as WorldModelFile;
+  worldModelCache = { mtimeMs: stats.mtimeMs, file };
+  return file;
+}
+
+/** Test-only escape hatch — clears the module-level cache between cases so
+ *  one test's cached file can't leak into the next. */
+export function __resetWorldModelCacheForTests(): void {
+  worldModelCache = null;
+}
+
 export async function fetchBlastRadius(entityId: string): Promise<AdminFetchResult<BlastRadiusResult>> {
   try {
-    const raw = await readFile(join(process.cwd(), 'docs/generated/WORLD_MODEL.json'), 'utf-8');
-    const file = JSON.parse(raw) as WorldModelFile;
+    const file = await readWorldModel();
     return ok(computeBlastRadius(file.edges, entityId));
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
-      return unconfigured('Helm World Model (docs/generated/WORLD_MODEL.json — ships on PR #1785)');
+      return unconfigured('Helm World Model (docs/generated/WORLD_MODEL.json unreadable — run `npm run knowledge:world-model` to regenerate)');
     }
     return failed(error instanceof Error ? error.message : String(error));
   }

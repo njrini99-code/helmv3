@@ -58,15 +58,48 @@ export function toAgentRunDetail(row: AgentRunGetRpcRow): AgentRunDetail {
   };
 }
 
-/** True for the specific "the migration hasn't shipped yet" shape this
- *  repo's own precedent (player-detail.ts's flight-trace section,
- *  traces/page.tsx's loadTraces()) treats as an expected environment fact,
- *  not an incident — undefined_function (42883) / undefined_table (42P01),
- *  or the same wording from a non-PostgrestError throw. */
+/**
+ * True for the specific "the migration hasn't shipped yet" shape this repo's
+ * own precedent treats as an expected environment fact, not an incident —
+ * matches `src/app/api/cron/helm-debug-prune/route.ts`'s
+ * `isMigrationNotAppliedError` exactly (same four codes, same message
+ * fallbacks), because this RPC is in the identical position: HELD migration,
+ * PostgREST-exposed facade. While the migration is HELD, PostgREST cannot
+ * resolve the RPC name at all and answers `PGRST202` ("Could not find the
+ * function public.helm_debug_list_agent_runs(...) in the schema cache") —
+ * NOT `42883`/`42P01`, which only fire if the function exists but the
+ * `helm_debug` schema/tables it queries do not (`3F000` invalid_schema_name
+ * covers that second shape too). Without `PGRST202` here, every 60s
+ * `AutoRefresh` poll on `/admin/engineering` returned `failed(...)` and
+ * rendered a red `role="alert"` "read failed" panel instead of the
+ * not-yet-live `PanelNoData` state — a routine, expected environment fact
+ * reading as a production incident.
+ */
+const MIGRATION_NOT_APPLIED_CODES = new Set(['PGRST202', '42883', '42P01', '3F000']);
+
 function isUnappliedMigrationError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  const code = (error as { code?: string })?.code;
-  return code === '42883' || code === '42P01' || /does not exist/i.test(message);
+  if (!error) return false;
+  const code = (error as { code?: string }).code ?? '';
+  if (MIGRATION_NOT_APPLIED_CODES.has(code)) return true;
+
+  // The RPC-error-result shape ({code, message}, not an Error instance) and
+  // the catch-block throw shape (a real Error) carry the message on
+  // different property paths that both happen to be `.message` — but
+  // `String(someNonErrorObject)` yields "[object Object]", not its message,
+  // so extract `.message` directly rather than gating on `instanceof Error`.
+  const rawMessage =
+    error instanceof Error
+      ? error.message
+      : typeof (error as { message?: unknown }).message === 'string'
+        ? (error as { message: string }).message
+        : String(error);
+  const message = rawMessage.toLowerCase();
+  return (
+    message.includes('could not find the function') ||
+    (message.includes('function') && message.includes('does not exist')) ||
+    (message.includes('relation') && message.includes('does not exist')) ||
+    (message.includes('schema') && message.includes('does not exist'))
+  );
 }
 
 type AgentRunReadRpcClient = {

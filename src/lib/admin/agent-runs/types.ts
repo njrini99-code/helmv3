@@ -53,8 +53,9 @@ export interface AgentRunRecord {
   finishedAt?: string | null;
   durationMs?: number | null;
   /** Any additional non-sensitive detail. Sanitized twice: once here
-   *  (`sanitizeAgentRunPayload`) and again inside the DB facade
-   *  (`helm_private.agent_run_safe_payload`). */
+   *  (`record.ts`'s `sanitizeMetadata`, recursive — depth, per-level key
+   *  count, per-string length and total-byte bounds) and again inside the
+   *  DB facade (`helm_private.agent_run_safe_payload`, top-level only). */
   metadata?: Record<string, unknown>;
 }
 

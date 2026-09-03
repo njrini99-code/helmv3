@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { computeBlastRadius, formatCausalConfidenceLadder, type WorldModelEdge } from '@/lib/admin/engineering/blast-radius';
 import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
 
@@ -58,6 +58,67 @@ describe('computeBlastRadius', () => {
     const result = computeBlastRadius(denseEdges, 'hub', 1);
     expect(result.nodes.length).toBeLessThanOrEqual(40);
     expect(result.truncated).toBe(true);
+  });
+});
+
+// PR #1790 review item 2: fetchBlastRadius must parse WORLD_MODEL.json once
+// per process (module-level cache keyed by mtime), not on every request —
+// /admin/engineering is force-dynamic and AutoRefresh polls it every 60s, so
+// an unconditional readFile+JSON.parse on a multi-MB graph re-does the same
+// work on every poll for a file that only changes when a deploy regenerates
+// it. Mocks node:fs/promises directly (unlike charter.test.ts's fetch*
+// tests, which read the real committed files) because this behavior needs a
+// controllable mtime across repeated calls — something a real file on disk
+// can't give a test without actually touching it between assertions.
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn(),
+  stat: vi.fn(),
+}));
+
+describe('fetchBlastRadius caching', () => {
+  const WORLD_MODEL_JSON = JSON.stringify({ nodes: {}, edges: EDGES });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { __resetWorldModelCacheForTests } = await import('@/lib/admin/engineering/blast-radius');
+    __resetWorldModelCacheForTests();
+  });
+
+  it('reads the file once and reuses the parsed result when mtime is unchanged', async () => {
+    const fs = await import('node:fs/promises');
+    vi.mocked(fs.stat).mockResolvedValue({ mtimeMs: 1000 } as never);
+    vi.mocked(fs.readFile).mockResolvedValue(WORLD_MODEL_JSON as never);
+    const { fetchBlastRadius } = await import('@/lib/admin/engineering/blast-radius');
+
+    const first = await fetchBlastRadius('round_tracking');
+    const second = await fetchBlastRadius('round_tracking');
+
+    expect(first.status).toBe('ok');
+    expect(second.status).toBe('ok');
+    expect(fs.stat).toHaveBeenCalledTimes(2); // stat is cheap — runs every call
+    expect(fs.readFile).toHaveBeenCalledTimes(1); // parse only happened once
+  });
+
+  it('re-reads the file when mtime changes — a new deploy regenerated the graph', async () => {
+    const fs = await import('node:fs/promises');
+    vi.mocked(fs.readFile).mockResolvedValue(WORLD_MODEL_JSON as never);
+    vi.mocked(fs.stat).mockResolvedValueOnce({ mtimeMs: 1000 } as never).mockResolvedValueOnce({ mtimeMs: 2000 } as never);
+    const { fetchBlastRadius } = await import('@/lib/admin/engineering/blast-radius');
+
+    await fetchBlastRadius('round_tracking');
+    await fetchBlastRadius('round_tracking');
+
+    expect(fs.readFile).toHaveBeenCalledTimes(2);
+  });
+
+  it('still reports unconfigured (not error) on ENOENT, cache or not', async () => {
+    const fs = await import('node:fs/promises');
+    const enoent = Object.assign(new Error('no such file'), { code: 'ENOENT' });
+    vi.mocked(fs.stat).mockRejectedValue(enoent);
+    const { fetchBlastRadius } = await import('@/lib/admin/engineering/blast-radius');
+
+    const result = await fetchBlastRadius('round_tracking');
+    expect(result.status).toBe('unconfigured');
   });
 });
 
