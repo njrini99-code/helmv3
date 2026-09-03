@@ -1417,3 +1417,83 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   `npm run lint` exit 0. `npm run lint:ratchet` run separately (long-running
   full-repo scan); see commit message for its result. `npm run build` NOT
   run — no `'use server'` surface changed.
+
+## 2026-09-03 — Bridge Premium Observability Phase 0: six truth-model read models under incidents/
+
+Implements Phase 0 ("Truth and naming") of the owner's Bridge Premium
+Observability brief — pure read models and resolvers, no UI, no new tables.
+See `memory/features/admin-platform.md`'s "Phase 0 truth models" section for
+the full description of each module; summarized here for the change record.
+
+- **`present.ts`** — `resolveIncidentPresentation`: deterministic
+  code/operation/feature/fingerprint/generic tiered resolver producing a
+  plain-English title, operation context, and technical signature. 38
+  table-driven mappings grounded in `memory/incidents/**` and direct code
+  reads (not invented) — e.g. the 2026-08-25 CoachHelm recap-persist
+  permission-denied incident, the 2026-09-02 command-palette missing-column
+  incident, `src/lib/notifications/push.ts`'s Apple dead-token handling,
+  `src/app/api/inngest/route.ts`'s signature-failure messages.
+- **`aliases.ts`** — `classifyMergeConfidence` / `groupIntoRootIncidents`:
+  a SECOND pass above `correlate.ts`'s existing exact-signature join,
+  grouping already-built incident-shaped facts into root incidents via
+  trace ids / RPC+code+feature (highest tier) or a six-dimension tight-window
+  match (medium tier), with the brief's never-merge rules (message/time/
+  source/user alone) enforced structurally — the classifier never reads
+  those fields as merge keys, so a fixture stacking every forbidden signal
+  at once still classifies `'none'`.
+- **`episodes.ts`** — `deriveEpisodes`: episodes are opened by regressions,
+  never pre-emptively by resolutions.
+- **`coverage.ts`** — `buildEvidenceCoverage`: six-source (Sentry/Supabase/
+  Flight Recorder/Vercel/GitHub/Jobs) per-incident coverage as check/
+  question/blind, reusing `SourceHealth` rather than a new vocabulary.
+- **`release-context.ts`** — Runtime Identity Triplet, `classifyReleaseRelationship`
+  (proximity alone is `NO CAUSAL SIGNAL`, never `NEW AFTER RELEASE`;
+  confidence capped below 1), `classifyReleaseWatch` (bad news always
+  outranks elapsed time; `PROVEN HEALTHY` requires full source coverage).
+  `fetchProductionMigrationHead` is a separate, deliberately UNTESTED
+  fail-open reader (no file-based source of truth for the production DB
+  migration head exists in this repo; the only path is a live query or the
+  Supabase Management API) — same split as `deploy-freshness.ts`'s
+  `fetchDeployFreshness`/`classifyDeployFreshness`.
+- **`release-compare.ts`** — `buildReleaseComparison`: baseline-vs-current
+  deltas; DB-derived metrics (p95, invariant breaches, new SQLSTATEs) are
+  forced `'unknown'` TOGETHER whenever either side's DB source was blind,
+  even over a caller-supplied raw `0`.
+- **Wiring**: `fetch.ts`'s `IncidentBoard` gained one additive field,
+  `presentations: Record<string, IncidentPresentation>`, computed per
+  incident in the existing `drafts.map` construction. Deliberately kept OFF
+  `UnifiedIncident` itself — every `incidents/__tests__/*.test.ts` file
+  (`attention`, `lens`, `truth-strip`) and `correlate.ts`'s `IncidentDraft`
+  hand-build full `UnifiedIncident` object literals satisfying the
+  interface exactly, so a new required field there is a mechanical diff
+  across all of them and a name other live Bridge sessions are also
+  touching. A board-level map costs zero churn against that surface.
+- **Scope note**: `memory/registry.yml` still maps the entire Bridge/
+  control-plane surface (`src/app/admin/**`, `src/lib/admin/**`,
+  `src/lib/reliability/**`) to the single `admin_platform` feature id — no
+  separate `observability`/`reliability` key exists, matching the scout
+  plan's own §0.8 finding. This entry and the feature-doc section above are
+  filed under that one id for that reason, not because the six modules are
+  narrowly scoped.
+- **Tests**: 159 new tests across seven new `__tests__` files —
+  `present.test.ts` 71, `aliases.test.ts` 24, `episodes.test.ts` 10,
+  `coverage.test.ts` 13, `release-context.test.ts` 26,
+  `release-compare.test.ts` 13, `fetch-presentation.test.ts` (the wiring
+  test) 2. All ran green at commit time, per-file `vitest run` output.
+  Full `src/lib/admin` + `src/lib/reliability` suite (102 files, 1436
+  tests) run green after the wiring commit; each subsequent module's tests
+  plus a full re-run of that combined suite were captured to file with exit
+  codes checked separately (never piped through `tail`) after every commit.
+- **Verified**: `npm run typecheck` and `npx eslint --max-warnings 0` on
+  every new/changed file, exit code 0 each, checked independently of the
+  command's own stdout tail. `npm run audit:supabase-errors`,
+  `node scripts/knowledge/document-inventory.mjs`, `npm run docs:path-drift`
+  and `npm run docs:schema-drift` run as the PR's own gate pass — see the
+  PR description for each command's captured result.
+- **Not done**: no live-network integration test for
+  `fetchProductionMigrationHead` (matches the established
+  `fetchDeployFreshness` pattern — an I/O boundary with no pure logic to
+  pin) and no live table for the production DB migration head to read from
+  file-based truth, since none exists in this repo; the reader depends
+  entirely on `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` being present
+  in the runtime environment and fails open to `'unknown'` otherwise.
