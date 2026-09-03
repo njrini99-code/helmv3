@@ -29,6 +29,7 @@ import { archiveKnownResolvedIncidents } from '@/lib/admin/incident-resolver';
 import { autoResolveFixedIncidents, type AutoResolveResult } from '@/lib/admin/auto-resolve';
 import type { Database } from '@/lib/types/database';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { logServerException } from '@/lib/server-error-logger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -168,6 +169,17 @@ async function runAutoResolve(): Promise<AutoResolveResult | { error: string }> 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[log-retention] autoResolveFixedIncidents failed', message);
+    // recordJobRun already emits the Sentry Cron Monitor check-in (status
+    // 'error') before rethrowing, but that's a monitor alert, not a
+    // captured exception — this is the one place the actual error object
+    // (message + stack) reaches Sentry/Bridge for this job, since the
+    // rethrow is deliberately swallowed here so Close stays independent of
+    // Retention (see this function's header comment).
+    void logServerException(err, {
+      action: 'selfheal.close.autoResolveFixedIncidents',
+      featureArea: 'admin',
+      source: 'cron',
+    }, 'warning');
     return { error: message };
   }
 }
