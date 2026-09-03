@@ -4005,6 +4005,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/incidents/present.ts",
+          "line": 49
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/incidents/present.ts",
+          "line": 50
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/incidents/present.ts",
+          "line": 51
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/incidents/truth-strip.ts",
           "line": 19
         },
@@ -4165,6 +4180,18 @@
           "kind": "import_graph",
           "path": "src/lib/admin/incident-resolver.ts",
           "line": 16
+        }
+      ]
+    },
+    {
+      "source": "admin_incidents",
+      "target": "player_coachhelm_development",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/incidents/release-context.ts",
+          "line": 30
         }
       ]
     },
@@ -4455,17 +4482,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 75
+          "line": 109
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 115
+          "line": 149
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 320
+          "line": 354
         },
         {
           "kind": "import_graph",
@@ -4569,12 +4596,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 108
+          "line": 142
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 114
+          "line": 148
         },
         {
           "kind": "import_graph",
@@ -4611,22 +4638,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 76
+          "line": 110
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 109
+          "line": 143
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 124
+          "line": 158
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 206
+          "line": 240
         },
         {
           "kind": "import_graph",

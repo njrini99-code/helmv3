@@ -19,6 +19,7 @@ import { deriveLifecycle } from './lifecycle';
 import { deriveEvidenceCoverage, deriveProof, deriveProofGaps } from './proof';
 import { buildDeployProof } from './deploy-proof';
 import { countLenses } from './lens';
+import { presentationSubjectFromIncident, resolveIncidentPresentation, type IncidentPresentation } from './present';
 import {
   buildSourceFreshness,
   describeBlindness,
@@ -436,6 +437,23 @@ export interface IncidentBoard {
    * card into every client component that only wants to render a title.
    */
   eventIdsByIncident: Record<string, string[]>;
+  /**
+   * IncidentPresentation per incident id (`present.ts`, Phase 0 of the
+   * owner's Bridge Premium brief — "the deterministic, plain-English
+   * projection of a UnifiedIncident").
+   *
+   * Additive and keyed HERE, on the board, rather than as a field on
+   * `UnifiedIncident` itself. Every `incidents/__tests__/*.test.ts` file
+   * hand-builds full `UnifiedIncident` object literals (`attention.test.ts`,
+   * `lens.test.ts`, `truth-strip.test.ts`, and `IncidentDraft` in
+   * `correlate.ts`, all satisfying the interface exactly) — a new required
+   * field on that interface is a mechanical diff across every one of them,
+   * and a name three other live Bridge sessions are also touching tonight.
+   * A board-level map is genuinely additive: it changes nothing a caller was
+   * already relying on, and a card that does not yet read `presentations`
+   * behaves exactly as it did before this file existed.
+   */
+  presentations: Record<string, IncidentPresentation>;
   /** Per-source freshness, always one row per source. */
   freshness: SourceFreshness[];
   coverage: CoverageSummary;
@@ -697,9 +715,26 @@ export async function fetchIncidentBoard(
     if (ids.length > 0) eventIdsByIncident[incident.id] = [...new Set(ids)];
   }
 
+  const presentations: Record<string, IncidentPresentation> = {};
+  for (const incident of incidents) {
+    presentations[incident.id] = resolveIncidentPresentation(
+      presentationSubjectFromIncident({
+        errorCode: incident.errorCode,
+        actionName: incident.actionName,
+        featureId: incident.featureId,
+        route: incident.route,
+        sport: incident.sport,
+        title: incident.title,
+        description: incident.description,
+        klass: incident.klass,
+      }),
+    );
+  }
+
   return {
     incidents,
     eventIdsByIncident,
+    presentations,
     freshness,
     coverage,
     blindnessNote: describeBlindness(freshness, reasons),
