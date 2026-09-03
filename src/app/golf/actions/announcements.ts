@@ -1305,6 +1305,144 @@ export async function deleteAnnouncement(
 }
 
 // ============================================================================
+// UPDATE ANNOUNCEMENT (coach action)
+// ============================================================================
+
+/**
+ * Editable fields are exactly the ones createEnrichedAnnouncement writes onto
+ * the golf_announcements ROW itself: title, body, urgency, and
+ * requires_acknowledgement (confirmed against src/lib/types/database.ts —
+ * those four plus team_id/created_by/timestamps are the whole row; audience
+ * lives in the separate golf_announcement_recipients junction table).
+ *
+ * Recipient targeting, attachments (golf_announcement_documents), and inline
+ * tasks (golf_announcement_tasks / golf_tasks / golf_task_assignments) are
+ * deliberately NOT editable here. Changing any of them means deleting and
+ * re-inserting junction rows for the new set — exactly the
+ * DELETE-then-INSERT-in-a-save-path shape the Review Gate blocks
+ * (helmv3-destructive-write-pattern) — and re-targeting would also silently
+ * orphan acknowledgements/task-completions tied to the old recipient set.
+ * Delete-and-recreate remains the path for changing those.
+ *
+ * requires_acknowledgement CAN change. That only affects what's asked of
+ * players going forward; existing golf_announcement_acknowledgements rows are
+ * never touched by this action, so already-acknowledged players stay
+ * acknowledged even if the flag is later turned off, and turning it on does
+ * not retroactively require anyone who already read the original version to
+ * re-acknowledge.
+ */
+const updateAnnouncementSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200, 'Title must be 200 characters or fewer'),
+  body: z.string().min(1, 'Message is required').max(10000, 'Message must be 10,000 characters or fewer'),
+  urgency: z.enum(['low', 'normal', 'high', 'urgent']),
+  requiresAcknowledgement: z.boolean(),
+});
+
+async function updateAnnouncementImpl(
+  announcementId: string,
+  input: {
+    title: string;
+    body: string;
+    urgency: 'low' | 'normal' | 'high' | 'urgent';
+    requiresAcknowledgement: boolean;
+  }
+): Promise<ActionResult> {
+  try {
+    const validated = updateAnnouncementSchema.parse(input);
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+    if (!coach) return { success: false, error: 'Coach not found' };
+
+    // Load the announcement's team so we can authorize by team access —
+    // identical shape to deleteAnnouncement's own lookup just below it.
+    const { data: ann } = await supabase
+      .from('golf_announcements')
+      .select('id, team_id')
+      .eq('id', announcementId)
+      .single();
+
+    if (!ann) {
+      return { success: false, error: 'Announcement not found' };
+    }
+
+    // Same authorization as delete (F036/F037): any coach staffed on the
+    // announcement's team, not only the original author.
+    const authorized = await validateCoachTeamAccess(supabase, coach.id, ann.team_id, coach.organization_id);
+    if (!authorized) {
+      return { success: false, error: 'Not authorized to edit this announcement' };
+    }
+
+    const { error } = await supabase
+      .from('golf_announcements')
+      .update({
+        title: validated.title,
+        body: validated.body,
+        urgency: validated.urgency,
+        requires_acknowledgement: validated.requiresAcknowledgement,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', announcementId);
+
+    if (error) return { success: false, error: 'Failed to update announcement' };
+
+    revalidatePath('/golf/dashboard/announcements');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    return { success: true };
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const issue = error.issues[0];
+      return {
+        success: false,
+        error: issue?.message
+          ? issue.message
+          : 'Invalid input. Please check your entries.',
+      };
+    }
+    return formatSafeErrorResponse(error);
+  }
+}
+
+// See the note on createEnrichedAnnouncement above — same nesting, same
+// reason (demoSafe stays on the outer withAdminObserved layer).
+const golfActionUpdateAnnouncement = withGolfAction(
+  'updateAnnouncement',
+  {
+    featureArea: 'golf-announcements',
+    feature: 'announcements',
+    rlsContext: { table: 'golf_announcements', verb: 'update' },
+    toErrorResult: (message) => ({ success: false, error: message }),
+  },
+  updateAnnouncementImpl,
+);
+
+const observedUpdateAnnouncement = withAdminObserved(
+  'updateAnnouncement',
+  { demoSafe: true, sport: 'golf', feature: 'announcements', observeSoftFailures: false },
+  golfActionUpdateAnnouncement,
+);
+
+export async function updateAnnouncement(
+  announcementId: string,
+  input: {
+    title: string;
+    body: string;
+    urgency: 'low' | 'normal' | 'high' | 'urgent';
+    requiresAcknowledgement: boolean;
+  }
+): Promise<ActionResult> {
+  return observedUpdateAnnouncement(announcementId, input);
+}
+
+// ============================================================================
 // HELPER: Group array by key
 // ============================================================================
 

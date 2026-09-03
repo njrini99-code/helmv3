@@ -50,6 +50,7 @@ import {
 import {
   IconPlus,
   IconSend,
+  IconCheck,
   IconPaperclip,
   IconClipboardList,
   IconUsers,
@@ -60,7 +61,7 @@ import {
   IconUpload,
   IconX,
 } from '@/components/icons';
-import { createEnrichedAnnouncement } from '@/app/golf/actions/announcements';
+import { createEnrichedAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
 import { uploadGolfDocument, createGolfDocument } from '@/app/golf/actions/documents';
 import { convertHeicToJpeg } from '@/lib/storage/heic-to-jpeg';
 
@@ -93,7 +94,24 @@ export interface FairwayCreateAnnouncementProps {
   teamId: string | null;
 }
 
-type Urgency = 'low' | 'normal' | 'high' | 'urgent';
+export type Urgency = 'low' | 'normal' | 'high' | 'urgent';
+
+/** create = the coach's "New Announcement" flow (unchanged). edit = the
+ *  coach card's Edit control — a reduced field set (title / message /
+ *  priority / require-acknowledgement) that calls updateAnnouncement instead
+ *  of createEnrichedAnnouncement. Recipients, attachments, and tasks are not
+ *  editable (see the note on updateAnnouncement in announcements.ts) so
+ *  those sections simply don't render in edit mode, rather than existing as
+ *  a second, duplicated form. */
+export type AnnouncementFormMode = 'create' | 'edit';
+
+/** The fields shared by both modes — what edit mode prefills from and saves. */
+export interface AnnouncementEditValues {
+  title: string;
+  body: string;
+  urgency: Urgency;
+  requiresAcknowledgement: boolean;
+}
 
 /* ─── Schema length limits — mirror createAnnouncementSchema (announcements.ts)
  *     so the field hard-prevents overflow (maxLength) and the counter matches
@@ -155,9 +173,10 @@ export function FairwayCreateAnnouncement({ players, documents, teamId }: Fairwa
       <Button variant="primary" leftIcon={<IconPlus size={16} />} onClick={() => setOpen(true)}>
         New Announcement
       </Button>
-      <CreateSheet
+      <AnnouncementFormSheet
         open={open}
         onOpenChange={setOpen}
+        mode="create"
         players={players}
         documents={documents}
         teamId={teamId}
@@ -166,20 +185,43 @@ export function FairwayCreateAnnouncement({ players, documents, teamId }: Fairwa
   );
 }
 
-function CreateSheet({
+export interface AnnouncementFormSheetProps {
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
+  mode: AnnouncementFormMode;
+  players: Player[];
+  documents: DocumentLite[];
+  /** Team id for direct upload. Null (no team, or edit mode) hides upload. */
+  teamId: string | null;
+  /** Required when mode === 'edit'. */
+  announcementId?: string;
+  /** Required when mode === 'edit' — prefills title/body/urgency/ack. */
+  initialValues?: AnnouncementEditValues;
+  /** Edit mode only: fires with the saved values right after a successful
+   *  update, so the caller (the coach card) can patch its own cached detail
+   *  in place instead of waiting on a full refetch. */
+  onSaved?: (values: AnnouncementEditValues) => void;
+}
+
+/** The shared title/message/priority/ack form, in either mode. Exported so
+ *  the coach card's Edit control can drive it directly (mode="edit") without
+ *  duplicating the field set, validation, or markup. */
+export function AnnouncementFormSheet({
   open,
   onOpenChange,
+  mode,
   players,
   documents,
   teamId,
-}: FairwayCreateAnnouncementProps & {
-  open: boolean;
-  onOpenChange: (next: boolean) => void;
-}) {
+  announcementId,
+  initialValues,
+  onSaved,
+}: AnnouncementFormSheetProps) {
   const router = useRouter();
   const titleRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const isEdit = mode === 'edit';
 
   // ── Form state (1:1 with the legacy flow) ─────────────────────────────────
   const [title, setTitle] = useState('');
@@ -209,6 +251,18 @@ function CreateSheet({
     const t = setTimeout(() => titleRef.current?.focus(), 180);
     return () => clearTimeout(t);
   }, [open]);
+
+  // Edit mode: prefill the shared fields from the announcement being edited
+  // each time the sheet opens. Runs on open rather than mount so re-opening
+  // to edit a second announcement (or re-opening after the close-reset below)
+  // always starts from that announcement's current values.
+  useEffect(() => {
+    if (!open || !isEdit || !initialValues) return;
+    setTitle(initialValues.title);
+    setBody(initialValues.body);
+    setUrgency(initialValues.urgency);
+    setRequiresAcknowledgement(initialValues.requiresAcknowledgement);
+  }, [open, isEdit, initialValues]);
 
   // Reset everything when the sheet fully closes (so a re-open is clean).
   useEffect(() => {
@@ -311,6 +365,37 @@ function CreateSheet({
     }
     if (!body.trim()) {
       fairwayToast.danger('Message is required');
+      return;
+    }
+
+    // Edit mode only ever touches the shared fields — no recipients,
+    // attachments, or tasks to validate (those sections don't render here).
+    if (isEdit) {
+      if (!announcementId) return;
+      setLoading(true);
+      try {
+        const result = await updateAnnouncement(announcementId, {
+          title: title.trim(),
+          body: body.trim(),
+          urgency,
+          requiresAcknowledgement,
+        });
+
+        if (!result.success) {
+          fairwayToast.danger(result.error || 'Failed to update announcement');
+          setLoading(false);
+          return;
+        }
+
+        fairwayToast.success('Announcement updated.');
+        onSaved?.({ title: title.trim(), body: body.trim(), urgency, requiresAcknowledgement });
+        onOpenChange(false);
+        router.refresh();
+      } catch {
+        fairwayToast.danger('Failed to update announcement');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
