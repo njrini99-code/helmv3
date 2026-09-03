@@ -29,7 +29,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 13 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 24 | 24 | 11 | 16 |
+| `CURRENT_FEATURE` | 22 | 22 | 9 | 10 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 17 | 3 | 5 | 22 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
@@ -158,12 +158,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-incidents.md` | current | yes | - | yes | 7 | 29 | 1 |
+| `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | 1 |
 | `memory/features/admin-platform.md` | current | yes | - | yes | 10 | 74 | 3 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 10 | 74 | 3 |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 10 | 74 | 3 |
-| `memory/features/admin-reliability-collector.md` | current | yes | - | - | 7 | 16 | - |
-| `memory/features/admin-selfheal.md` | current | yes | - | yes | 7 | 27 | - |
+| `memory/features/admin-reliability-collector.md` | current | yes | - | - | 5 | 16 | - |
+| `memory/features/admin-selfheal.md` | current | yes | - | yes | 5 | 27 | - |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -273,7 +271,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 7 | 8 | - |
+| `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 5 | 8 | - |
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 2 | 11 | 2 |
 | `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | 1 | 8 | - |
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 2 | 7 | - |
@@ -307,7 +305,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | 3 | 0 | - |
+| `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | 1 | 0 | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | - | - | yes | 3 | 89 | 21 |
 | `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 3 | 40 | 7 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | - | - | yes | 1 | 0 | - |
@@ -378,7 +376,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 5 | 0 | - |
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 6 | 19 | 6 |
-| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 6 | 13 | 1 |
+| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 4 | 13 | 1 |
 | `docs/UIUX_AUDIT.md` | current | - | - | - | 2 | 0 | - |
 | `docs/audits/AUTONOMOUS_RUN_STATUS_2026-07-01.md` | current | - | - | yes | 1 | 9 | 2 |
 | `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 7 | 12 | 2 |
@@ -563,11 +561,11 @@ them would bury everything above.
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 26 |
-| `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 3 | 21 | 20 |
+| `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 1 | 21 | 20 |
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 6 | 8 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
-| `docs/OBSERVABILITY.md` | current | yes | - | yes | 6 | 6 | - |
+| `docs/OBSERVABILITY.md` | current | yes | - | yes | 4 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 3 | 3 | - |
 | `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 3 | 7 | - |
