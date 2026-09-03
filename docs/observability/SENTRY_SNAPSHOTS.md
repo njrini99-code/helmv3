@@ -222,7 +222,7 @@ did not find a documented alternative auth method for that endpoint.
    Tokens → "Create New Token." Name it `github-actions-snapshots`. Scope:
    `project:write` (personal token) or `org:ci` (org-level token) per
    `docs.sentry.io/product/snapshots/integrating-into-ci/`.
-2. `gh secret set SENTRY_AUTH_TOKEN --repo njrini99-code/helmv3` — pipe the
+2. `gh secret set SENTRY_SNAPSHOTS_AUTH_TOKEN --repo njrini99-code/helmv3` — pipe the
    token on stdin, never as a CLI argument (shell history).
 3. Also add `SENTRY_ORG` (`helm-xs`) and `SENTRY_PROJECT`
    (`javascript-nextjs`) as repo secrets or variables if the CLI's

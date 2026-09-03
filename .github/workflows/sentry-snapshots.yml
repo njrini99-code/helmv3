@@ -93,7 +93,7 @@ jobs:
       - name: Check for SENTRY_AUTH_TOKEN
         id: token
         env:
-          TOKEN_SET: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+          TOKEN_SET: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN != '' }}
         run: |
           set -euo pipefail
           if [ "$TOKEN_SET" = "true" ]; then
@@ -249,7 +249,7 @@ jobs:
       - name: Upload snapshots to Sentry
         if: steps.count.outputs.count != '0'
         env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN }}
           SENTRY_ORG: helm-xs
           SENTRY_PROJECT: javascript-nextjs
         run: |
