@@ -23,8 +23,8 @@
  * schema truth — extraction and verification are deliberately separate
  * passes so a claim's evidence can be inspected independent of the verdict.
  */
-import {
 import { escapeRegExp } from './regex.mjs';
+import {
   getFeatureBlock,
   findLineForValue,
   findLineForKey,
