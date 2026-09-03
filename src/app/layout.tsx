@@ -121,7 +121,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <ThemeScript />
         <MarketingAnimGate />
-        <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
+        {/* StaleDeploymentRecoveryScript compares this against /api/health's
+            `release` field to detect a new deploy while a tab stays open.
+            Uses the same release identifier Sentry does (git SHA), not the
+            raw Vercel deployment id — /api/health stopped returning that id
+            deliberately (see its own header comment) since it is an
+            unauthenticated, Vercel-internal identifier an unrelated
+            endpoint should not hand back. Keep both sides on the same value:
+            src/app/api/health/route.ts's release resolution. */}
+        <meta
+          name="x-deployment-id"
+          content={process.env.NEXT_PUBLIC_SENTRY_RELEASE ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev'}
+        />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <StaleDeploymentRecoveryScript />

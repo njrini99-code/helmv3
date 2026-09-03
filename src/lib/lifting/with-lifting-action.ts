@@ -36,6 +36,7 @@ import { observeActionSoftFailure } from '@/lib/admin/observe-action-result';
 import { resolveLiftingAccess } from '@/lib/lifting/access';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import type { HelmLiftingAccessResult } from '@/lib/types/helm-lifting';
+import { recordWorkflow } from '@/lib/observability/metrics';
 
 // -----------------------------------------------------------------------------
 // Error types
@@ -118,6 +119,11 @@ export function withLiftingAction<TArgs extends unknown[], TResult>(
   const { featureArea, requireEdit = false, orgFrom } = opts;
 
   return async (...args: TArgs): Promise<TResult> => {
+    // helm.workflow.* (Deliverable 6) — sport/action dimensions ONLY, same
+    // rule withGolfAction/withBaseballAction's own metrics follow: this is a
+    // generic wrapper across every lifting action, and an orgId dimension
+    // here would be unbounded cardinality on a Sentry-side metric index key.
+    const startedAt = Date.now();
     return Sentry.withScope(async (scope) => {
       scope.setTag('sport', 'lifting');
       scope.setTag('feature', featureArea);
@@ -191,6 +197,14 @@ export function withLiftingAction<TArgs extends unknown[], TResult>(
           tags: { sport: 'lifting', feature: featureArea, lifting_org: orgId },
         });
         scope.addBreadcrumb({ category: 'lifting.action', message: `done ${name}`, level: 'info' });
+        recordWorkflow({
+          feature: 'lifting_action',
+          action: name,
+          outcome: 'success',
+          durationMs: Date.now() - startedAt,
+          sport: 'lifting',
+          runtime: process.env.NEXT_RUNTIME,
+        });
         return result;
       } catch (error) {
         // Expected control-flow errors: re-raise as-is (logged as warnings)
@@ -211,6 +225,17 @@ export function withLiftingAction<TArgs extends unknown[], TResult>(
             },
             'info',
           );
+          // outcome carries the specific expected-error class name, same
+          // "transient/expected reads distinctly from terminal" convention
+          // withGolfAction/withBaseballAction's own metrics use.
+          recordWorkflow({
+            feature: 'lifting_action',
+            action: name,
+            outcome: error.name,
+            durationMs: Date.now() - startedAt,
+            sport: 'lifting',
+            runtime: process.env.NEXT_RUNTIME,
+          });
           throw error;
         }
 
@@ -223,6 +248,14 @@ export function withLiftingAction<TArgs extends unknown[], TResult>(
           handled: false,
           tags: { sport: 'lifting', feature: featureArea },
           fingerprint: ['server_action', featureArea, name],
+        });
+        recordWorkflow({
+          feature: 'lifting_action',
+          action: name,
+          outcome: 'failure',
+          durationMs: Date.now() - startedAt,
+          sport: 'lifting',
+          runtime: process.env.NEXT_RUNTIME,
         });
         throw new LiftingActionError();
       }

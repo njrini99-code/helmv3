@@ -1,4 +1,10 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
+<!-- schema-drift-absent: golf_action, baseball_action -->
+<!-- `golf_action`/`baseball_action` below are Sentry metric `feature`
+     dimension LITERALS (the fixed string withGolfAction/withBaseballAction
+     pass to recordWorkflow) — never database objects, and were never meant
+     to be. They only match the golf_*/baseball_* schema-drift identifier
+     pattern by naming coincidence with the sport prefix convention. -->
 # Feature: Sentry Observability
 
 ## Status
@@ -159,6 +165,50 @@ alongside (not duplicated here).
   `recordAi()`.
 - Job/push/auth surfaces repo-wide — `OP_JOB_RUN`/`OP_PUSH_DELIVER`/
   `OP_AUTH_ATTEMPT` + the matching `record*()` families.
+- `golf_round_lifecycle`/`shot_tracking` — `roundStage`/`classifyAutosaveOutcome`
+  (pre-existing, sparse: one `roundStage` call in
+  `submitGolfRoundComprehensiveImpl`'s post-submit stats-cache step, one
+  `classifyAutosaveOutcome`/`OPERATION` pairing in `savePartialRoundImpl`'s
+  RPC call — not a full per-step span vocabulary, and NOT extended by the
+  work below). On top of that, `recordWorkflow`/`helmLog`/`attachHelmTrace`
+  (metrics.ts / structured-log.ts / correlation.ts, all three listed above)
+  are now wired into `createHelmFlightRecorder`'s `finalize` — one shared
+  hook covering all four flight-recorder workflows
+  (`golf.round.submit`/`golf.round.autosave`/`golf.shot.delete`/
+  `golf.shot.add_or_edit`) from every one of `finalize`'s three return
+  paths (the real recorder, the disabled-mode no-op, and the
+  start-timeout degrade path) — plus `deleteInProgressRoundImpl` ("recover")
+  via a local `recordDiscardRoundOutcome` helper, since that action never
+  constructs a flight recorder. See
+  `memory/ledgers/changes/observability_sentry.md`'s Deliverable 6 entries
+  for commits/tests.
+- `coachhelm_ai` — `recordAi()`, wired into all 5 production AI SDK call
+  sites per Deliverable 5 (see the ledger) via per-call
+  `experimental_telemetry`; the `OP_COACHHELM_REQUEST`/
+  `OP_COACHHELM_PERSIST` span ops remain a separate, pre-existing surface
+  this feature's own commits did not touch.
+- `auth_onboarding_join` — `recordAuth()` via
+  `src/lib/observability/golf-login-outcome.ts`'s `recordLoginOutcome`,
+  called from every one of `loginActionImpl`'s 8 return branches
+  (`src/app/golf/actions/auth.ts`).
+- Push delivery — `recordPush()`, wired into
+  `src/lib/notifications/push.ts`'s `sendPushNotification` (the single-user
+  delivery function; `sendBulkPushNotification` is covered transitively,
+  since it calls the former per recipient — not separately instrumented).
+- The three generic action wrappers — `withGolfAction`/`withBaseballAction`/
+  `withLiftingAction` (`src/lib/{golf,baseball,lifting}/with-*-action.ts`)
+  each call `recordWorkflow` at their own success/expected-error/unexpected-
+  error exit points, dimensioned by `sport`+`action` only (a fixed
+  `feature` literal per wrapper — `golf_action`/`baseball_action`/
+  `lifting_action` — never a per-call identity dimension like
+  round/team/org id, since these wrappers are shared across every action
+  they wrap). `withLiftingAction` matched no `feature_id` in
+  `memory/registry.yml` as of this writing — a registry gap, not fixed
+  here; see that file's own `features:` map before assuming lifting has no
+  telemetry-consuming code at all.
+- Job/cron surfaces — `recordJobRun`/Sentry Cron Monitor check-ins
+  (`src/lib/observability/cron-monitors.ts`,
+  `docs/observability/SENTRY_CRON_MONITORS.md`), added in Deliverable 3.
 
 ## Business Rules
 

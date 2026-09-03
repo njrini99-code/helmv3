@@ -69,6 +69,20 @@ const sharedIgnoreErrors = [
   // Sentry as an error — dozens of them, all working as designed.
   'GolfDemoReadOnlyError',
   'PlayerAccessError',
+  // Lift Lab's equivalent of the Baseball five above — withLiftingAction
+  // (src/lib/lifting/with-lifting-action.ts) resolves AUTH -> ORG-CONTEXT ->
+  // EDIT-GATE and throws these three typed control-flow classes, logged via
+  // logServerEvent(..., skipSentry: true, ...) and then re-thrown so callers
+  // can branch — the exact same re-raise-escapes-to-onRequestError shape as
+  // the Baseball classes above. Phase A finding #3
+  // (docs/observability/SENTRY_PHASE_A_FINDINGS.md §(b)/(c)): this list was
+  // never updated when Lift Lab's wrapper shipped, so every "not signed in" /
+  // "no Lifting org resolved" / "no edit access" throw was a live, alertable
+  // Sentry issue — the exact noise pattern already fixed for Baseball/Golf,
+  // reproduced in the one wrapper nobody matched up.
+  'LiftingUnauthorizedError',
+  'LiftingNoOrgError',
+  'LiftingForbiddenError',
 ];
 
 /**
@@ -249,11 +263,30 @@ export async function register() {
         ...(!isDev && profilingIntegration ? [profilingIntegration] : []),
         // Auto-instruments Vercel AI SDK calls (generateText/streamText/
         // generateObject). Captures model, latency, errors, and — when the
-        // call sets experimental_telemetry — token usage and prompt/output
-        // bodies. CoachHelm and round-recap go through the AI SDK.
+        // call sets experimental_telemetry.isEnabled:true — token usage and
+        // (subject to these two flags) prompt/output bodies. CoachHelm chat,
+        // round-recap composition, and the class-schedule vision importer
+        // all go through the AI SDK.
+        //
+        // recordInputs/recordOutputs:false — Phase A finding
+        // (docs/observability/SENTRY_PHASE_A_FINDINGS.md §(a)): this
+        // integration was fully configured with BOTH flags `true` while
+        // being structurally inert (no call site set
+        // `experimental_telemetry.isEnabled`), one line away from recording
+        // prompt/output bodies at every call site simultaneously the moment
+        // any of them opted in. Phase C's five production call sites (chat
+        // stream, schedule-vision's two vision calls, RCA, compose()) all
+        // now opt in individually with recordInputs/recordOutputs:false of
+        // their own — this is the matching SAFE DEFAULT for the global
+        // integration, so a future call site that opts into telemetry
+        // without also setting these two explicitly inherits "do not
+        // record" rather than "record everything", which is what let a
+        // schedule screenshot's raw image bytes and a coach chat prompt
+        // carrying a player's first name both sit one flag away from
+        // Sentry.
         Sentry.vercelAIIntegration({
-          recordInputs: true,
-          recordOutputs: true,
+          recordInputs: false,
+          recordOutputs: false,
         }),
         // Forward server console.log/warn/error to Sentry → Explore → Logs
         // (separate stream from issues). Catches anything we log via console
@@ -265,6 +298,19 @@ export async function register() {
 
       // Enable Sentry SDK structured logs (separate from error events).
       enableLogs: true,
+
+      // Sentry Metrics (Sentry.metrics.count/gauge/distribution — Phase C's
+      // helm.workflow.*/helm.ai.*/helm.job.* catalogue, metrics.ts). Set
+      // explicitly rather than relying on the installed SDK's own default:
+      // read live from node_modules/@sentry/core/build/cjs/metrics/internal.js
+      // (`metricsEnabled = enableMetrics ?? _experiments?.enableMetrics ??
+      // true`) and confirmed by an actual captured envelope, metrics already
+      // send with this option absent — contradicting
+      // docs/observability/SENTRY_SDK_API_VERIFICATION.md's claim that they
+      // "would currently be dropped" unset. Kept explicit anyway so the
+      // intent survives a future SDK default change, same reasoning as
+      // `sourcemaps.deleteSourcemapsAfterUpload` in sentry-build-options.mjs.
+      enableMetrics: true,
 
       // Page loads stay sampled; db.* spans are kept at 1.0 — see makeTracesSampler.
       tracesSampler: makeTracesSampler(isDev),
@@ -336,6 +382,10 @@ export async function register() {
         Sentry.captureConsoleIntegration({ levels: ['error'] }),
       ],
       enableLogs: true,
+      // Same rationale as the Node block above — kept identical on both
+      // runtimes since a metric call could in principle originate from
+      // Edge/proxy code.
+      enableMetrics: true,
       tracesSampler: makeTracesSampler(isDev),
       beforeSend: scrubPii,
       beforeSendMetric: enforceMetricAttributeAllowlist,
@@ -360,7 +410,14 @@ export async function register() {
 const bridgeSkipErrorNames = new Set(
   sharedIgnoreErrors.filter(
     (entry): entry is string =>
-      typeof entry === 'string' && (entry.startsWith('Baseball') || entry === 'PlayerAccessError'),
+      typeof entry === 'string' &&
+      (entry.startsWith('Baseball') ||
+        entry === 'PlayerAccessError' ||
+        // Lift Lab's wrapper re-raises these exactly like withBaseballAction
+        // does (review of Phase C, 2026-09-03: each one produced a second
+        // admin_events row labelled as an unhandled 500).
+        entry.startsWith('Lifting') ||
+        entry === 'GolfDemoReadOnlyError'),
   ),
 );
 
@@ -421,27 +478,48 @@ type OnRequestErrorContext = Readonly<{
   revalidateReason?: 'on-demand' | 'stale';
 }>;
 
-// Capture errors from nested React Server Components. Sentry still gets
-// every error first (unchanged behavior); the Helm Bridge write is strictly
-// additive and can never affect Next's own error handling.
+// Capture errors from nested React Server Components. The Helm Bridge write
+// is strictly additive and can never affect Next's own error handling.
 export async function onRequestError(
   error: unknown,
   request: OnRequestErrorRequest,
   errorContext: OnRequestErrorContext,
 ): Promise<void> {
-  Sentry.captureRequestError(error, request, errorContext);
+  // isAlreadyBridgeLogged has no node-only deps (see bridge-logged-marker.ts)
+  // so it's imported statically above and is safe to call on both the edge
+  // and nodejs paths, and before any dynamic import below.
+  const alreadyLogged = isAlreadyBridgeLogged(error);
+
+  // Phase A finding #6 (duplicate-capture bug #4, structural): this call used
+  // to run UNCONDITIONALLY, regardless of whether the throw site already sent
+  // this exact error to Sentry itself. When a call site does
+  // `logServerException(error, {...}); throw error;` WITHOUT skipSentry, that
+  // throw-site call already ran the richer capture (Sentry.withScope with
+  // action/feature/sport tags, a fingerprint override) via
+  // captureSentryTrace — and captureRequestError below would mint a SECOND,
+  // differently-fingerprinted issue for the identical error the moment it
+  // escaped the boundary. Symmetrically, when a call site deliberately passed
+  // skipSentry:true (a routine/expected error it chose not to page on), an
+  // unconditional captureRequestError here undermined that choice the moment
+  // the error escaped. Gating on the same __helmBridgeLogged marker
+  // shouldSkipBridgeWrite already reads fixes both: an error already routed
+  // through the approved logServerException/logError pipeline — captured or
+  // deliberately not — is never captured a second/first time here. A
+  // never-before-seen error (alreadyLogged === false) is captured exactly as
+  // before.
+  if (!alreadyLogged) {
+    Sentry.captureRequestError(error, request, errorContext);
+  }
 
   try {
     // Dynamic import keeps server-error-logger (and its @/lib/supabase/admin
     // dependency) out of the edge bundle — only resolved on the nodejs path.
-    // isAlreadyBridgeLogged has no node-only deps (see bridge-logged-marker.ts)
-    // so it's imported statically above and is safe to call on both paths.
     const { logServerException } =
       process.env.NEXT_RUNTIME === 'nodejs'
         ? await import('@/lib/server-error-logger')
         : { logServerException: undefined };
 
-    if (shouldSkipBridgeWrite(error, isAlreadyBridgeLogged(error))) return;
+    if (shouldSkipBridgeWrite(error, alreadyLogged)) return;
 
     const route = errorContext.routePath || request.path;
     const source = mapRouteTypeToSource(errorContext.routeType);

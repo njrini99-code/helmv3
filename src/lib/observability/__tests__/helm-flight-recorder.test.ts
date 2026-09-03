@@ -1,4 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { attachHelmTrace, recordWorkflow, helmLog } = vi.hoisted(() => ({
+  attachHelmTrace: vi.fn(),
+  recordWorkflow: vi.fn(),
+  helmLog: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+vi.mock('../correlation', () => ({ attachHelmTrace }));
+vi.mock('../metrics', () => ({ recordWorkflow }));
+vi.mock('../structured-log', () => ({ helmLog }));
+
 import {
   createHelmFlightRecorder,
   recordRescuedStepOutcome,
@@ -6,6 +16,15 @@ import {
   type FlightRecorderDependencies,
 } from '../helm-flight-recorder';
 import { __setVercelRequestContextForTests } from '../vercel-wait-until';
+
+beforeEach(() => {
+  attachHelmTrace.mockClear();
+  recordWorkflow.mockClear();
+  helmLog.debug.mockClear();
+  helmLog.info.mockClear();
+  helmLog.warn.mockClear();
+  helmLog.error.mockClear();
+});
 
 function fakeDependencies(
   overrides: Partial<FlightRecorderDependencies> = {},
@@ -553,5 +572,160 @@ describe('recordRescuedStepOutcome', () => {
       sentry_trace_id: 'sentry-trace',
       root_span_id: 'sentry-span',
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// helm.workflow.* metrics + helmLog + Sentry trace correlation (Deliverable
+// 6) — the Sentry-side signal this file adds on top of the pre-existing
+// helm_debug persistence above. Covers all THREE return points `finalize`
+// can come from: the real recorder, the disabled-mode no-op, and the
+// start-timeout degrade path — deliberately, since the whole point of
+// emitting from `createHelmFlightRecorder` rather than from each of golf.ts's
+// four call sites is that every path finalizes the same way.
+// ---------------------------------------------------------------------------
+describe('helm.workflow.* metrics, helmLog, and Sentry trace correlation', () => {
+  it('calls attachHelmTrace with the resolved trace id at construction, before any enabled check', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    expect(attachHelmTrace).toHaveBeenCalledWith(recorder.traceId);
+  });
+
+  it('records helm.workflow.* once on finalize(\'success\'), with duration and the golf_round_lifecycle feature', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    await recorder.finalize('success');
+
+    expect(recordWorkflow).toHaveBeenCalledTimes(1);
+    expect(recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feature: 'golf_round_lifecycle',
+        action: 'golf.round.autosave',
+        outcome: 'success',
+        sport: 'golf',
+        durationMs: expect.any(Number),
+      }),
+    );
+    expect(helmLog.info).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'success', action: 'golf.round.autosave' }),
+    );
+    expect(helmLog.warn).not.toHaveBeenCalled();
+    expect(helmLog.error).not.toHaveBeenCalled();
+  });
+
+  it('reports the PROMOTED outcome (failure) when a required step failed, even though the caller passed success', async () => {
+    // Mirrors the very first test in this file: finalize()'s own promotion
+    // rule (a failed step always wins) must be what the metric/log see too,
+    // not the raw status the caller happened to pass.
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+    await recorder.fail('db.submit_round_atomic', { errorCode: '23503' });
+    await recorder.finalize('success');
+
+    expect(recordWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'failure', errorCode: '23503' }),
+    );
+    expect(helmLog.error).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'failure', error_code: '23503' }),
+    );
+  });
+
+  it('logs at warn (not error) for a warning/rescued finish', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.shot.add_or_edit' }, dependencies);
+
+    await recorder.finalize('warning');
+
+    expect(recordWorkflow).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'warning' }));
+    expect(helmLog.warn).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'warning' }),
+    );
+    expect(helmLog.error).not.toHaveBeenCalled();
+  });
+
+  it('logs at warn for a pending finish (interrupted, not failed) and passes outcome through unmodified', async () => {
+    const { dependencies } = fakeDependencies();
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.shot.delete' }, dependencies);
+
+    await recorder.finalize('pending');
+
+    expect(recordWorkflow).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'pending' }));
+    expect(helmLog.warn).toHaveBeenCalledWith(
+      'golf.round_lifecycle.finished',
+      expect.objectContaining({ result: 'pending' }),
+    );
+  });
+
+  it('still records the workflow metric from the DISABLED-mode no-op recorder (production, no override)', async () => {
+    const original = process.env.VERCEL_ENV;
+    process.env.VERCEL_ENV = 'production';
+    try {
+      const { dependencies, calls } = fakeDependencies();
+      const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+
+      // Confirms this really is the disabled path: no persistStart write happened.
+      expect(calls).toHaveLength(0);
+      await recorder.finalize('failure');
+
+      expect(recordWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'golf.round.submit', outcome: 'failure' }),
+      );
+      expect(helmLog.error).toHaveBeenCalledTimes(1);
+    } finally {
+      if (original === undefined) delete process.env.VERCEL_ENV;
+      else process.env.VERCEL_ENV = original;
+    }
+  });
+
+  it('still records the workflow metric from the start-TIMEOUT degrade path', async () => {
+    vi.useFakeTimers();
+    try {
+      const dependencies: FlightRecorderDependencies = {
+        newTraceId: () => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+        persistStart: () => new Promise(() => {}),
+        persistStep: vi.fn(async () => {}),
+        persistFinalize: async () => {},
+        onRecorderFailure: vi.fn(),
+      };
+
+      const pending = createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+      await vi.advanceTimersByTimeAsync(PERSIST_START_TIMEOUT_MS + 50);
+      const recorder = await pending;
+
+      await recorder.finalize('failure');
+
+      expect(recordWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'golf.round.submit', outcome: 'failure' }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('emits the workflow metric BEFORE the (unbounded) persistFinalize write, so a hung write cannot swallow it', async () => {
+    const finalizeOrder: string[] = [];
+    recordWorkflow.mockImplementationOnce(() => { finalizeOrder.push('metric'); });
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'ffffffff-1111-2222-3333-444444444444',
+      startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+      persistStart: async () => {},
+      persistStep: async () => {},
+      persistFinalize: async () => {
+        finalizeOrder.push('persist');
+      },
+      onRecorderFailure: vi.fn(),
+    };
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    await recorder.finalize('success');
+
+    expect(finalizeOrder).toEqual(['metric', 'persist']);
   });
 });

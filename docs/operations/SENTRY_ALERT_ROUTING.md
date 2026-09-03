@@ -44,7 +44,7 @@ What actually prevents that here:
 2. **Metric detectors and the generic issue-stream default workflows watch
    different detectors.** `3021134`/`3653843` are linked only to the
    built-in `6533345` "Issue Stream" detector — not to any of `7702315`,
-   `9711158`, `9711163`, `9711164`, `9711165`, `9711646`. A metric-issue
+   `9711158`, `9711163`, `9711164`, `9711165`, `9712025`. A metric-issue
    event (e.g. the error-rate detector firing) is a different event type
    from a generic issue event, so it does not also flow through the
    issue-stream detector and re-trigger the defaults. This was not modified
@@ -101,7 +101,7 @@ already written in `SENTRY_MONITORS.md`.
    deliberate yes/no from the owner rather than silence. `Sentry MCP`
    exposes `analyze_issue_with_seer` already, so tooling exists whenever
    the owner decides to turn on the budget.
-5. **Verify `feature:coachhelm*` and the golf `feature:round_tracking`
+5. **Verify `feature:coachhelm*` and the golf `feature:golf_round_lifecycle`
    guess once real code ships.** Both are documented in detail in
    `SENTRY_MONITORS.md` under the relevant detector — the wildcard was
    verified against current data, but the golf metric detector's query is a
@@ -122,7 +122,7 @@ already written in `SENTRY_MONITORS.md`.
 - **P1 workflow** `3937972` — unchanged pre-existing workflow, gained 4 new
   detector links.
 - **P2 workflow** `3937991` — new.
-- **5 detectors** — `9711158`, `9711163`, `9711164`, `9711165`, `9711646` —
+- **5 detectors** — `9711158`, `9711163`, `9711164`, `9711165`, `9712025` —
   new, all verified attached to exactly one workflow each.
 - **1 uptime monitor** `9711171` — new, created but disabled pending
   billing.

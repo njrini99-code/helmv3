@@ -19,6 +19,8 @@ import { z } from 'zod';
 import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { describeError } from '@/lib/utils/describe-error';
 import type { IncidentReportDeploy } from '@/lib/admin/incident-report';
+import { recordAi } from '@/lib/observability/metrics';
+import { classifyProviderFault } from '@/lib/admin/provider-fault';
 
 /** Structured root-cause analysis for one incident fingerprint. */
 export interface RcaAnalysis {
@@ -188,17 +190,41 @@ export async function runRcaAnalysis(context: RcaSourceContext): Promise<RcaResu
     };
   }
 
+  const startedAt = Date.now();
   try {
     // `instructions` + `prompt`, not a `messages` array with a system-role
     // entry: the installed AI SDK (^7) gates system-role messages inside
     // `messages` behind `allowSystemInMessages` (default `false`) and would
     // reject the shape this file used before — `instructions` is exactly the
     // field the SDK's own `Prompt` type provides for this.
-    const { object } = await generateObject({
+    const { object, usage } = await generateObject({
       model: resolveModelProvider(RCA_MODEL),
       schema: rcaEngineSchema,
       instructions: RCA_SYSTEM_PROMPT,
       prompt: buildRcaContextText(context),
+      // Sentry AI observability opt-in (Phase A finding, §(a)): the prompt
+      // here is the incident report + up to 3 raw stack traces — already
+      // redacted once on the way into error_logs/admin_events, but stack
+      // traces can still echo row-level values a redaction pass would not
+      // catch (spans.ts's own documented Postgres-error concern). No prompt
+      // or model output belongs in Sentry from this call.
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'admin.rca',
+        recordInputs: false,
+        recordOutputs: false,
+      },
+    });
+
+    recordAi({
+      feature: 'admin_rca',
+      action: 'admin.rca.analyze',
+      model: RCA_MODEL,
+      outcome: 'success',
+      durationMs: Date.now() - startedAt,
+      inputTokens: usage?.inputTokens,
+      outputTokens: usage?.outputTokens,
+      runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
     });
 
     const analysis: RcaAnalysis = {
@@ -208,6 +234,15 @@ export async function runRcaAnalysis(context: RcaSourceContext): Promise<RcaResu
     };
     return { status: 'ok', analysis };
   } catch (error) {
+    recordAi({
+      feature: 'admin_rca',
+      action: 'admin.rca.analyze',
+      model: RCA_MODEL,
+      outcome: 'failure',
+      durationMs: Date.now() - startedAt,
+      errorCode: classifyProviderFault(error)?.code,
+      runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+    });
     return { status: 'error', message: describeError(error) };
   }
 }
