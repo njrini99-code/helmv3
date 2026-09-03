@@ -1264,6 +1264,7 @@ features:
       routes:
         - src/app/admin/engineering/**
         - src/app/admin/work-log/**
+        - src/app/admin/database/**
         - src/app/admin/lenses/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
         # below (errors/ -> admin_incidents, reliability/ ->
@@ -1299,6 +1300,17 @@ features:
         - src/components/admin/lenses/**
       api:
         - src/app/api/admin/**
+        # Scoped to these two crons rather than src/app/api/cron/** on purpose:
+        # the coachhelm-* crons in that directory belong to coachhelm_ai, and a
+        # blanket glob would silently hand their ownership to admin_platform.
+        - src/app/api/cron/reliability-triage/**
+        - src/app/api/cron/selfheal-triage/**
+        # The three zero-cost Supabase observability collectors (Phase 1,
+        # 2026-09-03) behind /admin/database, same reasoning as the two
+        # crons above: src/app/api/cron/** is not a blanket glob here.
+        - src/app/api/cron/db-health-sampler/**
+        - src/app/api/cron/db-stat-delta/**
+        - src/app/api/cron/db-observability-prune/**
       actions:
         - src/app/golf/actions/admin*.ts
         - src/app/golf/actions/admin/**
@@ -1328,6 +1340,14 @@ features:
         # not blur blast-radius attribution.
         - src/lib/admin/**
         - src/lib/reliability/**
+        # General Supabase/Postgres observability (Phase 1, 2026-09-03):
+        # envelope, classifier, out-of-band DB error writer, health/stat
+        # delta collectors. This is a NARROWER, more specific glob than
+        # src/lib/observability/** below (owned by shot_tracking for the
+        # round-tracking flight recorder) — deliberately, since this
+        # subtree is admin/Bridge-facing infrastructure, not round-tracking
+        # specific, even though it shares the parent directory.
+        - src/lib/observability/supabase/**
         # The self-heal loop's REPAIR-stage runner and its launchd config —
         # mapped here 2026-09-02 after `knowledge:map` resolved these paths to
         # `impactedFeatures: []`. The Bridge (self-heal loop) lives under

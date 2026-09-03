@@ -24,6 +24,7 @@ import {
   GitBranch,
   Trophy,
   Waypoints,
+  Database,
   RefreshCw,
   Dumbbell,
   Search,
@@ -142,6 +143,11 @@ const NAV_ICON_BY_HREF = {
   // between three sources, and it sits directly beside Errors in the same
   // section — a second warning triangle would read as a duplicate of it.
   '/admin/reliability': Waypoints,
+  // The database's own icon, not a variant of Reliability's Waypoints or
+  // Jobs' Timer — this tab's subject is Postgres state itself (connections,
+  // deduped DB errors, query deltas), not cross-source correlation or cron
+  // scheduling.
+  '/admin/database': Database,
   // A closed loop, not another gauge: this tab's subject is a CIRCUIT that
   // either completes or does not, and it sits beside Reliability where a
   // second measurement glyph would read as a variant of it.

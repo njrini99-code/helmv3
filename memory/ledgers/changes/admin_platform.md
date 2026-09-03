@@ -1,6 +1,70 @@
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # Admin Platform change ledger
 
+## 2026-09-03 — Zero-cost Supabase observability, Phase 1 (foundation): envelope, classifier, out-of-band DB error store, health/stat collectors, `/admin/database`
+
+New track (`agent/supabase-observability`), Phase 1 of a multi-phase
+zero-incremental-recurring-cost Supabase/Postgres observability program (the
+master brief lives on a sibling control-plane branch, not yet merged).
+
+- **Re-measured the production baseline** read-only via the Supabase
+  Management API — `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.
+  Corrects four numbers the brief's own 2026-09-03 snapshot got wrong:
+  `max_connections` is 60, not ~200; `service_role` statement_timeout is
+  30s, not 2m; per-role `idle_in_transaction_session_timeout` is UNKNOWN
+  (methodology limit — `pg_roles.rolconfig` can't see pooler-applied GUCs),
+  not 8s; and `helm_debug` (`trace_runs`/`trace_steps`/`helm_debug_prune`)
+  is LIVE in production and has been for about a week, while `HELD.md` and
+  the `helm-debug-prune` cron route's own header still describe it as
+  unapplied — recorded as a stale-doc finding rather than silently fixed
+  (`HELD.md` is shared surface, not this track's to edit).
+- **`src/lib/observability/supabase/{envelope,classify}.ts`** — one
+  canonical error shape and a code-first SQLSTATE/PostgREST classifier
+  covering every always-investigate family the brief names, plus the three
+  context-sensitive codes (42501/23505/23503) where the SAME code is
+  routine in one call path and a defect in another, resolved by an explicit
+  caller-stated flag rather than inferred from message text.
+- **`observe-result.ts` / `record-db-error.ts` / `integrity.ts`** —
+  `observeSupabaseResult()` (the one call a server call site adds around a
+  `{data,error}` result: metric + structured log + a scheduled durable
+  write, for the two actionable+ buckets only — never a duplicate Sentry
+  capture, that stays the existing M1-M4 wrappers' job),
+  `recordDbErrorOutOfBand()` (fail-open, 3s-timeout, opened as a SEPARATE
+  transaction AFTER the failed request already returned, so a rolled-back
+  business transaction can never erase its own failure record), and
+  `checkZeroRowMutationIntegrity()` (the brief's mandatory "HTTP 200 with
+  error payload" primitive — NOT yet wired into any specific workflow's
+  full outcome contract; that is a later, feature-by-feature phase).
+- **`db-health-delta.ts` / `query-regression.ts`** — pure, fixture-tested
+  delta/baseline/regression arithmetic behind two new Vercel-cron
+  collectors (`db-health-sampler` every 5m, `db-stat-delta` every 15m).
+  Reset detection uses two signals in both modules (a changed
+  `stats_reset`, OR any counter going negative) because production's own
+  `pg_stat_database.stats_reset` reads NULL — a timestamp-only check would
+  miss that exact shape.
+- **Four HELD migrations** (`20260903180000`-`20260903180300`) — new
+  `helm_debug` tables (`db_error_events`, `db_health_samples`,
+  `db_stat_deltas`, `db_stat_prior_state`) plus SECURITY DEFINER read/write
+  facades, same isolation pattern as `20260825200811`: schema revoked from
+  public, anon and authenticated, EXECUTE service_role-only, ACL tripwire, no
+  direct table grant to any role including service_role. Not applied — see
+  `supabase/migrations/HELD.md`.
+- **`/admin/database`** (`src/app/admin/database/page.tsx` +
+  `src/lib/admin/database/{overview,errors,performance}.ts`) — Mission
+  Control / Database Errors / Query Performance, registered in `ADMIN_NAV`
+  (Triage, key `D`, beside Reliability). Every fetcher degrades to
+  `status:'unconfigured'` on the HELD-migration shape, so the tab currently
+  renders "not shipped yet" honestly rather than a false green or a false
+  failure.
+- **Verified**: 120 new unit tests, `npx tsc --noEmit` clean,
+  `npm run lint --max-warnings 0` clean on every touched file,
+  `npm run docs:path-drift` clean. NOT VERIFIED: this PR does not compile
+  under CI until the sibling `agent/sentry-max-server` branch (Phase C —
+  `src/lib/observability/{metrics,structured-log,correlation}.ts`) merges
+  to `main` first; `observe-result.ts`/`integrity.ts`/`record-db-error.ts`
+  import from those paths as instructed, and they do not exist on `main`
+  yet as of this writing.
+
 ## 2026-09-02 — Registry granularity split: admin_incidents / admin_reliability_collector / admin_selfheal carved out
 
 - SHA: recorded on merge of `agent/bridge-worldmodel`.

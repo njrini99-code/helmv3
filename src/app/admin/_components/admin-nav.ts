@@ -7,6 +7,7 @@ type AdminHref =
   | '/admin/work-log'
   | '/admin/qualifiers'
   | '/admin/reliability'
+  | '/admin/database'
   | '/admin/self-heal'
   | '/admin/auth'
   | '/admin/golf'
@@ -59,6 +60,12 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // shows each source's incidents, this one shows what MORE THAN ONE source
   // agrees on, plus which sources were readable at all.
   { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
+  // Database/Postgres-layer signal, distinct from Reliability: that tab
+  // correlates APPLICATION-level signals across three sources every 3
+  // hours; this tab is the DATABASE's own state — connections, deduped
+  // Supabase/PostgREST failures, query-performance deltas — read from the
+  // zero-cost collectors every 5-15 minutes.
+  { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres health, deduped DB errors, query deltas', meta: '5m' },
   // The self-healing circuit as a thing that can be watched. Distinct from
   // Jobs & Integrity, which answers "did the crons run": this answers "is the
   // loop alive, and has each stage ever actually produced its output" — a
@@ -99,8 +106,8 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // (github-pr-timeline.ts entries, problem/fix narrative), this is the
   // change-to-proof join over the SAME entries (repair verdict, shipped
   // release, post-deploy delta) — Bridge Premium Phase 5 (Engineering OS).
-  { label: 'Proof Log', href: '/admin/work-log', key: 'X', section: 'Platform', description: 'PR → release shipped in → post-deploy proof', meta: 'proof' },
-  { label: 'Engineering OS', href: '/admin/engineering', key: 'Y', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
+  { label: 'Proof Log', href: '/admin/work-log', key: 'Y', section: 'Platform', description: 'PR → release shipped in → post-deploy proof', meta: 'proof' },
+  { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
 
   // LENSES — Bridge Premium Phase 4 (brief §20-27). Journey/flow-shaped
   // dominant visuals over the same underlying data the Apps/Customers tabs

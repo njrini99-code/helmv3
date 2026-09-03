@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 25 features, 70 routes, 42 components, 27 apis, 91 actions, 58 services, 49 tests, 128 tables, 139 rpcs, 24 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 966 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 25 features, 71 routes, 42 components, 30 apis, 91 actions, 59 services, 49 tests, 128 tables, 148 rpcs, 27 jobs, 11 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 987 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -31,7 +31,7 @@ Admin Platform · active · criticality high · owner platform
 
 - **Relations:** 10 doc/structurally-evidenced, 21 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_debug`, `helm_lifting_group_audit`
-- **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_get_agent_run`, `helm_debug_list_agent_runs`, `helm_debug_list_traces`, `helm_debug_record_agent_run`, `is_super_admin`, `recalculate_round_strokes_gained`, `refresh_player_stats_cache`, `revoke_user_sessions`
+- **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_db_health_snapshot`, `helm_debug_get_agent_run`, `helm_debug_list_agent_runs`, `helm_debug_list_traces`, `helm_debug_prune_observability`, `helm_debug_read_db_error_events`, `helm_debug_read_db_health_history`, `helm_debug_read_db_stat_deltas`, `helm_debug_record_agent_run`, `helm_debug_stat_statements_snapshot`, `is_super_admin`, `recalculate_round_strokes_gained`, `record_db_error_event`, `record_db_health_sample`, `record_db_stat_snapshot`, `refresh_player_stats_cache`, `revoke_user_sessions`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `admin_dashboard`
 
@@ -80,7 +80,7 @@ BaseballHelm (recruiting + team management + Lift Lab) · active · criticality 
 Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
-- **Tables:** `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_catching_events`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_development_metrics`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
+- **Tables:** `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_catching_events`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_development_metrics`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** none
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
@@ -170,7 +170,7 @@ Player CoachHelm And Development · active · criticality high · owner product
 Player Hub · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
-- **Tables:** `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_catching_events`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_development_metrics`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
+- **Tables:** `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_catching_events`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_development_metrics`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** `get_coach_today_schedule`
 - **Test surfaces:** 1
 - **Sentry/admin_events signals:** `player_hub`
@@ -281,14 +281,17 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/coachhelm-roster-sweep` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-safety-net` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-validation` | vercel_cron | `coach_intelligence_triage` |
+| `vercel_cron:/api/cron/db-health-sampler` | vercel_cron | `admin_platform` |
+| `vercel_cron:/api/cron/db-observability-prune` | vercel_cron | `admin_platform` |
+| `vercel_cron:/api/cron/db-stat-delta` | vercel_cron | `admin_platform` |
 | `vercel_cron:/api/cron/event-reminders` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/helm-debug-prune` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/ingest-gmail-replies` | vercel_cron | `crm_outreach` |
 | `vercel_cron:/api/cron/integrity-check` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/log-retention` | vercel_cron | `admin_selfheal` |
 | `vercel_cron:/api/cron/refresh-engagement` | vercel_cron | `crm_outreach` |
-| `vercel_cron:/api/cron/reliability-triage` | vercel_cron | `admin_reliability_collector` |
-| `vercel_cron:/api/cron/selfheal-triage` | vercel_cron | `admin_selfheal` |
+| `vercel_cron:/api/cron/reliability-triage` | vercel_cron | `admin_platform` |
+| `vercel_cron:/api/cron/selfheal-triage` | vercel_cron | `admin_platform` |
 | `vercel_cron:/api/cron/task-reminders` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/v3/causality-attribute` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/genome-nightly` | vercel_cron | `coachhelm_ai` |
