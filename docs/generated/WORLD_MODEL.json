@@ -3126,7 +3126,7 @@
       },
       {
         "id": "record_db_error_event",
-        "definedIn": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
+        "definedIn": "supabase/migrations/20260903193000_helm_debug_error_events_individual_rows.sql"
       },
       {
         "id": "record_db_health_sample",
