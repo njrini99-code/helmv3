@@ -304,6 +304,17 @@ them would have broken those routes, not the dead one.
   `metadata.sqlstate`/`metadata.failure_code` when the `error_code` column is
   empty, matching what `helm_private.trace_exception_checkpoint` actually
   writes.
+- **`buildTraceTree` never silently drops a node, cycles included.**
+  `parent_step_key` is free text written by three separate producers (server,
+  collector, RPC), so a genuine mutual cycle is possible; every member of one
+  used to be attached as some OTHER member's child and none of them ever
+  reached `roots`, so the whole cycle vanished from the rendered tree with no
+  error. `observedStepCount` (above) was already immune, since it counts the
+  raw observed array rather than the walked tree — this closes the same gap
+  for the tree itself, via a rescue sweep that promotes any still-unvisited
+  node to an additional root after the normal walk. No cycle has been
+  observed in a real trace; this is defensive, matching the module's own
+  stated design principle.
 - **A downgraded trace's badge only ever appears once you open it.**
   `helm_debug_finalize_trace` (since the applied
   `20260901140000_trace_cannot_claim_success_while_blind.sql`) writes

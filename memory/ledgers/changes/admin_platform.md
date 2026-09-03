@@ -908,3 +908,30 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   entry — see the commit history for whether it was run before merge; a
   `'use server'` surface (`golf-tracer.ts`) changed, so it is required before
   merge per CLAUDE.md.
+
+## 2026-09-02 — Flight Recorder: a genuine parent_step_key cycle no longer silently vanishes from the rendered tree
+
+- SHA: branch `agent/tracer-gaps`, PR pending. Follow-up to the same day's
+  "one observed-step-count definition" entry above.
+- **What**: `buildTraceTree`'s containment loop pushes every node into either
+  `roots` or its resolved parent's `children` array; a genuine mutual cycle
+  (A's parent is B, B's parent is A, or a longer ring) left every member
+  attached as some OTHER member's child and none ever reached `roots`, so
+  the depth-first walk never visited any of them — the whole cycle vanished
+  from `tree.flat` with no error. Fixed with a rescue sweep: after the
+  normal walk, any node still unvisited is promoted to an additional root
+  and walked from there too. A no-op on every acyclic trace this repo has
+  ever recorded.
+- **Why**: this module's own header comment states the guarantee directly —
+  "the tree would be quietly, plausibly wrong" is exactly what a debugging
+  tool must never be — and `observedStepCount` being correct (fixed earlier
+  today) does not by itself guarantee the *rendered tree* still shows every
+  node; this closes the same gap on the render side. `parent_step_key` is
+  free text written by three separate producers (server, collector, RPC), so
+  a cycle, while never observed in production, is not impossible.
+- **Verified**: two new tests (2-node and 3-node mutual cycles asserting the
+  exact surviving node set) written first and confirmed red (`flat: []` on
+  both) before the fix; full touched-directory suite green after (6 files,
+  111 tests, up from 109). `npm run typecheck` / `lint` / `lint:ratchet` (68
+  warnings, no regression) / `audit:supabase-errors` (baseline 1039, no
+  regression) all clean.
