@@ -393,6 +393,39 @@ died before you could speak — it is not a Repair verdict.
 `'failed'` only when the run itself broke — a gate you could not read, a
 worktree you could not create — not when you correctly decided to open nothing.
 
+### The launchd config is tracked in the repo, not hand-edited on the Mac
+
+`config/launchd/com.helm.bridge-rca-repair.plist` is the source of truth for
+the live agent at `~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`.
+Install (or reinstall after editing the repo copy) with:
+
+```bash
+npm run selfheal:repair:install
+```
+
+which copies the repo plist over the live one, lints it with `plutil`,
+reloads it (`launchctl bootout` + `bootstrap`), and prints its loaded state.
+Verify the whole chain — plist installed and matching, job loaded, env file
+present, binary and prompt file resolve, the `-p` argument is safe, and the
+newest production heartbeat is fresh — with:
+
+```bash
+npm run selfheal:repair:doctor
+```
+
+**The frontmatter trap.** The 06:40 fire on 2026-09-02 failed in 0.6s because
+the plist passed `SKILL.md`'s raw text as the `claude -p` argument, and that
+file opens with YAML frontmatter (`---`). The CLI parsed `---` as an unknown
+option and exited before writing anything, including its own heartbeat — the
+outer runner's fallback row carried no stderr, so `/admin/jobs` could only say
+"child exited 1", not why. The rule this leaves behind: **a `-p` argument must
+never start with `-` or `$(`.** Put a plain sentence before any
+`$(cat ...)` substitution, the way the current plist does
+(`"Follow the instructions in the text below exactly. $(cat ...)"`). The
+doctor's check (f) enforces this on every run, and the vitest at
+`src/test/scripts/selfheal-repair-launchd.test.ts` enforces it statically
+against every plist under `config/launchd/`.
+
 ---
 
 ## Report
