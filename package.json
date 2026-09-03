@@ -53,6 +53,8 @@
     "knowledge:registry-check": "tsx scripts/knowledge/check-feature-registry.ts",
     "knowledge:map": "node scripts/knowledge/map-changed-files.mjs",
     "knowledge:report": "node scripts/knowledge/workflow-report.mjs",
+    "knowledge:world-model": "node scripts/knowledge/world-model.mjs",
+    "knowledge:world-model:check": "node scripts/knowledge/world-model.mjs --check",
     "helm-os:check": "npm run docs:check && npm run knowledge:check",
     "lighthouse": "lhci autorun --config=lighthouserc.cjs",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",

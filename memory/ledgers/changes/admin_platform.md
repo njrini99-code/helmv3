@@ -1,5 +1,45 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Registry granularity split: admin_incidents / admin_reliability_collector / admin_selfheal carved out
+
+- SHA: recorded on merge of `agent/bridge-worldmodel`.
+- `memory/registry.yml`'s single `admin_platform` entry (every capability this
+  control-plane program builds — incidents, the reliability collector, the
+  self-healing loop, the Bridge shell — resolved to one `feature_id`) split
+  into the shared shell plus three sub-capability entries, per owner decision
+  (ADR-2026-09-03-control-plane-owner-decisions, memory/decisions/ — on the parallel Bridge control-plane session's branch, not yet on this branch, closing
+  `ADMIN_PLATFORM_REGISTRY_GRANULARITY`). `admin_platform` keeps the sole
+  runtime `FeatureKey` (`admin_dashboard`) and the general shell/Tracer/
+  Flight-Recorder/CRM/cross-cutting-infra surface; the three new entries carry
+  `feature_keys: []` with `covered_by: admin_platform` since nothing writes a
+  dedicated `FeatureKey` for them yet.
+- `memory/features/admin-platform.md` (686 lines) split by moving its
+  incidents/reliability/selfheal-specific sections into three new docs —
+  `admin-incidents.md`, `admin-reliability-collector.md`,
+  `admin-selfheal.md` — verbatim where a business rule was cleanly scoped to
+  one capability, with a cross-reference note added wherever a rule mentions
+  code another doc now owns. Cross-cutting infrastructure (error-path write
+  scheduling, flood collapse, credential shape, feature aliasing, the
+  `background_job_logs` status vocabulary, `/admin/traces`) stayed on the
+  shell — none of it is specific to incidents, the collector, or self-heal.
+- Also closed as a system gap in the same change: `src/app/admin/actions/**`
+  mapped to NO feature before this — `analyze-error.ts`/`resolve-error.ts`/
+  `sentry-resolve.ts` now route to `admin_incidents`, `triage.ts` to
+  `admin_selfheal`, and the remaining four (`view-as.ts`, `golf-tracer.ts`,
+  `billing.ts`, `sessions.ts`) to the shell.
+- `src/lib/admin/**` stays on the shell as a broad glob rather than being
+  enumerated file-by-file with the carved paths excluded — an overlap
+  documented as intentional in the registry (see `check-feature-registry.ts`'s
+  own note on shared modules claimed by more than one feature); the world-model
+  generator (`scripts/knowledge/world-model.mjs`, this same change) resolves a
+  file's PRIMARY feature by most-specific-glob-wins so the overlap does not
+  blur blast-radius attribution.
+- Verified: `npm run knowledge:registry-check` (0 reconciliation problems, 24
+  semantic features / 87 runtime FeatureKeys), `npm run knowledge:globs` (0 new
+  dead entries), `npm run knowledge:map -- --files <one file per new entry>`
+  routes each to exactly the intended id, `npm run knowledge:feature-map` /
+  `document-inventory.mjs` regenerated clean.
+
 ## 2026-09-02 — Correction to (e) and (h): a critical expected-recurrence must still page, and a fixture must still be visible
 
 Two follow-up fixes to the same session's own defect-(e) and defect-(h)

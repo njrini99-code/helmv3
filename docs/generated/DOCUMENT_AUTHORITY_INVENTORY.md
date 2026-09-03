@@ -29,16 +29,16 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 13 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 19 | 19 | 7 | 8 |
+| `CURRENT_FEATURE` | 22 | 22 | 9 | 8 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
-| `GENERATED_TRUTH` | 15 | 3 | 5 | 22 |
-| `PROCESS_CONTRACT` | 8 | 3 | 7 | 11 |
+| `GENERATED_TRUTH` | 16 | 3 | 5 | 22 |
+| `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 62 | 3 | 31 | 156 |
 | `AUDIT_SNAPSHOT` | 81 | 6 | 37 | 132 |
-| `STATE_SNAPSHOT` | 4 | 0 | 3 | 6 |
-| `HISTORY_LEDGER` | 22 | 0 | 4 | 45 |
+| `STATE_SNAPSHOT` | 4 | 1 | 3 | 6 |
+| `HISTORY_LEDGER` | 26 | 0 | 4 | 45 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 2 | 0 | 2 | 0 |
 | `INDEX` | 19 | 0 | 6 | 28 |
@@ -158,7 +158,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 2 | 83 | 2 |
+| `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | 1 |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 8 | 55 | 1 |
+| `memory/features/admin-reliability-collector.md` | current | yes | - | - | 5 | 16 | - |
+| `memory/features/admin-selfheal.md` | current | yes | - | yes | 5 | 27 | - |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/calendar-events.md` | current | yes | - | - | 2 | 22 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -254,7 +257,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 9 | 8 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 2 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 129 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 152 | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 28 | 3 | - |
@@ -268,7 +272,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 3 | 8 | - |
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 1 | 11 | 2 |
-| `docs/ai-system/selfheal/triage-contract.md` | current | - | - | yes | 0 | 8 | - |
+| `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | 1 | 8 | - |
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 2 | 7 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 11 | 7 |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 5 | 2 |
@@ -369,7 +373,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 5 | 0 | - |
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 6 | 19 | 6 |
-| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 3 | 13 | 1 |
+| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 4 | 13 | 1 |
 | `docs/UIUX_AUDIT.md` | current | - | - | - | 2 | 0 | - |
 | `docs/audits/AUTONOMOUS_RUN_STATUS_2026-07-01.md` | current | - | - | yes | 1 | 9 | 2 |
 | `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 7 | 12 | 2 |
@@ -453,7 +457,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | - | - | yes | 1 | 18 | 1 |
+| `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | yes | - | yes | 2 | 18 | 1 |
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/reports/HELM_OS_TRUTH_CONVERGENCE_2026-08-30.md` | current | - | - | yes | 0 | 37 | 3 |
 | `docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` | current | - | - | - | 1 | 1 | 1 |
@@ -464,9 +468,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 1 | 85 | 8 |
+| `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | 1 | 6 | - |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 4 | 87 | 8 |
+| `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
+| `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | 1 | 4 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 | 3 | - |
+| `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 1 | 6 | 2 |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 | 0 | - |
@@ -551,13 +559,13 @@ them would bury everything above.
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 6 | 8 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
-| `docs/OBSERVABILITY.md` | current | yes | - | yes | 2 | 6 | - |
+| `docs/OBSERVABILITY.md` | current | yes | - | yes | 4 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 3 | 3 | - |
 | `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 3 | 7 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | - | - | yes | 2 | 16 | 13 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 5 | 19 | 9 |
-| `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | 4 | 13 | 2 |
+| `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | 4 | 16 | 2 |
 | `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md` | current | - | - | yes | 1 | 15 | 3 |
 | `docs/baseball/COACH_NAV_8TAB_PROPOSAL.md` | current | - | - | yes | 0 | 2 | 1 |
 | `docs/baseball/ENTRY_SCENES_DESIGN.md` | current | - | - | - | 0 | 1 | 1 |

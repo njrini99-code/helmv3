@@ -29,7 +29,7 @@ is a second thing to keep true.
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/feature_awareness_system.md`
 
 ## `coachhelm_ai`
 
@@ -223,11 +223,44 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/**`, `src/app/golf/admin/**`, `src/app/admin/_components/**`, `src/app/golf/admin/crm/components/**`, `src/app/api/admin/**`, `src/app/api/cron/reliability-triage/**` … and 19 more in the registry
+- **Code:** `src/app/admin/golf/**`, `src/app/admin/traces/**`, `src/app/admin/deploys/**`, `src/app/admin/auth/**`, `src/app/admin/qualifiers/**`, `src/app/admin/activity/**` … and 32 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
 - **Incidents:** `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
 - **History:** `memory/ledgers/changes/admin_platform.md`, `memory/ledgers/tests/admin_platform.md`
+
+## `admin_incidents`
+
+**Admin Incidents** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-incidents.md`
+- **Code:** `src/app/admin/errors/**`, `src/app/admin/actions/analyze-error.ts`, `src/app/admin/actions/resolve-error.ts`, `src/app/admin/actions/sentry-resolve.ts`, `src/lib/admin/incidents/**`, `src/lib/admin/incident-*.ts` … and 8 more in the registry
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — incident telemetry writes through admin_events under the shared admin_dashboard key on admin_platform, the shell this entry was carved from.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_incidents.md`
+
+## `admin_reliability_collector`
+
+**Admin Reliability Collector** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-reliability-collector.md`
+- **Code:** `src/app/admin/reliability/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — the collector writes background_job_logs rows (reliability-snapshot, reliability-triage job types) rather than admin_events, so nothing here claims a FeatureKey today.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_reliability_collector.md`
+
+## `admin_selfheal`
+
+**Admin Self-Heal** · active · criticality high · owner platform
+
+- **Behaviour:** `memory/features/admin-selfheal.md`
+- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 10 more in the registry
+- **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — self-heal stages heartbeat into background_job_logs (selfheal-triage, log-retention job types) and SELFHEAL_STAGES capability state, not admin_events.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** `memory/ledgers/changes/admin_selfheal.md`
 
 ## `team_access_control`
 
