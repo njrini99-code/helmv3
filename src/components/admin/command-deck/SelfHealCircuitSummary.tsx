@@ -76,7 +76,16 @@ export function SelfHealCircuitSummary({ summary }: { summary: CircuitSummary })
       )}
       <div className="flex flex-wrap gap-2 sm:flex-nowrap">
         {summary.stages.map((stage, i) => (
-          <div key={stage.stageId} className="flex flex-1 items-center gap-2">
+          // min-w-0 is load-bearing, not defensive. A flex item defaults to
+          // `min-width: auto`, which resolves to its CONTENT's min-content
+          // width — and StageCard renders the active incident title with
+          // `truncate`, whose `white-space: nowrap` makes that min-content
+          // width the FULL untruncated title. So the row could not shrink,
+          // `truncate` never engaged, and /admin scrolled 433px sideways on a
+          // 1534px viewport (measured on production 2026-09-03; /admin/errors
+          // at the same width was 0). With min-w-0 the wrapper may shrink,
+          // the card is bounded, and truncate finally does its job.
+          <div key={stage.stageId} className="flex min-w-0 flex-1 items-center gap-2">
             <StageCard stage={stage} isActive={summary.activeStageId === stage.stageId} />
             {i < summary.stages.length - 1 ? (
               <span aria-hidden className="hidden shrink-0 text-warm-300 sm:block">
