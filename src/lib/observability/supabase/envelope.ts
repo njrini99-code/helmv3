@@ -137,6 +137,19 @@ const MAX_SAFE_TEXT_CHARS = 300;
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
 /**
+ * Credential shapes that survive `redactFreeTextForStorage` when they appear
+ * as PLAIN TEXT rather than inside a URL query (review finding, 2026-09-03):
+ * a JWT (three base64url segments, header always starts `eyJ`), a bearer
+ * token, and `<name>=<value>` / `<name>: <value>` pairs whose name says it is
+ * a secret. Order matters: the JWT pattern runs first so a `token=eyJ…` pair
+ * is fully replaced rather than leaving the tail of the token behind.
+ */
+const JWT_RE = /eyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}/g;
+const BEARER_RE = /\bbearer\s+[A-Za-z0-9._~+/=-]{12,}/gi;
+const SECRET_PAIR_RE =
+  /\b(access[_-]?token|refresh[_-]?token|id[_-]?token|token|api[_-]?key|apikey|secret|password|passwd|pwd|authorization|auth|service[_-]?role[_-]?key|anon[_-]?key)\b\s*[=:]\s*["']?[A-Za-z0-9._~+/=-]{8,}["']?/gi;
+
+/**
  * `redactFreeTextForStorage` (masks emails, strips embedded URL secrets,
  * bounds length, fails open to a placeholder — never to the raw value) plus
  * one more pass this call site needs that the shared helper doesn't do:
@@ -148,7 +161,11 @@ const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 export function sanitizeSupabaseFreeText(value: string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   try {
-    const withoutUuids = value.replace(UUID_RE, '[id]');
+    const withoutSecrets = value
+      .replace(JWT_RE, '[secret]')
+      .replace(BEARER_RE, 'bearer [secret]')
+      .replace(SECRET_PAIR_RE, '$1=[secret]');
+    const withoutUuids = withoutSecrets.replace(UUID_RE, '[id]');
     const safe = redactFreeTextForStorage(withoutUuids, MAX_SAFE_TEXT_CHARS);
     return safe.length > 0 ? safe : null;
   } catch {

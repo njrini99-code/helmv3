@@ -122,6 +122,30 @@ describe('buildSupabaseFingerprint — code-first, per brief §8 example', () =>
 });
 
 describe('privacy — sanitizeSupabaseFreeText / buildSupabaseErrorEnvelope', () => {
+  const JWT =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
+  it('redacts a JWT that appears as plain text, not only inside a URL (review finding 2026-09-03)', () => {
+    const out = sanitizeSupabaseFreeText(`permission denied for ${JWT} on relation golf_rounds`);
+    expect(out).not.toContain('eyJ');
+    expect(out).not.toContain('SflKxwR');
+    expect(out).toContain('[secret]');
+  });
+
+  it('redacts bearer tokens and secret-named key=value pairs', () => {
+    const out = sanitizeSupabaseFreeText(
+      'request failed: Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123456789 token=sk_live_1234567890abcdef service_role_key: sbp_0123456789abcdef',
+    );
+    expect(out).not.toMatch(/abcdefghijklmnopqrstuvwxyz0123456789/);
+    expect(out).not.toContain('sk_live_1234567890abcdef');
+    expect(out).not.toContain('sbp_0123456789abcdef');
+  });
+
+  it('leaves ordinary Postgres messages alone', () => {
+    const out = sanitizeSupabaseFreeText('duplicate key value violates unique constraint "golf_rounds_pkey"');
+    expect(out).toBe('duplicate key value violates unique constraint "golf_rounds_pkey"');
+  });
+
   it('strips a UUID from free text', () => {
     const result = sanitizeSupabaseFreeText('Key (round_id)=(0b1e6f2a-1234-4abc-9def-abcdef012345) already exists.');
     expect(result).not.toContain('0b1e6f2a-1234-4abc-9def-abcdef012345');
