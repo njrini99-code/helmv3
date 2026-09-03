@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { resolveTriageEvents } from '@/app/admin/actions/triage';
 import { resolveSentryIssueAction } from '@/app/admin/actions/sentry-resolve';
 import type { UnifiedIncident } from '@/lib/admin/incidents/types';
+import type { IncidentPresentation } from '@/lib/admin/incidents/present';
+import type { IncidentGenome } from '@/lib/admin/incidents/genome';
+import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
 import { PanelAllClear, PanelNoData } from './PanelStates';
 import { UnifiedIncidentCard } from './UnifiedIncidentCard';
 
@@ -55,6 +58,13 @@ export function UnifiedIncidentQueue({
   grouped = true,
   onResolve = resolveTriageEvents,
   onResolveSentry = resolveSentryIssueAction,
+  /** Phase 0/1 additions — all optional and keyed by incident id, so a caller
+   *  that has not computed them yet renders exactly as before. See
+   *  `UnifiedIncidentCard`'s own prop docs for what `undefined` vs. a
+   *  present-but-null entry means for each. */
+  presentations,
+  genomeByIncident,
+  releaseRelationships,
 }: {
   incidents: readonly UnifiedIncident[];
   eventIdsByIncident: Record<string, string[]>;
@@ -65,6 +75,9 @@ export function UnifiedIncidentQueue({
   grouped?: boolean;
   onResolve?: (eventIds: string[]) => Promise<{ resolvedCount: number }>;
   onResolveSentry?: (issueId: string) => Promise<{ ok: boolean; error?: string; unconfigured?: boolean }>;
+  presentations?: Record<string, IncidentPresentation>;
+  genomeByIncident?: ReadonlyMap<string, IncidentGenome>;
+  releaseRelationships?: ReadonlyMap<string, ReleaseRelationshipVerdict>;
 }) {
   const router = useRouter();
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(new Set());
@@ -168,6 +181,9 @@ export function UnifiedIncidentQueue({
         series={series(incident)}
         onResolve={resolve}
         error={errors.get(incident.id)}
+        presentation={presentations?.[incident.id]}
+        genome={genomeByIncident?.get(incident.id)}
+        releaseRelationship={releaseRelationships?.get(incident.id) ?? (releaseRelationships ? null : undefined)}
       />
     );
   }

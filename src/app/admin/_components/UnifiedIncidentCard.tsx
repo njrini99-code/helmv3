@@ -20,6 +20,10 @@ import { INCIDENT_CLASS_LABEL } from '@/lib/admin/incident-classification';
 import { RCA_CATEGORY_LABEL } from '@/lib/admin/rca-category';
 import { describeErrorCode } from '@/lib/admin/error-code-hint';
 import { deriveIncidentFlow, FLOW_STAGE_TITLE } from '@/lib/admin/selfheal-flow';
+import type { IncidentPresentation } from '@/lib/admin/incidents/present';
+import type { IncidentGenome } from '@/lib/admin/incidents/genome';
+import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
+import { SourceConfidenceRing, ReleaseRelationshipLabel, EpisodeTimelineStrip } from '@/components/admin/premium';
 import { routeLabel } from './IncidentCard';
 import { LocalTime } from './LocalTime';
 import { CopyReportButton } from './CopyReportButton';
@@ -338,11 +342,33 @@ export function UnifiedIncidentCard({
   series,
   onResolve,
   error,
+  /**
+   * Phase 0's plain-English projection (`present.ts`) for THIS incident,
+   * when the caller has already resolved it — the board computes one per
+   * incident (`IncidentBoard.presentations`), so this is always available
+   * from `UnifiedIncidentQueue` in practice. Optional so this card keeps
+   * working, unchanged, for a caller that has not been updated yet: without
+   * it, the row falls straight back to `incident.description`, exactly the
+   * pre-Phase-1 behavior.
+   */
+  presentation,
+  /** Phase 1's per-incident Genome (`genome.ts`) — evidence coverage and the
+   *  episode timeline. Optional for the same reason as `presentation`. */
+  genome,
+  /** This incident's relationship to the current production release
+   *  (`release-watch.ts`), when a Release Watch could be computed. `null`
+   *  when release data was unavailable — rendered as its own hatched
+   *  "release relationship unknown" state, never silently omitted, so an
+   *  operator can tell "no release context yet" apart from "not shown". */
+  releaseRelationship,
 }: {
   incident: UnifiedIncident;
   series: number[] | null;
   onResolve?: (incident: UnifiedIncident) => void;
   error?: string;
+  presentation?: IncidentPresentation;
+  genome?: IncidentGenome;
+  releaseRelationship?: ReleaseRelationshipVerdict | null;
 }) {
   const path = routeLabel(incident.route);
   const primary = primarySource(incident.sources);
@@ -472,19 +498,61 @@ export function UnifiedIncidentCard({
       >
         {incident.linkTarget ? (
           <Link href={incident.linkTarget} className="hover:underline">
-            {incident.description}
+            {presentation?.title ?? incident.description}
           </Link>
         ) : (
-          incident.description
+          (presentation?.title ?? incident.description)
         )}
       </RowHead>
+
+      {/* Phase 0's "feature > operation" line — the resolver's own words for
+          where this happened, ahead of the raw fact line below. */}
+      {presentation?.operationContext ? (
+        <p className="mt-0.5 text-caption leading-4 text-warm-600">{presentation.operationContext}</p>
+      ) : null}
 
       <FactLine
         items={[incident.errorCode, incident.actionName, primary ? INCIDENT_SOURCE_LABEL[primary.source] : null]}
         emphasizeFirst={Boolean(incident.errorCode)}
       />
 
+      {/* Muted-mono technical signature — brief §7: demoted detail, never
+          the title. Only rendered once a presentation was actually
+          resolved, so a card with no presentation prop looks identical to
+          the pre-Phase-1 card rather than showing a redundant line. */}
+      {presentation ? (
+        <p className="mt-0.5 break-words font-fw-mono text-caption leading-4 text-warm-500 [overflow-wrap:anywhere]">
+          {presentation.technicalSignature}
+        </p>
+      ) : null}
+
       {path ? <RowPath>{path}</RowPath> : null}
+
+      {/* Release relationship — brief §9. `undefined` means "no Release
+          Watch was computed for this render" (omit entirely, same as
+          `presentation`); `null` means "computed, but this incident has no
+          answer" and still renders, hatched. */}
+      {releaseRelationship !== undefined ? (
+        <div className="mt-1.5">
+          {releaseRelationship ? (
+            <ReleaseRelationshipLabel verdict={releaseRelationship} size="sm" />
+          ) : (
+            <ReleaseRelationshipLabel
+              verdict={{ relationship: 'unknown', confidence: 0, evidenceFor: [], evidenceAgainst: ['Release watch could not be computed this refresh.'] }}
+              size="sm"
+            />
+          )}
+        </div>
+      ) : null}
+
+      {/* Regressions shown as episodes — only when there is more than one,
+          i.e. an actual regression exists; a single-episode incident stays
+          silent here rather than adding chrome for the common case. */}
+      {genome && genome.episodes.episodes.length > 1 ? (
+        <div className="mt-1.5">
+          <EpisodeTimelineStrip episodes={genome.episodes.episodes} incomplete={genome.episodes.timelineIncomplete} size="sm" />
+        </div>
+      ) : null}
 
       {/* The feature tag — a product area in words, or "untagged" out loud. */}
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5" data-testid="unified-incident-tags">
@@ -556,6 +624,8 @@ export function UnifiedIncidentCard({
         ) : null}
 
         <ProofDots proof={incident.proof} size="sm" />
+
+        {genome ? <SourceConfidenceRing coverage={genome.evidenceCoverage} size={22} className="shrink-0" /> : null}
 
         <CopyReportButton variant="icon" report={incident.report} label={`Copy incident report: ${incident.title}`} />
 
