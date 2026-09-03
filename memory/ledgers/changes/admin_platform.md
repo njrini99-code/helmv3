@@ -1,5 +1,39 @@
 # Admin Platform change ledger
 
+## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (b) — the capture-quality panel stops penalising cron rows for lacking a user, and observed-action user attribution is pinned
+
+- SHA: pending (branch `agent/reliability-bridge-fixes`, defect (b) of the
+  six-defect sweep).
+- **`analyzeCaptureQuality` (`src/lib/admin/data/capture-quality.ts`) gives the
+  'user' field its own, smaller denominator.** A `source: 'cron'` row
+  (`job-log.ts`'s `Cron failed: <jobType>`, including the reliability
+  collector's own) or `source: 'system'` row (`deploy-marker.ts`) is a machine
+  invocation — it has no session to resolve a user from, so counting it
+  against 'user' coverage blamed a call site for a gap it could never close.
+  New `SELF_REFERENTIAL_SOURCES` set + `isSelfReferentialRow`; the 'user'
+  field's `total`/`present`/`ratio` are computed over the user-eligible
+  subset, every other field (and `report.rows`, and `weakestSources`' row
+  counts) is unchanged — a cron failure legitimately carries error-code,
+  stack, route, feature and action, and stays eligible to rank as a weakest
+  emitter on those. `rca_analysis` rows need no matching filter: they are
+  already excluded upstream by `queryAppErrorEvents`'s `event_type='error'`
+  clause, so a second check here would be a guard that can never fire — not
+  added.
+- **Observed-action user attribution ("second half" of this defect): verified
+  correct, not a bug.** `withAdminObserved` (`src/lib/admin/observed-action.ts`)
+  and its three consumers — `withGolfAction`, `withBaseballAction`,
+  `withLiftingAction` — already resolve `userId`/`userEmail` from the session
+  before calling `observeActionSoftFailure`/`logServerException`, and
+  `observe-action-result.ts` forwards them unchanged into the logger context.
+  No code change was needed; a new test pins the soft-failure path (only the
+  thrown-error path had coverage before) so a future refactor can't silently
+  drop it.
+- **Verified**: new failing-first cases in `capture-quality.test.ts` (11/11
+  passing — 3 new cases were red against the pre-fix code); a new pinning
+  case in `observe-action-result.test.ts` (30/30, passed immediately — see
+  above); `npm run typecheck`, `lint`, `lint:ratchet`, `audit:supabase-errors`
+  all green on this change alone.
+
 ## 2026-09-02 — Reliability/Bridge defect sweep (agent/reliability-bridge-fixes): catalogued defect (f) — a Sentry 429 gets one honoured retry before it reads as blind
 
 - SHA: pending (branch `agent/reliability-bridge-fixes`, defect (f) of the

@@ -296,6 +296,21 @@ them would have broken those routes, not the dead one.
   `production`, where a canceled deploy means the intended release never
   shipped and stays `warning`. A superseded or manually-canceled preview
   build is routine noise, not a reliability signal.
+- **The capture-quality panel's 'user' field excludes rows that could never
+  have carried a user.** `analyzeCaptureQuality` (`src/lib/admin/data/
+  capture-quality.ts`) measures how completely `admin_events` rows were
+  instrumented — but a `source: 'cron'` row (`job-log.ts`'s `Cron failed:
+  <jobType>`, including the reliability collector's own) or `source:
+  'system'` row (`deploy-marker.ts`) is a machine invocation with no session
+  to resolve a user from, not an under-instrumented call site. Counting them
+  against the 'user' field's denominator understated capture quality for a
+  gap no call site could ever close. They stay in `rows` and every OTHER
+  field's denominator (error-code/stack/route/feature/action) — a cron
+  failure legitimately carries all five — and stay eligible to rank as a
+  weakest emitter on those five, just never penalised for the one field they
+  were never eligible to carry. `SELF_REFERENTIAL_SOURCES` is the single set;
+  `rca_analysis` rows need no matching check because they are already outside
+  `queryAppErrorEvents`'s `event_type='error'` filter.
 - **Reliability is a lens, not a second queue.** `/admin/reliability` keeps
   source health, the blind-source notice, the severity mix, run history and
   the raw snapshot — removing those was never the goal. What it must not do

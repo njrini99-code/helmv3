@@ -240,6 +240,51 @@ describe('observe-action-result', () => {
     expect(infoCall?.[1]).toMatchObject({ skipSentry: true });
   });
 
+  // Catalogued defect (b), second half: a Bridge row from the observed-action
+  // capture path must carry `user_id` whenever the wrapper that called this
+  // resolved a session. `withGolfAction` / `withBaseballAction` /
+  // `withLiftingAction` all resolve `userId`/`userEmail` before calling this
+  // and pass them through `context` — this pins that `observeActionSoftFailure`
+  // forwards them unchanged into the logger call rather than dropping them,
+  // for both the info (`logServerEvent`) and error (`logServerError`) tiers.
+  it('forwards a caller-resolved userId/userEmail into the logger context unchanged', () => {
+    observeActionSoftFailure(
+      { success: false, error: 'Invalid email or password (2 attempts remaining)' },
+      {
+        action: 'saveRound',
+        sport: 'golf',
+        source: 'server_action',
+        userId: 'user-abc',
+        userEmail: 'coach@example.com',
+      },
+    );
+    expect(mocks.logServerEvent).toHaveBeenCalledTimes(1);
+    const infoCall = mocks.logServerEvent.mock.calls[0] as
+      | [string, Record<string, unknown> | undefined, 'info' | 'warning' | 'error' | 'critical']
+      | undefined;
+    expect(infoCall?.[1]).toMatchObject({ userId: 'user-abc', userEmail: 'coach@example.com' });
+
+    mocks.logServerEvent.mockClear();
+    mocks.logServerError.mockClear();
+    __resetEmitThrottleForTests();
+
+    observeActionSoftFailure(
+      { success: false, error: 'Could not save document' },
+      {
+        action: 'uploadBaseballDocument',
+        sport: 'baseball',
+        source: 'server_action',
+        userId: 'user-xyz',
+        userEmail: 'player@example.com',
+      },
+    );
+    expect(mocks.logServerError).toHaveBeenCalledTimes(1);
+    const errorCall = mocks.logServerError.mock.calls[0] as
+      | [string, Record<string, unknown> | undefined, 'warning' | 'error' | 'critical']
+      | undefined;
+    expect(errorCall?.[1]).toMatchObject({ userId: 'user-xyz', userEmail: 'player@example.com' });
+  });
+
   it('logs unexpected soft failures at error severity', () => {
     observeActionSoftFailure(
       { success: false, error: 'Could not save document' },
