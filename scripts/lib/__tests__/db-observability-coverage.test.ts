@@ -117,12 +117,23 @@ describe('coverage matrix - a cell is never silently upgraded', () => {
     }
   });
 
-  it('reports UNKNOWN, not NO, when a row has no implementing module on this branch', () => {
-    // Several rows name modules that belong to sibling tracks. Missing
-    // evidence is weaker than "the code does not do this", and the matrix
-    // must say the weaker thing.
+  it('reports UNKNOWN, not NO, for a row whose implementing module is absent', () => {
+    // THE CONTRACT, asserted directly rather than through repo state.
+    // Missing evidence is weaker than "the code does not do this", and the
+    // matrix must say the weaker thing.
+    //
+    // This used to require `absent.length > 0` — that is, it depended on the
+    // branch happening to contain a row whose module was missing. That held
+    // while the tracks were separate and stopped holding the moment all
+    // three merged and every row gained a module. A guard that silently
+    // stops guarding once the repo improves is worse than no guard, so the
+    // contract is now pinned against the cell functions themselves, which
+    // cannot be satisfied by accident.
+    expect(coverage.__testing.dbErrorEventCell(null)).toBe(UNKNOWN);
+    expect(coverage.__testing.codeOf(['src/lib/observability/supabase/__does_not_exist__.ts'])).toBeNull();
+
+    // And the repo-state sweep still runs when there IS such a row.
     const absent = buildMatrix().filter((r) => !r.modulesPresent);
-    expect(absent.length).toBeGreaterThan(0);
     for (const row of absent) {
       expect(row.cells['DB error event'], row.id).toBe(UNKNOWN);
       expect(row.cells['SQLSTATE/code'], row.id).toBe(UNKNOWN);

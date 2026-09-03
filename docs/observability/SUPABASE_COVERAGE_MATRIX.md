@@ -45,30 +45,30 @@ the table rather than in prose.
 
 | Failure class | Sentry | Bridge | DB error event | Flight Recorder | SQLSTATE/code | Release | Trace correlation | Metric | Invariant | Alert | Replay | Live verified | Blind spot |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PostgREST select failure | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| PostgREST mutation failure | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| RPC SQLSTATE failure | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| RPC rollback | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| RPC timeout | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| RPC unknown commit | UNKNOWN | UNKNOWN | NO | YES | YES | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
-| RLS expected denial | UNKNOWN | UNKNOWN | YES | NO | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent; not on the Bridge |
-| RLS unexpected denial | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| Auth API error | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no replay fixture |
-| Auth client error | UNKNOWN | UNKNOWN | NO | NO | YES | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
-| Storage error | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no replay fixture |
-| Realtime connection error | YES | UNKNOWN | NO | NO | NO | NO | NO | YES | NO | UNKNOWN | NO | NOT VERIFIED | no durable event; not on the Bridge; no replay fixture |
-| Realtime silent propagation | YES | UNKNOWN | NO | NO | NO | NO | NO | YES | NO | UNKNOWN | NO | NOT VERIFIED | no durable event; not on the Bridge; no replay fixture |
-| Edge Function exception | UNKNOWN | UNKNOWN | YES | NO | YES | YES | YES | YES | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; not on the Bridge; no replay fixture |
-| pg_cron failure | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
-| pg_cron missed run | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
-| pg_net failure | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
-| Lock wait | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
-| Deadlock | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| Connection saturation | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
-| CPU / memory saturation | UNKNOWN | YES | UNKNOWN | NO | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no replay fixture |
-| Query performance regression | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
-| Schema drift | UNKNOWN | UNKNOWN | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
-| DB type drift | UNKNOWN | UNKNOWN | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
-| Data integrity violation | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | YES | UNKNOWN | YES | NOT VERIFIED | Sentry routing is call-site dependent |
-| Sentry trace missing | UNKNOWN | UNKNOWN | UNKNOWN | NO | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; not on the Bridge; no replay fixture |
-| DB collector missing | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | UNKNOWN | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| PostgREST select failure | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| PostgREST mutation failure | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| RPC SQLSTATE failure | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| RPC rollback | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| RPC timeout | UNKNOWN | YES | YES | YES | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| RPC unknown commit | UNKNOWN | UNKNOWN | NO | YES | YES | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
+| RLS expected denial | UNKNOWN | UNKNOWN | YES | NO | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent; not on the Bridge |
+| RLS unexpected denial | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| Auth API error | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no replay fixture |
+| Auth client error | UNKNOWN | UNKNOWN | NO | NO | YES | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
+| Storage error | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no replay fixture |
+| Realtime connection error | YES | UNKNOWN | NO | NO | NO | NO | NO | YES | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | no durable event; not on the Bridge; no replay fixture |
+| Realtime silent propagation | YES | UNKNOWN | NO | NO | NO | NO | NO | YES | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | no durable event; not on the Bridge; no replay fixture |
+| Edge Function exception | UNKNOWN | UNKNOWN | YES | NO | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; not on the Bridge; no replay fixture |
+| pg_cron failure | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| pg_cron missed run | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| pg_net failure | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| Lock wait | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| Deadlock | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | NO | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| Connection saturation | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| CPU / memory saturation | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| Query performance regression | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
+| Schema drift | UNKNOWN | UNKNOWN | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
+| DB type drift | UNKNOWN | UNKNOWN | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
+| Data integrity violation | UNKNOWN | YES | YES | NO | YES | YES | YES | YES | YES | NOT VERIFIED (policy documented, not wired) | YES | NOT VERIFIED | Sentry routing is call-site dependent |
+| Sentry trace missing | UNKNOWN | UNKNOWN | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; not on the Bridge; no replay fixture; no metric |
+| DB collector missing | UNKNOWN | YES | NO | NO | NO | NO | NO | NO | NO | NOT VERIFIED (policy documented, not wired) | NO | NOT VERIFIED | Sentry routing is call-site dependent; no durable event; no replay fixture; no metric |
