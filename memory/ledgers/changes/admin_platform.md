@@ -885,3 +885,36 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
 - **Verified**: see the tests ledger entry of the same date. `npm run build`
   NOT run — the volume reported 0 GiB free at the time and a cold `.next`
   costs up to 5.7 GiB; no `'use server'` surface changed.
+
+## 2026-09-02 — Diagnose cron final gate: `collectRelAnalyses` binds its read error
+
+- SHA: branch `agent/selfheal-diagnose-cron`, PR pending (final-gate pass on
+  the "move Diagnose onto a Vercel cron" work already committed on this
+  branch — the cron route, the `triage-collect.ts`/`triage-apply.ts`
+  extraction, and the RCA-analysis extraction into `rca-run.ts` were already
+  shipped in prior commits; this entry covers only the fix made during the
+  gate run).
+- **What**: `src/lib/admin/triage-collect.ts`'s `collectRelAnalyses` now
+  destructures `error` from its `fetchAllRowsResult` call (it previously took
+  only `data`) and logs a failure instead of silently returning an empty
+  `Map` indistinguishable from "no prior analyses exist".
+- **Why**: `npm run audit:paginated-reads` regressed 12 -> 13 on this branch
+  — the ratchet's `helm/no-unchecked-paginated-read` rule flagged the
+  unbound `error`. Fixed rather than baseline-raised, per the no-ratchet-
+  raise rule. This read is best-effort enrichment (an "already analysed"
+  annotation merged onto reliability candidates), not a health-critical read
+  — a failure here does not flip `runSelfHealTriage`'s heartbeat to
+  `failed`/`degraded`; the two health-critical reads it sits beside
+  (`collectAdminEvents`, `collectReliabilitySignals`) already bound and
+  reported their own errors into `SourceHealth` before this fix.
+- **Verified**: `npm run typecheck`, `npm run lint` (0 warnings),
+  `npm run lint:ratchet` (68 warnings, no regression),
+  `npx vitest run src/lib/admin src/app/admin src/app/api/cron/selfheal-triage`
+  (146 files / 1671 tests, all pass, before and after the fix),
+  `npm run audit:paginated-reads` (12, baseline 12, confirmed fixed),
+  `npm run audit:supabase-errors` / `audit:fail-open` (1039 / 51, no
+  regression), `node scripts/markdown-lint-ratchet.mjs`,
+  `npm run lint:duplicate-exports`,
+  `node scripts/knowledge/document-inventory.mjs --check`,
+  `npm run docs:path-drift`, `npm run docs:schema-drift`. `npm run build`
+  NOT run locally — CI builds it.

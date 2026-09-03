@@ -331,7 +331,13 @@ export async function collectReliabilitySignals(
 
 /** Analyses stored for reliability signals, keyed `rel:<signature>`. */
 export async function collectRelAnalyses(admin: AdminClient): Promise<Map<string, string>> {
-  const { data } = await fetchAllRowsResult<{ fingerprint: string | null; metadata: unknown }>(
+  // This is a best-effort "did we already analyse this" annotation, not a
+  // source of truth for existence. A failed read here degrades to "no
+  // existing fix shown" for the affected candidates (they still surface via
+  // collectReliabilitySignals with existingAnalysisFix=null) rather than
+  // masquerading as a health verdict; the health-critical reads this feeds
+  // (admin_events, reliability snapshot) each bind and report their own error.
+  const { data, error } = await fetchAllRowsResult<{ fingerprint: string | null; metadata: unknown }>(
     (from, to) =>
       admin
         .from('admin_events')
@@ -342,6 +348,9 @@ export async function collectRelAnalyses(admin: AdminClient): Promise<Map<string
         .order('id', { ascending: true })
         .range(from, to),
   );
+  if (error) {
+    console.error('collectRelAnalyses: read failed, continuing without existing-fix annotations', error.message);
+  }
   const out = new Map<string, string>();
   for (const row of data ?? []) {
     const fp = str(row.fingerprint);
