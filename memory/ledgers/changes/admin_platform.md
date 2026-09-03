@@ -1973,6 +1973,149 @@ status transition, not a caller-supplied timestamp).
   disk is at the safety floor) — the fix is reasoned from Next.js's
   documented file-tracing behavior and the exact file paths this code
   reads, not verified against a real traced function bundle.
+## 2026-09-03 — Bridge Premium Observability Phase 2: Helm Command Deck (posture, System Orbit, Attention Stack, Decision Inbox, Release Wake, Self-Heal Circuit summary)
+
+Implements Phase 2 ("Overview Command Deck") of the owner's Bridge Premium
+Observability brief — the upper 40-50% of `/admin`, inserted above every
+existing panel, which is left unchanged. See
+`memory/features/admin-platform.md`'s "Phase 2 Command Deck" section for
+the full per-module description; summarized here for the change record.
+
+- **New read models** (`src/lib/admin/command-deck/`): `posture.ts`
+  (`derivePostureSentence`), `orbit.ts` (`buildSystemOrbit`, the fixed
+  8-node System Orbit — Realtime always `'unknown'`, no evidence source
+  covers it), `selfheal-circuit.ts` (`buildCircuitSummary`, the real
+  3-stage Diagnose/Repair/Close loop, not the brief's idealized 6-stage
+  one), `release-wake.ts` (`buildReleaseWake`, wiring Phase 0's
+  `classifyReleaseWatch`/`classifyReleaseRelationship` against real
+  evidence; latency/invariant lanes honestly `unknown`, no read model backs
+  them), `decisions.ts` + `held-migrations.ts` (`buildDecisionInbox`,
+  sourced from `selectAttention`'s `needs-evidence` rows and
+  `supabase/migrations/HELD.md`'s open `HOLD` rows).
+- **New components** (`src/components/admin/command-deck/`):
+  `PostureSentence.tsx`, `SystemOrbit.tsx` (server-rendered SVG, tokens
+  only, `motion-safe:` pulse; mobile swaps to a stacked node list — no
+  network diagram on a phone, brief §10/§41-43), `AttentionStack.tsx`
+  (top-5 compact sibling of the existing `AttentionQueue`, same
+  `selectAttention` data, user-impact badge via a presentational join onto
+  `UnifiedIncident.affectedUsers`), `DecisionInboxSummary.tsx`,
+  `ReleaseWakeRibbon.tsx`, `SelfHealCircuitSummary.tsx`, and the
+  composition `CommandDeck.tsx`.
+- **Wiring**: `src/app/admin/page.tsx` gained one `PanelBoundary`-wrapped
+  `<CommandDeck />` above the existing "Right now" section. `CommandDeck.tsx`
+  gathers all six upstream reads via one `Promise.all` (all fail-soft; none
+  throw) rather than per-panel fetches — avoids a second live GitHub-API
+  round trip beyond `MissionTruthStrip`'s existing one
+  (`fetchDeployFreshness`/`fetchBriefing` are not React `cache()`-memoised)
+  and buys no independent streaming anyway, since every panel reads the
+  same shared data.
+- **Fixed during review**: `orbit.ts`'s Jobs node defaulted to `'healthy'`
+  when the self-heal board itself was unreadable (only `selfHealStalled`
+  gated it, defaulting `false`) — added `selfHealReadable` to `OrbitInput`
+  so an unread board renders Jobs `'unknown'`, never healthy on silence.
+  `release-wake.ts`'s `selfHealActions` lane was unconditionally
+  `knownLane(...)` even with `deployedAtMs: null` — gated it the same as
+  the other since-deploy lanes so a caller's default `0` (itself only
+  computed because it, too, could not establish the deploy time) reads as
+  unknown, not as a confirmed zero.
+- **Registry**: `memory/registry.yml`'s `admin_platform.code.components`
+  gained `src/components/admin/command-deck/**` — `knowledge:map` resolved
+  it to `impactedFeatures: []` before this entry (verified by direct
+  `knowledge:map -- --files` invocation both before and after the fix).
+  `src/lib/admin/command-deck/**` already resolved via the existing
+  `src/lib/admin/**` glob; no change needed there.
+- **Known gap, not fixed here**: `AttentionRow.headline` (`attention.ts`,
+  outside this task's ownership — Phase 1's territory) still reads
+  `incident.description`, not Phase 0's `IncidentPresentation.title` — the
+  posture sentence and Attention Stack surface the same headline
+  `/admin/errors` shows today, not yet brief §7's deterministic
+  plain-English title.
+- **Shared primitives**: the sibling `bridge-premium-p1` branch (posture
+  pill / evidence chips / confidence meter / unknown-treatment / episode
+  strip under `src/components/admin/premium/*`) had not pushed to
+  `origin` as of this entry (`git fetch` + `git ls-remote` checked at
+  session start and again before finishing). `tone.ts` and every component
+  here are local, small (~40 lines of presentation each) and additive —
+  nothing duplicates `premium/*`; swapping to it later is a straightforward
+  per-component import change.
+- **Tests**: 53 vitest cases across 11 new files (5 read-model files under
+  `src/lib/admin/command-deck/__tests__/`, 6 component-render files under
+  `src/components/admin/command-deck/__tests__/`) — five fixtures per read
+  model (healthy / blind source / regression / decision waiting /
+  all-unknown), render tests via `@testing-library/react` for every
+  component. Full suite run green, exit code checked independently
+  (`npx vitest run --maxWorkers=4 src/lib/admin/command-deck
+  src/components/admin/command-deck`, never piped through `tail`).
+- **Verified**: `npm run typecheck` (whole repo, exit 0, both before and
+  after the render-layer additions) and `npx eslint ... --max-warnings 0`
+  scoped to every new/changed file (one warning fixed — an arbitrary
+  `text-[10px]` replaced with the canonical `text-caption` scale).
+- **Not done**: no live-network verification that `held-migrations.ts`'s
+  `fs.readFile` of `supabase/migrations/HELD.md` survives a real Vercel
+  serverless bundle — this repo has no `outputFileTracingIncludes` entry
+  for it in `next.config.mjs`, and confirming one would need a real
+  `npm run build`, out of this task's gate scope. The read degrades safely
+  either way (`null` -> `readable: false`, never a silently-empty inbox),
+  but the fix (if the read does fail in production) is a `next.config.mjs`
+  entry, not a change to `decisions.ts`'s shape. No dedicated
+  `CommandDeck.tsx` integration test (no established repo precedent for
+  mocking six modules to test an async Server Component this way) — its
+  wiring is exercised by `npm run typecheck` plus every constituent
+  read-model/component test.
+
+## 2026-09-03 — Command Deck: merged in `bridge-premium-p1`'s shared primitives, swapped two hand-rolled chips
+
+`bridge-premium-p1`'s `src/components/admin/premium/*` had not pushed to
+`origin` when the previous entry was written; it pushed shortly after. Per
+the task's own instruction ("if the primitives you need exist there, merge
+them in and import them"), re-checked with `git fetch origin
+agent/bridge-premium-p1`, found real primitives this time (`PosturePill`,
+`ReleaseWatchPosturePill`, `UnknownValue`, `EvidenceSourceChips`,
+`ConfidenceMeter`, `EpisodeTimelineStrip`, `ReleaseRelationshipLabel`,
+`EvidenceInspector` — 19 files, ~1857 lines), and merged:
+`git merge --no-edit origin/agent/bridge-premium-p1` — clean, no conflicts
+(disjoint file sets; the only shared-directory neighbor is
+`src/lib/admin/incidents/**`, which that branch only ADDED to via two new
+files, `genome.ts`/`release-watch.ts`).
+
+- **`PostureSentence.tsx`**: the hand-rolled tone chip (a `<span>` styled
+  from `POSTURE_TONE_RAIL`) is now `PosturePill`, tone mapped through
+  `POSTURE_TONE_STATE_TONE` (`command-deck/types.ts`) since this module's
+  `PostureTone` (four values) is coarser than `PosturePill`'s
+  `StateTone | 'unknown'` (six). `PosturePill`'s own `'unknown'` branch
+  already renders `UnknownValue`'s hatched treatment rather than a colored
+  pill — a strictly better fit than what was hand-rolled.
+- **`ReleaseWakeRibbon.tsx`**: the hand-rolled `WATCH_LABEL`/`WATCH_TONE`
+  maps (14 lines, duplicating `RELEASE_WATCH_LABEL` from
+  `release-context.ts`) are deleted; the watch-state chip is now
+  `ReleaseWatchPosturePill`, which already maps every `ReleaseWatchState` to
+  the identical label plus a real "why unknown" tooltip this file never had.
+- **`command-deck/tone.ts`**: dropped `POSTURE_TONE_INK`/`POSTURE_TONE_RAIL`/
+  `NODE_STATE_INK`/`NODE_STATE_RAIL` (dead after the `PostureSentence.tsx`
+  swap — `NODE_STATE_*` had been dead from the start, since `SystemOrbit.tsx`
+  needs `var(--fw-*)` CSS strings for SVG fill/stroke, not Tailwind classes,
+  and always built its own separate map). Kept only `TONE_RAIL`/`TONE_INK`
+  (`StateTone`-keyed), still used by `AttentionStack.tsx`'s row rail — no
+  `premium/*` primitive covers that list-row shape.
+- **Cleanup**: `ReleaseWakeSnapshot.watchState` and
+  `PostureInput`/`PostureSentence.releaseWatch` were typed
+  `ReleaseWatchState | 'unknown'`, a redundant union — `ReleaseWatchState`
+  already includes `'unknown'` as one of its seven members. Simplified to
+  `ReleaseWatchState` in both files; no behavior change, caught while
+  wiring `ReleaseWatchPosturePill`'s `state` prop (typed as the bare
+  `ReleaseWatchState`) against the redundant union and confirming they were
+  structurally identical rather than assuming it.
+- **Verified**: `npm run typecheck` (whole repo, exit 0), `npx eslint
+  src/lib/admin/command-deck src/components/admin/command-deck
+  --max-warnings 0` (exit 0), and the combined suite —
+  `npx vitest run --maxWorkers=4 src/lib/admin/command-deck
+  src/components/admin/command-deck src/components/admin/premium
+  src/lib/admin/incidents/__tests__/genome.test.ts
+  src/lib/admin/incidents/__tests__/release-watch.test.ts` — 92/92 green
+  (54 own + 38 from the merged branch), exit code checked independently.
+  No test assertions needed changing: `ReleaseWatchPosturePill` renders the
+  identical label strings (`RELEASE_WATCH_LABEL`) the deleted hand-rolled
+  map used.
 ## 2026-09-03 — Bridge Premium Observability Phase 1: incident cards, Incident Genome, Release Watch, Evidence Inspector
 
 **What**: wired the Phase 0 truth models (previous entry) into `/admin/errors`

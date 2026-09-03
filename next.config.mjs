@@ -121,6 +121,17 @@ const nextConfig = {
       './supabase/migrations/HELD.md',
       './config/mutation-gate.json',
     ],
+  // `held-migrations.ts` (`src/lib/admin/command-deck/held-migrations.ts`)
+  // reads `supabase/migrations/HELD.md` via `fs` at request time from
+  // `/admin` — output file tracing only bundles files it can see imported
+  // or explicitly listed here, so a Vercel serverless function is not
+  // otherwise guaranteed to ship a plain markdown file read this way. If
+  // this glob is ever wrong, `held-migrations.ts`'s own `fetchHeldMigrations`
+  // still degrades safely (any read failure returns `null`, and
+  // `buildDecisionInbox` treats that as `readable: false`, never an empty
+  // all-clear inbox) — this entry closes the gap, it isn't load-bearing for
+  // correctness.
+    '/admin': ['./supabase/migrations/HELD.md'],
   },
 
   // Experimental features
