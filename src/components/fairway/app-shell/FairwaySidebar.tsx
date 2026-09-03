@@ -30,6 +30,28 @@ import { Button } from '@/components/ui/button';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
 
 /**
+ * `item.shortcut` (Bridge's only current producer, `AdminShell.tsx`) has
+ * always been rendered as a plain visible badge with no machine-readable
+ * companion — reachable by a sighted keyboard user who spots the badge, but
+ * never announced or discoverable via assistive tech. AdminShell's global
+ * keydown handler matches a bare digit as-is and a bare letter only in its
+ * Shift-produced uppercase form (deliberately, so letter shortcuts can never
+ * collide with a plain, unmodified reserved key — see
+ * `RESERVED_LOCAL_SHORTCUTS` in `admin-nav.ts`), so the real gesture behind
+ * an uppercase-letter badge is Shift+<letter>, not the bare letter the badge
+ * text shows. Formats that gesture correctly for `aria-keyshortcuts`
+ * (https://www.w3.org/TR/wai-aria-1.1/#aria-keyshortcuts); anything that
+ * isn't exactly one digit or one uppercase letter is left unannounced rather
+ * than guessed at.
+ */
+function ariaKeyShortcut(shortcut: string | undefined): string | undefined {
+  if (!shortcut || shortcut.length !== 1) return undefined;
+  if (/[0-9]/.test(shortcut)) return shortcut;
+  if (/[A-Z]/.test(shortcut)) return `Shift+${shortcut}`;
+  return undefined;
+}
+
+/**
  * Lets footer/slot children read whether the rail is collapsed without
  * requiring prop-drilling through the caller's render tree.
  */
@@ -140,6 +162,7 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
         onBlur={hidePopout}
         aria-current={active ? 'page' : undefined}
         aria-label={collapsed ? item.label : undefined}
+        aria-keyshortcuts={ariaKeyShortcut(item.shortcut)}
         title={collapsed ? item.label : undefined}
         className={cn(
           navRowBase,
@@ -175,7 +198,15 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
           </span>
         ) : null}
         {!collapsed && item.shortcut ? (
-          <span className="rounded border border-white/[0.08] px-1.5 py-0.5 font-fw-mono text-micro leading-none text-nav-text-dim">
+          // aria-hidden: the machine-readable form lives on the Link's own
+          // aria-keyshortcuts above. Without this, an expanded (non-aria-
+          // labelled) row's accessible name would append the raw badge text
+          // after the description — "…every source that saw it 3" — which
+          // reads as noise, not a shortcut announcement.
+          <span
+            aria-hidden="true"
+            className="rounded border border-white/[0.08] px-1.5 py-0.5 font-fw-mono text-micro leading-none text-nav-text-dim"
+          >
             {item.shortcut}
           </span>
         ) : null}

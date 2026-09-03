@@ -133,6 +133,22 @@ export function hrefForShortcut(key: string): string | null {
 }
 
 /**
+ * Single, UNMODIFIED (no Shift) keys that AdminShell's global keydown
+ * handler intercepts for something other than tab navigation — currently
+ * just plain 'r' for "refresh now" (the same action the Refresh button
+ * fires). Every ADMIN_NAV letter shortcut is deliberately the Shift+letter
+ * (uppercase `e.key`) form specifically so it can never collide with one of
+ * these; digit shortcuts need no Shift and have no local reservation to
+ * collide with. `admin-nav.test.ts` asserts no ADMIN_NAV key falls in this
+ * set, so a future addition here — or a future lowercase ADMIN_NAV key — is
+ * caught immediately instead of silently making a tab unreachable, which is
+ * exactly what happened to Reliability's 'R' shortcut when AdminShell used
+ * to treat plain 'r' and Shift+'R' as the same refresh trigger (fixed
+ * alongside this constant, Bridge Premium Phase 6).
+ */
+export const RESERVED_LOCAL_SHORTCUTS: ReadonlySet<string> = new Set(['r']);
+
+/**
  * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 10): Bridge's mobile
  * bottom-tab daily loop — Overview / Errors / Health / Users (Synthesis
  * Decision 6). A stable module-level array (never a fresh literal at the
