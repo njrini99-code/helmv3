@@ -141,8 +141,12 @@ call-site change, not a policy that drifted on its own.
 
 ```bash
 npx supabase start
-npx supabase db reset   # local only; denied against production by policy
 ```
+
+`supabase start` applies every migration in `supabase/migrations/` on the way
+up, so no separate reset is needed. Do not reach for `supabase db reset`
+here: it is refused by `permissions.deny` (see `.claude/rules/shipping.md`
+§4), and this step does not need it.
 
 ```sql
 begin;

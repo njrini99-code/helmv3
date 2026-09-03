@@ -1,4 +1,3 @@
-import 'server-only';
 /**
  * The only thing in this track that writes to disk — brief §75.
  *
@@ -8,9 +7,26 @@ import 'server-only';
  * record, `git log` is its history, and `npm run knowledge:ledger-check` is
  * its validator.
  *
- * `import 'server-only'` because this reaches `node:fs`. It resolves to an
- * empty module outside a React Server Component graph, so a `tsx` CLI and a
- * vitest node run both import it normally.
+ * NO `import 'server-only'` HERE, DELIBERATELY — AND IT WAS THERE FIRST
+ * ---------------------------------------------------------------------
+ * This module carried that marker until a probe run of the documented CLI
+ * failed with `ERR_MODULE_NOT_FOUND: Cannot find package 'server-only'`.
+ * The package is NOT on disk in this repo: Next ships
+ * `next/dist/compiled/server-only` and aliases the bare specifier in its own
+ * webpack config, and `vitest.config.ts` aliases it to
+ * `src/test/stubs/server-only.ts`. So the marker resolves inside a Next
+ * build and inside vitest, and NOWHERE ELSE. A passing test suite was
+ * therefore not evidence that the CLI could run — the stub was answering.
+ *
+ * That matters for any src module a Node process is meant to invoke
+ * directly: the marker makes it unrunnable outside Next. This one is repo
+ * TOOLING rather than a Next server module — it writes into the working
+ * tree, is imported only by `scripts/observability/record-db-incident.ts`
+ * and by its own test, and its `node:fs` import would make a client bundle
+ * fail loudly at build time anyway. Keeping it in `src/` keeps it inside
+ * `npm run typecheck` and `npm run lint`; dropping the marker keeps the
+ * documented entry point runnable. Do not re-add it without re-running the
+ * CLI.
  *
  * IT REFUSES MORE THAN IT WRITES, ON PURPOSE
  * -------------------------------------------
