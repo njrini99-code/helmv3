@@ -3,7 +3,7 @@
 -- RISK TIER: R3. HELD — see supabase/migrations/HELD.md. Same isolation
 -- pattern as 20260903180000_helm_debug_db_error_events.sql: new schema
 -- objects, revoked from public/anon/authenticated, reached only through the
--- two SECURITY DEFINER facades below.
+-- two definer-rights facades below.
 --
 -- WHY TWO FUNCTIONS, NOT ONE
 -- -----------------------------

@@ -1,7 +1,7 @@
 -- Helm Debug — private database error event store (brief §8)
 --
 -- RISK TIER: R3 (privileged) per memory/system/golfhelm-engineering-os.md.
--- Adds a new table + a SECURITY DEFINER RPC facade + grant changes on a
+-- Adds a new table + a definer-rights RPC facade + grant changes on a
 -- production schema. HELD — see supabase/migrations/HELD.md. Never applied
 -- by an agent; owner-apply-only after db-migration-reviewer sign-off.
 --
@@ -18,7 +18,7 @@
 --
 -- ISOLATION, same pattern as 20260825200811 (see its header comment): this
 -- schema is revoked from public/anon/authenticated, is not exposed to
--- PostgREST, and the only access path is the SECURITY DEFINER facade below.
+-- PostgREST, and the only access path is the definer-rights facade below.
 -- Measured against production 2026-09-03
 -- (docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md §3):
 -- `has_schema_privilege('service_role','helm_debug','USAGE')` is FALSE even
@@ -141,8 +141,8 @@ revoke all on all sequences in schema helm_debug from public;
 
 -- Owner-rights facade — the ONLY path that reaches db_error_events. Upserts
 -- by (fingerprint, bucket_started_at) unless p_force_individual_row is true.
--- VOLATILE (writes), SECURITY DEFINER, search_path pinned per this repo's
--- SECURITY DEFINER convention (20260825200811, 20260826010000).
+-- VOLATILE (writes), definer-rights, search_path pinned per this repo's
+-- definer-rights convention (20260825200811, 20260826010000).
 create or replace function public.record_db_error_event(
     p_service text,
     p_environment text,
@@ -351,7 +351,7 @@ end $$;
 
 -- No row-level policies: same reasoning as 20260825200811 — the schema is
 -- revoked from public/anon/authenticated above and not in PostgREST's
--- exposed schema list, so the SECURITY DEFINER facade above is the only
+-- exposed schema list, so the definer-rights facade above is the only
 -- path in, and service_role bypasses RLS regardless. A policy here would be
 -- dead code that reads as "row-level scoping is enforced" when the real
 -- boundary is schema-level revocation plus the absence of any direct grant.
