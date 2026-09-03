@@ -7,8 +7,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * returns the bare gateway-id string, which the mocked `generateObject` never
  * actually dispatches anywhere.
  */
-const { generateObject } = vi.hoisted(() => ({ generateObject: vi.fn() }));
+const { generateObject, recordAi } = vi.hoisted(() => ({
+  generateObject: vi.fn(),
+  recordAi: vi.fn(),
+}));
 vi.mock('ai', () => ({ generateObject }));
+vi.mock('@/lib/observability/metrics', () => ({ recordAi }));
 
 import {
   buildRcaContextText,
@@ -73,6 +77,7 @@ describe('buildRcaContextText', () => {
 describe('runRcaAnalysis', () => {
   beforeEach(() => {
     generateObject.mockReset();
+    recordAi.mockClear();
   });
 
   afterEach(() => {
@@ -135,6 +140,42 @@ describe('runRcaAnalysis', () => {
     expect(call.messages).toBeUndefined();
     expect(typeof call.instructions).toBe('string');
     expect(call.prompt).toContain('fp-1');
+
+    // Sentry AI observability opt-in (Phase A finding §(a)): the prompt here
+    // is the incident report + up to 3 raw stack traces — no prompt/output
+    // belongs in Sentry from this call.
+    expect(call.experimental_telemetry).toEqual({
+      isEnabled: true,
+      functionId: 'admin.rca',
+      recordInputs: false,
+      recordOutputs: false,
+    });
+  });
+
+  it('records helm.ai.* success on a completed analysis', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-key');
+    generateObject.mockResolvedValue({
+      object: {
+        probableCause: 'Null pointer in the save path',
+        suspectFiles: [],
+        suggestedFix: 'Guard the null case',
+        confidence: 'high',
+        relatedFingerprints: [],
+      },
+      usage: { inputTokens: 900, outputTokens: 150 },
+    });
+
+    await runRcaAnalysis(baseContext);
+
+    expect(recordAi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feature: 'admin_rca',
+        action: 'admin.rca.analyze',
+        outcome: 'success',
+        inputTokens: 900,
+        outputTokens: 150,
+      }),
+    );
   });
 
   it('returns error, never throws, when the model call fails', async () => {
@@ -144,5 +185,20 @@ describe('runRcaAnalysis', () => {
     const result = await runRcaAnalysis(baseContext);
 
     expect(result).toEqual({ status: 'error', message: 'model unavailable' });
+  });
+
+  it('records helm.ai.* failure when the model call fails', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-key');
+    generateObject.mockRejectedValue(new Error('model unavailable'));
+
+    await runRcaAnalysis(baseContext);
+
+    expect(recordAi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feature: 'admin_rca',
+        action: 'admin.rca.analyze',
+        outcome: 'failure',
+      }),
+    );
   });
 });

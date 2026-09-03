@@ -54,6 +54,59 @@ describe('process-level error handlers', () => {
     expect(severity).toBe('error');
   });
 
+  describe('duplicate-capture fix — exactly one Sentry capture per process error', () => {
+    // Phase A finding: Sentry.captureException(error) fired directly here AND
+    // logServerException's own internal capture (captureServerTrace ->
+    // captureSentryTrace) fired a second time, since no skipSentry flag was
+    // passed — every process-level crash minted TWO Sentry issues. The fix
+    // keeps the direct call (it fires unconditionally, ahead of the Bridge
+    // write's rate limit, so a storm never loses Sentry visibility) and
+    // skips logServerException's own internal capture via skipSentry:true.
+
+    it('handleUnhandledRejection captures to Sentry exactly once', async () => {
+      const boom = new Error('unhandled');
+      await handleUnhandledRejection(boom);
+
+      expect(mocks.captureException).toHaveBeenCalledTimes(1);
+      expect(mocks.captureException).toHaveBeenCalledWith(boom);
+    });
+
+    it('handleUncaughtException captures to Sentry exactly once', async () => {
+      const boom = new Error('uncaught');
+      await handleUncaughtException(boom);
+
+      expect(mocks.captureException).toHaveBeenCalledTimes(1);
+      expect(mocks.captureException).toHaveBeenCalledWith(boom);
+    });
+
+    it('passes skipSentry:true to logServerException so its internal capture is suppressed', async () => {
+      await handleUnhandledRejection(new Error('rejected'));
+
+      const [, ctx] = mocks.logServerException.mock.calls[0] as [Error, Record<string, unknown>];
+      expect(ctx.skipSentry).toBe(true);
+    });
+
+    it('passes skipSentry:true for handleUncaughtException too', async () => {
+      await handleUncaughtException(new Error('crashed'));
+
+      const [, ctx] = mocks.logServerException.mock.calls[0] as [Error, Record<string, unknown>];
+      expect(ctx.skipSentry).toBe(true);
+    });
+
+    it('still captures to Sentry exactly once per event even when the Bridge write is rate-limited', async () => {
+      for (let i = 0; i < 20; i++) await handleUncaughtException(new Error(`e${i}`));
+      mocks.captureException.mockClear();
+
+      const outcome = await handleUnhandledRejection(new Error('21st'));
+
+      expect(outcome).toBe('rate_limited');
+      // The Bridge write never ran (rate-limited before logServerException),
+      // but the direct Sentry capture still fired exactly once — never zero,
+      // never two.
+      expect(mocks.captureException).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('wraps a non-Error rejection reason and keeps it in metadata', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     await handleUnhandledRejection('a string reason');

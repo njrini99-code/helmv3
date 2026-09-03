@@ -50,6 +50,50 @@ features:
         - npm run knowledge:check
         - node --check scripts/knowledge/workflow-report.mjs
 
+  observability_sentry:
+    name: Sentry Observability — Telemetry Vocabulary
+    status: active
+    owner: platform
+    criticality: medium
+    observability:
+      feature_keys: []
+      reason: >-
+        This module IS the observability layer (metric/span/log vocabulary
+        and the beforeSend*/scrubPii hooks) — instrumenting itself would be
+        circular. No admin_events.feature key exists for it by design; see
+        classification: observability_only in observability_keys_unowned
+        below for the same reasoning applied to a runtime key.
+    docs:
+      feature: memory/features/observability-sentry.md
+      flows:
+        - docs/observability/SENTRY_TELEMETRY_TAXONOMY.md
+        - docs/observability/SENTRY_SUPABASE_TRACING.md
+      ui: []
+      business_logic:
+        - docs/observability/SENTRY_TELEMETRY_TAXONOMY.md
+      incidents: []
+    code:
+      routes: []
+      components: []
+      api: []
+      actions: []
+      services:
+        - src/instrumentation*.ts
+        - src/lib/observability/**
+      db: []
+      tests:
+        - src/lib/observability/__tests__/**
+        - src/test/observability/**
+    integrations:
+      - sentry
+    review:
+      required_docs:
+        - memory/features/observability-sentry.md
+        - docs/observability/SENTRY_TELEMETRY_TAXONOMY.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/observability src/instrumentation.ts src/instrumentation-client.ts src/test/observability
+
   coachhelm_ai:
     name: CoachHelm AI
     status: active
@@ -1189,6 +1233,7 @@ features:
         # change actually touches keeps that check honest.
         - docs/ai-system/selfheal/README.md
         - docs/ai-system/selfheal/repair-contract.md
+        - docs/ai-system/FEATURE_FLAGS.md
       ui:
         - memory/projects/golfhelm.md
         - docs/v3-design-language.md
@@ -1246,6 +1291,16 @@ features:
         - scripts/selfheal-repair-install.sh
         - scripts/selfheal-repair-doctor.mjs
         - config/launchd/**
+        # Feature-flag registry + governance gate (Phase F.4.2,
+        # docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md §4).
+        # config/feature-flags.yml is the source of truth; src/lib/flags/**
+        # is the typed reader (registry.generated.ts is generated, never
+        # hand-edited — see FEATURE_FLAGS.md); scripts/flags/** + the
+        # top-level check script are the generator and the CI expiry gate.
+        - config/feature-flags.yml
+        - src/lib/flags/**
+        - scripts/flags/**
+        - scripts/check-feature-flags.mjs
         # Phase K.4.5 (Engineering OS Intelligence) Janitor generator —
         # mapped here 2026-09-03 after `knowledge:map` resolved
         # scripts/janitor/** to `impactedFeatures: []`. Same precedent as
@@ -1430,6 +1485,18 @@ integrations:
     code:
       - sentry.*
       - src/instrumentation*.ts
+      # Client "maximum observability" build (2026-09-02/03): the pure
+      # options builder instrumentation-client.ts's Sentry.init() reads
+      # (profiling/replay sample rates, ignoreErrors), the in-app feedback
+      # button, and the shared breadcrumb helper. `npm run knowledge:map`
+      # walks the `features:` map only, not this `integrations:` section —
+      # these three files legitimately impacted ZERO product features (they
+      # are platform observability infra, same reasoning as
+      # `feature_awareness_system` above), which is why they are listed
+      # HERE rather than added to an unrelated feature's `code.services`.
+      - src/lib/sentry-client-options.ts
+      - src/components/fairway/feedback/ReportProblemButton.tsx
+      - src/lib/observability/client-breadcrumbs.ts
     criticality: medium
   datadog:
     docs: docs/OBSERVABILITY.md

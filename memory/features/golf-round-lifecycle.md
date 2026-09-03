@@ -62,6 +62,24 @@ either round-start screen. Full mechanics for both live in
 `memory/features/shot-tracking.md`, since the RPCs and client guards they
 touch are shared with shot tracking, not lifecycle-specific.
 
+As of 2026-09-03, the four flight-recorder-instrumented server-action
+workflows (`golf.round.submit`/`.autosave`, `golf.shot.delete`/
+`.add_or_edit` — see `src/lib/observability/golf-round-flight-workflow.ts`
+for the full step vocabulary) also emit a Sentry `helm.workflow.*` metric
+and one structured log line per invocation, from a single hook in
+`createHelmFlightRecorder`'s `finalize()`
+(`src/lib/observability/helm-flight-recorder.ts`) rather than from each
+call site in `golf.ts` — see `memory/features/observability-sentry.md`'s
+Consumers section for what it emits and why. This is IN ADDITION TO, not a
+replacement for, the pre-existing `trace_runs`/`helm_debug` persistence
+those same recorder calls already write (opt-in in production; see that
+file's own header for the retention/volume reasoning) — the Sentry signal
+fires regardless of whether that DB persistence is enabled, so it is the
+thing to check first when debugging a production round-save incident, not
+`trace_runs`. `deleteInProgressRoundImpl` ("recover" — discarding an
+in-progress round) is not flight-recorder-instrumented and gets its own,
+separate `recordWorkflow` calls directly in `golf.ts`.
+
 ## Primary Entry Points
 
 ### Routes
@@ -88,6 +106,12 @@ touch are shared with shot tracking, not lifecycle-specific.
 - `src/lib/coachhelm/v2/post-round-trigger.ts`
 - `src/lib/coachhelm/v2/shot-analysis/**`
 - `src/lib/coachhelm/v3/llm/round-review.ts`
+- `src/lib/observability/helm-flight-recorder.ts`,
+  `src/lib/observability/golf-round-flight-workflow.ts` — the
+  `trace_runs`/`helm_debug` diagnostic trace AND (as of 2026-09-03) the
+  Sentry `helm.workflow.*` metric + structured log for `golf.round.submit`/
+  `.autosave`/`golf.shot.delete`/`.add_or_edit`. See the "Current State"
+  note above.
 
 ## Core Data
 
