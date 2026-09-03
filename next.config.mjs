@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
+import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -402,21 +403,26 @@ const nextConfig = {
 // Sentry still works in dev via instrumentation.ts, just without source map uploads
 const isDev = process.env.NODE_ENV === 'development';
 
+// The installed @sentry/nextjs (10.71.0) withSentryConfig has exactly two
+// parameters — (nextConfig, sentryBuildOptions) — confirmed against both the
+// type declaration and the runtime source
+// (node_modules/@sentry/nextjs/build/cjs/config/withSentryConfig/index.js:6).
+// This used to be called with three positional arguments; the third was
+// silently discarded (JS never binds an extra call-site argument to
+// anything), which meant six real options — including the ad-blocker-safe
+// tunnel route and automatic Vercel Cron Monitor check-ins — had zero
+// effect regardless of their values. See
+// docs/observability/SENTRY_PHASE_A_FINDINGS.md §(h) and
+// src/lib/sentry-build-options.mjs (the extracted, unit-tested merged
+// options object).
 export default isDev
   ? withBundleAnalyzer(nextConfig)
   : withSentryConfig(
       withBundleAnalyzer(nextConfig),
-      {
-        // https://github.com/getsentry/sentry-webpack-plugin#options
-        silent: true,
+      buildSentryBuildOptions({
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
         authToken: process.env.SENTRY_AUTH_TOKEN,
-        // Release name + commits — falls back to Vercel's git SHA so each
-        // deploy is a distinct release. setCommits with auto:true lets Sentry
-        // associate the commits in this build with the release, which powers
-        // Suspect Commits ("this error was introduced by commit abc123") and
-        // the per-release commit list in the UI.
         release: {
           name: sentryRelease,
           setCommits: {
@@ -432,28 +438,5 @@ export default isDev
             env: process.env.VERCEL_ENV || process.env.NODE_ENV || 'production',
           },
         },
-        // Don't phone home about build telemetry
-        telemetry: false,
-      },
-      {
-        // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-        // Upload a larger set of source maps for prettier stack traces (increases build time)
-        widenClientFileUpload: true,
-
-        // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers
-        tunnelRoute: '/monitoring',
-
-        // Hides source maps from generated client bundles
-        hideSourceMaps: true,
-
-        // Tree-shake Sentry logger statements
-        disableLogger: true,
-
-        // Auto-instrument Vercel Cron Monitors
-        automaticVercelMonitors: true,
-
-        // React component annotations make stack traces show JSX component names
-        reactComponentAnnotation: { enabled: true },
-      }
+      })
     );
