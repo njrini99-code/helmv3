@@ -126,7 +126,12 @@ describe('FairwayCoursePicker', () => {
       </LazyMotion>,
     );
 
-    const heading = await screen.findByText('Choose a course');
+    // getByRole('heading', level: 1) rather than findByText: the sr-only
+    // DrawerTitle carries the SAME "Choose a course" copy (an <h2>, for the
+    // dialog's accessible name), so a plain text query matches both and
+    // throws on multiple elements. The visible <h1> is the one this
+    // assertion cares about.
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Choose a course' });
     const header = heading.closest('header');
     const group = header?.parentElement;
     expect(group).toBeTruthy();

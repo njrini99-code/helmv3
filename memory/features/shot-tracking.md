@@ -713,6 +713,19 @@ signal keys, and every client branches on the keys before it shows anything.
   at most once per browser session when its synchronous write fails even
   after compaction; both round screens listen and show one warning toast. The
   IndexedDB mirror (`queueRecoverySnapshot`) was and is unaffected.
+- Unload warning false positive after a deliberate exit (2026-09-02,
+  MASTER_BUG_REPORT_2026-09-02.md Part 1): both round screens' native
+  `beforeunload` warning (and the `pagehide` beacon save) checked only
+  local state (`step`, or presence of hole stats/in-progress shots), never
+  whether the player had just resolved the round's fate through the exit
+  dialog. `handleSaveForLater`/`handleDeleteRound` navigate away with
+  `router.push`, a client-side transition that does not itself fire
+  `beforeunload` — but if a real unload event ever did coincide with that
+  navigation, the stale check would warn (or, for Discard, resurrect the
+  just-deleted round via a stray beacon write) even though nothing was at
+  risk. Both screens now set `roundExitedSafelyRef` to `true` right before
+  `router.push` in both handlers, checked first by both `handleBeforeUnload`
+  and `handlePageHide`. A genuinely unsaved close/refresh/back is untouched.
 - Left for follow-up (2026-09-02, explicitly not silently skipped): C2 — the
   v1 offline drain (`syncV1Rounds` in `src/lib/offline/sync-engine.ts`) still
   auto-submits a stored terminal submission unattended, with no staleness

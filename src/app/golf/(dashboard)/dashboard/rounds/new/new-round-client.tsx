@@ -289,6 +289,18 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // store) is sufficient: an in-flight promise's closure still sees this
   // same ref object after the component unmounts and navigates away.
   const roundDiscardedRef = useRef(false);
+  // MASTER_BUG_REPORT_2026-09-02.md Part 1: the exit dialog's Save for later
+  // (and Discard) navigate away with `router.push`, a client-side transition
+  // that does not itself fire `beforeunload` — but `handleBeforeUnload`
+  // below never checks whether the round was just saved, only whether
+  // `step` has left 'setup', so it stays "true" long after a successful
+  // save. If a real unload event ever does coincide with that navigation,
+  // the round has already been safely saved or intentionally discarded and
+  // the warning would be a false positive. Set true BEFORE the `router.push`
+  // in both handleSaveForLater and handleDeleteRound so handleBeforeUnload
+  // (and the pagehide beacon) bail out for exactly those two exits — a
+  // genuinely unsaved close/refresh/back is untouched.
+  const roundExitedSafelyRef = useRef(false);
   // B9: true from the moment a background beacon save is queued until the
   // next status check resolves it — see the matching ref in
   // continue-round-client.tsx for the full "beacon has no readable
@@ -556,6 +568,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   useEffect(() => {
     // Warn before closing tab/navigating away if there's any data to lose
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Save for later / Discard already resolved this round's fate on the
+      // server before navigating away — see roundExitedSafelyRef above.
+      if (roundExitedSafelyRef.current) return;
       if (stepRef.current !== 'setup' || setupDataRef.current.courseName) {
         e.preventDefault();
         e.returnValue = '';
@@ -582,6 +597,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     // Trigger SYNCHRONOUS localStorage save + async server save when app goes to background
     const handlePageHide = () => {
       if (isSubmittingRef.current) return;
+      // Skip after Save for later / Discard: for Discard specifically, a
+      // beacon fired here (pagehide can follow router.push during the same
+      // navigation) would re-write the round the player just deleted —
+      // resurrecting it. For Save for later it would just be a redundant
+      // write of data already durable server-side.
+      if (roundExitedSafelyRef.current) return;
       const { currentHole, holesSnapshot, statsSnapshot, mergedInProgress, setup } = buildEmergencyPayload();
 
       // 1. SYNCHRONOUS localStorage write — guaranteed to complete before page freeze
@@ -2234,6 +2255,11 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     clearEmergencySave(savedRoundIdRef.current, playerId);
     setShowExitModal(false);
 
+    // Round is durable server-side as of the successful save above — an
+    // unload/pagehide that coincides with this navigation must not warn or
+    // re-save. Set before router.push (async; the listeners stay live until
+    // the component actually unmounts).
+    roundExitedSafelyRef.current = true;
     router.push('/golf/dashboard/rounds');
     router.refresh();
   };
@@ -2261,6 +2287,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     clearEmergencySave(savedRoundId, playerId);
     setShowExitModal(false);
 
+    // The round is gone server-side — nothing left to warn about or re-save
+    // on a coincident unload/pagehide. Same reasoning as handleSaveForLater.
+    roundExitedSafelyRef.current = true;
     // Redirect to rounds page
     router.push('/golf/dashboard/rounds');
   };
