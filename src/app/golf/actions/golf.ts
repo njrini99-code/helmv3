@@ -9031,7 +9031,13 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
   // Constructed FIRST, same convention as savePartialRound/submit above —
   // shotId is the only identity known this early; round/player ids are
   // attached as `observed` metadata on their own step once resolved.
-  const flightRecorder = await createSafeFlightRecorder({ workflow: 'golf.shot.delete' });
+  // startTimeoutMs: 300 — tighter than the shared 500ms default. This
+  // construction now sits before any business logic, so a hung
+  // `trace_runs` insert would otherwise add up to the default bound to a
+  // single shot delete that previously paid nothing for tracing at all.
+  // submit/savePartialRound keep the default deliberately — see the
+  // field's own doc.
+  const flightRecorder = await createSafeFlightRecorder({ workflow: 'golf.shot.delete', startTimeoutMs: 300 });
   let traceEnded = false;
   const endTrace = (status: 'success' | 'failure' | 'warning' | 'pending') => {
     if (traceEnded) return;
@@ -9175,12 +9181,18 @@ async function deleteShotImpl(shotId: string): Promise<ActionResult<void>> {
     // it into an error.
     void flightRecorder.start('verify.shots');
     try {
-      const { data: stillThere } = await supabase
+      const { data: stillThere, error: verifyError } = await supabase
         .from('golf_shots')
         .select('id')
         .eq('id', shotId)
         .maybeSingle();
-      void flightRecorder.complete('verify.shots', { observed: { deleted: !stillThere } });
+      // A failed read must not render as "row confirmed gone" — bind and
+      // check the error explicitly rather than trusting `data` alone.
+      if (verifyError) {
+        void flightRecorder.warn('verify.shots', { errorSummary: verifyError.message });
+      } else {
+        void flightRecorder.complete('verify.shots', { observed: { deleted: !stillThere } });
+      }
     } catch (verifyErr) {
       void flightRecorder.warn('verify.shots', { errorSummary: describeError(verifyErr) });
     }
@@ -9282,8 +9294,8 @@ async function updateShotImpl(
   data: ShotUpdateData
 ): Promise<ActionResult<void>> {
   // Constructed FIRST — same convention as deleteShot/savePartialRound/
-  // submit above.
-  const flightRecorder = await createSafeFlightRecorder({ workflow: 'golf.shot.add_or_edit' });
+  // submit above. startTimeoutMs: 300 — see deleteShot's identical comment.
+  const flightRecorder = await createSafeFlightRecorder({ workflow: 'golf.shot.add_or_edit', startTimeoutMs: 300 });
   let traceEnded = false;
   const endTrace = (status: 'success' | 'failure' | 'warning' | 'pending') => {
     if (traceEnded) return;
@@ -9507,12 +9519,18 @@ async function updateShotImpl(
     // Best-effort read-back — see deleteShot's identical comment.
     void flightRecorder.start('verify.shots');
     try {
-      const { data: verifyShot } = await supabase
+      const { data: verifyShot, error: verifyError } = await supabase
         .from('golf_shots')
         .select('id')
         .eq('id', shotId)
         .maybeSingle();
-      void flightRecorder.complete('verify.shots', { observed: { found: Boolean(verifyShot) } });
+      // A failed read must not render as "row confirmed missing" — bind and
+      // check the error explicitly rather than trusting `data` alone.
+      if (verifyError) {
+        void flightRecorder.warn('verify.shots', { errorSummary: verifyError.message });
+      } else {
+        void flightRecorder.complete('verify.shots', { observed: { found: Boolean(verifyShot) } });
+      }
     } catch (verifyErr) {
       void flightRecorder.warn('verify.shots', { errorSummary: describeError(verifyErr) });
     }

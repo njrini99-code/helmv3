@@ -212,6 +212,84 @@ describe('Helm flight recorder', () => {
         vi.useRealTimers();
       }
     });
+
+    it('honors a per-call startTimeoutMs override tighter than the shared default', async () => {
+      // golf.shot.delete/golf.shot.add_or_edit pass startTimeoutMs: 300
+      // because their recorder construction now sits before any business
+      // logic — a hung persistStart there must degrade well before the
+      // shared 500ms default would let it. Advancing only 300ms + 50 (never
+      // PERSIST_START_TIMEOUT_MS, which stays 500) proves the override, not
+      // the default, is what the race actually uses.
+      vi.useFakeTimers();
+      try {
+        const spanEnd = vi.fn();
+        const spanSetStatus = vi.fn();
+        const onRecorderFailure = vi.fn();
+        const persistStep = vi.fn(async () => {});
+        const dependencies: FlightRecorderDependencies = {
+          newTraceId: () => 'c1d2e3f4-5061-4708-9203-a0b0c0d0e0f0',
+          startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: spanEnd, setStatus: spanSetStatus }),
+          persistStart: () => new Promise(() => {}),
+          persistStep,
+          persistFinalize: async () => {},
+          onRecorderFailure,
+        };
+
+        const pending = createHelmFlightRecorder(
+          { workflow: 'golf.shot.delete', startTimeoutMs: 300 },
+          dependencies,
+        );
+        await vi.advanceTimersByTimeAsync(300 + 50);
+
+        const recorder = await pending;
+
+        expect(onRecorderFailure).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'persistStart exceeded 300ms' }),
+          expect.objectContaining({ operation: 'start_timeout', timeout_ms: 300 }),
+        );
+        expect(spanSetStatus).toHaveBeenCalledWith('internal_error');
+        expect(spanEnd).toHaveBeenCalled();
+
+        // Degrades to the same inert no-op shape, and the caller proceeds —
+        // never awaited past the 300ms bound, never rejected.
+        await expect(recorder.start('db.delete_shot')).resolves.toBeUndefined();
+        await expect(recorder.finalize('success')).resolves.toBeUndefined();
+        expect(persistStep).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('still respects the shared PERSIST_START_TIMEOUT_MS default when no override is given', async () => {
+      // Companion to the override test above: submit/savePartialRound pass
+      // no startTimeoutMs, so a hang there must NOT degrade at 300ms +
+      // 50ms — only at the full shared default.
+      vi.useFakeTimers();
+      try {
+        const onRecorderFailure = vi.fn();
+        const dependencies: FlightRecorderDependencies = {
+          newTraceId: () => 'd1e2f3a4-5061-4708-9203-a0b0c0d0e0f1',
+          startSpan: () => ({ traceId: 'sentry-trace', spanId: 'sentry-span', end: vi.fn(), setStatus: vi.fn() }),
+          persistStart: () => new Promise(() => {}),
+          persistStep: async () => {},
+          persistFinalize: async () => {},
+          onRecorderFailure,
+        };
+
+        const pending = createHelmFlightRecorder({ workflow: 'golf.round.submit' }, dependencies);
+        await vi.advanceTimersByTimeAsync(300 + 50);
+        expect(onRecorderFailure).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(PERSIST_START_TIMEOUT_MS);
+        await pending;
+        expect(onRecorderFailure).toHaveBeenCalledWith(
+          expect.objectContaining({ message: `persistStart exceeded ${PERSIST_START_TIMEOUT_MS}ms` }),
+          expect.objectContaining({ operation: 'start_timeout', timeout_ms: PERSIST_START_TIMEOUT_MS }),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });
 

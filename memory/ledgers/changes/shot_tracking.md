@@ -691,3 +691,59 @@
   0 failed), `node scripts/knowledge/document-inventory.mjs --check` (0),
   `npm run docs:path-drift` (0, 1254 references checked, baseline 0). Not
   run: `npm run build` (excluded by this task's own instructions).
+
+## 2026-09-02 (follow-up) — per-workflow start timeout, CI red on PR #1769
+
+- SHA: (this commit).
+- Change 1 — `helm-flight-recorder.ts`: `StartHelmFlightRecorderInput` gained
+  an optional `startTimeoutMs`, defaulting to `PERSIST_START_TIMEOUT_MS`
+  (500ms as of the entry above) when omitted, and used in place of the
+  constant in the `raceAgainstTimeout` call around the start write and in
+  the resulting timeout error/metadata. `deleteShot`/`updateShot`
+  (`golf.shot.delete`, `golf.shot.add_or_edit`) now pass `startTimeoutMs:
+  300` — tighter than the shared default — because their recorder
+  construction sits before any business logic, unlike submit/autosave,
+  where a slower shot-edit budget was never part of the contract before this
+  refit. `submitGolfRoundComprehensive` and `savePartialRound` (both
+  branches) keep the default, unaffected.
+- Change 2 — CI fix, admin tests stale against the workflow declaration
+  change earlier in this branch (`golf-round-flight-workflow.ts`'s
+  `verify.*` steps went from `required` to `best_effort`, see the first
+  2026-09-02 entry above): `trace-tree.test.ts`'s "materialises required
+  steps the trace never recorded" asserted `verify.round/holes/shots`
+  ghosted for `golf.round.submit`, which is no longer true — those steps are
+  no longer diffed against observed steps at all now that they are
+  `best_effort`. Fixed by deriving a fixture that omits `server.player`
+  (still `required`, `SHARED_MUTATION_STEPS`) instead, added an explicit
+  regression test that verify.* do NOT ghost, and hardened "marks missing
+  steps with status missing" (same describe block) with a
+  `length > 0` guard so it cannot silently degrade to a vacuous pass over an
+  empty array the way it already had. `tracer-shared.test.ts`'s "groups by
+  layer... dropping empty lanes" and "ghosts a missing REQUIRED step..." made
+  the same stale assumption for `golf.round.start`'s `verify.round`; fixed by
+  asserting the `verification` lane is genuinely absent (2 lanes, not 3) and
+  distinguishing that from `server.player`'s genuine ghost.
+- Change 3 — CI fix, `npm run audit:supabase-errors` regression (1041 vs
+  baseline 1039, both in `app/golf/actions`): the `verify.shots` read-backs
+  this branch added in `deleteShotImpl`/`updateShotImpl` destructured `data`
+  without binding `error` — a failed read would render as "row confirmed
+  gone" / "row confirmed missing" instead of "read failed, status unknown".
+  Fixed by binding `error` and routing a failed read through the existing
+  `warn('verify.shots', ...)` path instead of reporting a false
+  observed-state; a successful read is unaffected. `audit:fail-open`,
+  `audit:paginated-reads`, and `lint:duplicate-exports` were already clean
+  against their baselines — no fix needed, verified instead.
+- Why: PR #1769 review round two — a follow-up ask (tighter shot-edit
+  timeout) plus two CI failures on the pushed head (5b2b272de) that the
+  earlier local gate runs in this session did not cover: `npx vitest run
+  src/app/admin` and the four audit/lint scripts CI's Lint job runs.
+- Tests: see `memory/ledgers/tests/shot_tracking.md`, same date.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, 68 warnings, no
+  regressions), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib src/app/admin` (304 files, 2631 passed,
+  3 skipped, 0 failed), `npm run audit:supabase-errors` (0, 1039, matches
+  baseline exactly — was 1041), `npm run audit:fail-open` (0, 51, matches
+  baseline), `npm run audit:paginated-reads` (0, 12, matches baseline),
+  `npm run lint:duplicate-exports` (0, 27 known remain, no new). Not run:
+  `npm run build` (excluded by this task's own instructions).

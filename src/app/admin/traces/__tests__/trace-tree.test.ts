@@ -56,21 +56,49 @@ describe('buildTraceTree — containment', () => {
 });
 
 describe('buildTraceTree — steps that never ran', () => {
+  // `verify.round`/`verify.holes`/`verify.shots` were 'required' in
+  // golf.round.submit's declaration when this suite was first written, so
+  // REAL_STEPS (which never records them — the transaction died first) used
+  // to ghost all three. As of 2026-09-02 they are 'best_effort' (see
+  // golf-round-flight-workflow.ts's own comment: a failed or short
+  // verification read must not inflate missing-required counts), so
+  // REAL_STEPS alone no longer has ANY genuinely missing required step —
+  // server.validation/auth/player and db.submit_round_atomic all ran. This
+  // fixture drops `server.player` (still required, SHARED_MUTATION_STEPS) to
+  // keep exercising real ghosting rather than letting these tests degrade
+  // into vacuously passing over an empty `missing` array.
+  const STEPS_MISSING_A_REQUIRED_STEP = REAL_STEPS.filter((s) => s.step_key !== 'server.player');
+
   it('materialises required steps the trace never recorded', () => {
     // This is the feature that makes the tool a debugger rather than a log
-    // viewer. verify.* never ran because the transaction died; omitting them
-    // would read as "nothing further was needed".
-    const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
+    // viewer: a required step the trace never recorded must not read as
+    // "nothing further was needed".
+    const tree = buildTraceTree(STEPS_MISSING_A_REQUIRED_STEP, 'golf.round.submit');
     const missing = tree.flat.filter((n) => n.isMissing).map((n) => n.key);
-    expect(missing).toContain('verify.round');
-    expect(missing).toContain('verify.holes');
-    expect(missing).toContain('verify.shots');
+    expect(missing).toContain('server.player');
     expect(tree.missingRequiredCount).toBe(missing.length);
   });
 
-  it('marks missing steps with status "missing", never a quiet success', () => {
+  it('does NOT ghost verify.round/holes/shots — they are best_effort, not required', () => {
+    // Regression guard for the requiredness change itself: a short or failed
+    // verification read must not inflate missing-required counts even when
+    // (as here) it genuinely never ran.
     const tree = buildTraceTree(REAL_STEPS, 'golf.round.submit');
-    for (const node of tree.flat.filter((n) => n.isMissing)) {
+    const missing = tree.flat.filter((n) => n.isMissing).map((n) => n.key);
+    expect(missing).not.toContain('verify.round');
+    expect(missing).not.toContain('verify.holes');
+    expect(missing).not.toContain('verify.shots');
+    expect(tree.missingRequiredCount).toBe(0);
+  });
+
+  it('marks missing steps with status "missing", never a quiet success', () => {
+    const tree = buildTraceTree(STEPS_MISSING_A_REQUIRED_STEP, 'golf.round.submit');
+    const missingNodes = tree.flat.filter((n) => n.isMissing);
+    // Guards against this test silently degrading to a vacuous pass over an
+    // empty array the way it did when the fixture above stopped producing
+    // any missing steps at all.
+    expect(missingNodes.length).toBeGreaterThan(0);
+    for (const node of missingNodes) {
       expect(node.status).toBe('missing');
       expect(node.durationMs).toBeNull();
     }

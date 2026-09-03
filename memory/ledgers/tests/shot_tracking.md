@@ -396,3 +396,50 @@ Each written red first against the pre-fix source; defect descriptions in
   0 failed), `node scripts/knowledge/document-inventory.mjs --check` (0),
   `npm run docs:path-drift` (0, 1254 references checked, baseline 0). Not
   run: `npm run build` (excluded by this task's own instructions).
+
+## 2026-09-02 (follow-up) — per-workflow start timeout, CI red on PR #1769
+
+Defect/change descriptions in `memory/ledgers/changes/shot_tracking.md`, same
+date.
+
+- `src/lib/observability/__tests__/helm-flight-recorder.test.ts` (new cases):
+  a per-call `startTimeoutMs` override (300ms) degrades the recorder at that
+  bound rather than the shared `PERSIST_START_TIMEOUT_MS` default, reporting
+  `'start_timeout'` through `onRecorderFailure` while the caller proceeds; a
+  companion case proves the shared default is untouched when no override is
+  passed (advances only past the override bound and asserts no failure yet,
+  then past the full default and asserts one).
+- `src/app/admin/traces/__tests__/trace-tree.test.ts` (repaired, one new
+  case): the "materialises required steps"/"marks missing steps" pair now
+  exercises a fixture missing `server.player` (still `required`) instead of
+  `verify.*` (now `best_effort` and no longer diffed at all); added
+  "does NOT ghost verify.round/holes/shots" as an explicit regression guard
+  for the requiredness change itself, and a `length > 0` guard on the
+  missing-steps assertion so it cannot silently degrade to a vacuous pass
+  again.
+- `src/app/admin/golf/tracer/__tests__/tracer-shared.test.ts` (repaired):
+  "groups by layer... dropping empty lanes" now expects two lanes for
+  `golf.round.start` (verification's lane is genuinely empty and dropped,
+  not populated by a ghost) with a matching comment explaining why; "ghosts a
+  missing REQUIRED step..." now asserts the `verification` lane is absent
+  instead of asserting a ghosted `verify.round`, distinguishing a genuine
+  required-step ghost (`server.player`) from a best-effort step that
+  correctly renders as simply not there.
+- `src/app/golf/actions/golf.ts` (`deleteShotImpl`/`updateShotImpl`): no new
+  test file — covered by the existing
+  `golf-shot-delete-update-flight-recorder.test.ts` suite, which continued
+  to pass unchanged; the fix (binding and checking `verify.shots`'s read
+  error) is exercised indirectly through the fixture's already-successful
+  read path, and the fail-open contract (never blocks the caller, never
+  throws) is the same guarantee that suite's existing "still succeeds when
+  createHelmFlightRecorder itself rejects" case already covers at the
+  recorder-construction level.
+- Verified, each captured to a file, exit code checked: `npm run typecheck`
+  (0), `npm run lint` (0), `npm run lint:ratchet` (0, 68 warnings, no
+  regressions), `npx vitest run src/lib/observability src/test/golf
+  src/app/golf/actions src/test/lib src/app/admin` (304 files, 2631 passed,
+  3 skipped, 0 failed), `npm run audit:supabase-errors` (0, 1039, matches
+  baseline), `npm run audit:fail-open` (0, 51, matches baseline),
+  `npm run audit:paginated-reads` (0, 12, matches baseline),
+  `npm run lint:duplicate-exports` (0, 27 known remain, no new). Not run:
+  `npm run build` (excluded by this task's own instructions).

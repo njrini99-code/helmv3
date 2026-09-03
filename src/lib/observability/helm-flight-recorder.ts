@@ -23,6 +23,17 @@ export interface StartHelmFlightRecorderInput {
   existingRoundId?: string | null;
   environment?: string;
   metadata?: SafeMetadata;
+  /**
+   * Overrides `PERSIST_START_TIMEOUT_MS` for this recorder's start write.
+   * `deleteShot`/`updateShot` (golf.shot.delete, golf.shot.add_or_edit) now
+   * await recorder construction — which awaits this bounded write — BEFORE
+   * any business logic, unlike submit/autosave, where a slower shot-edit
+   * budget was never part of the contract. Passing a tighter bound there
+   * caps how much a hung `trace_runs` insert can add to an action that
+   * previously paid nothing for it. Omit to keep the shared default —
+   * submit and savePartialRound (both branches) do, deliberately.
+   */
+  startTimeoutMs?: number;
 }
 
 export interface FlightRecorderStepInput {
@@ -302,6 +313,7 @@ export async function createHelmFlightRecorder(
     }
   };
 
+  const startTimeoutMs = input.startTimeoutMs ?? PERSIST_START_TIMEOUT_MS;
   const startOutcome = await raceAgainstTimeout(
     failOpen('start', () => dependencies.persistStart({
       traceId,
@@ -309,7 +321,7 @@ export async function createHelmFlightRecorder(
       environment: environmentForTrace(input.environment),
       metadata: baseMetadata,
     })),
-    PERSIST_START_TIMEOUT_MS,
+    startTimeoutMs,
   );
 
   if (startOutcome === 'timeout') {
@@ -319,8 +331,8 @@ export async function createHelmFlightRecorder(
     // disabled-mode branch above returns, and close out the Sentry span we
     // already opened so it doesn't leak as permanently "in progress".
     dependencies.onRecorderFailure(
-      new Error(`persistStart exceeded ${PERSIST_START_TIMEOUT_MS}ms`),
-      { operation: 'start_timeout', trace_id: traceId, workflow: input.workflow, timeout_ms: PERSIST_START_TIMEOUT_MS },
+      new Error(`persistStart exceeded ${startTimeoutMs}ms`),
+      { operation: 'start_timeout', trace_id: traceId, workflow: input.workflow, timeout_ms: startTimeoutMs },
     );
     closeSpanSafely('internal_error');
     const noop = async () => undefined;
