@@ -697,9 +697,13 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
   with each member's merge tier and reason, attached evidence-source
   chips) between the lifecycle explanation and the evidence wall.
 - **Shared vocabulary**: `src/components/admin/premium/**` — see the
-  "Components" section above for the full list. `EvidenceInspector`
-  exists and is exported but is not yet opened from any card in this
-  entry (a future phase can wire a trigger to it without rebuilding it).
+  "Components" section above for the full list. `EvidenceInspector` IS
+  wired: `UnifiedIncidentQueue.tsx` owns one shared instance (matching
+  `FeatureDrawer.tsx`'s established pattern rather than mounting one per
+  row), and `UnifiedIncidentCard.tsx` builds its `EvidenceInspectorData`
+  and opens it via an `onInspect` callback (an "Inspect" button in the
+  card's footer). Corrected 2026-09-03 (PR #1789 review) — this entry
+  previously said the opposite, stale from before that wiring landed.
 
 ## Known Risk Areas
 
