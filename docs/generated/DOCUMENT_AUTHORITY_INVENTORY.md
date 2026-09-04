@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 64 | 5 | 33 | 174 |
-| `AUDIT_SNAPSHOT` | 82 | 6 | 38 | 137 |
+| `AUDIT_SNAPSHOT` | 83 | 6 | 38 | 138 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 7 |
 | `HISTORY_LEDGER` | 32 | 0 | 5 | 74 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
@@ -449,6 +449,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/qa/baseball-fairway-visual-audit-2026-07-04/player/INDEX.md` | current | - | - | - | 0 | 5 | - |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | 1 |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
+| `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 0 | 3 | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-14.md` | current | - | - | yes | 0 | 2 | - |
 | `docs/ui-audits/UI_AUDIT_2026-08-15-PRE-DEPLOY-BASELINE.md` | current | - | - | - | 0 | 1 | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-15.md` | current | - | - | - | 0 | 1 | 1 |
