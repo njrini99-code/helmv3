@@ -30,7 +30,15 @@ const source = readFileSync(join(process.cwd(), 'src/hooks/golf/use-golf-message
 describe('useGolfMessages — one fetch and one subscription per conversation', () => {
   it('keys the fetch+subscribe effect on the conversation alone', () => {
     // The effect that calls fetchMessages() and opens the channel.
-    const start = source.indexOf('    fetchMessages();\n\n    // Set up real-time subscription');
+    //
+    // Anchored on `fetchMessages();` alone. It used to also require the
+    // "Set up real-time subscription" comment on the very next line, which
+    // made the test brittle against anything added inside the effect — and
+    // something was: the debounced read-marking helper that marks a thread
+    // read when a message arrives while it is open. The effect's IDENTITY is
+    // what this test cares about, not what sits between its first statement
+    // and the channel.
+    const start = source.indexOf('    fetchMessages();');
     expect(start).toBeGreaterThan(-1);
 
     // Its dependency array is the first `}, [...]);` after it.

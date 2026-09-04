@@ -566,6 +566,13 @@ export default function FairwayShotTracking({
         />
       )}
 
+      {/* ONE sticky round-chrome layer. The shot-progress strip used to be a
+          SECOND sticky element pinned to `var(--scorecard-height)` and pulled
+          full-bleed with negative margins out of the content column — two
+          composited layers, two z-index participants, and a JS-measured CSS
+          variable re-published on every resize just to keep them touching.
+          Passing it as the header's own bottom row makes the round chrome a
+          single element that scrolls, sticks and safe-areas as one thing. */}
       <FairwayScorecardHeader
         holes={holes}
         currentHoleIndex={currentHoleIndex}
@@ -573,6 +580,14 @@ export default function FairwayShotTracking({
         autoSaveStatus={autoSaveStatus}
         onExit={onExit}
         onNavigateToHole={onNavigateToHole ? handleNavigateToHole : undefined}
+        belowSlot={
+          <FairwayShotPills
+            currentShot={currentShot}
+            recordedShotCount={shotHistory.length}
+            selectedShotNumber={selectedShotNumber}
+            onSelectShot={handleSelectShot}
+          />
+        }
       />
 
       {/* MAIN CONTENT — full-width column that opens into a calm two-pane layout
@@ -580,14 +595,7 @@ export default function FairwayShotTracking({
           longer floats mid-screen with big wasted side margins. The shot pills
           stay full-bleed-sticky at the top of the content column. */}
       <div className="mx-auto w-full min-w-0 max-w-5xl px-4 pb-6 pt-4 sm:px-6">
-          <FairwayShotPills
-            currentShot={currentShot}
-            recordedShotCount={shotHistory.length}
-            selectedShotNumber={selectedShotNumber}
-            onSelectShot={handleSelectShot}
-          />
-
-          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
             {/* Hole context — flyover + readouts. Sticks alongside the entry on
                 desktop so the live panel can scroll without losing context. */}
             <div className="lg:sticky lg:top-[calc(var(--scorecard-height,105px)+5.5rem)]">

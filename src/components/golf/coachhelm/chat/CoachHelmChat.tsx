@@ -138,6 +138,17 @@ export function CoachHelmChat({
 
   const composer = (
     <PromptComposer
+      // Scoped to the conversation, for the same reason the team-message
+      // composer is (FairwayMessages). `PromptComposer` owns its draft as local
+      // state and clears it only on a successful send, while `chat.send` is
+      // bound to whatever `conversationId` is current at the moment of sending.
+      // Unkeyed, a question typed against one conversation and abandoned would
+      // survive the switch and be delivered to the next one, with nothing on
+      // screen suggesting the text had carried over.
+      //
+      // Keying makes it a fresh instance per conversation, so a draft can only
+      // ever be sent to the conversation it was written for.
+      key={conversationId ?? 'new'}
       onSend={chat.send}
       onStop={chat.stop}
       busy={chat.busy}

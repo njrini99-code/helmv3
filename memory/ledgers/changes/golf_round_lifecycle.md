@@ -250,3 +250,20 @@
   the scroll — off-screen on shorter devices or larger text.
 - Why: sweep finding (wf_07e7042d-6fa, rounds area) — no scroll affordance
   signalled a CTA below the fold.
+
+## 2026-09-04 — the Pulse chart showed 40% of a round and looked complete
+
+- SHA: PR #1828 (branch `agent/mobile-p0-stability`).
+- Change: `FairwayRoundDetail`'s `PulseTrace` drops the inline
+  `style={{ width }}` that beat its own `w-full max-w-[520px]` classes in the
+  cascade, and stretches its viewBox with `preserveAspectRatio="none"` plus
+  `vector-effect="non-scaling-stroke"`. The end-dot is a round-capped
+  zero-length stroke rather than a `<circle>`, which is immune to the aspect
+  distortion. The now-dead `overflow-x-auto` wrapper is removed. The course
+  picker header reserves the floating Close control's lane.
+- Why: the chart was pinned to a literal 520px on EVERY viewport, not just
+  mobile — `w-full` never applied anywhere. In a ~208px phone column it clipped
+  to the leftmost ~40% of the round inside a silent scroll container, and
+  because that slice forms a plausible V shape it read as a complete trend. A
+  coach drew conclusions from 40% of a round believing they had seen all of it.
+  This is a correctness defect, not a cosmetic one.

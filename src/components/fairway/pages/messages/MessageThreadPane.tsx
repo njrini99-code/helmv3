@@ -29,7 +29,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -45,6 +45,79 @@ import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
 import { Textarea } from '@/components/ui/textarea';
+
+/**
+ * How long to wait before the ONE automatic re-fetch of an attachment that
+ * came back successful-but-empty.
+ *
+ * Sized for a commit-order race, not a network failure: the sender's two
+ * inserts (`golf_messages`, then `golf_message_attachments`) land milliseconds
+ * apart, and realtime broadcasts on the first. Long enough that the second has
+ * committed, short enough that a photo does not visibly hang.
+ */
+const ATTACHMENT_RACE_RETRY_MS = 1200;
+
+/**
+ * How long a pause has to be before two messages from the same person stop
+ * reading as one utterance. Five minutes is the conventional chat window: long
+ * enough that a burst of three quick lines stays a single group, short enough
+ * that a reply hours later gets its own avatar and its own timestamp.
+ */
+const GROUP_WINDOW_MINUTES = 5;
+
+/**
+ * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
+ * and a missing timestamp must never silently merge two messages into one
+ * group — so an absent value reads as "infinitely far apart", which breaks the
+ * group rather than fusing it.
+ */
+function minutesBetween(a: string | null, b: string | null): number {
+  if (!a || !b) return Infinity;
+  const ms = new Date(b).getTime() - new Date(a).getTime();
+  return Number.isFinite(ms) ? Math.abs(ms) / 60000 : Infinity;
+}
+
+/**
+ * Whether two ISO timestamps land on the same local calendar day. An absent
+ * timestamp is treated as NOT the same day, for the same reason as above: the
+ * safe failure is an extra separator, never a silent merge.
+ */
+function isSameCalendarDay(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  const da = new Date(a);
+  const db = new Date(b);
+  return (
+    da.getFullYear() === db.getFullYear() &&
+    da.getMonth() === db.getMonth() &&
+    da.getDate() === db.getDate()
+  );
+}
+
+/**
+ * Label for a day separator: Today / Yesterday by name, then the date.
+ *
+ * Explicit `en-US` per the repo's locale rule — an implicit locale renders
+ * differently for the server and the client and shows up as a hydration
+ * mismatch.
+ */
+function formatDaySeparator(iso: string | null): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDiff = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86_400_000);
+
+  if (dayDiff === 0) return 'Today';
+  if (dayDiff === 1) return 'Yesterday';
+  // Inside the last week the weekday alone is the most readable landmark.
+  if (dayDiff > 1 && dayDiff < 7) return date.toLocaleDateString('en-US', { weekday: 'long' });
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+  });
+}
 
 /** One resolved (signed) attachment for an open thread message. */
 type ResolvedAttachment = NonNullable<
@@ -160,10 +233,26 @@ function ReadReceipt({ isRead }: { isRead?: boolean }) {
 function TypingIndicator() {
   return (
     <Inset padding="none" className="inline-flex rounded-fw-lg rounded-bl-sm px-4 py-3">
+      {/* An opacity wave, not a bounce. `animate-bounce` threw the dots a
+          third of their own height on a spring curve — energetic, and the
+          wrong register for "someone is composing a sentence". Three dots
+          breathing in sequence reads calmer, costs one compositor property
+          instead of layout, and is what the eye expects from a chat. */}
       <span className="flex items-center gap-1" aria-label="Typing">
-        <span className="h-2 w-2 rounded-full bg-text-tertiary motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="h-2 w-2 rounded-full bg-text-tertiary motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="h-2 w-2 rounded-full bg-text-tertiary motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
+        {[0, 1, 2].map((i) => (
+          <m.span
+            key={i}
+            className="h-1.5 w-1.5 rounded-full bg-text-tertiary"
+            animate={{ opacity: [0.25, 1, 0.25] }}
+            transition={{
+              duration: 1.2,
+              times: [0, 0.5, 1],
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.18,
+            }}
+          />
+        ))}
       </span>
     </Inset>
   );
@@ -301,6 +390,63 @@ export function MessageThreadPane({
   const reduceMotion = useReducedMotion() ?? false;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
+  /** The message list itself — observed for late growth (images, fonts). */
+  const messagesContentRef = React.useRef<HTMLDivElement>(null);
+  /**
+   * True from the moment a thread is pinned to its newest message until the
+   * reader deliberately scrolls away from the bottom. While armed, anything
+   * that grows the thread re-pins it.
+   */
+  const stickToBottomRef = React.useRef(false);
+  /**
+   * Ids already painted at least once, so an ARRIVAL can be told apart from
+   * history.
+   *
+   * Without this the entrance below would run on every message the first time
+   * a thread opens — twenty bubbles rippling in at once, which reads as the
+   * page rebuilding itself rather than as a message landing. Seeded on the
+   * first render of each conversation and reset on switch, so history mounts
+   * silently and only genuinely new messages animate.
+   */
+  const seenMessageIdsRef = React.useRef<Set<string>>(new Set());
+  const seededConversationRef = React.useRef<string | null>(null);
+  /**
+   * How many messages were unread when this thread was OPENED.
+   *
+   * Frozen deliberately. Opening a thread marks it read within about a second,
+   * so `conversation.unread_count` collapses to 0 almost immediately — reading
+   * it live would draw the separator for one frame and then erase the one piece
+   * of context the reader came back for. Captured once per conversation and
+   * held until they leave, which is how every chat app behaves: the line stays
+   * where it was until you go away and return.
+   */
+  const openUnreadCountRef = React.useRef(0);
+  const activeConversationId = conversation?.id ?? null;
+  if (seededConversationRef.current !== activeConversationId) {
+    seededConversationRef.current = activeConversationId;
+    seenMessageIdsRef.current = new Set(messages.map((m) => m.id));
+    openUnreadCountRef.current = conversation?.unread_count ?? 0;
+  }
+  /**
+   * Index of the first message that was unread on open, or -1 for none.
+   *
+   * Derived from the count rather than a per-message flag because that is what
+   * the conversation actually carries. Clamped to the loaded window: the thread
+   * fetches the most recent 200, so an unread count larger than what is on
+   * screen must not push the marker off the top of the list.
+   */
+  const firstUnreadIndex = (() => {
+    // Not memoized: two comparisons and a subtraction, recomputed per render,
+    // is cheaper than the dependency array it would need — and the value it
+    // depends on lives in a ref, which a dependency array cannot observe
+    // anyway.
+    const count = openUnreadCountRef.current;
+    if (!count || count <= 0 || messages.length === 0) return -1;
+    const index = messages.length - Math.min(count, messages.length);
+    // Never draw it above the very first message — a line at the top of a
+    // thread separates nothing and just reads as a stray rule.
+    return index <= 0 ? -1 : index;
+  })();
   const observedConversationIdRef = React.useRef<string | null>(null);
   const pendingInitialScrollConversationIdRef = React.useRef<string | null>(null);
   // P259: per-message anchors so a search hit can scroll its bubble into view.
@@ -317,8 +463,23 @@ export function MessageThreadPane({
   // Used to render a quiet "Couldn’t load — tap to retry" chip instead of an
   // eternal pending placeholder.
   const [attachmentErrors, setAttachmentErrors] = React.useState<Set<string>>(new Set());
-  // Bumped to force a re-run of the batch fetch (manual retry from the chip).
+  // Bumped to force a re-run of the batch fetch (manual retry from the chip,
+  // and the one-shot auto-retry for the commit-order race below).
   const [attachmentRetryNonce, setAttachmentRetryNonce] = React.useState(0);
+  // Message ids already given their one automatic retry. Prevents a genuinely
+  // unreadable attachment from re-fetching forever; it settles on the retry
+  // chip instead, which is a state the user can act on.
+  const retriedEmptyRef = React.useRef<Set<string>>(new Set());
+  // Pending auto-retry timers, cleared on unmount so a conversation switch
+  // cannot bump the nonce on an unmounted thread.
+  const retryTimersRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+  React.useEffect(
+    () => () => {
+      for (const timer of retryTimersRef.current) clearTimeout(timer);
+      retryTimersRef.current = [];
+    },
+    [],
+  );
 
   // Stable key of the visible attachment-bearing message ids (ordered) so the
   // batch fetch re-runs only when that set actually changes.
@@ -359,10 +520,44 @@ export function MessageThreadPane({
           errored.add(messageId);
         } else if (res.attachments?.length) {
           next[messageId] = res.attachments;
+        } else {
+          // SUCCESSFUL BUT EMPTY — and this branch used to not exist, which is
+          // the whole defect. Every message reaching this effect has
+          // `has_attachments: true`, so "no rows" is not a valid resting
+          // state: it means the rows are not readable YET.
+          //
+          // The send is two unbatched statements (message-attachments.ts):
+          // the `golf_messages` row commits and is broadcast over realtime
+          // before the `golf_message_attachments` rows necessarily commit. A
+          // recipient's fetch can land in that window and get a legitimately
+          // empty result with no error. Falling into neither bucket, it
+          // rendered the static "Attachment" label — no gallery, no retry chip
+          // — and the effect only re-runs when the SET of attachment-bearing
+          // message ids changes, so that bubble stayed dead for the rest of
+          // the session.
+          //
+          // Recording it as unresolved is the honest state: it surfaces the
+          // same retry affordance a hard failure gets, and the one-shot
+          // auto-retry below usually closes the race before anyone taps it.
+          errored.add(messageId);
         }
       }
       setAttachmentsByMessage(next);
       setAttachmentErrors(errored);
+
+      // The commit-order race resolves in milliseconds, so a single delayed
+      // retry turns "tap to retry" into something the user never has to do.
+      // Bounded to ONE attempt per fetch pass — `retriedEmptyRef` is keyed on
+      // the message id, so a genuinely unreadable attachment (deleted row,
+      // revoked access) settles on the retry chip instead of looping.
+      const unresolved = [...errored].filter((id) => !retriedEmptyRef.current.has(id));
+      if (unresolved.length > 0) {
+        for (const id of unresolved) retriedEmptyRef.current.add(id);
+        const timer = setTimeout(() => {
+          if (!cancelled) setAttachmentRetryNonce((n) => n + 1);
+        }, ATTACHMENT_RACE_RETRY_MS);
+        retryTimersRef.current.push(timer);
+      }
     })();
     return () => {
       cancelled = true;
@@ -407,9 +602,67 @@ export function MessageThreadPane({
     const container = messagesContainerRef.current;
     if (container) {
       container.scrollTop = container.scrollHeight;
+      // Hold the bottom until the reader actually moves.
+      //
+      // Setting scrollTop ONCE is not enough, and that is the "it opens at the
+      // top and I have to scroll down" report. This runs the moment the
+      // messages array is populated, but the thread keeps GROWING afterwards:
+      // signed attachment images arrive and reserve real height, the webfont
+      // swaps and reflows every bubble, day separators lay out, and on a phone
+      // the container's own dvh-derived height is still settling against the
+      // safe-area and keyboard variables. Every one of those grows
+      // `scrollHeight` while `scrollTop` stays exactly where we left it — so a
+      // pin that was correct at frame one is hundreds of pixels short by the
+      // time the thread is readable, and the further back the newest message
+      // is, the more it looks like the thread simply opened at the top.
+      //
+      // The observer below re-pins on each of those growth events until the
+      // reader scrolls, at which point their position is theirs and we stop
+      // touching it.
+      stickToBottomRef.current = true;
     }
     pendingInitialScrollConversationIdRef.current = null;
   }, [conversation?.id, loading, messages, scrollToMessageId]);
+
+  // Re-pin to the bottom while `stickToBottomRef` is armed and the content is
+  // still changing size. Released by the reader's first deliberate scroll away
+  // from the bottom (below), so this can never fight someone reading history.
+  React.useEffect(() => {
+    const container = messagesContainerRef.current;
+    const content = messagesContentRef.current;
+    if (!container || !content) return;
+
+    const observer = new ResizeObserver(() => {
+      if (!stickToBottomRef.current) return;
+      container.scrollTop = container.scrollHeight;
+    });
+    observer.observe(content);
+
+    // Images are the biggest single source of late growth and do not always
+    // trigger a content resize the observer sees in time, so pin on their load
+    // too. `capture` because `load` does not bubble.
+    const onLoad = () => {
+      if (stickToBottomRef.current) container.scrollTop = container.scrollHeight;
+    };
+    container.addEventListener('load', onLoad, true);
+
+    // A deliberate scroll away from the bottom hands control back to the
+    // reader, permanently for this thread. The near-bottom tolerance matches
+    // the auto-scroll rule below so the two agree about what "at the bottom"
+    // means.
+    const onScroll = () => {
+      if (!stickToBottomRef.current) return;
+      const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+      if (!atBottom) stickToBottomRef.current = false;
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      container.removeEventListener('load', onLoad, true);
+      container.removeEventListener('scroll', onScroll);
+    };
+  }, [conversation?.id]);
 
   // Keep the newest message in view when the scroll region itself changes
   // height. The iOS keyboard opening shrinks it (FairwayMessages subtracts
@@ -522,7 +775,23 @@ export function MessageThreadPane({
       depth="raised"
       padding="none"
       aria-label="Conversation"
-      className={cn('flex min-h-[40vh] flex-col overflow-hidden', className)}
+      className={cn(
+        'flex min-h-[40vh] flex-col overflow-hidden',
+        // On a phone with a thread open this panel IS the whole screen, so the
+        // elevation stops reading as "a pane beside the rail" and starts
+        // reading as a full-screen card floating on a page — which is Doctrine
+        // Rule 11 (no full-screen monolith cards) and the "chat feels like a
+        // card inside a page" complaint. The conversation should be the
+        // canvas. Flattened below `md` only; from `md` up it is genuinely one
+        // pane of a two-pane inbox and keeps its lift.
+        //
+        // `!` is required because the depth treatment comes from a CSS module
+        // class (instrument-panel.module.css `.panelRaised` / `.panel`), which
+        // has the same single-class specificity as a Tailwind utility — without
+        // it the winner would depend on stylesheet order.
+        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none',
+        className,
+      )}
     >
       {/* Thread bezel header — name + subtitle, mobile back affordance. */}
       <header className="flex min-w-0 items-center gap-3 border-b border-border-subtle px-4 py-3 sm:px-5">
@@ -598,15 +867,40 @@ export function MessageThreadPane({
             description="Start the conversation — say hello below."
           />
         ) : (
-          <div className="space-y-4">
+          // No `space-y-*` on this container: the rhythm is carried per message
+          // by the grouping (tight within a group, generous between), and a
+          // uniform gap on every child would flatten that back out and
+          // double-space the day separators.
+          <div ref={messagesContentRef}>
             {messages.map((msg, idx) => {
               // own-message check is identical for both roles (spec §4).
               const isOwn = msg.sender_id === userId || msg.sender_id === currentUserId;
               const prevMsg = messages[idx - 1];
               const nextMsg = messages[idx + 1];
-              const isFirstInGroup = !prevMsg || prevMsg.sender_id !== msg.sender_id;
-              const isLastInGroup = !nextMsg || nextMsg.sender_id !== msg.sender_id;
+              // Grouping is by sender AND by time. Sender alone meant two
+              // messages from the same person stayed in one visual group no
+              // matter how far apart they were sent — a "yeah" at 9pm merged
+              // silently into the group from 7am, sharing its avatar and
+              // hiding its own timestamp, so the thread read as one utterance
+              // that had actually spanned the whole day.
+              const prevGap = prevMsg ? minutesBetween(prevMsg.created_at, msg.created_at) : Infinity;
+              const nextGap = nextMsg ? minutesBetween(msg.created_at, nextMsg.created_at) : Infinity;
+              const startsDay = !prevMsg || !isSameCalendarDay(prevMsg.created_at, msg.created_at);
+
+              const isFirstInGroup =
+                !prevMsg || prevMsg.sender_id !== msg.sender_id || prevGap > GROUP_WINDOW_MINUTES || startsDay;
+              const isLastInGroup =
+                !nextMsg ||
+                nextMsg.sender_id !== msg.sender_id ||
+                nextGap > GROUP_WINDOW_MINUTES ||
+                !isSameCalendarDay(msg.created_at, nextMsg.created_at);
               const showTime = isLastInGroup;
+
+              // An ARRIVAL is a message this pane has not painted before.
+              // History is marked seen on the first render of the thread, so
+              // opening a conversation never ripples twenty bubbles in at once.
+              const isNew = !seenMessageIdsRef.current.has(msg.id);
+              if (isNew) seenMessageIdsRef.current.add(msg.id);
 
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
@@ -626,21 +920,72 @@ export function MessageThreadPane({
               const senderAvatar = senderInfo?.avatar ?? null;
 
               return (
-                <div
-                  key={msg.id}
-                  ref={(node) => {
+                <React.Fragment key={msg.id}>
+                {/* Day separator. A thread had no temporal landmarks at all —
+                    scrolling back through a busy week was an undifferentiated
+                    column of bubbles, and "3:14 PM" on a message told you the
+                    hour but never the day. Rendered once, when the calendar day
+                    changes. */}
+                {/* New-messages marker. Drawn once, at the boundary the reader
+                    left off at, so they can see immediately what arrived while
+                    they were away instead of scrolling to work it out. Accent
+                    rules and a label rather than a plain hairline — this line
+                    means something the day separators do not. */}
+                {idx === firstUnreadIndex && (
+                  <div className="flex items-center gap-3 pb-1.5 pt-3" role="separator" aria-label="New messages">
+                    <span className="h-px flex-1 bg-accent-500/45" />
+                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-accent-700">
+                      New
+                    </span>
+                    <span className="h-px flex-1 bg-accent-500/45" />
+                  </div>
+                )}
+                {startsDay && (
+                  <div className="flex items-center gap-3 pb-1 pt-2" role="separator">
+                    <span className="h-px flex-1 bg-border-subtle" />
+                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                      {formatDaySeparator(msg.created_at)}
+                    </span>
+                    <span className="h-px flex-1 bg-border-subtle" />
+                  </div>
+                )}
+                <m.div
+                  ref={(node: HTMLDivElement | null) => {
                     // P259: register/unregister this message's scroll anchor.
                     if (node) messageRefs.current.set(msg.id, node);
                     else messageRefs.current.delete(msg.id);
                   }}
+                  // A message should LAND, not appear. `false` for history and
+                  // under reduced motion means no transform is ever applied to
+                  // an already-settled bubble — only a genuine arrival moves,
+                  // and only once.
+                  //
+                  // Deliberately small: 6px of rise and a fade, on the same
+                  // decelerating curve the shell uses. Anything larger reads as
+                  // the list re-laying-out, which is the opposite of the
+                  // impression it exists to give. Nothing else on screen moves,
+                  // because only this element animates — the history above it
+                  // stays exactly where the reader's eye left it.
+                  initial={isNew && !reduceMotion ? { opacity: 0, y: 6 } : false}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   className={cn(
                     'flex items-end gap-2',
                     isOwn ? 'justify-end' : 'justify-start',
-                    !isLastInGroup && 'mb-0.5',
+                    // Tight inside a group, generous between them — the
+                    // spacing carries the grouping now, rather than every
+                    // message sitting in the same undifferentiated rhythm.
+                    isLastInGroup ? 'mb-1.5' : 'mb-0.5',
                   )}
                 >
-                  {/* Incoming avatar (first of group only) */}
-                  {!isOwn && (
+                  {/* Incoming avatar — GROUPS ONLY, once per group.
+                      A 1:1 thread does not need a repeated face: there is
+                      exactly one other person, their name and avatar are in
+                      the header two inches above, and the column cost 40px of
+                      width on every single line of the narrowest screen in the
+                      product. In a group it is load-bearing — it is how you
+                      tell four people apart while scrolling. */}
+                  {!isOwn && isGroup && (
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
                       {isFirstInGroup ? (
                         <Avatar decorative
@@ -652,10 +997,17 @@ export function MessageThreadPane({
                     </div>
                   )}
 
-                  <div className={cn('group relative flex min-w-0 max-w-[70%] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
-                    {/* Sender name above first incoming bubble */}
-                    {!isOwn && isFirstInGroup && (
-                      <span className="ml-1 font-fw-sans text-eyebrow font-medium text-text-tertiary">
+                  <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                    {/* Sender name — GROUPS ONLY, once per group.
+                        Redundant in a 1:1 (the header already names them) and
+                        it was `text-eyebrow` in tertiary ink, which is the
+                        quietest type in the system: in a busy group thread you
+                        could not scan who was speaking without studying the
+                        avatars. It is the label that makes a group readable, so
+                        it gets caption weight in secondary ink — still calm,
+                        actually legible. */}
+                    {!isOwn && isGroup && isFirstInGroup && (
+                      <span className="ml-1 font-fw-sans text-caption font-medium text-text-secondary">
                         {senderName}
                       </span>
                     )}
@@ -823,23 +1175,43 @@ export function MessageThreadPane({
                       {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
                     </div>
                   )}
-                </div>
+                </m.div>
+                </React.Fragment>
               );
             })}
 
-            {/* Typing indicator */}
-            {isOtherTyping && (
-              <div className="flex items-end gap-2 justify-start">
-                <div className="w-8 flex-shrink-0">
-                  <Avatar
-                    name={conversation.other_participant?.name || 'User'}
-                    src={conversation.other_participant?.avatar}
-                    size="sm"
-                  />
-                </div>
-                <TypingIndicator />
-              </div>
-            )}
+            {/* Typing indicator. Wrapped in AnimatePresence so it eases in and
+                out instead of popping — it appears and disappears constantly
+                while someone composes, and an abrupt insert at the foot of the
+                thread jolts the whole column each time.
+
+                No avatar in a GROUP: the typing broadcast carries no identity,
+                so the only face available is `other_participant`, which is a
+                1:1 concept. Showing it in a group would attribute the typing to
+                a specific person the app has no idea about. */}
+            <AnimatePresence initial={false}>
+              {isOtherTyping && (
+                <m.div
+                  key="typing"
+                  className="flex items-end justify-start gap-2"
+                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {!isGroup && (
+                    <div className="w-8 flex-shrink-0">
+                      <Avatar
+                        name={conversation.other_participant?.name || 'User'}
+                        src={conversation.other_participant?.avatar}
+                        size="sm"
+                      />
+                    </div>
+                  )}
+                  <TypingIndicator />
+                </m.div>
+              )}
+            </AnimatePresence>
             <div ref={messagesEndRef} />
           </div>
         )}

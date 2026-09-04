@@ -151,11 +151,21 @@ export function AttachmentButton({
       type="button"
       onClick={showDropdown ? undefined : handleSimpleClick}
       disabled={disabled}
+      // Fairway tokens, not the retired pre-Fairway `warm-*` palette. The
+      // design system retires `warm-*`/`cream-*` on golf-dashboard surfaces
+      // with exactly one named exception (`ui/skeleton.tsx`), and this control
+      // sits in the team-message composer — as golf-dashboard as it gets.
+      //
+      // The focus ring mattered most: `ring-primary-500/40` is the brand green
+      // at FORTY PERCENT opacity, which is far below the 3:1 a focus indicator
+      // owes and worse than the accent-500 case the token fix addressed. It is
+      // now the same accent-600 ring every other control uses.
       className={cn(
-        'w-11 h-11 flex items-center justify-center rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95',
+        'w-11 h-11 flex items-center justify-center rounded-fw-md',
+        'text-text-tertiary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken active:scale-95 motion-reduce:active:scale-100',
         'transition-[color,background-color,transform] duration-150',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
-        'data-[state=open]:bg-warm-100/80 data-[state=open]:text-warm-700',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+        'data-[state=open]:bg-surface-sunken data-[state=open]:text-text-primary',
         disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
@@ -269,12 +279,15 @@ function AttachmentTypeOption({
       onSelect={onSelect}
       className="gap-3 px-3 py-2.5"
     >
-      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-warm-100/60 flex items-center justify-center text-warm-600">
+      <div className="flex-shrink-0 w-9 h-9 rounded-fw-md bg-surface-sunken flex items-center justify-center text-text-secondary">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-body font-medium text-warm-800 leading-snug">{label}</p>
-        <p className="text-xs text-warm-500 leading-snug">{description}</p>
+        <p className="text-body font-medium text-text-primary leading-snug">{label}</p>
+        {/* `text-caption`, not `text-xs` — the Fairway type scale, so this row
+            matches every other secondary line in the app instead of sitting a
+            half-step off it. */}
+        <p className="text-caption text-text-tertiary leading-snug">{description}</p>
       </div>
     </DropdownMenuItem>
   );

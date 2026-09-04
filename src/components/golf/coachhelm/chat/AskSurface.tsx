@@ -122,7 +122,33 @@ export function AskSurface({
     // space it had: the page scrolled 41px at 390x844 and 97px at 1440x900,
     // and the composer — the one control this surface exists for — sat under
     // the bottom tab bar. Keep a fallback for any host that doesn't set it.
-    <div className="flex h-[calc(100dvh-var(--fw-shell-offset,7rem))] min-h-0 flex-col" data-slot="ask-surface">
+    <div
+      className="flex min-h-0 flex-col"
+      data-slot="ask-surface"
+      // This surface sizes itself against the keyboard, so CapacitorProvider's
+      // keyboardWillShow scroll-into-view must leave it alone — centring the
+      // composer in a viewport the keyboard covers would scroll the thread
+      // header off the top for nothing.
+      data-fw-keyboard-aware
+      style={{
+        // The keyboard term was missing entirely. The iOS WebView does not
+        // resize for the keyboard (`resize: 'ionic'`, no <ion-app>) and Safari
+        // does not resize its layout viewport, so this column kept its full
+        // height and PromptComposer — its last child — sat under the keys.
+        // Same defect the team-message composer had (#1739); CoachHelm's
+        // full-page Ask surface never received the fix. The drawer variant did
+        // (CoachHelmDrawer is keyboard-aware), which is why it only bit here.
+        //
+        // Subtracting `max(0px, keyboard - bottom-nav)` rather than the whole
+        // keyboard, because `--fw-shell-offset` ALREADY reserves the 56px nav
+        // plus its safe-area inset on mobile — and while the keyboard is up the
+        // nav is underneath it, so that height is not owed twice. Taking the
+        // full keyboard here would shrink the thread by roughly a nav bar for
+        // nothing. Resolves to 0 on desktop and whenever the keyboard is down.
+        height:
+          'calc(100dvh - var(--fw-shell-offset, 7rem) - max(0px, calc(var(--keyboard-height, 0px) - 56px - env(safe-area-inset-bottom, 0px))))',
+      }}
+    >
       {/* ── Slim bar. Deliberately not a page header: the conversation is the
             page, and a tall masthead above a chat is wasted vertical space. ── */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-4 py-2 sm:px-6">

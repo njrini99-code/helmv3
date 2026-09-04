@@ -942,3 +942,29 @@
   `node scripts/knowledge/document-inventory.mjs --check` (0, no regen
   needed). Not run locally: `npm run build` (no `.env.local` in this
   worktree; CI builds).
+
+## 2026-09-04 — the shot strip did not fit an iPhone, and the round chrome was two sticky layers
+
+- SHA: PR #1828 (branch `agent/mobile-p0-stability`).
+- Change:
+  - `FairwayShotPills` is a progress control, not six buttons.
+    `Math.max(6, currentShot + 1)` always rendered at least six full 44px cells
+    plus gaps, a fixed "SHOT" label and row padding — past 390px before a
+    seventh shot existed, inside an `overflow-x-hidden` wrapper around an
+    `overflow-x-auto` child, so the excess became a silent scroll with no
+    affordance. Recorded shots are now small marks with honest 44px hit areas,
+    the current shot is a dominant chip, and future shots are marks with no
+    button, no tab stop, `aria-hidden`.
+  - The strip is now `FairwayScorecardHeader`'s `belowSlot`, so the round chrome
+    is ONE sticky layer. It was a second sticky pinned to a JS-measured
+    `--scorecard-height` and pulled full-bleed with negative margins.
+  - `FairwayShotEntry`: `segBtn` drops `transition-colors` (it replaced the
+    transition-property list the shared press physics animates against, so the
+    press snapped) and moves its focus ring off the failing `border-focus`
+    token; haptics wired to the round grammar — `selection` per shot choice,
+    `light` per shot, `medium` on hole completion.
+- Why: the strip's geometry was a symptom; the model was the bug. Future shots
+  are marks on a track, not disabled buttons, and spending a 44px target on
+  each six times over is what pushed the row off the narrowest screen in the
+  product. `src/lib/fairway/haptics.ts` already existed with the full
+  vocabulary and the round had not one call.

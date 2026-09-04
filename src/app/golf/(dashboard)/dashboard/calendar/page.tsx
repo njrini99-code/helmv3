@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -121,6 +122,74 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
     throw new Error('Failed to load your team for the calendar. Please try again.');
   }
 
+  // Phase 2 (events + roster + settings + class owners — everything gated on
+  // `teamId`) is its OWN async component behind an interior Suspense, mirroring
+  // `(dashboard)/dashboard/layout.tsx`'s `CoachHelmDrawerMount`. Before this
+  // split, the route's `loading.tsx` skeleton covered phase 1 (team
+  // resolution) AND phase 2 (the events waterfall) as one atomic wait, because
+  // this whole function was one async component with no interior boundary —
+  // nothing could stream until BOTH round trips finished. Phase 2 genuinely
+  // depends on `teamId`, so it can't be parallelized with phase 1, but it
+  // doesn't need to keep blocking the shell: once phase 1 resolves, this
+  // function returns immediately and the SAME skeleton (`FairwayCalendarSkeleton`,
+  // token-true reserved geometry) flushes as part of the real page instead of
+  // the route-level fallback, while phase 2 streams in behind it.
+  return (
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <Suspense fallback={<FairwayCalendarSkeleton />}>
+        <CalendarEventsSection
+          supabase={supabase}
+          teamId={teamId}
+          coachList={coachList}
+          isCoach={isCoach}
+          coachId={coach?.id ?? null}
+          playerId={playerId}
+          initialEventId={initialEventId}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+interface CalendarEventsSectionProps {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  teamId: string | null;
+  coachList: { id: string; full_name: string | null; avatar_url: string | null }[];
+  isCoach: boolean;
+  coachId: string | null;
+  playerId: string | null;
+  initialEventId?: string;
+}
+
+/**
+ * Phase 2: the events/roster/settings/class-owners waterfall, gated on
+ * `teamId` from phase 1. Rendered inside the page's interior `<Suspense>` so
+ * it streams independently of the phase-1 shell (see the comment above).
+ * A thrown error here still reaches `calendar/error.tsx` — Suspense is not an
+ * error boundary, so the throw propagates to the nearest one exactly as it
+ * did when this was inline in the page component (audit finding #20: a
+ * failed events fetch must never render as a cheerful empty calendar).
+ */
+/**
+ * Exported for the page's data-fetch contract tests.
+ *
+ * The events read used to live in the page body, so those tests could call
+ * `GolfCalendarPage()` and assert on the query. Streaming it moved the read in
+ * here, behind Suspense — the page no longer performs it, so calling the page
+ * asserts nothing about it. Exporting the section keeps those guarantees
+ * testable at the place the work actually happens rather than deleting them:
+ * that a failed events read THROWS (never a cheerful empty calendar), that the
+ * select carries the series fields, and that cancelled events survive.
+ */
+export async function CalendarEventsSection({
+  supabase,
+  teamId,
+  coachList,
+  isCoach,
+  coachId,
+  playerId,
+  initialEventId,
+}: CalendarEventsSectionProps) {
   let events: CalendarEvent[] = [];
   let teamMembers: {
     id: string;
@@ -367,25 +436,26 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   ).length;
 
   // Fairway is the only tree (Wave W1) — it reuses the SAME events/
-  // teamMembers/timezone payload computed above.
+  // teamMembers/timezone payload computed above. No wrapping div here: the
+  // `fairwayScope('min-h-full bg-canvas')` shell now lives once in
+  // `GolfCalendarPage`, around the `<Suspense>` boundary, so it's present for
+  // both the skeleton fallback and this resolved content.
   return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayCalendar
-        events={events}
-        teamMembers={teamMembers}
-        isCoach={isCoach}
-        teamTimezone={teamTimezone}
-        upcomingCount={upcomingCount}
-        serverNow={serverNow}
-        currentUserId={coach?.id ?? playerId ?? undefined}
-        teamId={teamId}
-        loadedRangeStart={threeMonthsAgo.toISOString()}
-        loadedRangeEnd={threeMonthsAhead.toISOString()}
-        initialEventId={initialEventId}
-        classOwners={classOwners}
-        classOwnersResolved={classOwnersResolved}
-        viewerPlayerId={playerId}
-      />
-    </div>
+    <FairwayCalendar
+      events={events}
+      teamMembers={teamMembers}
+      isCoach={isCoach}
+      teamTimezone={teamTimezone}
+      upcomingCount={upcomingCount}
+      serverNow={serverNow}
+      currentUserId={coachId ?? playerId ?? undefined}
+      teamId={teamId}
+      loadedRangeStart={threeMonthsAgo.toISOString()}
+      loadedRangeEnd={threeMonthsAhead.toISOString()}
+      initialEventId={initialEventId}
+      classOwners={classOwners}
+      classOwnersResolved={classOwnersResolved}
+      viewerPlayerId={playerId}
+    />
   );
 }

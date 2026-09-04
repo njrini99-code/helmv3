@@ -282,8 +282,16 @@ export function FairwayCoursePicker({
               stages without a stage-specific branch. */}
           <div className="flex h-full w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
             <div className="mx-auto flex w-full max-w-3xl flex-col">
-            {/* Airy, premium header — bold title + clean search on the cream canvas. */}
-            <header className="px-1">
+            {/* Airy, premium header — bold title + clean search on the cream canvas.
+                `pr-*` reserves the floating Close control's lane. That button is
+                `absolute right-4` at 40px, while this column's `truncate` clips
+                at the CONTAINER edge — so a long course name ran its last ~40px,
+                ellipsis included, underneath the X. Truncation cannot fix that:
+                it was clipping at the wrong boundary, not clipping too late.
+                Reserving the lane means the title ends where the button starts,
+                and the ellipsis stays legible. Sized to the control plus a
+                breath (40 + 8), and only where the control floats. */}
+            <header className="px-1 pr-12 sm:pr-14">
               <div className="flex items-start gap-2.5">
                 {stage === 'tees' && (
                   // eslint-disable-next-line helm/no-raw-button -- compact back affordance

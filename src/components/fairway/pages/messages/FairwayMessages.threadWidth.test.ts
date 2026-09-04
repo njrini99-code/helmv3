@@ -63,8 +63,21 @@ describe('FairwayMessages — two-pane grid width contract', () => {
   });
 
   it('does not regress the phone masthead-hides-on-open-thread fix (PR #1768 / UI-4)', () => {
-    expect(src).toContain("<div className={mobileShowChat ? 'hidden md:block' : undefined}>");
-    expect(src).toContain("${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-6'}");
+    // #1768 hid the editorial masthead below `md` WHILE A THREAD WAS OPEN,
+    // because it plus the thread header left ~100px of an 844px screen for
+    // messages. That guard was written as
+    // `mobileShowChat ? 'hidden md:block' : undefined`.
+    //
+    // The masthead is now hidden below `md` in EVERY state, not only with a
+    // thread open: on the list view it printed the destination name a third
+    // time (the top bar and the eyebrow already say it) above a stacked action
+    // row. So this asserts the PROPERTY #1768 was protecting — the masthead
+    // never occupies phone height — rather than the specific conditional it
+    // originally used, which is strictly weaker than what ships now.
+    expect(src).toContain('<div className="hidden md:block">');
+    expect(src).toContain('<ViewHeader');
+    // And the thread still gets the full column when it is open on a phone.
+    expect(src).toContain("mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'");
   });
 
   it("does not touch MessageThreadPane's own scroll-to-bottom logic (unchanged prop contract, only wrapped in a layout container)", () => {

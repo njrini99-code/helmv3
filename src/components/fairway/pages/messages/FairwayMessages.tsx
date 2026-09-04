@@ -486,12 +486,58 @@ export function FairwayMessages() {
       data-fw-keyboard-aware
       className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-max(56px+env(safe-area-inset-bottom,0px),var(--keyboard-height,0px)))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]')}
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-6 sm:px-6 lg:py-8">
+      {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below
+          `md` there is nothing left up here that needs to breathe — the row
+          beneath is a search field. The desktop rhythm is unchanged from `sm`.
+
+          With a thread OPEN on a phone the horizontal gutter goes too: the
+          thread pane flattens to the canvas at that width (MessageThreadPane),
+          and a 16px cream margin either side of a full-screen conversation is
+          the last thing making it read as a card on a page. The gutter returns
+          for the conversation LIST, where it is separating rows from the screen
+          edge and is doing real work. */}
+      <div
+        className={`mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden py-3 sm:px-6 sm:py-6 lg:py-8 ${
+          mobileShowChat ? 'px-0' : 'px-4'
+        }`}
+      >
         {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ──
             On a phone with a thread open it steps aside: the masthead plus the
             thread's own header left 100–272px of an 844px screen for messages
             (audit 2026-09-02, UI-4). The thread header carries Back. */}
-        <div className={mobileShowChat ? 'hidden md:block' : undefined}>
+        {/* ── PHONE: a compact action row, not an editorial masthead ─────────
+            The full ViewHeader below is a desktop cover treatment (Doctrine
+            Rule 2: on phone these condense to one line). Rendering it here
+            printed the destination name THREE times before the first
+            conversation row — FairwayTopBar already shows "Messages" on
+            mobile (FairwayTopBar.tsx:261, `md:hidden`, and its own comment
+            notes it shares the left edge with "the page masthead below it"),
+            then the eyebrow said MESSAGES and the title said "Team messages".
+            The team name and the conversation count followed, then the action
+            buttons on their own stacked row, because the masthead only goes
+            side-by-side at `sm:`.
+            Only the two ACTIONS are not carried by other chrome, so only they
+            survive here. The conversation count is dropped rather than moved:
+            the rail beneath it is the count, rendered. */}
+        {!mobileShowChat && (
+          <div className="flex items-center justify-end gap-2 md:hidden">
+            {userRole === 'coach' && teamId ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<Users size={16} aria-hidden="true" />}
+                onClick={() => setShowTeamBroadcastModal(true)}
+              >
+                Team
+              </Button>
+            ) : null}
+            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
+              New message
+            </Button>
+          </div>
+        )}
+
+        <div className="hidden md:block">
         <ViewHeader
           eyebrow="Messages"
           title="Team messages"
@@ -534,7 +580,7 @@ export function FairwayMessages() {
             fractional tracks cannot leave dead space). No grid/width change
             here; see the inner max-w wrapper below for the one real gap this
             audit surfaced (an uncapped thread column on wide desktops). */}
-        <div className={`${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-6'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6`}>
+        <div className={`${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6`}>
           {/* TRIAGE — conversation rail. On mobile it hides when a chat is open. */}
           <aside
             className={
@@ -604,7 +650,26 @@ export function FairwayMessages() {
                 className="flex-1 min-h-0"
               >
                 {selectedConversation ? (
+                  // `key` IS the fix, not a list-rendering formality.
+                  //
+                  // The composer owns `message` and `pendingAttachments` as
+                  // local state and clears them only on a SUCCESSFUL send.
+                  // Mounted without a key it survived a conversation switch,
+                  // while both send handlers read whatever
+                  // `selectedConversationId` is current AT SEND TIME. So a
+                  // draft — or an attached photo — typed to one person and
+                  // abandoned would be delivered to whoever was selected next,
+                  // with nothing on screen suggesting the text had carried
+                  // over. That is private content sent to the wrong recipient.
+                  //
+                  // Keying on the conversation makes the composer a fresh
+                  // instance per thread, so its contents can only ever be sent
+                  // to the thread they were typed into. Per-conversation DRAFT
+                  // PERSISTENCE is a separate feature (spec P1) and deliberately
+                  // not smuggled in here: keeping the text would recreate the
+                  // exact hazard unless it is also scoped per conversation.
                   <MessageComposer
+                    key={selectedConversation.id}
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}

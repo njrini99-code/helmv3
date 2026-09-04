@@ -187,7 +187,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 'text-warm-400 hover:text-warm-600 active:text-warm-600',
                 'transition-all duration-150',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
-                'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100',
+                // Invisible AND inert, not merely invisible. This is a 44x44
+                // hit target pinned over the input's right edge, and at
+                // `opacity-0` it was still fully tappable: on a phone, tapping
+                // near the end of the text to place the cursor could fire
+                // Clear instead and wipe what had been typed, with no visible
+                // control to explain it. `opacity-0` hides a thing from the
+                // eye; only `pointer-events-none` hides it from a finger.
+                //
+                // Pointer events come back with visibility, and on touch that
+                // is `group-focus-within` — tapping into the field reveals and
+                // arms the button together, so the affordance still works, it
+                // just cannot fire while it cannot be seen.
+                'pointer-events-none opacity-0',
+                'group-hover:pointer-events-auto group-hover:opacity-100',
+                'group-focus-within:pointer-events-auto group-focus-within:opacity-100',
+                'focus:pointer-events-auto focus:opacity-100',
               )}
             >
               <span className="w-5 h-5 rounded-full bg-warm-100 hover:bg-warm-200 flex items-center justify-center">

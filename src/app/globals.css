@@ -168,6 +168,22 @@
     /* scroll-behavior: smooth; -- Disabled: can feel sluggish */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    /* Stop iOS from resizing our type on its own.
+       Mobile Safari's text autosizing inflates font sizes when the layout
+       width changes — most visibly on a portrait -> landscape rotation, where
+       body copy jumps a step larger and every measured layout in the app
+       (bubble max-widths, the shot strip, hole rows, calendar columns) is
+       suddenly working against different metrics than it was designed for.
+       Nothing in the app asked for that, and it is one of the clearest tells
+       that a screen is a web page rather than an app: native UI does not
+       change its type size because you turned the phone.
+       This pins the ramp to what the design system specifies. It does NOT
+       affect the user's own Dynamic Type / accessibility text-size setting,
+       which scales `rem`-based type as intended — only Safari's automatic,
+       unrequested inflation. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* Lock horizontal scroll on mobile only — prevents iPhone side-scroll

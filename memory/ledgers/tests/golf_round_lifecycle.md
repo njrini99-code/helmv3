@@ -139,3 +139,23 @@
   hold identically in every environment built from this chain, so a grant
   regression fails CI even where local runtime behavior is lax. This suite
   is the complement to the call-path test above, not a replacement for it.
+
+## 2026-09-04 — UI-1 was green while the bug was live (PR #1828)
+
+- `src/test/golf/mobile-audit-2026-09-02.test.ts` UI-1 — REWRITTEN, and worth
+  recording why. It asserted `width="100%" height="auto"
+  preserveAspectRatio="xMidYMid meet"` on the Pulse chart: markup that LOOKS
+  responsive and was not, because an inline `style={{ width }}` on the wrapping
+  span beat the `w-full max-w-[520px]` classes in the cascade. The chart
+  rendered at a literal 520px on every viewport and clipped to ~40% of a round
+  in a phone column, and this test passed the entire time — it was checking the
+  SVG's own attributes while the element ABOVE it did the pinning.
+  It now asserts the two things that actually make it responsive: no inline
+  width survives on the span, and the viewBox stretches to the column. This is
+  the failure mode to watch for in source-string tests generally — pinning the
+  markup nearest the symptom rather than the element that controls it.
+- `src/components/fairway/pages/rounds/FairwayRoundDetail.test.tsx` — the
+  end-dot assertion matches by `data-slot` instead of tag name. The dot is a
+  round-capped stroke rather than a `<circle>` now (fill geometry distorts under
+  `preserveAspectRatio="none"`, stroke does not), so the test pins the behaviour
+  that matters — an end marker is drawn — and leaves the implementation free.

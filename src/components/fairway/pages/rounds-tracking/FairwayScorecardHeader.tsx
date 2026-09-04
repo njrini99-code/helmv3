@@ -40,6 +40,20 @@ interface FairwayScorecardHeaderProps {
   autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
   onExit?: () => void;
   onNavigateToHole?: (holeIndex: number) => void;
+  /**
+   * Chrome that belongs to the round but sits BELOW the scorecard — today, the
+   * shot-progress strip.
+   *
+   * It lives here rather than as a sibling because it was previously a SECOND
+   * sticky element pinned to `var(--scorecard-height)`: two independently
+   * composited layers, two z-index participants, and a JS-measured CSS
+   * variable joining them that had to be re-measured on every resize. On a
+   * phone that is the whole round chrome, so it is one layer now. Rendering it
+   * inside this element also means it is inside the measured box, so the
+   * published `--scorecard-height` keeps describing the FULL chrome height —
+   * which is what the desktop sidebar's sticky offset actually wants.
+   */
+  belowSlot?: React.ReactNode;
 }
 
 // Verbatim helpers from the legacy file.
@@ -173,6 +187,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   autoSaveStatus,
   onExit,
   onNavigateToHole,
+  belowSlot,
 }: FairwayScorecardHeaderProps) {
   const headerRef = useRef<HTMLDivElement>(null);
   // Distance-unit preference — the legacy ScorecardHeader reads this
@@ -393,6 +408,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
             )}
         </div>
       </div>
+      {belowSlot}
     </div>
   );
 });

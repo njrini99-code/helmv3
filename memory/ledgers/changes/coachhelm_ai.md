@@ -55,3 +55,17 @@
   over a page that was mostly blank cream, because an empty pulse left the
   flex-1 opening region stretching around nothing while the route skeleton
   had promised a findings list.
+
+## 2026-09-04 — the Ask composer had both message-composer bugs
+
+- SHA: PR #1828 (branch `agent/mobile-p0-stability`).
+- Change: `PromptComposer` gates Enter-to-send on `(pointer: fine)`;
+  `CoachHelmChat` keys it on `conversationId`; `AskSurface` subtracts
+  `max(0px, keyboard - 56px - safe-area-bottom)` from its height and carries
+  `data-fw-keyboard-aware`.
+- Why: generalising the team-message fixes to their siblings. A coach could not
+  write a two-line question (an iOS keyboard has no Shift+Enter, so the newline
+  branch was unreachable), a draft survived a conversation switch and would be
+  sent to whichever conversation was then current, and the full-page Ask surface
+  had no keyboard term at all — the DRAWER variant was already keyboard-aware,
+  which is exactly why this only bit on the full page.

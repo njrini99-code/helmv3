@@ -131,7 +131,14 @@ describe('MessageThreadPane initial thread position', () => {
       };
       const { container } = render(createElement(MessageThreadPane, props));
       const region = container.querySelector<HTMLElement>('[data-scroll-container]')!;
-      expect(callbacks).toHaveLength(1);
+      // TWO observers now, and both are legitimate:
+      //   • the stick-to-bottom hold, which re-pins a freshly opened thread
+      //     while its content is still growing (late images, font swap, day
+      //     separators) — the "it opened at the top" fix;
+      //   • this test's subject, the keyboard-shrink pin.
+      // A real resize notifies both, so the simulation fires both.
+      expect(callbacks).toHaveLength(2);
+      const resizeAll = () => callbacks.forEach((cb) => cb());
 
       // Pinned to the bottom of a 640px thread in a 400px-tall region. A real
       // ResizeObserver reports the initial size right after observe(); jsdom's
@@ -139,20 +146,25 @@ describe('MessageThreadPane initial thread position', () => {
       let clientHeight = 400;
       Object.defineProperty(region, 'scrollHeight', { configurable: true, value: 640 });
       Object.defineProperty(region, 'clientHeight', { configurable: true, get: () => clientHeight });
-      callbacks[0]!();
+      resizeAll();
       region.scrollTop = 240;
 
       // ...then the keyboard opens and the region loses 300px. scrollTop does
       // not move on its own, so 240 would now show the middle of the thread.
       clientHeight = 100;
-      callbacks[0]!();
+      resizeAll();
       expect(region.scrollTop).toBe(640);
 
-      // A reader scrolled up into history is left alone.
+      // A reader scrolled up into history is left alone — by BOTH mechanisms.
+      // The scroll event is dispatched explicitly because assigning `scrollTop`
+      // in jsdom does not emit one, where a real browser always does; that
+      // event is what releases the stick-to-bottom hold, so without it this
+      // would be testing a state the browser never reaches.
       clientHeight = 400;
       region.scrollTop = 0;
+      region.dispatchEvent(new Event('scroll'));
       clientHeight = 100;
-      callbacks[0]!();
+      resizeAll();
       expect(region.scrollTop).toBe(0);
     } finally {
       (globalThis as { ResizeObserver: unknown }).ResizeObserver = OriginalResizeObserver;

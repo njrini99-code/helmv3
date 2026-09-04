@@ -31,6 +31,7 @@ import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview'
 import type { PendingAttachment } from '@/lib/storage/attachments';
 import { Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 /* ─── Length limit — mirrors sendMessageSchema (action-schemas.ts:42,
  *     content.max(5000)) so the field hard-prevents overflow (maxLength) and the
@@ -64,6 +65,25 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const attachmentIdCounter = useRef(0);
 
+  /* Enter-to-send is a HARDWARE-KEYBOARD affordance, and treating it as
+   * universal cost phone users the ability to write a paragraph.
+   *
+   * The contract below is "Enter sends, Shift+Enter makes a new line" — but an
+   * iOS software keyboard has no Shift+Enter. Its return key reports as plain
+   * `Enter`, so on a phone the newline branch was unreachable and every attempt
+   * at a second line sent the message instead. A player could not put a line
+   * break in a team message at all (Doctrine Rule 7 — no desktop chrome on
+   * phones — is the same rule the hint text below violates).
+   *
+   * `(pointer: fine)` is the honest test: it asks whether a real pointer (and
+   * therefore a real keyboard) is driving, not how wide the screen is, so a
+   * tablet with a keyboard case keeps Enter-to-send and a 1024px phone in
+   * landscape does not. The hook's server snapshot is `false`, which lands on
+   * the touch behavior during SSR — the correct default for the native iOS
+   * target, and a state where Enter never silently sends.
+   */
+  const isPointerFine = useMediaQuery('(pointer: fine)');
+
   // Auto-resize textarea (PRESERVED: clamp 40→120px on the message value).
   useEffect(() => {
     if (textareaRef.current) {
@@ -93,11 +113,29 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     }
   };
 
-  // Cleanup typing timeout on unmount (PRESERVED).
+  // Live mirror of the pending attachments, so the unmount cleanup below can
+  // revoke them without taking `pendingAttachments` as a dependency (which
+  // would re-run the cleanup on every add/remove instead of only on unmount).
+  const pendingAttachmentsRef = useRef(pendingAttachments);
+  pendingAttachmentsRef.current = pendingAttachments;
+
+  // Cleanup on unmount: the typing timeout (PRESERVED), and any object URLs
+  // still held by un-sent attachment previews.
+  //
+  // The URL revocation is new, and it is owed because the composer is now
+  // keyed on the conversation (FairwayMessages.tsx) so that a draft cannot be
+  // misdelivered to the next thread. That key makes unmount a ROUTINE event —
+  // every conversation switch — where before it happened only when the whole
+  // page went away. Previews were revoked on remove and after a successful
+  // send, so a picked-but-never-sent photo would now leak its blob on each
+  // switch.
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+      }
+      for (const attachment of pendingAttachmentsRef.current) {
+        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
       }
     };
   }, []);
@@ -169,6 +207,9 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Touch keyboards fall through to the textarea's native newline; the send
+    // button is the only send affordance there. See `isPointerFine` above.
+    if (!isPointerFine) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -253,19 +294,29 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
         </Button>
       </div>
 
-      <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
-        <p className="font-fw-sans text-eyebrow text-text-tertiary">
-          Press Enter to send, Shift+Enter for a new line.
-        </p>
-        {charsLeft && (
-          <span
-            className="flex-shrink-0 font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
-            aria-live="polite"
-          >
-            {charsLeft}
-          </span>
-        )}
-      </div>
+      {/* The hint describes keys a touch keyboard does not have, so it is
+          pointer-gated rather than always-on (Doctrine Rule 7). The whole row
+          is gated too — an empty flex row still costs `mt-1.5` of the little
+          vertical space a phone composer has, and on mobile the counter is
+          usually the only occupant. `ml-auto` keeps the counter right-aligned
+          once the hint beside it is gone. */}
+      {(isPointerFine || charsLeft) && (
+        <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
+          {isPointerFine && (
+            <p className="font-fw-sans text-eyebrow text-text-tertiary">
+              Press Enter to send, Shift+Enter for a new line.
+            </p>
+          )}
+          {charsLeft && (
+            <span
+              className="ml-auto flex-shrink-0 font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
+              aria-live="polite"
+            >
+              {charsLeft}
+            </span>
+          )}
+        </div>
+      )}
     </form>
   );
 }

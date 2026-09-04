@@ -244,7 +244,16 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
       "flex w-full flex-col",
       compact ? "gap-3" : "gap-4",
       plinth &&
-        cn("rounded-fw-lg bg-surface-tint", compact ? "px-6 py-5" : "px-8 py-7"),
+        cn(
+          "rounded-fw-lg bg-surface-tint",
+          // The plinth is a DESKTOP cover treatment — a warm band with generous
+          // air around an editorial masthead. Its padding was fixed, so on a
+          // phone it spent 56px of vertical space and 64px of horizontal on
+          // decoration, at the top of the screen, before any content. Doctrine
+          // Rule 2: these condense on phone. Full treatment returns at `sm`, so
+          // desktop is untouched.
+          compact ? "px-4 py-4 sm:px-6 sm:py-5" : "px-5 py-5 sm:px-8 sm:py-7",
+        ),
       className,
     );
 

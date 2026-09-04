@@ -322,21 +322,46 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   const forcedCollapsed = isCompactWidth || isShortViewport;
   const renderCollapsed = forcedCollapsed || collapsed;
 
-  const topBarProps: FairwayTopBarProps = {
-    breadcrumbs,
-    onSearchOpen,
-    searchPlaceholder,
-    searchSlot,
-    actions: topBarActions,
-    accentColor,
-    linkComponent,
-    // The standing destination label's FALLBACK (a mounted
-    // `<FairwayLargeTitle>` always overrides this internally via context —
-    // see FairwayTopBar's own doc comment). A plain string derived from props
-    // that only change on navigation.
-    pageTitle: pageTitle ?? breadcrumbs?.at(-1)?.label,
-    flush: !!subNav,
-  };
+  // Stable identity, for the same reason `sidebarProps` above has one —
+  // and this object is why that pairing was still only half-installed.
+  // `FairwayTopBar` is `React.memo`'d, but this was a bare object literal
+  // rebuilt on EVERY `AppShell` render, so the memo never once held: a fresh
+  // props object is never `Object.is`-equal to the previous one.
+  //
+  // The cost is not theoretical and it is not limited to navigation.
+  // `FairwayDashboardContent` subscribes to `useNotificationBadges()` at the
+  // top of the persistent dashboard tree, so the 45s badge poll re-renders
+  // this whole shell; each of those re-renders repainted the top bar with
+  // nothing visible changed. That is the mechanism behind the owner's
+  // "the header rebuilds between tabs" report (mobile audit, 2026-09-03).
+  const topBarProps: FairwayTopBarProps = useMemo(
+    () => ({
+      breadcrumbs,
+      onSearchOpen,
+      searchPlaceholder,
+      searchSlot,
+      actions: topBarActions,
+      accentColor,
+      linkComponent,
+      // The standing destination label's FALLBACK (a mounted
+      // `<FairwayLargeTitle>` always overrides this internally via context —
+      // see FairwayTopBar's own doc comment). A plain string derived from props
+      // that only change on navigation.
+      pageTitle: pageTitle ?? breadcrumbs?.at(-1)?.label,
+      flush: !!subNav,
+    }),
+    [
+      breadcrumbs,
+      onSearchOpen,
+      searchPlaceholder,
+      searchSlot,
+      topBarActions,
+      accentColor,
+      linkComponent,
+      pageTitle,
+      subNav,
+    ],
+  );
 
   // Desktop content column offset by the (collapsed) rail width. Driven by
   // `renderCollapsed`, not the raw `collapsed` state, so the compact-width /

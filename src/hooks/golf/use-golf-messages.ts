@@ -12,6 +12,14 @@ import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 /** Pause before the single transport-failure retry of a message send. */
 const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
 
+/**
+ * How long to coalesce read-marking after messages arrive in an open thread.
+ * Long enough that a burst of four lines is one write instead of four; short
+ * enough that the sender's receipt turns over while they are still looking at
+ * it.
+ */
+const MARK_READ_ON_ARRIVAL_DEBOUNCE_MS = 900;
+
 export interface GolfConversationParticipant {
   id: string;
   name: string;
@@ -75,6 +83,122 @@ export function applyRealtimeMessageUpdate<
   const next = prev.slice();
   next[idx] = { ...current, content: updated.content, edited_at: updated.edited_at };
   return next;
+}
+
+/**
+ * Order two messages by `created_at`, tie-broken by `id`.
+ *
+ * `created_at` is nullable in the schema, and a comparator doing date
+ * arithmetic on `null`/an unparsable string yields `NaN`, which sorts
+ * nowhere consistently. Treat an unparsable timestamp as "sorts after
+ * everything with a real one" rather than let it corrupt the ordering.
+ */
+function compareByCreatedAtThenId(
+  a: { readonly id: string; readonly created_at: string | null },
+  b: { readonly id: string; readonly created_at: string | null },
+): number {
+  const at = a.created_at ? Date.parse(a.created_at) : NaN;
+  const bt = b.created_at ? Date.parse(b.created_at) : NaN;
+  const aValid = !Number.isNaN(at);
+  const bValid = !Number.isNaN(bt);
+  if (aValid && bValid && at !== bt) return at - bt;
+  if (aValid !== bValid) return aValid ? -1 : 1;
+  if (a.id < b.id) return -1;
+  if (a.id > b.id) return 1;
+  return 0;
+}
+
+/**
+ * Apply one realtime `golf_messages` INSERT to the local list.
+ *
+ * Exported and pure for the same reason as `applyRealtimeMessageUpdate`
+ * above: this is a merge/ordering algorithm, and it deserves a test that
+ * does not have to stand up a realtime channel + auth harness to exercise
+ * it.
+ *
+ * Reconciliation with an optimistic row matches on the id ALONE.
+ * `sendMessage` inserts the client-generated id that `useGolfMessages`
+ * already rendered the optimistic row under AS the row's real
+ * `golf_messages.id` (a normal `DEFAULT uuid_generate_v4()` column, not
+ * GENERATED ALWAYS — a client-supplied override is a legitimate insert, not
+ * a workaround), so the optimistic row and its echo carry the SAME id from
+ * the start. That replaces the old "first `optimistic-*` row from me"
+ * heuristic — which reconciled the WRONG message when two sends were in
+ * flight and their echoes arrived out of order — with an exact match: there
+ * is no longer any ambiguity to resolve, and a mismatched send can no longer
+ * mismatch a receive.
+ *
+ * On a match: replace IN PLACE, never reorder. The optimistic row already
+ * rendered at the position its sender is looking at; re-sorting it by the
+ * server's `created_at` (never earlier than the optimistic client
+ * timestamp, and essentially never equal to it) would move a bubble the
+ * user just watched appear out from under them — this hook's own history
+ * (P258, F124, the 2026-08-31 churn fix above) is about exactly that kind
+ * of self-inflicted reflow. This also folds in the old plain "avoid
+ * duplicates" guard: any exact id match, from any sender, replaces in
+ * place instead of appending a second copy.
+ *
+ * On no match (a message from someone else, or our own echo arriving with
+ * no local optimistic row to meet — e.g. a second tab, or a channel that
+ * reconnected mid-send): insert in `created_at` order instead of always
+ * appending, so two people sending near-simultaneously still render in the
+ * order their messages were created rather than the order their INSERTs
+ * happened to arrive over the wire. The common case — the feed already
+ * arriving in order — stays an O(1) append; only an out-of-order arrival
+ * pays for the scan.
+ */
+export function applyRealtimeMessageInsert<
+  T extends { id: string; created_at: string | null },
+>(prev: T[], inserted: T): T[] {
+  const idx = prev.findIndex((m) => m.id === inserted.id);
+  if (idx !== -1) {
+    const current = prev[idx]!;
+    if (current === inserted) return prev;
+    const next = prev.slice();
+    next[idx] = inserted;
+    return next;
+  }
+
+  const last = prev[prev.length - 1];
+  if (!last || compareByCreatedAtThenId(last, inserted) <= 0) {
+    return [...prev, inserted];
+  }
+
+  let pos = prev.length;
+  while (pos > 0 && compareByCreatedAtThenId(prev[pos - 1]!, inserted) > 0) {
+    pos--;
+  }
+  const next = prev.slice();
+  next.splice(pos, 0, inserted);
+  return next;
+}
+
+/**
+ * A collision-proof id for the optimistic row, threaded through to the
+ * server as `golf_messages.id` (see `sendMessage` / `applyRealtimeMessageInsert`
+ * above). Was an `optimistic-` prefix glued to a millisecond timestamp — two
+ * sends in the same millisecond produced the SAME id, which corrupted both
+ * the dedupe guard and, before this rewrite, the reconciliation search.
+ *
+ * Prefers `crypto.randomUUID`; falls back to a Math.random-seeded v4-shaped
+ * string on engines/contexts where it's unavailable (older WKWebView,
+ * non-secure contexts — this repo ships iOS Capacitor and Android, see
+ * `newKey()` in useCoachHelmChat.ts for the same guard on the same
+ * platforms). The fallback MUST stay UUID-shaped: it is optionally sent to
+ * the server as `client_message_id`, which `MessageSchemas.send` validates
+ * with `z.string().uuid()` — a malformed id would fail that validation and
+ * turn every send on an affected device into a hard failure instead of a
+ * merely lower-entropy one.
+ */
+function generateClientMessageId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 export function useGolfMessages(conversationId: string) {
@@ -179,7 +303,20 @@ export function useGolfMessages(conversationId: string) {
     // Fetch most recent 200 messages (descending for limit), then reverse for display order
     const { data, error: fetchError } = await supabase
       .from('golf_messages')
-      .select('id, conversation_id, sender_id, content, read, created_at, is_deleted, edited_at')
+      // `has_attachments` is REQUIRED here, not decorative. MessageThreadPane
+      // only calls getGolfMessageAttachments for messages whose
+      // `has_attachments` is truthy, so omitting the column from this select
+      // made it `undefined` on every message loaded from the database — the
+      // signing fetch never fired and the bubble rendered empty.
+      //
+      // It looked intermittent rather than broken because the realtime INSERT
+      // handler below takes `payload.new`, which is the FULL row and does
+      // carry the flag. So an image was visible to whoever had the thread open
+      // when it arrived, and disappeared for everyone the next time the
+      // conversation was opened. That is the "Can't see pics" report from the
+      // team chat: the sender saw it send, the recipients opened the thread
+      // later and saw nothing.
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -252,6 +389,42 @@ export function useGolfMessages(conversationId: string) {
 
     fetchMessages();
 
+    /**
+     * Mark the thread read shortly after someone else's message lands here.
+     *
+     * Debounced because a burst — a coach firing off four lines — would
+     * otherwise be four writes and four realtime round trips for one act of
+     * reading. Coalescing to a single call a beat later is the same outcome at
+     * a fraction of the cost.
+     *
+     * Gated on `visibilityState` so a backgrounded tab does not claim the
+     * player read something they never saw: this hook stays mounted while the
+     * phone is locked or the app is in the background, and "delivered" is not
+     * "read". When they come back, the next arrival — or the re-fetch on
+     * re-entering the thread — marks it properly.
+     *
+     * Declared inside the effect so it closes over THIS conversation's id;
+     * the effect is keyed on `conversationId`, so a switch tears the timer
+     * down with everything else and no write can land against a thread the
+     * player has already left.
+     */
+    let markReadTimer: ReturnType<typeof setTimeout> | null = null;
+    const markReadSoon = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (markReadTimer) clearTimeout(markReadTimer);
+      markReadTimer = setTimeout(() => {
+        void markGolfMessagesAsRead(conversationId).catch((err) => {
+          // Non-fatal: the badge stays stale until the next read attempt. Never
+          // allowed to reject unhandled and tear the hook down mid-conversation.
+          logError(
+            err instanceof Error ? err : new Error(String(err)),
+            { component: 'useGolfMessages', action: 'mark-read-on-arrival', sport: 'golf', conversationId },
+            'low'
+          );
+        });
+      }, MARK_READ_ON_ARRIVAL_DEBOUNCE_MS);
+    };
+
     // Set up real-time subscription for messages and typing
     const channel = supabase.channel(`golf-conversation:${conversationId}`);
     channelRef.current = channel;
@@ -266,23 +439,22 @@ export function useGolfMessages(conversationId: string) {
         },
         (payload) => {
           const newMessage = payload.new as MessageWithReadStatus;
-          setMessages(prev => {
-            // Replace optimistic message if this is our own message arriving via realtime
-            if (newMessage.sender_id === currentUserIdRef.current) {
-              const optimisticIdx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.sender_id === currentUserIdRef.current);
-              if (optimisticIdx !== -1) {
-                const updated = [...prev];
-                updated[optimisticIdx] = newMessage;
-                return updated;
-              }
-            }
-            // Avoid duplicates (message already exists by ID)
-            if (prev.some(m => m.id === newMessage.id)) return prev;
-            return [...prev, newMessage];
-          });
+          // See applyRealtimeMessageInsert above: id-exact reconciliation
+          // with our own optimistic row, in-order insertion otherwise.
+          setMessages(prev => applyRealtimeMessageInsert(prev, newMessage));
           // Clear typing indicator when message is received
           if (newMessage.sender_id !== currentUserIdRef.current) {
             setIsOtherTyping(false);
+            // ...and mark it read, because the reader is looking at it RIGHT NOW.
+            //
+            // `markGolfMessagesAsRead` used to run only inside `fetchMessages`,
+            // which re-runs on conversation change alone. So a message that
+            // arrived while the thread was already open was appended to the
+            // list, read by a human, and never marked read in the database:
+            // the sender's receipt sat on "Sent" indefinitely while the
+            // recipient was demonstrably reading it, and the recipient's own
+            // rail badge stayed stale until they navigated away and back.
+            markReadSoon();
           }
         }
       )
@@ -345,6 +517,10 @@ export function useGolfMessages(conversationId: string) {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+      // A pending read-mark belongs to the conversation being left, so it dies
+      // with it rather than landing against a thread the player has moved on
+      // from.
+      if (markReadTimer) clearTimeout(markReadTimer);
     };
     // Deliberately keyed on the CONVERSATION only. `fetchMessages` is now
     // identity-stable and every handler above reads `currentUserIdRef`, so a
@@ -373,8 +549,12 @@ export function useGolfMessages(conversationId: string) {
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
-    // Optimistic update: add message to UI immediately
-    const optimisticId = `optimistic-${Date.now()}`;
+    // Optimistic update: add message to UI immediately. The id is generated
+    // ONCE, above the retry, and reused for both the optimistic row and every
+    // send attempt below — see generateClientMessageId's docstring for why it
+    // must be collision-proof, and the comment on the retry call for why
+    // reusing it across a retry is safe rather than merely convenient.
+    const optimisticId = generateClientMessageId();
     const optimisticMessage: MessageWithReadStatus = {
       id: optimisticId,
       conversation_id: conversationId,
@@ -394,8 +574,13 @@ export function useGolfMessages(conversationId: string) {
       // mid-send on 2026-09-01/02, and Vercel logged no message_sent for
       // either, so the request never arrived. One retry after a beat is what
       // they did by hand — see withOneTransportRetry for why that is safe here.
+      // Passing the SAME optimisticId on both attempts also makes a retry
+      // that fires after the first attempt actually committed safe: the
+      // second insert collides on golf_messages' primary key and the server
+      // reports it back as the success it is (see sendMessage/action's 23505
+      // handling) instead of creating a second, duplicate row.
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, content),
+        () => sendGolfMessage(conversationId, content, optimisticId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
 

@@ -88,7 +88,12 @@ describe('FairwayRoundDetail — #28 Pulse chart renders real data', () => {
     // 18 holes of real score/par data → 18 plotted points, not zero/empty.
     expect(points.trim().split(/\s+/).length).toBe(18);
     // A real end-dot is drawn alongside the line (not the ONLY visible mark).
-    expect(pulse!.querySelector('circle')).not.toBeNull();
+    // Matched by data-slot rather than tag: the dot is a round-capped stroke,
+    // not a <circle>, because the chart now stretches X and Y by different
+    // factors and that distortion applies to fill geometry (a circle rendered
+    // as an oval on a phone). This asserts the end marker EXISTS, which is the
+    // behaviour worth pinning, and leaves the implementation free.
+    expect(pulse!.querySelector('[data-slot="pulse-end-dot"]')).not.toBeNull();
   });
 
   it('omits the Pulse panel entirely when there is no honest series (< 2 points)', () => {

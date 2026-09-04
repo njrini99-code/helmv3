@@ -326,11 +326,33 @@ export function MobileEventSheet({
         role="dialog"
         aria-modal="true"
         aria-label={isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event'}
+        // Lifts with the keyboard. This sheet is pinned to `bottom-0` —
+        // exactly where the software keyboard lands — and it contains a
+        // description Textarea plus title and location fields. The iOS WebView
+        // does not resize for the keyboard (`resize: 'ionic'`, no <ion-app>)
+        // and Safari does not resize its layout viewport, so tapping any of
+        // those put the field under the keys. Same defect #1739 fixed for the
+        // message composer; this sheet is hand-rolled rather than built on the
+        // keyboard-aware `Sheet` primitive, so it never inherited it.
+        //
+        // `dvh` replaces `vh` in the cap for the same reason it did in
+        // `ui/drawer.tsx`: `vh` measures the largest viewport and ignores
+        // mobile Safari's dynamic toolbars. The cap shrinks by the keyboard
+        // height too, so a lifted sheet still clears the status bar.
+        //
+        // `--keyboard-height` is 0px on desktop and whenever the keyboard is
+        // down, so all of this is inert there. The 250ms track matches the
+        // Sheet primitive so the two move alike.
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50',
+          'fixed inset-x-0 bottom-[var(--keyboard-height,0px)] z-50',
           'bg-cream-50 rounded-t-3xl shadow-2xl',
-          'max-h-[90vh] overflow-hidden',
-          'transform transition-transform duration-300 ease-out',
+          'max-h-[calc(90dvh-var(--keyboard-height,0px))] overflow-hidden',
+          // ONE transition declaration covering both properties. Listing
+          // `transition-[bottom]` and `transition-transform` separately would
+          // not stack — twMerge resolves them as the same utility and keeps the
+          // last, silently dropping whichever came first. The sheet needs both:
+          // `transform` for its open/close slide, `bottom` for the keyboard.
+          'transform transition-[transform,bottom] duration-300 ease-out motion-reduce:transition-none',
           isOpen ? 'translate-y-0' : 'translate-y-full'
         )}
       >

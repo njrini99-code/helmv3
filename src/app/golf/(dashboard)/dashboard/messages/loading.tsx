@@ -3,13 +3,26 @@ import { Skeleton } from '@/components/fairway/feedback';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
 /**
- * Purpose-built Suspense fallback for the Messages inbox. Shape-matches
- * FairwayMessages (ViewHeader masthead → md:grid-cols-12 two-pane inbox: a
- * conversation-rail aside at md:col-span-5/lg:col-span-4 + a thread pane at
- * md:col-span-7/lg:col-span-8), so the real page paints in place with no
- * layout swap / CLS on hydrate. Previously fell back to the legacy
- * `MessagesPageSkeleton` (cream/warm tokens) — a flash-of-wrong-design against
- * this Fairway-only route.
+ * Suspense fallback for the Messages inbox.
+ *
+ * A skeleton's whole job is to occupy the geometry the real page is about to
+ * occupy. This one had drifted: it painted the full editorial masthead (eyebrow
+ * + title + description + a two-button row), `py-6`, `mt-6`, and a bordered
+ * card around the rail — none of which the phone layout renders any more. The
+ * result was a visible reconstruction on entering the tab: roughly 120px of
+ * masthead skeleton appeared, then vanished as the real page mounted, taking
+ * the card border with it and yanking every conversation row upward. That is
+ * the "it hot reloads and looks crappy" report, and it is a mismatch between
+ * this file and FairwayMessages, not a rendering fault.
+ *
+ * It now mirrors the shipped layout at BOTH widths:
+ *   • phone — no masthead, a right-aligned action row, `py-3`, a flat
+ *     edge-to-edge rail with a search field and rows on the canvas
+ *   • `md`+ — the masthead and the two-pane grid, unchanged
+ *
+ * Keep this file and `FairwayMessages` / `MessageConversationRail` in step. A
+ * skeleton that no longer matches is worse than none: it manufactures exactly
+ * the layout jump it exists to prevent.
  */
 export default function Loading() {
   return (
@@ -18,9 +31,19 @@ export default function Loading() {
         'flex h-[calc(100dvh-4rem-56px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]',
       )}
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-6 sm:px-6 lg:py-8">
-        <div role="status" aria-busy="true" aria-live="polite" className="flex flex-wrap items-end justify-between gap-4">
-          <span className="sr-only">Loading messages…</span>
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-3 sm:px-6 sm:py-6 lg:py-8">
+        <span className="sr-only" role="status" aria-busy="true" aria-live="polite">
+          Loading messages…
+        </span>
+
+        {/* PHONE — the action row that replaces the masthead below `md`. */}
+        <div className="flex items-center justify-end gap-2 md:hidden">
+          <Skeleton className="h-9 w-16 rounded-full" />
+          <Skeleton className="h-9 w-28 rounded-full" />
+        </div>
+
+        {/* `md`+ — the editorial masthead, unchanged. */}
+        <div className="hidden flex-wrap items-end justify-between gap-4 md:flex">
           <div>
             <Skeleton className="h-3 w-20" />
             <Skeleton className="mt-2 h-9 w-48 max-w-full" />
@@ -32,13 +55,24 @@ export default function Loading() {
           </div>
         </div>
 
-        {/* Two-pane inbox */}
-        <div className="mt-6 flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6">
-          {/* Conversation rail */}
+        {/* Two-pane inbox. `mt-3` on phone / `mt-6` from `md` matches the page. */}
+        <div className="mt-3 flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:mt-6 md:grid md:gap-6">
+          {/* Conversation rail. Flat on phone (no Surface border, no card
+              padding) exactly as MessageConversationRail now renders; the
+              bordered panel returns at `md`. */}
           <aside className="col-span-12 flex w-full flex-col md:col-span-5 md:w-auto lg:col-span-4">
-            <Surface elevation="border" padding="none" className="flex-1 overflow-hidden">
-              <div className="flex flex-col gap-1 p-3">
-                {Array.from({ length: 6 }).map((_, i) => (
+            <Surface
+              elevation="border"
+              padding="none"
+              className="flex-1 overflow-hidden max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent"
+            >
+              {/* Search field — the rail's first row on phone, where the
+                  bezel heading used to be. */}
+              <div className="px-0 pb-3 pt-0 md:px-3 md:pt-3">
+                <Skeleton className="h-11 w-full rounded-fw-md" />
+              </div>
+              <div className="flex flex-col gap-1 px-0 pb-3 md:px-3">
+                {Array.from({ length: 7 }).map((_, i) => (
                   <div key={i} className="flex items-start gap-3 rounded-fw-md px-3 py-2.5">
                     <Skeleton circle className="h-10 w-10 flex-shrink-0" />
                     <div className="flex-1 space-y-2">
