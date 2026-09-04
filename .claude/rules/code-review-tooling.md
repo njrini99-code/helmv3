@@ -39,8 +39,13 @@ same move (`Static checks`, `Lint`). The reason was runner-slot starvation:
 
 **CI split — GitHub Actions vs CircleCI**
 
-GitHub Actions owns the per-PR fast path: typecheck, lint, vitest,
-next build, Supabase RLS tests (`ci.yml`), and the Review Gate above.
+GitHub Actions owns the per-PR fast path (`ci.yml`, job display names
+verbatim): Static checks, TypeScript, Lint, Unit tests, Unit tests (shifted
+timezone), Next build, Supabase lint + RLS tests, BaseballHelm authenticated
+smoke — behind a `Detect code-relevant paths` gate, aggregating to
+`CI aggregate`. Plus the Review Gate above. Three of those were missing from
+this list until 2026-09-04, one of them (`Static checks`) named correctly
+two paragraphs earlier in this same file.
 
 CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
 
@@ -69,8 +74,12 @@ Fastlane, parallel Playwright, Lighthouse on Vercel previews).
 
 Shared config:
 
-- `.gitleaks.toml` — project-specific secret patterns (rotated
-  2026-05-17 Supabase dev DB password is allowlisted only in audit
-  docs).
+- `.gitleaks.toml` — project-specific secret patterns. Its `[allowlist]`
+  `paths` are GLOBAL across every rule, not scoped to one: the rotated
+  2026-05-17 Supabase dev DB password is allowlisted in the audit docs, and
+  so is `.gitleaks.toml` itself plus one source file — the Supabase
+  error-envelope privacy test, which needs a real-shaped JWT to prove
+  redaction works. "Only in audit docs" read as though a source file could
+  never be allowlisted.
 
 ---

@@ -1,5 +1,5 @@
 ---
-verified: 2026-08-16  # working-style guidance, not code claims — nothing here to grep
+verified: 2026-09-04  # working-style guidance ON TOP OF code claims — scripts, npm scripts, .gitignore, settings.json and the enforcement inventory are all greppable, and three drift scanners already read this file
 ---
 
 ## Autonomy — finish the work, don't narrate it
@@ -58,6 +58,20 @@ Pick one of these before dispatching, never neither:
 
   Use it because it guarantees four things at once: an external managed
   location, the `agent/<task>` branch name, `--no-track`, and a known base.
+
+  It can also REFUSE, before allocating anything: one mutation workspace at a
+  time (`HELM_MAX_MUTATION_WORKTREES`, default 1) and a free-space reserve.
+  A refusal costs nothing and is the tool working — park an existing checkout
+  rather than overriding it. An agent told to give three sub-agents a
+  worktree each will be refused on the second, by design.
+
+  The harness has its own worktree isolation (`isolation: "worktree"` on the
+  Agent tool, `EnterWorktree`). It gives you a checkout and NONE of the four
+  guarantees: no `--no-track`, so the `agent/foo -> origin/main` trap below is
+  live again; no `.helm/workspace.json`, so the lifecycle tool cannot classify
+  it and returns `KEEP_WORKSPACE_INTENT_REQUIRED`; and no mutation-budget
+  accounting. Use it for throwaway reads; use the script for anything that
+  will push.
 
   It no longer installs dependencies. A checkout cost ~3.8 GiB of node_modules
   whether or not the task needed one, and most control-plane, docs and config
