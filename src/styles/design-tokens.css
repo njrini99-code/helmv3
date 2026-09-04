@@ -146,7 +146,23 @@
   /* ---- Borders / warm hairlines (NOT cool gray) ---- */
   --fw-color-border-subtle: oklch(0.862 0.013 82 / 0.95); /* a VISIBLE warm hairline — card edges read against the deeper canvas (was 0.90/0.8, invisible) */
   --fw-color-border-strong: oklch(0.872 0.009 80);      /* emphasis / table head */
-  --fw-color-border-focus:  var(--fw-color-accent-500);
+  /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
+     indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
+     warm canvas measures ~2.67:1 on the OKLCH render path — it fails. That was
+     already known: the shared control helper (`fwFocusRing`, controls/_internal)
+     hard-codes accent-600 and documents this exact reason.
+     The trouble was that only controls built on that helper benefited. 175
+     places in golf/Fairway reach for `ring-border-focus` directly — the
+     conversation rows, settings rows, sliders, popovers, chart frames, toasts,
+     the search field — and every one of them was drawing a ring nobody with
+     low vision could reliably find. Fixing the token fixes all of them at once,
+     and stops the two definitions disagreeing.
+     accent-600 is the same Helm green one step darker, so the brand reads
+     unchanged; only the indicator gains the contrast it always needed.
+     DARK theme keeps accent-500 deliberately — see the dark block below, where
+     accent-500 is the LIGHTER green and is what earns contrast against a dark
+     ground. Darkening it there would make the ring harder to see, not easier. */
+  --fw-color-border-focus:  var(--fw-color-accent-600);
 
   /* ---- Status (green-forward; amber + red are the only off-green hues) ---- */
   --fw-color-success:    var(--fw-color-accent-500);
