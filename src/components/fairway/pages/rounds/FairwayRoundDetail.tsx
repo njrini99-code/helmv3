@@ -574,7 +574,11 @@ export function FairwayRoundDetail({
             as="section"
           >
             <div className="flex items-center justify-between gap-5">
-              <div className="min-w-0 flex-1 overflow-x-auto">
+              {/* No overflow-x-auto: PulseTrace fills this column responsively
+                  now (see its own comment) instead of clipping at a fixed
+                  520px and leaving a silent, undiscoverable horizontal
+                  scroll behind it. */}
+              <div className="min-w-0 flex-1">
                 <PulseTrace series={pulseSeries} />
               </div>
               <div className="shrink-0">
@@ -922,17 +926,34 @@ function PulseTrace({
       data-slot="pulse-trace"
       role="img"
       aria-label={summary}
+      // `w-full max-w-[520px]` was already here, but a literal `style={{
+      // width }}` (520px, always, on every viewport) sat below it in the
+      // cascade and won — so the span, and the `width="100%"` SVG inside it,
+      // were ALWAYS exactly 520px wide regardless of Tailwind's `w-full`. In
+      // a ~208px phone column that just overflowed into the parent's
+      // `overflow-x-auto` with no visible scrollbar or swipe hint, showing
+      // only the leftmost ~40% of the round — and because that slice
+      // happened to form a plausible V shape, it read as the WHOLE round,
+      // not a truncated one (audit 2026-09-02, UI-1). Dropping the inline
+      // `width` lets the span size itself from CSS: full column width up to
+      // the designed 520px cap, identical to before on any column ≥520px
+      // (desktop, unchanged) and now genuinely responsive below it.
       className="block w-full max-w-[520px]"
-      style={{ width, height }}
+      style={{ height }}
     >
       <svg
-        // Sized by the viewBox and scaled to the column: a fixed 520px SVG in a
-        // ~208px phone column showed 40% of the round and looked complete
-        // (audit 2026-09-02, UI-1).
+        // The viewBox keeps the same 520×64 coordinate space the trace was
+        // computed in; `preserveAspectRatio="none"` lets the SVG stretch
+        // that space to whatever width the span above actually resolves
+        // to, so every hole stays visible — narrower per-step on a narrow
+        // phone — instead of getting cropped by a fixed-width overflow
+        // scroll. `vector-effect="non-scaling-stroke"` keeps the line at a
+        // constant on-screen thickness even though X and Y no longer share
+        // one scale factor.
         width="100%"
-        height="auto"
+        height={height}
         viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio="none"
         fill="none"
         aria-hidden="true"
         className="overflow-visible"
@@ -943,6 +964,7 @@ function PulseTrace({
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
         />
         <circle cx={last.x} cy={last.y} r={strokeWidth + 1.5} fill={color} />
       </svg>
