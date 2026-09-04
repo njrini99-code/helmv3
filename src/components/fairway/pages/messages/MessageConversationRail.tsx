@@ -44,6 +44,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -275,6 +276,8 @@ export function MessageConversationRail({
   // ── P259: cross-conversation message search ────────────────────────────────
   // Empty query → the normal triage list. >=2 chars → debounced server search
   // (searchGolfMessages: participant-scoped, wildcard-escaped, 50-row cap).
+  // Drives the bezel/padding gate on the panel below — see the note there.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
@@ -421,10 +424,35 @@ export function MessageConversationRail({
     <InstrumentPanel
       as="nav"
       depth="base"
-      padding="md"
-      header="Conversations"
+      // On a phone this rail IS the Messages screen, so its bezel is pure
+      // overhead: `padding="md"` costs 24px and the "Conversations" heading
+      // another ~46px (`text-h3` + the bezel's `mb-5`) before the search field,
+      // to label a full-screen list of conversations that sits under a top bar
+      // already reading "Messages". Doctrine Rule 2 — one line on phone, not a
+      // stack of bands. The page gutter supplies the horizontal inset, so the
+      // list runs edge-to-edge like a native inbox.
+      //
+      // `aria-label` below is unconditional, so dropping the VISIBLE heading
+      // costs assistive tech nothing — the nav landmark keeps its name either
+      // way.
+      //
+      // Gated in JS rather than CSS because `header` is a prop rendered inside
+      // the primitive, with no slot to target. This is the same
+      // `useMediaQuery` pattern AppShell uses to gate the desktop rail's mount:
+      // the hook's server snapshot is `false` (mobile-first, matching SSR) and
+      // it reads matchMedia synchronously on the first client render, so a
+      // desktop viewport corrects before paint rather than flashing.
+      padding={isDesktop ? 'md' : 'none'}
+      header={isDesktop ? 'Conversations' : undefined}
       aria-label="Conversations"
-      className={cn('flex flex-col', className)}
+      className={cn(
+        'flex flex-col',
+        // Same reasoning as the thread pane: a card that fills the screen has
+        // stopped being a card (Doctrine Rule 11). `!` is required because the
+        // border comes from a CSS module class of equal specificity.
+        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+        className,
+      )}
     >
       {/* P259: cross-conversation message search. */}
       <div className="mb-3">
