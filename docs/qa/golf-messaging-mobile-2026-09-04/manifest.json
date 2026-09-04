@@ -4,9 +4,9 @@
   "viewportHeight": 844,
   "overflowAssertion": "document.documentElement.scrollWidth <= document.documentElement.clientWidth",
   "observedLimitations": [
-    "This pre-runtime-fix capture shows the failed outgoing reply bubble clipped at 320px and 390px even though document-level horizontal overflow is zero. Re-run this command after the messaging layout fix before treating failed-send visual QA as clear."
+    "Chromium component evidence does not prove physical iPhone Safari/WebView keyboard, safe-area, touch, or native-sheet behavior."
   ],
-  "recaptureAfterRuntimeFix": "npx tsx scripts/qa/golf-messaging-mobile/capture.ts",
+  "failedSendVisualCheck": "After the bubble-column repair, visual inspection confirmed reply, body, and retry metadata remain inside the viewport at 320px, 390px, and 430px. Document overflow remained zero at every width.",
   "results": [
     {
       "fixture": "inbox-unread-group",

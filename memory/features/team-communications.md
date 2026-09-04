@@ -33,6 +33,8 @@ These surfaces are operationally important because they touch files, notificatio
 
 - `src/app/golf/actions/messages.ts`
 - `src/app/golf/actions/message-attachments.ts`
+- `src/app/golf/actions/message-reactions.ts`
+- `src/app/golf/actions/message-responses.ts`
 - `src/app/golf/actions/announcements.ts`
 - `src/app/golf/actions/communication.ts`
 
@@ -42,6 +44,9 @@ These surfaces are operationally important because they touch files, notificatio
 - `golf_conversation_participants`
 - `golf_messages`
 - `golf_message_attachments`
+- `golf_message_reactions`
+- `golf_message_responses`
+- `golf_message_mentions`
 - `golf_announcements`
 - `golf_announcement_acknowledgements`
 - `golf_announcement_documents`
@@ -88,6 +93,20 @@ Announcement create
   `message_sent` for either — the request never arrived. A retry carries the
   same duplicate risk as the player's own re-tap and nothing more; a
   schema-backed idempotency key is the answer if duplicates ever become costly.
+- A private conversation may only include the caller and people in the same
+  Golf team. The player-facing group flow requires a title and at least two
+  selected teammates; the server keeps the title optional for compatibility
+  with existing direct callers, but applies the same team-audience check to
+  every caller. Coach-only Team broadcasts remain the official channel rather
+  than being conflated with player-created groups.
+- A reply target is read through caller RLS and must be a non-deleted message
+  in the same conversation. Invalid, inaccessible, cross-thread, and deleted
+  targets all fail with the same user-safe `Reply message is unavailable`
+  result.
+- Send failure remains attached to the optimistic bubble as retryable state;
+  it is never removed merely because the write failed. Failed reaction and
+  structured-response reads return an explicit unavailable state, preserving
+  the last known UI instead of presenting a failed read as zero activity.
 
 ## UI Contract
 
@@ -98,6 +117,28 @@ Announcement create
 - The composer's Attachments section renders for any coach with a team (2026-08-26): it offers direct device upload (25 MB cap, mirrors the Documents-page accept list) plus the library picker; it must NOT be hidden just because the team library is empty.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
+- The Golf messaging mobile presentation is purpose-built rather than a
+  squeezed desktop rail: the inbox is a flat people-first canvas using real
+  `Avatar`/`AvatarGroup` identity, `PressTarget` rows, search, and compact
+  filters; an open thread owns the phone with a compact back/header surface.
+  Group participant identity is scoped to the active conversation, cleared
+  while a new group loads, and ignores stale fetches, so one group cannot show
+  another group’s faces.
+- The thread itself uses a warm recessed reading well. Incoming and outgoing
+  message bursts retain their connected geometry, with a subtle tokenized edge
+  on the first bubble and contact elevation on the final bubble rather than a
+  shadow on every message. That makes messages sit above the reading field
+  without turning chat into a card stack.
+- Message composition uses a native auto-growing textarea and Fairway press
+  controls. Valid sends snapshot and clear the draft in the same interaction
+  tick; network state belongs on the optimistic bubble (`Sending`, `Sent`,
+  `Read`, or retryable failure), not a disabled composer spinner. The composer
+  retains keyboard-safe geometry, attachment preview, reply strip, newline
+  behavior, typing throttling, and a 44px send hit target.
+- The first-open scroll sentinel waits until the mobile thread is visible and
+  has usable height. This prevents the hidden master-detail pane from
+  consuming its one initial positioning attempt and opening a thread at the
+  first message. Desktop remains the two-pane workspace.
 - On a phone the messages column shrinks by whichever is taller of the bottom
   chrome (56px nav + safe area) and `--keyboard-height`, so the composer sits
   directly above the keys ("I can't see what I'm typing", Shenandoah team
@@ -171,6 +212,9 @@ masquerade P257 exists to stop.
 - `e2e/messages.spec.ts`
 - RLS tests when conversation, message, announcement, recipient, or acknowledgement policies change.
 - Browser/mobile checks for attachment send, announcement acknowledgement, and targeted-recipient views.
+- `docs/qa/golf-messaging-mobile-2026-09-04/` contains the deterministic
+  component-rendered mobile evidence, overflow assertions, and the current
+  device-QA limitation once regenerated.
 
 ## Related Docs
 

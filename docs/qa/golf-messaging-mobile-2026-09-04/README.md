@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Golf messaging mobile evidence — 2026-09-04
 
 This evidence is generated from the shipping `MessageConversationRail`, `MessageThreadPane`, `MessageComposer`, and `FairwayNewMessageSheet` components in a local browser page. The harness imports the repository's Fairway Tailwind/token CSS; it is not a hand-built HTML mockup.
@@ -19,6 +21,10 @@ Fixtures cover:
 
 Fixture people use the product Avatar fallback initials (no external images or external data). Narrow adapters only replace live Supabase/network hooks and dormant structured-message/attachment branches; all visible messaging surfaces above are the product components.
 
-The committed `thread-failed-send` PNGs are pre-runtime-fix evidence: at 320px and 390px the failed outgoing reply bubble is visibly clipped despite the required document-level overflow assertion passing. After the messaging layout fix lands, rerun the command above to replace all evidence and update `manifest.json` before marking failed-send visual QA clear.
+The failed-send fixture was visually rechecked after its bubble-column repair:
+at 320px, 390px, and 430px its reply, body, and retry metadata remain inside
+the viewport. The overflow assertion alone was not accepted as proof, because
+the original clipped text without widening the document; the regenerated PNGs
+are the final visual evidence.
 
 This is Chromium browser evidence, not physical-device QA. It does not prove iPhone Safari/WebView keyboard, safe-area, touch, or native-sheet behavior.
