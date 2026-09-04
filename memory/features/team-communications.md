@@ -119,22 +119,26 @@ Announcement create
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
 - The Golf messaging mobile presentation is purpose-built rather than a
   squeezed desktop rail: the inbox is a flat people-first canvas using real
-  `Avatar`/`AvatarGroup` identity, `PressTarget` rows, search, and compact
-  filters; an open thread owns the phone with a compact back/header surface.
-  Group participant identity is scoped to the active conversation, cleared
-  while a new group loads, and ignores stale fetches, so one group cannot show
-  another group’s faces.
-- The thread itself uses a warm recessed reading well. Incoming and outgoing
-  message bursts retain their connected geometry, with a subtle tokenized edge
-  on the first bubble and contact elevation on the final bubble rather than a
-  shadow on every message. That makes messages sit above the reading field
-  without turning chat into a card stack.
+  `Avatar`/`AvatarGroup` identity, `PressTarget` rows, search, compact filters,
+  and editorial dividers rather than row cards. An open thread owns the phone
+  with a compact back/header surface. Group participant identity is scoped to
+  the active conversation, cleared while a new group loads, and ignores stale
+  fetches, so one group cannot show another group’s faces. Stored photo URLs
+  always render as photos; no-photo identities receive a deterministic Fairway
+  tint, and a group with no photos uses its conversation monogram instead of a
+  stack of anonymous initials.
+- The mobile thread is a full-bleed canvas, not a recessed panel. Incoming and
+  outgoing bursts retain connected geometry and restrained tonal distinction,
+  but messaging deliberately uses no bubble shadows, contact elevation, or
+  nested card surfaces. Its depth comes from identity, type, alignment, space,
+  and the persistent header/composer chrome.
 - Message composition uses a native auto-growing textarea and Fairway press
   controls. Valid sends snapshot and clear the draft in the same interaction
   tick; network state belongs on the optimistic bubble (`Sending`, `Sent`,
   `Read`, or retryable failure), not a disabled composer spinner. The composer
-  retains keyboard-safe geometry, attachment preview, reply strip, newline
-  behavior, typing throttling, and a 44px send hit target.
+  retains keyboard-safe geometry, attachment preview, an inline 2px-rule reply
+  reference (not a rounded reply card), newline behavior, typing throttling,
+  and a 44px send hit target.
 - The first-open scroll sentinel waits until the mobile thread is visible and
   has usable height. This prevents the hidden master-detail pane from
   consuming its one initial positioning attempt and opening a thread at the

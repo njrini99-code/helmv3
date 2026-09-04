@@ -29,19 +29,19 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 14 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
-| `CURRENT_FEATURE` | 26 | 26 | 11 | 21 |
+| `CURRENT_FEATURE` | 26 | 26 | 11 | 22 |
 | `REFERENCE` | 59 | 12 | 17 | 103 |
 | `GENERATED_TRUTH` | 21 | 3 | 6 | 26 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
-| `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
-| `PLAN` | 64 | 5 | 33 | 174 |
+| `DESIGN_SPEC` | 8 | 0 | 7 | 11 |
+| `PLAN` | 65 | 5 | 33 | 175 |
 | `AUDIT_SNAPSHOT` | 83 | 6 | 38 | 138 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 7 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 74 |
 | `INCIDENT` | 11 | 0 | 0 | 3 |
 | `ADR` | 3 | 0 | 2 | 0 |
-| `INDEX` | 20 | 1 | 7 | 28 |
+| `INDEX` | 21 | 1 | 7 | 28 |
 | `ARCHIVE` | 1206 | 0 | 419 | 535 |
 | `UNKNOWN` | 112 | 12 | 46 | 146 |
 
@@ -182,7 +182,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 53 | 2 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 19 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
-| `memory/features/team-communications.md` | current | yes | - | - | 2 | 11 | - |
+| `memory/features/team-communications.md` | current | yes | - | - | 3 | 14 | 1 |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 18 | - |
 
 ### `REFERENCE`
@@ -305,6 +305,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/specs/2026-07-19-coachhelm-stats-redesign-design.md` | current | - | - | yes | 1 | 1 | 1 |
 | `docs/superpowers/specs/2026-08-17-coachhelm-instrumentation-design.md` | current | - | - | - | 1 | 4 | 3 |
 | `docs/superpowers/specs/2026-08-18-golf-team-operations-design.md` | current | - | - | yes | 1 | 0 | - |
+| `docs/superpowers/specs/2026-09-04-golf-messaging-mobile-completion-design.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/superpowers/specs/README.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/superpowers/specs/helm-bridge/DECISIONS.md` | current | - | - | yes | 2 | 3 | 1 |
 | `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | current | - | - | yes | 6 | 8 | 1 |
@@ -356,6 +357,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/2026-08-18-coachhelm-cron-insights-wiring.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/superpowers/plans/2026-08-18-golf-team-operations.md` | current | - | - | yes | 0 | 23 | 2 |
 | `docs/superpowers/plans/2026-08-25-golf-flight-recorder.md` | current | - | - | yes | 0 | 11 | - |
+| `docs/superpowers/plans/2026-09-04-golf-messaging-mobile-completion.md` | current | - | - | - | 0 | 16 | 1 |
 | `docs/superpowers/plans/README.md` | current | - | - | - | 0 | 7 | 1 |
 | `docs/superpowers/plans/helm-bridge/EXECUTION_LOG.md` | current | - | - | - | 1 | 26 | 3 |
 | `docs/superpowers/plans/helm-bridge/waves/w00-security-prereqs.md` | current | - | - | - | 0 | 3 | 1 |
@@ -550,6 +552,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/README.md` | current | - | - | yes | 3 | 33 | 16 |
 | `docs/db/drafts/README.md` | current | - | - | - | 0 | 1 | 1 |
 | `docs/features/coachhelm/README.md` | superseded | - | - | - | 0 | 0 | - |
+| `docs/qa/golf-messaging-mobile-2026-09-04/README.md` | current | - | - | - | 1 | 0 | - |
 | `e2e/README.md` | current | - | - | yes | 0 | 10 | 4 |
 | `ios/App/CapApp-SPM/README.md` | current | - | - | - | 0 | 0 | - |
 | `memory/decisions/README.md` | current | - | - | yes | 0 | 2 | - |
