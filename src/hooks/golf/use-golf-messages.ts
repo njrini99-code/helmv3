@@ -316,7 +316,7 @@ export function useGolfMessages(conversationId: string) {
       // conversation was opened. That is the "Can't see pics" report from the
       // team chat: the sender saw it send, the recipients opened the thread
       // later and saw nothing.
-      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at')
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -545,7 +545,7 @@ export function useGolfMessages(conversationId: string) {
     });
   }, [conversationId, currentUserId]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, replyToId?: string | null) => {
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
@@ -565,6 +565,11 @@ export function useGolfMessages(conversationId: string) {
       created_at: new Date().toISOString(),
       edited_at: null,
       is_deleted: false,
+      // §30: carried on the optimistic row too, so the quote renders in the
+      // same frame as the bubble. Without it the reply would appear, then grow
+      // a quote a round trip later — the layout jump the spec's arrival motion
+      // exists to avoid.
+      reply_to_id: replyToId ?? null,
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
@@ -580,7 +585,7 @@ export function useGolfMessages(conversationId: string) {
       // reports it back as the success it is (see sendMessage/action's 23505
       // handling) instead of creating a second, duplicate row.
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, content, optimisticId),
+        () => sendGolfMessage(conversationId, content, optimisticId, replyToId ?? undefined),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
 

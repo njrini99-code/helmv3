@@ -24,13 +24,14 @@
  * ========================================================================== */
 
 import { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 import { Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/fairway/controls/button';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 /* ─── Length limit — mirrors sendMessageSchema (action-schemas.ts:42,
@@ -55,9 +56,18 @@ export interface MessageComposerProps {
   onSendWithAttachments?: (content: string, attachments: PendingAttachment[]) => Promise<boolean>;
   /** Throttled typing broadcast (the unchanged useGolfMessages.sendTypingStatus). */
   onTyping?: (isTyping: boolean) => void;
+  /**
+   * §30: the message being replied to, if any. The composer only DISPLAYS it —
+   * the page owns the state and passes the id to its own send handler, so the
+   * composer keeps its "text in, promise out" contract and does not grow a
+   * second way to send.
+   */
+  replyTo?: { name: string; preview: string } | null;
+  /** Dismiss the reply preview without sending. */
+  onCancelReply?: () => void;
 }
 
-export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: MessageComposerProps) {
+export function MessageComposer({ onSend, onSendWithAttachments, onTyping, replyTo, onCancelReply }: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -223,8 +233,43 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     // Sunken matte composer track — mirrors AskThreadPane's composer slot.
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border-subtle bg-surface px-3 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2.5 lg:pb-2.5"
+      className={cn(
+        // An attached BAR, not a bordered box. The hairline alone left the
+        // composer reading as the last block of the page; a shadow cast UPWARD
+        // is what makes a bottom bar look like it is in front of the thread
+        // that scrolls under it. One shadow, no border-and-shadow (the Surface
+        // rule), and it is the only elevation on this screen — the thread's
+        // bubbles lift off the page, the composer lifts off the thread.
+        'bg-surface px-3 pt-2.5 shadow-[0_-1px_3px_rgba(0,0,0,0.04),0_-1px_0_var(--fw-color-border-subtle)]',
+        'pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2.5 lg:pb-2.5',
+      )}
     >
+      {/* §30 reply preview. Above the field, inside the composer's own track,
+          so it reads as part of the thing you are about to send rather than as
+          a banner floating over the thread. Dismiss is a 44px target: it is the
+          only way out of reply mode and sits next to a send button. */}
+      {replyTo ? (
+        <div className="mb-2 flex items-center gap-2 rounded-fw-md border-l-2 border-accent-600 bg-surface-sunken py-1.5 pl-2.5 pr-1">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-fw-sans text-caption font-semibold text-accent-700">
+              Replying to {replyTo.name}
+            </p>
+            <p className="truncate font-fw-sans text-caption text-text-secondary">
+              {replyTo.preview}
+            </p>
+          </div>
+          <IconButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Cancel reply"
+            onClick={onCancelReply}
+          >
+            <X size={16} aria-hidden="true" />
+          </IconButton>
+        </div>
+      ) : null}
+
       {/* Pending attachment previews — REUSED component, render only when present. */}
       {pendingAttachments.length > 0 && (
         <AttachmentPreview

@@ -54,6 +54,14 @@ export interface MessageConversationRailProps {
   selectedId: string | null;
   /** Select a conversation (page sets selected id + mobile master-detail). */
   onSelect: (id: string) => void;
+  /**
+   * §16: actions that belong on the search row — compose, team broadcast.
+   * Rendered INLINE with the search field rather than in a band above it.
+   * Removing the giant green pill left the row it used to stand in, and an
+   * otherwise-empty band holding two icons is the same wasted vertical space
+   * with less in it.
+   */
+  trailingActions?: React.ReactNode;
   /** Open the New message modal from the honest-empty CTA. */
   onNewMessage: () => void;
   /** First-paint skeleton rail. */
@@ -283,6 +291,7 @@ export function MessageConversationRail({
   selectedId,
   onSelect,
   onNewMessage,
+  trailingActions,
   loading = false,
   error = false,
   onRetry,
@@ -496,16 +505,22 @@ export function MessageConversationRail({
       {/* §16: "secondary to conversation list, no giant card". A pill on the
           sunken track reads as a field; the bordered rounded rectangle read as
           another card stacked above the rows. */}
-      <div className="mb-3">
-        <Input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search messages…"
-          leading={<Search aria-hidden />}
-          aria-label="Search messages"
-          className="rounded-full border-transparent bg-surface-sunken focus:border-accent-600"
-        />
+      <div className="mb-3 flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <Input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search messages…"
+            leading={<Search aria-hidden />}
+            aria-label="Search messages"
+            className="rounded-full border-transparent bg-surface-sunken focus:border-accent-600"
+          />
+        </div>
+        {/* Compose sits ON this row (§16). Removing the green pill left the
+            band it used to stand in; two icons alone in that band is the same
+            wasted height with less in it. One row: find, or start. */}
+        {trailingActions}
       </div>
 
       {isSearching ? (

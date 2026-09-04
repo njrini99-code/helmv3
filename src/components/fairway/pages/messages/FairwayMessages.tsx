@@ -307,6 +307,15 @@ export function FairwayMessages() {
   // ── P259: open a conversation FROM a cross-conversation search hit, then
   // scroll the thread to the matched message once it loads.
   const [pendingScrollMessageId, setPendingScrollMessageId] = React.useState<string | null>(null);
+
+  // §30: the pending reply. The PAGE owns it, not the composer, because it is
+  // conversation state — switching threads must drop it. It is stamped with the
+  // conversation it belongs to for the same reason drafts are scoped per
+  // conversation: a reply target leaking across threads is the composer-draft
+  // misdirection bug in a new costume.
+  const [replyTo, setReplyTo] = React.useState<
+    { id: string; conversationId: string; name: string; preview: string } | null
+  >(null);
   const handleOpenFromSearch = (conversationId: string, messageId: string) => {
     setPendingScrollMessageId(messageId);
     handleSelectConversation(conversationId);
@@ -348,8 +357,13 @@ export function FairwayMessages() {
   // ── Send (UNCHANGED hook; realtime replaces the optimistic stub) ────────────
   const handleSendMessage = async (content: string) => {
     if (!selectedConversationId) return false;
+    // Read the target BEFORE the await and clear it immediately: the composer
+    // clears optimistically, so leaving the preview up for the round trip
+    // would show a reply target for a message already sent.
+    const replyToId = replyTo?.conversationId === selectedConversationId ? replyTo.id : undefined;
+    setReplyTo(null);
     try {
-      await sendMessage(content);
+      await sendMessage(content, replyToId);
       return true;
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
@@ -570,28 +584,11 @@ export function FairwayMessages() {
             Both keep 44px targets and real labels: IconButton renders
             `aria-label`, so this loses nothing for VoiceOver, and the pencil
             square is the platform-conventional compose glyph. */}
-        {!mobileShowChat && (
-          <div className="flex items-center justify-end gap-1 md:hidden">
-            {userRole === 'coach' && teamId ? (
-              <IconButton
-                variant="ghost"
-                size="md"
-                aria-label="Message the team"
-                onClick={() => setShowTeamBroadcastModal(true)}
-              >
-                <Users size={20} aria-hidden="true" />
-              </IconButton>
-            ) : null}
-            <IconButton
-              variant="ghost"
-              size="md"
-              aria-label="New message"
-              onClick={() => setShowNewMessageModal(true)}
-            >
-              <SquarePen size={20} aria-hidden="true" />
-            </IconButton>
-          </div>
-        )}
+        {/* The mobile action band is GONE. It held a giant green pill, then
+            (briefly) two icons — either way a full row of vertical space, on
+            the smallest screen, above the list it was pushing down. Its
+            contents now sit on the rail's search row: one row that says "find
+            one, or start one". */}
 
         <div className="hidden md:block">
         <ViewHeader
@@ -658,6 +655,28 @@ export function FairwayMessages() {
                 onRetry={refetch}
                 teamId={teamId}
                 onOpenMessage={handleOpenFromSearch}
+                trailingActions={
+                  <>
+                    {userRole === 'coach' && teamId ? (
+                      <IconButton
+                        variant="ghost"
+                        size="md"
+                        aria-label="Message the team"
+                        onClick={() => setShowTeamBroadcastModal(true)}
+                      >
+                        <Users size={20} aria-hidden="true" />
+                      </IconButton>
+                    ) : null}
+                    <IconButton
+                      variant="ghost"
+                      size="md"
+                      aria-label="New message"
+                      onClick={() => setShowNewMessageModal(true)}
+                    >
+                      <SquarePen size={20} aria-hidden="true" />
+                    </IconButton>
+                  </>
+                }
               />
             </PullToRefresh>
           </aside>
@@ -702,6 +721,18 @@ export function FairwayMessages() {
                 onSetMobileActions={setMobileActionsId}
                 groupParticipants={groupParticipants}
                 scrollToMessageId={pendingScrollMessageId}
+                onReply={(message) => {
+                  const isOwn = message.sender_id === userId;
+                  setReplyTo({
+                    id: message.id,
+                    conversationId: message.conversation_id,
+                    name: isOwn ? 'yourself' : (selectedConversation?.other_participant?.name ?? 'teammate'),
+                    preview: message.content
+                      ? decodeMessageContent(message.content).slice(0, 90)
+                      : 'Attachment',
+                  });
+                }}
+                onJumpToMessage={(messageId) => setPendingScrollMessageId(messageId)}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}
                 className="flex-1 min-h-0"
               >
@@ -729,6 +760,12 @@ export function FairwayMessages() {
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}
+                    replyTo={
+                      replyTo && replyTo.conversationId === selectedConversation.id
+                        ? { name: replyTo.name, preview: replyTo.preview }
+                        : null
+                    }
+                    onCancelReply={() => setReplyTo(null)}
                   />
                 ) : null}
               </MessageThreadPane>

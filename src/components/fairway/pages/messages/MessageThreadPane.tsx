@@ -31,10 +31,11 @@
 
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Reply, ChevronLeft, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
+import { ConversationDetailsSheet } from './ConversationDetailsSheet';
 import { useGolfMessageReactions } from '@/hooks/golf/use-golf-message-reactions';
 import { GOLF_QUICK_REACTIONS } from '@/app/golf/actions/message-reactions';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -177,6 +178,10 @@ export interface MessageThreadPaneProps {
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
   onSetMobileActions: (id: string | null) => void;
+  /** §30: begin a reply to this message (page owns the pending-reply state). */
+  onReply?: (message: MessageWithReadStatus) => void;
+  /** §30: jump to a quoted message (page owns scrollToMessageId). */
+  onJumpToMessage?: (messageId: string) => void;
 
   /**
    * Bug fix #1 — group sender resolution.
@@ -446,6 +451,8 @@ export function MessageThreadPane({
   onConfirmDelete,
   onCancelDelete,
   onSetMobileActions,
+  onReply,
+  onJumpToMessage,
   groupParticipants,
   scrollToMessageId,
   onScrolledToMessage,
@@ -482,11 +489,27 @@ export function MessageThreadPane({
   // batched read covers exactly what is on screen — see the hook for why this
   // is one request rather than one per bubble.
   const reactionMessageIds = React.useMemo(() => messages.map((m) => m.id), [messages]);
+
+  // §30: quoted messages are resolved from the LOADED window, not fetched.
+  // A reply almost always quotes something recent, and a per-bubble fetch
+  // would open one request per quote. When the quoted message is older than
+  // the window the quote degrades to a neutral label rather than disappearing
+  // — the reply still makes sense, and nothing about it lies.
+  const messagesById = React.useMemo(() => {
+    const map = new Map<string, MessageWithReadStatus>();
+    for (const m of messages) map.set(m.id, m);
+    return map;
+  }, [messages]);
   const { getFor: getReactionsFor, toggle: toggleReaction } = useGolfMessageReactions(
     conversation?.id ?? null,
     reactionMessageIds,
     currentUserId ?? userId ?? null,
   );
+
+  // §37: conversation details. Local state — the sheet is a detail OF this
+  // pane, and lifting it to the page would make every keystroke in the
+  // composer re-render a component that only the header opens.
+  const [detailsOpen, setDetailsOpen] = React.useState(false);
 
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelLongPress = React.useCallback(() => {
@@ -928,24 +951,49 @@ export function MessageThreadPane({
         className,
       )}
     >
-      {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-w-0 items-center gap-2.5 border-b border-border-subtle bg-surface px-3 py-1.5 sm:gap-3 sm:px-5 sm:py-2.5">
-        {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
-            an open thread this is the only way out AND the only thing naming
-            where "out" is, so it says so — the platform convention, and the
-            same reason iOS labels its back buttons. `-ml-2` pulls the glyph to
-            the gutter so the label starts on the content grid rather than
-            floating inboard of it. */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          aria-label="Back to conversations"
-          className="-ml-1.5 min-h-[44px] shrink-0 gap-0 px-1.5 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
+      {/* §4 FairwayMessageNavBar. A THREE-COLUMN nav bar, not a row of things.
+          It used to be `flex` with back, avatar and name packed left, so the
+          title sat at whatever x the back label happened to end at — a
+          different position for every conversation, and nothing on the right at
+          all. A symmetric grid gives the identity a fixed centre it can be
+          trusted to occupy, which is what makes a nav bar read as chrome rather
+          than as content that happens to be at the top.
+
+          The label is gone from the back control. "‹ Messages" was defended
+          here as naming the destination, but a chevron out of a conversation
+          has exactly one meaning, and the label was costing the left column
+          enough width to shove the title off centre. The destination is still
+          named — for screen readers, by `aria-label`, which is where that
+          information belongs. */}
+      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border-subtle bg-surface px-1.5 py-1 sm:px-3 sm:py-1.5">
+        <div className="flex min-w-0 justify-start">
+          <IconButton
+            variant="ghost"
+            size="md"
+            onClick={onBack}
+            aria-label="Back to conversations"
+            className="lg:hidden"
+          >
+            <ChevronLeft size={22} aria-hidden="true" />
+          </IconButton>
+        </div>
+        {/* §5/§37: the identity is the control that opens conversation
+            details. It named the conversation and did nothing when touched,
+            which on a phone reads as a dead control — the one place a group's
+            membership is obviously "behind" was unreachable. */}
+        {/* eslint-disable-next-line helm/no-raw-button -- a nav-bar identity
+            region, not a button shape: <Button>'s padding and min-height would
+            push the header past its 48-54px budget (§4). */}
+        <button
+          type="button"
+          onClick={() => setDetailsOpen(true)}
+          aria-label={`Conversation details for ${headerName}`}
+          className={cn(
+            'flex min-w-0 items-center justify-center gap-2 rounded-fw-md px-2 py-1 text-center',
+            'transition-colors active:bg-surface-sunken',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+          )}
         >
-          <ArrowLeft size={18} aria-hidden="true" />
-          Messages
-        </Button>
         {isGroup ? (
           <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
             <Users size={18} aria-hidden="true" />
@@ -971,7 +1019,32 @@ export function MessageThreadPane({
             <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
           ) : null}
         </div>
+        </button>
+
+        {/* §4: the overflow the header never had. Same destination as tapping
+            the identity — one action, two affordances, because a nav bar with
+            an empty right column reads as unfinished and the "···" is where a
+            phone user looks for a conversation's settings. */}
+        <div className="flex justify-end">
+          <IconButton
+            variant="ghost"
+            size="md"
+            onClick={() => setDetailsOpen(true)}
+            aria-label="Conversation details"
+          >
+            <MoreHorizontal size={20} aria-hidden="true" />
+          </IconButton>
+        </div>
       </header>
+
+      <ConversationDetailsSheet
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        name={headerName}
+        isGroup={isGroup}
+        avatar={conversation.other_participant?.avatar}
+        participants={isGroup ? groupParticipants : undefined}
+      />
 
       {/* Thread scroll region — the DEEPER champagne page tone, not the card
           tone. This inverted on 2026-09-04 and it is the whole reason the
@@ -1256,6 +1329,11 @@ export function MessageThreadPane({
                               })}
                             </Inset>
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
+                              {onReply ? (
+                                <IconButton variant="ghost" size="sm" aria-label="Reply to message" onClick={() => { onReply(msg); onSetMobileActions(null); }}>
+                                  <Reply size={18} aria-hidden="true" />
+                                </IconButton>
+                              ) : null}
                               <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
                                 <Copy size={18} aria-hidden="true" />
                               </IconButton>
@@ -1363,6 +1441,57 @@ export function MessageThreadPane({
                           !isLastInGroup && (isOwn ? 'rounded-br-md' : 'rounded-bl-md'),
                         )}
                       >
+                        {/* §30: the quote sits INSIDE the bubble, above the
+                            words that answer it, so a reply is one object
+                            rather than two stacked ones. Tapping it jumps to
+                            the source (the pane already has the scroll-anchor
+                            machinery that notification deep-links use). */}
+                        {msg.reply_to_id ? (() => {
+                          const quoted = messagesById.get(msg.reply_to_id);
+                          const quotedName = quoted
+                            ? (quoted.sender_id === userId || quoted.sender_id === currentUserId
+                                ? 'You'
+                                : (isGroup
+                                    ? groupParticipants?.get(quoted.sender_id)?.name
+                                    : conversation.other_participant?.name)
+                                  ?? 'Teammate')
+                            : null;
+                          return (
+                            // An inline quote block inside a bubble; <Button>'s
+                            // min-height would make the quote taller than the
+                            // reply it introduces.
+                            // eslint-disable-next-line helm/no-raw-button -- see above
+                            <button
+                              type="button"
+                              disabled={!quoted || !onJumpToMessage}
+                              onClick={() => quoted && onJumpToMessage?.(quoted.id)}
+                              aria-label={quoted ? `Go to ${quotedName}'s message` : 'Original message unavailable'}
+                              className={cn(
+                                'mb-1.5 block w-full border-l-2 pl-2 text-left',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                                quoted ? 'cursor-pointer' : 'cursor-default',
+                                isOwn ? 'border-text-on-accent/50' : 'border-accent-600',
+                              )}
+                            >
+                              <span className={cn(
+                                'block truncate font-fw-sans text-caption font-semibold',
+                                isOwn ? 'text-text-on-accent/90' : 'text-accent-700',
+                              )}>
+                                {quotedName ?? 'Original message'}
+                              </span>
+                              <span className={cn(
+                                'block truncate font-fw-sans text-caption',
+                                isOwn ? 'text-text-on-accent/75' : 'text-text-secondary',
+                              )}>
+                                {quoted
+                                  ? (quoted.is_deleted
+                                      ? 'Message deleted'
+                                      : decodeMessageContent(quoted.content) || 'Attachment')
+                                  : 'Not in this part of the conversation'}
+                              </span>
+                            </button>
+                          );
+                        })() : null}
                         {msg.content ? (
                           <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-fw-sans text-body-lg leading-snug">
                             {decodeMessageContent(msg.content)}

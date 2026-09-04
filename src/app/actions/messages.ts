@@ -36,6 +36,13 @@ interface SendMessageOptions {
   sport?: Sport;
   createNotifications?: boolean;
   /**
+   * §30: the message this one replies to. GOLF ONLY — `golf_messages` carries
+   * the column and `baseball_messages` does not, so it is dropped rather than
+   * inserted for baseball. Never trusted for access: the quoted row is read
+   * back through RLS like any other message.
+   */
+  replyToId?: string;
+  /**
    * Client-generated id for the optimistic row that will represent this
    * message locally. When present it is inserted as the row's real `id`
    * (a normal `DEFAULT uuid_generate_v4()` column, not GENERATED ALWAYS, so
@@ -93,6 +100,7 @@ export async function sendMessage({
   sport = 'baseball',
   createNotifications = true,
   clientMessageId,
+  replyToId,
 }: SendMessageOptions) {
   try {
     const supabase = await createClient();
@@ -108,6 +116,7 @@ export async function sendMessage({
       conversation_id: conversationId,
       content,
       client_message_id: clientMessageId,
+      reply_to_id: replyToId,
     });
 
     // React's text interpolation auto-escapes on render — store raw user text.
@@ -145,6 +154,11 @@ export async function sendMessage({
       .from(messagesTable as any)
       .insert({
         ...(validatedData.client_message_id ? { id: validatedData.client_message_id } : {}),
+        // Golf only — baseball_messages has no such column, and spreading an
+        // unknown key into its insert would fail the whole send.
+        ...(sport === 'golf' && validatedData.reply_to_id
+          ? { reply_to_id: validatedData.reply_to_id }
+          : {}),
         conversation_id: validatedData.conversation_id,
         sender_id: user.id,
         content: sanitizedContent,
@@ -600,8 +614,8 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 // SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
-async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string) {
-  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId });
+async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string, replyToId?: string) {
+  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId, replyToId });
 
   if (result.success) {
     const supabase = await createClient();
@@ -622,8 +636,13 @@ const observedSendGolfMessage = withAdminObserved(
   sendGolfMessageImpl,
 );
 
-export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string) {
-  return observedSendGolfMessage(conversationId, content, clientMessageId);
+export async function sendGolfMessage(
+  conversationId: string,
+  content: string,
+  clientMessageId?: string,
+  replyToId?: string,
+) {
+  return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId);
 }
 
 async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
