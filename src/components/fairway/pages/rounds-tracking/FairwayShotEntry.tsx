@@ -20,6 +20,7 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { Button } from '@/components/fairway/controls/button';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
@@ -64,12 +65,50 @@ interface FairwayShotEntryProps {
 
 /* Shared chip styles — thumb-sized selectable options */
 const segWrap = 'flex w-full gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-1';
+/**
+ * A segmented choice inside `segWrap`. These are the controls a player actually
+ * operates during a round — club, shot result, putt break, putt slope, miss
+ * direction — so two details here are load-bearing.
+ *
+ * NO `transition-colors`. These render as `<Button variant="ghost">`, which
+ * carries the shared press physics (`fwPress`: settle 0.5px, scale 0.98,
+ * spring-timed). `transition-colors` REPLACES the transition-property list that
+ * physics animates against, dropping `transform` — so the press snapped instead
+ * of easing, on the one surface where tactile feedback matters most. Omitting
+ * it lets the button's own `fwTransition` (colors AND transform) apply.
+ *
+ * The focus ring is `accent-600`, not `border-focus`. The design system records
+ * that `border-focus` (= accent-500) measures ~2.67:1 on the OKLCH render path
+ * and FAILS the WCAG 3:1 non-text minimum, which is exactly why the shared
+ * `fwFocusRing` darkens to accent-600; this control had kept the failing token.
+ * `ring-inset` stays — on a segmented track the ring belongs inside the rail.
+ */
 const segBtn = (active: boolean) =>
   cn(
-    'min-h-[48px] flex-1 rounded-fw-sm px-2 font-fw-sans text-sm font-medium transition-colors',
-    'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
+    'min-h-[48px] flex-1 rounded-fw-sm px-2 font-fw-sans text-sm font-medium',
+    'focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-inset focus-visible:ring-offset-0',
     active ? 'bg-accent-650 text-text-on-accent shadow-flat' : 'text-text-secondary hover:text-text-primary',
   );
+
+/**
+ * Props for a radiogroup of shot choices.
+ *
+ * The `selection` tick is the iOS detent — the same sensation a native picker
+ * gives when it lands on a value, and precisely the grammar the round spec asks
+ * for on club / result / break / slope. It sits on the GROUP rather than on
+ * each option so there is one definition instead of a dozen, and so a choice
+ * added later inherits it automatically.
+ *
+ * Deliberately `selection`, never `light`: light is the confirm for committing
+ * a shot, and reusing it here would flatten the vocabulary into one buzz for
+ * everything. Over eighteen holes that becomes vibration fatigue, and a player
+ * stops reading the feedback at all. `fwHaptic` already no-ops off-device and
+ * whenever the player has haptics switched off.
+ */
+const radioGroupProps = {
+  role: 'radiogroup' as const,
+  onClick: () => fwHaptic('selection'),
+};
 
 function Section({
   label,
@@ -205,7 +244,7 @@ export function FairwayShotEntry({
           {/* Club Selection (Tee Shot Par 4/5) */}
           {isTeeShot && currentHole.par !== 3 && (
             <Section label="Club off tee">
-              <div className={segWrap} role="radiogroup" aria-label="Club off tee">
+              <div className={segWrap} {...radioGroupProps} aria-label="Club off tee">
                 <Button variant="ghost"
                   type="button"
                   onClick={() => dispatch({ type: 'SET_DRIVER', payload: true })}
@@ -238,7 +277,7 @@ export function FairwayShotEntry({
               <div className="space-y-4">
                 <div>
                   <p className="mb-2 font-fw-sans text-xs font-medium uppercase tracking-wide text-text-tertiary">Break</p>
-                  <div className={segWrap} role="radiogroup" aria-label="Putt break direction">
+                  <div className={segWrap} {...radioGroupProps} aria-label="Putt break direction">
                     {[{ v: 'left_to_right', l: 'L → R' }, { v: 'straight', l: 'Straight' }, { v: 'right_to_left', l: 'R → L' }, { v: 'multiple', l: 'Mult.' }].map((b) => (
                       <Button variant="ghost"
                         key={b.v}
@@ -255,7 +294,7 @@ export function FairwayShotEntry({
                 </div>
                 <div>
                   <p className="mb-2 font-fw-sans text-xs font-medium uppercase tracking-wide text-text-tertiary">Slope</p>
-                  <div className={segWrap} role="radiogroup" aria-label="Putt slope">
+                  <div className={segWrap} {...radioGroupProps} aria-label="Putt slope">
                     {[{ v: 'uphill', l: 'Uphill' }, { v: 'level', l: 'Level' }, { v: 'downhill', l: 'Down' }, { v: 'severe', l: 'Severe' }].map((s) => (
                       <Button variant="ghost"
                         key={s.v}
@@ -276,7 +315,7 @@ export function FairwayShotEntry({
 
           {/* Shot Result - Context-Aware */}
           <Section label={isPutting ? 'Putt result' : 'Shot result'}>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label={isPutting ? 'Putt result' : 'Shot result'}>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" {...radioGroupProps} aria-label={isPutting ? 'Putt result' : 'Shot result'}>
               {(() => {
                 const formatLieLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
                 // VERBATIM option-set logic from legacy.
@@ -336,7 +375,7 @@ export function FairwayShotEntry({
             (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
             <Section label="Miss direction">
               {isTeeShot && (
-                <div className={segWrap} role="radiogroup" aria-label="Miss direction">
+                <div className={segWrap} {...radioGroupProps} aria-label="Miss direction">
                   {['left', 'right'].map((d) => (
                     <Button variant="ghost"
                       key={d}
@@ -531,7 +570,20 @@ export function FairwayShotEntry({
         <Button
           variant="primary"
           fullWidth
-          onClick={onNextShot}
+          // The commit tick, fired BEFORE the handler so the hand is answered
+          // on the tap rather than after the state machine and autosave have
+          // settled. Two weights, because these are not the same event:
+          // `light` confirms one more shot recorded, `medium` marks finishing
+          // the hole — a checkpoint the player should feel is different without
+          // having to look up from the ball.
+          //
+          // Round COMPLETION deliberately stays out of here; that is a
+          // `success` outcome owned by the round-submit path, and spending it
+          // on a per-hole action would leave nothing left for the real one.
+          onClick={() => {
+            fwHaptic(resultOfShot === 'hole' ? 'medium' : 'light');
+            onNextShot();
+          }}
           disabled={!ready}
           aria-describedby={nextShotBlocker ? 'fw-next-shot-blocker' : undefined}
           aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
