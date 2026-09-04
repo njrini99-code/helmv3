@@ -129,6 +129,19 @@
   body[data-fw-immersive] [data-slot='fw-bottom-nav'] {
     display: none;
   }
+  /* The top bar goes too, and this is the point of the whole mechanism.
+     An open conversation otherwise stacks TWO headers on a phone: the shell's
+     bar ("Messages" + bell) and the thread's own (back + avatar + name). The
+     thread header is strictly better — it names the person, carries Back, and
+     owns the overflow menu — so the shell's bar is pure duplication sitting on
+     the scarcest 111px of the screen.
+     Hidden only below `md`: on desktop the thread is one pane of a two-pane
+     inbox and the shell bar is still the app's chrome. */
+  @media (max-width: 767px) {
+    body[data-fw-immersive] [data-slot='fw-topbar'] {
+      display: none;
+    }
+  }
   @media (max-width: 767px) {
     /* Zero, not safe-area: the immersive surface sizes itself against the
        viewport and carries its own home-indicator clearance, so leaving any

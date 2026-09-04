@@ -853,30 +853,45 @@ export function MessageThreadPane({
       )}
     >
       {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-w-0 items-center gap-3 border-b border-border-subtle px-4 py-3 sm:px-5">
-        <IconButton
+      <header className="flex min-w-0 items-center gap-2.5 border-b border-border-subtle px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+        {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
+            an open thread this is the only way out AND the only thing naming
+            where "out" is, so it says so — the platform convention, and the
+            same reason iOS labels its back buttons. `-ml-2` pulls the glyph to
+            the gutter so the label starts on the content grid rather than
+            floating inboard of it. */}
+        <Button
           variant="ghost"
-          size="md"
-          aria-label="Back to conversations"
+          size="sm"
           onClick={onBack}
-          className="lg:hidden"
+          aria-label="Back to conversations"
+          className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
         >
           <ArrowLeft size={20} aria-hidden="true" />
-        </IconButton>
+          Messages
+        </Button>
         {isGroup ? (
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
             <Users size={18} aria-hidden="true" />
           </span>
         ) : (
           <Avatar
             name={conversation.other_participant?.name || 'User'}
             src={conversation.other_participant?.avatar}
-            size="md"
+            size="sm"
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
-          {headerSubtitle ? (
+          {/* One line, truncated — this is a nav bar now, not a page masthead.
+              `line-clamp-2` let a long group title push the bar to two rows and
+              shove the thread down. */}
+          <p className="truncate font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
+          {/* The subtitle earns its line only when it says something the name
+              does not. "Direct message" under a person's name is the label
+              restating the obvious, on the row with the least space in the
+              product — a member count on a group is genuinely new information.
+              (spec §5: do not permanently show "Direct message".) */}
+          {headerSubtitle && headerSubtitle !== 'Direct message' ? (
             <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
           ) : null}
         </div>

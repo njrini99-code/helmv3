@@ -501,7 +501,13 @@ export function FairwayMessages() {
         // ~200px of dead beige between the composer and the tab bar.
         // The keyboard term only takes what the reservation has not.
         mobileShowChat
-          ? 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
+          // Thread open on a phone: BOTH shell bars are hidden, so the
+          // surface owns the whole viewport and its own insets. No `4rem`
+          // term — that was the shell top bar, which is no longer there —
+          // and `pt-[safe-area-top]` because nothing above it is reserving
+          // the notch any more. This is what makes the thread header the
+          // ONE header instead of the second one.
+          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
           : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
       )}
     >
