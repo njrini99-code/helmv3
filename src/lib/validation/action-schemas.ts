@@ -73,6 +73,11 @@ export const MessageSchemas = {
   send: z.object({
     conversation_id: CommonSchemas.uuid,
     content: z.string().min(1, 'Message cannot be empty').max(5000).trim(),
+    // Client-generated id for the optimistic row (see use-golf-messages.ts).
+    // Optional: baseball's send path and any golf caller that predates this
+    // don't send one, and `sendMessage` falls back to the DB default
+    // (`golf_messages.id uuid DEFAULT uuid_generate_v4()`) when it's absent.
+    client_message_id: CommonSchemas.uuid.optional(),
   }),
 
   createConversation: z.object({

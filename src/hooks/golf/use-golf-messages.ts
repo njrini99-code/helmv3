@@ -77,6 +77,122 @@ export function applyRealtimeMessageUpdate<
   return next;
 }
 
+/**
+ * Order two messages by `created_at`, tie-broken by `id`.
+ *
+ * `created_at` is nullable in the schema, and a comparator doing date
+ * arithmetic on `null`/an unparsable string yields `NaN`, which sorts
+ * nowhere consistently. Treat an unparsable timestamp as "sorts after
+ * everything with a real one" rather than let it corrupt the ordering.
+ */
+function compareByCreatedAtThenId(
+  a: { readonly id: string; readonly created_at: string | null },
+  b: { readonly id: string; readonly created_at: string | null },
+): number {
+  const at = a.created_at ? Date.parse(a.created_at) : NaN;
+  const bt = b.created_at ? Date.parse(b.created_at) : NaN;
+  const aValid = !Number.isNaN(at);
+  const bValid = !Number.isNaN(bt);
+  if (aValid && bValid && at !== bt) return at - bt;
+  if (aValid !== bValid) return aValid ? -1 : 1;
+  if (a.id < b.id) return -1;
+  if (a.id > b.id) return 1;
+  return 0;
+}
+
+/**
+ * Apply one realtime `golf_messages` INSERT to the local list.
+ *
+ * Exported and pure for the same reason as `applyRealtimeMessageUpdate`
+ * above: this is a merge/ordering algorithm, and it deserves a test that
+ * does not have to stand up a realtime channel + auth harness to exercise
+ * it.
+ *
+ * Reconciliation with an optimistic row matches on the id ALONE.
+ * `sendMessage` inserts the client-generated id that `useGolfMessages`
+ * already rendered the optimistic row under AS the row's real
+ * `golf_messages.id` (a normal `DEFAULT uuid_generate_v4()` column, not
+ * GENERATED ALWAYS — a client-supplied override is a legitimate insert, not
+ * a workaround), so the optimistic row and its echo carry the SAME id from
+ * the start. That replaces the old "first `optimistic-*` row from me"
+ * heuristic — which reconciled the WRONG message when two sends were in
+ * flight and their echoes arrived out of order — with an exact match: there
+ * is no longer any ambiguity to resolve, and a mismatched send can no longer
+ * mismatch a receive.
+ *
+ * On a match: replace IN PLACE, never reorder. The optimistic row already
+ * rendered at the position its sender is looking at; re-sorting it by the
+ * server's `created_at` (never earlier than the optimistic client
+ * timestamp, and essentially never equal to it) would move a bubble the
+ * user just watched appear out from under them — this hook's own history
+ * (P258, F124, the 2026-08-31 churn fix above) is about exactly that kind
+ * of self-inflicted reflow. This also folds in the old plain "avoid
+ * duplicates" guard: any exact id match, from any sender, replaces in
+ * place instead of appending a second copy.
+ *
+ * On no match (a message from someone else, or our own echo arriving with
+ * no local optimistic row to meet — e.g. a second tab, or a channel that
+ * reconnected mid-send): insert in `created_at` order instead of always
+ * appending, so two people sending near-simultaneously still render in the
+ * order their messages were created rather than the order their INSERTs
+ * happened to arrive over the wire. The common case — the feed already
+ * arriving in order — stays an O(1) append; only an out-of-order arrival
+ * pays for the scan.
+ */
+export function applyRealtimeMessageInsert<
+  T extends { id: string; created_at: string | null },
+>(prev: T[], inserted: T): T[] {
+  const idx = prev.findIndex((m) => m.id === inserted.id);
+  if (idx !== -1) {
+    const current = prev[idx]!;
+    if (current === inserted) return prev;
+    const next = prev.slice();
+    next[idx] = inserted;
+    return next;
+  }
+
+  const last = prev[prev.length - 1];
+  if (!last || compareByCreatedAtThenId(last, inserted) <= 0) {
+    return [...prev, inserted];
+  }
+
+  let pos = prev.length;
+  while (pos > 0 && compareByCreatedAtThenId(prev[pos - 1]!, inserted) > 0) {
+    pos--;
+  }
+  const next = prev.slice();
+  next.splice(pos, 0, inserted);
+  return next;
+}
+
+/**
+ * A collision-proof id for the optimistic row, threaded through to the
+ * server as `golf_messages.id` (see `sendMessage` / `applyRealtimeMessageInsert`
+ * above). Was an `optimistic-` prefix glued to a millisecond timestamp — two
+ * sends in the same millisecond produced the SAME id, which corrupted both
+ * the dedupe guard and, before this rewrite, the reconciliation search.
+ *
+ * Prefers `crypto.randomUUID`; falls back to a Math.random-seeded v4-shaped
+ * string on engines/contexts where it's unavailable (older WKWebView,
+ * non-secure contexts — this repo ships iOS Capacitor and Android, see
+ * `newKey()` in useCoachHelmChat.ts for the same guard on the same
+ * platforms). The fallback MUST stay UUID-shaped: it is optionally sent to
+ * the server as `client_message_id`, which `MessageSchemas.send` validates
+ * with `z.string().uuid()` — a malformed id would fail that validation and
+ * turn every send on an affected device into a hard failure instead of a
+ * merely lower-entropy one.
+ */
+function generateClientMessageId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function useGolfMessages(conversationId: string) {
   const [messages, setMessages] = useState<MessageWithReadStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,20 +395,9 @@ export function useGolfMessages(conversationId: string) {
         },
         (payload) => {
           const newMessage = payload.new as MessageWithReadStatus;
-          setMessages(prev => {
-            // Replace optimistic message if this is our own message arriving via realtime
-            if (newMessage.sender_id === currentUserIdRef.current) {
-              const optimisticIdx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.sender_id === currentUserIdRef.current);
-              if (optimisticIdx !== -1) {
-                const updated = [...prev];
-                updated[optimisticIdx] = newMessage;
-                return updated;
-              }
-            }
-            // Avoid duplicates (message already exists by ID)
-            if (prev.some(m => m.id === newMessage.id)) return prev;
-            return [...prev, newMessage];
-          });
+          // See applyRealtimeMessageInsert above: id-exact reconciliation
+          // with our own optimistic row, in-order insertion otherwise.
+          setMessages(prev => applyRealtimeMessageInsert(prev, newMessage));
           // Clear typing indicator when message is received
           if (newMessage.sender_id !== currentUserIdRef.current) {
             setIsOtherTyping(false);
@@ -386,8 +491,12 @@ export function useGolfMessages(conversationId: string) {
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
-    // Optimistic update: add message to UI immediately
-    const optimisticId = `optimistic-${Date.now()}`;
+    // Optimistic update: add message to UI immediately. The id is generated
+    // ONCE, above the retry, and reused for both the optimistic row and every
+    // send attempt below — see generateClientMessageId's docstring for why it
+    // must be collision-proof, and the comment on the retry call for why
+    // reusing it across a retry is safe rather than merely convenient.
+    const optimisticId = generateClientMessageId();
     const optimisticMessage: MessageWithReadStatus = {
       id: optimisticId,
       conversation_id: conversationId,
@@ -407,8 +516,13 @@ export function useGolfMessages(conversationId: string) {
       // mid-send on 2026-09-01/02, and Vercel logged no message_sent for
       // either, so the request never arrived. One retry after a beat is what
       // they did by hand — see withOneTransportRetry for why that is safe here.
+      // Passing the SAME optimisticId on both attempts also makes a retry
+      // that fires after the first attempt actually committed safe: the
+      // second insert collides on golf_messages' primary key and the server
+      // reports it back as the success it is (see sendMessage/action's 23505
+      // handling) instead of creating a second, duplicate row.
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, content),
+        () => sendGolfMessage(conversationId, content, optimisticId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
 

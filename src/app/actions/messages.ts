@@ -35,6 +35,16 @@ interface SendMessageOptions {
   content: string;
   sport?: Sport;
   createNotifications?: boolean;
+  /**
+   * Client-generated id for the optimistic row that will represent this
+   * message locally. When present it is inserted as the row's real `id`
+   * (a normal `DEFAULT uuid_generate_v4()` column, not GENERATED ALWAYS, so
+   * a client-supplied override is a legitimate insert) instead of letting
+   * Postgres generate one. That makes the realtime echo of this send carry
+   * the SAME id the caller already rendered, so reconciliation in
+   * useGolfMessages is an exact match instead of a heuristic guess.
+   */
+  clientMessageId?: string;
 }
 
 /**
@@ -82,6 +92,7 @@ export async function sendMessage({
   content,
   sport = 'baseball',
   createNotifications = true,
+  clientMessageId,
 }: SendMessageOptions) {
   try {
     const supabase = await createClient();
@@ -95,7 +106,8 @@ export async function sendMessage({
     // Validate input with centralized schema
     const validatedData = MessageSchemas.send.parse({
       conversation_id: conversationId,
-      content
+      content,
+      client_message_id: clientMessageId,
     });
 
     // React's text interpolation auto-escapes on render — store raw user text.
@@ -132,6 +144,7 @@ export async function sendMessage({
     const { data: insertedMessage, error: messageError } = await supabase
       .from(messagesTable as any)
       .insert({
+        ...(validatedData.client_message_id ? { id: validatedData.client_message_id } : {}),
         conversation_id: validatedData.conversation_id,
         sender_id: user.id,
         content: sanitizedContent,
@@ -141,6 +154,20 @@ export async function sendMessage({
       .single();
 
     if (messageError) {
+      // withOneTransportRetry (transient-network-error.ts) reruns this exact
+      // call — same clientMessageId both times — when the FIRST attempt's
+      // response was lost to a transport error after the insert had already
+      // committed. That collides on the primary key. `*_messages_pkey` is the
+      // only unique constraint either messages table has, so 23505 here can
+      // only mean "this exact row already exists" — the send already
+      // succeeded once; report that success rather than a failure the caller
+      // would use to roll back a message realtime has already delivered.
+      // (An id collision with someone else's message is not reachable this
+      // way either: INSERT cannot overwrite an existing row, so a client that
+      // deliberately reused a foreign id would just fail its own write.)
+      if (validatedData.client_message_id && messageError.code === '23505') {
+        return { success: true };
+      }
       await logServerError(`[Security] Message insert failed: ${messageError.message}`, {
         action: 'messages.sendMessage',
         metadata: {
@@ -573,8 +600,8 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 // SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
-async function sendGolfMessageImpl(conversationId: string, content: string) {
-  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false });
+async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string) {
+  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId });
 
   if (result.success) {
     const supabase = await createClient();
@@ -595,8 +622,8 @@ const observedSendGolfMessage = withAdminObserved(
   sendGolfMessageImpl,
 );
 
-export async function sendGolfMessage(conversationId: string, content: string) {
-  return observedSendGolfMessage(conversationId, content);
+export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string) {
+  return observedSendGolfMessage(conversationId, content, clientMessageId);
 }
 
 async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
