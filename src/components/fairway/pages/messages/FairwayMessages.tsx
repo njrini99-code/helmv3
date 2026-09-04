@@ -71,6 +71,14 @@ import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
 import { MessageComposer } from './MessageComposer';
 
+type GroupParticipant = { name: string; avatar: string | null };
+type GroupParticipantMap = Map<string, GroupParticipant>;
+
+interface ScopedGroupParticipants {
+  conversationId: string | null;
+  participants: GroupParticipantMap;
+}
+
 export function FairwayMessages() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
@@ -142,11 +150,12 @@ export function FairwayMessages() {
   // For group conversations, each incoming bubble's sender_id is resolved to a
   // real name + avatar by fetching golf_conversation_participants → coaches/players.
   // Mirrors the legacy fetchGroupParticipants / groupParticipants pattern.
-  const [groupParticipants, setGroupParticipants] = React.useState<
-    Map<string, { name: string; avatar: string | null }>
-  >(new Map());
+  const [groupParticipantState, setGroupParticipantState] = React.useState<ScopedGroupParticipants>({
+    conversationId: null,
+    participants: new Map(),
+  });
 
-  const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
+  const fetchGroupParticipants = React.useCallback(async (conversationId: string): Promise<GroupParticipantMap> => {
     const supabase = createClient();
     const { data: participants, error: participantsError } = await supabase
       .from('golf_conversation_participants')
@@ -161,7 +170,7 @@ export function FairwayMessages() {
       );
     }
 
-    if (!participants || participants.length === 0) return;
+    if (!participants || participants.length === 0) return new Map();
 
     const userIds = participants.map(p => p.user_id);
 
@@ -184,7 +193,7 @@ export function FairwayMessages() {
       );
     }
 
-    const map = new Map<string, { name: string; avatar: string | null }>();
+    const map: GroupParticipantMap = new Map();
     (coaches ?? []).forEach(c => {
       if (c.user_id) {
         map.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
@@ -196,21 +205,46 @@ export function FairwayMessages() {
         map.set(p.user_id, { name, avatar: p.avatar_url ?? null });
       }
     });
-    setGroupParticipants(map);
+    return map;
   }, []);
 
-  // Fetch participant names whenever we enter a group conversation; clear on 1:1.
+  // Fetch participant names whenever we enter a group conversation. Identity
+  // is scoped to the conversation that produced it: the selected id can change
+  // before an older request resolves, and an unscoped Map would paint the old
+  // group's faces into the new thread until (or even after) its fetch completes.
   React.useEffect(() => {
+    let cancelled = false;
+
     if (!selectedConversationId) {
-      setGroupParticipants(new Map());
-      return;
+      setGroupParticipantState({ conversationId: null, participants: new Map() });
+      return undefined;
     }
+
     const conv = conversations.find(c => c.id === selectedConversationId);
     if (conv?.is_group) {
-      fetchGroupParticipants(selectedConversationId);
+      // Clear before the request. The render-time identity gate below also
+      // protects the first render after selection, before this effect runs.
+      setGroupParticipantState({
+        conversationId: selectedConversationId,
+        participants: new Map(),
+      });
+      void fetchGroupParticipants(selectedConversationId).then((participants) => {
+        if (cancelled) return;
+        setGroupParticipantState({
+          conversationId: selectedConversationId,
+          participants,
+        });
+      });
     } else {
-      setGroupParticipants(new Map());
+      setGroupParticipantState({
+        conversationId: selectedConversationId,
+        participants: new Map(),
+      });
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
   // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
@@ -301,6 +335,10 @@ export function FairwayMessages() {
     if (!selectedConversationId) return null;
     return conversations.find(c => c.id === selectedConversationId) ?? null;
   }, [conversations, selectedConversationId]);
+  const activeGroupParticipants =
+    selectedConversation && groupParticipantState.conversationId === selectedConversation.id
+      ? groupParticipantState.participants
+      : undefined;
 
   // ── Selection + mobile master-detail (PRESERVED) ────────────────────────────
   const handleSelectConversation = (id: string) => {
@@ -721,7 +759,7 @@ export function FairwayMessages() {
                 onConfirmDelete={handleConfirmDelete}
                 onCancelDelete={handleCancelDelete}
                 onSetMobileActions={setMobileActionsId}
-                groupParticipants={groupParticipants}
+                groupParticipants={activeGroupParticipants}
                 typingUserIds={typingUserIds}
                 scrollToMessageId={pendingScrollMessageId}
                 onReply={(message) => {

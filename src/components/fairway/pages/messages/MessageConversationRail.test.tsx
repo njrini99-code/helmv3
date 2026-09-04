@@ -85,6 +85,11 @@ describe('MessageConversationRail — no duplicate count readout', () => {
 });
 
 describe('MessageConversationRail — Fairway inbox controls', () => {
+  it('forces the flat mobile background across loading, error, empty, and loaded branches', () => {
+    expect(source.match(/max-md:!bg-transparent/g) ?? []).toHaveLength(4);
+    expect(source).not.toContain('max-md:bg-transparent');
+  });
+
   it('uses the canonical clearable SearchField instead of the legacy form input', () => {
     expect(source).toContain("from '@/components/fairway/command/search-field'");
     expect(source).toContain('<SearchField');

@@ -438,7 +438,7 @@ export function MessageConversationRail({
         header={isDesktop ? 'Conversations' : undefined}
         className={cn(
           'flex flex-col',
-          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
           className,
         )}
         aria-busy="true"
@@ -480,7 +480,7 @@ export function MessageConversationRail({
         header={isDesktop ? 'Conversations' : undefined}
         className={cn(
           'flex flex-col',
-          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
           className,
         )}
       >
@@ -510,7 +510,7 @@ export function MessageConversationRail({
         header={isDesktop ? 'Conversations' : undefined}
         className={cn(
           'flex flex-col',
-          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
           className,
         )}
       >
@@ -594,7 +594,7 @@ export function MessageConversationRail({
         // Same reasoning as the thread pane: a card that fills the screen has
         // stopped being a card (Doctrine Rule 11). `!` is required because the
         // border comes from a CSS module class of equal specificity.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
         className,
       )}
     >
