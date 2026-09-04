@@ -311,6 +311,11 @@ for (const w of wts) {
     prLookup: pr.lookup,
     prNumber: pr.number ?? null,
     prState: pr.state ?? null,
+    // The WORKTREE classifier needs the PR head OID too, not just the state.
+    // Without it "MERGED at this exact tip" cannot be evaluated on the park
+    // path and silently reads false — which is how three merged checkouts sat
+    // at UNKNOWN_REMOTE while their branches read DELETE_MERGED_EXACT.
+    prHeadSha: pr.headSha ?? null,
     disposition: disp?.disposition ?? null,
     worktreePolicy: disp?.worktree_policy ?? null,
     ...(isCanonical ? { parkPolicy: null, workspaceMarker: null } : (() => {

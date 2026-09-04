@@ -213,7 +213,19 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   repo — and leaves the canonical checkout alone. **It does not install
   dependencies** — run `node scripts/ensure-worktree-deps.mjs <dir>` when a
   command actually needs them, so a docs or config task never pays for a
-  ~3.8 GiB node_modules it will not use. Use it because it guarantees
+  ~3.8 GiB node_modules it will not use. Since 2026-09-04 that command SHARES
+  the canonical `node_modules` (a symlink, 0 bytes) when the worktree's
+  `package-lock.json` is byte-identical to canonical's, and installs for real
+  when it differs. `new-worktree.sh`'s header rejects symlinking outright, and
+  its reason — two branches with different lockfiles test against whichever
+  tree was installed last, manufacturing fake passes and fake failures — is
+  correct but CONDITIONAL, and was written as though lockfiles always differ.
+  Most task branches never touch it. That gap left two contradictory policies
+  live on one machine: this script installing 3.8 GiB per worktree, while
+  `worktree.symlinkDirectories` in `~/.claude/settings.json` symlinked
+  `node_modules` for Claude Code's own worktrees — with sessions meanwhile
+  hand-symlinking to dodge the cost, without the lockfile check that makes it
+  safe. The condition is now checked rather than assumed. Use it because it guarantees
   `--no-track`: creating a task branch from a REMOTE-TRACKING ref such as
   `origin/main` without disabling tracking lets git's `autoSetupMerge` default
   configure `agent/foo -> origin/main`, and a bare push then targets main.
@@ -229,6 +241,43 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   PARK    remove the disposable checkout, KEEP the branch
   RETIRE  park, AND delete a branch proven merged by exact PR head OID
   ```
+
+  **A merged PR releases its own checkout, and until 2026-09-04 it could not.**
+  This is the same defect #1654 fixed for BRANCH deletion, which was never
+  carried to the PARK path. Parking demanded a remote tip to prove the commits
+  survive removing the directory — and `delete_branch_on_merge` is TRUE here,
+  so GitHub deletes that remote at the moment of merge, i.e. exactly when the
+  checkout becomes safe to reclaim. **The evidence parking depended on was
+  destroyed by the event that made parking correct.** Measured that day: 0 of
+  25 worktrees parkable, three of them (PRs #1793, #1797, #1819) printing
+  `UNKNOWN_REMOTE` — "commits here may exist nowhere else" — on the same row
+  whose branch column read `DELETE_MERGED_EXACT`. One report calling the same
+  commits both provably-in-main and possibly-nowhere.
+
+  A PR merged at this exact tip is now accepted as durability proof (it is
+  stronger than a remote tip: the commits are in `main`) and satisfies the
+  workspace gate as well, because merging IS the owner declaring the work done.
+  Four facts must all hold, and #1681's rule is untouched — an OPEN PR still
+  requires the marker:
+
+  ```text
+  clean            dirtyCount === 0
+  idle             no live process cwd here
+  identified       not detached
+  merged HERE      PR MERGED and local tip === PR head OID (exact)
+  ```
+
+  `src/test/scripts/worktree-park-merged.test.ts` pins both the exception and
+  every veto. Note what that test also pins: the exception shipped DEAD the
+  first time, because `prHeadSha` was never passed into the worktree facts, so
+  it evaluated false for every checkout. A gate whose input is missing does not
+  error — it just never fires.
+
+  **Run it at merge time, not at session end.** `npm run worktrees:postmerge`
+  (`git fetch --prune` + `--retire`) is wired to fire automatically after
+  `gh pr merge` via a `PostToolUse` hook in `.claude/settings.json`. GitHub
+  already deletes the REMOTE branch on merge; nothing ever deleted the LOCAL
+  one, which is the whole reason 62 local branches stood against 49 remote.
 
   **It reports on REMOTE branches as well as local ones, and the distinction
   is the whole point.** Until 2026-08-31 it enumerated `refs/heads` only, so a
