@@ -214,7 +214,7 @@ scopes) that none of the three recolor files override, so it survives
 scoping. Consumed by `<InkNotice>`, snapshot-card error variants
 (`src/components/baseball/player-profile/snapshot-cards/shared.tsx:117,199`),
 and join/onboarding error UI
-(`src/app/baseball/join/[code]/page.tsx:170-174`,
+(`src/app/baseball/join/[code]/page.tsx:212-216`,
 `src/app/baseball/staff/join/[code]/page.tsx:73-77`). **Never** swap a
 `--notice-error-ink` read back to `--pursuit-ink` "for consistency" — it
 would silently break error/success distinguishability on exactly those 3
@@ -233,11 +233,11 @@ darkens the fill in **both** themes. Use 650/750 for hover/pressed on accent
 fills — never re-point them at 700 "for consistency", `--fw-color-team-mens/womens`,
 `--fw-color-warm-50..950`, surface tier (`canvas/surface/surface-tint/surface-sunken/elevated`),
 text (`text-primary/secondary/tertiary/on-accent/on-dark` — tertiary
-darkened per a WCAG P422 fix, line 87, to clear 4.5:1 AA),
+darkened per a WCAG P422 fix, line 142, to clear 4.5:1 AA),
 border/status/nav tokens, `--fw-radius-*`, `--fw-shadow-*`. Consumed in
 `src/components/fairway/{calendar,instrument,overlays,surfaces}/*.css` and
 animation vars `--fw-dur-*`/`--fw-ease-*` in `globals.css` (lines
-1767-1845) with inline fallbacks (e.g. `var(--fw-dur-base, 280ms)`). This
+1933-2011) with inline fallbacks (e.g. `var(--fw-dur-base, 280ms)`). This
 is a **separate token layer** scoped via a `.fairway-ds` class, coexisting
 with — not replacing — the `tailwind.config.ts` tokens described in
 the `tailwind.config.ts` color families (`primary-*`/`destructive`/`warm-*`/`cream-*`).
@@ -249,8 +249,8 @@ asymmetry, not an oversight to "fix" by inventing a lifting registry.
 
 | Product | Location | Shape |
 |---|---|---|
-| Baseball | `src/lib/baseball/nav-registry.ts` (1366 lines) | `BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[]` (line 330) + role/visibility helpers `isBaseballNavEntryVisible`/`getVisibleBaseballNav`/`getPrimaryBaseballNav`/`getSecondaryBaseballNav`/`getBaseballNavEntry`/`getBaseballDefaultLandingHref`/`getBaseballTerminology` (lines 1109-1276). |
-| Golf | `src/lib/golf/nav-registry.ts` (579 lines) | `GOLF_COACH_HUBS`/`GOLF_PLAYER_HUBS` (lines 201, 231) + `buildCoachRailSections`/`buildPlayerRailSections`/`buildCoachBottomNavItems`/`buildPlayerBottomNavItems` (lines 304-460) + `resolveActiveGolfHub` + `COACHHELM_COACH_CLUSTER_PREFIXES`/`COACHHELM_PLAYER_CLUSTER_PREFIXES` (lines 125-152). |
+| Baseball | `src/lib/baseball/nav-registry.ts` | `BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[]` (line 348) + role/visibility helpers `isBaseballNavEntryVisible`/`getVisibleBaseballNav`/`getPrimaryBaseballNav`/`getSecondaryBaseballNav`/`getBaseballNavEntry`/`getBaseballDefaultLandingHref`/`getBaseballTerminology` (lines 1109-1276). |
+| Golf | `src/lib/golf/nav-registry.ts` | `GOLF_COACH_HUBS`/`GOLF_PLAYER_HUBS` (lines 225, 255) + `buildCoachRailSections`/`buildPlayerRailSections`/`buildCoachBottomNavItems`/`buildPlayerBottomNavItems` (lines 340-487) + `resolveActiveGolfHub` + `COACHHELM_COACH_CLUSTER_PREFIXES`/`COACHHELM_PLAYER_CLUSTER_PREFIXES` (lines 125-152). |
 | Lift Lab | `src/components/lifting/shell/LabNav.tsx` | Component-inline. **No `LIFTING_NAV_REGISTRY` module exists** — a new lifting route edits `LabNav.tsx` directly. |
 | Admin | `src/app/admin/_components/admin-nav.ts` (+ `__tests__/admin-nav.test.ts`) | Own small registry + test, separate from baseball/golf's. |
 
