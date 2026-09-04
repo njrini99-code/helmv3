@@ -179,7 +179,20 @@ export function useGolfMessages(conversationId: string) {
     // Fetch most recent 200 messages (descending for limit), then reverse for display order
     const { data, error: fetchError } = await supabase
       .from('golf_messages')
-      .select('id, conversation_id, sender_id, content, read, created_at, is_deleted, edited_at')
+      // `has_attachments` is REQUIRED here, not decorative. MessageThreadPane
+      // only calls getGolfMessageAttachments for messages whose
+      // `has_attachments` is truthy, so omitting the column from this select
+      // made it `undefined` on every message loaded from the database — the
+      // signing fetch never fired and the bubble rendered empty.
+      //
+      // It looked intermittent rather than broken because the realtime INSERT
+      // handler below takes `payload.new`, which is the FULL row and does
+      // carry the flag. So an image was visible to whoever had the thread open
+      // when it arrived, and disappeared for everyone the next time the
+      // conversation was opened. That is the "Can't see pics" report from the
+      // team chat: the sender saw it send, the recipients opened the thread
+      // later and saw nothing.
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
