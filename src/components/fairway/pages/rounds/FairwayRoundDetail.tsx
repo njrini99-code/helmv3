@@ -966,7 +966,27 @@ function PulseTrace({
           strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
         />
-        <circle cx={last.x} cy={last.y} r={strokeWidth + 1.5} fill={color} />
+        {/* The end-dot as a zero-length round-capped STROKE, not a <circle>.
+            `preserveAspectRatio="none"` above stretches X and Y by different
+            factors, and that distortion applies to fill geometry: a `<circle>`
+            here rendered as a squashed ~2.8x7px oval at 390px. `vector-effect`
+            governs stroke only, so a round line cap is immune to it — this
+            draws a true circle of diameter `strokeWidth`, identical at every
+            column width. The 0.001 x-offset keeps the segment non-degenerate,
+            since a genuinely zero-length subpath is rendered inconsistently
+            across engines; it is three orders of magnitude below one device
+            pixel here and cannot be seen. */}
+        <line
+          data-slot="pulse-end-dot"
+          x1={last.x - 0.001}
+          y1={last.y}
+          x2={last.x}
+          y2={last.y}
+          stroke={color}
+          strokeWidth={(strokeWidth + 1.5) * 2}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
       </svg>
     </span>
   );
