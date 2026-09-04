@@ -113,11 +113,29 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     }
   };
 
-  // Cleanup typing timeout on unmount (PRESERVED).
+  // Live mirror of the pending attachments, so the unmount cleanup below can
+  // revoke them without taking `pendingAttachments` as a dependency (which
+  // would re-run the cleanup on every add/remove instead of only on unmount).
+  const pendingAttachmentsRef = useRef(pendingAttachments);
+  pendingAttachmentsRef.current = pendingAttachments;
+
+  // Cleanup on unmount: the typing timeout (PRESERVED), and any object URLs
+  // still held by un-sent attachment previews.
+  //
+  // The URL revocation is new, and it is owed because the composer is now
+  // keyed on the conversation (FairwayMessages.tsx) so that a draft cannot be
+  // misdelivered to the next thread. That key makes unmount a ROUTINE event —
+  // every conversation switch — where before it happened only when the whole
+  // page went away. Previews were revoked on remove and after a successful
+  // send, so a picked-but-never-sent photo would now leak its blob on each
+  // switch.
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+      }
+      for (const attachment of pendingAttachmentsRef.current) {
+        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
       }
     };
   }, []);

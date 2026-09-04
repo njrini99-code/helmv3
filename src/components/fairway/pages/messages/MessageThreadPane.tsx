@@ -46,6 +46,17 @@ import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
 import { Textarea } from '@/components/ui/textarea';
 
+/**
+ * How long to wait before the ONE automatic re-fetch of an attachment that
+ * came back successful-but-empty.
+ *
+ * Sized for a commit-order race, not a network failure: the sender's two
+ * inserts (`golf_messages`, then `golf_message_attachments`) land milliseconds
+ * apart, and realtime broadcasts on the first. Long enough that the second has
+ * committed, short enough that a photo does not visibly hang.
+ */
+const ATTACHMENT_RACE_RETRY_MS = 1200;
+
 /** One resolved (signed) attachment for an open thread message. */
 type ResolvedAttachment = NonNullable<
   Awaited<ReturnType<typeof getGolfMessageAttachments>>['attachments']
@@ -317,8 +328,23 @@ export function MessageThreadPane({
   // Used to render a quiet "Couldn’t load — tap to retry" chip instead of an
   // eternal pending placeholder.
   const [attachmentErrors, setAttachmentErrors] = React.useState<Set<string>>(new Set());
-  // Bumped to force a re-run of the batch fetch (manual retry from the chip).
+  // Bumped to force a re-run of the batch fetch (manual retry from the chip,
+  // and the one-shot auto-retry for the commit-order race below).
   const [attachmentRetryNonce, setAttachmentRetryNonce] = React.useState(0);
+  // Message ids already given their one automatic retry. Prevents a genuinely
+  // unreadable attachment from re-fetching forever; it settles on the retry
+  // chip instead, which is a state the user can act on.
+  const retriedEmptyRef = React.useRef<Set<string>>(new Set());
+  // Pending auto-retry timers, cleared on unmount so a conversation switch
+  // cannot bump the nonce on an unmounted thread.
+  const retryTimersRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+  React.useEffect(
+    () => () => {
+      for (const timer of retryTimersRef.current) clearTimeout(timer);
+      retryTimersRef.current = [];
+    },
+    [],
+  );
 
   // Stable key of the visible attachment-bearing message ids (ordered) so the
   // batch fetch re-runs only when that set actually changes.
@@ -359,10 +385,44 @@ export function MessageThreadPane({
           errored.add(messageId);
         } else if (res.attachments?.length) {
           next[messageId] = res.attachments;
+        } else {
+          // SUCCESSFUL BUT EMPTY — and this branch used to not exist, which is
+          // the whole defect. Every message reaching this effect has
+          // `has_attachments: true`, so "no rows" is not a valid resting
+          // state: it means the rows are not readable YET.
+          //
+          // The send is two unbatched statements (message-attachments.ts):
+          // the `golf_messages` row commits and is broadcast over realtime
+          // before the `golf_message_attachments` rows necessarily commit. A
+          // recipient's fetch can land in that window and get a legitimately
+          // empty result with no error. Falling into neither bucket, it
+          // rendered the static "Attachment" label — no gallery, no retry chip
+          // — and the effect only re-runs when the SET of attachment-bearing
+          // message ids changes, so that bubble stayed dead for the rest of
+          // the session.
+          //
+          // Recording it as unresolved is the honest state: it surfaces the
+          // same retry affordance a hard failure gets, and the one-shot
+          // auto-retry below usually closes the race before anyone taps it.
+          errored.add(messageId);
         }
       }
       setAttachmentsByMessage(next);
       setAttachmentErrors(errored);
+
+      // The commit-order race resolves in milliseconds, so a single delayed
+      // retry turns "tap to retry" into something the user never has to do.
+      // Bounded to ONE attempt per fetch pass — `retriedEmptyRef` is keyed on
+      // the message id, so a genuinely unreadable attachment (deleted row,
+      // revoked access) settles on the retry chip instead of looping.
+      const unresolved = [...errored].filter((id) => !retriedEmptyRef.current.has(id));
+      if (unresolved.length > 0) {
+        for (const id of unresolved) retriedEmptyRef.current.add(id);
+        const timer = setTimeout(() => {
+          if (!cancelled) setAttachmentRetryNonce((n) => n + 1);
+        }, ATTACHMENT_RACE_RETRY_MS);
+        retryTimersRef.current.push(timer);
+      }
     })();
     return () => {
       cancelled = true;

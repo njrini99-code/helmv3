@@ -639,7 +639,26 @@ export function FairwayMessages() {
                 className="flex-1 min-h-0"
               >
                 {selectedConversation ? (
+                  // `key` IS the fix, not a list-rendering formality.
+                  //
+                  // The composer owns `message` and `pendingAttachments` as
+                  // local state and clears them only on a SUCCESSFUL send.
+                  // Mounted without a key it survived a conversation switch,
+                  // while both send handlers read whatever
+                  // `selectedConversationId` is current AT SEND TIME. So a
+                  // draft — or an attached photo — typed to one person and
+                  // abandoned would be delivered to whoever was selected next,
+                  // with nothing on screen suggesting the text had carried
+                  // over. That is private content sent to the wrong recipient.
+                  //
+                  // Keying on the conversation makes the composer a fresh
+                  // instance per thread, so its contents can only ever be sent
+                  // to the thread they were typed into. Per-conversation DRAFT
+                  // PERSISTENCE is a separate feature (spec P1) and deliberately
+                  // not smuggled in here: keeping the text would recreate the
+                  // exact hazard unless it is also scoped per conversation.
                   <MessageComposer
+                    key={selectedConversation.id}
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}
