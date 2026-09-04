@@ -141,7 +141,7 @@ routes live under `src/app`.
 
 | Wrapper | Canonical location | Usage | Notes |
 |---|---|---|---|
-| `withBaseballAction` | `src/lib/baseball/with-baseball-action.ts:248` | 98 sites | Auth + active-context resolution, server-side capability enforcement, `Sentry.withScope` (`sport=baseball`, `feature`, `feature_area`, `action`) + breadcrumb. `opts`: `featureArea` required; optional `requiredCapability` / `requiredPlayerAccess` / `teamFrom` / `requireActiveContext` / `demoSafe`. |
+| `withBaseballAction` | `src/lib/baseball/with-baseball-action.ts:339` | 98 sites | Auth + active-context resolution, server-side capability enforcement, `Sentry.withScope` (`sport=baseball`, `feature`, `feature_area`, `action`) + breadcrumb. `opts`: `featureArea` required; optional `requiredCapability` / `requiredPlayerAccess` / `teamFrom` / `requireActiveContext` / `demoSafe`. |
 | `withLiftingAction` | `src/lib/lifting/with-lifting-action.ts:113` | 23 sites | Injects `LiftingActionContext {user, orgId, access}`. `opts`: `featureArea`, `requireEdit`, `orgFrom`. Same `Sentry.withScope(sport='lifting', ...)` shape as baseball. |
 | `withAdminObserved` | `src/lib/admin/observed-action.ts:56` (comment 21-25, guard `isNextControlFlowError` at line 28) | 129 sites — most-used of the three | Explicitly generalizes the with-baseball/with-lifting idea for cross-sport use ("Helm Bridge capture class #2 — failed server actions"). Contract: never changes the wrapped function's resolve/reject; logging is fire-and-forget via `resolveObservedUser()` (self-swallowing) then `observeActionSoftFailure()`. `isNextControlFlowError()` guards `NEXT_REDIRECT`/`NEXT_NOT_FOUND` digests from being misreported as failures. |
 
@@ -156,7 +156,7 @@ wrapped in `withBaseballAction`/`withLiftingAction` — purely to add
 | Variant | Location | Status |
 |---|---|---|
 | Canonical `useToast()` / `addToast()` | `src/components/ui/sonner.tsx:212-222` (dispatch via `dispatchByType()` at line 195) | **Use this.** Returns `{showToast(message, type)` [legacy 2-arg], `addToast({type,title,description,action,duration})` [options object], `removeToast(id)}`, all routed through Sonner's `toast.success/error/warning/info`. `Toaster` mounted once in `src/app/layout.tsx`. |
-| Direct `toast.error(...)` sonner import | 31 files, e.g. `src/app/golf/admin/crm/page.tsx:839,843,886,985,996` | Accepted legacy pattern, not broken. Don't "fix" these as a drive-by in an unrelated change; steer *new* code to `useToast()` instead. |
+| Direct `toast.error(...)` sonner import | 31 files, e.g. `src/app/golf/admin/crm/page.tsx:586,921,972,1062,1067` | Accepted legacy pattern, not broken. Don't "fix" these as a drive-by in an unrelated change; steer *new* code to `useToast()` instead. |
 | Local `useToast()` / `ToastContext` collision | `src/app/golf/admin/crm/components/Toast.tsx:29` (`ToastContext` at line 27) | **Name collision, not a duplicate.** Own React Context, own `toast(message, type)` API — completely separate from and incompatible with the canonical sonner-backed `useToast()`. Importing the wrong one in a golf/admin/crm file throws (`useToast must be used within a ToastProvider`) or silently no-ops depending on which is in scope. Pick by **import path**, not by name. |
 
 ### Data access
@@ -358,9 +358,9 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    `tsconfig.json:21`: `"noUncheckedIndexedAccess": true` — every `arr[i]`
    read types as `T | undefined`, not `T`. Canonical fallback is a
    documented, guard-then-assert `!`, **not** a silent `?? fallback`:
-   `src/lib/golf/nav-registry.ts:322,328,335,341,348,389,427,430`
+   `src/lib/golf/nav-registry.ts:358,364,371,377,384,425,476,479`
    (`team.tabs[0]!.href`), `src/lib/golf/strokes-gained.ts:122`
-   (`distances[0]!`), `src/lib/golf/progress-drivers.ts:145`
+   (`distances[0]!`), `src/lib/golf/progress-drivers.ts:161`
    (`goals[0]!.player_id // non-empty (guarded above)`). Convention
    confirmed in `docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md:927`.
    When `noUncheckedIndexedAccess` forces a `T | undefined` at an index
