@@ -9,9 +9,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  */
 const mocks = vi.hoisted(() => ({
   captureCheckIn: vi.fn(() => 'checkin-id-123'),
+  flushTelemetryNow: vi.fn(),
 }));
 vi.mock('@sentry/nextjs', () => ({
   captureCheckIn: mocks.captureCheckIn,
+}));
+vi.mock('@/lib/observability/flush', () => ({
+  flushTelemetryNow: mocks.flushTelemetryNow,
+  scheduleTelemetryFlush: vi.fn(),
+  TELEMETRY_FLUSH_TIMEOUT_MS: 2000,
 }));
 
 import {
@@ -172,6 +178,35 @@ describe('startCronCheckIn / finishCronCheckIn', () => {
     });
     expect(() => startCronCheckIn('log-retention')).not.toThrow();
     expect(startCronCheckIn('log-retention')).toBeNull();
+  });
+
+  /**
+   * `captureCheckIn` only BUFFERS. On Vercel the invocation returns straight
+   * after this call and the instance freezes, so without an explicit flush
+   * the terminal check-in is simply lost — which Sentry reads as a `timeout`,
+   * i.e. an outage, for a job that ran fine. Measured 2026-09-04 on
+   * api-cron-db-health-sampler: ok=1-4 vs timeout=8-11 per hour, error=0,
+   * missed=0. The `in_progress` check-in needs no equivalent because the
+   * job's own work runs after it and carries it out on someone else's flush.
+   */
+  it('flushes after the terminal check-in — a buffered envelope is a lost one', () => {
+    const id = startCronCheckIn('log-retention');
+    mocks.flushTelemetryNow.mockClear();
+    finishCronCheckIn('log-retention', id, 'ok', 1200);
+    expect(mocks.flushTelemetryNow).toHaveBeenCalledTimes(1);
+  });
+
+  it('flushes on the FAILURE path too — that is the path recordJobRun logs before reaching here', () => {
+    const id = startCronCheckIn('log-retention');
+    mocks.flushTelemetryNow.mockClear();
+    finishCronCheckIn('log-retention', id, 'error', 300);
+    expect(mocks.flushTelemetryNow).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not flush when there is no check-in to deliver (gated off, or start failed)', () => {
+    mocks.flushTelemetryNow.mockClear();
+    finishCronCheckIn('log-retention', null, 'ok');
+    expect(mocks.flushTelemetryNow).not.toHaveBeenCalled();
   });
 
   it('NEVER THROWS: a throwing Sentry mock does not propagate out of finishCronCheckIn', () => {

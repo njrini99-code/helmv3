@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   recordHelmBreadcrumb: vi.fn(),
@@ -40,6 +40,15 @@ beforeEach(() => {
 const baseOptions = { feature: 'golf.tasks', channelClass: 'golf_task_assignments', subscriptionType: 'postgres_changes' as const };
 
 describe('observeRealtimeChannel', () => {
+  // The Sentry capture is deferred by TRANSPORT_FAILURE_GRACE_MS so a blip
+  // that self-heals never opens an issue — every assertion about a capture
+  // therefore has to say explicitly whether the window elapsed. Fake timers
+  // are scoped to THIS describe: createRealtimeActivityMonitor's tests below
+  // measure real elapsed time.
+  const GRACE_MS = 30_000;
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it('returns the SAME channel .subscribe() would have — cleanup via removeChannel(channel) keeps working', () => {
     const fake = new FakeChannel();
     const returned = observeRealtimeChannel(fake, baseOptions);
@@ -76,12 +85,18 @@ describe('observeRealtimeChannel', () => {
     );
   });
 
-  it('CHANNEL_ERROR: breadcrumb + metric + warn log + Sentry captureMessage', () => {
+  it('CHANNEL_ERROR: metric + warn log immediately, Sentry captureMessage only once the grace window elapses', () => {
     const fake = new FakeChannel();
     const channel = observeRealtimeChannel(fake, baseOptions) as FakeChannel;
     channel.emit('CHANNEL_ERROR', new Error('boom'));
+
+    // The RATE signal is never deferred — Bridge still counts every
+    // occurrence, including the ones that go on to self-heal.
     expect(mocks.recordRealtimeChannelFailure).toHaveBeenCalledWith({ feature: 'golf.tasks', result: 'CHANNEL_ERROR' });
     expect(mocks.helmLogWarn).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(GRACE_MS);
     expect(mocks.captureMessage).toHaveBeenCalledTimes(1);
     expect(mocks.captureMessage).toHaveBeenCalledWith(
       expect.stringContaining('CHANNEL_ERROR'),
@@ -97,11 +112,54 @@ describe('observeRealtimeChannel', () => {
     );
   });
 
-  it('TIMED_OUT: warning level, still captured', () => {
+  it('TIMED_OUT: warning level, still captured once the window elapses', () => {
     const fake = new FakeChannel();
     const channel = observeRealtimeChannel(fake, baseOptions) as FakeChannel;
     channel.emit('TIMED_OUT');
+    vi.advanceTimersByTime(GRACE_MS);
     expect(mocks.captureMessage).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ level: 'warning' }));
+  });
+
+  it('a transport failure that RECOVERS inside the window opens no issue at all', () => {
+    const fake = new FakeChannel();
+    const channel = observeRealtimeChannel(fake, baseOptions) as FakeChannel;
+    channel.emit('SUBSCRIBED');
+    channel.emit('CHANNEL_ERROR');
+    vi.advanceTimersByTime(GRACE_MS - 1);
+    channel.emit('SUBSCRIBED'); // realtime-js reconnected on its own
+    vi.advanceTimersByTime(GRACE_MS * 2);
+
+    // This is the /golf/dashboard/calendar case: the hook refetches on
+    // re-SUBSCRIBED, so the user lost nothing and there is no incident.
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
+    // ...but the occurrence is still counted.
+    expect(mocks.recordRealtimeChannelFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('a transport failure that NEVER recovers still opens an issue — the honest signal survives', () => {
+    const fake = new FakeChannel();
+    const channel = observeRealtimeChannel(fake, baseOptions) as FakeChannel;
+    channel.emit('CHANNEL_ERROR');
+    vi.advanceTimersByTime(GRACE_MS);
+    expect(mocks.captureMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('a reconnect LOOP queues one deferred capture, not one per failed attempt', () => {
+    const fake = new FakeChannel();
+    const channel = observeRealtimeChannel(fake, baseOptions) as FakeChannel;
+    for (let i = 0; i < 5; i += 1) channel.emit('CHANNEL_ERROR');
+    vi.advanceTimersByTime(GRACE_MS);
+    expect(mocks.captureMessage).toHaveBeenCalledTimes(1);
+    expect(mocks.recordRealtimeChannelFailure).toHaveBeenCalledTimes(5);
+  });
+
+  it('CLOSED cancels a pending capture — an unmount mid-blip is not an outage', () => {
+    const fake = new FakeChannel();
+    const channel = observeRealtimeChannel(fake, baseOptions) as FakeChannel;
+    channel.emit('CHANNEL_ERROR');
+    channel.emit('CLOSED'); // supabase.removeChannel() during cleanup
+    vi.advanceTimersByTime(GRACE_MS * 2);
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
   });
 
   it('CLOSED: breadcrumb only — no metric, no capture (ambiguous: unmount vs forced close)', () => {
@@ -123,6 +181,7 @@ describe('observeRealtimeChannel', () => {
     const channel2 = observeRealtimeChannel(fake2, baseOptions) as FakeChannel; // same channelClass, different channel instance
     channel2.emit('TIMED_OUT');
 
+    vi.advanceTimersByTime(GRACE_MS);
     expect(mocks.captureMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -135,6 +194,7 @@ describe('observeRealtimeChannel', () => {
     const channelB = observeRealtimeChannel(fakeB, { ...baseOptions, channelClass: 'golf_qualifiers' }) as FakeChannel;
     channelB.emit('CHANNEL_ERROR');
 
+    vi.advanceTimersByTime(GRACE_MS);
     expect(mocks.captureMessage).toHaveBeenCalledTimes(2);
   });
 
