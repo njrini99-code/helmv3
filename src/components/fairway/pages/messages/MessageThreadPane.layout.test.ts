@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { createElement } from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
@@ -110,5 +112,22 @@ describe('MessageThreadPane message geometry', () => {
 
     expect(messageColumn).not.toBeNull();
     expect(messageColumn).toContainElement(retryTarget);
+  });
+
+  it('uses a recessed thread well and endpoint-only bubble depth tokens', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'src/components/fairway/pages/messages/MessageThreadPane.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain(
+      'overflow-y-auto overscroll-contain touch-pan-y bg-surface-sunken',
+    );
+    expect(source).toContain(
+      "isFirstInGroup && (isOwn ? 'border-t border-accent-500' : 'border-t border-elevated')",
+    );
+    expect(source).toContain("isLastInGroup && 'shadow-flat'");
+    expect(source).toContain("sendState === 'failed' && 'opacity-80'");
+    expect(source).not.toContain("'bg-surface text-text-primary shadow-flat'");
   });
 });

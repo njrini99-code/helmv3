@@ -7,7 +7,7 @@
  * The two-pane inbox's RIGHT pane and the page's ONE focal hero: a flat matte
  * `InstrumentPanel` depth='raised' thread well with a sunken composer track —
  * mirrors AskThreadPane. The conversation bubbles read on matte surfaces
- * (own = bg-accent tint, other = bg-surface RAISED off a bg-canvas well);
+ * (own = bg-accent tint, other = bg-surface lifted off a sunken matte well);
  * NEVER bg-white/backdrop-blur.
  *
  * It owns NO send/edit/delete logic — the parent FairwayMessages drives those
@@ -1200,19 +1200,14 @@ export function MessageThreadPane({
         participants={isGroup ? groupParticipants : undefined}
       />
 
-      {/* Thread scroll region — the DEEPER champagne page tone, not the card
-          tone. This inverted on 2026-09-04 and it is the whole reason the
-          thread read as flat: the well was `bg-surface` (0.984 L, the single
-          lightest colour in the system) and the incoming bubbles were
-          `bg-surface-sunken` (0.963), so every bubble was DARKER than the
-          surface it sat on. They did not sit on the page, they sank into it.
-          `design-tokens.css` already names the fix at --fw-color-canvas:
-          "cards now clearly LIFT off it … the ~0.03 gap is the premium
-          card/page separation the flat-cream look lacked." A conversation is
-          a stack of cards; it gets the same treatment. */}
+      {/* Thread scroll region — a semantic recessed well inside the screen.
+          The mobile InstrumentPanel itself remains the flat page canvas; only
+          this reading region takes the sunken tone, so the matte incoming
+          bubbles and accent outgoing bubbles have a deliberate layer to lift
+          from without turning the whole phone screen back into a card. */}
       <div
         ref={messagesContainerRef}
-        className="flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
+        className="flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y bg-surface-sunken px-4 py-5 sm:px-5"
         data-scroll-container
       >
         {loading ? (
@@ -1634,28 +1629,26 @@ export function MessageThreadPane({
                           // which is why the menu offers it for incoming
                           // messages too, not only your own.
                           'select-none [-webkit-touch-callout:none]',
-                          // §13: a bubble is LANGUAGE, not a card. `shadow-soft`
-                          // is the raised-card elevation, and at that weight a
-                          // thread reads as a stack of floating Surfaces. The
-                          // separation is already done by colour — cream on
-                          // champagne, green on champagne — so elevation only
-                          // has to hint, not carry. `shadow-flat` is roughly a
-                          // third of soft's opacity and blur.
-                          //
-                          // Outgoing gets NO shadow at all: a saturated green
-                          // fill on a pale ground is already the highest
-                          // contrast step on the screen, and elevation on top
-                          // of that is the "too many green focal points"
-                          // problem in §31.
+                          // §13: a bubble is LANGUAGE, not a card. Surface and
+                          // accent fills establish the material; depth is
+                          // reserved for the OUTER boundaries of each speaker
+                          // group. A light token edge catches the first bubble,
+                          // and the quiet `shadow-flat` contact layer grounds
+                          // only the final one. Middle bubbles stay flat, so a
+                          // burst reads as one utterance rather than a stack of
+                          // mini cards.
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-surface text-text-primary shadow-flat',
+                            : 'bg-surface text-text-primary',
+                          isFirstInGroup && (isOwn ? 'border-t border-accent-500' : 'border-t border-elevated'),
+                          isLastInGroup && 'shadow-flat',
                           // Undelivered reads as provisional: the fill softens
                           // rather than turning red. The message is not an
                           // error, it just has not landed — and colour is never
                           // the only channel, the metadata line says so in
-                          // words directly beneath it.
-                          sendState === 'failed' && 'opacity-60',
+                          // words directly beneath it. Keep enough opacity for
+                          // the reply quote and body text to remain readable.
+                          sendState === 'failed' && 'opacity-80',
                           // 20px card radius, not 28px. At 28 a two-word reply
                           // ("Yo") has a radius larger than its own half-height
                           // and renders as a lozenge. The interior corners of a
