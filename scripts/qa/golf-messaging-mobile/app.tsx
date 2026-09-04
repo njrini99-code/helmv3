@@ -159,7 +159,7 @@ function NewPrivateGroupFixture() {
 
 function currentFixture(): FixtureId {
   const fixture = new URLSearchParams(window.location.search).get('fixture');
-  if (fixture === 'inbox-unread-group' || fixture === 'thread-short-group' || fixture === 'thread-failed-send' || fixture === 'new-private-group') {
+  if (fixture === 'inbox-unread-group' || fixture === 'thread-short-group' || fixture === 'thread-group-details' || fixture === 'thread-failed-send' || fixture === 'new-private-group') {
     return fixture;
   }
   return 'inbox-unread-group';
@@ -171,6 +171,7 @@ export function App() {
     <main className="fairway-ds min-h-screen bg-canvas p-0 text-text-primary" data-fixture={fixture}>
       {fixture === 'inbox-unread-group' ? <InboxFixture /> : null}
       {fixture === 'thread-short-group' ? <ThreadFixture failed={false} /> : null}
+      {fixture === 'thread-group-details' ? <ThreadFixture failed={false} /> : null}
       {fixture === 'thread-failed-send' ? <ThreadFixture failed /> : null}
       {fixture === 'new-private-group' ? <NewPrivateGroupFixture /> : null}
     </main>

@@ -6,7 +6,7 @@
   "observedLimitations": [
     "Chromium component evidence does not prove physical iPhone Safari/WebView keyboard, safe-area, touch, or native-sheet behavior."
   ],
-  "failedSendVisualCheck": "After the bubble-column repair, visual inspection confirmed reply, body, and retry metadata remain inside the viewport at 320px, 390px, and 430px. Document overflow remained zero at every width.",
+  "failedSendVisualCheck": "After the flat mobile reset, visual inspection confirmed reply, body, and retry metadata remain inside the viewport at 320px, 390px, and 430px. Document overflow remained zero at every width.",
   "results": [
     {
       "fixture": "inbox-unread-group",
@@ -49,6 +49,27 @@
       "scrollWidth": 430,
       "clientWidth": 430,
       "png": "thread-short-group-430.png"
+    },
+    {
+      "fixture": "thread-group-details",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "png": "thread-group-details-320.png"
+    },
+    {
+      "fixture": "thread-group-details",
+      "width": 390,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "png": "thread-group-details-390.png"
+    },
+    {
+      "fixture": "thread-group-details",
+      "width": 430,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "png": "thread-group-details-430.png"
     },
     {
       "fixture": "thread-failed-send",

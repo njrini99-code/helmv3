@@ -10,12 +10,13 @@ Run from the repository root:
 npx tsx scripts/qa/golf-messaging-mobile/capture.ts
 ```
 
-The command renders deterministic fixtures at 320, 390, and 430 CSS pixels, writes the twelve PNGs and `manifest.json` here, and fails if a browser page reports `document.documentElement.scrollWidth > document.documentElement.clientWidth`.
+The command renders deterministic fixtures at 320, 390, and 430 CSS pixels, writes the fifteen PNGs and `manifest.json` here, and fails if a browser page reports `document.documentElement.scrollWidth > document.documentElement.clientWidth`.
 
 Fixtures cover:
 
 - `inbox-unread-group`: selected unread group row and actual `AvatarGroup` stack.
 - `thread-short-group`: grouped incoming bubbles, group sender identity, reply metadata, composer.
+- `thread-group-details`: the actual flat conversation-details sheet opened from that group thread.
 - `thread-failed-send`: retained failed bubble, retry metadata, quote, and composer reply state.
 - `new-private-group`: the actual mobile group sheet after two fixture roster recipients and a group name are selected.
 

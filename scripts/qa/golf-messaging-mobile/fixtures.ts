@@ -1,6 +1,7 @@
 export const fixtureIds = [
   'inbox-unread-group',
   'thread-short-group',
+  'thread-group-details',
   'thread-failed-send',
   'new-private-group',
 ] as const;

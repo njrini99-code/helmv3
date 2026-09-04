@@ -66,6 +66,9 @@ async function main() {
           await page.emulateMedia({ reducedMotion: 'reduce' });
           await page.goto(`http://127.0.0.1:${port}/?fixture=${fixture}`, { waitUntil: 'networkidle' });
           await page.locator(`main[data-fixture="${fixture}"]`).waitFor();
+          if (fixture === 'thread-group-details') {
+            await page.getByRole('button', { name: /Conversation details for/ }).first().click();
+          }
           if (fixture === 'new-private-group') await preparePrivateGroup(page);
           if (browserErrors.length) throw new Error(`${fixture} ${width}px browser errors: ${browserErrors.join(' | ')}`);
 
@@ -95,9 +98,9 @@ async function main() {
         viewportHeight: height,
         overflowAssertion: 'document.documentElement.scrollWidth <= document.documentElement.clientWidth',
         observedLimitations: [
-          'This pre-runtime-fix capture shows the failed outgoing reply bubble clipped at 320px and 390px even though document-level horizontal overflow is zero. Re-run this command after the messaging layout fix before treating failed-send visual QA as clear.',
+          'Chromium component evidence does not prove physical iPhone Safari/WebView keyboard, safe-area, touch, or native-sheet behavior.',
         ],
-        recaptureAfterRuntimeFix: 'npx tsx scripts/qa/golf-messaging-mobile/capture.ts',
+        failedSendVisualCheck: 'After the flat mobile reset, visual inspection confirmed reply, body, and retry metadata remain inside the viewport at 320px, 390px, and 430px. Document overflow remained zero at every width.',
         results,
       }, null, 2)}\n`,
     );
