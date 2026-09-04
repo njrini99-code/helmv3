@@ -12,6 +12,19 @@
 --
 -- No anon grants anywhere: the helper is REVOKEd from PUBLIC and anon and
 -- granted only to `authenticated`, matching golf_conversation_on_my_team.
+--
+-- VERIFIED ON PRODUCTION 2026-09-04, in rolled-back transactions, WITH a
+-- control that passes (so the attacks are not passing vacuously against a
+-- policy that denies everything):
+--   control  participant reacts as SELF ................. INSERTED
+--   attack A participant forges a TEAMMATE's reaction ... BLOCKED 42501
+--   attack B non-participant reacts to the message ...... BLOCKED 42501
+--   attack C non-participant reads the reactions ........ 0 rows
+--   table row count afterwards .......................... 0
+--
+-- Attack A is the one worth stating plainly: it is the `user_id = auth.uid()`
+-- conjunct in the INSERT policy, and without it any participant in a
+-- conversation could attribute a reaction to anybody else in it.
 
 -- Is the CALLER a participant in this conversation?
 --
