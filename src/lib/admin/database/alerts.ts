@@ -160,11 +160,42 @@ export async function fetchAlertPolicy(): Promise<AdminFetchResult<AlertPolicySn
         ? blind('no health sample yet')
         : known(pctMax >= CONNECTIONS_PCT_MAX_CRITICAL, `connectionsPctMax = ${pctMax}`);
 
-    const unhealthyCollectors = overview.data.collectors.filter((c) => c.lastStatus !== 'completed');
-    signals.sampler_stopped = known(
-      unhealthyCollectors.length > 0,
-      unhealthyCollectors.map((c) => `${c.jobType}: ${c.lastStatus}`).join('; '),
-    );
+    // `!== 'completed'` collapsed three different facts into one firing
+    // alert. CollectorHealth's own doc in overview.ts is the authority on why
+    // that is wrong, and this line was violating the rule that file states:
+    //
+    //   failed     the collector ran and did not finish — a real defect.
+    //   never_run  the log WAS read and holds no row for it. For a cron that
+    //              is registered and deployed, that is exactly how a
+    //              permanently dead one looks — #1775's selfheal-triage sat
+    //              on an undeployed Vercel cron and stayed invisible because
+    //              nothing fired. So this KEEPS firing. A newly added daily
+    //              job reading red until its first scheduled time is a small,
+    //              self-clearing cost; a dead cron reading "unknown" forever
+    //              is the expensive one.
+    //   unknown    the job-log READ ITSELF failed, so nothing is known about
+    //              any collector. overview.ts returns 'unknown' for ALL THREE
+    //              in that case, so iterating and concluding anything here
+    //              asserts a defect from a query that never returned — the
+    //              precise inversion this program exists to prevent.
+    const failedCollectors = overview.data.collectors.filter((c) => c.lastStatus === 'failed');
+    const neverRunCollectors = overview.data.collectors.filter((c) => c.lastStatus === 'never_run');
+    const unreadCollectors = overview.data.collectors.filter((c) => c.lastStatus === 'unknown');
+    const brokenCollectors = [...failedCollectors, ...neverRunCollectors];
+    if (brokenCollectors.length > 0) {
+      // A known failure outranks an unread collector: if some collectors are
+      // broken and others merely unreadable, the defect is the finding.
+      signals.sampler_stopped = known(
+        true,
+        brokenCollectors.map((c) => `${c.jobType}: ${c.lastStatus}`).join('; '),
+      );
+    } else if (unreadCollectors.length > 0) {
+      signals.sampler_stopped = blind(
+        `collector job-log read did not return for ${unreadCollectors.map((c) => c.jobType).join(', ')}`,
+      );
+    } else {
+      signals.sampler_stopped = known(false);
+    }
   }
 
   // --- errors-derived -------------------------------------------------------
