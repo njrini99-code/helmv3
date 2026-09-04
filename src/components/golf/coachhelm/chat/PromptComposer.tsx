@@ -24,6 +24,7 @@
 import * as React from 'react';
 import { Plus, ArrowUp, Square, X, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { ChatContextChip } from './useCoachHelmChat';
 
 export interface ComposerPlayer {
@@ -96,6 +97,10 @@ export function PromptComposer({
   failed,
   className,
 }: PromptComposerProps) {
+  // Drives the Enter-to-send gate below: a real pointer implies a real
+  // keyboard, and only a real keyboard has the Shift+Enter this composer's
+  // contract depends on.
+  const isPointerFine = useMediaQuery('(pointer: fine)');
   const [value, setValue] = React.useState(initialValue ?? '');
   const [menu, setMenu] = React.useState<'none' | 'plus' | 'players'>('none');
   const [query, setQuery] = React.useState('');
@@ -225,6 +230,21 @@ export function PromptComposer({
       }
     }
 
+    // Enter-to-send is a HARDWARE-KEYBOARD affordance. The contract above is
+    // "Enter sends, Shift+Enter is a new line", which quietly assumes a Shift
+    // key exists. An iOS software keyboard has none — its return key reports as
+    // plain `Enter` — so on a phone the newline branch was unreachable and
+    // every attempt at a second line sent the prompt instead. A coach could not
+    // write a two-line question to CoachHelm at all.
+    //
+    // Same fix, and the same test, as the team-message composer
+    // (fairway/pages/messages/MessageComposer.tsx): gate on `(pointer: fine)`,
+    // which asks whether a real pointer — and therefore a real keyboard — is
+    // driving, rather than how wide the screen is. A tablet with a keyboard
+    // case keeps Enter-to-send; a landscape phone does not. On touch the send
+    // button is the send affordance, and Enter falls through to the textarea's
+    // native newline.
+    if (!isPointerFine) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
