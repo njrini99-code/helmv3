@@ -583,6 +583,15 @@ function checkDisk() {
 function checkLifecycleRuntime() {
   const r = sh('node', ['scripts/worktree-lifecycle.mjs', '--json']);
   if (r.status !== 0 && !r.stdout) return add('lifecycle', 'reporter', UNKNOWN, 'lifecycle reporter produced nothing');
+  // Exit 2 from the reporter means INFRASTRUCTURE_FAILURE: every PR lookup
+  // failed, so the rows are shaped correctly and say nothing. Short-circuit
+  // BEFORE the checks below, which would otherwise read an evidence blackout
+  // as `PASS ... 0 NO_UPSTREAM_UNIQUE_WORK` — a green check standing on no
+  // evidence, which is the failure this whole file exists to refuse.
+  if (r.status === 2) {
+    return add('lifecycle', 'reporter', UNKNOWN,
+      'lifecycle reporter returned INFRASTRUCTURE_FAILURE (every PR lookup failed) — no lifecycle claim can be made from this run');
+  }
   let rows;
   try {
     rows = JSON.parse(r.stdout);
