@@ -224,40 +224,49 @@ descendants). One reveal, one owner. **No change made or needed.**
 
 ## I. File-level implementation plan
 
-**Landed on this branch:**
+**Landed (golf only — the branch carries no baseball changes):**
 
-| File | Change |
+| Area | Files |
 |---|---|
-| `fairway/app-shell/AppShell.tsx` | memoize `topBarProps` |
-| `fairway/pages/messages/MessageComposer.tsx` | pointer-gate Enter-to-send and the desktop hint |
-| `fairway/pages/messages/MessageComposer.enterKey.test.tsx` | new — 7 tests |
-| `fairway/pages/messages/FairwayMessages.tsx` | compact phone action row; drop mobile masthead |
-| `ui/drawer.tsx` | `--keyboard-height` lift; `vh`→`dvh` |
-| `hooks/golf/use-golf-messages.ts` | select `has_attachments` |
-| `hooks/golf/__tests__/use-golf-messages.attachment-flag.test.ts` | new — 3 tests |
-| `baseball/messages/MessagesFairway.tsx` | keyboard term + `data-fw-keyboard-aware` |
+| Shell re-render | `fairway/app-shell/AppShell.tsx` (memoize `topBarProps`) |
+| Composer keys | `MessageComposer.tsx`, `MessageComposer.enterKey.test.tsx`, `coachhelm/chat/PromptComposer.tsx` |
+| Attachments | `hooks/golf/use-golf-messages.ts` (+ `use-golf-messages.attachment-flag.test.ts`), `MessageThreadPane.tsx` (empty-result retry) |
+| Draft misdirection | `FairwayMessages.tsx` (+ `FairwayMessages.composerScope.test.ts`), `coachhelm/chat/CoachHelmChat.tsx` |
+| Messages layout | `FairwayMessages.tsx`, `MessageConversationRail.tsx`, `MessageThreadPane.tsx`, `messages/loading.tsx` |
+| Chat feel | `MessageThreadPane.tsx` — day + unread separators, time-aware grouping, arrival motion, typing indicator, group-only identity |
+| Read state | `use-golf-messages.ts` — mark-read on arrival, debounced + visibility-gated |
+| Send integrity | `use-golf-messages.ts`, `app/actions/messages.ts`, `lib/validation/action-schemas.ts` (client UUID, exact reconciliation, 23505 handling) |
+| Keyboard | `ui/drawer.tsx`, `coachhelm/chat/AskSurface.tsx` |
+| Round | `FairwayShotPills.tsx` (progress control), `FairwayScorecardHeader.tsx` (`belowSlot`, one sticky layer), `FairwayShotEntry.tsx` (press + focus + haptics) |
+| Controls | `controls/_internal.ts` (`fwPress`), `controls/button.tsx`, `controls/selectable-pill.tsx`, `ui/input.tsx`, `golf/messages/AttachmentButton.tsx` |
+| Design tokens | `styles/design-tokens.css` (focus-ring contrast), `app/globals.css` (`text-size-adjust`), `view-header/view-header.tsx` (plinth condenses on phone) |
+| Charts / calendar | `FairwayRoundDetail.tsx` (responsive Pulse + end-dot), `calendar/page.tsx` (streamed phase 2), `FairwayCalendarMemberRail.tsx`, `FairwayCoursePicker.tsx` |
 
 **Deliberately deferred, with reasons:**
 
 - **Dedicated chat route** — P1 #15 in the spec's own ordering, and the
-  master-detail behaviour it would buy already exists via `mobileShowChat`. The
-  real gap it closes is narrower than "card inside a page": conversation
-  selection is state, not URL (`FairwayMessages.tsx:291`), and the
-  `?conversation=` deep link is *stripped* by `router.replace`, so opening a
-  thread creates no history entry — the back gesture exits Messages instead of
-  returning to the list, and an open thread cannot be linked. Worth doing; not
-  P0; too large to ride along with stability fixes.
-- **Calendar waterfall** (§A.7) — a real fix, but it is a server-data
-  restructure on the app's slowest route and does not belong in a mobile
-  stability PR.
+  master-detail it would buy already exists via `mobileShowChat`. The real gap
+  is narrower: selection is state, not URL, and the `?conversation=` deep link
+  is *stripped*, so opening a thread creates no history entry — the back gesture
+  exits Messages rather than returning to the list, and a thread cannot be
+  linked. Worth doing; too large to ride with stability fixes.
 - **Safe-area on `ui/drawer.tsx`** — 11 of its 23 call sites already pad
-  themselves; a container-level pad would double-pad exactly those. Needs a
-  per-call-site pass.
-- **Optimistic-send UUID + ordering** (§D) — correct fix is a client-generated
-  id threaded through the server action; a contained change, but a behavioural
-  one on the send path, and it wants its own PR and its own tests.
-
----
+  themselves and 12 do not. The correct fix is to move ownership to the
+  container and remove it from the 11, which is a 12-file change that wants
+  visual verification. The keyboard half, which is the bug, IS fixed.
+- **Optimistic entry for attachment sends** — the sender sees nothing between
+  tapping send and the realtime echo, which on course wifi is seconds. The fix
+  crosses two hooks (`useMessageAttachments` never touches `useGolfMessages`
+  state) and is a behavioural change to the send path; it wants its own PR.
+- **History beyond 200 messages** — the thread fetch is capped and there is no
+  pagination, so older history is unreachable. Real, and a feature rather than a
+  fix.
+- **`display-mode: standalone`** — an installed PWA takes the plain-web path.
+  Adding a third platform mode without a device to test it would be guessing.
+- **Page gutter inconsistency** — Home uses `px-5`, six other routes `px-4`. The
+  spec's own table wants ~20px, so Home is arguably correct and the others are
+  the outliers; picking a direction blind, across seven routes, is not a 3am
+  change.
 
 ## J. What is NOT verified
 
