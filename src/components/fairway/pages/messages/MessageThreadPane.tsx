@@ -268,6 +268,9 @@ function ReactionChips({
   return (
     <div className={cn('flex flex-wrap gap-1', align === 'end' ? 'justify-end' : 'justify-start')}>
       {reactions.map((r) => (
+        // A reaction chip is a ~24px inline token; <Button>'s 36/44px
+        // min-height would make the strip taller than the bubble it annotates.
+        // eslint-disable-next-line helm/no-raw-button -- see above
         <button
           key={r.emoji}
           type="button"
@@ -873,7 +876,12 @@ export function MessageThreadPane({
   const isGroup = isGroupConversation(conversation);
   const headerName = isGroup
     ? conversation.title || 'Team Group'
-    : conversation.other_participant?.name || 'Unknown User';
+    // §5: "Unknown User" is ship-blocking. It is a DEBUG string, and it was
+    // rendering as ordinary UI for a real DM. The participant is built from a
+    // coach/player lookup, so an unresolved one is not "unknown" — it is
+    // somebody with no current roster row: they left, or the account is gone.
+    // Say that. A truthful label beats a placeholder that reads like a fault.
+    : conversation.other_participant?.name || 'Former team member';
   // `is_group` is set for anything carrying `is_team_chat`, and a broadcast
   // sent to ONE player carries it too (the flag is load-bearing for the
   // conversation-create RLS workaround, so it can't just be dropped there).
@@ -910,6 +918,13 @@ export function MessageThreadPane({
         // has the same single-class specificity as a Tailwind utility — without
         // it the winner would depend on stylesheet order.
         'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none',
+        // §44 "retire mobile InstrumentPanel thinking": the panel's own card
+        // tone is what still made this read as a pane laid ON a page. Below
+        // `md` the panel takes the page's own ground and stops reserving a
+        // minimum height, so the thread is the screen rather than an object
+        // sitting on one. From `md` up it is genuinely one pane of a two-pane
+        // inbox and keeps every bit of its lift.
+        'max-md:!bg-canvas max-md:!min-h-0',
         className,
       )}
     >
@@ -970,7 +985,7 @@ export function MessageThreadPane({
           a stack of cards; it gets the same treatment. */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
+        className="flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
         data-scroll-container
       >
         {loading ? (
@@ -1014,7 +1029,12 @@ export function MessageThreadPane({
           // by the grouping (tight within a group, generous between), and a
           // uniform gap on every child would flatten that back out and
           // double-space the day separators.
-          <div ref={messagesContentRef}>
+          // §6: bottom-anchored. `mt-auto` in a flex column pushes a SHORT
+          // thread down to sit above the composer instead of hugging the top
+          // with a void beneath it, and does nothing at all once the content
+          // is taller than the region — so long threads and history prepend
+          // are untouched. No absolute positioning, no scroll maths.
+          <div ref={messagesContentRef} className="mt-auto w-full">
             {messages.map((msg, idx, all) => {
               // The receipt belongs to the CONVERSATION, not to each group.
               // It used to render under every outgoing group, which stacked
@@ -1099,12 +1119,16 @@ export function MessageThreadPane({
                   </div>
                 )}
                 {startsDay && (
-                  <div className="flex items-center gap-3 pb-2 pt-5" role="separator">
-                    <span className="h-px flex-1 bg-border-subtle" />
+                  // §11: the full-width rules are gone. Two hairlines
+                  // spanning the thread made the DATE the strongest horizontal
+                  // element on screen — louder than any message. A centred
+                  // label orients just as well and competes with nothing. The
+                  // unread landmark below KEEPS its rules on purpose: that one
+                  // is meant to be found.
+                  <div className="flex justify-center pb-2 pt-6" role="separator">
                     <span className="font-fw-sans text-caption font-semibold text-text-tertiary">
                       {formatDaySeparator(msg.created_at)}
                     </span>
-                    <span className="h-px flex-1 bg-border-subtle" />
                   </div>
                 )}
                 <m.div
@@ -1209,6 +1233,10 @@ export function MessageThreadPane({
                               {GOLF_QUICK_REACTIONS.map((emoji) => {
                                 const picked = getReactionsFor(msg.id).some((r) => r.emoji === emoji && r.mine);
                                 return (
+                                  // A 44x44 circular emoji target; <Button>
+                                  // adds horizontal padding and a text scale
+                                  // that would break the round hit area.
+                                  // eslint-disable-next-line helm/no-raw-button -- see above
                                   <button
                                     key={emoji}
                                     type="button"
@@ -1216,7 +1244,7 @@ export function MessageThreadPane({
                                     aria-pressed={picked}
                                     onClick={() => { void toggleReaction(msg.id, emoji); onSetMobileActions(null); }}
                                     className={cn(
-                                      'flex h-11 w-11 items-center justify-center rounded-full text-[20px] leading-none',
+                                      'flex h-11 w-11 items-center justify-center rounded-full text-body-lg leading-none',
                                       'transition-transform active:scale-90',
                                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                                       picked && 'bg-accent-50',
@@ -1336,7 +1364,7 @@ export function MessageThreadPane({
                         )}
                       >
                         {msg.content ? (
-                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body leading-snug">
+                          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-fw-sans text-body-lg leading-snug">
                             {decodeMessageContent(msg.content)}
                           </p>
                         ) : null}

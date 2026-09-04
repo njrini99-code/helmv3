@@ -15,6 +15,19 @@ vi.mock('@/app/golf/actions/messages', () => ({
   getGolfMessageAttachments: vi.fn(),
 }));
 
+// This file tests SCROLL POSITION. Reactions bring a Supabase client and a
+// realtime channel with them, neither of which exists in this environment —
+// unstubbed, the hook throws on NEXT_PUBLIC_SUPABASE_URL and takes the scroll
+// assertions down with it. Stub the hook, not the client, so the seam stays at
+// the feature boundary rather than in Supabase's constructor.
+vi.mock('@/hooks/golf/use-golf-message-reactions', () => ({
+  useGolfMessageReactions: () => ({
+    reactions: new Map(),
+    getFor: () => [],
+    toggle: vi.fn(),
+  }),
+}));
+
 describe('MessageThreadPane initial thread position', () => {
   const groupMessages = [
     { conversation_id: 'group-1' },

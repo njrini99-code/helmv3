@@ -144,7 +144,9 @@ function ConversationRow({
   const isGroup = isGroupConversation(conv);
   const displayName = isGroup
     ? conv.title || 'Team Group'
-    : conv.other_participant?.name || 'Unknown User';
+    // See MessageThreadPane: "Unknown User" is a debug string. A participant
+    // with no coach/player row has left the roster, and the list should say so.
+    : conv.other_participant?.name || 'Former team member';
   const time = formatTime(conv.last_message?.created_at);
 
   return (

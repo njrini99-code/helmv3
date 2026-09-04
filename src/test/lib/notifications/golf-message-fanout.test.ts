@@ -20,6 +20,12 @@
  * So the two properties worth pinning are (1) the recipient lookup must go
  * through the SERVICE-ROLE client, and (2) an empty recipient set must be
  * loud, never a silent return.
+ *
+ * 2026-09-04: a THIRD property. Email was removed from this path by owner
+ * instruction — a chat message is not an email, and an active thread mailed
+ * every participant once per message. Push and the in-app bell remain. The
+ * assertion below is inverted rather than deleted, so that re-adding a
+ * per-message email fails here instead of quietly shipping.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -129,7 +135,7 @@ describe('notifyGolfMessageRecipients', () => {
       RECIPIENT,
       expect.objectContaining({ senderName: 'Coach Rini', conversationId: CONV }),
     );
-    expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+    expect(notifyNewMessageMock).not.toHaveBeenCalled();
   });
 
   it('an empty recipient set is LOGGED and sends nothing — never a silent return', async () => {

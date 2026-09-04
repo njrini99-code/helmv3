@@ -236,10 +236,16 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
 
       <div
         className={cn(
-          'flex items-end gap-2 rounded-fw-lg p-1.5',
+          // §22: radius 20px (was 28 — a composer is a field, not a sheet),
+          // and ONE focus treatment. It used to draw a colour-shifted border
+          // AND a 2px ring: two concentric rounded rectangles around a field
+          // that already sits inside a bordered track. The border alone says
+          // "focused" perfectly well and is what the spec means by "no giant
+          // green ring".
+          'flex items-end gap-2 rounded-card p-1.5',
           'border border-border-subtle bg-surface',
-          'transition-colors duration-200',
-          'focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-border-focus/30',
+          'transition-colors duration-150',
+          'focus-within:border-accent-600',
         )}
       >
         {/* Attachment trigger — REUSED UNCHANGED. */}
@@ -281,24 +287,40 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-fw-md p-0 md:h-10 md:w-10',
-            'outline-none transition-all duration-200',
+            // §22: the HIT TARGET stays 44px; the VISIBLE circle is 36. They
+            // were the same object before, which is why the send button read as
+            // an oversized tile. §50: name the properties — `transition-all`
+            // on a control pressed this often animates layout too.
+            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-full bg-transparent p-0',
+            'outline-none hover:bg-transparent',
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
-            'active:scale-95 motion-reduce:active:scale-100',
-            canSend
-              ? 'bg-accent-650 text-text-on-accent shadow-flat hover:bg-accent-600 hover:shadow-soft'
-              : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',
+            // §50: name the property. `transition-all` on a control pressed
+            // this often animates layout as well as paint.
+            'transition-transform duration-150 active:scale-95 motion-reduce:active:scale-100',
+            !canSend && 'cursor-not-allowed',
           )}
         >
-          {sending ? (
-            <span className="flex items-center gap-1" aria-hidden="true">
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
-            </span>
-          ) : (
-            <Send size={18} aria-hidden="true" />
-          )}
+          {/* §22: the hit target is the 44px <Button>; the VISIBLE control is
+              this 36px circle. They used to be the same box, which is why send
+              read as an oversized tile rather than a send button. */}
+          <span
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150',
+              canSend
+                ? 'bg-accent-650 text-text-on-accent'
+                : 'bg-surface-sunken text-text-tertiary',
+            )}
+          >
+            {sending ? (
+              <span className="flex items-center gap-1" aria-hidden="true">
+                <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
+              </span>
+            ) : (
+              <Send size={18} aria-hidden="true" />
+            )}
+          </span>
         </Button>
       </div>
 

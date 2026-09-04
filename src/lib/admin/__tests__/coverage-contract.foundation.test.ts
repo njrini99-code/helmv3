@@ -353,6 +353,11 @@ describe('global tripwire', () => {
     //   instead of delete-and-recreate (GAPS_AUDIT_INTERACTION_CRUD). Wrapped
     //   like deleteAnnouncement; announcements.ts is 'ALL'-mapped, so this
     //   scan picks it up with no manifest edit.
-    expect(total).toBe(447);
+    // 2026-09-04 (+2): toggleGolfMessageReaction / getGolfMessageReactions
+    //   (message-reactions.ts) — message reactions, spec §29. Both
+    //   withAdminObserved-wrapped; message-reactions.ts sits under
+    //   src/app/golf/actions/ which is 'ALL'-mapped, so the live scan picks
+    //   them up with no manifest edit.
+    expect(total).toBe(449);
   });
 });
