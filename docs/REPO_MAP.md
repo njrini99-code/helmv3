@@ -3,7 +3,7 @@
 Structural map of helmv3: route atlas, canonical idioms (with file:line
 anchors), known traps, and a pre-code checklist. This is a map of *shape and
 convention*, not of feature behavior — for feature behavior use
-`memory/registry.yml` and `memory/context/*.md` per `CLAUDE.md`'s context
+`memory/registry.yml` and `memory/context/*.md` per AGENTS.md's Feature awareness section — context
 routing table. This doc does not auto-regenerate; if a route count or
 file:line anchor looks wrong, trust the source file over this doc and flag
 the drift.
@@ -126,12 +126,11 @@ for "admin" needs all three named.
 
 Top-level `src/app` pages (route groups resolved): `/`, `/about`, `/help`,
 `/products`, `/support`, `/splash`, `/vizlab`, `/fairway-preview`,
-`/soreness-preview`, plus `(legal)` → `/privacy`, `/terms`.
+plus `(legal)` → `/privacy`, `/terms`.
 
-**`helm-website-ui/`** is a second, wholly separate Next.js app
-(`helm-website-ui/app/page.tsx`, `helm-website-ui/app/products/page.tsx`) —
-its own build, not part of the `src/app` tree. Don't assume all marketing
-routes live under `src/app`.
+**All marketing routes live under `src/app`.** A separate `helm-website-ui/`
+Next.js app used to sit at the repo root; it was deleted in `761bea048`
+(#810) and this paragraph described it until 2026-09-04.
 
 ---
 
@@ -143,7 +142,7 @@ routes live under `src/app`.
 |---|---|---|---|
 | `withBaseballAction` | `src/lib/baseball/with-baseball-action.ts:339` | 98 sites | Auth + active-context resolution, server-side capability enforcement, `Sentry.withScope` (`sport=baseball`, `feature`, `feature_area`, `action`) + breadcrumb. `opts`: `featureArea` required; optional `requiredCapability` / `requiredPlayerAccess` / `teamFrom` / `requireActiveContext` / `demoSafe`. |
 | `withLiftingAction` | `src/lib/lifting/with-lifting-action.ts:113` | 23 sites | Injects `LiftingActionContext {user, orgId, access}`. `opts`: `featureArea`, `requireEdit`, `orgFrom`. Same `Sentry.withScope(sport='lifting', ...)` shape as baseball. |
-| `withAdminObserved` | `src/lib/admin/observed-action.ts:56` (comment 21-25, guard `isNextControlFlowError` at line 28) | 129 sites — most-used of the three | Explicitly generalizes the with-baseball/with-lifting idea for cross-sport use ("Helm Bridge capture class #2 — failed server actions"). Contract: never changes the wrapped function's resolve/reject; logging is fire-and-forget via `resolveObservedUser()` (self-swallowing) then `observeActionSoftFailure()`. `isNextControlFlowError()` guards `NEXT_REDIRECT`/`NEXT_NOT_FOUND` digests from being misreported as failures. |
+| `withAdminObserved` | `src/lib/admin/observed-action.ts:73` (comment 27-38, guard `isNextControlFlowError` at line 39) | 129 sites — most-used of the three | Explicitly generalizes the with-baseball/with-lifting idea for cross-sport use ("Helm Bridge capture class #2 — failed server actions"). Contract: never changes the wrapped function's resolve/reject; logging is self-swallowing and is SCHEDULED past the response via `scheduleBridgeWrite` — NOT fire-and-forget then `observeActionSoftFailure()`. `isNextControlFlowError()` guards `NEXT_REDIRECT`/`NEXT_NOT_FOUND` digests from being misreported as failures. |
 
 These three **compose, they don't compete**: a sport-specific wrapper owns
 auth + capability + Sentry scoping; `withAdminObserved` is a cross-cutting
@@ -164,7 +163,7 @@ wrapped in `withBaseballAction`/`withLiftingAction` — purely to add
 | Primitive | Location | Usage | Rule |
 |---|---|---|---|
 | `fromUntyped(client, table)` | `src/lib/supabase/untyped.ts:69` (`UntypedTable` allowlist union, lines 15-61) | 159 sites | Centralizes the `as any` escape hatch for tables not yet in generated `database.ts` types. Extend the `UntypedTable` union when adding a new hand-typed table module — don't scatter raw `as any` casts. Graduate a table off this list once `db:types` regen picks it up. |
-| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing/placeholder; returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. The `service-role-scope` hard rule blocks any use outside `src/lib/supabase/admin*` and `src/app/api/**/admin/**` as a security incident — not a style nit. **2026-08-15:** this rule no longer lives in the external review bot — the external review bots were dropped 2026-07-20 and the retired rules directory is deleted. It is now enforced deterministically by the **Review Gate** (`.github/workflows/review-gate.yml`, aggregate check `Review Gate / all`) via the custom packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` — that directory name is historical, CI still consumes it. See `.claude/rules/code-review-tooling.md`. |
+| `createAdminClient()` | `src/lib/supabase/admin.ts:4` | 200 sites — most-used data-access primitive in the repo | Throws if `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing/placeholder; returns a service-role client (`autoRefreshToken:false, persistSession:false`) that **bypasses RLS**. The `service-role-scope` hard rule blocks any use outside `src/lib/supabase/admin*` and `src/app/api/**/admin/**` as a security incident — not a style nit. **2026-08-15:** this rule no longer lives in the external review bot — the external review bots were dropped 2026-07-20 and the retired rules directory is deleted. It is now enforced deterministically by the **Review Gate** (`.github/workflows/review-gate.yml`, aggregate check `Review Gate aggregate`) via the custom packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` — that directory name is historical, CI still consumes it. See `.claude/rules/code-review-tooling.md`. |
 | `fetchAllRows` / `fetchAllRowsResult` | `src/lib/supabase/fetch-all-rows.ts` — `fetchAllRows` (line 60, throws on error), `fetchAllRowsResult` (line 103, `{data,error}` shape) | 69 sites | `DEFAULT_PAGE_SIZE=1000` (line 34), loop bounded at 1000 pages as a circuit-breaker (line 74). Caller **must** supply a stable `.order()` on a unique column (lines 10-19) or page boundaries drift. Optional `rlsCtx` threads into `maybeCaptureRlsDenial` (lines 22-29). This is the fix for the PostgREST 1000-row-cap trap below — treat the two as one unit. |
 | `todayIsoInTz(tz, now)` / `resolveTeamTimezone(...)` | `src/lib/baseball/daily-contract/contract-day.ts:57` and `:193` | — | Canonical timezone-resolution primitives for any calendar/today/streak feature. Part of the "daily contract" module backing the `calendar-timezone-safety` rule (store UTC, display in team/user timezone, no naive `new Date()` day-boundaries) — now a Review Gate pack rule, not the external review bot. Don't hand-roll `new Date()` day-boundary math. |
 | `getAppBaseUrl()` | `src/lib/app-base-url.ts:32` | — | Canonical way to resolve the app's own base URL (email links, share links) instead of hardcoding a host or reading `NEXT_PUBLIC_SITE_URL` directly at each call site. |
@@ -223,7 +222,7 @@ animation vars `--fw-dur-*`/`--fw-ease-*` in `globals.css` (lines
 1767-1845) with inline fallbacks (e.g. `var(--fw-dur-base, 280ms)`). This
 is a **separate token layer** scoped via a `.fairway-ds` class, coexisting
 with — not replacing — the `tailwind.config.ts` tokens described in
-`CLAUDE.md`'s color-family list (`primary-*`/`destructive`/`warm-*`/`cream-*`).
+the `tailwind.config.ts` color families (`primary-*`/`destructive`/`warm-*`/`cream-*`).
 
 ### Nav registries
 
@@ -235,7 +234,7 @@ asymmetry, not an oversight to "fix" by inventing a lifting registry.
 | Baseball | `src/lib/baseball/nav-registry.ts` (1366 lines) | `BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[]` (line 330) + role/visibility helpers `isBaseballNavEntryVisible`/`getVisibleBaseballNav`/`getPrimaryBaseballNav`/`getSecondaryBaseballNav`/`getBaseballNavEntry`/`getBaseballDefaultLandingHref`/`getBaseballTerminology` (lines 1109-1276). |
 | Golf | `src/lib/golf/nav-registry.ts` (579 lines) | `GOLF_COACH_HUBS`/`GOLF_PLAYER_HUBS` (lines 201, 231) + `buildCoachRailSections`/`buildPlayerRailSections`/`buildCoachBottomNavItems`/`buildPlayerBottomNavItems` (lines 304-460) + `resolveActiveGolfHub` + `COACHHELM_COACH_CLUSTER_PREFIXES`/`COACHHELM_PLAYER_CLUSTER_PREFIXES` (lines 125-152). |
 | Lift Lab | `src/components/lifting/shell/LabNav.tsx` | Component-inline. **No `LIFTING_NAV_REGISTRY` module exists** — a new lifting route edits `LabNav.tsx` directly. |
-| Admin | `src/app/admin/_components/admin-nav.ts` (+ `admin-nav.test.ts`) | Own small registry + test, separate from baseball/golf's. |
+| Admin | `src/app/admin/_components/admin-nav.ts` (+ `__tests__/admin-nav.test.ts`) | Own small registry + test, separate from baseball/golf's. |
 
 ### Error-boundary pattern
 

@@ -61,9 +61,15 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 1b. Agent settings ownership
 
-- **Helm project scope owns `autoMemoryEnabled`, and the value is `false`.**
-  `.claude/settings.json` is authoritative; do not set this key in user scope
-  for Helm work, and do not flip it per branch.
+- **`autoMemoryEnabled` must be `false` for Helm work, and
+  `.claude/settings.json` sets it.** Measured 2026-09-04 the invariant is
+  VIOLATED: `~/.claude/settings.json` sets the same key to `true`. Which
+  scope wins for this key is UNVERIFIED — the project-deny-over-user-allow
+  precedence proven in §4 is the PERMISSIONS resolver and does not
+  generalise, and the enforcement inventory reads project config only. Clear
+  the user-scope key rather than reasoning about precedence. That is an OWNER
+  action: user scope affects every project and any concurrent session, so an
+  agent reports this rather than editing it.
 - The reason is not that auto-memory is bad. It is that this repo already has
   an explicit Git-backed memory architecture — `memory/registry.yml`,
   `memory/features/**`, `memory/ledgers/**`, `memory/incidents/**`,
@@ -128,8 +134,12 @@ mechanical, and these are the habits that keep it fixed.
   so `git push` from it targeted `main`. Verify:
   `git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads`
 - **Make worktrees with `scripts/new-worktree.sh <task>`.** It is the one
-  supported path: `~/worktrees/helmv3/<task>`, `--no-track`, isolated
-  dependencies. Never `.worktrees/` inside the repo — `.gitignore` hides an
+  supported path: `~/worktrees/helmv3/<task>`, `--no-track`, a known base.
+  It does NOT install dependencies — this read "isolated dependencies" until
+  2026-09-04, while the script itself prints `not installed — run: node
+  scripts/ensure-worktree-deps.mjs <dir>` and AGENTS.md says so outright. An
+  agent that trusted the old wording and ran `npm test` got a bare checkout.
+  Never `.worktrees/` inside the repo — `.gitignore` hides an
   internal one from git but `find`/`grep` still return it, so agents edit the
   copy nobody ships.
 - **Prune with `npm run worktrees{,:park,:retire}`, never by hand.** This repo

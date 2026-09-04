@@ -19,7 +19,8 @@ verified: 2026-08-20-mechanical  # paths + table names machine-checked this date
 
 **Review Gate** (`.github/workflows/review-gate.yml`) — the deterministic
 review toolchain (ast-grep, semgrep, gitleaks, actionlint, yamllint,
-shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint). Aggregate
+shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint, and an
+env-secrets check). Aggregate
 status check: `Review Gate aggregate` (renamed from `all` on 2026-08-19 —
 `Review Gate / all` posts NOTHING, and required contexts are matched by
 name, so looking for the old name is the phantom-check trap that made
@@ -45,10 +46,16 @@ CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
 
 - `weekly` workflow — Knip dead-code, Stryker mutation tests on
   `src/lib/coachhelm/v2/`, full-repo sqlfluff, npm audit, Squawk
-  migration safety, Janitor entropy report (`scripts/janitor/`, advisory).
+  migration safety, Promptfoo evals, Janitor entropy report
+  (`scripts/janitor/`, advisory).
   Scheduled Mondays 06:00 UTC; triggered via the
   `run-weekly=true` pipeline parameter (configure in CircleCI
   project settings → Triggers).
+- `android` workflow — Android `assembleDebug` on a Linux Android image.
+  Same branch-name gating as `ios` below: push to `main`, `release/*`,
+  `android/*`, `capacitor/*`, `ci/android-*`. A PR from any other branch
+  name touching `android/**` does NOT trigger it. AGENTS.md has always
+  documented this workflow; this file omitted it entirely until 2026-09-04.
 - `ios` workflow — iOS Capacitor compile verification on M-series
   macOS runners (~2× faster, ~⅓ the cost of GHA `macos-13`). Runs on
   push to `main`, `release/*`, `ios/*`, `capacitor/*` branches.
