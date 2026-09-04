@@ -218,6 +218,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
 
   return (
     <header
+      data-slot="fw-topbar"
       ref={ref}
       // a11y: names the banner landmark with the current destination. On
       // routes whose in-content `h1` is a greeting (both dashboards) or absent

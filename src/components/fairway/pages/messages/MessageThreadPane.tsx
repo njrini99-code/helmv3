@@ -30,8 +30,10 @@
 
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
+import { isGroupConversation } from './conversation-kind';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
   GolfConversationWithMeta,
@@ -64,6 +66,15 @@ const ATTACHMENT_RACE_RETRY_MS = 1200;
  * that a reply hours later gets its own avatar and its own timestamp.
  */
 const GROUP_WINDOW_MINUTES = 5;
+
+/**
+ * How long a press must be held on a message before its actions open.
+ *
+ * 450ms is the conventional platform feel — long enough that a scroll gesture
+ * starting on a bubble never fires it, short enough that it does not feel like
+ * the app is ignoring you.
+ */
+const LONG_PRESS_MS = 450;
 
 /**
  * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
@@ -398,6 +409,49 @@ export function MessageThreadPane({
    * that grows the thread re-pins it.
    */
   const stickToBottomRef = React.useRef(false);
+
+  /**
+   * Long-press to open a message's actions.
+   *
+   * This replaces a persistent kebab that rendered ABOVE every own bubble on
+   * mobile. It was the loudest thing on the screen — a floating ⋮ in empty
+   * whitespace beside each message — and because it was a sibling in the same
+   * flex column it also injected vertical space BETWEEN consecutive messages,
+   * which quietly defeated the grouping: three quick lines read as three
+   * islands instead of one utterance.
+   *
+   * Press-and-hold is what a phone user already expects here, and it costs no
+   * permanent pixels. The timer is cancelled by movement, so a scroll that
+   * happens to start on a bubble never opens the menu.
+   */
+  const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelLongPress = React.useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+  React.useEffect(() => cancelLongPress, [cancelLongPress]);
+
+  const longPressHandlers = React.useCallback(
+    (messageId: string) => ({
+      onPointerDown: () => {
+        cancelLongPress();
+        longPressTimerRef.current = setTimeout(() => {
+          // The detent tick, so the menu opening is felt as well as seen.
+          fwHaptic('selection');
+          onSetMobileActions(messageId);
+        }, LONG_PRESS_MS);
+      },
+      onPointerUp: cancelLongPress,
+      onPointerMove: cancelLongPress,
+      onPointerCancel: cancelLongPress,
+      onPointerLeave: cancelLongPress,
+      // Suppress the native callout so iOS does not race our menu with its own.
+      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    }),
+    [cancelLongPress, onSetMobileActions],
+  );
   /**
    * Ids already painted at least once, so an ARRIVAL can be told apart from
    * history.
@@ -750,7 +804,12 @@ export function MessageThreadPane({
     );
   }
 
-  const isGroup = conversation.is_group;
+  // Not `conversation.is_group` — that flag is true for any team-chat-flagged
+  // conversation, including a broadcast to ONE player. The header below
+  // already worked around it by reading participant_count; this makes that
+  // the ONE derivation, so the avatar and the per-bubble sender identity stop
+  // disagreeing with the subtitle sitting inches away from them.
+  const isGroup = isGroupConversation(conversation);
   const headerName = isGroup
     ? conversation.title || 'Team Group'
     : conversation.other_participant?.name || 'Unknown User';
@@ -761,7 +820,7 @@ export function MessageThreadPane({
   // conversation" to both people in it. Read the participant count instead,
   // and say nothing when the count is unknown rather than guess wrong.
   const participantCount = conversation.participant_count ?? 0;
-  const headerSubtitle = isGroup
+  const headerSubtitle = conversation.is_group
     ? participantCount > 2
       ? 'Group conversation'
       : participantCount === 2
@@ -794,30 +853,45 @@ export function MessageThreadPane({
       )}
     >
       {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-w-0 items-center gap-3 border-b border-border-subtle px-4 py-3 sm:px-5">
-        <IconButton
+      <header className="flex min-w-0 items-center gap-2.5 border-b border-border-subtle px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+        {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
+            an open thread this is the only way out AND the only thing naming
+            where "out" is, so it says so — the platform convention, and the
+            same reason iOS labels its back buttons. `-ml-2` pulls the glyph to
+            the gutter so the label starts on the content grid rather than
+            floating inboard of it. */}
+        <Button
           variant="ghost"
-          size="md"
-          aria-label="Back to conversations"
+          size="sm"
           onClick={onBack}
-          className="lg:hidden"
+          aria-label="Back to conversations"
+          className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
         >
           <ArrowLeft size={20} aria-hidden="true" />
-        </IconButton>
+          Messages
+        </Button>
         {isGroup ? (
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
             <Users size={18} aria-hidden="true" />
           </span>
         ) : (
           <Avatar
             name={conversation.other_participant?.name || 'User'}
             src={conversation.other_participant?.avatar}
-            size="md"
+            size="sm"
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
-          {headerSubtitle ? (
+          {/* One line, truncated — this is a nav bar now, not a page masthead.
+              `line-clamp-2` let a long group title push the bar to two rows and
+              shove the thread down. */}
+          <p className="truncate font-fw-sans text-body font-medium text-text-primary">{headerName}</p>
+          {/* The subtitle earns its line only when it says something the name
+              does not. "Direct message" under a person's name is the label
+              restating the obvious, on the row with the least space in the
+              product — a member count on a group is genuinely new information.
+              (spec §5: do not permanently show "Direct message".) */}
+          {headerSubtitle && headerSubtitle !== 'Direct message' ? (
             <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
           ) : null}
         </div>
@@ -987,7 +1061,16 @@ export function MessageThreadPane({
                       tell four people apart while scrolling. */}
                   {!isOwn && isGroup && (
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
-                      {isFirstInGroup ? (
+                      {/* On the LAST message of the group, not the first.
+                          The row is `items-end`, so anchoring the avatar to the
+                          final bubble sits it level with the speaker's last
+                          word — and level with the timestamp, which also renders
+                          on the last message. Anchored to the FIRST bubble it
+                          floated at the top of a tall group, level with nothing,
+                          with the group's own timestamp stranded four bubbles
+                          below it. Every phone chat does it this way for the
+                          same reason. */}
+                      {isLastInGroup ? (
                         <Avatar decorative
                           name={senderName}
                           src={senderAvatar}
@@ -1023,9 +1106,17 @@ export function MessageThreadPane({
                             <Trash2 size={14} aria-hidden="true" />
                           </IconButton>
                         </div>
-                        <div className="relative mt-0.5 flex items-center lg:hidden">
-                          {mobileActionsId === msg.id ? (
+                        {/* No persistent kebab. The actions appear on long-press
+                            (see longPressHandlers) and otherwise cost nothing.
+                            Copy is included because taking over long-press takes
+                            over the gesture iOS uses to select text — without it
+                            the message would become uncopyable. */}
+                        {mobileActionsId === msg.id && (
+                          <div className="relative mt-0.5 flex items-center lg:hidden">
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
+                              <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
+                                <Copy size={18} aria-hidden="true" />
+                              </IconButton>
                               <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
                                 <Pencil size={18} aria-hidden="true" />
                               </IconButton>
@@ -1036,12 +1127,8 @@ export function MessageThreadPane({
                                 <X size={16} aria-hidden="true" />
                               </IconButton>
                             </Inset>
-                          ) : (
-                            <IconButton variant="ghost" size="sm" aria-label="Message actions" onClick={() => onSetMobileActions(msg.id)}>
-                              <MoreVertical size={16} aria-hidden="true" />
-                            </IconButton>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -1100,8 +1187,14 @@ export function MessageThreadPane({
                     ) : (
                       // Bubble — normal mode. own = accent tint, other = sunken matte.
                       <div
+                        {...(isOwn ? longPressHandlers(msg.id) : {})}
                         className={cn(
                           'px-4 py-2.5',
+                          // Own bubbles opt out of the iOS text-selection callout
+                          // because long-press is now the actions gesture; Copy
+                          // in that menu replaces what selection provided.
+                          // Incoming messages keep native selection untouched.
+                          isOwn && 'select-none [-webkit-touch-callout:none]',
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',

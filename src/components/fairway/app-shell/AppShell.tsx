@@ -485,6 +485,13 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
 
           <main className="flex-1">
             <div
+              // Marked so an IMMERSIVE surface — an open conversation, say —
+              // can collapse the bottom-nav reservation together with the bar
+              // itself (`body[data-fw-immersive]`, globals.css). Hiding the bar
+              // while its 56px of padding stayed would be worse than leaving
+              // the bar up: the content would end in dead space with nothing
+              // occupying it.
+              data-slot="fw-shell-content"
               className={cn(
                 // The bottom pad clears the iOS home indicator (env() is 0 on
                 // non-notched/desktop, so this is a no-op there) — KEPT in both

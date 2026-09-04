@@ -260,7 +260,15 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           className={cn(
             'flex-1 resize-none rounded-none border-0 bg-transparent px-2 py-2 min-h-0',
             'font-fw-sans text-base text-text-primary lg:text-body',
+            // The TRACK owns the focus treatment, not the field. The legacy
+            // `ui/input.tsx` Textarea carries its own
+            // `focus-visible:ring-2 ... ring-offset-2`, and this only
+            // neutralised the `focus:` variant — so focusing the composer drew
+            // the container's `focus-within` ring AND a second offset ring
+            // around the field inside it. Two nested rounded rectangles, which
+            // is the control-level version of a card inside a card.
             'placeholder:text-text-tertiary focus:outline-none focus:ring-0',
+            'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-transparent',
           )}
           style={{ minHeight: '40px', maxHeight: '120px' }}
         />

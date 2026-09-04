@@ -272,7 +272,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 30 | 3 | - |
 | `memory/glossary.md` | current | yes | yes | yes | 22 | 10 | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | 5 | 260 | 1 |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | 5 | 261 | 1 |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | 0 | 0 | - |
 
 ### `PROCESS_CONTRACT`
