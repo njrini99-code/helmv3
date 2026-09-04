@@ -1,3 +1,9 @@
+<!-- markdownlint-disable MD013 MD060 -->
+<!-- MD013 (80-col) and MD060 (table pipe padding): this is a prose
+     findings document with file:line citations and comparison tables that
+     do not survive hard wrapping without becoming unreadable. Same
+     convention the other prose docs in this repo use. -->
+
 # Helm mobile native-class rebuild — audit
 
 **Date:** 2026-09-03 · **Branch:** `agent/mobile-p0-stability` (from `origin/main` @ `7f93595f7`)
@@ -74,7 +80,11 @@ Ranked by how much of the reported feeling each explains.
    the keyboard.** 23 call sites, several text-entry. **FIXED.**
 
 6. **`MessagesFairway.tsx:90` — baseball never received #1739.** Its height
-   budget accounted for every piece of chrome except the keyboard. **FIXED.**
+   budget accounts for every piece of chrome except the keyboard, so a baseball
+   coach typing a message has the composer under the keys. **NOT FIXED — still
+   live.** It was fixed and then REVERTED when scope was set to golf only; the
+   revert commit carries the one-line fix so it can be reapplied deliberately
+   rather than rediscovered from a user complaint.
 
 7. **`FairwayMessages.tsx` — `<MessageComposer>` was mounted with no `key`.**
    Its `message` and `pendingAttachments` are local state cleared only on a
