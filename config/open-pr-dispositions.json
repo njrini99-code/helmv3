@@ -68,5 +68,12 @@
     "",
     "ACTIVE and UNKNOWN always KEEP, whatever this field says — a mis-typed",
     "policy beside them fails safe."
-  ]
+  ],
+  "1835": {
+    "disposition": "HUMAN_TEST_PENDING",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "branch": "agent/golf-messages-1830-followthrough",
+    "opened": "2026-09-04",
+    "note": "Six defects #1830 left behind in the golf messages surface. Complete and gate-green, but the long-press slop (10px) and the 450ms hold are the class of thing that reasons correctly and can still be wrong under a thumb — HUMAN_TEST_PENDING is waiting on a real device, not on more work. Also blocked on a merge-order decision: #1833 rewrites the same two files and preserves all six, so whichever lands second needs a rebase. The checkout is released (PARK_IF_REPRODUCIBLE) because it was created solely to cherry-pick and push this branch; the branch stays."
+  }
 }
