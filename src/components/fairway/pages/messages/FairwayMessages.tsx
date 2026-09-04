@@ -66,6 +66,7 @@ import { ViewHeader } from '@/components/fairway/view-header';
 import { Button } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 
+import { isGroupConversation } from './conversation-kind';
 import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
 import { MessageComposer } from './MessageComposer';
@@ -198,7 +199,14 @@ export function FairwayMessages() {
       return;
     }
     const conv = conversations.find(c => c.id === selectedConversationId);
-    if (conv?.is_group) {
+    // Not `conv.is_group` — the flag is true for any team-chat-flagged
+    // conversation including a broadcast to ONE player, so a two-person DM
+    // fired three extra queries (participants, coaches, players) to build a
+    // map the thread pane then never read: its own `isGroup` is the
+    // participant-count derivation, so it resolves the sender from
+    // `other_participant` instead. #1830 made this the one derivation and
+    // updated the rail and the pane; this consumer was left on the flag.
+    if (isGroupConversation(conv)) {
       fetchGroupParticipants(selectedConversationId);
     } else {
       setGroupParticipants(new Map());
@@ -300,6 +308,21 @@ export function FairwayMessages() {
     setMobileShowChat(true);
   };
   const handleBack = () => setMobileShowChat(false);
+
+  // Switching threads abandons whatever was half-done in the previous one.
+  // None of this can be MISDELIVERED — Save and Confirm only render inside the
+  // matching bubble, so they are unreachable from another conversation — but
+  // the state survived the switch, so coming back re-entered that bubble in
+  // edit mode still holding the draft from before, and a delete prompt
+  // reappeared for a decision the user had already walked away from. This is
+  // the same hazard the keyed composer below is documented against, for the
+  // four pieces of state that were left behind when that was fixed.
+  React.useEffect(() => {
+    setEditingMessageId(null);
+    setEditContent('');
+    setDeleteConfirmId(null);
+    setMobileActionsId(null);
+  }, [selectedConversationId]);
 
   // ── P259: open a conversation FROM a cross-conversation search hit, then
   // scroll the thread to the matched message once it loads.

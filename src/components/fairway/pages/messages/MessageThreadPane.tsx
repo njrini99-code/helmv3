@@ -77,6 +77,37 @@ const GROUP_WINDOW_MINUTES = 5;
 const LONG_PRESS_MS = 450;
 
 /**
+ * How far a pointer may drift during a press before it stops being a press.
+ *
+ * `pointermove` fires for sub-pixel jitter and a resting thumb is never
+ * perfectly still, so cancelling on the FIRST move event cancelled on the
+ * tremor of holding still. That made the gesture feel like the app was
+ * ignoring you, on the one surface where it is the only affordance there is:
+ * since the kebab was removed, long-press is how a phone reaches Copy, Edit
+ * and Delete. 10px is the conventional platform slop — comfortably above
+ * finger jitter, comfortably below what a deliberate scroll travels in 450ms.
+ */
+const LONG_PRESS_SLOP_PX = 10;
+
+/**
+ * Whether a pointer has travelled far enough from where it went down that the
+ * gesture is a scroll or a drag rather than a press.
+ *
+ * Exported because the threshold IS the behaviour, and the values either side
+ * of it are what a test needs to pin. Asserting on them through the rendered
+ * component would mean synthesising pointer events carrying coordinates that
+ * jsdom does not model.
+ */
+export function exceedsLongPressSlop(
+  start: { x: number; y: number } | null,
+  x: number,
+  y: number,
+): boolean {
+  if (!start) return false;
+  return Math.hypot(x - start.x, y - start.y) > LONG_PRESS_SLOP_PX;
+}
+
+/**
  * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
  * and a missing timestamp must never silently merge two messages into one
  * group — so an absent value reads as "infinitely far apart", which breaks the
@@ -425,18 +456,22 @@ export function MessageThreadPane({
    * happens to start on a bubble never opens the menu.
    */
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Where the live press went down, for the movement threshold below. */
+  const longPressOriginRef = React.useRef<{ x: number; y: number } | null>(null);
   const cancelLongPress = React.useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
+    longPressOriginRef.current = null;
   }, []);
   React.useEffect(() => cancelLongPress, [cancelLongPress]);
 
   const longPressHandlers = React.useCallback(
     (messageId: string) => ({
-      onPointerDown: () => {
+      onPointerDown: (e: React.PointerEvent) => {
         cancelLongPress();
+        longPressOriginRef.current = { x: e.clientX, y: e.clientY };
         longPressTimerRef.current = setTimeout(() => {
           // The detent tick, so the menu opening is felt as well as seen.
           fwHaptic('selection');
@@ -444,7 +479,13 @@ export function MessageThreadPane({
         }, LONG_PRESS_MS);
       },
       onPointerUp: cancelLongPress,
-      onPointerMove: cancelLongPress,
+      // Only a REAL drift cancels — see LONG_PRESS_SLOP_PX. A scroll still
+      // cancels within the first few pixels of travel, long before 450ms.
+      onPointerMove: (e: React.PointerEvent) => {
+        if (exceedsLongPressSlop(longPressOriginRef.current, e.clientX, e.clientY)) {
+          cancelLongPress();
+        }
+      },
       onPointerCancel: cancelLongPress,
       onPointerLeave: cancelLongPress,
       // Suppress the native callout so iOS does not race our menu with its own.
@@ -534,6 +575,15 @@ export function MessageThreadPane({
     },
     [],
   );
+  // Each conversation gets its own one-shot retry budget. The set bounding the
+  // auto-retry is keyed on message id and never cleared, so an attachment that
+  // lost the commit-order race once settled on its retry chip for the rest of
+  // the SESSION — leaving the thread and coming back, which is the obvious
+  // thing to try, could not earn it another attempt. Declared above the batch
+  // fetch so it resets before that effect re-runs for the new thread.
+  React.useEffect(() => {
+    retriedEmptyRef.current = new Set();
+  }, [activeConversationId]);
 
   // Stable key of the visible attachment-bearing message ids (ordered) so the
   // batch fetch re-runs only when that set actually changes.
@@ -621,6 +671,34 @@ export function MessageThreadPane({
   const retryAttachments = React.useCallback(() => {
     setAttachmentRetryNonce((n) => n + 1);
   }, []);
+
+  // An open action menu closes when the thread scrolls under it, or when a
+  // press lands anywhere else. Long-press opens the menu without moving the
+  // page, so without this it floats on beside a bubble that has scrolled away,
+  // dismissable only through its own X — and the X was added as an escape
+  // hatch, not as the only way out.
+  //
+  // Its own listener rather than a branch inside the stick-to-bottom handler:
+  // that one is about scroll POSITION and is torn down per conversation, this
+  // one is about a menu being open. Capture phase so a press that opens
+  // ANOTHER message's menu closes this one first and the timer that follows
+  // still wins.
+  React.useEffect(() => {
+    if (!mobileActionsId) return undefined;
+    const container = messagesContainerRef.current;
+    const close = () => onSetMobileActions(null);
+    const closeIfOutside = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-message-actions]')) return;
+      close();
+    };
+    container?.addEventListener('scroll', close, { passive: true });
+    document.addEventListener('pointerdown', closeIfOutside, true);
+    return () => {
+      container?.removeEventListener('scroll', close);
+      document.removeEventListener('pointerdown', closeIfOutside, true);
+    };
+  }, [mobileActionsId, onSetMobileActions]);
 
   // On every conversation switch, begin at the newest loaded message. The
   // previous implementation only used the "near bottom" rule below; a fresh
@@ -933,13 +1011,33 @@ export function MessageThreadPane({
             }
           />
         ) : !messages || messages.length === 0 ? (
-          // HONEST-EMPTY (b): selected thread, zero messages.
-          <EmptyState
-            variant="subtle"
-            icon={MessageSquare}
-            title="No messages yet"
-            description="Start the conversation — say hello below."
-          />
+          isOtherTyping ? (
+            // Someone is composing the FIRST message of this thread. The
+            // typing indicator lived inside the has-messages branch below, so
+            // an empty thread showed nothing at all while the other person was
+            // writing to it — and "say hello below" is the wrong thing to say
+            // to a reader who is watching a reply being typed.
+            <div className="flex items-end justify-start gap-2">
+              {!isGroup && (
+                <div className="w-8 flex-shrink-0">
+                  <Avatar
+                    name={conversation.other_participant?.name || 'User'}
+                    src={conversation.other_participant?.avatar}
+                    size="sm"
+                  />
+                </div>
+              )}
+              <TypingIndicator />
+            </div>
+          ) : (
+            // HONEST-EMPTY (b): selected thread, zero messages.
+            <EmptyState
+              variant="subtle"
+              icon={MessageSquare}
+              title="No messages yet"
+              description="Start the conversation — say hello below."
+            />
+          )
         ) : (
           // No `space-y-*` on this container: the rhythm is carried per message
           // by the grouping (tight within a group, generous between), and a
@@ -1112,7 +1210,7 @@ export function MessageThreadPane({
                             over the gesture iOS uses to select text — without it
                             the message would become uncopyable. */}
                         {mobileActionsId === msg.id && (
-                          <div className="relative mt-0.5 flex items-center lg:hidden">
+                          <div data-message-actions className="relative mt-0.5 flex items-center lg:hidden">
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
                               <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
                                 <Copy size={18} aria-hidden="true" />
@@ -1190,11 +1288,19 @@ export function MessageThreadPane({
                         {...(isOwn ? longPressHandlers(msg.id) : {})}
                         className={cn(
                           'px-4 py-2.5',
-                          // Own bubbles opt out of the iOS text-selection callout
-                          // because long-press is now the actions gesture; Copy
-                          // in that menu replaces what selection provided.
+                          // Own bubbles opt out of text selection because
+                          // long-press is the actions gesture there, and Copy in
+                          // that menu replaces what selection provided.
+                          //
+                          // Scoped to `max-lg:` because the menu carrying Copy
+                          // is `lg:hidden` and the desktop hover row has only
+                          // Edit and Delete — unscoped, this took selection away
+                          // at exactly the widths where nothing gave it back, so
+                          // your own messages became uncopyable on a desktop.
+                          // The iOS callout suppression stays unscoped; it is
+                          // inert anywhere that is not iOS Safari.
                           // Incoming messages keep native selection untouched.
-                          isOwn && 'select-none [-webkit-touch-callout:none]',
+                          isOwn && 'max-lg:select-none [-webkit-touch-callout:none]',
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',
