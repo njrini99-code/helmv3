@@ -57,6 +57,68 @@ import { Textarea } from '@/components/ui/textarea';
  */
 const ATTACHMENT_RACE_RETRY_MS = 1200;
 
+/**
+ * How long a pause has to be before two messages from the same person stop
+ * reading as one utterance. Five minutes is the conventional chat window: long
+ * enough that a burst of three quick lines stays a single group, short enough
+ * that a reply hours later gets its own avatar and its own timestamp.
+ */
+const GROUP_WINDOW_MINUTES = 5;
+
+/**
+ * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
+ * and a missing timestamp must never silently merge two messages into one
+ * group — so an absent value reads as "infinitely far apart", which breaks the
+ * group rather than fusing it.
+ */
+function minutesBetween(a: string | null, b: string | null): number {
+  if (!a || !b) return Infinity;
+  const ms = new Date(b).getTime() - new Date(a).getTime();
+  return Number.isFinite(ms) ? Math.abs(ms) / 60000 : Infinity;
+}
+
+/**
+ * Whether two ISO timestamps land on the same local calendar day. An absent
+ * timestamp is treated as NOT the same day, for the same reason as above: the
+ * safe failure is an extra separator, never a silent merge.
+ */
+function isSameCalendarDay(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  const da = new Date(a);
+  const db = new Date(b);
+  return (
+    da.getFullYear() === db.getFullYear() &&
+    da.getMonth() === db.getMonth() &&
+    da.getDate() === db.getDate()
+  );
+}
+
+/**
+ * Label for a day separator: Today / Yesterday by name, then the date.
+ *
+ * Explicit `en-US` per the repo's locale rule — an implicit locale renders
+ * differently for the server and the client and shows up as a hydration
+ * mismatch.
+ */
+function formatDaySeparator(iso: string | null): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDiff = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86_400_000);
+
+  if (dayDiff === 0) return 'Today';
+  if (dayDiff === 1) return 'Yesterday';
+  // Inside the last week the weekday alone is the most readable landmark.
+  if (dayDiff > 1 && dayDiff < 7) return date.toLocaleDateString('en-US', { weekday: 'long' });
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+  });
+}
+
 /** One resolved (signed) attachment for an open thread message. */
 type ResolvedAttachment = NonNullable<
   Awaited<ReturnType<typeof getGolfMessageAttachments>>['attachments']
@@ -674,14 +736,33 @@ export function MessageThreadPane({
             description="Start the conversation — say hello below."
           />
         ) : (
-          <div className="space-y-4">
+          // No `space-y-*` on this container: the rhythm is carried per message
+          // by the grouping (tight within a group, generous between), and a
+          // uniform gap on every child would flatten that back out and
+          // double-space the day separators.
+          <div>
             {messages.map((msg, idx) => {
               // own-message check is identical for both roles (spec §4).
               const isOwn = msg.sender_id === userId || msg.sender_id === currentUserId;
               const prevMsg = messages[idx - 1];
               const nextMsg = messages[idx + 1];
-              const isFirstInGroup = !prevMsg || prevMsg.sender_id !== msg.sender_id;
-              const isLastInGroup = !nextMsg || nextMsg.sender_id !== msg.sender_id;
+              // Grouping is by sender AND by time. Sender alone meant two
+              // messages from the same person stayed in one visual group no
+              // matter how far apart they were sent — a "yeah" at 9pm merged
+              // silently into the group from 7am, sharing its avatar and
+              // hiding its own timestamp, so the thread read as one utterance
+              // that had actually spanned the whole day.
+              const prevGap = prevMsg ? minutesBetween(prevMsg.created_at, msg.created_at) : Infinity;
+              const nextGap = nextMsg ? minutesBetween(msg.created_at, nextMsg.created_at) : Infinity;
+              const startsDay = !prevMsg || !isSameCalendarDay(prevMsg.created_at, msg.created_at);
+
+              const isFirstInGroup =
+                !prevMsg || prevMsg.sender_id !== msg.sender_id || prevGap > GROUP_WINDOW_MINUTES || startsDay;
+              const isLastInGroup =
+                !nextMsg ||
+                nextMsg.sender_id !== msg.sender_id ||
+                nextGap > GROUP_WINDOW_MINUTES ||
+                !isSameCalendarDay(msg.created_at, nextMsg.created_at);
               const showTime = isLastInGroup;
 
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
@@ -702,8 +783,22 @@ export function MessageThreadPane({
               const senderAvatar = senderInfo?.avatar ?? null;
 
               return (
+                <React.Fragment key={msg.id}>
+                {/* Day separator. A thread had no temporal landmarks at all —
+                    scrolling back through a busy week was an undifferentiated
+                    column of bubbles, and "3:14 PM" on a message told you the
+                    hour but never the day. Rendered once, when the calendar day
+                    changes. */}
+                {startsDay && (
+                  <div className="flex items-center gap-3 pb-1 pt-2" role="separator">
+                    <span className="h-px flex-1 bg-border-subtle" />
+                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                      {formatDaySeparator(msg.created_at)}
+                    </span>
+                    <span className="h-px flex-1 bg-border-subtle" />
+                  </div>
+                )}
                 <div
-                  key={msg.id}
                   ref={(node) => {
                     // P259: register/unregister this message's scroll anchor.
                     if (node) messageRefs.current.set(msg.id, node);
@@ -712,7 +807,10 @@ export function MessageThreadPane({
                   className={cn(
                     'flex items-end gap-2',
                     isOwn ? 'justify-end' : 'justify-start',
-                    !isLastInGroup && 'mb-0.5',
+                    // Tight inside a group, generous between them — the
+                    // spacing carries the grouping now, rather than every
+                    // message sitting in the same undifferentiated rhythm.
+                    isLastInGroup ? 'mb-1.5' : 'mb-0.5',
                   )}
                 >
                   {/* Incoming avatar (first of group only) */}
@@ -728,7 +826,7 @@ export function MessageThreadPane({
                     </div>
                   )}
 
-                  <div className={cn('group relative flex min-w-0 max-w-[70%] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
+                  <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name above first incoming bubble */}
                     {!isOwn && isFirstInGroup && (
                       <span className="ml-1 font-fw-sans text-eyebrow font-medium text-text-tertiary">
@@ -900,6 +998,7 @@ export function MessageThreadPane({
                     </div>
                   )}
                 </div>
+                </React.Fragment>
               );
             })}
 
