@@ -78,10 +78,14 @@ export const FairwayShotPills = memo(function FairwayShotPills({
   const shots = Array.from({ length: Math.max(6, currentShot + 1) }, (_, i) => i + 1);
 
   return (
-    <div
-      className="sticky z-40 -mx-4 -mt-4 border-b border-border-subtle bg-canvas px-4 py-3 shadow-flat sm:-mx-6 sm:px-6"
-      style={{ top: 'var(--scorecard-height, 105px)' }}
-    >
+    // Not sticky, and no negative margins. This renders as the bottom row of
+    // FairwayScorecardHeader's own sticky element (its `belowSlot`), so the
+    // round chrome is ONE layer that sticks and safe-areas as a single thing.
+    // Previously this was a second sticky pinned to `var(--scorecard-height)`,
+    // clawing its way out of the content column's padding with `-mx-4 -mt-4`
+    // to reach the screen edges — a hack that only existed because it was in
+    // the wrong parent. `bg-elevated` matches the bar it now belongs to.
+    <div className="border-t border-border-subtle bg-elevated px-3 py-2.5">
       {/* The label carries the live count now, so the number is readable
           without counting dots — and it replaces the old fixed "SHOT" eyebrow
           that consumed width beside the strip on every hole. */}
