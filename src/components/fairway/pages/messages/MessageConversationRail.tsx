@@ -185,10 +185,24 @@ function ConversationRow({
             // `md` inside a stack, not `lg`: three overlapping 48px discs are
             // wider than the avatar column and would shove the text. The stack
             // reads at roughly the same optical weight as one large avatar.
+            // The stack must fit the SAME 48px column a DM avatar occupies, or
+            // the text beside it starts at a different x on half the list.
+            //
+            // Two `xs` (24px) faces at the default 6px overlap is 42px — inside
+            // 48 with room, and both faces stay legible. The two versions
+            // before this were geometry failures worth recording: three `md`
+            // (40px) faces plus AvatarGroup's "+N" chip is ~130px and hung out
+            // of the row entirely; two `sm` (32px) at a 16px overlap fit the
+            // box but hid the back avatar behind the front one, leaving a
+            // sliver of half a letter that reads as a rendering bug rather than
+            // as layering.
+            //
+            // No `max`, so no "+N" chip — the chip is another full-size element
+            // and puts the stack straight back out of the column.
             <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
-              <AvatarGroup size="md" max={3}>
+              <AvatarGroup size="xs">
                 {members.map((m, i) => (
-                  <Avatar key={`${m.name}-${i}`} name={m.name} src={m.avatar ?? undefined} size="md" />
+                  <Avatar key={`${m.name}-${i}`} name={m.name} src={m.avatar ?? undefined} size="xs" />
                 ))}
               </AvatarGroup>
             </span>

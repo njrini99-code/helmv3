@@ -31,11 +31,18 @@ export type GroupAvatarMap = ReadonlyMap<string, GroupMember[]>;
 const EMPTY: GroupAvatarMap = new Map();
 
 /**
- * How many faces a stack can hold before it stops being legible. Anything past
- * this is collapsed into AvatarGroup's own "+N" chip, so fetching more members
- * per conversation than this would be work nobody ever sees.
+ * TWO faces, and the number is geometry rather than taste.
+ *
+ * A group row has to occupy the SAME 48px avatar column as a DM row, or the
+ * text beside it starts at a different x for half the list. Two 32px avatars
+ * overlapped by 16px is exactly 48. Three plus AvatarGroup's "+N" chip is
+ * ~130px, which is what the first version rendered — the stack hung out of the
+ * row and over the screen edge.
+ *
+ * Nothing is lost by not showing a count here: the row already names the
+ * conversation, and the details sheet lists every member.
  */
-const MAX_FACES = 3;
+const MAX_FACES = 2;
 
 /** PostgREST caps a response at 1000 rows regardless of `.limit()`. */
 const PAGE = 1000;
