@@ -36,14 +36,18 @@
  * change) instead of stranding the player at shot 1 while they play shot 9 —
  * the scroll is a safety net rather than the mechanism.
  *
- * PRESERVED EXACTLY: the props contract, the recorded/active/completed/future
- * derivation, `onSelectShot` firing only for recorded shots, and the sticky
- * offset at `var(--scorecard-height, 105px)` that pins this beneath the
- * scorecard header.
+ * This is no longer sticky itself. It renders as the bottom row of
+ * FairwayScorecardHeader's own sticky element (its `belowSlot`), so the round
+ * chrome is ONE layer — see that component for why the second sticky and the
+ * `--scorecard-height` coupling went away.
+ *
+ * PRESERVED EXACTLY: the props contract, the recorded/active/future derivation,
+ * and `onSelectShot` firing only for recorded shots.
  * ========================================================================== */
 
 import { memo, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/fairway/controls/button';
 
 interface FairwayShotPillsProps {
   currentShot: number;
@@ -121,39 +125,34 @@ export const FairwayShotPills = memo(function FairwayShotPills({
           if (isActive) {
             return (
               <div key={num} ref={currentRef} className="shrink-0">
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   onClick={() => isRecorded && onSelectShot(num)}
                   disabled={!isRecorded}
                   aria-current="step"
                   aria-label={isRecorded ? `View shot ${num}` : `Shot ${num}, in progress`}
                   className={cn(
-                    'flex h-11 min-w-[2.75rem] items-center justify-center rounded-fw-md px-3',
+                    'h-11 min-h-0 min-w-[2.75rem] rounded-fw-md px-3',
                     'font-fw-mono text-body-sm font-semibold tabular-nums',
-                    'outline-none transition-colors duration-150',
-                    'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                    'bg-accent-650 text-text-on-accent',
-                    isRecorded ? 'cursor-pointer active:scale-95 motion-reduce:active:scale-100' : 'cursor-default',
+                    'bg-accent-650 text-text-on-accent hover:bg-accent-600',
                   )}
                 >
                   {num}
-                </button>
+                </Button>
               </div>
             );
           }
 
           // RECORDED — a small mark with an honest 44px-tall hit area around it.
           return (
-            <button
+            <Button
               key={num}
-              type="button"
+              variant="ghost"
               onClick={() => onSelectShot(num)}
               aria-label={`View shot ${num}`}
               aria-pressed={isSelected}
               className={cn(
-                'group flex h-11 w-7 shrink-0 cursor-pointer items-center justify-center rounded-fw-sm',
-                'outline-none transition-colors duration-150',
-                'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                'group h-11 w-7 min-h-0 min-w-0 shrink-0 rounded-fw-sm px-0',
               )}
             >
               <span
@@ -164,7 +163,7 @@ export const FairwayShotPills = memo(function FairwayShotPills({
                     : 'h-2 w-2 bg-accent-500 group-active:h-2.5 group-active:w-2.5',
                 )}
               />
-            </button>
+            </Button>
           );
         })}
       </div>

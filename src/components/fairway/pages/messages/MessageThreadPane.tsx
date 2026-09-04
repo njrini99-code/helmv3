@@ -435,14 +435,18 @@ export function MessageThreadPane({
    * fetches the most recent 200, so an unread count larger than what is on
    * screen must not push the marker off the top of the list.
    */
-  const firstUnreadIndex = React.useMemo(() => {
+  const firstUnreadIndex = (() => {
+    // Not memoized: two comparisons and a subtraction, recomputed per render,
+    // is cheaper than the dependency array it would need — and the value it
+    // depends on lives in a ref, which a dependency array cannot observe
+    // anyway.
     const count = openUnreadCountRef.current;
     if (!count || count <= 0 || messages.length === 0) return -1;
     const index = messages.length - Math.min(count, messages.length);
     // Never draw it above the very first message — a line at the top of a
     // thread separates nothing and just reads as a stray rule.
     return index <= 0 ? -1 : index;
-  }, [messages.length, activeConversationId]);
+  })();
   const observedConversationIdRef = React.useRef<string | null>(null);
   const pendingInitialScrollConversationIdRef = React.useRef<string | null>(null);
   // P259: per-message anchors so a search hit can scroll its bubble into view.
