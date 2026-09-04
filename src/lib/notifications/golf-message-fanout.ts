@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -105,16 +104,21 @@ export async function notifyGolfMessageRecipients(
       return;
     }
 
-    // Email notifications. Reasons are reported, not just counted — see
-    // src/lib/settled-failures.ts and INC-2026-08-27.
-    await allSettledReported(
-      recipientProfiles.map(r =>
-        r.email
-          ? notifyNewMessage(r.id, r.email, senderName, previewText, conversationId, 'golf')
-          : Promise.resolve()
-      ),
-      { action: 'notifications.notifyGolfMessageRecipients', featureArea: 'messaging', label: 'email' },
-    );
+    // NO EMAIL ON AN ORDINARY MESSAGE. Removed 2026-09-04 by owner instruction:
+    // "stop sending emails every time there's a message. It should just be the
+    // app notification."
+    //
+    // Email is the wrong channel for a chat message and was the loudest one we
+    // had: every participant got a mail per message, so an active thread of ten
+    // messages sent ten emails to everyone in it. Push and the in-app bell below
+    // already carry the same payload, immediately, to the app the conversation
+    // lives in — which is where a reply can actually happen.
+    //
+    // Deliberately deleted rather than flag-gated: a dormant flag on a fanout
+    // path is a thing that gets flipped back on by accident. If email ever
+    // returns here it must be for a DIFFERENT event (a mention, a critical
+    // announcement, a digest of what you missed while away) with its own
+    // opt-out, not for "somebody typed".
 
     // Push notifications — carry the conversation id so the push payload
     // deep-links straight to the thread that fired it (P260).

@@ -5,7 +5,7 @@
  * Fairway · messages · MessageComposer — the "what's-next" composer track
  * ----------------------------------------------------------------------------
  * The WHAT'S-NEXT section of the two-pane inbox: a sunken matte composer track
- * (mirrors AskThreadPane's `border-t bg-surface-sunken` composer slot). It is a
+ * (mirrors AskThreadPane's `border-t` composer slot). It is a
  * pure PRESENTATION re-skin of the legacy `MessageInput` — the behavior is
  * PRESERVED byte-for-byte in intent:
  *   • auto-resize textarea (height clamps 40→120px on the message value)
@@ -223,7 +223,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     // Sunken matte composer track — mirrors AskThreadPane's composer slot.
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border-subtle bg-surface-sunken p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-4 lg:pb-4"
+      className="border-t border-border-subtle bg-surface px-3 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2.5 lg:pb-2.5"
     >
       {/* Pending attachment previews — REUSED component, render only when present. */}
       {pendingAttachments.length > 0 && (

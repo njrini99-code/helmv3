@@ -58,7 +58,26 @@ describe('keyboard inset — who consumes it', () => {
 
   it('the composer drops its home-indicator pad while the keyboard covers the home indicator', () => {
     const src = read('src/components/fairway/pages/messages/MessageComposer.tsx');
-    expect(src).toContain('[.keyboard-open_&]:pb-4');
+
+    // Assert the INVARIANT, not a spacing value. This used to pin the literal
+    // string `[.keyboard-open_&]:pb-4`, which made it fail on 2026-09-04 for a
+    // composer that still had exactly the behaviour the test is named after —
+    // only the number had changed. A gate that fires on a padding tweak and is
+    // silent on the actual regression is measuring the wrong thing.
+    //
+    // What must hold: the resting pad reserves the home indicator, and the
+    // keyboard-open override does NOT — because when the keyboard is up it is
+    // covering the home indicator, and reserving space for both stacks a dead
+    // band above the keyboard.
+    const resting = src.match(/\spb-\[calc\([^\]]*env\(safe-area-inset-bottom\)[^\]]*\)\]/);
+    expect(resting, 'composer must reserve the home indicator at rest').not.toBeNull();
+
+    const keyboardOpen = src.match(/\[\.keyboard-open_&\]:pb-[\w.[\]-]+/);
+    expect(keyboardOpen, 'composer must override its bottom pad when the keyboard is open').not.toBeNull();
+    expect(
+      keyboardOpen?.[0],
+      'the keyboard-open pad must NOT re-add the safe-area inset',
+    ).not.toContain('safe-area-inset-bottom');
   });
 
   it('<body> grows by the keyboard height so a focused field on ANY page can be scrolled above it', () => {
