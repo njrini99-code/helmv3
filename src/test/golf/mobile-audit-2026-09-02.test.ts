@@ -11,7 +11,23 @@ const read = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8');
 describe('mobile audit 2026-09-02', () => {
   it('UI-1: the round pulse chart scales to its column instead of clipping at 520px', () => {
     const src = read('src/components/fairway/pages/rounds/FairwayRoundDetail.tsx');
-    expect(src).toMatch(/width="100%"\s+height="auto"\s+viewBox=\{`0 0 \$\{width\} \$\{height\}`\}\s+preserveAspectRatio="xMidYMid meet"/);
+    // This assertion used to pin `width="100%" height="auto"
+    // preserveAspectRatio="xMidYMid meet"` — markup that LOOKS responsive, and
+    // was not: an inline `style={{ width }}` on the wrapping span beat the
+    // `w-full max-w-[520px]` classes in the cascade, so the chart rendered at a
+    // literal 520px on every viewport and clipped to ~40% of the round in a
+    // ~208px phone column. The test passed the whole time. It was checking the
+    // SVG's own attributes while the element above it did the pinning.
+    //
+    // So it now asserts the two things that actually make it responsive: no
+    // inline width survives on the span, and the viewBox is stretched to
+    // whatever width the column resolves to.
+    expect(src).toContain("style={{ height }}");
+    expect(src).not.toMatch(/style=\{\{\s*width\s*,\s*height\s*\}\}/);
+    expect(src).toContain('preserveAspectRatio="none"');
+    // ...and that the trace keeps a constant on-screen thickness despite X and
+    // Y no longer sharing a scale factor.
+    expect(src).toContain('vectorEffect="non-scaling-stroke"');
   });
 
   it('UI-2/3: the agenda does not scroll the page when today already heads the visible list', () => {
@@ -21,8 +37,18 @@ describe('mobile audit 2026-09-02', () => {
 
   it('UI-4: the inbox masthead hides on a phone while a thread is open', () => {
     const src = read('src/components/fairway/pages/messages/FairwayMessages.tsx');
-    expect(src).toContain("<div className={mobileShowChat ? 'hidden md:block' : undefined}>");
-    expect(src).toContain("${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-6'}");
+    // UI-4 hid the editorial masthead below `md` while a thread was open,
+    // because it plus the thread header left ~100px of an 844px screen for
+    // messages. The masthead is now hidden below `md` in EVERY state — on the
+    // list view it printed the destination name a third time (the top bar and
+    // the eyebrow already say it) above a stacked action row.
+    //
+    // Asserting the PROPERTY UI-4 protects — the masthead never occupies phone
+    // height — rather than the conditional it originally used, which is
+    // strictly weaker than what ships now.
+    expect(src).toContain('<div className="hidden md:block">');
+    expect(src).toContain('<ViewHeader');
+    expect(src).toContain("mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'");
   });
 
   it('UI-5: the event editor scrolls its own error banner into view', () => {

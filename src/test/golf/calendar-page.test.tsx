@@ -63,7 +63,32 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
-import GolfCalendarPage from '@/app/golf/(dashboard)/dashboard/calendar/page';
+import GolfCalendarPage, { CalendarEventsSection } from '@/app/golf/(dashboard)/dashboard/calendar/page';
+import { createClient } from '@/lib/supabase/server';
+
+/**
+ * The events read now lives in `CalendarEventsSection`, an async child behind
+ * the page's interior `<Suspense>`, so that the calendar shell can paint
+ * without waiting on it. `GolfCalendarPage()` therefore no longer performs the
+ * read, and calling it would assert nothing about the contract below.
+ *
+ * These tests exercise the section directly. Every guarantee is unchanged — a
+ * failed read still THROWS to the route error boundary (Suspense is not an
+ * error boundary, so it still reaches `calendar/error.tsx`), the select still
+ * carries the series fields, and cancelled events still survive.
+ */
+async function renderEventsSection(initialEventId?: string) {
+  const supabase = await createClient();
+  return CalendarEventsSection({
+    supabase,
+    teamId: 'team-1',
+    coachList: [],
+    isCoach: true,
+    coachId: 'coach-1',
+    playerId: null,
+    initialEventId,
+  });
+}
 
 // The page now reads `searchParams` (P440 Travel↔Calendar `?event=` deep-link
 // auto-open) — every call site needs a resolved searchParams promise. These
@@ -82,13 +107,13 @@ describe('GolfCalendarPage — events fetch contract', () => {
   it('THROWS (route error boundary, retryable) when the events query errors', async () => {
     tableResults.set('golf_events', { data: null, error: { message: 'connection reset' } });
 
-    await expect(GolfCalendarPage(noSearchParams())).rejects.toThrow('Failed to load calendar events');
+    await expect(renderEventsSection()).rejects.toThrow('Failed to load calendar events');
   });
 
   it('selects series fields and does NOT filter out cancelled events', async () => {
     tableResults.set('golf_events', { data: [], error: null });
 
-    await GolfCalendarPage(noSearchParams());
+    await renderEventsSection();
 
     const eventsQuery = queryLog.find((q) => q.table === 'golf_events');
     expect(eventsQuery).toBeDefined();
@@ -134,7 +159,7 @@ describe('GolfCalendarPage — events fetch contract', () => {
       error: null,
     });
 
-    const jsx = (await GolfCalendarPage(noSearchParams())) as React.ReactElement;
+    const jsx = (await renderEventsSection()) as React.ReactElement;
     // Walk the element tree for the surface's `events` prop.
     const found: Array<Record<string, unknown>> = [];
     const visit = (node: unknown): void => {

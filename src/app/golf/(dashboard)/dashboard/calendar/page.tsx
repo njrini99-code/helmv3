@@ -170,7 +170,18 @@ interface CalendarEventsSectionProps {
  * did when this was inline in the page component (audit finding #20: a
  * failed events fetch must never render as a cheerful empty calendar).
  */
-async function CalendarEventsSection({
+/**
+ * Exported for the page's data-fetch contract tests.
+ *
+ * The events read used to live in the page body, so those tests could call
+ * `GolfCalendarPage()` and assert on the query. Streaming it moved the read in
+ * here, behind Suspense — the page no longer performs it, so calling the page
+ * asserts nothing about it. Exporting the section keeps those guarantees
+ * testable at the place the work actually happens rather than deleting them:
+ * that a failed events read THROWS (never a cheerful empty calendar), that the
+ * select carries the series fields, and that cancelled events survive.
+ */
+export async function CalendarEventsSection({
   supabase,
   teamId,
   coachList,

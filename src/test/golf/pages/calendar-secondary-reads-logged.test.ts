@@ -71,11 +71,33 @@ const client = {
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => client }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => client }));
 
+/**
+ * Runs BOTH phases of the calendar page.
+ *
+ * The page streams: it resolves `teamId` itself, then renders
+ * `CalendarEventsSection` behind an interior `<Suspense>` for the reads that
+ * depend on it — including the roster and team-settings reads these tests are
+ * about. Awaiting only the default export would exercise phase 1 and silently
+ * assert nothing about the reads that moved, so this drives the section too.
+ *
+ * Errors are left to the caller, which is what lets the "must not be silent"
+ * tests observe a throw while still inspecting what was logged.
+ */
 async function renderPage() {
   const mod = await import('@/app/golf/(dashboard)/dashboard/calendar/page');
-  return (mod.default as (a: unknown) => Promise<unknown>)({
+  const page = await (mod.default as (a: unknown) => Promise<unknown>)({
     searchParams: Promise.resolve({}),
   });
+  const section = mod.CalendarEventsSection as (a: unknown) => Promise<unknown>;
+  await section({
+    supabase: client,
+    teamId: 'team-1',
+    coachList: [],
+    isCoach: true,
+    coachId: 'coach-1',
+    playerId: null,
+  });
+  return page;
 }
 
 beforeAll(async () => {
