@@ -6403,7 +6403,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/admin-tracer-data.ts",
-          "line": 1617
+          "line": 1625
         }
       ]
     },
@@ -6475,7 +6475,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/admin-tracer-data.ts",
-          "line": 1578
+          "line": 1586
         }
       ]
     },

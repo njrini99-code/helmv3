@@ -5,6 +5,7 @@ import {
   flightStepStatusTone,
   isPlausibleTraceId,
   tracerIncidentGroupKey,
+  unmatchedTracerOperatorImpact,
   FLIGHT_LAYER_ORDER,
 } from '../tracer-shared';
 
@@ -262,4 +263,36 @@ describe('tracerIncidentGroupKey', () => {
     // this should never occur in practice — documented for completeness.
     expect(tracerIncidentGroupKey('', 'event-7')).toBe('');
   });
+});
+
+/**
+ * The tracer board rendered five "RECENT DATA-QUALITY INCIDENTS" on
+ * 2026-09-03, two of them at info severity, every one carrying "Players or
+ * staff may have seen a failure or stale data." For the info rows that was
+ * false: `no_rounds_in_period` and `engine_no_recent_rounds` are empty-state
+ * guards meaning the player has no rounds yet. The catch-all branch was
+ * asserting user impact it had no basis for — the same class as a handled
+ * fallback rendering as a defect.
+ */
+describe('unmatchedTracerOperatorImpact', () => {
+  it('does not claim a user-visible failure for an all-info group', () => {
+    const impact = unmatchedTracerOperatorImpact('info');
+    expect(impact).not.toMatch(/may have seen a failure/);
+    expect(impact).toMatch(/Not asserted/);
+  });
+
+  it('says unknown, NOT "no impact" — info is handled, not proof of a correct screen', () => {
+    const impact = unmatchedTracerOperatorImpact('info');
+    expect(impact).toMatch(/unknown from this row, not zero/);
+    // The mirror-image overclaim would be just as wrong as the original.
+    expect(impact).not.toMatch(/no impact|nobody|no user|unaffected/i);
+  });
+
+  for (const severity of ['critical', 'error', 'warning'] as const) {
+    it(`keeps the assertive impact line at ${severity} severity`, () => {
+      // A group's severity is the WORST across its occurrences, so anything
+      // above info means at least one occurrence was a real failure.
+      expect(unmatchedTracerOperatorImpact(severity)).toMatch(/may have seen a failure or stale data/);
+    });
+  }
 });

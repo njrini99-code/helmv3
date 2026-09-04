@@ -55,6 +55,34 @@ export function formatStuckDuration(hours: number): string {
  * exactly, so a NULL-fingerprint row lands as its own singleton incident in
  * both places instead of inventing a second convention here.
  */
+/**
+ * Operator-impact line for a tracer incident that matched NO specialized
+ * narrative rule.
+ *
+ * The specialized branches in deriveTracerNarrative each assert an impact
+ * written for a known failure mode, and those claims stand at any severity.
+ * This is the catch-all — it runs precisely when nothing was recognized, so
+ * it is the one place with no earned knowledge of what a user saw.
+ *
+ * Asserting "players may have seen a failure" for an all-info group was false
+ * on the live board: `getPlayerShotAnalytics` / `no_rounds_in_period` and
+ * `postRoundTrigger.engineFailure` / `engine_no_recent_rounds` are
+ * empty-state guards meaning "this player has no rounds yet".
+ *
+ * `severity` is the GROUP's, which is the WORST across its occurrences, so
+ * 'info' here means every occurrence was info. A group mixing info and error
+ * reports 'error' and keeps the assertive line.
+ *
+ * Deliberately NOT "no impact": info means the path handled it and
+ * continued, which does not prove the user saw a correct screen. Unknown, not
+ * zero — swapping an overclaim for its mirror image is not a fix.
+ */
+export function unmatchedTracerOperatorImpact(severity: TracerIncident['severity']): string {
+  return severity === 'info'
+    ? 'Not asserted — every occurrence in this group was recorded at info severity, meaning the path handled it and continued. User impact is unknown from this row, not zero. Read it as context.'
+    : 'Players or staff may have seen a failure or stale data in the tracer-monitored flow.';
+}
+
 export function tracerIncidentGroupKey(fingerprint: string | null, id: string): string {
   return fingerprint ?? `row:${id}`;
 }

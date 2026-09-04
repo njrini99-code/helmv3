@@ -10,7 +10,10 @@ import { revalidatePath } from 'next/cache';
 import { normalizeIncidentRoute } from '@/lib/admin/incident-grouping';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { classifyInProgressActivity } from '@/lib/golf/tracer-round-activity';
-import { tracerIncidentGroupKey } from '@/app/admin/golf/tracer/tracer-shared';
+import {
+  tracerIncidentGroupKey,
+  unmatchedTracerOperatorImpact,
+} from '@/app/admin/golf/tracer/tracer-shared';
 
 // ============================================
 // TYPES
@@ -337,6 +340,10 @@ function deriveTracerNarrative(
   featureArea: string,
   action: string | null,
   errorCode: string | null,
+  // The GROUP's severity, which is the WORST across its occurrences (see the
+  // TRACER_SEVERITY_ORDER comparison where groups merge). Only the catch-all
+  // branch reads it — see the note there.
+  severity: TracerIncident['severity'],
 ): Pick<TracerIncident, 'title' | 'summary' | 'whyItHappened' | 'howToFix' | 'operatorImpact'> {
   const normalized = message.toLowerCase();
 
@@ -434,7 +441,7 @@ function deriveTracerNarrative(
     howToFix: errorCode
       ? `Review the raw message, error code ${errorCode}, and captured context below, then fix the failing step before replaying the round workflow.`
       : 'Review the raw message, captured context, and stack below, then repair the failing step before replaying the round workflow.',
-    operatorImpact: 'Players or staff may have seen a failure or stale data in the tracer-monitored flow.',
+    operatorImpact: unmatchedTracerOperatorImpact(severity),
   };
 }
 
@@ -566,6 +573,7 @@ function buildTracerIncidents(events: TracerAdminEventRecord[]): TracerIncident[
         featureArea,
         group.latestContext.action,
         group.latestContext.errorCode,
+        group.severity,
       );
 
       const incident: TracerIncident = {
