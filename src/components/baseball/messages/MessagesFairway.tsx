@@ -74,21 +74,8 @@ import { InstrumentPanel, Skeleton } from '@/components/fairway';
 // bottom-nav term above does: this box's height budget now accounts for
 // EVERY piece of chrome actually rendered above it on this route, not just
 // the ones that are always present.
-// The keyboard term was missing entirely until 2026-09-03. Golf's messages
-// shell subtracts `--keyboard-height` because the iOS WebView does NOT resize
-// for the keyboard (`resize: 'ionic'`, no <ion-app>) and Safari does not resize
-// its layout viewport — so a full-height column keeps its height and the
-// composer sits under the keys ("I can't see what I'm typing", golf team chat,
-// 2026-09-01, fixed in #1739). Baseball has its own, older messages surface
-// and never received that fix, so the identical defect was still live here.
-//
-// `max(...)` rather than another subtraction, matching FairwayMessages: while
-// the keyboard is up the bottom nav is underneath it, so its height is not
-// owed — subtracting both would shrink the thread by roughly a nav bar for
-// nothing. `--keyboard-height` is 0px on desktop and whenever the keyboard is
-// down, so the nav term still wins there and this is inert.
 const SHELL =
-  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-max(var(--golf-mobile-bottom-nav-offset,0px),var(--keyboard-height,0px))-var(--baseball-hub-subnav-offset,0px))] overflow-hidden bg-canvas';
+  'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-var(--golf-mobile-bottom-nav-offset,0px)-var(--baseball-hub-subnav-offset,0px))] overflow-hidden bg-canvas';
 
 /** The rail's masthead — kept byte-identical to `MessagesClient.tsx`'s
  *  `RAIL_TITLE` so the loading -> loaded swap never changes the title. */
@@ -119,14 +106,7 @@ export function MessagesFairway({
 }: MessagesFairwayProps) {
   if (loading) {
     return (
-      <div
-        // This surface sizes itself against the keyboard (see SHELL), so the
-        // provider's keyboardWillShow scroll-into-view must leave it alone —
-        // centring the composer in a viewport the keyboard covers would scroll
-        // the thread header off the top for nothing.
-        data-fw-keyboard-aware
-        className={fairwayScope(SHELL)}
-      >
+      <div className={fairwayScope(SHELL)}>
         <div className="w-full flex-shrink-0 border-r border-border-subtle lg:w-80 xl:w-96">
           <InstrumentPanel
             as="nav"
@@ -166,14 +146,7 @@ export function MessagesFairway({
   }
 
   return (
-    <div
-      // This surface sizes itself against the keyboard (see SHELL), so the
-      // provider's keyboardWillShow scroll-into-view must leave it alone —
-      // centring the composer in a viewport the keyboard covers would scroll
-      // the thread header off the top for nothing.
-      data-fw-keyboard-aware
-      className={fairwayScope(SHELL)}
-    >
+    <div className={fairwayScope(SHELL)}>
       <div
         className={cn(
           'w-full flex-shrink-0 border-r border-border-subtle',
