@@ -94,6 +94,7 @@ describe('MessageThreadPane initial thread position', () => {
       conversation,
       messages,
       loading: true,
+      threadVisible: true,
       userId: 'coach-1',
       currentUserId: 'coach-1',
       isOtherTyping: false,
@@ -125,6 +126,67 @@ describe('MessageThreadPane initial thread position', () => {
     expect(scrollContainer!.scrollTop).toBe(640);
   });
 
+  it('waits to consume the initial scroll sentinel until a hidden thread becomes visible', () => {
+    const conversation: GolfConversationWithMeta = {
+      id: 'group-1',
+      is_group: true,
+      title: 'Team group',
+      unread_count: 0,
+    } as GolfConversationWithMeta;
+    const messages: MessageWithReadStatus[] = [
+      {
+        id: 'm1',
+        conversation_id: 'group-1',
+        sender_id: 'player-1',
+        content: 'Newest message',
+        created_at: '2026-08-22T11:00:00.000Z',
+        read: false,
+        is_deleted: false,
+        edited_at: null,
+        has_attachments: false,
+      },
+    ] as MessageWithReadStatus[];
+    const props: MessageThreadPaneProps = {
+      conversation,
+      messages,
+      loading: true,
+      threadVisible: false,
+      userId: 'coach-1',
+      currentUserId: 'coach-1',
+      isOtherTyping: false,
+      onBack: vi.fn(),
+      onNewMessage: vi.fn(),
+      editingMessageId: null,
+      editContent: '',
+      isEditSaving: false,
+      deleteConfirmId: null,
+      mobileActionsId: null,
+      onStartEdit: vi.fn(),
+      onEditContentChange: vi.fn(),
+      onCancelEdit: vi.fn(),
+      onSaveEdit: vi.fn(),
+      onDeleteClick: vi.fn(),
+      onConfirmDelete: vi.fn(),
+      onCancelDelete: vi.fn(),
+      onSetMobileActions: vi.fn(),
+    };
+
+    const { container, rerender } = render(createElement(MessageThreadPane, props));
+    const scrollContainer = container.querySelector<HTMLElement>('[data-scroll-container]');
+    expect(scrollContainer).not.toBeNull();
+    Object.defineProperty(scrollContainer!, 'scrollHeight', { configurable: true, value: 640 });
+    Object.defineProperty(scrollContainer!, 'clientHeight', { configurable: true, value: 0 });
+
+    rerender(createElement(MessageThreadPane, { ...props, loading: false }));
+
+    expect(scrollContainer!.scrollTop).not.toBe(640);
+
+    Object.defineProperty(scrollContainer!, 'clientHeight', { configurable: true, value: 180 });
+    rerender(createElement(MessageThreadPane, { ...props, loading: false, threadVisible: true }));
+
+    expect(scrollContainer!.scrollTop).toBe(640);
+  });
+
   it('stays pinned to the newest message when the scroll region shrinks under it (keyboard opening)', () => {
     // jsdom has no ResizeObserver; capture the callback the pane registers.
     // It has no scrollIntoView either, and the new-message effect calls it.
@@ -147,6 +209,7 @@ describe('MessageThreadPane initial thread position', () => {
       ] as MessageWithReadStatus[];
       const props: MessageThreadPaneProps = {
         conversation, messages, loading: false, userId: 'coach-1', currentUserId: 'coach-1', isOtherTyping: false,
+        threadVisible: true,
         onBack: vi.fn(), onNewMessage: vi.fn(), editingMessageId: null, editContent: '', isEditSaving: false,
         deleteConfirmId: null, mobileActionsId: null, onStartEdit: vi.fn(), onEditContentChange: vi.fn(),
         onCancelEdit: vi.fn(), onSaveEdit: vi.fn(), onDeleteClick: vi.fn(), onConfirmDelete: vi.fn(),

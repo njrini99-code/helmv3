@@ -60,6 +60,7 @@ import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
 import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
 import { ViewHeader } from '@/components/fairway/view-header';
@@ -102,6 +103,8 @@ export function FairwayMessages() {
   const [showNewMessageModal, setShowNewMessageModal] = React.useState(false);
   const [showTeamBroadcastModal, setShowTeamBroadcastModal] = React.useState(false);
   const [mobileShowChat, setMobileShowChat] = React.useState(false);
+  const isDesktopMessages = useMediaQuery('(min-width: 768px)');
+  const threadVisible = isDesktopMessages || mobileShowChat;
 
   // An open conversation owns the phone. Hides the bottom tab bar (and its
   // reserved padding) for as long as the thread is open — see
@@ -701,6 +704,7 @@ export function FairwayMessages() {
                 conversation={selectedConversation}
                 messages={messages}
                 loading={messagesLoading}
+                threadVisible={threadVisible}
                 error={messagesError}
                 onRetry={refetchMessages}
                 userId={userId}

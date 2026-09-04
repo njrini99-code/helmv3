@@ -158,6 +158,8 @@ export interface MessageThreadPaneProps {
   /** Messages from the unchanged useGolfMessages() hook. */
   messages: MessageWithReadStatus[];
   loading: boolean;
+  /** True when the thread is visible (desktop or mobile detail view). */
+  threadVisible: boolean;
   /**
    * True when the thread fetch FAILED (distinct from a truly-empty thread).
    * Renders a recoverable error state with Retry instead of the honest-empty
@@ -482,6 +484,7 @@ export function MessageThreadPane({
   conversation,
   messages,
   loading,
+  threadVisible,
   error,
   onRetry,
   userId,
@@ -816,8 +819,8 @@ export function MessageThreadPane({
     }
 
     const container = messagesContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
+    if (!threadVisible || !container || container.clientHeight <= 0) return;
+    container.scrollTop = container.scrollHeight;
       // Hold the bottom until the reader actually moves.
       //
       // Setting scrollTop ONCE is not enough, and that is the "it opens at the
@@ -835,10 +838,9 @@ export function MessageThreadPane({
       // The observer below re-pins on each of those growth events until the
       // reader scrolls, at which point their position is theirs and we stop
       // touching it.
-      stickToBottomRef.current = true;
-    }
+    stickToBottomRef.current = true;
     pendingInitialScrollConversationIdRef.current = null;
-  }, [conversation?.id, loading, messages, scrollToMessageId]);
+  }, [conversation?.id, loading, messages, scrollToMessageId, threadVisible]);
 
   // Re-pin to the bottom while `stickToBottomRef` is armed and the content is
   // still changing size. Released by the reader's first deliberate scroll away
