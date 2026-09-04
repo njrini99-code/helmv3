@@ -63,7 +63,7 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
-import GolfCalendarPage, { CalendarEventsSection } from '@/app/golf/(dashboard)/dashboard/calendar/page';
+import { CalendarEventsSection } from '@/app/golf/(dashboard)/dashboard/calendar/page';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -89,11 +89,6 @@ async function renderEventsSection(initialEventId?: string) {
     initialEventId,
   });
 }
-
-// The page now reads `searchParams` (P440 Travel↔Calendar `?event=` deep-link
-// auto-open) — every call site needs a resolved searchParams promise. These
-// tests exercise the no-deep-link path, so an empty object is the honest stand-in.
-const noSearchParams = () => ({ searchParams: Promise.resolve({}) });
 
 describe('GolfCalendarPage — events fetch contract', () => {
   beforeEach(() => {
