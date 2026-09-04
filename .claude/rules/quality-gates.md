@@ -78,6 +78,24 @@ Verified 2026-08-20. Do not treat these as coverage:
   belongs here — `package.json`'s `prebuild` runs
   `scripts/check-required-env.mjs` on every `npm run build`, so it fires in
   CI's `next-build` job and on every local build.)
+- **The Golf e2e suite self-skips on credentials Playwright itself injected,
+  and exits 0.** `e2e/golf-critical-paths.spec.ts` — the only spec that loads
+  `/golf/dashboard/messages`, `/roster`, `/calendar`, `/intelligence` — gates
+  every test on `hasGolfCoachAuth`, a module-level
+  `process.env.GOLFHELM_COACH_EMAIL && ...GOLFHELM_COACH_PASSWORD`. Those ARE
+  in `.env.local`, and Playwright prints `injected env (80) from .env.local`
+  on startup, yet the constant still evaluates false: the injection does not
+  reach the spec module's top-level read. Measured 2026-09-04, same command
+  either side of one change:
+
+  ```text
+  npx playwright test ... -g "messages loads a conversation"   -> 1 skipped, exit 0
+  set -a; . ./.env.local; set +a; <same command>               -> 1 passed,  exit 0
+  ```
+
+  Both are green. The first verified nothing. Export the credentials into the
+  ENVIRONMENT before the run — `.env.local` alone is not enough — and check the
+  passed/skipped counts, because the exit code cannot tell you which you got.
 - **`orphans:mounts`** exists as a script with no CI caller. (`db:drift:check`
   was in this bullet until 2026-09-01; it now runs in ci.yml's `supabase` job
   against the migrations-rebuilt local stack, and in `db-drift.yml` against

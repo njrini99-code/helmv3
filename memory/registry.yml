@@ -934,7 +934,15 @@ features:
         - supabase/migrations/*announcement*.sql
         - supabase/migrations/*communication*.sql
       tests:
+        # e2e/messages.spec.ts is BASEBALL-only — every one of its nine
+        # `page.goto` calls targets /baseball/dashboard/messages, and this
+        # feature's routes are golf. It cannot exercise anything listed under
+        # `routes:` or `api:` above. Kept because it is still the messaging
+        # spec, but it is not evidence about this feature.
         - e2e/messages.spec.ts
+        # The spec that DOES load /golf/dashboard/messages (the "messages
+        # loads a conversation" case).
+        - e2e/golf-critical-paths.spec.ts
         - src/app/golf/actions/unified-notifications-model.test.ts
     integrations:
       - supabase
@@ -948,7 +956,16 @@ features:
         - memory/context/golfhelm-database.md
       required_checks:
         - npm run typecheck
-        - npm run test:e2e -- e2e/messages.spec.ts
+        # WAS `e2e/messages.spec.ts` until 2026-09-04 — a baseball-only spec
+        # named as the required check for a golf-routed feature, so running it
+        # proved nothing about this feature and passing it read as coverage.
+        # NOTE: this spec self-skips unless GOLFHELM_COACH_EMAIL /
+        # GOLFHELM_COACH_PASSWORD are in the ENVIRONMENT. Playwright's own
+        # .env.local injection does NOT reach the spec module's top-level
+        # process.env reads, so having them in .env.local is not enough and
+        # the run exits 0 having skipped. Export them first:
+        #   set -a; . ./.env.local; set +a; npm run test:e2e -- e2e/golf-critical-paths.spec.ts
+        - npm run test:e2e -- e2e/golf-critical-paths.spec.ts
         - npm run build
 
   team_operations:
