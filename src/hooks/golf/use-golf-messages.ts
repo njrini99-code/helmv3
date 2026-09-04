@@ -12,6 +12,14 @@ import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 /** Pause before the single transport-failure retry of a message send. */
 const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
 
+/**
+ * How long to coalesce read-marking after messages arrive in an open thread.
+ * Long enough that a burst of four lines is one write instead of four; short
+ * enough that the sender's receipt turns over while they are still looking at
+ * it.
+ */
+const MARK_READ_ON_ARRIVAL_DEBOUNCE_MS = 900;
+
 export interface GolfConversationParticipant {
   id: string;
   name: string;
@@ -381,6 +389,42 @@ export function useGolfMessages(conversationId: string) {
 
     fetchMessages();
 
+    /**
+     * Mark the thread read shortly after someone else's message lands here.
+     *
+     * Debounced because a burst — a coach firing off four lines — would
+     * otherwise be four writes and four realtime round trips for one act of
+     * reading. Coalescing to a single call a beat later is the same outcome at
+     * a fraction of the cost.
+     *
+     * Gated on `visibilityState` so a backgrounded tab does not claim the
+     * player read something they never saw: this hook stays mounted while the
+     * phone is locked or the app is in the background, and "delivered" is not
+     * "read". When they come back, the next arrival — or the re-fetch on
+     * re-entering the thread — marks it properly.
+     *
+     * Declared inside the effect so it closes over THIS conversation's id;
+     * the effect is keyed on `conversationId`, so a switch tears the timer
+     * down with everything else and no write can land against a thread the
+     * player has already left.
+     */
+    let markReadTimer: ReturnType<typeof setTimeout> | null = null;
+    const markReadSoon = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (markReadTimer) clearTimeout(markReadTimer);
+      markReadTimer = setTimeout(() => {
+        void markGolfMessagesAsRead(conversationId).catch((err) => {
+          // Non-fatal: the badge stays stale until the next read attempt. Never
+          // allowed to reject unhandled and tear the hook down mid-conversation.
+          logError(
+            err instanceof Error ? err : new Error(String(err)),
+            { component: 'useGolfMessages', action: 'mark-read-on-arrival', sport: 'golf', conversationId },
+            'low'
+          );
+        });
+      }, MARK_READ_ON_ARRIVAL_DEBOUNCE_MS);
+    };
+
     // Set up real-time subscription for messages and typing
     const channel = supabase.channel(`golf-conversation:${conversationId}`);
     channelRef.current = channel;
@@ -401,6 +445,16 @@ export function useGolfMessages(conversationId: string) {
           // Clear typing indicator when message is received
           if (newMessage.sender_id !== currentUserIdRef.current) {
             setIsOtherTyping(false);
+            // ...and mark it read, because the reader is looking at it RIGHT NOW.
+            //
+            // `markGolfMessagesAsRead` used to run only inside `fetchMessages`,
+            // which re-runs on conversation change alone. So a message that
+            // arrived while the thread was already open was appended to the
+            // list, read by a human, and never marked read in the database:
+            // the sender's receipt sat on "Sent" indefinitely while the
+            // recipient was demonstrably reading it, and the recipient's own
+            // rail badge stayed stale until they navigated away and back.
+            markReadSoon();
           }
         }
       )
@@ -463,6 +517,10 @@ export function useGolfMessages(conversationId: string) {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+      // A pending read-mark belongs to the conversation being left, so it dies
+      // with it rather than landing against a thread the player has moved on
+      // from.
+      if (markReadTimer) clearTimeout(markReadTimer);
     };
     // Deliberately keyed on the CONVERSATION only. `fetchMessages` is now
     // identity-stable and every handler above reads `currentUserIdRef`, so a
