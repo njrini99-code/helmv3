@@ -13,11 +13,16 @@
  * ========================================================================== */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import * as React from 'react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { Button } from '@/components/fairway/controls/button';
 import {
   canCreateConversation,
   resolveCoachName,
   ROLE_LABEL_PATTERN,
+  SelectedRecipientStrip,
   updateSelectedRecipients,
 } from './FairwayNewMessageSheet';
 
@@ -123,6 +128,54 @@ describe('updateSelectedRecipients — private-group search persistence', () => 
     const selected = updateSelectedRecipients('group', new Map(), recipient);
 
     expect(updateSelectedRecipients('group', selected, recipient)).toEqual(new Map());
+  });
+});
+
+function SelectedRecipientStripHarness() {
+  const [recipients, setRecipients] = React.useState(
+    new Map([
+      ['player-1', { userId: 'player-1', name: 'Avery Lee', avatar: 'avery.png' }],
+      ['player-2', { userId: 'player-2', name: 'Blair Kim', avatar: 'blair.png' }],
+    ]),
+  );
+  const participantIds = Array.from(recipients.keys());
+
+  return (
+    <>
+      <p>{recipients.size} selected</p>
+      <SelectedRecipientStrip
+        recipients={recipients}
+        onRemove={(userId) => {
+          setRecipients((previous) => {
+            const next = new Map(previous);
+            next.delete(userId);
+            return next;
+          });
+        }}
+      />
+      <Button
+        variant="primary"
+        disabled={!canCreateConversation('group', participantIds, 'Practice plans')}
+      >
+        Create group
+      </Button>
+    </>
+  );
+}
+
+describe('SelectedRecipientStrip', () => {
+  it('removes a selected recipient from the visible strip and disables an ineligible group', async () => {
+    const user = userEvent.setup();
+    render(<SelectedRecipientStripHarness />);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create group' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Remove Avery Lee' }));
+
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove Avery Lee' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create group' })).toBeDisabled();
   });
 });
 

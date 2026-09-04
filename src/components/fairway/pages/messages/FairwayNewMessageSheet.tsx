@@ -36,9 +36,10 @@ import { SearchField } from '@/components/fairway/command/search-field';
 import { TextArea } from '@/components/fairway/forms';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { Button } from '@/components/fairway/controls/button';
+import { Chip } from '@/components/fairway/controls/badge';
 import { PressTarget } from '@/components/fairway/controls/press-target';
 import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
-import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
+import { Avatar } from '@/components/fairway/controls/avatar';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
@@ -98,6 +99,30 @@ export function updateSelectedRecipients(
     next.set(recipient.userId, recipient);
   }
   return next;
+}
+
+export interface SelectedRecipientStripProps {
+  recipients: ReadonlyMap<string, SelectedRecipient>;
+  onRemove: (userId: string) => void;
+}
+
+export function SelectedRecipientStrip({ recipients, onRemove }: SelectedRecipientStripProps) {
+  return (
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Selected recipients">
+      {Array.from(recipients.values()).map((recipient) => (
+        <Chip
+          key={recipient.userId}
+          size="sm"
+          tone="accent"
+          leadingIcon={<Avatar decorative name={recipient.name} src={recipient.avatar} size="xs" />}
+          onRemove={() => onRemove(recipient.userId)}
+          removeLabel={`Remove ${recipient.name}`}
+        >
+          {recipient.name}
+        </Chip>
+      ))}
+    </div>
+  );
 }
 
 export interface FairwayNewMessageSheetProps {
@@ -438,11 +463,16 @@ export function FairwayNewMessageSheet({
               {selectedRecipients.size} selected
             </p>
             {selectedRecipients.size > 0 ? (
-              <AvatarGroup size="sm" max={5}>
-                {Array.from(selectedRecipients.values()).map((recipient) => (
-                  <Avatar key={recipient.userId} name={recipient.name} src={recipient.avatar} size="sm" />
-                ))}
-              </AvatarGroup>
+              <SelectedRecipientStrip
+                recipients={selectedRecipients}
+                onRemove={(userId) => {
+                  setSelectedRecipients((previous) => {
+                    const next = new Map(previous);
+                    next.delete(userId);
+                    return next;
+                  });
+                }}
+              />
             ) : (
               <p className="font-fw-sans text-caption text-text-tertiary">Select at least two teammates.</p>
             )}
