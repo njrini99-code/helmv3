@@ -76,10 +76,41 @@ Ranked by how much of the reported feeling each explains.
 6. **`MessagesFairway.tsx:90` — baseball never received #1739.** Its height
    budget accounted for every piece of chrome except the keyboard. **FIXED.**
 
-7. **`calendar/page.tsx:64→157` — a genuine two-phase sequential Supabase
-   waterfall.** Phase 2's four queries cannot start until phase 1 resolves
-   `teamId`. The repo's own `NavPending.tsx:14` cites calendar as the slowest
-   route. **NOT FIXED — see §I.**
+7. **`FairwayMessages.tsx` — `<MessageComposer>` was mounted with no `key`.**
+   Its `message` and `pendingAttachments` are local state cleared only on a
+   successful send, while both send handlers read whatever
+   `selectedConversationId` is current *at send time*. A draft or attached
+   photo therefore survived a conversation switch and was delivered to whoever
+   was selected next, with no visual cue. **This is a privacy defect, not a
+   convenience gap.** **FIXED**, with a gate.
+
+8. **`MessageThreadPane.tsx` — a successful-but-empty attachment fetch fell
+   into no branch.** The send is two unbatched statements; realtime broadcasts
+   on the first, so a recipient's fetch can land before the attachment rows
+   commit and get an empty result with *no error*. The handler recognised only
+   error and non-empty, so the bubble rendered a static "📎 Attachment" label
+   with no gallery and no retry — permanently, since the effect only re-runs
+   when the *set* of attachment-bearing ids changes. This is the second half of
+   "Can't see pics": the missing column broke every reload, this race broke
+   live arrival. **FIXED** (recorded as unresolved + one bounded auto-retry).
+
+9. **`ui/input.tsx:190` — an invisible button that still took taps.** A 44×44
+   clear control at `opacity-0` with no `pointer-events-none`, over the input's
+   right edge. Tapping to place the cursor could fire Clear and wipe the field.
+   **FIXED.**
+
+10. **`FairwayRoundDetail.tsx:926` — the Pulse chart was pinned to 520px on
+    *every* viewport.** The real cause was narrower than the audit's: an inline
+    `style={{ width }}` beat the `w-full max-w-[520px]` classes in the cascade,
+    so `w-full` never applied anywhere. In a ~208px phone column it clipped to
+    the leftmost ~40% of the round inside a silent `overflow-x-auto` — and
+    because that slice forms a plausible V shape, it read as a *complete*
+    trend. A coach drew conclusions from 40% of a round. **FIXED** (responsive).
+
+11. **`calendar/page.tsx:64→157` — a genuine two-phase sequential Supabase
+    waterfall.** Phase 2's four queries cannot start until phase 1 resolves
+    `teamId`. The repo's own `NavPending.tsx:14` cites calendar as the slowest
+    route. **In progress — see §I.**
 
 ---
 
@@ -142,9 +173,26 @@ Ranked by how much of the reported feeling each explains.
   `whileTap` call sites. Bottom-nav targets are `min-h-[56px]`.
 - Reduced motion has a real central helper (`useReducedMotionGuard`) mandated by
   the design-system rules, plus a CSS belt-and-braces block.
-- **Real gap:** ~32 files use `group-hover:opacity-*` hover-reveal affordances
-  with no verified tap fallback — a control that only appears on `:hover` is
-  unreachable by touch. Counted, not individually audited. **Recorded.**
+- **The hover-reachability sweep found ZERO real defects in golf/Fairway.** The
+  ~32-file `group-hover:opacity-*` count was a grep count, and triaging all ten
+  golf/Fairway candidates found every one already handled: `md:`/`sm:`-gated so
+  they are visible by default on phone (`AttachmentPreview.tsx:167`,
+  `VersionHistory.tsx:177`, `FairwayTaskTemplateList.tsx:351`,
+  `FairwayDocuments.tsx:1775`), decorative marks inside an already fully-tappable
+  tile (`ConflictWarning.tsx:153`, `PracticeRxPanel.tsx:213`), `hidden … lg:flex`
+  so never rendered on phone (`MessageThreadPane.tsx:666`,
+  `FairwayRoundRow.tsx:226`), or carrying an explicit
+  `[@media(hover:none)]:opacity-100` fallback (`data-table.tsx:145`).
+  `PlayersGridView.tsx` even carries a test asserting the absence of this bug
+  class. **That remediation had already been done — recorded so it is not
+  re-audited.**
+- The sweep did find the **inverse** bug in a shared primitive
+  (`ui/input.tsx:190`, §A.9), now fixed.
+- Five genuine instances of the original class **do** exist outside golf/Fairway
+  and are NOT fixed here: `PlayerNotesSection.tsx:204`, `TeamCard.tsx:262`,
+  `CompareBar.tsx:99`, `FilterPanel.tsx:343`, `ProgramEditorClient.tsx:767`
+  (baseball / coach-discover / lifting). `CompareBar.tsx:99` is the sharpest —
+  it is the *only* remove control on a selected-player chip.
 
 ## G. Proposed spacing / design-system changes
 
