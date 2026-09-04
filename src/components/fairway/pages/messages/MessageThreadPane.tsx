@@ -501,6 +501,22 @@ export function MessageThreadPane({
     // thread separates nothing and just reads as a stray rule.
     return index <= 0 ? -1 : index;
   })();
+  /**
+   * Index of the LAST message the reader sent, or -1.
+   *
+   * The read receipt is a fact about the CONVERSATION — how far the other
+   * person has got — not a property of each utterance. Rendered once per
+   * group it printed "Read" three times in a single screen of a real thread,
+   * which states one fact repeatedly and reads as noise. Every chat that
+   * feels finished shows it once, against the newest thing you said.
+   */
+  const lastOwnIndex = (() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      if (m && (m.sender_id === userId || m.sender_id === currentUserId)) return i;
+    }
+    return -1;
+  })();
   const observedConversationIdRef = React.useRef<string | null>(null);
   const pendingInitialScrollConversationIdRef = React.useRef<string | null>(null);
   // P259: per-message anchors so a search hit can scroll its bubble into view.
@@ -901,7 +917,13 @@ export function MessageThreadPane({
           reads cleanly against the raised glass bezel. */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-surface px-4 py-5 sm:px-5"
+        // `canvas`, not `surface`. The tier was inverted: the well was the
+        // CARD colour (0.984) and incoming bubbles were `sunken` (0.963), so
+        // the messages sat BELOW their own container and had to be found
+        // rather than seen. design-tokens.css sets canvas 0.03 below surface
+        // precisely so "cards now clearly LIFT off it" — the bubbles are the
+        // cards here, and this is that pairing, the right way up.
+        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
         data-scroll-container
       >
         {loading ? (
@@ -1014,13 +1036,20 @@ export function MessageThreadPane({
                     <span className="h-px flex-1 bg-accent-500/45" />
                   </div>
                 )}
+                {/* A quiet centred label, with no rules through it.
+                    The New marker above draws accent rules BECAUSE, in its own
+                    words, "this line means something the day separators do
+                    not" — but the day separator drew the same two rules, so the
+                    only thing carrying that distinction was hue. Two full-width
+                    hairlines per day also cut the column into slabs and compete
+                    with the bubbles for the eye. Dropping them makes the New
+                    marker the only ruled thing in the thread, which is what it
+                    was always described as being. */}
                 {startsDay && (
-                  <div className="flex items-center gap-3 pb-1 pt-2" role="separator">
-                    <span className="h-px flex-1 bg-border-subtle" />
+                  <div className="flex items-center justify-center pb-2 pt-5" role="separator">
                     <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                       {formatDaySeparator(msg.created_at)}
                     </span>
-                    <span className="h-px flex-1 bg-border-subtle" />
                   </div>
                 )}
                 <m.div
@@ -1189,15 +1218,25 @@ export function MessageThreadPane({
                       <div
                         {...(isOwn ? longPressHandlers(msg.id) : {})}
                         className={cn(
-                          'px-4 py-2.5',
+                          // Reading size and real padding. `text-body-sm` in a
+                          // tight box is caption treatment, and it made the
+                          // content of the product read as metadata about
+                          // itself. The message IS the product on this screen.
+                          'px-4 py-3 sm:px-4',
                           // Own bubbles opt out of the iOS text-selection callout
                           // because long-press is now the actions gesture; Copy
                           // in that menu replaces what selection provided.
                           // Incoming messages keep native selection untouched.
                           isOwn && 'select-none [-webkit-touch-callout:none]',
+                          // Both bubbles now LIFT off the deeper well, which is
+                          // the whole reason the well moved to `canvas` above.
+                          // Incoming takes `surface` — the card cream — so it
+                          // is the same 0.03 separation the token file was
+                          // tuned around, carried by fill instead of a
+                          // hairline. Shadow OR border, never both.
                           isOwn
-                            ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-surface-sunken text-text-primary',
+                            ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                            : 'bg-surface text-text-primary shadow-flat',
                           isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
                           isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',
                           !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-tr-md rounded-br-sm' : 'rounded-fw-lg rounded-tl-md rounded-bl-sm'),
@@ -1205,7 +1244,7 @@ export function MessageThreadPane({
                         )}
                       >
                         {msg.content ? (
-                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body-sm leading-relaxed">
+                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body leading-relaxed">
                             {decodeMessageContent(msg.content)}
                           </p>
                         ) : null}
@@ -1251,23 +1290,40 @@ export function MessageThreadPane({
                         ) : null}
                       </div>
                     )}
-                  </div>
 
-                  {/* Time + read receipt (last of group, tabular-nums) */}
-                  {showTime && editingMessageId !== msg.id && (
-                    <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
-                      <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                        {formatTime(msg.created_at)}
-                      </span>
-                      {/* P264 no-data-lies: per-message "Read" is only honest in a
-                          1:1 thread. In a group the hook can only see ONE arbitrary
-                          other participant's last_read_at, so "Read" would imply the
-                          whole group has read when a single (random) member has.
-                          Suppress the receipt in groups rather than imply group-read
-                          off one member. */}
-                      {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
-                    </div>
-                  )}
+                    {/* Time + receipt, INSIDE the bubble column rather than
+                        beside it in the row.
+
+                        As a sibling of the column it occupied horizontal space
+                        on the same flex line, so it shortened the line it sat
+                        on: three bubbles ran flush to the edge and the fourth —
+                        always the last of the group, the only one that shows a
+                        time — was pushed inboard by the exact width of
+                        "Read 4:06 PM". Every group in the thread ended on a
+                        different x. That ragged edge is the single most visible
+                        thing separating this from a finished chat, and it is
+                        structural, not a spacing value.
+
+                        The column already carries items-end / items-start, so
+                        the meta aligns to the bubble's own edge and the bubbles
+                        keep the full width of the line. */}
+                    {showTime && editingMessageId !== msg.id && (
+                      <div className="flex items-center gap-1.5 px-0.5">
+                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                          {formatTime(msg.created_at)}
+                        </span>
+                        {/* P264 no-data-lies: per-message "Read" is only honest in a
+                            1:1 thread. In a group the hook can only see ONE arbitrary
+                            other participant's last_read_at, so "Read" would imply the
+                            whole group has read when a single (random) member has.
+                            Suppress the receipt in groups rather than imply group-read
+                            off one member. */}
+                        {isOwn && !isGroup && idx === lastOwnIndex && (
+                          <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </m.div>
                 </React.Fragment>
               );
