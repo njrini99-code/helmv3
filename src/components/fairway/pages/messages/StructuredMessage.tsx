@@ -123,11 +123,18 @@ export function StructuredMessage({
               type="button"
               variant="secondary"
               size="sm"
+              // `rightIcon`, not a child. Button wraps ALL of its children in a
+              // single <span>, so a text node plus an <svg> passed as children
+              // become one inline flow — `justify-between` then has exactly one
+              // thing to distribute and the arrow wraps onto a second line.
+              // Rendering the real component is what surfaced this; the
+              // hand-written harness had drawn them as separate flex items and
+              // showed a button that looked fine.
+              rightIcon={<ArrowRight size={14} aria-hidden="true" />}
               className="mt-0.5 w-full justify-between font-fw-sans"
               onClick={() => onOpenEvent(payload.eventId as string)}
             >
               View in Calendar
-              <ArrowRight size={14} aria-hidden="true" />
             </Button>
           ) : null}
         </div>
