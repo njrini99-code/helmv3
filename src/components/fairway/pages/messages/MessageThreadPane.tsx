@@ -1046,7 +1046,16 @@ export function MessageThreadPane({
                       tell four people apart while scrolling. */}
                   {!isOwn && isGroup && (
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
-                      {isFirstInGroup ? (
+                      {/* On the LAST message of the group, not the first.
+                          The row is `items-end`, so anchoring the avatar to the
+                          final bubble sits it level with the speaker's last
+                          word — and level with the timestamp, which also renders
+                          on the last message. Anchored to the FIRST bubble it
+                          floated at the top of a tall group, level with nothing,
+                          with the group's own timestamp stranded four bubbles
+                          below it. Every phone chat does it this way for the
+                          same reason. */}
+                      {isLastInGroup ? (
                         <Avatar decorative
                           name={senderName}
                           src={senderAvatar}
