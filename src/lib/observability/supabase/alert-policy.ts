@@ -63,7 +63,7 @@ export const ALERT_POLICY_RULES: readonly AlertPolicyRule[] = [
   { id: 'call_amplification', severity: 'P2', description: 'Call amplification (N+1-shaped)' },
   { id: 'noncritical_webhook_failures', severity: 'P2', description: 'Noncritical webhook failures' },
   // TELEMETRY_DEFECT — the observability system reporting on itself
-  { id: 'sampler_stopped', severity: 'TELEMETRY_DEFECT', description: 'A collector stopped producing samples' },
+  { id: 'sampler_stopped', severity: 'TELEMETRY_DEFECT', description: 'A collector is not producing samples' },
   { id: 'metrics_api_unreadable', severity: 'TELEMETRY_DEFECT', description: 'Supabase Metrics API unreadable' },
   { id: 'sentry_blind', severity: 'TELEMETRY_DEFECT', description: 'Sentry read failed' },
   { id: 'flight_recorder_absent', severity: 'TELEMETRY_DEFECT', description: 'Flight Recorder absent for a required workflow' },

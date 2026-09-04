@@ -175,12 +175,70 @@ describe('fetchAlertPolicy', () => {
     expect(above.data!.alerts.find((a) => a.rule.id === 'sustained_critical_rpc_timeout_rate')!.state).toBe('firing');
   });
 
-  it('fires sampler_stopped when a collector is not completed', async () => {
+  // The three collector states are not interchangeable. This used to be one
+  // test named "when a collector is not completed", which is the defect
+  // written down as a specification: it made `unknown` — a job-log read that
+  // never returned — fire a defect claiming a collector stopped.
+  const samplerState = async () =>
+    (await fetchAlertPolicy()).data!.alerts.find((a) => a.rule.id === 'sampler_stopped')!;
+
+  it('fires sampler_stopped when a collector FAILED', async () => {
+    mocks.overview.mockResolvedValue(
+      okOverview({ collectors: [{ jobType: 'db-health-sampler', lastStatus: 'failed', lastRunAt: null }] }),
+    );
+    expect((await samplerState()).state).toBe('firing');
+  });
+
+  it('fires sampler_stopped when a collector has NEVER RUN', async () => {
+    // Deliberately still firing. A registered, deployed cron with no run row
+    // is how a permanently dead one looks (#1775), and routing this to
+    // `unknown` would silence the only signal that catches it.
     mocks.overview.mockResolvedValue(
       okOverview({ collectors: [{ jobType: 'db-health-sampler', lastStatus: 'never_run', lastRunAt: null }] }),
     );
-    const result = await fetchAlertPolicy();
-    expect(result.data!.alerts.find((a) => a.rule.id === 'sampler_stopped')!.state).toBe('firing');
+    expect((await samplerState()).state).toBe('firing');
+  });
+
+  it('reports UNKNOWN, never firing, when the collector job-log read failed', async () => {
+    // overview.ts returns 'unknown' for ALL collectors when the read fails,
+    // so this is the whole-panel case, not an edge one.
+    mocks.overview.mockResolvedValue(
+      okOverview({
+        collectors: [
+          { jobType: 'db-health-sampler', lastStatus: 'unknown', lastRunAt: null },
+          { jobType: 'db-stat-delta', lastStatus: 'unknown', lastRunAt: null },
+        ],
+      }),
+    );
+    const alert = await samplerState();
+    // Not 'clear' either — that would be the worst of the three, reporting
+    // healthy collectors from a query that never returned.
+    expect(alert.state).toBe('unknown');
+    expect(alert.reason).toMatch(/did not return/);
+  });
+
+  it('a known failure outranks an unreadable collector', async () => {
+    mocks.overview.mockResolvedValue(
+      okOverview({
+        collectors: [
+          { jobType: 'db-health-sampler', lastStatus: 'unknown', lastRunAt: null },
+          { jobType: 'db-stat-delta', lastStatus: 'failed', lastRunAt: null },
+        ],
+      }),
+    );
+    const alert = await samplerState();
+    expect(alert.state).toBe('firing');
+    expect(alert.evidence).toContain('db-stat-delta: failed');
+    // The unreadable one must not be presented as a defect it was never
+    // observed to have.
+    expect(alert.evidence).not.toContain('db-health-sampler');
+  });
+
+  it('is clear only when every collector actually completed', async () => {
+    mocks.overview.mockResolvedValue(
+      okOverview({ collectors: [{ jobType: 'db-health-sampler', lastStatus: 'completed', lastRunAt: null }] }),
+    );
+    expect((await samplerState()).state).toBe('clear');
   });
 
   it('fires performance_regression_no_failure when there are recent regressions', async () => {
