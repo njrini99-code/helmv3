@@ -410,11 +410,39 @@ export function MessageThreadPane({
    */
   const seenMessageIdsRef = React.useRef<Set<string>>(new Set());
   const seededConversationRef = React.useRef<string | null>(null);
+  /**
+   * How many messages were unread when this thread was OPENED.
+   *
+   * Frozen deliberately. Opening a thread marks it read within about a second,
+   * so `conversation.unread_count` collapses to 0 almost immediately — reading
+   * it live would draw the separator for one frame and then erase the one piece
+   * of context the reader came back for. Captured once per conversation and
+   * held until they leave, which is how every chat app behaves: the line stays
+   * where it was until you go away and return.
+   */
+  const openUnreadCountRef = React.useRef(0);
   const activeConversationId = conversation?.id ?? null;
   if (seededConversationRef.current !== activeConversationId) {
     seededConversationRef.current = activeConversationId;
     seenMessageIdsRef.current = new Set(messages.map((m) => m.id));
+    openUnreadCountRef.current = conversation?.unread_count ?? 0;
   }
+  /**
+   * Index of the first message that was unread on open, or -1 for none.
+   *
+   * Derived from the count rather than a per-message flag because that is what
+   * the conversation actually carries. Clamped to the loaded window: the thread
+   * fetches the most recent 200, so an unread count larger than what is on
+   * screen must not push the marker off the top of the list.
+   */
+  const firstUnreadIndex = React.useMemo(() => {
+    const count = openUnreadCountRef.current;
+    if (!count || count <= 0 || messages.length === 0) return -1;
+    const index = messages.length - Math.min(count, messages.length);
+    // Never draw it above the very first message — a line at the top of a
+    // thread separates nothing and just reads as a stray rule.
+    return index <= 0 ? -1 : index;
+  }, [messages.length, activeConversationId]);
   const observedConversationIdRef = React.useRef<string | null>(null);
   const pendingInitialScrollConversationIdRef = React.useRef<string | null>(null);
   // P259: per-message anchors so a search hit can scroll its bubble into view.
@@ -894,6 +922,20 @@ export function MessageThreadPane({
                     column of bubbles, and "3:14 PM" on a message told you the
                     hour but never the day. Rendered once, when the calendar day
                     changes. */}
+                {/* New-messages marker. Drawn once, at the boundary the reader
+                    left off at, so they can see immediately what arrived while
+                    they were away instead of scrolling to work it out. Accent
+                    rules and a label rather than a plain hairline — this line
+                    means something the day separators do not. */}
+                {idx === firstUnreadIndex && (
+                  <div className="flex items-center gap-3 pb-1.5 pt-3" role="separator" aria-label="New messages">
+                    <span className="h-px flex-1 bg-accent-500/45" />
+                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-accent-700">
+                      New
+                    </span>
+                    <span className="h-px flex-1 bg-accent-500/45" />
+                  </div>
+                )}
                 {startsDay && (
                   <div className="flex items-center gap-3 pb-1 pt-2" role="separator">
                     <span className="h-px flex-1 bg-border-subtle" />
