@@ -41,6 +41,22 @@ output is indistinguishable from "all clear", the check is not a gate yet.
 Count what you actually examined and fail when the count is implausible —
 `log()` the denominator, not just the findings.
 
+**The same shape one level up: a FITTED explanation reported as a KNOWN one.**
+Documented here because this file caused it. The 2026-09-04 sandbox write-up
+first shipped with "macOS caches TLS trust decisions, so the first few calls
+succeed before it is exhausted" — a mechanism fitted to two data points, landed
+in `AGENTS.md`, and false. A third measurement (the burst failed at call #1,
+not after a warm-up) killed it outright.
+
+A wrong cause is worse than an admitted unknown, because **a cause gets
+reasoned FROM**: the natural next "fix" for a warm-cache story is to add a
+warm-up call, which would have wasted a session chasing a mechanism that does
+not exist. When you can measure the behaviour but not the cause, write the
+behaviour and mark the cause UNCONFIRMED. "I don't know why, but here is the
+rule that holds" is a durable finding; a confident wrong mechanism is a trap
+with a long fuse. Both failures are the same thing — confidence with no
+evidence under it — one in a check's output, one in a doc's prose.
+
 ---
 
 ### 1. The ratchet system
