@@ -52,6 +52,13 @@ name: Self-heal Repair
 permissions:
   contents: write
   pull-requests: write
+  # Required by claude-code-action: it exchanges a GitHub OIDC token for its
+  # own credential, and without this the action fails before Claude ever
+  # starts — "Could not fetch an OIDC token", retried 3× then fatal. Learned
+  # from the workflow's first-ever run (33821046930), which failed here.
+  # This grants an identity assertion, not repository write; it does not widen
+  # what the job can change.
+  id-token: write
 
 # One Repair at a time. Two concurrent runs would each open a PR for the same
 # finding, and the second would branch from a tree the first had already moved.
