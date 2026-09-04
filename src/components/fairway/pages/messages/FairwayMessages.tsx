@@ -117,6 +117,7 @@ export function FairwayMessages() {
     refetch: refetchMessages,
     sendMessage,
     retryMessage,
+    typingUserIds,
     editMessage,
     removeMessage,
     isOtherTyping,
@@ -721,6 +722,7 @@ export function FairwayMessages() {
                 onCancelDelete={handleCancelDelete}
                 onSetMobileActions={setMobileActionsId}
                 groupParticipants={groupParticipants}
+                typingUserIds={typingUserIds}
                 scrollToMessageId={pendingScrollMessageId}
                 onReply={(message) => {
                   const isOwn = message.sender_id === userId;

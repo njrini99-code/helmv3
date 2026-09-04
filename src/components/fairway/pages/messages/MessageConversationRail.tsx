@@ -645,7 +645,16 @@ export function MessageConversationRail({
               active={filter === o.value}
               aria-pressed={filter === o.value}
               onClick={() => setFilter(o.value)}
-              className="min-h-[36px] flex-shrink-0 px-4 font-fw-sans text-body-sm"
+              className={cn(
+                // §6: cut visual weight. These were full-height pills with a
+                // card shadow, which put the CONTROLS above the PEOPLE in the
+                // visual hierarchy (§3) — the eye landed on "All / Unread /
+                // Teams" before it reached a single name. 32px, no shadow, and
+                // an unselected chip is a warm tint rather than a raised card.
+                'min-h-[32px] flex-shrink-0 px-3.5 font-fw-sans text-body-sm',
+                'shadow-none',
+                filter === o.value ? '' : 'bg-surface-sunken text-text-secondary',
+              )}
             >
               {o.label}
               {typeof o.count === 'number' ? (
@@ -758,7 +767,10 @@ export function MessageConversationRail({
               {i > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute left-[72px] right-3 top-0 h-px bg-border-subtle"
+                  // §8: "almost disappear". At full border-subtle a five-row
+                  // inbox read as a table. Half opacity keeps the structure
+                  // available to the eye without drawing it.
+                  className="pointer-events-none absolute left-[72px] right-3 top-0 h-px bg-border-subtle/50"
                 />
               ) : null}
               <ConversationRow

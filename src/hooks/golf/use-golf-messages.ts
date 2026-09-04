@@ -229,7 +229,10 @@ export function useGolfMessages(conversationId: string) {
   // consumer (MessageThreadPane) reads this to render a recoverable error instead.
   const [error, setError] = useState<boolean>(false);
   const [otherParticipantLastReadAt, setOtherParticipantLastReadAt] = useState<string | null>(null);
-  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  // DERIVED, not stored. Two sources for "is anyone typing" is two things that
+  // can disagree — the old boolean could stay true after the last typist's
+  // entry was removed.
+  
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   /**
    * The same value, readable without becoming a dependency.
@@ -256,6 +259,10 @@ export function useGolfMessages(conversationId: string) {
    */
   const currentUserIdRef = useRef<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  /** Everyone currently typing in this conversation, excluding you. */
+  const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
+  /** One expiry timer PER typist — see the broadcast handler for why. */
+  const typingExpiryRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const lastTypingBroadcastRef = useRef<number>(0);
   const supabaseRef = useRef(createClient());
   const channelRef = useRef<ReturnType<typeof supabaseRef.current.channel> | null>(null);
@@ -445,6 +452,12 @@ export function useGolfMessages(conversationId: string) {
       }, MARK_READ_ON_ARRIVAL_DEBOUNCE_MS);
     };
 
+    // Capture the ref objects ONCE, for the cleanup below. Reading
+    // `ref.current` inside a cleanup can see a different object than the effect
+    // installed timers into, and clearing the wrong one silently leaks them.
+    const expiryTimers = typingExpiryRef.current;
+    const sharedTypingTimer = typingTimeoutRef;
+
     // Set up real-time subscription for messages and typing
     const channel = supabase.channel(`golf-conversation:${conversationId}`);
     channelRef.current = channel;
@@ -464,7 +477,14 @@ export function useGolfMessages(conversationId: string) {
           setMessages(prev => applyRealtimeMessageInsert(prev, newMessage));
           // Clear typing indicator when message is received
           if (newMessage.sender_id !== currentUserIdRef.current) {
-            setIsOtherTyping(false);
+            // They sent it, so they have stopped typing. Drop just THEM —
+            // clearing the whole set would silence everyone else mid-sentence.
+            setTypingUserIds(prev => prev.filter(id => id !== newMessage.sender_id));
+            const t = typingExpiryRef.current.get(newMessage.sender_id);
+            if (t) {
+              clearTimeout(t);
+              typingExpiryRef.current.delete(newMessage.sender_id);
+            }
             // ...and mark it read, because the reader is looking at it RIGHT NOW.
             //
             // `markGolfMessagesAsRead` used to run only inside `fetchMessages`,
@@ -515,17 +535,32 @@ export function useGolfMessages(conversationId: string) {
         { event: 'typing' },
         (payload) => {
           const { userId, isTyping } = payload.payload as { userId: string; isTyping: boolean };
-          if (userId !== currentUserIdRef.current) {
-            setIsOtherTyping(isTyping);
-            // Auto-clear typing indicator after 3 seconds if no update
-            if (isTyping) {
-              if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current);
-              }
-              typingTimeoutRef.current = setTimeout(() => {
-                setIsOtherTyping(false);
-              }, 3000);
-            }
+          if (userId === currentUserIdRef.current) return;
+
+          // WHO is typing, not just THAT somebody is. The payload has always
+          // carried `userId` — this handler simply discarded it and collapsed
+          // every typist into one boolean, which is why a group could only ever
+          // say "typing…". Nothing new is broadcast here; the identity was on
+          // the wire the whole time.
+          setTypingUserIds(prev =>
+            isTyping
+              ? (prev.includes(userId) ? prev : [...prev, userId])
+              : prev.filter(id => id !== userId),
+          );
+
+          // Expiry is PER USER. One shared 3s timer meant the second person to
+          // start typing reset the first person's countdown, so a busy group
+          // could show somebody as typing indefinitely after they stopped.
+          const timers = typingExpiryRef.current;
+          const existing = timers.get(userId);
+          if (existing) clearTimeout(existing);
+          if (isTyping) {
+            timers.set(userId, setTimeout(() => {
+              setTypingUserIds(prev => prev.filter(id => id !== userId));
+              timers.delete(userId);
+            }, 3000));
+          } else {
+            timers.delete(userId);
           }
         }
       );
@@ -534,8 +569,17 @@ export function useGolfMessages(conversationId: string) {
     return () => {
       supabase.removeChannel(channel);
       channelRef.current = null;
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
+      // Every per-typist expiry timer, not just the legacy shared one — a
+      // surviving timer would call setState on an unmounted subscription.
+      //
+      // Read through the captured locals, not `ref.current`: by the time a
+      // cleanup runs the ref may point at a different object, and clearing the
+      // WRONG map would leave the real timers running. (react-hooks flags this;
+      // it is right to.)
+      expiryTimers.forEach(t => clearTimeout(t));
+      expiryTimers.clear();
+      if (sharedTypingTimer.current) {
+        clearTimeout(sharedTypingTimer.current);
       }
       // A pending read-mark belongs to the conversation being left, so it dies
       // with it rather than landing against a thread the player has moved on
@@ -745,7 +789,8 @@ export function useGolfMessages(conversationId: string) {
     editMessage,
     removeMessage,
     refetch: fetchMessages,
-    isOtherTyping,
+    isOtherTyping: typingUserIds.length > 0,
+    typingUserIds,
     sendTypingStatus,
     currentUserId,
   };

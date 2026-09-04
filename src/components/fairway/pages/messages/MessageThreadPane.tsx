@@ -40,6 +40,7 @@ import {
   bubbleEnter,
   reactionEnter,
   bubbleLift,
+  avatarEnter,
 } from '@/lib/golf/chat-motion';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
@@ -55,6 +56,7 @@ import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { Button, IconButton } from '@/components/fairway/controls/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
@@ -167,6 +169,8 @@ export interface MessageThreadPaneProps {
   currentUserId: string | null;
   /** True while the other participant is typing (unchanged hook state). */
   isOtherTyping: boolean;
+  /** §49: WHO is typing, excluding you. Empty when nobody is. */
+  typingUserIds?: string[];
   /** Mobile back to the rail (page owns mobileShowChat). */
   onBack: () => void;
   /** Open the New message modal (the no-select prompt CTA). */
@@ -320,12 +324,17 @@ function ReactionChips({
           aria-pressed={r.mine}
           aria-label={`${r.emoji} ${r.count}${r.mine ? ', including you' : ''}`}
           className={cn(
+            // §20: warm neutral, quiet edge, no shadow — a chip that belongs
+            // to the bubble above it rather than a status control sitting
+            // beside it. Yours is marked by a slightly stronger edge and ink,
+            // NOT by turning accent green: §31 reserves strong green for the
+            // message itself, Send, the selected filter and unread.
             'inline-flex min-h-0 items-center gap-1 rounded-full border px-2 py-0.5',
             'font-fw-sans text-caption transition-transform active:scale-95',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
             r.mine
-              ? 'border-accent-500 bg-accent-50 font-semibold text-accent-700'
-              : 'border-border-subtle bg-surface text-text-secondary',
+              ? 'border-accent-300 bg-surface font-medium text-text-primary'
+              : 'border-border-subtle bg-surface-sunken text-text-secondary',
           )}
         >
           <span aria-hidden="true">{r.emoji}</span>
@@ -473,6 +482,7 @@ export function MessageThreadPane({
   userId,
   currentUserId,
   isOtherTyping,
+  typingUserIds,
   onBack,
   onNewMessage,
   editingMessageId,
@@ -551,6 +561,17 @@ export function MessageThreadPane({
   // pane, and lifting it to the page would make every keystroke in the
   // composer re-render a component that only the header opens.
   const [detailsOpen, setDetailsOpen] = React.useState(false);
+
+  // Resolve typists to names locally. An unresolved id is DROPPED rather than
+  // rendered as "Someone" — a group line naming the wrong count is worse than
+  // the plain dots.
+  const typingNames = React.useMemo(() => {
+    if (!typingUserIds?.length || !groupParticipants) return [];
+    return typingUserIds
+      .map(id => groupParticipants.get(id)?.name)
+      .filter((n): n is string => Boolean(n))
+      .map(n => n.split(' ')[0] ?? n);
+  }, [typingUserIds, groupParticipants]);
 
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelLongPress = React.useCallback(() => {
@@ -1317,15 +1338,22 @@ export function MessageThreadPane({
                     isLastInGroup ? 'mb-3' : 'mb-0.5',
                   )}
                 >
-                  {/* Incoming avatar — GROUPS ONLY, once per group.
-                      A 1:1 thread does not need a repeated face: there is
-                      exactly one other person, their name and avatar are in
-                      the header two inches above, and the column cost 40px of
-                      width on every single line of the narrowest screen in the
-                      product. In a group it is load-bearing — it is how you
-                      tell four people apart while scrolling. */}
-                  {!isOwn && isGroup && (
-                    <div className="flex w-8 flex-shrink-0 flex-col items-center">
+                  {/* Incoming avatar, once per group — in DMs TOO now (§12).
+                      This was groups-only, on the argument that a 1:1 has one
+                      other person whose face is already in the header. That
+                      reasoning was about information and the spec's point is
+                      about PRESENCE: a thread with a face in it feels like a
+                      person is on the other end, and one without reads as a
+                      log. The width cost is real, so the avatar is 28px here
+                      rather than the header's 36, and the bubble column keeps
+                      its 78%.
+
+                      `decorative` because the sender is already named for
+                      screen readers by the group's sender label (and by the
+                      thread header in a DM) — an alt here would read the same
+                      name twice per group. */}
+                  {!isOwn && (
+                    <div className="flex w-7 flex-shrink-0 flex-col items-center">
                       {/* On the LAST message of the group, not the first.
                           The row is `items-end`, so anchoring the avatar to the
                           final bubble sits it level with the speaker's last
@@ -1336,11 +1364,25 @@ export function MessageThreadPane({
                           below it. Every phone chat does it this way for the
                           same reason. */}
                       {isLastInGroup ? (
-                        <Avatar decorative
-                          name={senderName}
-                          src={senderAvatar}
-                          size="sm"
-                        />
+                        <m.div
+                          // §28: a new speaker's face APPEARS rather than pops.
+                          // Scale only — a sliding avatar reads as a bug.
+                          initial={isNew && !reduceMotion ? avatarEnter.initial : false}
+                          animate={avatarEnter.animate}
+                          transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.bubbleIn) }}
+                        >
+                          <Avatar
+                            decorative
+                            name={isGroup ? senderName : (conversation.other_participant?.name || 'User')}
+                            src={isGroup ? senderAvatar : conversation.other_participant?.avatar}
+                            size="xs"
+                            // 28px: the size class only, no type override —
+                            // `xs` already carries its own scale, and an
+                            // arbitrary text-[Npx] is exactly what the
+                            // token lint exists to catch.
+                            className="h-7 w-7"
+                          />
+                        </m.div>
                       ) : null}
                     </div>
                   )}
@@ -1511,19 +1553,32 @@ export function MessageThreadPane({
                         }
                         transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.press) }}
                         className={cn(
-                          'px-3.5 py-2',
+                          // §14: 14px / 10px. Vertical was 8, which made a
+                          // one-line bubble read as a chip rather than a line
+                          // of speech.
+                          'px-3.5 py-2.5',
                           // Opt out of the iOS text-selection callout, because
                           // long-press is the actions gesture now. Copy lives in
                           // that menu and is what replaces native selection —
                           // which is why the menu offers it for incoming
                           // messages too, not only your own.
                           'select-none [-webkit-touch-callout:none]',
-                          // Shadow, never a border — `shadow-soft` alone is the
-                          // Surface rule (border OR shadow, never both), and it
-                          // is what makes a bubble read as sitting ON the page.
+                          // §13: a bubble is LANGUAGE, not a card. `shadow-soft`
+                          // is the raised-card elevation, and at that weight a
+                          // thread reads as a stack of floating Surfaces. The
+                          // separation is already done by colour — cream on
+                          // champagne, green on champagne — so elevation only
+                          // has to hint, not carry. `shadow-flat` is roughly a
+                          // third of soft's opacity and blur.
+                          //
+                          // Outgoing gets NO shadow at all: a saturated green
+                          // fill on a pale ground is already the highest
+                          // contrast step on the screen, and elevation on top
+                          // of that is the "too many green focal points"
+                          // problem in §31.
                           isOwn
-                            ? 'bg-accent-650 text-text-on-accent shadow-soft'
-                            : 'bg-surface text-text-primary shadow-soft',
+                            ? 'bg-accent-650 text-text-on-accent'
+                            : 'bg-surface text-text-primary shadow-flat',
                           // Undelivered reads as provisional: the fill softens
                           // rather than turning red. The message is not an
                           // error, it just has not landed — and colour is never
@@ -1576,21 +1631,26 @@ export function MessageThreadPane({
                               onClick={() => quoted && onJumpToMessage?.(quoted.id)}
                               aria-label={quoted ? `Go to ${quotedName}'s message` : 'Original message unavailable'}
                               className={cn(
-                                'mb-1.5 block w-full border-l-2 pl-2 text-left',
+                                'mb-1 block w-full border-l-2 pl-2 py-0.5 text-left',
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                                 quoted ? 'cursor-pointer' : 'cursor-default',
                                 isOwn ? 'border-text-on-accent/50' : 'border-accent-600',
                               )}
                             >
+                              {/* §19: the quote supports the reply, it does not
+                                  compete with it. Weight drops from semibold to
+                                  medium and both lines lose contrast — at
+                                  17px response over 12px quote, the response
+                                  has to be the thing the eye lands on. */}
                               <span className={cn(
-                                'block truncate font-fw-sans text-caption font-semibold',
-                                isOwn ? 'text-text-on-accent/90' : 'text-accent-700',
+                                'block truncate font-fw-sans text-caption font-medium',
+                                isOwn ? 'text-text-on-accent/75' : 'text-text-secondary',
                               )}>
                                 {quotedName ?? 'Original message'}
                               </span>
                               <span className={cn(
                                 'block truncate font-fw-sans text-caption',
-                                isOwn ? 'text-text-on-accent/75' : 'text-text-secondary',
+                                isOwn ? 'text-text-on-accent/60' : 'text-text-tertiary',
                               )}>
                                 {quoted
                                   ? (quoted.is_deleted
@@ -1669,26 +1729,35 @@ export function MessageThreadPane({
                   {sendState && editingMessageId !== msg.id ? (
                     <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
                       {sendState === 'failed' ? (
-                        <>
-                          <span className="font-fw-sans text-caption text-fw-danger-ink">
-                            Not delivered
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onRetryMessage?.(msg.id)}
-                            className="min-h-0 rounded px-1.5 py-0.5 font-fw-sans text-caption font-semibold text-accent-700 hover:bg-accent-100"
-                          >
-                            Retry
-                          </Button>
-                        </>
+                        /* §22: ONE tappable line, not two controls that read as
+                           web links side by side. The whole metadata region is
+                           the retry target, which is also a bigger, easier
+                           thing to hit than the word "Retry" was. */
+                        <PressTarget
+                          type="button"
+                          onClick={() => onRetryMessage?.(msg.id)}
+                          className={cn(
+                            'flex items-center gap-1 rounded px-1 py-0.5',
+                            'font-fw-sans text-caption text-fw-danger-ink',
+                            'transition-colors active:bg-surface-sunken',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                          )}
+                        >
+                          <AlertTriangle size={12} aria-hidden="true" />
+                          Not delivered · Tap to retry
+                        </PressTarget>
                       ) : (
                         <span className="font-fw-sans text-caption text-text-tertiary">Sending…</span>
                       )}
                     </div>
                   ) : showTime && editingMessageId !== msg.id && (
-                    <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
+                    /* §21: ONE quiet line. `Read` used to be a separate accent
+                       chip beside the time, which made a routine status the
+                       second-greenest thing in the thread (§31). It is a
+                       middot-joined phrase now, in the same tertiary ink as the
+                       timestamp — present when you look for it, silent when you
+                       are not. */
+                    <div className={cn('flex items-center gap-1 pb-1', isOwn ? 'flex-row-reverse' : '')}>
                       <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
                         {formatTime(msg.created_at)}
                       </span>
@@ -1699,7 +1768,10 @@ export function MessageThreadPane({
                           Suppress the receipt in groups rather than imply group-read
                           off one member. */}
                       {isOwn && !isGroup && idx === lastOwnMessageIndex && (
-                        <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />
+                        <>
+                          <span aria-hidden="true" className="font-fw-sans text-caption text-text-tertiary">·</span>
+                          <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />
+                        </>
                       )}
                     </div>
                   )}
@@ -1736,7 +1808,27 @@ export function MessageThreadPane({
                       />
                     </div>
                   )}
-                  <TypingIndicator />
+                  {/* §49: a group says WHO. The typing broadcast has always
+                      carried `userId`; the hook used to discard it and collapse
+                      every typist into one boolean, which is the only reason
+                      this could not be named before. Names resolve locally from
+                      the participant map — never from anything the sender put
+                      on the wire.
+
+                      Caps at two names. Five people typing must not grow this
+                      line and push the thread, so three or more becomes a
+                      count. */}
+                  {isGroup && typingNames.length > 0 ? (
+                    <span className="font-fw-sans text-caption text-text-tertiary">
+                      {typingNames.length === 1
+                        ? `${typingNames[0]} is typing…`
+                        : typingNames.length === 2
+                          ? `${typingNames[0]} and ${typingNames[1]} are typing…`
+                          : `${typingNames.length} people are typing…`}
+                    </span>
+                  ) : (
+                    <TypingIndicator />
+                  )}
                 </m.div>
               )}
             </AnimatePresence>
@@ -1764,9 +1856,14 @@ export function MessageThreadPane({
               exit={reduceMotion ? undefined : { opacity: 0, scale: 0.94, y: 4 }}
               transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.micro) }}
             >
+              {/* §23: floating CHROME, not a primary CTA. A solid green pill
+                  here competed with the outgoing bubbles it sits among and read
+                  as the most important thing on screen — it is a way back to
+                  the bottom, not an action. Warm surface, dark text, one small
+                  accent glyph. */}
               <Button
                 type="button"
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={() => {
                   fwHaptic('selection');
@@ -1775,9 +1872,9 @@ export function MessageThreadPane({
                     behavior: reduceMotion ? 'auto' : 'smooth',
                   });
                 }}
-                className="rounded-full font-fw-sans shadow-soft"
+                className="rounded-full border-border-subtle bg-surface font-fw-sans text-text-primary shadow-raise"
               >
-                <ArrowDown size={14} aria-hidden="true" />
+                <ArrowDown size={14} aria-hidden="true" className="text-accent-700" />
                 {missedCount} new {missedCount === 1 ? 'message' : 'messages'}
               </Button>
             </m.div>
