@@ -94,7 +94,10 @@ describe('keyboard inset — who consumes it', () => {
     // keyboard-open override does NOT — because when the keyboard is up it is
     // covering the home indicator, and reserving space for both stacks a dead
     // band above the keyboard.
-    const resting = src.match(/\spb-\[calc\([^\]]*env\(safe-area-inset-bottom\)[^\]]*\)\]/);
+    // `[\s'"\`]` not `\s`: the composer's className moved into a cn() call on
+    // 2026-09-04, so the utility is now preceded by a quote rather than a
+    // space. The class was unchanged; only what sits to its left moved.
+    const resting = src.match(/[\s'"`]pb-\[calc\([^\]]*env\(safe-area-inset-bottom\)[^\]]*\)\]/);
     expect(resting, 'composer must reserve the home indicator at rest').not.toBeNull();
 
     // ...and it must be the ONLY thing that does. The open-thread surface in

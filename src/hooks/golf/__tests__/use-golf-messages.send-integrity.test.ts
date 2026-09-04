@@ -84,8 +84,12 @@ describe('use-golf-messages — realtime INSERT no longer reconciles by "first o
   });
 
   it('the same client id is reused across the transport retry, not regenerated per attempt', () => {
-    const sendStart = source.indexOf('const sendMessage = async (content: string)');
-    expect(sendStart).toBeGreaterThan(-1);
+    // Locate the function, do not pin its full parameter list. This pinned
+    // `'const sendMessage = async (content: string)'` and broke on 2026-09-04
+    // when a second parameter (replyToId, §30) was added — a signature change
+    // that has nothing to do with the retry/id invariant this test guards.
+    const sendStart = source.indexOf('const sendMessage = async (content: string');
+    expect(sendStart, 'sendMessage not found — has it been renamed?').toBeGreaterThan(-1);
     const retryStart = source.indexOf('withOneTransportRetry(', sendStart);
     expect(retryStart).toBeGreaterThan(sendStart);
     const retryCall = source.slice(retryStart, source.indexOf(');', retryStart));

@@ -42,6 +42,7 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Input } from '@/components/fairway/forms/Input';
 import { Button } from '@/components/fairway/controls/button';
 import { Avatar } from '@/components/fairway/controls/avatar';
+import { Segmented } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -192,51 +193,53 @@ function ConversationRow({
           />
         )}
 
+        {/* Name over preview on the left; time over count on the right. The
+            time used to sit on the name's row and the unread badge on the
+            preview's, so the row had FOUR alignment edges and the badge
+            competed with the message text for the same horizontal space —
+            a long preview pushed it around. One right rail, two stacked
+            metadata items, one edge. */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className={cn(
-                'truncate font-fw-sans text-body',
-                hasUnread ? 'font-semibold text-text-primary' : 'font-medium text-text-primary',
-              )}
-            >
-              {displayName}
-            </span>
-            {time ? (
-              <time
-                dateTime={conv.last_message?.created_at ?? undefined}
-                className={cn(
-                  'flex-shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary',
-                )}
-              >
-                {time}
-              </time>
-            ) : null}
-          </div>
+          <span
+            className={cn(
+              'block truncate font-fw-sans text-body',
+              hasUnread ? 'font-semibold text-text-primary' : 'font-medium text-text-primary',
+            )}
+          >
+            {displayName}
+          </span>
+          <p
+            className={cn(
+              // §16 wants 14-15px here. This was `text-eyebrow` — 11px at
+              // 0.06em tracking, the role built for ALL-CAPS labels, applied
+              // to a sentence somebody actually said. It is the message
+              // preview; it should read like one.
+              'mt-0.5 truncate font-fw-sans text-body-sm',
+              hasUnread ? 'text-text-primary' : 'text-text-secondary',
+            )}
+          >
+            {conv.last_message?.content
+              ? decodeMessageContent(conv.last_message.content)
+              : 'No messages yet'}
+          </p>
+        </div>
 
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <p
-              className={cn(
-                // §16 wants 14-15px here. This was `text-eyebrow` — 11px at
-                // 0.06em tracking, the role built for ALL-CAPS labels, applied
-                // to a sentence somebody actually said. It is the message
-                // preview; it should read like one.
-                'min-w-0 flex-1 truncate font-fw-sans text-body-sm',
-                hasUnread ? 'text-text-primary' : 'text-text-secondary',
-              )}
+        <div className="flex flex-shrink-0 flex-col items-end gap-1.5 pt-0.5">
+          {time ? (
+            <time
+              dateTime={conv.last_message?.created_at ?? undefined}
+              className="font-fw-sans text-caption tabular-nums text-text-tertiary"
             >
-              {conv.last_message?.content
-                ? decodeMessageContent(conv.last_message.content)
-                : 'No messages yet'}
-            </p>
-            {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
-                dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
-            {hasUnread ? (
-              <Badge tone="accent" size="sm" numeric className="flex-shrink-0">
-                {conv.unread_count > 9 ? '9+' : conv.unread_count}
-              </Badge>
-            ) : null}
-          </div>
+              {time}
+            </time>
+          ) : null}
+          {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
+              dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
+          {hasUnread ? (
+            <Badge tone="accent" size="sm" numeric>
+              {conv.unread_count > 9 ? '9+' : conv.unread_count}
+            </Badge>
+          ) : null}
         </div>
       </div>
     </Button>
@@ -305,6 +308,7 @@ export function MessageConversationRail({
   // Drives the bezel/padding gate on the panel below — see the note there.
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [filter, setFilter] = React.useState<'all' | 'unread' | 'teams'>('all');
   const [searchResults, setSearchResults] = React.useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchError, setSearchError] = React.useState(false);
@@ -463,8 +467,36 @@ export function MessageConversationRail({
 
   // TRIAGE: unread floats to top, then recency groups (each kept in the hook's
   // most-recent-first order within the bucket).
-  const unread = conversations.filter(c => c.unread_count > 0);
-  const read = conversations.filter(c => c.unread_count === 0);
+  // ── Inbox filter ──────────────────────────────────────────────────────
+  // Every modern chat inbox carries one of these. Ours is keyed to what Helm
+  // actually knows rather than to a generic All/Favorites: a golf program's
+  // inbox is a mix of one-to-one coaching and team channels, and "just the
+  // team channels" is a real thing a coach wants at 6am on a travel day.
+  //
+  // The counts on the chips are the honest kind — they come from the same
+  // `unread_count` the rows render, so a chip can never claim a number the
+  // list below it does not show.
+  const unreadTotal = conversations.filter(c => c.unread_count > 0).length;
+  const teamTotal = conversations.filter(c => isGroupConversation(c)).length;
+
+  // A control that cannot change what you see is chrome. Each option earns its
+  // place only if it would produce a DIFFERENT list from "All" — which means
+  // some, but not all, conversations match it.
+  const unreadFilterUseful = unreadTotal > 0 && unreadTotal < conversations.length;
+  const teamFilterUseful = teamTotal > 0 && teamTotal < conversations.length;
+  const showFilters = unreadFilterUseful || teamFilterUseful;
+
+  // Not `useMemo`: this sits BELOW the loading/error/empty early returns, so a
+  // hook here is called conditionally — React's rules-of-hooks error, and a
+  // real one, since the branch taken changes between renders. A plain filter is
+  // also what the two lines under it already do, over the same array.
+  const visible =
+    filter === 'unread' ? conversations.filter(c => c.unread_count > 0)
+    : filter === 'teams' ? conversations.filter(c => isGroupConversation(c))
+    : conversations;
+
+  const unread = visible.filter(c => c.unread_count > 0);
+  const read = visible.filter(c => c.unread_count === 0);
   const grouped = groupConversationsByTime(read);
 
   return (
@@ -523,6 +555,41 @@ export function MessageConversationRail({
         {trailingActions}
       </div>
 
+      {/* Filters, under search. Rendered only when they can actually change
+          what you see — see `showFilters`. An inbox of three conversations
+          that are all team channels does not get a "Teams" chip that filters
+          to the same three. */}
+      {showFilters ? (
+        <div className="mb-3">
+          <Segmented
+            size="lg"
+            fullWidth
+            aria-label="Filter conversations"
+            value={filter}
+            onValueChange={(v) => setFilter(v)}
+            options={[
+              { value: 'all' as const, label: 'All' },
+              ...(unreadFilterUseful
+                ? [{
+                    value: 'unread' as const,
+                    label: (
+                      <span className="inline-flex items-center gap-1.5">
+                        Unread
+                        <span className="font-fw-sans text-caption tabular-nums text-accent-700">
+                          {unreadTotal}
+                        </span>
+                      </span>
+                    ),
+                  }]
+                : []),
+              ...(teamFilterUseful
+                ? [{ value: 'teams' as const, label: 'Teams' }]
+                : []),
+            ]}
+          />
+        </div>
+      ) : null}
+
       {isSearching ? (
         // ── Search results view (replaces the triage list while searching) ──
         searchLoading ? (
@@ -561,6 +628,21 @@ export function MessageConversationRail({
             description="Try a different word, or clear the search to see all conversations."
           />
         )
+      ) : visible.length === 0 ? (
+        // Reachable without the list being empty: read the last unread message
+        // while the Unread filter is on and this is what is left. It must not
+        // say "No conversations yet" — there are conversations, just none here.
+        <EmptyState
+          variant="subtle"
+          icon={Inbox}
+          title={filter === 'unread' ? 'Nothing unread' : 'No team channels'}
+          description="Every conversation is still here — clear the filter to see them."
+          action={
+            <Button variant="secondary" size="sm" onClick={() => setFilter('all')}>
+              Show all
+            </Button>
+          }
+        />
       ) : (
       <div className="flex flex-col gap-3">
         {unread.length > 0 ? (
