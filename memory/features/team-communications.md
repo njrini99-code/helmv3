@@ -14,6 +14,17 @@ they are already near the bottom; an explicit search result takes precedence
 and opens at its matched message instead. The search target consumes the
 initial-open sentinel so it cannot be overwritten by a stale initial scroll.
 
+Message actions live on the bubble rather than beside it. Below `lg` a
+press-and-hold on an own message opens Copy / Edit / Delete: the press
+tolerates the drift of a finger holding still and is cancelled once the pointer
+actually travels, so a scroll beginning on a bubble never opens it. The menu
+closes on the next press anywhere else and when the thread scrolls under it.
+From `lg` up the same actions appear on hover and own messages keep native text
+selection, which is where Copy comes from at those widths. Switching
+conversations abandons any in-progress edit, delete prompt or open action menu,
+for the same reason the composer is keyed on the conversation: state from one
+thread must not reappear in another.
+
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
 ## Primary Entry Points
