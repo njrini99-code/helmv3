@@ -1788,10 +1788,13 @@ export function MessageThreadPane({
                       onToggle={(emoji) => void toggleReaction(msg.id, emoji)}
                       align={isOwn ? 'end' : 'start'}
                     />
-                  </div>
 
-                  {/* Time + read receipt (last of group, tabular-nums) */}
-                  {/* §29/§30: a message whose send failed keeps its place and
+                    {/* Time + read receipt (last of group, tabular-nums).
+                        Keep this metadata inside the same constrained column as
+                        the bubble. As a sibling in the outer flex row, a failed
+                        status consumed width while the reply bubble retained its
+                        intrinsic width, pushing message text past the viewport. */}
+                    {/* §29/§30: a message whose send failed keeps its place and
                       says so. It used to be DELETED from the list — the player
                       watched their words appear and vanish, with a toast as
                       the only trace. The metadata line carries the state
@@ -1846,6 +1849,7 @@ export function MessageThreadPane({
                       )}
                     </div>
                   )}
+                  </div>
                 </m.div>
                 </React.Fragment>
               );
