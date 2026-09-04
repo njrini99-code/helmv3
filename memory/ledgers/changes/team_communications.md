@@ -107,3 +107,37 @@ verified site at a time.
 `pgCode`/`pgDetails`/`pgHint` into metadata, and nothing in the Bridge reads
 those three keys — verified by grep 2026-08-27. Those values are written and
 never displayed.
+
+## 2026-09-04 — "Can't see pics" had two causes, and a draft could reach the wrong person
+
+- SHA: PR #1828 (branch `agent/mobile-p0-stability`).
+- Change:
+  - `use-golf-messages.ts` thread select now includes `has_attachments`.
+    `MessageThreadPane` only signs attachments for messages where that flag is
+    truthy, so omitting it from the read made it `undefined` on every message
+    loaded from the database and signing never fired.
+  - `MessageThreadPane` treats a SUCCESSFUL-but-EMPTY attachment fetch as
+    unresolved (retry chip + one bounded auto-retry) instead of falling into no
+    branch and rendering a dead "Attachment" label forever.
+  - `<MessageComposer>` is keyed on the conversation. It was unkeyed, its draft
+    clears only on a successful send, and the send handlers read whichever
+    conversation is selected AT SEND TIME.
+  - Enter-to-send gated on `(pointer: fine)`; the desktop hint is gated the same
+    way.
+  - Read-marking now also fires when a message arrives while the thread is open
+    (debounced 900ms, gated on `document.visibilityState`).
+  - Optimistic sends carry a client-generated UUID inserted as the row's real
+    `id`, so the realtime echo reconciles by identity. `client_message_id` is
+    optional in `MessageSchemas.send`; a 23505 on retry is read as success.
+  - Presentation: day separators, a New marker frozen at open, grouping that
+    breaks on a 5-minute gap and a day boundary, arrival motion, group-only
+    sender identity, flattened panels below `md`.
+- Why: "Can't see pics" was reported in the live team chat and appeared in no
+  telemetry — nothing failed, the client never asked. It looked intermittent
+  because the realtime INSERT handler uses `payload.new` (the full row, flag
+  included), so a photo was visible to whoever had the thread open when it
+  arrived and gone for everyone afterwards.
+  The composer key is a privacy fix: a message or photo typed to one person and
+  abandoned was delivered to whoever was selected next, with no visual cue.
+  Enter-to-send assumed a Shift key exists; an iOS keyboard reports return as
+  plain `Enter`, so a player could not put a line break in a message at all.
