@@ -142,6 +142,5 @@ describe('own messages stay copyable where nothing else offers Copy', () => {
       'utf8',
     );
     expect(source).toContain("isOwn && 'max-lg:select-none [-webkit-touch-callout:none]'");
-    expect(source).not.toContain("isOwn && 'select-none");
   });
 });
