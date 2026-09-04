@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
+import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds, getGolfMessageParticipantIdentities } from '@/app/golf/actions/messages';
 import { withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
@@ -1167,6 +1167,22 @@ export function useGolfConversations(knownUserId?: string | null) {
       if (p.user_id) playerByUserId.set(p.user_id, p as PlayerLookup);
     });
 
+    // Client RLS reads are still useful as the no-network fallback, but the
+    // server identity action is authoritative for Messaging: it also resolves
+    // an existing upload in the avatars bucket when an older roster record was
+    // never given its public avatar_url.
+    const resolvedIdentities = await getGolfMessageParticipantIdentities(
+      conversationsData.map((conversation) => conversation.id),
+    );
+    const identityByUserId = new Map(resolvedIdentities.map((identity) => [identity.userId, identity]));
+    const directIdentityByConversationId = new Map(
+      resolvedIdentities.flatMap((identity) =>
+        identity.userId === userId
+          ? []
+          : identity.conversationIds.map((conversationId) => [conversationId, identity] as const),
+      ),
+    );
+
     // Transform to GolfConversationWithMeta format
     const transformedConversations = conversationsData.map((conv) => {
       // Handle group conversations differently
@@ -1191,15 +1207,29 @@ export function useGolfConversations(knownUserId?: string | null) {
       }
 
       // Find the other user in this conversation
-      const otherUserId = conv.participant_ids?.find((id) => id !== userId);
+      // The RPC normally supplies all participant ids. For older/direct rows
+      // where that array is incomplete, the authorized server identity action
+      // still has the exact conversation membership. Use it as a safe fallback
+      // rather than rendering a real teammate as a generic former member.
+      const otherUserId = conv.participant_ids?.find((id) => id !== userId)
+        ?? directIdentityByConversationId.get(conv.id)?.userId;
 
       let otherParticipant: GolfConversationParticipant | undefined;
 
       if (otherUserId) {
+        const resolvedIdentity = identityByUserId.get(otherUserId);
         const coach = coachByUserId.get(otherUserId);
         const player = playerByUserId.get(otherUserId);
 
-        if (coach) {
+        if (resolvedIdentity) {
+          otherParticipant = {
+            id: otherUserId,
+            name: resolvedIdentity.name,
+            subtitle: resolvedIdentity.subtitle,
+            avatar: resolvedIdentity.avatarUrl,
+            type: resolvedIdentity.type,
+          };
+        } else if (coach) {
           otherParticipant = {
             id: otherUserId, // Use user_id for consistent comparison (conversations use user IDs)
             name: coach.full_name || 'Coach',

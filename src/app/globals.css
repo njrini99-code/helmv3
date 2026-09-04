@@ -138,7 +138,8 @@
      Hidden only below `md`: on desktop the thread is one pane of a two-pane
      inbox and the shell bar is still the app's chrome. */
   @media (max-width: 767px) {
-    body[data-fw-immersive] [data-slot='fw-topbar'] {
+    body[data-fw-immersive] [data-slot='fw-topbar'],
+    body[data-fw-immersive] [data-slot='fairway-hub-subnav'] {
       display: none;
     }
   }
@@ -3153,5 +3154,113 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
   .marketing-anim-gate [data-hero='actions']:not([data-anim-ready]),
   .marketing-anim-gate [data-hero='plate']:not([data-anim-ready]) {
     visibility: hidden;
+  }
+}
+
+/* ============================================================================
+ * Fairway Messaging material
+ * ----------------------------------------------------------------------------
+ * Messaging is intentionally a single canvas, not a page of nested cards.
+ * Depth is limited to the objects that need tactility: message bubbles, the
+ * composer, and the scroll-edge header. Every layer derives from Fairway's
+ * semantic surface tokens so the material also holds in dark mode.
+ * ========================================================================== */
+.fw-message-canvas {
+  background-color: var(--fw-color-canvas);
+  background-image:
+    radial-gradient(
+      88% 54% at 100% 0%,
+      color-mix(in oklch, var(--fw-color-accent-100) 52%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      68% 48% at 0% 100%,
+      color-mix(in oklch, var(--fw-color-surface-tint) 72%, transparent) 0%,
+      transparent 74%
+    );
+}
+
+.fw-message-thread-header {
+  background: color-mix(in oklch, var(--fw-color-surface) 92%, transparent);
+  border-color: color-mix(in oklch, var(--fw-color-border-subtle) 88%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--fw-color-elevated) 72%, transparent) inset,
+    0 10px 24px color-mix(in oklch, var(--fw-color-warm-900) 7%, transparent);
+  backdrop-filter: blur(var(--fw-blur-mobile)) saturate(125%);
+  -webkit-backdrop-filter: blur(var(--fw-blur-mobile)) saturate(125%);
+}
+
+.fw-message-bubble-incoming,
+.fw-message-bubble-outgoing {
+  position: relative;
+  isolation: isolate;
+}
+
+.fw-message-bubble-incoming {
+  background:
+    linear-gradient(
+      145deg,
+      var(--fw-color-elevated) 0%,
+      var(--fw-color-surface) 74%,
+      color-mix(in oklch, var(--fw-color-surface-sunken) 64%, var(--fw-color-surface)) 100%
+    );
+  border-color: color-mix(in oklch, var(--fw-color-border-subtle) 84%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--fw-color-elevated) 88%, transparent) inset,
+    0 9px 22px color-mix(in oklch, var(--fw-color-warm-900) 9%, transparent),
+    0 2px 4px color-mix(in oklch, var(--fw-color-warm-900) 5%, transparent);
+}
+
+.fw-message-bubble-outgoing {
+  background:
+    linear-gradient(
+      150deg,
+      var(--fw-color-accent-600) 0%,
+      var(--fw-color-accent-650) 58%,
+      var(--fw-color-accent-750) 100%
+    );
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--fw-color-text-on-accent) 33%, transparent) inset,
+    0 11px 25px color-mix(in oklch, var(--fw-color-accent-800) 26%, transparent),
+    0 2px 5px color-mix(in oklch, var(--fw-color-accent-900) 16%, transparent);
+}
+
+.fw-message-composer {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--fw-color-surface) 88%, transparent),
+      var(--fw-color-surface)
+    );
+  box-shadow:
+    0 -1px 0 color-mix(in oklch, var(--fw-color-elevated) 78%, transparent) inset,
+    0 -12px 28px color-mix(in oklch, var(--fw-color-warm-900) 5%, transparent);
+}
+
+.fw-message-composer-field {
+  background:
+    linear-gradient(
+      145deg,
+      var(--fw-color-elevated),
+      color-mix(in oklch, var(--fw-color-surface) 74%, var(--fw-color-elevated))
+    );
+  border-color: color-mix(in oklch, var(--fw-color-border-subtle) 94%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--fw-color-elevated) 92%, transparent) inset,
+    0 8px 20px color-mix(in oklch, var(--fw-color-warm-900) 6%, transparent);
+}
+
+@media (min-width: 768px) {
+  .fw-message-thread-header {
+    backdrop-filter: blur(var(--fw-blur-glass)) saturate(132%);
+    -webkit-backdrop-filter: blur(var(--fw-blur-glass)) saturate(132%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .fw-message-thread-header {
+    background: var(--fw-color-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }

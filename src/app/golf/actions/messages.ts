@@ -17,6 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { withGolfAction, captureGolfActionError } from '@/lib/golf/with-golf-action';
 import { describeError } from '@/lib/utils/describe-error';
+import type { GolfMessageParticipantIdentity } from '@/lib/golf/message-participant-identity';
 import {
   sendGolfMessage,
   createGolfConversation as createGolfConversationUnvalidated,
@@ -298,6 +299,124 @@ export const createGolfConversation = withGolfAction(
   },
   createGolfConversationImpl,
 );
+
+/**
+ * Resolve display-only identities for people who share a conversation with the
+ * caller. The membership check happens before service-role reads, so this is
+ * never a general people directory.
+ *
+ * `avatar_url` was historically populated only by one profile flow. Some
+ * people have a real image in the public `avatars` bucket but a null roster
+ * URL; Messaging should use that existing photo rather than manufacture
+ * initials for them.
+ */
+export async function getGolfMessageParticipantIdentities(
+  requestedConversationIds: string[],
+): Promise<GolfMessageParticipantIdentity[]> {
+  if (requestedConversationIds.length === 0) return [];
+
+  const conversationIds = [...new Set(requestedConversationIds)]
+    .filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))
+    .slice(0, 250);
+  if (conversationIds.length === 0) return [];
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data: callerMemberships, error: membershipError } = await supabase
+      .from('golf_conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', user.id)
+      .in('conversation_id', conversationIds);
+    if (membershipError) throw membershipError;
+
+    const authorizedConversationIds = [...new Set(
+      (callerMemberships ?? []).map((membership) => membership.conversation_id),
+    )];
+    if (authorizedConversationIds.length === 0) return [];
+
+    const admin = createAdminClient();
+    const { data: participantRows, error: participantError } = await admin
+      .from('golf_conversation_participants')
+      .select('conversation_id, user_id')
+      .in('conversation_id', authorizedConversationIds);
+    if (participantError) throw participantError;
+
+    const conversationIdsByUserId = new Map<string, string[]>();
+    for (const participant of participantRows ?? []) {
+      const knownConversationIds = conversationIdsByUserId.get(participant.user_id) ?? [];
+      if (!knownConversationIds.includes(participant.conversation_id)) {
+        knownConversationIds.push(participant.conversation_id);
+      }
+      conversationIdsByUserId.set(participant.user_id, knownConversationIds);
+    }
+    const userIds = [...new Set((participantRows ?? []).map((participant) => participant.user_id))];
+    if (userIds.length === 0) return [];
+
+    const [{ data: coaches, error: coachError }, { data: players, error: playerError }] = await Promise.all([
+      admin.from('golf_coaches').select('user_id, full_name, title, avatar_url').in('user_id', userIds),
+      admin.from('golf_players').select('user_id, first_name, last_name, graduation_year, avatar_url').in('user_id', userIds),
+    ]);
+    if (coachError) throw coachError;
+    if (playerError) throw playerError;
+
+    // Objects are stored as `avatars/<user-id>/<file>`. Use the Storage API
+    // instead of querying `storage.objects`: PostgREST deliberately does not
+    // expose the storage schema, even to a service-role client.
+    const avatarBucket = admin.storage.from('avatars');
+    const { data: rootEntries, error: rootError } = await avatarBucket.list('', { limit: 1000 });
+    if (rootError) throw rootError;
+    const ownersWithImages = new Set((rootEntries ?? []).map((entry) => entry.name));
+    const candidateOwnerIds = userIds.filter((id) => ownersWithImages.has(id));
+    const storedAvatarByUserId = new Map<string, string>();
+    await Promise.all(candidateOwnerIds.map(async (userId) => {
+      const { data: files, error: fileError } = await avatarBucket.list(userId, {
+        limit: 1,
+        sortBy: { column: 'updated_at', order: 'desc' },
+      });
+      if (fileError || !files?.[0]) return;
+      storedAvatarByUserId.set(userId, `${userId}/${files[0].name}`);
+    }));
+    const avatarUrlFor = (userId: string, linkedAvatar: string | null) => {
+      if (linkedAvatar) return linkedAvatar;
+      const path = storedAvatarByUserId.get(userId);
+      return path ? avatarBucket.getPublicUrl(path).data.publicUrl : null;
+    };
+
+    const identities = new Map<string, GolfMessageParticipantIdentity>();
+    for (const coach of coaches ?? []) {
+      if (!coach.user_id) continue;
+      identities.set(coach.user_id, {
+        userId: coach.user_id,
+        conversationIds: conversationIdsByUserId.get(coach.user_id) ?? [],
+        name: coach.full_name || 'Coach',
+        subtitle: coach.title || 'Golf Coach',
+        avatarUrl: avatarUrlFor(coach.user_id, coach.avatar_url),
+        type: 'coach',
+      });
+    }
+    for (const player of players ?? []) {
+      if (!player.user_id) continue;
+      identities.set(player.user_id, {
+        userId: player.user_id,
+        conversationIds: conversationIdsByUserId.get(player.user_id) ?? [],
+        name: [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Player',
+        subtitle: player.graduation_year ? `Class of ${player.graduation_year}` : 'Golf Player',
+        avatarUrl: avatarUrlFor(player.user_id, player.avatar_url),
+        type: 'player',
+      });
+    }
+    return [...identities.values()];
+  } catch (error) {
+    await logServerError(
+      `[getGolfMessageParticipantIdentities] ${describeError(error)}`,
+      { action: 'messages.getGolfMessageParticipantIdentities' },
+    );
+    return [];
+  }
+}
 
 export {
   // Golf messaging functions

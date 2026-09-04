@@ -52,7 +52,6 @@ import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { isGroupConversation } from './conversation-kind';
-import { hasMessageAvatarPhoto, messageAvatarFallbackClass } from './message-avatar';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -138,6 +137,10 @@ function ConversationRow({
     // See MessageThreadPane: "Unknown User" is a debug string. A participant
     // with no coach/player row has left the roster, and the list should say so.
     : conv.other_participant?.name || 'Former team member';
+  const isUnresolvedDirect = !isGroup && !conv.other_participant?.name?.trim();
+  const groupPhotoMembers = members?.filter((member) => Boolean(member.avatar)) ?? [];
+  const hasGroupPhotoStack = groupPhotoMembers.length >= 2;
+  const hasDirectPhoto = Boolean(conv.other_participant?.avatar);
   const time = formatTime(conv.last_message?.created_at);
 
   return (
@@ -158,13 +161,15 @@ function ConversationRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block w-full px-3 py-3 text-left',
+        'group block w-full border-l-2 border-transparent px-[14px] py-3.5 text-left md:py-3',
         'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         // Acknowledgement must not wait for navigation — `active:` paints on
         // touch-down, before any route work.
         'active:bg-surface-sunken',
-        isSelected ? 'bg-surface-tint' : 'hover:bg-surface-sunken/60',
+        isSelected
+          ? 'border-accent-500 bg-surface-tint'
+          : 'hover:bg-surface-sunken/60',
       )}
     >
       <div className="flex items-start gap-3">
@@ -175,7 +180,7 @@ function ConversationRow({
             "Demo University Golf" reads DU — on the accent wash that still
             distinguishes it from a DM at a glance. 48px per §16 (was 40). */}
         {isGroup ? (
-          members && members.length > 0 && hasMessageAvatarPhoto(members) ? (
+          hasGroupPhotoStack ? (
             // §33: REAL FACES. The photos were always in the app — the inbox
             // just never asked for them, because participant resolution was
             // scoped to the one open conversation. A team channel now shows who
@@ -200,41 +205,27 @@ function ConversationRow({
             // and puts the stack straight back out of the column.
             <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
               <AvatarGroup size="xs">
-                {members.map((m, i) => (
+                {groupPhotoMembers.slice(0, 2).map((m, i) => (
                   <Avatar
                     key={`${m.name}-${i}`}
                     name={m.name}
                     src={m.avatar ?? undefined}
                     size="xs"
-                    className={m.avatar ? undefined : messageAvatarFallbackClass(m.name)}
+                    className="shadow-soft"
                   />
                 ))}
               </AvatarGroup>
             </span>
-          ) : (
-            // An all-no-photo group gets ONE conversation identity instead of
-            // a stack of interchangeable person initials. The title-derived
-            // monogram stays specific to this channel, and its deterministic
-            // token tone stays stable anywhere messaging renders it.
-            <Avatar
-              name={displayName}
-              size="lg"
-              className={messageAvatarFallbackClass(conv.id)}
-            />
-          )
+          ) : null
         ) : (
-          // Keep photo and initials identity flat. Missing photos receive a
-          // deterministic token tone; real photos pass through untouched.
-          <Avatar
-            name={conv.other_participant?.name || 'User'}
-            src={conv.other_participant?.avatar}
-            size="lg"
-            className={
-              conv.other_participant?.avatar
-                ? undefined
-                : messageAvatarFallbackClass(conv.other_participant?.id ?? displayName)
-            }
-          />
+          hasDirectPhoto ? (
+            <Avatar
+              name={isUnresolvedDirect ? null : displayName}
+              src={conv.other_participant?.avatar}
+              size="lg"
+              className="shadow-soft"
+            />
+          ) : null
         )}
 
         {/* Name over preview on the left; time over count on the right. The
@@ -316,6 +307,8 @@ function SearchResultRow({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const hasSenderPhoto = Boolean(result.senderAvatar);
+
   return (
     <PressTarget
       type="button"
@@ -329,13 +322,14 @@ function SearchResultRow({
         isSelected ? 'bg-surface-tint' : 'hover:bg-surface-sunken/60',
       )}
     >
-      <div className="flex items-start gap-3">
-        <Avatar
-          name={result.senderName || 'User'}
-          src={result.senderAvatar}
-          size="md"
-          className={result.senderAvatar ? undefined : messageAvatarFallbackClass(result.senderName)}
-        />
+      <div className={cn('items-start', hasSenderPhoto ? 'flex gap-3' : 'block')}>
+        {hasSenderPhoto ? (
+          <Avatar
+            name={result.senderName || 'User'}
+            src={result.senderAvatar}
+            size="md"
+          />
+        ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
@@ -449,7 +443,7 @@ export function MessageConversationRail({
         header={isDesktop ? 'Conversations' : undefined}
         className={cn(
           'flex flex-col',
-          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
+          '!rounded-none !border-0 !shadow-none !bg-transparent',
           className,
         )}
         aria-busy="true"
@@ -491,7 +485,7 @@ export function MessageConversationRail({
         header={isDesktop ? 'Conversations' : undefined}
         className={cn(
           'flex flex-col',
-          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
+          '!rounded-none !border-0 !shadow-none !bg-transparent',
           className,
         )}
       >
@@ -521,7 +515,7 @@ export function MessageConversationRail({
         header={isDesktop ? 'Conversations' : undefined}
         className={cn(
           'flex flex-col',
-          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
+          '!rounded-none !border-0 !shadow-none !bg-transparent',
           className,
         )}
       >
@@ -605,14 +599,14 @@ export function MessageConversationRail({
         // Same reasoning as the thread pane: a card that fills the screen has
         // stopped being a card (Doctrine Rule 11). `!` is required because the
         // border comes from a CSS module class of equal specificity.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
+        '!rounded-none !border-0 !shadow-none !bg-transparent',
         className,
       )}
     >
       {/* P259: cross-conversation message search. */}
       {/* §16: "secondary to conversation list, no giant card". SearchField is
           the canonical sunken Fairway search track and owns its clear control. */}
-      <div className="mb-3 flex items-center gap-1">
+      <div className="mb-2 flex items-center gap-2 px-4 md:px-0">
         <div className="min-w-0 flex-1">
           <SearchField
             size="md"
@@ -648,7 +642,7 @@ export function MessageConversationRail({
         <div
           role="group"
           aria-label="Filter conversations"
-          className="mb-3 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mb-2 flex gap-1.5 overflow-x-auto px-4 pb-1 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {([
             { value: 'all' as const, label: 'All', show: true },
@@ -669,7 +663,9 @@ export function MessageConversationRail({
                 // an unselected chip is a warm tint rather than a raised card.
                 'min-h-[32px] flex-shrink-0 px-3.5 font-fw-sans text-body-sm',
                 'shadow-none',
-                filter === o.value ? '' : 'bg-surface-sunken text-text-secondary',
+                filter === o.value
+                  ? '!bg-accent-100 !text-accent-800 !shadow-none'
+                  : '!border-transparent !bg-transparent !text-text-secondary !shadow-none hover:!bg-surface-sunken',
               )}
             >
               {o.label}
@@ -766,7 +762,7 @@ export function MessageConversationRail({
            `position` rather than full layout on purpose: full layout animation
            would scale the row's box, which distorts text and avatars mid-flight
            — the exact "mushy" result §10 warns about. */
-        <ul className="flex flex-col">
+        <ul className="flex flex-col border-y border-border-subtle/60 bg-surface md:border-y-0 md:bg-transparent">
           <LayoutGroup>
           {visible.map((conv, i) => (
             <m.li
@@ -786,7 +782,7 @@ export function MessageConversationRail({
                   // §8: "almost disappear". At full border-subtle a five-row
                   // inbox read as a table. Half opacity keeps the structure
                   // available to the eye without drawing it.
-                  className="pointer-events-none absolute left-[72px] right-3 top-0 h-px bg-border-subtle/50"
+                  className="pointer-events-none absolute left-[76px] right-4 top-0 h-px bg-border-subtle/60 md:left-[72px] md:right-3"
                 />
               ) : null}
               <ConversationRow

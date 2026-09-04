@@ -7,8 +7,9 @@
  * The two-pane inbox's RIGHT pane on desktop and the full-bleed conversation
  * canvas on mobile. The responsive `InstrumentPanel` keeps desktop's paired
  * pane geometry but removes its bezel, background and elevation below `md`.
- * Conversation bubbles are flat tonal speech shapes (own = accent, other =
- * surface); NEVER card shadows, bg-white or backdrop blur.
+ * Conversation bubbles are tactile speech shapes (own = dimensional accent,
+ * other = softly lifted surface); NEVER generic card stacks, bg-white or
+ * backdrop blur.
  *
  * It owns NO send/edit/delete logic — the parent FairwayMessages drives those
  * through the UNCHANGED useGolfMessages hook + server actions and passes the
@@ -62,11 +63,10 @@ import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
 import { ConversationDetailsSheet } from './ConversationDetailsSheet';
 import { StructuredMessage } from './StructuredMessage';
-import { hasMessageAvatarPhoto, messageAvatarFallbackClass } from './message-avatar';
 import { parseStructuredPayload } from '@/lib/golf/structured-message';
 import { useGolfMessageResponses } from '@/hooks/golf/use-golf-message-responses';
 import { useGolfMessageReactions } from '@/hooks/golf/use-golf-message-reactions';
-import { GOLF_QUICK_REACTIONS } from '@/app/golf/actions/message-reactions';
+import { GOLF_QUICK_REACTIONS } from '@/lib/golf/message-reactions';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
   GolfConversationWithMeta,
@@ -327,7 +327,12 @@ function ReactionChips({
   const reduceMotion = useReducedMotion();
   if (!reactions.length) return null;
   return (
-    <div className={cn('flex flex-wrap gap-1', align === 'end' ? 'justify-end' : 'justify-start')}>
+    <div
+      className={cn(
+        'relative z-[1] -mt-2 flex flex-wrap gap-1 px-2',
+        align === 'end' ? 'justify-end' : 'justify-start',
+      )}
+    >
       {reactions.map((r) => (
         // A reaction chip is a ~24px inline token; <Button>'s 36/44px
         // min-height would make the strip taller than the bubble it annotates.
@@ -348,17 +353,15 @@ function ReactionChips({
           aria-pressed={r.mine}
           aria-label={`${r.emoji} ${r.count}${r.mine ? ', including you' : ''}`}
           className={cn(
-            // §20: warm neutral, quiet edge, no shadow — a chip that belongs
-            // to the bubble above it rather than a status control sitting
-            // beside it. Yours is marked by a slightly stronger edge and ink,
-            // NOT by turning accent green: §31 reserves strong green for the
-            // message itself, Send, the selected filter and unread.
-            'inline-flex min-h-0 items-center gap-1 rounded-full border px-2 py-0.5',
+            // The slight overlap and soft lift physically attach the reaction
+            // to its message. Yours gets an accent wash while the chip remains
+            // secondary to the words above it.
+            'inline-flex min-h-7 items-center gap-1 rounded-full border px-2 py-0.5 shadow-soft',
             'font-fw-sans text-caption transition-transform active:scale-95',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
             r.mine
-              ? 'border-accent-300 bg-surface font-medium text-text-primary'
-              : 'border-border-subtle bg-surface-sunken text-text-secondary',
+              ? 'border-accent-300 bg-accent-50 font-medium text-accent-800'
+              : 'border-border-subtle bg-surface text-text-secondary',
           )}
         >
           <span aria-hidden="true">{r.emoji}</span>
@@ -369,10 +372,13 @@ function ReactionChips({
   );
 }
 
-/** Typing indicator — three dim dots on a matte Inset (NOT a glass bubble). */
+/** Typing indicator — three calm dots on a small lifted speech surface. */
 function TypingIndicator() {
   return (
-    <Inset padding="none" className="inline-flex rounded-card bg-surface px-3.5 py-3">
+    <Inset
+      padding="none"
+      className="inline-flex rounded-card border border-border-subtle bg-surface px-3.5 py-3 shadow-soft"
+    >
       {/* An opacity wave, not a bounce. `animate-bounce` threw the dots a
           third of their own height on a spring curve — energetic, and the
           wrong register for "someone is composing a sentence". Three dots
@@ -534,10 +540,24 @@ export function MessageThreadPane({
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
   const reduceMotion = useReducedMotion() ?? false;
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   /** The message list itself — observed for late growth (images, fonts). */
   const messagesContentRef = React.useRef<HTMLDivElement>(null);
+  // Never use Element.scrollIntoView for conversation navigation. It is allowed
+  // to scroll every ancestor, including the dashboard document, which was
+  // pulling the entire Messages page upward when a thread opened. The message
+  // list is the only scroll owner for chat navigation.
+  const scrollMessageListToBottom = React.useCallback((behavior: ScrollBehavior) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (typeof container.scrollTo === 'function') {
+      container.scrollTo({ top: container.scrollHeight, behavior });
+    } else {
+      // JSDOM deliberately omits Element.scrollTo. Keeping the fallback here
+      // also makes embedded/older WebViews retain the same bounded owner.
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
   /**
    * True from the moment a thread is pinned to its newest message until the
    * reader deliberately scrolls away from the bottom. While armed, anything
@@ -929,13 +949,10 @@ export function MessageThreadPane({
   React.useEffect(() => {
     const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
     const container = messagesContainerRef.current;
-    if (!container) {
-      messagesEndRef.current?.scrollIntoView({ behavior });
-      return;
-    }
+    if (!container) return;
     const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
     if (isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior });
+      scrollMessageListToBottom(behavior);
       setMissedCount(0);
       return;
     }
@@ -950,7 +967,7 @@ export function MessageThreadPane({
         .filter(m => m.sender_id !== userId && m.sender_id !== currentUserId).length;
       if (incoming > 0) setMissedCount(c => c + incoming);
     }
-  }, [messages, reduceMotion, userId, currentUserId]);
+  }, [messages, reduceMotion, userId, currentUserId, scrollMessageListToBottom]);
 
   // Track how far the count has been reconciled, so a re-render cannot
   // double-count the same arrivals.
@@ -978,8 +995,14 @@ export function MessageThreadPane({
     if (!scrollToMessageId) return;
     if (loading) return;
     const node = messageRefs.current.get(scrollToMessageId);
-    if (node) {
-      node.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    const container = messagesContainerRef.current;
+    if (node && container) {
+      const targetTop = Math.max(0, node.offsetTop - container.clientHeight / 2 + node.clientHeight / 2);
+      if (typeof container.scrollTo === 'function') {
+        container.scrollTo({ top: targetTop, behavior: reduceMotion ? 'auto' : 'smooth' });
+      } else {
+        container.scrollTop = targetTop;
+      }
     }
     // Consume the request whether or not the node is present (e.g. the matched
     // message scrolled off the fetched window) so it doesn't re-fire on refetch.
@@ -994,7 +1017,7 @@ export function MessageThreadPane({
         depth="raised"
         padding="none"
         aria-label="Conversation"
-        className={cn('flex min-h-[40vh] flex-col overflow-hidden', className)}
+        className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', className)}
       >
         <div className="flex flex-1 items-center justify-center bg-surface px-4 py-5">
           <EmptyState
@@ -1033,6 +1056,8 @@ export function MessageThreadPane({
     // somebody with no current roster row: they left, or the account is gone.
     // Say that. A truthful label beats a placeholder that reads like a fault.
     : conversation.other_participant?.name || 'Former team member';
+  const directAvatarName = conversation.other_participant?.name?.trim() || null;
+  const directAvatarSrc = conversation.other_participant?.avatar || null;
   // `is_group` is set for anything carrying `is_team_chat`, and a broadcast
   // sent to ONE player carries it too (the flag is load-bearing for the
   // conversation-create RLS workaround, so it can't just be dropped there).
@@ -1052,9 +1077,7 @@ export function MessageThreadPane({
         .sort(([, a], [, b]) => Number(Boolean(b.avatar)) - Number(Boolean(a.avatar)))
         .slice(0, 2)
     : [];
-  const headerGroupHasPhoto = hasMessageAvatarPhoto(
-    headerGroupMembers.map(([, member]) => member),
-  );
+  const headerGroupPhotoMembers = headerGroupMembers.filter(([, member]) => Boolean(member.avatar));
 
   return (
     <InstrumentPanel
@@ -1063,27 +1086,18 @@ export function MessageThreadPane({
       padding="none"
       aria-label="Conversation"
       className={cn(
-        'flex min-h-[40vh] flex-col overflow-hidden',
-        // On a phone with a thread open this panel IS the whole screen, so the
-        // elevation stops reading as "a pane beside the rail" and starts
-        // reading as a full-screen card floating on a page — which is Doctrine
-        // Rule 11 (no full-screen monolith cards) and the "chat feels like a
-        // card inside a page" complaint. The conversation should be the
-        // canvas. Flattened below `md` only; from `md` up it is genuinely one
-        // pane of a two-pane inbox and keeps its lift.
+        'flex min-h-0 flex-1 flex-col overflow-hidden',
+        // This is a workspace, not a card. The rail and thread meet on one
+        // continuous plane; their divider provides the structure. Depth lives
+        // in the tactile objects inside the thread, not in a massive rounded
+        // rectangle around it.
         //
         // `!` is required because the depth treatment comes from a CSS module
         // class (instrument-panel.module.css `.panelRaised` / `.panel`), which
         // has the same single-class specificity as a Tailwind utility — without
         // it the winner would depend on stylesheet order.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none',
-        // §44 "retire mobile InstrumentPanel thinking": the panel's own card
-        // tone is what still made this read as a pane laid ON a page. Below
-        // `md` the panel takes the page's own ground and stops reserving a
-        // minimum height, so the thread is the screen rather than an object
-        // sitting on one. From `md` up it is genuinely one pane of a two-pane
-        // inbox and keeps every bit of its lift.
-        'max-md:!bg-canvas max-md:!min-h-0',
+        '!rounded-none !border-0 !shadow-none',
+        '!bg-canvas !min-h-0 fw-message-canvas',
         className,
       )}
     >
@@ -1101,7 +1115,7 @@ export function MessageThreadPane({
           enough width to shove the title off centre. The destination is still
           named — for screen readers, by `aria-label`, which is where that
           information belongs. */}
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border-subtle bg-surface px-1.5 py-1 sm:px-3 sm:py-1.5">
+      <header className="fw-message-thread-header relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-1.5 py-1 sm:px-3 sm:py-1.5">
         <div className="flex min-w-0 justify-start">
           <IconButton
             variant="ghost"
@@ -1131,44 +1145,34 @@ export function MessageThreadPane({
           )}
         >
           {isGroup ? (
-            headerGroupMembers.length > 0 && headerGroupHasPhoto ? (
+            headerGroupPhotoMembers.length >= 2 ? (
               <AvatarGroup
-                size="xs"
+                size="sm"
                 role="img"
                 aria-label={`Participants: ${headerGroupMembers.map(([, member]) => member.name).join(', ')}`}
                 className="flex-shrink-0"
               >
-                {headerGroupMembers.map(([id, member]) => (
+                {headerGroupPhotoMembers.map(([id, member]) => (
                   <Avatar
                     key={id}
                     name={member.name}
                     src={member.avatar}
-                    size="xs"
+                    size="sm"
                     decorative
-                    className={member.avatar ? undefined : messageAvatarFallbackClass(id)}
+                    className="shadow-soft"
                   />
                 ))}
               </AvatarGroup>
-            ) : (
-              <Avatar
-                name={headerName}
-                size="sm"
-                className={messageAvatarFallbackClass(conversation.id)}
-                decorative
-              />
-            )
-          ) : (
+            ) : null
+          ) : directAvatarSrc ? (
             <Avatar
-              name={conversation.other_participant?.name || 'User'}
-              src={conversation.other_participant?.avatar}
-              size="sm"
-              className={
-                conversation.other_participant?.avatar
-                  ? undefined
-                  : messageAvatarFallbackClass(conversation.other_participant?.id ?? headerName)
-              }
+              name={directAvatarName}
+              src={directAvatarSrc}
+              size="md"
+              decorative
+              className="shadow-soft"
             />
-          )}
+          ) : null}
           <div className="min-w-0 flex-1">
           {/* One line, truncated — this is a nav bar now, not a page masthead.
               `line-clamp-2` let a long group title push the bar to two rows and
@@ -1216,7 +1220,7 @@ export function MessageThreadPane({
           well inside the conversation. */}
       <div
         ref={messagesContainerRef}
-        className="flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
+        className="fw-message-canvas flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y px-4 py-5 sm:px-5 md:px-7 lg:px-10"
         data-scroll-container
       >
         {loading ? (
@@ -1265,7 +1269,7 @@ export function MessageThreadPane({
           // with a void beneath it, and does nothing at all once the content
           // is taller than the region — so long threads and history prepend
           // are untouched. No absolute positioning, no scroll maths.
-          <div ref={messagesContentRef} className="mt-auto w-full">
+          <div ref={messagesContentRef} className="mt-auto w-full md:mx-auto md:max-w-[40rem]">
             {messages.map((msg, idx, all) => {
               // The receipt belongs to the CONVERSATION, not to each group.
               // It used to render under every outgoing group, which stacked
@@ -1420,8 +1424,8 @@ export function MessageThreadPane({
                       screen readers by the group's sender label (and by the
                       thread header in a DM) — an alt here would read the same
                       name twice per group. */}
-                  {!isOwn && (
-                    <div className="flex w-7 flex-shrink-0 flex-col items-center">
+                  {!isOwn && (isGroup ? Boolean(senderAvatar) : Boolean(directAvatarSrc)) && (
+                    <div className="flex w-8 flex-shrink-0 flex-col items-center">
                       {/* On the LAST message of the group, not the first.
                           The row is `items-end`, so anchoring the avatar to the
                           final bubble sits it level with the speaker's last
@@ -1441,25 +1445,21 @@ export function MessageThreadPane({
                         >
                           <Avatar
                             decorative
-                            name={isGroup ? senderName : (conversation.other_participant?.name || 'User')}
-                            src={isGroup ? senderAvatar : conversation.other_participant?.avatar}
-                            size="xs"
+                            name={isGroup ? senderName : directAvatarName}
+                            src={isGroup ? senderAvatar : directAvatarSrc}
+                            size="sm"
                             // 28px: the size class only, no type override —
                             // `xs` already carries its own scale, and an
                             // arbitrary text-[Npx] is exactly what the
                             // token lint exists to catch.
-                            className={cn(
-                              'h-7 w-7',
-                              !(isGroup ? senderAvatar : conversation.other_participant?.avatar)
-                                && messageAvatarFallbackClass(msg.sender_id),
-                            )}
+                            className="h-8 w-8 shadow-soft"
                           />
                         </m.div>
                       ) : null}
                     </div>
                   )}
 
-                  <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                  <div className={cn('group relative flex min-w-0 max-w-[82%] flex-col gap-1 sm:max-w-[72%]', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name — GROUPS ONLY, once per group.
                         Redundant in a 1:1 (the header already names them) and
                         it was `text-eyebrow` in tertiary ink, which is the
@@ -1500,7 +1500,7 @@ export function MessageThreadPane({
                                 ones. Full-size 44px targets: these are the
                                 smallest things on screen and the ones most
                                 likely to be tapped in a hurry. */}
-                            <Inset padding="none" className="flex items-center gap-0.5 rounded-full px-1 py-0.5">
+                            <div className="flex items-center gap-0.5 rounded-full border border-border-subtle bg-surface px-1 py-0.5 shadow-raise">
                               {GOLF_QUICK_REACTIONS.map((emoji) => {
                                 const picked = getReactionsFor(msg.id).some((r) => r.emoji === emoji && r.mine);
                                 return (
@@ -1525,7 +1525,7 @@ export function MessageThreadPane({
                                   </button>
                                 );
                               })}
-                            </Inset>
+                            </div>
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
                               {onReply ? (
                                 <IconButton variant="ghost" size="sm" aria-label="Reply to message" onClick={() => { onReply(msg); onSetMobileActions(null); }}>
@@ -1614,8 +1614,10 @@ export function MessageThreadPane({
                         </div>
                       </div>
                     ) : (
-                      // Bubble — normal mode. Own = accent plane, other = warm
-                      // surface plane; shape and spacing carry the grouping.
+                      // Bubble — normal mode. Own = dimensional accent plane,
+                      // other = softly lifted warm surface. Shape and spacing
+                      // still carry the grouping without turning speech into a
+                      // stack of generic cards.
                       // Long-press on ANY message, not just your own: reacting to
                       // what SOMEBODY ELSE said is the whole point of a reaction,
                       // and gating the gesture on ownership made the feature
@@ -1643,14 +1645,13 @@ export function MessageThreadPane({
                           // which is why the menu offers it for incoming
                           // messages too, not only your own.
                           'select-none [-webkit-touch-callout:none]',
-                          // §13: a bubble is LANGUAGE, not a card. Surface and
-                          // accent fills establish two flat tonal planes;
-                          // whitespace plus sharp inner/soft outer corners make
-                          // a speaker burst read as one utterance. No border or
-                          // elevation is needed to restate that hierarchy.
+                          // Depth belongs to the speech itself. Incoming gets a
+                          // fine lit edge plus a soft token shadow; outgoing
+                          // gets a restrained green gradient and the same lift.
+                          // The conversation canvas itself remains flat.
                           isOwn
-                            ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-surface text-text-primary',
+                            ? 'fw-message-bubble-outgoing text-text-on-accent'
+                            : 'fw-message-bubble-incoming border text-text-primary',
                           // Undelivered reads as provisional: the fill softens
                           // rather than turning red. The message is not an
                           // error, it just has not landed — and colour is never
@@ -1876,17 +1877,14 @@ export function MessageThreadPane({
                   exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
                   transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {!isGroup && (
+                  {!isGroup && directAvatarSrc && (
                     <div className="w-8 flex-shrink-0">
                       <Avatar
-                        name={conversation.other_participant?.name || 'User'}
-                        src={conversation.other_participant?.avatar}
+                        name={directAvatarName}
+                        src={directAvatarSrc}
                         size="sm"
-                        className={
-                          conversation.other_participant?.avatar
-                            ? undefined
-                            : messageAvatarFallbackClass(conversation.other_participant?.id ?? headerName)
-                        }
+                        decorative
+                        className="shadow-soft"
                       />
                     </div>
                   )}
@@ -1914,7 +1912,6 @@ export function MessageThreadPane({
                 </m.div>
               )}
             </AnimatePresence>
-            <div ref={messagesEndRef} />
           </div>
         )}
       </div>
@@ -1950,9 +1947,7 @@ export function MessageThreadPane({
                 onClick={() => {
                   fwHaptic('selection');
                   setMissedCount(0);
-                  messagesEndRef.current?.scrollIntoView({
-                    behavior: reduceMotion ? 'auto' : 'smooth',
-                  });
+                  scrollMessageListToBottom(reduceMotion ? 'auto' : 'smooth');
                 }}
                 className="rounded-full border-border-subtle bg-surface font-fw-sans text-text-primary shadow-raise"
               >

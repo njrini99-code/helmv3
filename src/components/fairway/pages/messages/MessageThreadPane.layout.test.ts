@@ -114,19 +114,21 @@ describe('MessageThreadPane message geometry', () => {
     expect(messageColumn).toContainElement(retryTarget);
   });
 
-  it('uses a full-bleed canvas and shadow-free grouped bubble planes', () => {
+  it('uses a full-bleed canvas with dimensional grouped speech bubbles', () => {
     const source = readFileSync(
       join(process.cwd(), 'src/components/fairway/pages/messages/MessageThreadPane.tsx'),
       'utf8',
     );
 
     expect(source).toContain(
-      'overflow-y-auto overscroll-contain touch-pan-y bg-canvas',
+      'fw-message-canvas flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y',
     );
     expect(source).not.toContain('touch-pan-y bg-surface-sunken');
     expect(source).not.toContain("isFirstInGroup && (isOwn ? 'border-t");
     expect(source).not.toContain("isLastInGroup && 'shadow-flat'");
     expect(source).toContain("sendState === 'failed' && 'opacity-80'");
-    expect(source).not.toContain("'bg-surface text-text-primary shadow-flat'");
+    expect(source).toContain("'fw-message-bubble-outgoing text-text-on-accent'");
+    expect(source).toContain("'fw-message-bubble-incoming border text-text-primary'");
+    expect(source).toContain("'relative z-[1] -mt-2 flex flex-wrap gap-1 px-2'");
   });
 });

@@ -63,13 +63,13 @@ import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
-import { ViewHeader } from '@/components/fairway/view-header';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 
 import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
 import { MessageComposer } from './MessageComposer';
+import { isGroupConversation } from './conversation-kind';
 
 type GroupParticipant = { name: string; avatar: string | null };
 type GroupParticipantMap = Map<string, GroupParticipant>;
@@ -247,9 +247,6 @@ export function FairwayMessages() {
     };
   }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
-  // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
-  const threadCount = conversations.length;
-
   // ── ?player= deep-link: find-or-create, then select (PRESERVED verbatim) ─────
   const [handledPlayerParam, setHandledPlayerParam] = React.useState(false);
   React.useEffect(() => {
@@ -317,9 +314,14 @@ export function FairwayMessages() {
     router.replace('/golf/dashboard/messages', { scroll: false });
   }, [conversations, conversationsLoading, conversationIdFromUrl, handledConversationParam, router]);
 
-  // ── Auto-select first conversation (only when no deep-link param) (PRESERVED) ─
+  // ── Auto-select a live identity first (only when no deep-link param) ─────────
+  // An unresolved direct row is retained in the inbox for history, but it must
+  // not become the first thing a coach sees. Prefer a thread with a usable
+  // person or team identity; this is selection only, never a silent reorder.
   React.useEffect(() => {
-    const firstConversation = conversations[0];
+    const firstConversation = conversations.find(
+      (conversation) => isGroupConversation(conversation) || Boolean(conversation.other_participant?.name?.trim()),
+    ) ?? conversations[0];
     if (
       !conversationsLoading &&
       firstConversation &&
@@ -592,7 +594,7 @@ export function FairwayMessages() {
           edge and is doing real work. */}
       <div
         className={`mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden py-3 sm:px-6 sm:py-6 lg:py-8 ${
-          mobileShowChat ? 'px-0' : 'px-4'
+          'px-0'
         }`}
       >
         {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ──
@@ -629,34 +631,21 @@ export function FairwayMessages() {
             contents now sit on the rail's search row: one row that says "find
             one, or start one". */}
 
-        <div className="hidden md:block">
-        <ViewHeader
-          eyebrow="Messages"
-          title="Team messages"
-          description={teamName || undefined}
-          meta={
-            <span className="font-fw-mono tabular-nums">
-              {threadCount} {threadCount === 1 ? 'conversation' : 'conversations'}
-            </span>
-          }
-          secondaryActions={
-            userRole === 'coach' && teamId ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Users size={16} aria-hidden="true" />}
-                onClick={() => setShowTeamBroadcastModal(true)}
-              >
-                Official Team channel
-              </Button>
-            ) : undefined
-          }
-          primaryAction={
-            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-              New message
-            </Button>
-          }
-        />
+        <div className="hidden h-10 items-center justify-between px-1 md:flex">
+          <div className="min-w-0">
+            {teamName ? <p className="truncate font-fw-sans text-caption text-text-secondary">{teamName}</p> : null}
+          </div>
+          {userRole === 'coach' && teamId ? (
+            <IconButton
+              variant="ghost"
+              size="md"
+              aria-label="Open official team channel"
+              onClick={() => setShowTeamBroadcastModal(true)}
+              className="text-text-secondary hover:bg-surface-sunken hover:text-text-primary"
+            >
+              <Users size={19} aria-hidden="true" />
+            </IconButton>
+          ) : null}
         </div>
 
         {/* ── Two-pane inbox: rail (supporting aside) + thread (focal hero) ──── */}
@@ -672,7 +661,7 @@ export function FairwayMessages() {
             fractional tracks cannot leave dead space). No grid/width change
             here; see the inner max-w wrapper below for the one real gap this
             audit surfaced (an uncapped thread column on wide desktops). */}
-        <div className={`${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6`}>
+        <div className={`${mobileShowChat ? 'mt-0 md:mt-4' : 'mt-3 md:mt-4'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-0 md:border-y md:border-border-subtle md:bg-surface`}>
           {/* TRIAGE — conversation rail. On mobile it hides when a chat is open. */}
           <aside
             className={
@@ -680,7 +669,7 @@ export function FairwayMessages() {
                 ? 'hidden md:col-span-5 md:flex md:flex-col lg:col-span-4'
                 : // P263: w-full so the rail spans the full viewport on mobile
                   // (flex parent — col-span is a no-op there; w-full governs width).
-                  'col-span-12 flex w-full flex-col md:w-auto md:col-span-5 lg:col-span-4'
+                  'col-span-12 flex w-full flex-col md:w-auto md:col-span-5 md:border-r md:border-border-subtle lg:col-span-4'
             }
           >
             <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
@@ -695,26 +684,15 @@ export function FairwayMessages() {
                 teamId={teamId}
                 onOpenMessage={handleOpenFromSearch}
                 trailingActions={
-                  <>
-                    {userRole === 'coach' && teamId ? (
-                      <IconButton
-                        variant="ghost"
-                        size="md"
-                        aria-label="Open official Team channel"
-                        onClick={() => setShowTeamBroadcastModal(true)}
-                      >
-                        <Users size={20} aria-hidden="true" />
-                      </IconButton>
-                    ) : null}
-                    <IconButton
-                      variant="ghost"
-                      size="md"
-                      aria-label="New message"
-                      onClick={() => setShowNewMessageModal(true)}
-                    >
-                      <SquarePen size={20} aria-hidden="true" />
-                    </IconButton>
-                  </>
+                  <IconButton
+                    variant="primary"
+                    size="md"
+                    aria-label="New message"
+                    onClick={() => setShowNewMessageModal(true)}
+                    className="shadow-soft"
+                  >
+                    <SquarePen size={20} aria-hidden="true" />
+                  </IconButton>
                 }
               />
             </PullToRefresh>

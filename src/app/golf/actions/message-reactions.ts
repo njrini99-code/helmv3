@@ -3,25 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { isGolfQuickReaction } from '@/lib/golf/message-reactions';
 import { describeError } from '@/lib/utils/describe-error';
-
-/**
- * The quick-reaction set (spec §18). Deliberately closed.
- *
- * `emoji` reaches the database as text, so an open set would make this column
- * a client-controlled string field on a shared production table. The DB caps
- * its length; this caps its VOCABULARY, and the two together mean a modified
- * client cannot store anything here that the UI will not render.
- *
- * ✅ and 👍 lead because Helm messages are operational, not social — "seen and
- * handled" is the reaction a team actually needs.
- */
-export const GOLF_QUICK_REACTIONS = ['👍', '❤️', '😂', '👀', '✅'] as const;
-export type GolfQuickReaction = (typeof GOLF_QUICK_REACTIONS)[number];
-
-function isQuickReaction(value: string): value is GolfQuickReaction {
-  return (GOLF_QUICK_REACTIONS as readonly string[]).includes(value);
-}
 
 export interface GolfMessageReaction {
   message_id: string;
@@ -51,7 +34,7 @@ async function toggleGolfMessageReactionImpl(
   messageId: string,
   emoji: string,
 ): Promise<ToggleReactionResult> {
-  if (!isQuickReaction(emoji)) {
+  if (!isGolfQuickReaction(emoji)) {
     return { success: false, error: 'Unsupported reaction.' };
   }
 

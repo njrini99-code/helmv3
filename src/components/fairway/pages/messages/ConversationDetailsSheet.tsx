@@ -22,7 +22,6 @@ import { Sheet } from '@/components/fairway/overlays';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { PressTarget } from '@/components/fairway/controls/press-target';
 import { cn } from '@/lib/utils';
-import { messageAvatarFallbackClass } from './message-avatar';
 
 export interface ConversationDetailsSheetProps {
   open: boolean;
@@ -71,16 +70,16 @@ export function ConversationDetailsSheet({
             this is where the conversation gets to be shown at a size that
             actually reads as a person or a team. */}
         <div className="flex flex-col items-center gap-2 pt-1 text-center">
-          {isGroup ? (
-            <Avatar name={name} size="lg" className={messageAvatarFallbackClass(name)} />
-          ) : (
+          {/* A circle with invented initials is not an avatar. Messaging only
+              renders this visual anchor when the team has supplied a real
+              image; without one, the name is the honest identity. */}
+          {!isGroup && avatar ? (
             <Avatar
               name={name}
-              src={avatar ?? undefined}
+              src={avatar}
               size="lg"
-              className={avatar ? undefined : messageAvatarFallbackClass(name)}
             />
-          )}
+          ) : null}
           <div className="min-w-0">
             <p className="truncate font-fw-sans text-body-lg font-semibold text-text-primary">
               {name}
@@ -128,16 +127,12 @@ export function ConversationDetailsSheet({
                 <li
                   key={m.id}
                   className={cn(
-                    'flex items-center gap-3 py-2',
+                    'flex items-center py-2',
+                    m.avatar ? 'gap-3' : 'pl-1',
                     i > 0 && 'border-t border-border-subtle',
                   )}
                 >
-                  <Avatar
-                    name={m.name}
-                    src={m.avatar ?? undefined}
-                    size="sm"
-                    className={m.avatar ? undefined : messageAvatarFallbackClass(m.id)}
-                  />
+                  {m.avatar ? <Avatar name={m.name} src={m.avatar} size="sm" /> : null}
                   <span className="min-w-0 flex-1 truncate font-fw-sans text-body text-text-primary">
                     {m.name}
                   </span>

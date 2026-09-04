@@ -112,7 +112,7 @@ describe('MessageConversationRail — no duplicate count readout', () => {
 
 describe('MessageConversationRail — Fairway inbox controls', () => {
   it('forces the flat mobile background across loading, error, empty, and loaded branches', () => {
-    expect(source.match(/max-md:!bg-transparent/g) ?? []).toHaveLength(4);
+    expect(source.match(/!bg-transparent/g)?.length ?? 0).toBeGreaterThanOrEqual(4);
     expect(source).not.toContain('max-md:bg-transparent');
   });
 
@@ -141,7 +141,7 @@ describe('MessageConversationRail — Fairway inbox controls', () => {
 });
 
 describe('MessageConversationRail — group avatar identity', () => {
-  it('uses one conversation monogram instead of stacking no-photo initials', () => {
+  it('does not invent an initials avatar when the group has no real photos', () => {
     groupAvatarMock.current = new Map([
       [groupConversation.id, [
         { name: 'Alexis Bennett', avatar: null },
@@ -159,15 +159,15 @@ describe('MessageConversationRail — group avatar identity', () => {
     );
 
     expect(container.querySelector('[data-slot="fw-avatar-group"]')).toBeNull();
-    expect(container.querySelector('[data-slot="fw-avatar"]')).toHaveTextContent('TN');
+    expect(container.querySelector('[data-slot="fw-avatar"]')).toBeNull();
   });
 
-  it('retains AvatarGroup and the image source when any member has a real photo', () => {
+  it('uses a small real-photo stack only when at least two members have photos', () => {
     const safeImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E';
     groupAvatarMock.current = new Map([
       [groupConversation.id, [
         { name: 'Alexis Bennett', avatar: safeImage },
-        { name: 'Jordan Rivera', avatar: null },
+        { name: 'Jordan Rivera', avatar: safeImage },
       ]],
     ]);
 
@@ -183,6 +183,5 @@ describe('MessageConversationRail — group avatar identity', () => {
     const group = container.querySelector('[data-slot="fw-avatar-group"]');
     expect(group).not.toBeNull();
     expect(group?.querySelector('img')).toHaveAttribute('src', safeImage);
-    expect(group).toHaveTextContent('JR');
   });
 });

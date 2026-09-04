@@ -270,12 +270,12 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
   const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
-    // Flat composer band — a quiet hairline separates it from the full-bleed
-    // conversation canvas without floating another card above the thread.
+    // Composer chrome is allowed to float: the canvas remains flat, while the
+    // control the player is actively touching gets a clear physical layer.
     <form
       onSubmit={handleSubmit}
       className={cn(
-        'border-t border-border-subtle bg-surface px-3 pt-2.5',
+        'fw-message-composer relative z-10 border-t border-border-subtle px-3 pt-2.5',
         'pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2.5 lg:pb-2.5',
       )}
     >
@@ -323,9 +323,9 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
           // "focused" perfectly well and is what the spec means by "no giant
           // green ring".
           'flex items-end gap-2 rounded-card p-1.5',
-          'border border-border-subtle bg-surface',
-          'transition-colors duration-150',
-          'focus-within:border-accent-600',
+          'fw-message-composer-field border',
+          'transition-[border-color,box-shadow] duration-150',
+          'focus-within:border-accent-400 focus-within:shadow-raise',
         )}
       >
         {/* Attachment trigger — REUSED UNCHANGED. */}
@@ -403,23 +403,20 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
           vertical space a phone composer has, and on mobile the counter is
           usually the only occupant. `ml-auto` keeps the counter right-aligned
           once the hint beside it is gone. */}
-      {(isPointerFine || charsLeft) && (
-        <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
-          {isPointerFine && (
-            <p className="font-fw-sans text-eyebrow text-text-tertiary">
-              Press Enter to send, Shift+Enter for a new line.
-            </p>
-          )}
-          {charsLeft && (
-            <span
-              className="ml-auto flex-shrink-0 font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
-              aria-live="polite"
-            >
-              {charsLeft}
-            </span>
-          )}
+      {charsLeft ? (
+        <div className="mt-1.5 flex items-center justify-end px-2">
+          <span
+            className="font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
+            aria-live="polite"
+          >
+            {charsLeft}
+          </span>
         </div>
-      )}
+      ) : isPointerFine ? (
+        <p className="mt-1.5 hidden px-2 font-fw-sans text-eyebrow text-text-tertiary md:block">
+          Press Enter to send, Shift+Enter for a new line.
+        </p>
+      ) : null}
     </form>
   );
 }

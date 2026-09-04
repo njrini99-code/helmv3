@@ -40,7 +40,6 @@ import { Chip } from '@/components/fairway/controls/badge';
 import { PressTarget } from '@/components/fairway/controls/press-target';
 import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 import { Avatar } from '@/components/fairway/controls/avatar';
-import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
@@ -114,7 +113,7 @@ export function SelectedRecipientStrip({ recipients, onRemove }: SelectedRecipie
           key={recipient.userId}
           size="sm"
           tone="accent"
-          leadingIcon={<Avatar decorative name={recipient.name} src={recipient.avatar} size="xs" />}
+          leadingIcon={recipient.avatar ? <Avatar decorative name={recipient.name} src={recipient.avatar} size="xs" /> : undefined}
           onRemove={() => onRemove(recipient.userId)}
           removeLabel={`Remove ${recipient.name}`}
         >
@@ -554,23 +553,29 @@ export function FairwayNewMessageSheet({
                             : 'hover:bg-surface-sunken',
                         )}
                       >
-                        {/* Shared identity (avatar + name + subtitle); the selection
-                            check is this surface's trailing affordance. The button
-                            wrapper keeps the transparent-rest / tinted-hover-selected
-                            contract intact. */}
-                        <PlayerIdentity
-                          name={result.name}
-                          avatarUrl={result.avatar}
-                          size="md"
-                          meta={result.subtitle || undefined}
-                          trailing={
-                            isSelected ? (
-                              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
-                                <Check className="h-3.5 w-3.5" aria-hidden />
-                              </span>
-                            ) : undefined
-                          }
-                        />
+                        {/* Do not manufacture initials as an avatar. A real
+                            roster photo earns the visual anchor; everyone else
+                            remains a clean text identity until they upload one. */}
+                        <div className={cn('min-w-0 items-center', result.avatar ? 'flex gap-3' : 'flex')}>
+                          {result.avatar ? (
+                            <Avatar decorative name={result.name} src={result.avatar} size="md" />
+                          ) : null}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                              {result.name}
+                            </p>
+                            {result.subtitle ? (
+                              <p className="mt-0.5 truncate font-fw-sans text-body-sm text-text-secondary">
+                                {result.subtitle}
+                              </p>
+                            ) : null}
+                          </div>
+                          {isSelected ? (
+                            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
+                              <Check className="h-3.5 w-3.5" aria-hidden />
+                            </span>
+                          ) : null}
+                        </div>
                       </PressTarget>
                     </li>
                   );

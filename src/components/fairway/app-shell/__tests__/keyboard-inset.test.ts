@@ -34,6 +34,14 @@ describe('keyboard inset — who publishes it', () => {
 });
 
 describe('keyboard inset — who consumes it', () => {
+  it('immersive mobile conversations hide every shell chrome layer', () => {
+    const css = read('src/app/globals.css');
+
+    expect(css).toMatch(/body\[data-fw-immersive\] \[data-slot='fw-topbar'\][\s\S]*?display:\s*none/);
+    expect(css).toMatch(/body\[data-fw-immersive\] \[data-slot='fairway-hub-subnav'\][\s\S]*?display:\s*none/);
+    expect(css).toMatch(/body\[data-fw-immersive\] \[data-slot='fw-bottom-nav'\][\s\S]*?display:\s*none/);
+  });
+
   it('the messages column always gives up room for the keyboard, in both mobile modes', () => {
     const src = read('src/components/fairway/pages/messages/FairwayMessages.tsx');
 

@@ -9,8 +9,9 @@
  * to initials for every group. This is that same resolution, batched across the
  * whole inbox.
  *
- * THREE queries total, never one per row. A per-conversation fetch would be an
- * N+1 on the first screen a coach sees every morning.
+ * One membership query plus an authorized batch identity lookup, never one
+ * identity query per row. A per-conversation fetch would be an N+1 on the
+ * first screen a coach sees every morning.
  *
  * Fails soft and SILENT-EMPTY: on any error this returns an empty map and the
  * rows keep their initials. A missing face is a cosmetic downgrade; a thrown
@@ -18,6 +19,7 @@
  */
 
 import * as React from 'react';
+import { getGolfMessageParticipantIdentities } from '@/app/golf/actions/messages';
 import { createClient } from '@/lib/supabase/client';
 
 export interface GroupMember {
@@ -68,9 +70,18 @@ export function useGolfGroupAvatars(groupConversationIds: string[]): GroupAvatar
       const ids = idKey.split(',');
       const supabase = createClient();
 
-      // 1. Every membership row for these conversations, paginated — a program
-      //    with many team channels can exceed the 1000-row ceiling, and
-      //    PostgREST truncates silently rather than erroring.
+      // The server action proves membership before resolving the small
+      // display-only identity set. It is also where legacy records receive
+      // their existing image from the avatars bucket when avatar_url is null.
+      const identities = await getGolfMessageParticipantIdentities(ids);
+      if (!identities.length) return;
+      const identity = new Map(identities.map((member) => [member.userId, {
+        name: member.name,
+        avatar: member.avatarUrl,
+      }]));
+
+      // Retrieve membership only to retain the compact two-face group geometry.
+      // This stays paginated because PostgREST silently caps large result sets.
       const rows: { conversation_id: string; user_id: string }[] = [];
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
@@ -78,31 +89,11 @@ export function useGolfGroupAvatars(groupConversationIds: string[]): GroupAvatar
           .select('conversation_id, user_id')
           .in('conversation_id', ids)
           .range(from, from + PAGE - 1);
-        if (error || !data) return; // fail soft: keep initials
+        if (error || !data) return;
         rows.push(...data);
         if (data.length < PAGE) break;
       }
       if (!rows.length) return;
-
-      // 2. Resolve identities once for the UNION of user ids, not per
-      //    conversation — the same coach appears in most of them.
-      const userIds = [...new Set(rows.map(r => r.user_id))];
-      const [coaches, players] = await Promise.all([
-        supabase.from('golf_coaches').select('user_id, full_name, avatar_url').in('user_id', userIds),
-        supabase.from('golf_players').select('user_id, first_name, last_name, avatar_url').in('user_id', userIds),
-      ]);
-      if (coaches.error || players.error) return;
-
-      const identity = new Map<string, GroupMember>();
-      (coaches.data ?? []).forEach(c => {
-        if (c.user_id) identity.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
-      });
-      (players.data ?? []).forEach(p => {
-        if (p.user_id) {
-          const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player';
-          identity.set(p.user_id, { name, avatar: p.avatar_url ?? null });
-        }
-      });
 
       // 3. Group by conversation. Members WITH a photo sort first, because the
       //    stack shows only the first few and a real face beats initials in a

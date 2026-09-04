@@ -123,15 +123,19 @@ Announcement create
   and editorial dividers rather than row cards. An open thread owns the phone
   with a compact back/header surface. Group participant identity is scoped to
   the active conversation, cleared while a new group loads, and ignores stale
-  fetches, so one group cannot show another group’s faces. Stored photo URLs
-  always render as photos; no-photo identities receive a deterministic Fairway
-  tint, and a group with no photos uses its conversation monogram instead of a
-  stack of anonymous initials.
+  fetches, so one group cannot show another group’s faces. Messaging proves the
+  viewer belongs to a conversation before resolving its display-only identity;
+  it uses the roster photo URL first and the participant’s existing public
+  `avatars/<user-id>/…` upload when an older profile row was never linked. The
+  resolver returns the authorized conversation ids with each identity, letting
+  a direct thread recover its real participant even when the legacy RPC's
+  `participant_ids` array is incomplete. No-photo identities do not receive a
+  synthetic initials/person avatar; a face is rendered only for a real photo.
 - The mobile thread is a full-bleed canvas, not a recessed panel. Incoming and
-  outgoing bursts retain connected geometry and restrained tonal distinction,
-  but messaging deliberately uses no bubble shadows, contact elevation, or
-  nested card surfaces. Its depth comes from identity, type, alignment, space,
-  and the persistent header/composer chrome.
+  outgoing bursts retain connected geometry and restrained tonal distinction.
+  Depth is limited to tactile chat objects: lit incoming bubbles, a restrained
+  outgoing green plane, and the persistent header/composer chrome. The canvas
+  and conversation rows remain free of nested card surfaces.
 - Message composition uses a native auto-growing textarea and Fairway press
   controls. Valid sends snapshot and clear the draft in the same interaction
   tick; network state belongs on the optimistic bubble (`Sending`, `Sent`,
