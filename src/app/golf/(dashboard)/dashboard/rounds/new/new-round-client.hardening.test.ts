@@ -100,10 +100,16 @@ describe('New Round — hole_invalid on the checkpoint and autosave paths (B5)',
 
   it('handleAutoSave surfaces the specific message instead of throwing into the circuit breaker', () => {
     const autoSave = slice('const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {', 'const handleRoundSubmit = async (');
-    expect(autoSave).toContain("result.error === 'hole_invalid'");
-    const holeInvalidIdx = autoSave.indexOf("result.error === 'hole_invalid'");
+    // Widened 2026-09-04 from a bare `hole_invalid` check to the shared
+    // classifier, which also covers the auth/player-profile refusals that
+    // were being retried forever. The ORDERING is the invariant: the
+    // unrecoverable branch must come before the generic throw, or the
+    // circuit breaker swallows it again.
+    expect(autoSave).toContain('isUnrecoverableRoundWriteFailure(result)');
+    const unrecoverableIdx = autoSave.indexOf('isUnrecoverableRoundWriteFailure(result)');
     const genericThrowIdx = autoSave.indexOf('Auto-save server error');
-    expect(holeInvalidIdx).toBeLessThan(genericThrowIdx);
+    expect(unrecoverableIdx).toBeLessThan(genericThrowIdx);
+    expect(autoSave.slice(unrecoverableIdx, genericThrowIdx)).toContain('isAutoSaveStoppedFailure(result)');
   });
 });
 
