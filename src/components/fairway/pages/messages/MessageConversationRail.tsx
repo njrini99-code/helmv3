@@ -52,6 +52,7 @@ import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { isGroupConversation } from './conversation-kind';
+import { hasMessageAvatarPhoto, messageAvatarFallbackClass } from './message-avatar';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -157,15 +158,13 @@ function ConversationRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block w-full rounded-fw-md px-3 py-3 text-left',
+        'group block w-full px-3 py-3 text-left',
         'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         // Acknowledgement must not wait for navigation — `active:` paints on
         // touch-down, before any route work.
         'active:bg-surface-sunken',
-        isSelected
-          ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
-          : 'hover:bg-surface-sunken/60',
+        isSelected ? 'bg-surface-tint' : 'hover:bg-surface-sunken/60',
       )}
     >
       <div className="flex items-start gap-3">
@@ -176,7 +175,7 @@ function ConversationRow({
             "Demo University Golf" reads DU — on the accent wash that still
             distinguishes it from a DM at a glance. 48px per §16 (was 40). */}
         {isGroup ? (
-          members && members.length > 1 ? (
+          members && members.length > 0 && hasMessageAvatarPhoto(members) ? (
             // §33: REAL FACES. The photos were always in the app — the inbox
             // just never asked for them, because participant resolution was
             // scoped to the one open conversation. A team channel now shows who
@@ -202,32 +201,39 @@ function ConversationRow({
             <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
               <AvatarGroup size="xs">
                 {members.map((m, i) => (
-                  <Avatar key={`${m.name}-${i}`} name={m.name} src={m.avatar ?? undefined} size="xs" />
+                  <Avatar
+                    key={`${m.name}-${i}`}
+                    name={m.name}
+                    src={m.avatar ?? undefined}
+                    size="xs"
+                    className={m.avatar ? undefined : messageAvatarFallbackClass(m.name)}
+                  />
                 ))}
               </AvatarGroup>
             </span>
           ) : (
-            // One member, or none resolved yet: a stack of one is just an
-            // avatar wearing a ring it does not need. Initials, on the deeper
-            // accent tint.
-            <Avatar name={displayName} size="lg" className="bg-accent-100 text-accent-800" />
+            // An all-no-photo group gets ONE conversation identity instead of
+            // a stack of interchangeable person initials. The title-derived
+            // monogram stays specific to this channel, and its deterministic
+            // token tone stays stable anywhere messaging renders it.
+            <Avatar
+              name={displayName}
+              size="lg"
+              className={messageAvatarFallbackClass(conv.id)}
+            />
           )
         ) : (
-          // The shared Avatar falls back to `bg-surface-sunken` (0.963) with
-          // secondary ink. On this row's 0.953 canvas that is a ONE PERCENT
-          // lightness difference — the same defect the message bubbles had, and
-          // it made half the avatar column vanish. Overridden here rather than
-          // in the primitive, because every other Avatar in the app sits on a
-          // 0.984 card where the default reads correctly.
-          //
-          // Lifted cream disc + primary ink, against the group's accent tint:
-          // both have real presence, and a person still doesn't look like a
-          // team.
+          // Keep photo and initials identity flat. Missing photos receive a
+          // deterministic token tone; real photos pass through untouched.
           <Avatar
             name={conv.other_participant?.name || 'User'}
             src={conv.other_participant?.avatar}
             size="lg"
-            className="bg-surface text-text-primary shadow-flat"
+            className={
+              conv.other_participant?.avatar
+                ? undefined
+                : messageAvatarFallbackClass(conv.other_participant?.id ?? displayName)
+            }
           />
         )}
 
@@ -316,15 +322,20 @@ function SearchResultRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block w-full rounded-fw-md px-3 py-3 text-left transition-colors [transition-duration:150ms]',
+        'group block w-full px-3 py-3 text-left transition-colors [transition-duration:150ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'active:bg-surface-sunken',
-        isSelected ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60' : 'hover:bg-surface-sunken/60',
+        isSelected ? 'bg-surface-tint' : 'hover:bg-surface-sunken/60',
       )}
     >
       <div className="flex items-start gap-3">
-        <Avatar name={result.senderName || 'User'} src={result.senderAvatar} size="md" />
+        <Avatar
+          name={result.senderName || 'User'}
+          src={result.senderAvatar}
+          size="md"
+          className={result.senderAvatar ? undefined : messageAvatarFallbackClass(result.senderName)}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
@@ -697,9 +708,9 @@ export function MessageConversationRail({
             Something went wrong searching your messages. Check your connection and try again.
           </InlineNotice>
         ) : searchResults.length > 0 ? (
-          <ul className="flex flex-col gap-1">
-            {searchResults.map((result) => (
-              <li key={result.messageId}>
+          <ul className="flex flex-col">
+            {searchResults.map((result, index) => (
+              <li key={result.messageId} className={index > 0 ? 'border-t border-border-subtle/50' : undefined}>
                 <SearchResultRow
                   result={result}
                   isSelected={selectedId === result.conversationId}

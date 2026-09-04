@@ -4,8 +4,8 @@
  * ============================================================================
  * Fairway · messages · MessageComposer — the "what's-next" composer track
  * ----------------------------------------------------------------------------
- * The WHAT'S-NEXT section of the two-pane inbox: a sunken matte composer track
- * (mirrors AskThreadPane's `border-t` composer slot). It is a
+ * The WHAT'S-NEXT section of the two-pane inbox: a flat attached composer band
+ * separated from the thread by one quiet token hairline. It is a
  * pure PRESENTATION re-skin of the legacy `MessageInput` — the behavior is
  * PRESERVED byte-for-byte in intent:
  *   • auto-resize textarea (height clamps 40→120px on the message value)
@@ -270,24 +270,21 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
   const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
-    // Sunken matte composer track — mirrors AskThreadPane's composer slot.
+    // Flat composer band — a quiet hairline separates it from the full-bleed
+    // conversation canvas without floating another card above the thread.
     <form
       onSubmit={handleSubmit}
       className={cn(
-        // An attached BAR, not a bordered box. The hairline alone left the
-        // composer reading as the last block of the page. The shared Fairway
-        // elevation token keeps that separation theme-safe without embedding
-        // an off-token RGBA shadow recipe here.
-        'bg-surface px-3 pt-2.5 shadow-raise',
+        'border-t border-border-subtle bg-surface px-3 pt-2.5',
         'pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2.5 lg:pb-2.5',
       )}
     >
       {/* §30 reply preview. Above the field, inside the composer's own track,
-          so it reads as part of the thing you are about to send rather than as
-          a banner floating over the thread. Dismiss is a 44px target: it is the
+          an inline two-pixel rule and two lines of copy — not another rounded
+          container inside the composer. Dismiss is a 44px target: it is the
           only way out of reply mode and sits next to a send button. */}
       {replyTo ? (
-        <div className="mb-2 flex items-center gap-2 rounded-fw-md border-l-2 border-accent-600 bg-surface-sunken py-1.5 pl-2.5 pr-1">
+        <div className="mb-2 flex min-h-11 items-center gap-2 border-l-2 border-accent-600 pl-3">
           <div className="min-w-0 flex-1">
             <p className="truncate font-fw-sans text-caption font-semibold text-accent-700">
               Replying to {replyTo.name}

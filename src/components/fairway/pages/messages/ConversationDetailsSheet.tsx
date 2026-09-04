@@ -20,8 +20,9 @@ import * as React from 'react';
 import { Search, Users } from 'lucide-react';
 import { Sheet } from '@/components/fairway/overlays';
 import { Avatar } from '@/components/fairway/controls/avatar';
-import { Button } from '@/components/fairway/controls/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { cn } from '@/lib/utils';
+import { messageAvatarFallbackClass } from './message-avatar';
 
 export interface ConversationDetailsSheetProps {
   open: boolean;
@@ -71,9 +72,14 @@ export function ConversationDetailsSheet({
             actually reads as a person or a team. */}
         <div className="flex flex-col items-center gap-2 pt-1 text-center">
           {isGroup ? (
-            <Avatar name={name} size="lg" className="bg-accent-50 text-accent-700" />
+            <Avatar name={name} size="lg" className={messageAvatarFallbackClass(name)} />
           ) : (
-            <Avatar name={name} src={avatar ?? undefined} size="lg" />
+            <Avatar
+              name={name}
+              src={avatar ?? undefined}
+              size="lg"
+              className={avatar ? undefined : messageAvatarFallbackClass(name)}
+            />
           )}
           <div className="min-w-0">
             <p className="truncate font-fw-sans text-body-lg font-semibold text-text-primary">
@@ -91,18 +97,24 @@ export function ConversationDetailsSheet({
         </div>
 
         {onSearch ? (
-          <Button
-            variant="secondary"
-            size="md"
-            className="w-full justify-start"
-            leftIcon={<Search size={18} aria-hidden="true" />}
-            onClick={() => {
-              onOpenChange(false);
-              onSearch();
-            }}
-          >
-            Search messages
-          </Button>
+          <div className="border-y border-border-subtle">
+            <PressTarget
+              type="button"
+              className={cn(
+                'flex min-h-11 w-full items-center gap-3 px-1 text-left',
+                'font-fw-sans text-body font-medium text-text-primary',
+                'transition-colors active:bg-surface-sunken',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+              )}
+              onClick={() => {
+                onOpenChange(false);
+                onSearch();
+              }}
+            >
+              <Search size={18} aria-hidden="true" className="text-text-tertiary" />
+              <span>Search messages</span>
+            </PressTarget>
+          </div>
         ) : null}
 
         {isGroup && members.length > 0 ? (
@@ -120,7 +132,12 @@ export function ConversationDetailsSheet({
                     i > 0 && 'border-t border-border-subtle',
                   )}
                 >
-                  <Avatar name={m.name} src={m.avatar ?? undefined} size="sm" />
+                  <Avatar
+                    name={m.name}
+                    src={m.avatar ?? undefined}
+                    size="sm"
+                    className={m.avatar ? undefined : messageAvatarFallbackClass(m.id)}
+                  />
                   <span className="min-w-0 flex-1 truncate font-fw-sans text-body text-text-primary">
                     {m.name}
                   </span>

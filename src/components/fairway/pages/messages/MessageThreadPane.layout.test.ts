@@ -114,19 +114,18 @@ describe('MessageThreadPane message geometry', () => {
     expect(messageColumn).toContainElement(retryTarget);
   });
 
-  it('uses a recessed thread well and endpoint-only bubble depth tokens', () => {
+  it('uses a full-bleed canvas and shadow-free grouped bubble planes', () => {
     const source = readFileSync(
       join(process.cwd(), 'src/components/fairway/pages/messages/MessageThreadPane.tsx'),
       'utf8',
     );
 
     expect(source).toContain(
-      'overflow-y-auto overscroll-contain touch-pan-y bg-surface-sunken',
+      'overflow-y-auto overscroll-contain touch-pan-y bg-canvas',
     );
-    expect(source).toContain(
-      "isFirstInGroup && (isOwn ? 'border-t border-accent-500' : 'border-t border-elevated')",
-    );
-    expect(source).toContain("isLastInGroup && 'shadow-flat'");
+    expect(source).not.toContain('touch-pan-y bg-surface-sunken');
+    expect(source).not.toContain("isFirstInGroup && (isOwn ? 'border-t");
+    expect(source).not.toContain("isLastInGroup && 'shadow-flat'");
     expect(source).toContain("sendState === 'failed' && 'opacity-80'");
     expect(source).not.toContain("'bg-surface text-text-primary shadow-flat'");
   });

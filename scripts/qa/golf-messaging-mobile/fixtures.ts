@@ -7,6 +7,9 @@ export const fixtureIds = [
 
 export type FixtureId = (typeof fixtureIds)[number];
 
+// Deliberately no photos: the real component render must prove that missing
+// avatar_url values produce distinct, intentional initials and that a group
+// collapses to its title monogram instead of an all-initial avatar stack.
 export const fixturePeople = {
   alex: { userId: 'player-alex', name: 'Alexis Bennett', subtitle: 'Junior', avatar: null },
   jordan: { userId: 'player-jordan', name: 'Jordan Rivera', subtitle: 'Sophomore', avatar: null },

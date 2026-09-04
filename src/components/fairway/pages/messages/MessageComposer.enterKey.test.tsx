@@ -135,4 +135,12 @@ describe('MessageComposer — native Fairway control contract', () => {
     expect(source).not.toContain("from '@/components/ui/button'");
     expect(source).not.toContain("from '@/components/ui/input'");
   });
+
+  it('renders reply context as an inline rule instead of a raised rounded card', () => {
+    expect(source).toContain(
+      'mb-2 flex min-h-11 items-center gap-2 border-l-2 border-accent-600 pl-3',
+    );
+    expect(source).not.toContain('rounded-fw-md border-l-2 border-accent-600 bg-surface-sunken');
+    expect(source).not.toContain('bg-surface px-3 pt-2.5 shadow-raise');
+  });
 });

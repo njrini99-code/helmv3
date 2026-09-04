@@ -14,12 +14,20 @@
  * one place the count renders), so this locks: no `data-slot="readout"` node
  * ever renders inside the rail, in either state.
  * ========================================================================== */
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
 import { MessageConversationRail } from './MessageConversationRail';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+
+const groupAvatarMock = vi.hoisted(() => ({
+  current: new Map<string, Array<{ name: string; avatar: string | null }>>(),
+}));
+
+vi.mock('@/hooks/golf/use-golf-group-avatars', () => ({
+  useGolfGroupAvatars: () => groupAvatarMock.current,
+}));
 
 const source = readFileSync(
   join(process.cwd(), 'src/components/fairway/pages/messages/MessageConversationRail.tsx'),
@@ -28,10 +36,28 @@ const source = readFileSync(
 const searchResultStart = source.indexOf('function SearchResultRow');
 const searchResultEnd = source.indexOf('export function MessageConversationRail');
 const searchResultSource = source.slice(searchResultStart, searchResultEnd);
+const conversationRowStart = source.indexOf('function ConversationRow');
+const conversationRowSource = source.slice(conversationRowStart, searchResultStart);
 
 vi.mock('@/app/golf/actions/messages', () => ({
   searchGolfMessages: vi.fn(async () => ({ results: [] })),
 }));
+
+afterEach(() => {
+  groupAvatarMock.current = new Map();
+});
+
+const groupConversation = {
+  id: 'group-travel',
+  is_group: true,
+  participant_count: 4,
+  title: 'Tournament travel notes',
+  unread_count: 0,
+  last_message: {
+    content: 'Rooming preferences are ready.',
+    created_at: '2026-09-04T12:00:00.000Z',
+  },
+} as unknown as GolfConversationWithMeta;
 
 describe('MessageConversationRail — no duplicate count readout', () => {
   it('renders exactly one zero-state widget when there are no conversations, with no Readout numeral', () => {
@@ -103,5 +129,60 @@ describe('MessageConversationRail — Fairway inbox controls', () => {
     expect(searchResultEnd).toBeGreaterThan(searchResultStart);
     expect(searchResultSource).toContain('<PressTarget');
     expect(searchResultSource).not.toContain('<Button');
+  });
+
+  it('keeps conversation and search results as flat editorial rows', () => {
+    expect(conversationRowSource).not.toContain('rounded-fw-md');
+    expect(conversationRowSource).not.toContain('ring-inset ring-accent');
+    expect(conversationRowSource).not.toContain('shadow-flat');
+    expect(searchResultSource).not.toContain('rounded-fw-md');
+    expect(searchResultSource).not.toContain('ring-inset ring-accent');
+  });
+});
+
+describe('MessageConversationRail — group avatar identity', () => {
+  it('uses one conversation monogram instead of stacking no-photo initials', () => {
+    groupAvatarMock.current = new Map([
+      [groupConversation.id, [
+        { name: 'Alexis Bennett', avatar: null },
+        { name: 'Jordan Rivera', avatar: null },
+      ]],
+    ]);
+
+    const { container } = render(
+      <MessageConversationRail
+        conversations={[groupConversation]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onNewMessage={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector('[data-slot="fw-avatar-group"]')).toBeNull();
+    expect(container.querySelector('[data-slot="fw-avatar"]')).toHaveTextContent('TN');
+  });
+
+  it('retains AvatarGroup and the image source when any member has a real photo', () => {
+    const safeImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E';
+    groupAvatarMock.current = new Map([
+      [groupConversation.id, [
+        { name: 'Alexis Bennett', avatar: safeImage },
+        { name: 'Jordan Rivera', avatar: null },
+      ]],
+    ]);
+
+    const { container } = render(
+      <MessageConversationRail
+        conversations={[groupConversation]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onNewMessage={vi.fn()}
+      />,
+    );
+
+    const group = container.querySelector('[data-slot="fw-avatar-group"]');
+    expect(group).not.toBeNull();
+    expect(group?.querySelector('img')).toHaveAttribute('src', safeImage);
+    expect(group).toHaveTextContent('JR');
   });
 });

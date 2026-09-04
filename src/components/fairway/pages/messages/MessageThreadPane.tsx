@@ -4,11 +4,11 @@
  * ============================================================================
  * Fairway · messages · MessageThreadPane — the PULSE focal hero (open thread)
  * ----------------------------------------------------------------------------
- * The two-pane inbox's RIGHT pane and the page's ONE focal hero: a flat matte
- * `InstrumentPanel` depth='raised' thread well with a sunken composer track —
- * mirrors AskThreadPane. The conversation bubbles read on matte surfaces
- * (own = bg-accent tint, other = bg-surface lifted off a sunken matte well);
- * NEVER bg-white/backdrop-blur.
+ * The two-pane inbox's RIGHT pane on desktop and the full-bleed conversation
+ * canvas on mobile. The responsive `InstrumentPanel` keeps desktop's paired
+ * pane geometry but removes its bezel, background and elevation below `md`.
+ * Conversation bubbles are flat tonal speech shapes (own = accent, other =
+ * surface); NEVER card shadows, bg-white or backdrop blur.
  *
  * It owns NO send/edit/delete logic — the parent FairwayMessages drives those
  * through the UNCHANGED useGolfMessages hook + server actions and passes the
@@ -62,6 +62,7 @@ import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
 import { ConversationDetailsSheet } from './ConversationDetailsSheet';
 import { StructuredMessage } from './StructuredMessage';
+import { hasMessageAvatarPhoto, messageAvatarFallbackClass } from './message-avatar';
 import { parseStructuredPayload } from '@/lib/golf/structured-message';
 import { useGolfMessageResponses } from '@/hooks/golf/use-golf-message-responses';
 import { useGolfMessageReactions } from '@/hooks/golf/use-golf-message-reactions';
@@ -371,7 +372,7 @@ function ReactionChips({
 /** Typing indicator — three dim dots on a matte Inset (NOT a glass bubble). */
 function TypingIndicator() {
   return (
-    <Inset padding="none" className="inline-flex rounded-card bg-surface px-3.5 py-3 shadow-soft">
+    <Inset padding="none" className="inline-flex rounded-card bg-surface px-3.5 py-3">
       {/* An opacity wave, not a bounce. `animate-bounce` threw the dots a
           third of their own height on a spring curve — energetic, and the
           wrong register for "someone is composing a sentence". Three dots
@@ -1051,6 +1052,9 @@ export function MessageThreadPane({
         .sort(([, a], [, b]) => Number(Boolean(b.avatar)) - Number(Boolean(a.avatar)))
         .slice(0, 2)
     : [];
+  const headerGroupHasPhoto = hasMessageAvatarPhoto(
+    headerGroupMembers.map(([, member]) => member),
+  );
 
   return (
     <InstrumentPanel
@@ -1127,7 +1131,7 @@ export function MessageThreadPane({
           )}
         >
           {isGroup ? (
-            headerGroupMembers.length > 0 ? (
+            headerGroupMembers.length > 0 && headerGroupHasPhoto ? (
               <AvatarGroup
                 size="xs"
                 role="img"
@@ -1141,6 +1145,7 @@ export function MessageThreadPane({
                     src={member.avatar}
                     size="xs"
                     decorative
+                    className={member.avatar ? undefined : messageAvatarFallbackClass(id)}
                   />
                 ))}
               </AvatarGroup>
@@ -1148,7 +1153,7 @@ export function MessageThreadPane({
               <Avatar
                 name={headerName}
                 size="sm"
-                className="bg-accent-100 text-accent-800"
+                className={messageAvatarFallbackClass(conversation.id)}
                 decorative
               />
             )
@@ -1157,6 +1162,11 @@ export function MessageThreadPane({
               name={conversation.other_participant?.name || 'User'}
               src={conversation.other_participant?.avatar}
               size="sm"
+              className={
+                conversation.other_participant?.avatar
+                  ? undefined
+                  : messageAvatarFallbackClass(conversation.other_participant?.id ?? headerName)
+              }
             />
           )}
           <div className="min-w-0 flex-1">
@@ -1200,21 +1210,20 @@ export function MessageThreadPane({
         participants={isGroup ? groupParticipants : undefined}
       />
 
-      {/* Thread scroll region — a semantic recessed well inside the screen.
-          The mobile InstrumentPanel itself remains the flat page canvas; only
-          this reading region takes the sunken tone, so the matte incoming
-          bubbles and accent outgoing bubbles have a deliberate layer to lift
-          from without turning the whole phone screen back into a card. */}
+      {/* Thread scroll region — the page canvas itself, full bleed. The mobile
+          InstrumentPanel has no bezel/background/elevation, and this region
+          deliberately keeps that same plane rather than introducing an inset
+          well inside the conversation. */}
       <div
         ref={messagesContainerRef}
-        className="flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y bg-surface-sunken px-4 py-5 sm:px-5"
+        className="flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
         data-scroll-container
       >
         {loading ? (
           <div className="space-y-3 py-8">
-            <div className="h-9 w-3/4 rounded-card bg-surface shadow-soft" />
-            <div className="h-9 w-1/2 rounded-card bg-surface shadow-soft" />
-            <div className="ml-auto h-9 w-2/3 rounded-card bg-surface shadow-soft" />
+            <div className="h-9 w-3/4 rounded-card bg-surface" />
+            <div className="h-9 w-1/2 rounded-card bg-surface" />
+            <div className="ml-auto h-9 w-2/3 rounded-card bg-accent-100" />
           </div>
         ) : error ? (
           // P258: the fetch FAILED — render a recoverable error state with Retry,
@@ -1439,7 +1448,11 @@ export function MessageThreadPane({
                             // `xs` already carries its own scale, and an
                             // arbitrary text-[Npx] is exactly what the
                             // token lint exists to catch.
-                            className="h-7 w-7"
+                            className={cn(
+                              'h-7 w-7',
+                              !(isGroup ? senderAvatar : conversation.other_participant?.avatar)
+                                && messageAvatarFallbackClass(msg.sender_id),
+                            )}
                           />
                         </m.div>
                       ) : null}
@@ -1601,7 +1614,8 @@ export function MessageThreadPane({
                         </div>
                       </div>
                     ) : (
-                      // Bubble — normal mode. own = accent tint, other = raised cream.
+                      // Bubble — normal mode. Own = accent plane, other = warm
+                      // surface plane; shape and spacing carry the grouping.
                       // Long-press on ANY message, not just your own: reacting to
                       // what SOMEBODY ELSE said is the whole point of a reaction,
                       // and gating the gesture on ownership made the feature
@@ -1630,18 +1644,13 @@ export function MessageThreadPane({
                           // messages too, not only your own.
                           'select-none [-webkit-touch-callout:none]',
                           // §13: a bubble is LANGUAGE, not a card. Surface and
-                          // accent fills establish the material; depth is
-                          // reserved for the OUTER boundaries of each speaker
-                          // group. A light token edge catches the first bubble,
-                          // and the quiet `shadow-flat` contact layer grounds
-                          // only the final one. Middle bubbles stay flat, so a
-                          // burst reads as one utterance rather than a stack of
-                          // mini cards.
+                          // accent fills establish two flat tonal planes;
+                          // whitespace plus sharp inner/soft outer corners make
+                          // a speaker burst read as one utterance. No border or
+                          // elevation is needed to restate that hierarchy.
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
                             : 'bg-surface text-text-primary',
-                          isFirstInGroup && (isOwn ? 'border-t border-accent-500' : 'border-t border-elevated'),
-                          isLastInGroup && 'shadow-flat',
                           // Undelivered reads as provisional: the fill softens
                           // rather than turning red. The message is not an
                           // error, it just has not landed — and colour is never
@@ -1873,6 +1882,11 @@ export function MessageThreadPane({
                         name={conversation.other_participant?.name || 'User'}
                         src={conversation.other_participant?.avatar}
                         size="sm"
+                        className={
+                          conversation.other_participant?.avatar
+                            ? undefined
+                            : messageAvatarFallbackClass(conversation.other_participant?.id ?? headerName)
+                        }
                       />
                     </div>
                   )}
