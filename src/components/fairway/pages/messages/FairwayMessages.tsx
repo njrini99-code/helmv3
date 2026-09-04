@@ -438,7 +438,7 @@ export function FairwayMessages() {
     return (
       // Mobile subtracts FairwayBottomNav's 56px (md:hidden) too, so this empty
       // state never renders taller than the visible viewport above the tab bar.
-      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-max(56px+env(safe-area-inset-bottom,0px),var(--keyboard-height,0px)))] items-center justify-center bg-canvas p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]')}>
+      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
         <EmptyState
           icon={Users}
           title="No team found"
@@ -484,7 +484,7 @@ export function FairwayMessages() {
       // alone: centring the composer in a viewport the keyboard covers would
       // scroll the thread header off the top for nothing.
       data-fw-keyboard-aware
-      className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-max(56px+env(safe-area-inset-bottom,0px),var(--keyboard-height,0px)))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]')}
+      className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}
     >
       {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below
           `md` there is nothing left up here that needs to breathe — the row

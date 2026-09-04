@@ -45,6 +45,7 @@ import { Avatar } from '@/components/fairway/controls/avatar';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { isGroupConversation } from './conversation-kind';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -136,7 +137,11 @@ function ConversationRow({
   onSelect: () => void;
 }) {
   const hasUnread = conv.unread_count > 0;
-  const isGroup = conv.is_group;
+  // Not `conv.is_group` — that flag is true for any team-chat-flagged
+  // conversation including a broadcast to ONE player, so a two-person DM
+  // rendered the group glyph instead of the person's initials. See
+  // conversation-kind.ts.
+  const isGroup = isGroupConversation(conv);
   const displayName = isGroup
     ? conv.title || 'Team Group'
     : conv.other_participant?.name || 'Unknown User';

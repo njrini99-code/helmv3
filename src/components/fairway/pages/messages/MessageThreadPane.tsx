@@ -30,8 +30,10 @@
 
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
+import { isGroupConversation } from './conversation-kind';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
   GolfConversationWithMeta,
@@ -64,6 +66,15 @@ const ATTACHMENT_RACE_RETRY_MS = 1200;
  * that a reply hours later gets its own avatar and its own timestamp.
  */
 const GROUP_WINDOW_MINUTES = 5;
+
+/**
+ * How long a press must be held on a message before its actions open.
+ *
+ * 450ms is the conventional platform feel — long enough that a scroll gesture
+ * starting on a bubble never fires it, short enough that it does not feel like
+ * the app is ignoring you.
+ */
+const LONG_PRESS_MS = 450;
 
 /**
  * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
@@ -398,6 +409,49 @@ export function MessageThreadPane({
    * that grows the thread re-pins it.
    */
   const stickToBottomRef = React.useRef(false);
+
+  /**
+   * Long-press to open a message's actions.
+   *
+   * This replaces a persistent kebab that rendered ABOVE every own bubble on
+   * mobile. It was the loudest thing on the screen — a floating ⋮ in empty
+   * whitespace beside each message — and because it was a sibling in the same
+   * flex column it also injected vertical space BETWEEN consecutive messages,
+   * which quietly defeated the grouping: three quick lines read as three
+   * islands instead of one utterance.
+   *
+   * Press-and-hold is what a phone user already expects here, and it costs no
+   * permanent pixels. The timer is cancelled by movement, so a scroll that
+   * happens to start on a bubble never opens the menu.
+   */
+  const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelLongPress = React.useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+  React.useEffect(() => cancelLongPress, [cancelLongPress]);
+
+  const longPressHandlers = React.useCallback(
+    (messageId: string) => ({
+      onPointerDown: () => {
+        cancelLongPress();
+        longPressTimerRef.current = setTimeout(() => {
+          // The detent tick, so the menu opening is felt as well as seen.
+          fwHaptic('selection');
+          onSetMobileActions(messageId);
+        }, LONG_PRESS_MS);
+      },
+      onPointerUp: cancelLongPress,
+      onPointerMove: cancelLongPress,
+      onPointerCancel: cancelLongPress,
+      onPointerLeave: cancelLongPress,
+      // Suppress the native callout so iOS does not race our menu with its own.
+      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    }),
+    [cancelLongPress, onSetMobileActions],
+  );
   /**
    * Ids already painted at least once, so an ARRIVAL can be told apart from
    * history.
@@ -750,7 +804,12 @@ export function MessageThreadPane({
     );
   }
 
-  const isGroup = conversation.is_group;
+  // Not `conversation.is_group` — that flag is true for any team-chat-flagged
+  // conversation, including a broadcast to ONE player. The header below
+  // already worked around it by reading participant_count; this makes that
+  // the ONE derivation, so the avatar and the per-bubble sender identity stop
+  // disagreeing with the subtitle sitting inches away from them.
+  const isGroup = isGroupConversation(conversation);
   const headerName = isGroup
     ? conversation.title || 'Team Group'
     : conversation.other_participant?.name || 'Unknown User';
@@ -761,7 +820,7 @@ export function MessageThreadPane({
   // conversation" to both people in it. Read the participant count instead,
   // and say nothing when the count is unknown rather than guess wrong.
   const participantCount = conversation.participant_count ?? 0;
-  const headerSubtitle = isGroup
+  const headerSubtitle = conversation.is_group
     ? participantCount > 2
       ? 'Group conversation'
       : participantCount === 2
@@ -1023,9 +1082,17 @@ export function MessageThreadPane({
                             <Trash2 size={14} aria-hidden="true" />
                           </IconButton>
                         </div>
-                        <div className="relative mt-0.5 flex items-center lg:hidden">
-                          {mobileActionsId === msg.id ? (
+                        {/* No persistent kebab. The actions appear on long-press
+                            (see longPressHandlers) and otherwise cost nothing.
+                            Copy is included because taking over long-press takes
+                            over the gesture iOS uses to select text — without it
+                            the message would become uncopyable. */}
+                        {mobileActionsId === msg.id && (
+                          <div className="relative mt-0.5 flex items-center lg:hidden">
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
+                              <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
+                                <Copy size={18} aria-hidden="true" />
+                              </IconButton>
                               <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
                                 <Pencil size={18} aria-hidden="true" />
                               </IconButton>
@@ -1036,12 +1103,8 @@ export function MessageThreadPane({
                                 <X size={16} aria-hidden="true" />
                               </IconButton>
                             </Inset>
-                          ) : (
-                            <IconButton variant="ghost" size="sm" aria-label="Message actions" onClick={() => onSetMobileActions(msg.id)}>
-                              <MoreVertical size={16} aria-hidden="true" />
-                            </IconButton>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -1100,8 +1163,14 @@ export function MessageThreadPane({
                     ) : (
                       // Bubble — normal mode. own = accent tint, other = sunken matte.
                       <div
+                        {...(isOwn ? longPressHandlers(msg.id) : {})}
                         className={cn(
                           'px-4 py-2.5',
+                          // Own bubbles opt out of the iOS text-selection callout
+                          // because long-press is now the actions gesture; Copy
+                          // in that menu replaces what selection provided.
+                          // Incoming messages keep native selection untouched.
+                          isOwn && 'select-none [-webkit-touch-callout:none]',
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',
