@@ -191,6 +191,25 @@ mechanical, and these are the habits that keep it fixed.
   same command typed literally works, so it reads as a git problem. Seven
   branch pushes failed this way on 2026-08-30. Use `git push origin "$b"`, or
   `${b}` followed by a literal colon.
+- **`npm run dev` inside the Bash sandbox does not work, and it fails while
+  looking healthy.** Measured 2026-09-04: a flood of
+  `Watchpack Error (watcher): Error: EMFILE: too many open files, watch`
+  (with `ulimit -n` reporting 1048576, so this is the sandbox's own limit, not
+  the shell's), then a loop of
+
+  ```text
+  ⨯ The directory at ".next/dev" was deleted. ... Restarting the server to recover...
+  ▲ Next.js — Local: http://localhost:3000 — ✓ Ready in 133ms
+  ```
+
+  The log says READY. `curl localhost:3000` says `(52) Empty reply from
+  server`, then `(7) Failed to connect`. The obvious diagnosis is a second dev
+  server fighting over `.next/` — check `lsof -a -p <pid> -d cwd` before
+  believing it; on that date the other two `next` processes were in
+  `~/worktrees/helmv3/controlplane-d` with their own `.next`, and were
+  innocent. Run it with `dangerouslyDisableSandbox: true` and it is ready in
+  158ms and answers 200. **`curl` the server before reporting it as running** —
+  the log alone cannot distinguish the two cases.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 
