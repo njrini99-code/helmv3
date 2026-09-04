@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 ---
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
+verified: 2026-09-04  # paths machine-checked AND prose re-read against review-gate.yml, ci.yml, .circleci/config.yml and the live required contexts
 ---
 
 ## Code Review Tooling
@@ -58,7 +58,10 @@ CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
   documented this workflow; this file omitted it entirely until 2026-09-04.
 - `ios` workflow — iOS Capacitor compile verification on M-series
   macOS runners (~2× faster, ~⅓ the cost of GHA `macos-13`). Runs on
-  push to `main`, `release/*`, `ios/*`, `capacitor/*` branches.
+  push to `main`, `release/*`, `ios/*`, `capacitor/*` or
+  `agent/fix-circleci-ios-*` branches. Gating is by branch NAME, not changed
+  files: a PR touching `ios/**` from any other branch name does not trigger
+  it, and that last pattern is the opt-in an agent fixing iOS CI needs.
 
 See `.circleci/README.md` for one-time project setup steps (CircleCI
 dashboard) and the planned upgrade path (TestFlight publish via
