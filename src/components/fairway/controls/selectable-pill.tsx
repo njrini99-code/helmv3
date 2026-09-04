@@ -27,7 +27,7 @@
 
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
-import { fwDisabled, fwFocusRing, fwTransition } from './_internal';
+import { fwDisabled, fwFocusRing, fwPress, fwTransition } from './_internal';
 
 export interface SelectablePillProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onChange'> {
@@ -74,6 +74,14 @@ export const SelectablePill = forwardRef<HTMLButtonElement, SelectablePillProps>
           fwTransition,
           fwFocusRing,
           fwDisabled,
+          // The same press response every Fairway button gives. Without it this
+          // pill acknowledged a tap with a colour change and nothing else —
+          // and this is the primitive behind the club, shot-result, putt-break
+          // and putt-slope selectors, i.e. almost every tap a player makes
+          // during a round, outdoors, at arm's length, often with a glove on.
+          // A colour change is not confirmation in that context; the player
+          // taps again and risks double-entry.
+          fwPress,
           // Resting (no state) — neutral matte cell.
           !active && !completed && !future && 'bg-surface text-text-secondary ring-1 ring-border-subtle',
           active && 'bg-accent-650 text-text-on-accent shadow-flat',

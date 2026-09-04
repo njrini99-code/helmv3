@@ -44,6 +44,24 @@ export const fwTransition =
   'transition-[color,background-color,border-color,box-shadow,transform,opacity] ' +
   '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none';
 
+/**
+ * The Fairway press response — the ONE tactile language for "I felt that".
+ *
+ * Settle 0.5px down plus a hair of scale, spring-timed only on `:active` so the
+ * soft overshoot reads as a physical key-press while hover keeps the calm base
+ * curve. Collapsed under reduced motion.
+ *
+ * This lived inline in `button.tsx` alone, so every other control in the family
+ * was silently exempt — `SelectablePill`, the primitive behind the shot-progress
+ * strip and the club / result / break / slope selectors, acknowledged a tap with
+ * nothing but a colour swap. On a phone held at arm's length in sunlight, with a
+ * glove on, a colour swap is not confirmation: the player taps again. Extracted
+ * here so the two cannot drift and so a press feels identical everywhere.
+ */
+export const fwPress =
+  'active:translate-y-[0.5px] active:scale-[0.98] active:[transition-timing-function:var(--fw-ease-spring)] ' +
+  'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100';
+
 /** Status families shared by StatusPill / Badge / FilterPill semantics. */
 export type FwStatusTone =
   | 'neutral'
