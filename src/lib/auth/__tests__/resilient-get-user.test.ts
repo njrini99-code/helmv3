@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   getUserResilient,
+  isRefreshDiscardedError,
   isTransientAuthError,
   signInWithPasswordResilient,
   type AuthClientLike,
@@ -66,6 +67,95 @@ describe('isTransientAuthError', () => {
     expect(isTransientAuthError({ status: 401 })).toBe(false);
     expect(isTransientAuthError({ status: 403 })).toBe(false);
     expect(isTransientAuthError({ name: 'AuthApiError', status: 400 })).toBe(false);
+  });
+});
+
+// auth-js's commit guard (JAVASCRIPT-NEXTJS-RR, 2026-09-04). It carries status
+// 409, so every 4xx-based "real sign-out" discriminator in this repo read it as
+// a genuine rejection — and the golf dashboard layout redirects to /golf/login
+// on a null session. These pin that a discarded REFRESH RESULT is never treated
+// as a verdict on the SESSION.
+describe('AuthRefreshDiscardedError — a discarded refresh is not a sign-out', () => {
+  const DISCARDED = {
+    name: 'AuthRefreshDiscardedError',
+    status: 409,
+    message: 'Refresh result discarded: session state changed mid-flight (e.g., concurrent signOut)',
+  };
+
+  it('is NOT classified as transient — it is a distinct case, not an unavailable auth server', () => {
+    expect(isTransientAuthError(DISCARDED)).toBe(false);
+    expect(isRefreshDiscardedError(DISCARDED)).toBe(true);
+    expect(isRefreshDiscardedError({ status: 401 })).toBe(false);
+    expect(isRefreshDiscardedError(null)).toBe(false);
+  });
+
+  it('ANOTHER TAB ROTATED FIRST: keeps the user signed in from the fresh local session', async () => {
+    // The other tab already wrote a valid session; this tab discarded its own
+    // rotated pair. Before the fix this returned user:null on the first call
+    // and bounced a signed-in player to /golf/login.
+    const getUser = vi.fn().mockResolvedValue({ data: { user: null }, error: DISCARDED });
+    const getSession = vi.fn().mockResolvedValue({
+      data: { session: { user: USER, access_token: plausibleJwt() } },
+    });
+    const client = authClient({ getUser, getSession });
+
+    const result = await getUserResilient(client);
+
+    expect(result).toEqual({ user: USER, degraded: true });
+  });
+
+  it('CONCURRENT SIGN-OUT: still signs the user out, because storage was cleared', async () => {
+    // Same error, opposite truth — and no extra branching decides it: the
+    // signOut cleared storage, so the local fallback finds nothing.
+    const getUser = vi.fn().mockResolvedValue({ data: { user: null }, error: DISCARDED });
+    const getSession = vi.fn().mockResolvedValue({ data: { session: null } });
+    const client = authClient({ getUser, getSession });
+
+    const result = await getUserResilient(client);
+
+    expect(result).toEqual({ user: null, degraded: false });
+  });
+
+  it('prefers a clean re-read: retries once, and a settled refresh returns a non-degraded user', async () => {
+    const getUser = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { user: null }, error: DISCARDED })
+      .mockResolvedValueOnce({ data: { user: USER }, error: null });
+    const client = authClient({ getUser });
+
+    const result = await getUserResilient(client);
+
+    expect(result).toEqual({ user: USER, degraded: false });
+    expect(getUser).toHaveBeenCalledTimes(2);
+    expect(client.auth.getSession).not.toHaveBeenCalled();
+  });
+
+  it('middleware (retryTransient:false) skips the network retry but still degrades locally', async () => {
+    const getUser = vi.fn().mockResolvedValue({ data: { user: null }, error: DISCARDED });
+    const getSession = vi.fn().mockResolvedValue({
+      data: { session: { user: USER, access_token: plausibleJwt() } },
+    });
+    const client = authClient({ getUser, getSession });
+
+    const result = await getUserResilient(client, { retryTransient: false });
+
+    expect(result).toEqual({ user: USER, degraded: true });
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT change signInWithPasswordResilient: a discard is not a sign-in retry condition', async () => {
+    const signInWithPassword = vi
+      .fn()
+      .mockResolvedValue({ data: { user: null, session: null }, error: DISCARDED });
+    const client = authClient({ signInWithPassword });
+
+    const result = await signInWithPasswordResilient(client, {
+      email: 'a@b.c',
+      password: 'pw',
+    });
+
+    expect(result.error).toEqual(DISCARDED);
+    expect(signInWithPassword).toHaveBeenCalledTimes(1);
   });
 });
 
