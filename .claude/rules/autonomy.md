@@ -195,8 +195,21 @@ What is actually true:
 
 - `permissions.deny` fires deterministically, is not suspended by allow rules
   or by `bypassPermissions`, and a project-scope deny overrides a user-scope
-  allow. That is real, and it is what covers the Supabase CLI migration path
-  and the account-wide Supabase MCP mutations.
+  allow. That mechanism is real. What it demonstrably covers is the Supabase
+  CLI migration path — four commands across three spellings (bare,
+  `./node_modules/.bin/`, `npx`), which is the spelling coverage that matters
+  because the bare binary does not resolve on this machine at all.
+- **It does NOT currently cover the account-wide Supabase MCP.** That claim
+  was here until 2026-09-04 and is the same shape of error as the paragraph
+  above it. The deny rules exist, but `docs/CONTROL_PLANE_ENFORCEMENT.md`
+  records that the display-name spelling `mcp__claude_ai_Supabase__*` "match[es]
+  nothing the session can call today", and the UUID spelling is `CONFIGURED`,
+  `NOT yet observed to remove the tools`, with id stability across sessions
+  UNVERIFIED — that is the registered gap
+  `MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS`. Reconfirmed 2026-09-04
+  from a live session inventory: no `mcp__claude_ai_*` name is present. Rules
+  keyed on a name nothing exposes are not enforcement; they are a bet that the
+  spelling returns unchanged.
 - One `PreToolUse` hook covers canonical writes via three tool names, and by
   its own header does not read intent, match keywords, or look at features.
 - Everything else on the destructive list is on you.

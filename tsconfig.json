@@ -8,7 +8,9 @@
     // See also https://aka.ms/tsconfig/module
     "module": "esnext",
     "target": "es2018",
-    "types": ["vitest/globals"],
+    "types": [
+      "vitest/globals"
+    ],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -59,27 +61,42 @@
     "next-env.d.ts",
     "**/*.mts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
-  // `.next/types/**/*.ts` and `.next/dev/types/**/*.ts` were here and are
-  // deliberately gone (2026-08-26).
+  // `.next/types/**/*.ts` and `.next/dev/types/**/*.ts` are BACK, deliberately,
+  // and this comment is the second half of a story whose first half was true
+  // and is not any more.
   //
-  // They gave NOTHING in CI and broke `npm run typecheck` for every local
-  // session. In CI the typecheck job runs on a fresh checkout where `.next/`
-  // does not exist, so both globs matched zero files. Locally `.next/` is
-  // always present (dev server, or any build), so `tsc --noEmit` type-checked
-  // Next's own generated `validator.ts` and failed with two errors that exist
-  // nowhere else:
-  //   .next/types/validator.ts: Type 'Route' does not satisfy the constraint 'never'
-  // Measured that day: `tsc -p` with these globs = exit 2, without = exit 0,
-  // on identical source.
+  // They were removed 2026-08-26 for a real, measured reason: with `.next/`
+  // populated, `tsc --noEmit` type-checked Next's own generated
+  // `.next/types/validator.ts` and failed with `Type 'Route' does not satisfy
+  // the constraint 'never'` — two errors that existed nowhere else. `tsc -p`
+  // with the globs = exit 2, without = exit 0, on identical source. Every
+  // local session saw a red tree CI called green.
   //
-  // Every agent and developer running typecheck locally saw a red tree that CI
-  // considered green, which is a standing invitation to chase a bug that is not
-  // there. Generated-file coverage is NOT lost: `next.config.mjs` sets
-  // `typescript.ignoreBuildErrors: false`, so `next build` type-checks its own
-  // generated types itself — and passes with `.next/` present, which is exactly
-  // the case raw `tsc` could not handle.
+  // Two things then changed, and neither was noticed because nothing checks a
+  // comment. First, REMOVING THEM DOES NOT STICK: `next build` and `next dev`
+  // rewrite this file and add both globs back (Next prints "We detected
+  // TypeScript in your project and reconfigured your tsconfig.json"). So the
+  // line above claiming they were "deliberately gone" described a state that
+  // ended at the next build, and the canonical checkout sat permanently dirty
+  // in a tracked config file nobody had edited. Second, on Next 16.3.4 the
+  // offending file is no longer generated: the globs now pull in exactly
+  // `.next/dev/types/routes.d.ts` and `.next/dev/types/root-params.d.ts`, and
+  // both type-check clean.
+  //
+  // Measured 2026-09-04 on this tree: `npm run typecheck` WITH both globs and
+  // a populated `.next/` = exit 0, 0 errors, 2 generated files in the program
+  // (`tsc --listFiles | grep /.next/`). CI is unaffected either way — it runs
+  // on a fresh checkout where `.next/` does not exist and both globs match
+  // nothing.
+  //
+  // So they stay. Fighting the framework over a file it rewrites on every
+  // build bought a permanently dirty tree and no coverage. If the validator
+  // error ever returns, `next build` still catches it independently —
+  // `next.config.mjs` sets `typescript.ignoreBuildErrors: false`.
   "exclude": [
     "node_modules",
     "archive",
