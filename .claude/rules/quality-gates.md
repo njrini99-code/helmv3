@@ -23,6 +23,40 @@ gate.** Every finding below is an instance of that — a check that runs, prints
 nothing alarming, exits 0, and verifies nothing. They are worse than no check,
 because they buy false confidence.
 
+**The sharpest sub-class: a check whose FAILURE is shaped exactly like its
+SUCCESS.** Not "the gate is missing" — the gate runs, and a total inability to
+evaluate anything renders as a clean pass. Three separate instances surfaced on
+2026-09-04 alone, in three unrelated systems:
+
+| what ran | what it could not do | how it rendered |
+| --- | --- | --- |
+| `worktree-lifecycle.mjs` blackout guard | classify 70 of 73 branches (96%) | `0 branches deletable`, exit 0 — like a clean repo |
+| a test matching class strings with `/'[^']*'/` | match anything (mis-paired on prose apostrophes) | passed, by asserting over an empty set |
+| semgrep with a bad path glob (§4) | scan any files | 0 findings — like a clean tree |
+
+The tell is identical every time: **an empty result is reported as a good
+result.** When you write a check, ask what it prints when its data source is
+unreachable, its pattern matches nothing, or its input list is empty. If that
+output is indistinguishable from "all clear", the check is not a gate yet.
+Count what you actually examined and fail when the count is implausible —
+`log()` the denominator, not just the findings.
+
+**The same shape one level up: a FITTED explanation reported as a KNOWN one.**
+Documented here because this file caused it. The 2026-09-04 sandbox write-up
+first shipped with "macOS caches TLS trust decisions, so the first few calls
+succeed before it is exhausted" — a mechanism fitted to two data points, landed
+in `AGENTS.md`, and false. A third measurement (the burst failed at call #1,
+not after a warm-up) killed it outright.
+
+A wrong cause is worse than an admitted unknown, because **a cause gets
+reasoned FROM**: the natural next "fix" for a warm-cache story is to add a
+warm-up call, which would have wasted a session chasing a mechanism that does
+not exist. When you can measure the behaviour but not the cause, write the
+behaviour and mark the cause UNCONFIRMED. "I don't know why, but here is the
+rule that holds" is a durable finding; a confident wrong mechanism is a trap
+with a long fuse. Both failures are the same thing — confidence with no
+evidence under it — one in a check's output, one in a doc's prose.
+
 ---
 
 ### 1. The ratchet system

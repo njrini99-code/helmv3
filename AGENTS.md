@@ -213,7 +213,19 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   repo — and leaves the canonical checkout alone. **It does not install
   dependencies** — run `node scripts/ensure-worktree-deps.mjs <dir>` when a
   command actually needs them, so a docs or config task never pays for a
-  ~3.8 GiB node_modules it will not use. Use it because it guarantees
+  ~3.8 GiB node_modules it will not use. Since 2026-09-04 that command SHARES
+  the canonical `node_modules` (a symlink, 0 bytes) when the worktree's
+  `package-lock.json` is byte-identical to canonical's, and installs for real
+  when it differs. `new-worktree.sh`'s header rejects symlinking outright, and
+  its reason — two branches with different lockfiles test against whichever
+  tree was installed last, manufacturing fake passes and fake failures — is
+  correct but CONDITIONAL, and was written as though lockfiles always differ.
+  Most task branches never touch it. That gap left two contradictory policies
+  live on one machine: this script installing 3.8 GiB per worktree, while
+  `worktree.symlinkDirectories` in `~/.claude/settings.json` symlinked
+  `node_modules` for Claude Code's own worktrees — with sessions meanwhile
+  hand-symlinking to dodge the cost, without the lockfile check that makes it
+  safe. The condition is now checked rather than assumed. Use it because it guarantees
   `--no-track`: creating a task branch from a REMOTE-TRACKING ref such as
   `origin/main` without disabling tracking lets git's `autoSetupMerge` default
   configure `agent/foo -> origin/main`, and a bare push then targets main.
@@ -230,6 +242,43 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   RETIRE  park, AND delete a branch proven merged by exact PR head OID
   ```
 
+  **A merged PR releases its own checkout, and until 2026-09-04 it could not.**
+  This is the same defect #1654 fixed for BRANCH deletion, which was never
+  carried to the PARK path. Parking demanded a remote tip to prove the commits
+  survive removing the directory — and `delete_branch_on_merge` is TRUE here,
+  so GitHub deletes that remote at the moment of merge, i.e. exactly when the
+  checkout becomes safe to reclaim. **The evidence parking depended on was
+  destroyed by the event that made parking correct.** Measured that day: 0 of
+  25 worktrees parkable, three of them (PRs #1793, #1797, #1819) printing
+  `UNKNOWN_REMOTE` — "commits here may exist nowhere else" — on the same row
+  whose branch column read `DELETE_MERGED_EXACT`. One report calling the same
+  commits both provably-in-main and possibly-nowhere.
+
+  A PR merged at this exact tip is now accepted as durability proof (it is
+  stronger than a remote tip: the commits are in `main`) and satisfies the
+  workspace gate as well, because merging IS the owner declaring the work done.
+  Four facts must all hold, and #1681's rule is untouched — an OPEN PR still
+  requires the marker:
+
+  ```text
+  clean            dirtyCount === 0
+  idle             no live process cwd here
+  identified       not detached
+  merged HERE      PR MERGED and local tip === PR head OID (exact)
+  ```
+
+  `src/test/scripts/worktree-park-merged.test.ts` pins both the exception and
+  every veto. Note what that test also pins: the exception shipped DEAD the
+  first time, because `prHeadSha` was never passed into the worktree facts, so
+  it evaluated false for every checkout. A gate whose input is missing does not
+  error — it just never fires.
+
+  **Run it at merge time, not at session end.** `npm run worktrees:postmerge`
+  (`git fetch --prune` + `--retire`) is wired to fire automatically after
+  `gh pr merge` via a `PostToolUse` hook in `.claude/settings.json`. GitHub
+  already deletes the REMOTE branch on merge; nothing ever deleted the LOCAL
+  one, which is the whole reason 62 local branches stood against 49 remote.
+
   **It reports on REMOTE branches as well as local ones, and the distinction
   is the whole point.** Until 2026-08-31 it enumerated `refs/heads` only, so a
   branch whose local copy had been pruned — which is every branch merged with
@@ -242,16 +291,71 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   rendered as `DELETE_BRANCH`: one is recoverable from the reflog, the other
   is not.
 
-  **A total evidence blackout exits 2, and is never a clean report.** If every
-  PR lookup fails, the tool prints `INFRASTRUCTURE_FAILURE` and refuses to
-  present the result as a finding. The failure mode this closes was observed,
-  not theorised: `gh` cannot reach GitHub from inside the Bash sandbox (Go's
-  TLS cannot read the macOS keychain there), so every row read `UNKNOWN` and
-  the summary read `0 branches deletable` — indistinguishable from a genuinely
-  clean repository. Re-run outside the sandbox rather than trusting a report
-  whose every lookup failed. Same convention as `npm run guards`:
-  PASS / POLICY_FAILURE / INFRASTRUCTURE_FAILURE, where the third exits
-  non-zero and never presents as the first.
+  **A DOMINANT evidence blackout exits 2, and is never a clean report.** When
+  at least half of the PR lookups fail, the tool prints
+  `INFRASTRUCTURE_FAILURE` and refuses to present the result as a finding; any
+  failures at all are counted on their own line, because a row whose lookup
+  failed proves nothing about that branch. Same convention as
+  `npm run guards`: PASS / POLICY_FAILURE / INFRASTRUCTURE_FAILURE, where the
+  third exits non-zero and never presents as the first.
+
+  **This paragraph required unanimity until 2026-09-04, and that is exactly why
+  the guard stayed silent for the failure it was written for.** It said "if
+  every PR lookup fails". Instrumented at the guard's own line, inside the
+  sandbox:
+
+  ```text
+  total rows 72   ->   { FAILED: 69, OK: 3 }
+  ```
+
+  96% of lookups failed, `failed === all` was false, the guard did not fire,
+  the tool exited 0, and the summary read `0 branches deletable` —
+  indistinguishable from a genuinely clean repository. **A partial blackout is
+  the NORMAL shape of this failure; a total one is the special case**, and a
+  threshold set at the special case is a gate that cannot fire.
+
+  **Why partial, and why one successful call proves nothing.** Sandboxed `gh`
+  fails with `tls: failed to verify certificate: x509: OSStatus -26276` — Go's
+  TLS cannot verify a certificate chain in the sandbox. (This read "cannot read
+  the macOS keychain" until 2026-09-04. `gh` authenticates from the keychain
+  fine; it is certificate VERIFICATION that fails.) The failure is
+  **intermittent and volume-sensitive**, measured 2026-09-04:
+
+  ```text
+  gh pr view 1831              OK       single call
+  3 calls after an idle gap    3/3 OK
+  25-call burst                0/25     fails at call #1
+  3 calls straight after       0/3      still failing; recovers after a pause
+  ```
+
+  So a handful of calls succeed and a sustained run fails outright — which is
+  why `node scripts/worktree-lifecycle.mjs` (about 73 sequential lookups) read
+  70 FAILED / 3 OK. **The precise cause is NOT confirmed** — throttling of the
+  system trust service by a sandboxed client is consistent with the recovery
+  behaviour, but nothing here has proven it, and this paragraph is not the
+  place to guess. What is established is the operational rule: verify with a
+  burst, never one call.
+
+  ```bash
+  for i in $(seq 1 25); do gh api "repos/{owner}/{repo}/pulls?per_page=1" >/dev/null || echo FAIL; done
+  ```
+
+  **`sandbox.excludedCommands` already lists `gh *`, and that is not the
+  protection it looks like.** It exempts a `gh` command the matcher sees
+  directly; it does NOT cover `gh` spawned from inside a script or a Node
+  child process, which is exactly how this tool calls it. An exclusion entry
+  that appears to handle a tool while the tool's real call path stays
+  sandboxed is its own version of the failure this whole section is about.
+
+  A configuration fix exists — `sandbox.network.enableWeakerNetworkIsolation`,
+  which allows `com.apple.trustd.agent`. It is set in
+  `.claude/settings.local.json` (gitignored, helmv3-only) rather than user
+  scope deliberately: it weakens network isolation, and user scope would apply
+  that to every project on the machine. **It is read at session start, so it
+  takes effect on the NEXT session and is UNVERIFIED until then** — re-run the
+  burst above after restarting, and if it still fails, the key is not honored
+  at project scope and belongs in user settings as an owner decision. Until it
+  is confirmed, re-run outside the sandbox.
 
   Parking is what lets an open PR waiting on a human stop costing ~3.8 GiB.
   Branch deletion is proven by `PR MERGED` + `local tip === PR head OID`, never

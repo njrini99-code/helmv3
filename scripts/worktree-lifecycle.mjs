@@ -311,6 +311,11 @@ for (const w of wts) {
     prLookup: pr.lookup,
     prNumber: pr.number ?? null,
     prState: pr.state ?? null,
+    // The WORKTREE classifier needs the PR head OID too, not just the state.
+    // Without it "MERGED at this exact tip" cannot be evaluated on the park
+    // path and silently reads false — which is how three merged checkouts sat
+    // at UNKNOWN_REMOTE while their branches read DELETE_MERGED_EXACT.
+    prHeadSha: pr.headSha ?? null,
     disposition: disp?.disposition ?? null,
     worktreePolicy: disp?.worktree_policy ?? null,
     ...(isCanonical ? { parkPolicy: null, workspaceMarker: null } : (() => {
@@ -548,30 +553,58 @@ if (unknowns.length) {
   console.log('  UNKNOWN means evidence was unavailable. It is never a licence to remove anything.');
 }
 
-// Every PR lookup failing is an INFRASTRUCTURE failure, not 26 independent
+// Widespread PR-lookup failure is an INFRASTRUCTURE failure, not N independent
 // "this branch has no PR" answers — and the two are indistinguishable in the
 // output above. Observed 2026-08-31: `gh` cannot reach GitHub from inside the
-// Bash sandbox (Go's TLS cannot read the macOS keychain there), so every row
-// read UNKNOWN and the summary read `0 branches to delete`. That is the exact
-// shape of "the tool says there is nothing to clean" — indistinguishable from
-// a genuinely clean repo, which is how branches accumulated while a working
-// cleanup tool sat right here.
+// Bash sandbox, so rows read UNKNOWN and the summary read `0 branches to
+// delete`. That is the exact shape of "the tool says there is nothing to
+// clean" — indistinguishable from a genuinely clean repo, which is how
+// branches accumulated while a working cleanup tool sat right here.
+//
+// THE THRESHOLD IS NOT UNANIMITY, and requiring unanimity is what made this
+// guard silent for the failure it was written for. Measured 2026-09-04 in the
+// sandbox, instrumented at this exact line:
+//
+//     total rows 72   ->   { FAILED: 69, OK: 3 }
+//
+// 95.8% of lookups failed and the guard did not fire, because `failed === all`
+// was false. Exit 0, no marker, a report that reads clean. The three survivors
+// are not evidence of health: macOS caches TLS trust decisions, so the first
+// few `gh` calls succeed from that cache before it is exhausted and every
+// subsequent call dies with `x509: OSStatus -26276`. A partial blackout is the
+// NORMAL shape of this failure; a total one is the special case.
+//
+// So: any failure at all is reported, and a DOMINANT failure rate exits 2. A
+// row whose lookup failed proves nothing about that branch, and a report built
+// mostly from such rows proves nothing about the repo.
 //
 // Mirrors the repo's own guard convention: PASS / POLICY_FAILURE /
 // INFRASTRUCTURE_FAILURE, where the third exits non-zero and never presents as
 // the first.
+const BLACKOUT_FAILURE_RATIO = 0.5;
 const lookupRows = rows.filter((r) => r.prLookup);
 const failedLookups = lookupRows.filter((r) => r.prLookup !== 'OK');
-if (lookupRows.length > 0 && failedLookups.length === lookupRows.length) {
+const failureRatio = lookupRows.length > 0 ? failedLookups.length / lookupRows.length : 0;
+
+if (failedLookups.length > 0) {
   console.log('');
-  console.log('  INFRASTRUCTURE_FAILURE: every PR lookup failed.');
-  console.log(`  ${failedLookups.length}/${lookupRows.length} branches could not be classified, so this report proves NOTHING`);
-  console.log('  about what is disposable. It is not evidence that the repo is clean.');
+  console.log(`  ${failedLookups.length}/${lookupRows.length} PR lookup(s) FAILED — those rows prove nothing about their branch.`);
+}
+
+if (lookupRows.length > 0 && failureRatio >= BLACKOUT_FAILURE_RATIO) {
   console.log('');
-  console.log('  Most likely: `gh` cannot reach GitHub from this shell. Verify with');
-  console.log('    gh api repos/{owner}/{repo}/pulls?per_page=1');
-  console.log('  If that works in your terminal but not here, the caller is sandboxed —');
-  console.log('  re-run outside the sandbox rather than trusting this output.');
+  console.log('  INFRASTRUCTURE_FAILURE: PR lookups are broadly failing.');
+  console.log(`  ${failedLookups.length}/${lookupRows.length} branches (${Math.round(failureRatio * 100)}%) could not be classified, so this`);
+  console.log('  report proves NOTHING about what is disposable. It is not evidence that');
+  console.log('  the repo is clean.');
+  console.log('');
+  console.log('  Most likely: `gh` cannot reach GitHub from this shell. Verify with a BURST,');
+  console.log('  not a single call — macOS caches TLS trust, so one call can succeed while');
+  console.log('  the next fifty fail:');
+  console.log('    for i in $(seq 1 25); do gh api "repos/{owner}/{repo}/pulls?per_page=1" >/dev/null || echo FAIL; done');
+  console.log('  A sandboxed caller fails with: tls: failed to verify certificate: x509: OSStatus -26276');
+  console.log('  Fix: set sandbox.network.enableWeakerNetworkIsolation = true in ~/.claude/settings.json');
+  console.log('  (takes effect on the next session), or re-run outside the sandbox.');
   process.exit(2);
 }
 

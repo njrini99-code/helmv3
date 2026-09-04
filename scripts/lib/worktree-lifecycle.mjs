@@ -269,7 +269,36 @@ export function classifyWorktree(facts) {
   // checkout that has not released itself is never parkable, whatever its PR
   // says. This is the half that covers work BEFORE a PR exists — the residue
   // the #1681 fix left behind, registered then as WORKTREE_PARK_NO_PR_OWNERSHIP.
-  if (f.parkPolicy !== WORKTREE_POLICY_PARK_IF_REPRODUCIBLE) {
+  // ONE EXCEPTION, and only this one: the PR is MERGED at this exact tip.
+  //
+  // The gate below exists because #1681 removed a checkout whose OPEN PR was
+  // still being worked on. That reasoning is about work IN PROGRESS, and it
+  // does not reach a merged PR: merging IS the owner declaring the work done.
+  //
+  // The asymmetry it left is the reason worktrees only ever accumulated.
+  // Deleting the BRANCH of a merged-at-exact-OID PR is already covered by the
+  // standing authorization (DELETE_MERGED_EXACT, AGENTS.md), while parking its
+  // CHECKOUT — strictly the weaker act, since the branch survives a park —
+  // required a human to hand-edit a JSON file per worktree. Measured
+  // 2026-09-04: 0 of 25 worktrees were parkable, not one of them because it
+  // was in use. Every task branch is stamped KEEP at creation by
+  // new-worktree.sh, so nothing was ever reclaimable by default and the volume
+  // reached zero bytes free (2026-08-29).
+  //
+  // Four independent facts must hold, and three of them were already proven
+  // above before control reaches here:
+  //     clean            (dirtyCount === 0)        checked above
+  //     no live process  (hasLiveProcess === false) checked above
+  //     has a branch     (not detached)            checked above
+  //     PR MERGED at exactly this tip             checked here
+  // An OPEN, CLOSED or absent PR still requires the marker, unchanged.
+  const mergedAtThisTip =
+    f.prLookup === 'OK' &&
+    f.prState === 'MERGED' &&
+    Boolean(f.prHeadSha) &&
+    f.localSha === f.prHeadSha;
+
+  if (f.parkPolicy !== WORKTREE_POLICY_PARK_IF_REPRODUCIBLE && !mergedAtThisTip) {
     const how =
       f.workspaceMarker === 'absent'
         ? 'no .helm/workspace.json — a checkout that predates the marker, or was not made by scripts/new-worktree.sh'
@@ -278,7 +307,7 @@ export function classifyWorktree(facts) {
           : `.helm/workspace.json parkPolicy is ${f.parkPolicy ?? 'unset'}`;
     return {
       verdict: KEEP_WORKSPACE_INTENT_REQUIRED,
-      reason: `${how} — only parkPolicy: ${WORKTREE_POLICY_PARK_IF_REPRODUCIBLE} releases a checkout`,
+      reason: `${how} — only parkPolicy: ${WORKTREE_POLICY_PARK_IF_REPRODUCIBLE}, or a PR MERGED at this exact tip, releases a checkout`,
     };
   }
 
@@ -317,17 +346,38 @@ export function classifyWorktree(facts) {
 
   if (!f.localSha) return { verdict: UNKNOWN, reason: 'could not resolve the local tip' };
 
-  // Parking requires the checkout be reproducible: the work must be pushed.
-  // This is the ONE place a remote tip is required, and it is required in the
-  // safe direction — no upstream means we cannot prove the commits survive
-  // removing the directory.
-  if (!f.upstream) {
+  // Parking requires the checkout be reproducible: the work must survive
+  // removing the directory. A remote tip is ONE proof of that. A PR merged at
+  // exactly this tip is a STRONGER one — the commits are in main, which no
+  // branch deletion can take away.
+  //
+  // Accepting only the remote tip made this gate self-defeating, and that is
+  // the mechanism by which worktrees accumulated forever. `delete_branch_on_merge`
+  // is true on this repo, so GitHub deletes the upstream EXACTLY when the PR
+  // merges — i.e. exactly when the checkout becomes safe to reclaim. Measured
+  // 2026-09-04: three merged worktrees (PRs #1793, #1797, #1819) all sat at
+  // UNKNOWN_REMOTE, "no upstream — commits here may exist nowhere else", while
+  // their branch column simultaneously read DELETE_MERGED_EXACT. The same
+  // report called the commits both provably-in-main and possibly-nowhere.
+  //
+  // AGENTS.md already records this trap for BRANCH deletion — "proven by PR
+  // MERGED + local tip === PR head OID, never by a remote tip —
+  // delete_branch_on_merge removes that exactly when the branch becomes safe,
+  // which is #1654's shipped defect". #1654 fixed the branch path only; the
+  // park path kept the defect. This is that same fix, here.
+  if (!f.upstream && !mergedAtThisTip) {
     return { verdict: UNKNOWN_REMOTE, reason: 'no upstream — commits here may exist nowhere else' };
   }
-  if (!f.remoteSha) {
+  // Same defect, second shape: the upstream is still CONFIGURED but the remote
+  // ref is gone, because delete_branch_on_merge removed it at merge. Measured
+  // 2026-09-04 on PRs #1793 and #1797 — "could not read origin/<branch>" on a
+  // checkout whose branch column simultaneously read DELETE_MERGED_EXACT.
+  if (!f.remoteSha && !mergedAtThisTip) {
     return { verdict: UNKNOWN_REMOTE, reason: `could not read ${f.upstream}` };
   }
-  if (f.localSha !== f.remoteSha) {
+  // An unpushed local tip is a real veto — unless the PR merged AT that tip,
+  // in which case "unpushed" only means the remote was cleaned up afterwards.
+  if (f.remoteSha && f.localSha !== f.remoteSha && !mergedAtThisTip) {
     return { verdict: UNKNOWN_REMOTE, reason: `local tip differs from ${f.upstream} (unpushed commits)` };
   }
 
@@ -335,9 +385,12 @@ export function classifyWorktree(facts) {
     f.prState === 'OPEN'
       ? ` — PR #${f.prNumber} disposition ${f.disposition}/${f.worktreePolicy} authorises it`
       : '';
+  const durability = mergedAtThisTip
+    ? `PR #${f.prNumber} MERGED at this exact tip (${short(f.localSha)}) — the commits are in main`
+    : `identical to ${f.upstream}`;
   return {
     verdict: PARKABLE,
-    reason: `clean, idle, and identical to ${f.upstream}${authorised} — recreate with scripts/new-worktree.sh`,
+    reason: `clean, idle, and ${durability}${authorised} — recreate with scripts/new-worktree.sh`,
   };
 }
 

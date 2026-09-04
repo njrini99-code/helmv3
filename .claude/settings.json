@@ -190,6 +190,18 @@
             "statusMessage": "engineering-os: record touch"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(gh pr merge*)",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/worktree-lifecycle.mjs --retire",
+            "async": true,
+            "statusMessage": "Reclaiming merged worktrees and branches"
+          }
+        ]
       }
     ],
     "Stop": [
