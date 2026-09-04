@@ -31,7 +31,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { Inbox, Search } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NumberFlow from '@number-flow/react';
 import { LayoutGroup, m, useReducedMotion } from 'framer-motion';
@@ -42,7 +42,7 @@ import { searchGolfMessages } from '@/app/golf/actions/messages';
 import type { MessageSearchResult } from '@/app/actions/messages';
 import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { Input } from '@/components/fairway/forms/Input';
+import { SearchField } from '@/components/fairway/command/search-field';
 import { Button } from '@/components/fairway/controls/button';
 import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
 import { useGolfGroupAvatars, type GroupMember } from '@/hooks/golf/use-golf-group-avatars';
@@ -311,15 +311,15 @@ function SearchResultRow({
   onSelect: () => void;
 }) {
   return (
-    <Button
+    <PressTarget
       type="button"
-      variant="ghost"
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-3 text-left font-normal outline-none transition-colors [transition-duration:150ms]',
+        'group block w-full rounded-fw-md px-3 py-3 text-left transition-colors [transition-duration:150ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        'active:bg-surface-sunken',
         isSelected ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60' : 'hover:bg-surface-sunken/60',
       )}
     >
@@ -339,7 +339,7 @@ function SearchResultRow({
           </p>
         </div>
       </div>
-    </Button>
+    </PressTarget>
   );
 }
 
@@ -476,9 +476,13 @@ export function MessageConversationRail({
     return (
       <InstrumentPanel
         depth="base"
-        padding="md"
-        header="Conversations"
-        className={cn('flex flex-col', className)}
+        padding={isDesktop ? 'md' : 'none'}
+        header={isDesktop ? 'Conversations' : undefined}
+        className={cn(
+          'flex flex-col',
+          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+          className,
+        )}
       >
         <InlineNotice
           tone="danger"
@@ -502,9 +506,13 @@ export function MessageConversationRail({
     return (
       <InstrumentPanel
         depth="base"
-        padding="md"
-        header="Conversations"
-        className={cn('flex flex-col', className)}
+        padding={isDesktop ? 'md' : 'none'}
+        header={isDesktop ? 'Conversations' : undefined}
+        className={cn(
+          'flex flex-col',
+          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+          className,
+        )}
       >
         <EmptyState
           variant="subtle"
@@ -517,7 +525,6 @@ export function MessageConversationRail({
               variant="primary"
               size="sm"
               onClick={onNewMessage}
-              className="min-h-[36px] px-4 py-1.5"
             >
               New message
             </Button>
@@ -592,19 +599,17 @@ export function MessageConversationRail({
       )}
     >
       {/* P259: cross-conversation message search. */}
-      {/* §16: "secondary to conversation list, no giant card". A pill on the
-          sunken track reads as a field; the bordered rounded rectangle read as
-          another card stacked above the rows. */}
+      {/* §16: "secondary to conversation list, no giant card". SearchField is
+          the canonical sunken Fairway search track and owns its clear control. */}
       <div className="mb-3 flex items-center gap-1">
         <div className="min-w-0 flex-1">
-          <Input
-            type="search"
+          <SearchField
+            size="md"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
             placeholder="Search messages…"
-            leading={<Search aria-hidden />}
             aria-label="Search messages"
-            className="rounded-full border-transparent bg-surface-sunken focus:border-accent-600"
           />
         </div>
         {/* Compose sits ON this row (§16). Removing the green pill left the

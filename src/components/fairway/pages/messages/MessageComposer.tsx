@@ -30,9 +30,8 @@ import { fwHaptic } from '@/lib/fairway/haptics';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
 import type { PendingAttachment } from '@/lib/storage/attachments';
-import { Textarea } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/fairway/controls/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 /* ─── Length limit — mirrors sendMessageSchema (action-schemas.ts:42,
@@ -276,12 +275,10 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
       onSubmit={handleSubmit}
       className={cn(
         // An attached BAR, not a bordered box. The hairline alone left the
-        // composer reading as the last block of the page; a shadow cast UPWARD
-        // is what makes a bottom bar look like it is in front of the thread
-        // that scrolls under it. One shadow, no border-and-shadow (the Surface
-        // rule), and it is the only elevation on this screen — the thread's
-        // bubbles lift off the page, the composer lifts off the thread.
-        'bg-surface px-3 pt-2.5 shadow-[0_-1px_3px_rgba(0,0,0,0.04),0_-1px_0_var(--fw-color-border-subtle)]',
+        // composer reading as the last block of the page. The shared Fairway
+        // elevation token keeps that separation theme-safe without embedding
+        // an off-token RGBA shadow recipe here.
+        'bg-surface px-3 pt-2.5 shadow-raise',
         'pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2.5 lg:pb-2.5',
       )}
     >
@@ -340,7 +337,10 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
           className="mb-0.5 text-text-tertiary"
         />
 
-        <Textarea
+        {/* The native textarea owns IME, selection, and touch-keyboard newline
+            behavior; the surrounding Fairway track owns its visual state. */}
+        {/* eslint-disable-next-line helm/no-raw-input */}
+        <textarea
           ref={textareaRef}
           value={message}
           onChange={handleChange}
@@ -364,11 +364,10 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
           style={{ minHeight: '40px', maxHeight: '120px' }}
         />
 
-        {/* GOTCHA §a: the send button is a NATIVE <button> with matte token
-            classes — NOT a Surface as="button". ONE primary action. */}
-        <Button
+        {/* PressTarget provides the native button semantics without adding a
+            second pill surface around the visible 36px send affordance. */}
+        <PressTarget
           type="submit"
-          variant="ghost"
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
@@ -385,7 +384,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
             !canSend && 'cursor-not-allowed',
           )}
         >
-          {/* §22: the hit target is the 44px <Button>; the VISIBLE control is
+          {/* §22: the hit target is the 44px PressTarget; the VISIBLE control is
               this 36px circle. They used to be the same box, which is why send
               read as an oversized tile rather than a send button. */}
           <span
@@ -398,7 +397,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
           >
             <Send size={18} aria-hidden="true" />
           </span>
-        </Button>
+        </PressTarget>
       </div>
 
       {/* The hint describes keys a touch keyboard does not have, so it is

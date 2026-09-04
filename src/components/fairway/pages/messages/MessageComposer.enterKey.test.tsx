@@ -18,6 +18,13 @@
  * ========================================================================== */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const source = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/MessageComposer.tsx'),
+  'utf8',
+);
 
 /** Swapped per test to stand in for `(pointer: fine)`. */
 let pointerIsFine = true;
@@ -112,5 +119,20 @@ describe('MessageComposer — desktop helper text is pointer-gated', () => {
     pointerIsFine = false;
     renderComposer();
     expect(screen.queryByText(/Press Enter to send/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('MessageComposer — native Fairway control contract', () => {
+  it('uses one native textarea with Fairway press and icon controls', () => {
+    expect(source.match(/<textarea\b/g) ?? []).toHaveLength(1);
+    expect(source).toContain("from '@/components/fairway/controls/press-target'");
+    expect(source).toContain("from '@/components/fairway/controls/button'");
+    expect(source).toContain('<PressTarget');
+    expect(source).toContain('<IconButton');
+  });
+
+  it('does not import generic UI textarea or button controls', () => {
+    expect(source).not.toContain("from '@/components/ui/button'");
+    expect(source).not.toContain("from '@/components/ui/input'");
   });
 });

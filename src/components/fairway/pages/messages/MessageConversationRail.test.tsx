@@ -15,9 +15,19 @@
  * ever renders inside the rail, in either state.
  * ========================================================================== */
 import { render } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { MessageConversationRail } from './MessageConversationRail';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+
+const source = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/MessageConversationRail.tsx'),
+  'utf8',
+);
+const searchResultStart = source.indexOf('function SearchResultRow');
+const searchResultEnd = source.indexOf('export function MessageConversationRail');
+const searchResultSource = source.slice(searchResultStart, searchResultEnd);
 
 vi.mock('@/app/golf/actions/messages', () => ({
   searchGolfMessages: vi.fn(async () => ({ results: [] })),
@@ -71,5 +81,22 @@ describe('MessageConversationRail — no duplicate count readout', () => {
     // The count now lives ONLY in the page masthead — never duplicated here
     // as a big mono numeral inside the rail's own panel bezel.
     expect(container.querySelector('[data-slot="readout"]')).toBeNull();
+  });
+});
+
+describe('MessageConversationRail — Fairway inbox controls', () => {
+  it('uses the canonical clearable SearchField instead of the legacy form input', () => {
+    expect(source).toContain("from '@/components/fairway/command/search-field'");
+    expect(source).toContain('<SearchField');
+    expect(source).toContain('size="md"');
+    expect(source).toContain('onClear={() => setSearchQuery(\'\')}');
+    expect(source).not.toContain("from '@/components/fairway/forms/Input'");
+  });
+
+  it('renders cross-conversation search hits as unopinionated press targets', () => {
+    expect(searchResultStart).toBeGreaterThanOrEqual(0);
+    expect(searchResultEnd).toBeGreaterThan(searchResultStart);
+    expect(searchResultSource).toContain('<PressTarget');
+    expect(searchResultSource).not.toContain('<Button');
   });
 });

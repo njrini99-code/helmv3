@@ -31,7 +31,23 @@
 
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Reply, ChevronLeft, MoreHorizontal, ArrowDown } from 'lucide-react';
+import {
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  Copy,
+  Paperclip,
+  MessageSquare,
+  FileText,
+  Download,
+  AlertTriangle,
+  RotateCw,
+  Reply,
+  ChevronLeft,
+  MoreHorizontal,
+  ArrowDown,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   CHAT_MOTION,
@@ -57,7 +73,7 @@ import type {
 } from '@/hooks/golf/use-golf-messages';
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { PressTarget } from '@/components/fairway/controls/press-target';
 import { EmptyState } from '@/components/fairway/feedback';
@@ -1030,6 +1046,11 @@ export function MessageThreadPane({
         ? 'Direct message'
         : ''
     : conversation.other_participant?.subtitle || '';
+  const headerGroupMembers = isGroup
+    ? Array.from(groupParticipants?.entries() ?? [])
+        .sort(([, a], [, b]) => Number(Boolean(b.avatar)) - Number(Boolean(a.avatar)))
+        .slice(0, 2)
+    : [];
 
   return (
     <InstrumentPanel
@@ -1105,18 +1126,40 @@ export function MessageThreadPane({
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
           )}
         >
-        {isGroup ? (
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
-            <Users size={18} aria-hidden="true" />
-          </span>
-        ) : (
-          <Avatar
-            name={conversation.other_participant?.name || 'User'}
-            src={conversation.other_participant?.avatar}
-            size="sm"
-          />
-        )}
-        <div className="min-w-0 flex-1">
+          {isGroup ? (
+            headerGroupMembers.length > 0 ? (
+              <AvatarGroup
+                size="xs"
+                role="img"
+                aria-label={`Participants: ${headerGroupMembers.map(([, member]) => member.name).join(', ')}`}
+                className="flex-shrink-0"
+              >
+                {headerGroupMembers.map(([id, member]) => (
+                  <Avatar
+                    key={id}
+                    name={member.name}
+                    src={member.avatar}
+                    size="xs"
+                    decorative
+                  />
+                ))}
+              </AvatarGroup>
+            ) : (
+              <Avatar
+                name={headerName}
+                size="sm"
+                className="bg-accent-100 text-accent-800"
+                decorative
+              />
+            )
+          ) : (
+            <Avatar
+              name={conversation.other_participant?.name || 'User'}
+              src={conversation.other_participant?.avatar}
+              size="sm"
+            />
+          )}
+          <div className="min-w-0 flex-1">
           {/* One line, truncated — this is a nav bar now, not a page masthead.
               `line-clamp-2` let a long group title push the bar to two rows and
               shove the thread down. */}
