@@ -62,7 +62,7 @@ is a second thing to keep true.
 - **Telemetry:** `coachhelm_ai_engine` (coachhelm, high), `insights_management` (coachhelm, med), `coachhelm_analytics` (coachhelm, low), `round_review_ai` (coachhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging)
-- **History:** `memory/ledgers/changes/coachhelm_ai.md`
+- **History:** `memory/ledgers/changes/coachhelm_ai.md`, `memory/ledgers/tests/coachhelm_ai.md`
 
 ## `baseball_core`
 
@@ -139,7 +139,7 @@ is a second thing to keep true.
 - **Telemetry:** `calendar_events` (golfhelm, high), `academics_classes` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** `memory/ledgers/changes/calendar_events.md`
+- **History:** `memory/ledgers/changes/calendar_events.md`, `memory/ledgers/tests/calendar_events.md`
 
 ## `coach_intelligence_triage`
 
@@ -172,7 +172,7 @@ is a second thing to keep true.
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** `memory/ledgers/changes/team_communications.md`
+- **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
 
