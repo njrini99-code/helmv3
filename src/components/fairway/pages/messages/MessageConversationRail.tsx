@@ -42,7 +42,7 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Input } from '@/components/fairway/forms/Input';
 import { Button } from '@/components/fairway/controls/button';
 import { Avatar } from '@/components/fairway/controls/avatar';
-import { Segmented } from '@/components/fairway/controls/segmented';
+import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -102,39 +102,12 @@ function formatTime(dateStr: string | null | undefined): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** Recency buckets — PRESERVES the legacy groupConversationsByTime boundaries. */
-function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-  const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-  const groups = {
-    today: [] as GolfConversationWithMeta[],
-    yesterday: [] as GolfConversationWithMeta[],
-    thisWeek: [] as GolfConversationWithMeta[],
-    older: [] as GolfConversationWithMeta[],
-  };
-
-  conversations.forEach(conv => {
-    const lastMsgDate = conv.last_message?.created_at
-      ? new Date(conv.last_message.created_at)
-      : new Date(0);
-    if (lastMsgDate >= today) groups.today.push(conv);
-    else if (lastMsgDate >= yesterday) groups.yesterday.push(conv);
-    else if (lastMsgDate >= lastWeek) groups.thisWeek.push(conv);
-    else groups.older.push(conv);
-  });
-
-  return groups;
-}
-
-const GROUP_ORDER: ReadonlyArray<{ key: keyof ReturnType<typeof groupConversationsByTime>; label: string }> = [
-  { key: 'today', label: 'Today' },
-  { key: 'yesterday', label: 'Yesterday' },
-  { key: 'thisWeek', label: 'This Week' },
-  { key: 'older', label: 'Earlier' },
-];
+/* `groupConversationsByTime` and its recency buckets were deleted on
+   2026-09-04 with the date-section headers they existed to label. The list is
+   ordered purely by recency now (the hook already sorts newest-first) and the
+   per-row timestamp carries the same information without cutting a short list
+   into three labelled blocks. If date sections ever return, they should return
+   as a deliberate design decision rather than by reviving dead code. */
 
 function ConversationRow({
   conv,
@@ -184,12 +157,27 @@ function ConversationRow({
             "Demo University Golf" reads DU — on the accent wash that still
             distinguishes it from a DM at a glance. 48px per §16 (was 40). */}
         {isGroup ? (
-          <Avatar name={displayName} size="lg" className="bg-accent-50 text-accent-700" />
+          // accent-100/800, not 50/700. The references all carry photographs,
+          // which have their own weight; an initials circle has to earn the
+          // same presence from tone alone, and accent-50 on cream is barely a
+          // circle at all.
+          <Avatar name={displayName} size="lg" className="bg-accent-100 text-accent-800" />
         ) : (
+          // The shared Avatar falls back to `bg-surface-sunken` (0.963) with
+          // secondary ink. On this row's 0.953 canvas that is a ONE PERCENT
+          // lightness difference — the same defect the message bubbles had, and
+          // it made half the avatar column vanish. Overridden here rather than
+          // in the primitive, because every other Avatar in the app sits on a
+          // 0.984 card where the default reads correctly.
+          //
+          // Lifted cream disc + primary ink, against the group's accent tint:
+          // both have real presence, and a person still doesn't look like a
+          // team.
           <Avatar
             name={conv.other_participant?.name || 'User'}
             src={conv.other_participant?.avatar}
             size="lg"
+            className="bg-surface text-text-primary shadow-flat"
           />
         )}
 
@@ -235,8 +223,18 @@ function ConversationRow({
           ) : null}
           {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
               dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
+          {/* SOLID, not a wash. `tone="accent"` renders a pale accent-50 fill
+              with accent-700 text — at 12px on a cream row that is the quietest
+              thing in the right rail, competing with a timestamp for attention
+              and losing. Every reference uses a solid filled count. It is the
+              one place on this screen that should be loud, so it is. */}
           {hasUnread ? (
-            <Badge tone="accent" size="sm" numeric>
+            <Badge
+              tone="accent"
+              size="sm"
+              numeric
+              className="border-transparent bg-accent-650 text-text-on-accent"
+            >
               {conv.unread_count > 9 ? '9+' : conv.unread_count}
             </Badge>
           ) : null}
@@ -495,10 +493,6 @@ export function MessageConversationRail({
     : filter === 'teams' ? conversations.filter(c => isGroupConversation(c))
     : conversations;
 
-  const unread = visible.filter(c => c.unread_count > 0);
-  const read = visible.filter(c => c.unread_count === 0);
-  const grouped = groupConversationsByTime(read);
-
   return (
     <InstrumentPanel
       as="nav"
@@ -560,33 +554,48 @@ export function MessageConversationRail({
           that are all team channels does not get a "Teams" chip that filters
           to the same three. */}
       {showFilters ? (
-        <div className="mb-3">
-          <Segmented
-            size="lg"
-            fullWidth
-            aria-label="Filter conversations"
-            value={filter}
-            onValueChange={(v) => setFilter(v)}
-            options={[
-              { value: 'all' as const, label: 'All' },
-              ...(unreadFilterUseful
-                ? [{
-                    value: 'unread' as const,
-                    label: (
-                      <span className="inline-flex items-center gap-1.5">
-                        Unread
-                        <span className="font-fw-sans text-caption tabular-nums text-accent-700">
-                          {unreadTotal}
-                        </span>
-                      </span>
-                    ),
-                  }]
-                : []),
-              ...(teamFilterUseful
-                ? [{ value: 'teams' as const, label: 'Teams' }]
-                : []),
-            ]}
-          />
+        /* FREE-STANDING PILLS, not a Segmented track. Segmented is this repo's
+           view-SWITCHER: a bordered sunken well with a sliding pill, sized to
+           fill its row. Stretched across three options it reads as a squeezed
+           tab bar, and it draws two more boxes onto a screen that is trying to
+           be a list. Every reference uses loose pills, left-aligned, and they
+           are right — a filter is a set of optional narrowings, not a segmented
+           view of the same thing.
+
+           Scrolls rather than wraps: a fourth chip (a role filter is the
+           obvious next one) must not silently become a second row that pushes
+           the list down. */
+        <div
+          role="group"
+          aria-label="Filter conversations"
+          className="mb-3 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {([
+            { value: 'all' as const, label: 'All', show: true },
+            { value: 'unread' as const, label: 'Unread', count: unreadTotal, show: unreadFilterUseful },
+            { value: 'teams' as const, label: 'Teams', show: teamFilterUseful },
+          ]).filter(o => o.show).map((o) => (
+            <SelectablePill
+              key={o.value}
+              shape="round"
+              active={filter === o.value}
+              aria-pressed={filter === o.value}
+              onClick={() => setFilter(o.value)}
+              className="min-h-[36px] flex-shrink-0 px-4 font-fw-sans text-body-sm"
+            >
+              {o.label}
+              {typeof o.count === 'number' ? (
+                <span
+                  className={cn(
+                    'ml-1.5 tabular-nums',
+                    filter === o.value ? 'text-text-on-accent/80' : 'text-accent-700',
+                  )}
+                >
+                  {o.count}
+                </span>
+              ) : null}
+            </SelectablePill>
+          ))}
         </div>
       ) : null}
 
@@ -644,57 +653,46 @@ export function MessageConversationRail({
           }
         />
       ) : (
-      <div className="flex flex-col gap-3">
-        {unread.length > 0 ? (
-          <div>
-            <p className="px-3 pb-1.5 font-fw-sans text-caption font-semibold text-accent-700">
-              Unread
-            </p>
-            <ul className="flex flex-col gap-1">
-              {unread.map((conv, i) => (
-                <li
-                  key={conv.id}
-                  className="animate-fade-in-up motion-reduce:animate-none"
-                  style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
-                >
-                  <ConversationRow
-                    conv={conv}
-                    isSelected={selectedId === conv.id}
-                    onSelect={() => onSelect(conv.id)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        /* ONE CONTINUOUS LIST. The "Unread" / "Today" / "Earlier" sections are
+           gone, and that is the biggest single change on this screen: NONE of
+           the four reference inboxes has a date-section header. They order by
+           recency and let the timestamp column do that work, which is why they
+           read as one calm surface — my version broke a five-row list into
+           three labelled blocks, so the eye had to re-acquire the rhythm twice
+           on the way down.
 
-        {GROUP_ORDER.map(({ key, label }) => {
-          const group = grouped[key];
-          if (group.length === 0) return null;
-          return (
-            <div key={key}>
-              <p className="px-3 pb-1.5 font-fw-sans text-caption font-semibold text-text-tertiary">
-                {label}
-              </p>
-              <ul className="flex flex-col gap-1">
-                {group.map((conv, i) => (
-                  <li
-                    key={conv.id}
-                    className="animate-fade-in-up motion-reduce:animate-none"
-                    style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
-                  >
-                    <ConversationRow
-                      conv={conv}
-                      isSelected={selectedId === conv.id}
-                      onSelect={() => onSelect(conv.id)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
+           Floating unread to the top went with them. It was solving "show me
+           what I have not read", and the Unread CHIP now does that explicitly,
+           on demand, without permanently reordering the list under the reader.
+           Recency is the one ordering that never surprises.
+
+           Unread still reads instantly — semibold name, primary-ink preview,
+           and a solid count in the right rail. Three signals, no section. */
+        <ul className="flex flex-col">
+          {visible.map((conv, i) => (
+            <li
+              key={conv.id}
+              className="relative animate-fade-in-up motion-reduce:animate-none"
+              style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
+            >
+              {/* Hairline INSET to the text column, never through the avatar
+                  (§47). Absolutely positioned rather than a border on the row,
+                  because a border would have to sit inside the row's own
+                  padding and would cut the avatar in half. */}
+              {i > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-[72px] right-3 top-0 h-px bg-border-subtle"
+                />
+              ) : null}
+              <ConversationRow
+                conv={conv}
+                isSelected={selectedId === conv.id}
+                onSelect={() => onSelect(conv.id)}
+              />
+            </li>
+          ))}
+        </ul>
       )}
     </InstrumentPanel>
   );
