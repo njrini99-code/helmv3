@@ -1,0 +1,125 @@
+'use client';
+
+/**
+ * Real member faces for the conversation list's GROUP rows.
+ *
+ * The inbox already had every participant's photo available — it just never
+ * asked for it. `FairwayMessages.fetchGroupParticipants` resolves exactly this
+ * data, but only for the ONE conversation you have open, so the list fell back
+ * to initials for every group. This is that same resolution, batched across the
+ * whole inbox.
+ *
+ * THREE queries total, never one per row. A per-conversation fetch would be an
+ * N+1 on the first screen a coach sees every morning.
+ *
+ * Fails soft and SILENT-EMPTY: on any error this returns an empty map and the
+ * rows keep their initials. A missing face is a cosmetic downgrade; a thrown
+ * error would take the inbox with it.
+ */
+
+import * as React from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+export interface GroupMember {
+  name: string;
+  avatar: string | null;
+}
+
+/** conversation_id -> members, capped at what the UI can actually show. */
+export type GroupAvatarMap = ReadonlyMap<string, GroupMember[]>;
+
+const EMPTY: GroupAvatarMap = new Map();
+
+/**
+ * How many faces a stack can hold before it stops being legible. Anything past
+ * this is collapsed into AvatarGroup's own "+N" chip, so fetching more members
+ * per conversation than this would be work nobody ever sees.
+ */
+const MAX_FACES = 3;
+
+/** PostgREST caps a response at 1000 rows regardless of `.limit()`. */
+const PAGE = 1000;
+
+export function useGolfGroupAvatars(groupConversationIds: string[]): GroupAvatarMap {
+  const [map, setMap] = React.useState<GroupAvatarMap>(EMPTY);
+
+  // Stable key: the id array is a fresh reference every render, so depending on
+  // it directly would refetch on every keystroke in the inbox search field.
+  const idKey = React.useMemo(
+    () => [...groupConversationIds].sort().join(','),
+    [groupConversationIds],
+  );
+
+  React.useEffect(() => {
+    if (!idKey) {
+      setMap(EMPTY);
+      return;
+    }
+    let cancelled = false;
+
+    void (async () => {
+      const ids = idKey.split(',');
+      const supabase = createClient();
+
+      // 1. Every membership row for these conversations, paginated — a program
+      //    with many team channels can exceed the 1000-row ceiling, and
+      //    PostgREST truncates silently rather than erroring.
+      const rows: { conversation_id: string; user_id: string }[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from('golf_conversation_participants')
+          .select('conversation_id, user_id')
+          .in('conversation_id', ids)
+          .range(from, from + PAGE - 1);
+        if (error || !data) return; // fail soft: keep initials
+        rows.push(...data);
+        if (data.length < PAGE) break;
+      }
+      if (!rows.length) return;
+
+      // 2. Resolve identities once for the UNION of user ids, not per
+      //    conversation — the same coach appears in most of them.
+      const userIds = [...new Set(rows.map(r => r.user_id))];
+      const [coaches, players] = await Promise.all([
+        supabase.from('golf_coaches').select('user_id, full_name, avatar_url').in('user_id', userIds),
+        supabase.from('golf_players').select('user_id, first_name, last_name, avatar_url').in('user_id', userIds),
+      ]);
+      if (coaches.error || players.error) return;
+
+      const identity = new Map<string, GroupMember>();
+      (coaches.data ?? []).forEach(c => {
+        if (c.user_id) identity.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
+      });
+      (players.data ?? []).forEach(p => {
+        if (p.user_id) {
+          const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player';
+          identity.set(p.user_id, { name, avatar: p.avatar_url ?? null });
+        }
+      });
+
+      // 3. Group by conversation. Members WITH a photo sort first, because the
+      //    stack shows only the first few and a real face beats initials in a
+      //    slot that can only hold one of them.
+      const byConversation = new Map<string, GroupMember[]>();
+      for (const row of rows) {
+        const member = identity.get(row.user_id);
+        if (!member) continue;
+        const list = byConversation.get(row.conversation_id);
+        if (list) list.push(member);
+        else byConversation.set(row.conversation_id, [member]);
+      }
+      for (const [id, members] of byConversation) {
+        members.sort((a, b) => Number(Boolean(b.avatar)) - Number(Boolean(a.avatar)));
+        byConversation.set(id, members.slice(0, MAX_FACES));
+      }
+
+      if (!cancelled) setMap(byConversation);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idKey]);
+
+  return map;
+}

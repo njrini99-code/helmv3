@@ -26,6 +26,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
 import type { PendingAttachment } from '@/lib/storage/attachments';
@@ -69,7 +70,10 @@ export interface MessageComposerProps {
 
 export function MessageComposer({ onSend, onSendWithAttachments, onTyping, replyTo, onCancelReply }: MessageComposerProps) {
   const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
+  // No `sending` state. §63: a normal text send must not turn the composer
+  // into a loading indicator — the optimistic bubble already carries every
+  // network state there is. Attachment UPLOAD progress still belongs on the
+  // attachment preview, which owns it.
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -184,10 +188,30 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
     });
   };
 
+  /**
+   * §19: NETWORK STATE LIVES ON THE MESSAGE, NOT ON THE SEND BUTTON.
+   *
+   * This used to `setSending(true)`, `await` the send, and only then clear the
+   * field — so the text a player had already committed to sat in the composer
+   * for the entire round trip while the send button ran a bouncing-dot loader.
+   * That is form-submission feedback, and it is the single reason sending felt
+   * like a web app: the user had said the thing, and the interface was still
+   * holding it.
+   *
+   * The composer clears in the SAME tick as the commit now. The optimistic
+   * bubble is the feedback — it is already on screen, and `sending / sent /
+   * read / failed` belong to it.
+   *
+   * Failure does not silently eat the draft. On a failed send the text is put
+   * BACK — but only if the composer is still empty, because by then the user
+   * may already be typing the next thought and overwriting it would be worse
+   * than losing it. Same rule for pending attachments.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasAttachments = pendingAttachments.length > 0;
-    if ((!message.trim() && !hasAttachments) || sending) return;
+    const text = message.trim();
+    if (!text && !hasAttachments) return;
 
     // Clear typing indicator before sending (PRESERVED).
     if (onTyping) {
@@ -197,23 +221,32 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
       clearTimeout(typingTimeoutRef.current);
     }
 
-    setSending(true);
-
-    let success = false;
-    if (hasAttachments && onSendWithAttachments) {
-      success = await onSendWithAttachments(message.trim(), pendingAttachments);
-    } else {
-      success = await onSend(message.trim());
+    // ── The commit tick: clear before any await touches the network. ────────
+    const outgoingAttachments = pendingAttachments;
+    setMessage('');
+    setPendingAttachments([]);
+    // Collapse the field back to one line in the same frame; letting it stay
+    // tall after a multi-line send leaves a hole where the text used to be.
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
     }
+    fwHaptic('light');
+
+    const success =
+      hasAttachments && onSendWithAttachments
+        ? await onSendWithAttachments(text, outgoingAttachments)
+        : await onSend(text);
 
     if (success) {
-      pendingAttachments.forEach(a => {
+      outgoingAttachments.forEach(a => {
         if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
       });
-      setMessage('');
-      setPendingAttachments([]);
+      return;
     }
-    setSending(false);
+
+    // Restore, but never over something the user has since typed.
+    setMessage(prev => (prev.length > 0 ? prev : text));
+    setPendingAttachments(prev => (prev.length > 0 ? prev : outgoingAttachments));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -226,7 +259,11 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
     }
   };
 
-  const canSend = (message.trim().length > 0 || pendingAttachments.length > 0) && !sending;
+  // Deliberately NOT gated on an in-flight send: §20 wants the composer ready
+  // for the next message at ~150ms, and a `sending` gate makes two quick
+  // messages impossible. An empty field is the only thing that disables send,
+  // and clearing on commit means a double-tap cannot double-send.
+  const canSend = message.trim().length > 0 || pendingAttachments.length > 0;
   const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
@@ -296,7 +333,6 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
         {/* Attachment trigger — REUSED UNCHANGED. */}
         <AttachmentButton
           onFilesSelected={handleFilesSelected}
-          disabled={sending}
           className="mb-0.5 text-text-tertiary"
         />
 
@@ -356,15 +392,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
                 : 'bg-surface-sunken text-text-tertiary',
             )}
           >
-            {sending ? (
-              <span className="flex items-center gap-1" aria-hidden="true">
-                <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
-              </span>
-            ) : (
-              <Send size={18} aria-hidden="true" />
-            )}
+            <Send size={18} aria-hidden="true" />
           </span>
         </Button>
       </div>

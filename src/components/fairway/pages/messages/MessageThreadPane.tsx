@@ -33,6 +33,14 @@ import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Reply, ChevronLeft, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  CHAT_MOTION,
+  secs,
+  bubbleSpring,
+  bubbleEnter,
+  reactionEnter,
+  bubbleLift,
+} from '@/lib/golf/chat-motion';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
 import { ConversationDetailsSheet } from './ConversationDetailsSheet';
@@ -236,14 +244,31 @@ export function shouldScrollThreadToLatestOnOpen(
 
 /** Quiet text read receipt — "Read" / "Sent" (color is never the only channel). */
 function ReadReceipt({ isRead }: { isRead?: boolean }) {
+  const reduceMotion = useReducedMotion();
+  const status = isRead ? 'Read' : 'Sent';
+  // §20: Sent -> Read crossfades IN PLACE and never relayouts. `mode="wait"` so
+  // the two words never overlap, and the wrapper is an `inline-grid` with both
+  // states in one cell — that reserves the wider label up front, so the
+  // timestamp beside it cannot shift when the receipt changes. A receipt that
+  // nudges its own line is the kind of one-frame defect people feel and cannot
+  // name.
   return (
-    <span
-      className={cn(
-        'font-fw-sans text-caption',
-        isRead ? 'text-accent-700' : 'text-text-tertiary',
-      )}
-    >
-      {isRead ? 'Read' : 'Sent'}
+    <span className="inline-grid [&>*]:col-start-1 [&>*]:row-start-1">
+      <AnimatePresence mode="wait" initial={false}>
+        <m.span
+          key={status}
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.metadata) }}
+          className={cn(
+            'font-fw-sans text-caption',
+            isRead ? 'text-accent-700' : 'text-text-tertiary',
+          )}
+        >
+          {status}
+        </m.span>
+      </AnimatePresence>
     </span>
   );
 }
@@ -269,16 +294,26 @@ function ReactionChips({
   onToggle: (emoji: string) => void;
   align: 'start' | 'end';
 }) {
+  const reduceMotion = useReducedMotion();
   if (!reactions.length) return null;
   return (
     <div className={cn('flex flex-wrap gap-1', align === 'end' ? 'justify-end' : 'justify-start')}>
       {reactions.map((r) => (
         // A reaction chip is a ~24px inline token; <Button>'s 36/44px
         // min-height would make the strip taller than the bubble it annotates.
-        // eslint-disable-next-line helm/no-raw-button -- see above
-        <button
+        // (No no-raw-button suppression needed: `m.button` is not a raw
+        // <button> as far as the rule is concerned, and the directive that used
+        // to sit here became an unused-disable warning the moment this gained
+        // motion.)
+        <m.button
           key={r.emoji}
           type="button"
+          // §22: the chip should land under the bubble, not appear. Small and
+          // quick — a dramatic spring here pulls attention off the message the
+          // reaction is about.
+          initial={reduceMotion ? false : reactionEnter.initial}
+          animate={reactionEnter.animate}
+          transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.micro) }}
           onClick={() => onToggle(r.emoji)}
           aria-pressed={r.mine}
           aria-label={`${r.emoji} ${r.count}${r.mine ? ', including you' : ''}`}
@@ -293,7 +328,7 @@ function ReactionChips({
         >
           <span aria-hidden="true">{r.emoji}</span>
           <span className="tabular-nums">{r.count}</span>
-        </button>
+        </m.button>
       ))}
     </div>
   );
@@ -1221,9 +1256,15 @@ export function MessageThreadPane({
                   // impression it exists to give. Nothing else on screen moves,
                   // because only this element animates — the history above it
                   // stays exactly where the reader's eye left it.
-                  initial={isNew && !reduceMotion ? { opacity: 0, y: 6 } : false}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  // §5: a message RISES into the conversation. The old tween
+                  // was `y: 6` over a flat 200ms — the curve the shell uses for
+                  // a card, which is why an arriving message read as the list
+                  // re-laying out rather than as something being said. A
+                  // restrained spring with a hair of scale gives it weight;
+                  // damping is high relative to stiffness so it never bounces.
+                  initial={isNew && !reduceMotion ? bubbleEnter.initial : false}
+                  animate={bubbleEnter.animate}
+                  transition={reduceMotion ? { duration: 0 } : bubbleSpring}
                   className={cn(
                     'flex items-end gap-2',
                     isOwn ? 'justify-end' : 'justify-start',
@@ -1414,8 +1455,18 @@ export function MessageThreadPane({
                       // what SOMEBODY ELSE said is the whole point of a reaction,
                       // and gating the gesture on ownership made the feature
                       // unreachable exactly where it matters.
-                      <div
+                      <m.div
                         {...longPressHandlers(msg.id)}
+                        // §24: long-press does not just open a menu — the
+                        // touched bubble answers the thumb first. 1.5% and one
+                        // pixel: enough to feel, small enough that it never
+                        // reads as the bubble growing.
+                        animate={
+                          reduceMotion || mobileActionsId !== msg.id
+                            ? { scale: 1, y: 0 }
+                            : bubbleLift
+                        }
+                        transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.press) }}
                         className={cn(
                           'px-3.5 py-2',
                           // Opt out of the iOS text-selection callout, because
@@ -1537,7 +1588,7 @@ export function MessageThreadPane({
                             edited
                           </span>
                         ) : null}
-                      </div>
+                      </m.div>
                     )}
                     {/* Reactions sit UNDER the bubble (spec §18) and only
                         occupy space when they exist — an empty strip on every

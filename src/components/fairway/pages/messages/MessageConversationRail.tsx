@@ -33,6 +33,8 @@
 import * as React from 'react';
 import { Inbox, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LayoutGroup, m, useReducedMotion } from 'framer-motion';
+import { reorderSpring } from '@/lib/golf/chat-motion';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 import { searchGolfMessages } from '@/app/golf/actions/messages';
@@ -41,7 +43,9 @@ import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Input } from '@/components/fairway/forms/Input';
 import { Button } from '@/components/fairway/controls/button';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
+import { useGolfGroupAvatars, type GroupMember } from '@/hooks/golf/use-golf-group-avatars';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
@@ -110,11 +114,14 @@ function formatTime(dateStr: string | null | undefined): string {
    as a deliberate design decision rather than by reviving dead code. */
 
 function ConversationRow({
+  members,
   conv,
   isSelected,
   onSelect,
 }: {
   conv: GolfConversationWithMeta;
+  /** Resolved member faces for a GROUP row; absent for DMs and while loading. */
+  members?: GroupMember[];
   isSelected: boolean;
   onSelect: () => void;
 }) {
@@ -132,17 +139,28 @@ function ConversationRow({
   const time = formatTime(conv.last_message?.created_at);
 
   return (
-    <Button
+    /* §17/§49/§107: PressTarget, not Button.
+       A conversation is not a pill CTA, and the generic Button was being fought
+       the whole way — `h-auto min-h-0 border-0 font-normal justify-start
+       text-left` is eleven overrides undoing a control that wanted to be a
+       rounded green capsule, plus its own 180ms cinematic transition and its
+       coupled click haptic. PressTarget is deliberately unstyled: real <button>
+       semantics, focus and disabled handling, reduced-motion safety, and no
+       opinion about shape.
+
+       §50: a row press is subtler than a CTA press. A warm tint on touch-down,
+       no compression — a list row that visibly shrinks 2% reads as a button
+       pretending to be a row. */
+    <PressTarget
       type="button"
-      variant="ghost"
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-3 text-left font-normal outline-none transition-colors [transition-duration:150ms]',
-        '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
+        'group block w-full rounded-fw-md px-3 py-3 text-left',
+        'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        // §19: an immediate pressed surface. Acknowledgement must not wait for
-        // navigation — `active:` paints on touch-down, before any route work.
+        // Acknowledgement must not wait for navigation — `active:` paints on
+        // touch-down, before any route work.
         'active:bg-surface-sunken',
         isSelected
           ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
@@ -157,11 +175,28 @@ function ConversationRow({
             "Demo University Golf" reads DU — on the accent wash that still
             distinguishes it from a DM at a glance. 48px per §16 (was 40). */}
         {isGroup ? (
-          // accent-100/800, not 50/700. The references all carry photographs,
-          // which have their own weight; an initials circle has to earn the
-          // same presence from tone alone, and accent-50 on cream is barely a
-          // circle at all.
-          <Avatar name={displayName} size="lg" className="bg-accent-100 text-accent-800" />
+          members && members.length > 1 ? (
+            // §33: REAL FACES. The photos were always in the app — the inbox
+            // just never asked for them, because participant resolution was
+            // scoped to the one open conversation. A team channel now shows who
+            // is in it.
+            //
+            // `md` inside a stack, not `lg`: three overlapping 48px discs are
+            // wider than the avatar column and would shove the text. The stack
+            // reads at roughly the same optical weight as one large avatar.
+            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
+              <AvatarGroup size="md" max={3}>
+                {members.map((m, i) => (
+                  <Avatar key={`${m.name}-${i}`} name={m.name} src={m.avatar ?? undefined} size="md" />
+                ))}
+              </AvatarGroup>
+            </span>
+          ) : (
+            // One member, or none resolved yet: a stack of one is just an
+            // avatar wearing a ring it does not need. Initials, on the deeper
+            // accent tint.
+            <Avatar name={displayName} size="lg" className="bg-accent-100 text-accent-800" />
+          )
         ) : (
           // The shared Avatar falls back to `bg-surface-sunken` (0.963) with
           // secondary ink. On this row's 0.953 canvas that is a ONE PERCENT
@@ -240,7 +275,7 @@ function ConversationRow({
           ) : null}
         </div>
       </div>
-    </Button>
+    </PressTarget>
   );
 }
 
@@ -307,6 +342,14 @@ export function MessageConversationRail({
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filter, setFilter] = React.useState<'all' | 'unread' | 'teams'>('all');
+  const reduceMotion = useReducedMotion();
+  // Real member faces for group rows (§33). Batched across the whole inbox —
+  // see the hook for why this is three queries and not one per row.
+  const groupConversationIds = React.useMemo(
+    () => conversations.filter(c => isGroupConversation(c)).map(c => c.id),
+    [conversations],
+  );
+  const groupAvatars = useGolfGroupAvatars(groupConversationIds);
   const [searchResults, setSearchResults] = React.useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchError, setSearchError] = React.useState(false);
@@ -668,10 +711,22 @@ export function MessageConversationRail({
 
            Unread still reads instantly — semibold name, primary-ink preview,
            and a solid count in the right rail. Three signals, no section. */
+        /* §12: when a message arrives its conversation moves to the top, and
+           it must not TELEPORT there. `layout="position"` animates only the
+           transform — the row's contents are never re-laid-out, so the avatar
+           does not remount and its photo cannot flash. The DATA still owns the
+           order; motion only makes the change legible.
+
+           `position` rather than full layout on purpose: full layout animation
+           would scale the row's box, which distorts text and avatars mid-flight
+           — the exact "mushy" result §10 warns about. */
         <ul className="flex flex-col">
+          <LayoutGroup>
           {visible.map((conv, i) => (
-            <li
+            <m.li
               key={conv.id}
+              layout={reduceMotion ? false : 'position'}
+              transition={reorderSpring}
               className="relative animate-fade-in-up motion-reduce:animate-none"
               style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
             >
@@ -687,11 +742,13 @@ export function MessageConversationRail({
               ) : null}
               <ConversationRow
                 conv={conv}
+                members={groupAvatars.get(conv.id)}
                 isSelected={selectedId === conv.id}
                 onSelect={() => onSelect(conv.id)}
               />
-            </li>
+            </m.li>
           ))}
+          </LayoutGroup>
         </ul>
       )}
     </InstrumentPanel>
