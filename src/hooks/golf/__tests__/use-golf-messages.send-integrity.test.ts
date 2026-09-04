@@ -104,6 +104,16 @@ describe('use-golf-messages — realtime INSERT no longer reconciles by "first o
   });
 });
 
+describe('use-golf-messages — server-declared send failures remain retryable (defect 4)', () => {
+  it('marks a server-returned error failed without filtering the optimistic row away', () => {
+    const start = source.indexOf('const sendMessage = async');
+    const end = source.indexOf('// Edit a message', start);
+    const send = source.slice(start, end);
+    expect(send).toContain('markSendFailed(optimisticId)');
+    expect(send).not.toContain('prev.filter(m => m.id !== optimisticId)');
+  });
+});
+
 describe('applyRealtimeMessageInsert — exact-id reconciliation (defect 2, functional)', () => {
   it('replaces the optimistic row in place when the echo carries the SAME id, wherever it sits', () => {
     // Two sends in flight: 'a' from me, 'b' from someone else, both already

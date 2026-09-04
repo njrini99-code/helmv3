@@ -220,7 +220,7 @@ async function resolveGolfTeamAudience(teamId: string): Promise<Set<string> | nu
  * `logServerException` row per denial, so this file captures that identity
  * explicitly rather than relying on the generic wrapper log to carry it.
  */
-async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
+async function createGolfConversationImpl(participantUserIds: string[], teamId?: string, title?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -279,7 +279,9 @@ async function createGolfConversationImpl(participantUserIds: string[], teamId?:
     }
   }
 
-  return createGolfConversationUnvalidated(participantUserIds, teamId);
+  return title === undefined
+    ? createGolfConversationUnvalidated(participantUserIds, teamId)
+    : createGolfConversationUnvalidated(participantUserIds, teamId, title);
 }
 
 export const createGolfConversation = withGolfAction(
@@ -291,7 +293,7 @@ export const createGolfConversation = withGolfAction(
     // conversation row itself — see resolveGolfTeamAudience's own docstring
     // and src/app/actions/messages.ts's createGolfConversationImpl.
     rlsContext: { table: 'golf_conversation_participants', verb: 'insert' },
-    contextFrom: (_participantUserIds: string[], teamId?: string) => ({ teamId: teamId ?? null }),
+    contextFrom: (_participantUserIds: string[], teamId?: string, _title?: string) => ({ teamId: teamId ?? null }),
     sanitizeUnexpectedErrors: false,
   },
   createGolfConversationImpl,

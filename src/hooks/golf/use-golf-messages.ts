@@ -708,7 +708,7 @@ export function useGolfMessages(conversationId: string) {
 
       // Check if the result indicates an error
       if (result && 'error' in result && result.error) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId);
         throw new Error(result.error);
       }
 

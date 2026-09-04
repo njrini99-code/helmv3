@@ -70,6 +70,8 @@ export const WatchlistSchemas = {
  * Message Schemas
  */
 export const MessageSchemas = {
+  conversation_title: z.string().trim().min(1, 'Conversation title cannot be empty').max(80),
+
   send: z.object({
     conversation_id: CommonSchemas.uuid,
     content: z.string().min(1, 'Message cannot be empty').max(5000).trim(),
@@ -121,4 +123,3 @@ export const TeamSchemas = {
     secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a hex color').optional().nullable(),
   }),
 };
-

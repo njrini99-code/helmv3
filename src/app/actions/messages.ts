@@ -22,6 +22,8 @@ import { describeError } from '@/lib/utils/describe-error';
 
 type Sport = 'baseball' | 'golf';
 
+const REPLY_MESSAGE_UNAVAILABLE = 'Reply message is unavailable';
+
 // Supabase error type for type-safe error handling
 interface SupabaseError {
   message: string;
@@ -138,6 +140,21 @@ export async function sendMessage({
         participantError: participantError?.message
       });
       throw new Error('Not a participant in this conversation');
+    }
+
+    // A reply pointer must not cross conversation boundaries or resurrect a
+    // deleted message. Read through the caller's RLS context, so an otherwise
+    // valid id that this participant cannot read is indistinguishable from an
+    // unavailable reply target.
+    if (sport === 'golf' && validatedData.reply_to_id) {
+      const { data: replyTarget, error: replyError } = await supabase
+        .from('golf_messages')
+        .select('id')
+        .eq('id', validatedData.reply_to_id)
+        .eq('conversation_id', validatedData.conversation_id)
+        .eq('is_deleted', false)
+        .maybeSingle();
+      if (replyError || !replyTarget) throw new Error(REPLY_MESSAGE_UNAVAILABLE);
     }
 
     // Log security event
@@ -261,6 +278,11 @@ export async function sendMessage({
 
     return { success: true };
   } catch (err) {
+    // This boundary has one stable, user-safe error. Other unexpected errors
+    // remain sanitized by the standard action formatter.
+    if (err instanceof Error && err.message === REPLY_MESSAGE_UNAVAILABLE) {
+      return { success: false, error: REPLY_MESSAGE_UNAVAILABLE };
+    }
     return formatSafeErrorResponse(err);
   }
 }
@@ -269,6 +291,7 @@ interface CreateConversationOptions {
   participantUserIds: string[];
   sport?: Sport;
   teamId?: string; // Required for golf conversations
+  title?: string;
 }
 
 /**
@@ -276,11 +299,13 @@ interface CreateConversationOptions {
  * @param participantUserIds - Array of user IDs to include in conversation
  * @param sport - The sport context (for revalidation paths)
  * @param teamId - Team ID (required for golf conversations)
+ * @param title - Optional private-group title for golf conversations
  */
 export async function createConversation({
   participantUserIds,
   sport = 'baseball',
   teamId,
+  title,
 }: CreateConversationOptions) {
   const supabase = await createClient();
 
@@ -289,6 +314,10 @@ export async function createConversation({
   if (!user) {
     throw new Error('Unauthorized');
   }
+
+  const validatedTitle = title === undefined
+    ? undefined
+    : MessageSchemas.conversation_title.parse(title);
 
   // Check if conversation already exists between these users
   // Optimized: Single query instead of N+1 pattern
@@ -363,6 +392,9 @@ export async function createConversation({
       throw new Error('Team ID is required for golf conversations');
     }
     insertData.team_id = teamId;
+    if (validatedTitle !== undefined) {
+      insertData.title = validatedTitle;
+    }
   }
 
   const { error: convError } = await supabase
@@ -645,8 +677,8 @@ export async function sendGolfMessage(
   return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId);
 }
 
-async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
-  return createConversation({ participantUserIds, sport: 'golf', teamId });
+async function createGolfConversationImpl(participantUserIds: string[], teamId?: string, title?: string) {
+  return createConversation({ participantUserIds, sport: 'golf', teamId, title });
 }
 
 const observedCreateGolfConversation = withAdminObserved(
@@ -655,8 +687,8 @@ const observedCreateGolfConversation = withAdminObserved(
   createGolfConversationImpl,
 );
 
-export async function createGolfConversation(participantUserIds: string[], teamId?: string) {
-  return observedCreateGolfConversation(participantUserIds, teamId);
+export async function createGolfConversation(participantUserIds: string[], teamId?: string, title?: string) {
+  return observedCreateGolfConversation(participantUserIds, teamId, title);
 }
 
 async function markGolfMessagesAsReadImpl(conversationId: string) {
