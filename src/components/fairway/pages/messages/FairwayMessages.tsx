@@ -488,8 +488,19 @@ export function FairwayMessages() {
     >
       {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below
           `md` there is nothing left up here that needs to breathe — the row
-          beneath is a search field. The desktop rhythm is unchanged from `sm`. */}
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-3 sm:px-6 sm:py-6 lg:py-8">
+          beneath is a search field. The desktop rhythm is unchanged from `sm`.
+
+          With a thread OPEN on a phone the horizontal gutter goes too: the
+          thread pane flattens to the canvas at that width (MessageThreadPane),
+          and a 16px cream margin either side of a full-screen conversation is
+          the last thing making it read as a card on a page. The gutter returns
+          for the conversation LIST, where it is separating rows from the screen
+          edge and is doing real work. */}
+      <div
+        className={`mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden py-3 sm:px-6 sm:py-6 lg:py-8 ${
+          mobileShowChat ? 'px-0' : 'px-4'
+        }`}
+      >
         {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ──
             On a phone with a thread open it steps aside: the masthead plus the
             thread's own header left 100–272px of an 844px screen for messages

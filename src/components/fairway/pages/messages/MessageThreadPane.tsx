@@ -582,7 +582,23 @@ export function MessageThreadPane({
       depth="raised"
       padding="none"
       aria-label="Conversation"
-      className={cn('flex min-h-[40vh] flex-col overflow-hidden', className)}
+      className={cn(
+        'flex min-h-[40vh] flex-col overflow-hidden',
+        // On a phone with a thread open this panel IS the whole screen, so the
+        // elevation stops reading as "a pane beside the rail" and starts
+        // reading as a full-screen card floating on a page — which is Doctrine
+        // Rule 11 (no full-screen monolith cards) and the "chat feels like a
+        // card inside a page" complaint. The conversation should be the
+        // canvas. Flattened below `md` only; from `md` up it is genuinely one
+        // pane of a two-pane inbox and keeps its lift.
+        //
+        // `!` is required because the depth treatment comes from a CSS module
+        // class (instrument-panel.module.css `.panelRaised` / `.panel`), which
+        // has the same single-class specificity as a Tailwind utility — without
+        // it the winner would depend on stylesheet order.
+        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none',
+        className,
+      )}
     >
       {/* Thread bezel header — name + subtitle, mobile back affordance. */}
       <header className="flex min-w-0 items-center gap-3 border-b border-border-subtle px-4 py-3 sm:px-5">
