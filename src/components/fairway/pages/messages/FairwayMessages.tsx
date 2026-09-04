@@ -45,7 +45,7 @@
 
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Users } from 'lucide-react';
+import { Users, SquarePen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -63,7 +63,7 @@ import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
 import { ViewHeader } from '@/components/fairway/view-header';
-import { Button } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 
 import { MessageConversationRail } from './MessageConversationRail';
@@ -560,21 +560,36 @@ export function FairwayMessages() {
             Only the two ACTIONS are not carried by other chrome, so only they
             survive here. The conversation count is dropped rather than moved:
             the rail beneath it is the count, rendered. */}
+        {/* §16: "remove giant green New message pill … compose is a compact
+            icon button". A solid green lozenge on its own row was the largest,
+            highest-contrast object on the Messages screen — louder than any
+            conversation in the list it sits above, and it consumed a full band
+            of vertical space to say something a 44px glyph says. Icons now,
+            right-aligned, on a row that no longer needs to be tall.
+
+            Both keep 44px targets and real labels: IconButton renders
+            `aria-label`, so this loses nothing for VoiceOver, and the pencil
+            square is the platform-conventional compose glyph. */}
         {!mobileShowChat && (
-          <div className="flex items-center justify-end gap-2 md:hidden">
+          <div className="flex items-center justify-end gap-1 md:hidden">
             {userRole === 'coach' && teamId ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Users size={16} aria-hidden="true" />}
+              <IconButton
+                variant="ghost"
+                size="md"
+                aria-label="Message the team"
                 onClick={() => setShowTeamBroadcastModal(true)}
               >
-                Team
-              </Button>
+                <Users size={20} aria-hidden="true" />
+              </IconButton>
             ) : null}
-            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-              New message
-            </Button>
+            <IconButton
+              variant="ghost"
+              size="md"
+              aria-label="New message"
+              onClick={() => setShowNewMessageModal(true)}
+            >
+              <SquarePen size={20} aria-hidden="true" />
+            </IconButton>
           </div>
         )}
 

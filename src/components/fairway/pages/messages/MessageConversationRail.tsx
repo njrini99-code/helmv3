@@ -31,7 +31,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { Inbox, Users, Search } from 'lucide-react';
+import { Inbox, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
@@ -156,24 +156,31 @@ function ConversationRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
+        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-3 text-left font-normal outline-none transition-colors [transition-duration:150ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        // §19: an immediate pressed surface. Acknowledgement must not wait for
+        // navigation — `active:` paints on touch-down, before any route work.
+        'active:bg-surface-sunken',
         isSelected
           ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
           : 'hover:bg-surface-sunken/60',
       )}
     >
       <div className="flex items-start gap-3">
+        {/* §12/§16. Every group rendered the SAME generic two-person glyph,
+            so a list of three conversations showed three identical icons and
+            the avatar column carried no information at all. A group now gets
+            its own initials, like a person does — "Team Updates" reads TU,
+            "Demo University Golf" reads DU — on the accent wash that still
+            distinguishes it from a DM at a glance. 48px per §16 (was 40). */}
         {isGroup ? (
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
-            <Users size={18} aria-hidden="true" />
-          </span>
+          <Avatar name={displayName} size="lg" className="bg-accent-50 text-accent-700" />
         ) : (
           <Avatar
             name={conv.other_participant?.name || 'User'}
             src={conv.other_participant?.avatar}
-            size="md"
+            size="lg"
           />
         )}
 
@@ -181,8 +188,8 @@ function ConversationRow({
           <div className="flex items-center justify-between gap-2">
             <span
               className={cn(
-                'truncate font-fw-sans text-body-sm',
-                hasUnread || isSelected ? 'font-medium text-text-primary' : 'font-medium text-text-secondary',
+                'truncate font-fw-sans text-body',
+                hasUnread ? 'font-semibold text-text-primary' : 'font-medium text-text-primary',
               )}
             >
               {displayName}
@@ -191,8 +198,7 @@ function ConversationRow({
               <time
                 dateTime={conv.last_message?.created_at ?? undefined}
                 className={cn(
-                  'flex-shrink-0 font-fw-mono text-eyebrow tabular-nums',
-                  hasUnread ? 'text-accent-700' : 'text-text-tertiary',
+                  'flex-shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary',
                 )}
               >
                 {time}
@@ -203,8 +209,12 @@ function ConversationRow({
           <div className="mt-1 flex items-center justify-between gap-2">
             <p
               className={cn(
-                'min-w-0 flex-1 truncate font-fw-sans text-eyebrow leading-relaxed',
-                hasUnread ? 'text-text-primary' : 'text-text-tertiary',
+                // §16 wants 14-15px here. This was `text-eyebrow` — 11px at
+                // 0.06em tracking, the role built for ALL-CAPS labels, applied
+                // to a sentence somebody actually said. It is the message
+                // preview; it should read like one.
+                'min-w-0 flex-1 truncate font-fw-sans text-body-sm',
+                hasUnread ? 'text-text-primary' : 'text-text-secondary',
               )}
             >
               {conv.last_message?.content
@@ -242,7 +252,7 @@ function SearchResultRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
+        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-3 text-left font-normal outline-none transition-colors [transition-duration:150ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         isSelected ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60' : 'hover:bg-surface-sunken/60',
@@ -483,6 +493,9 @@ export function MessageConversationRail({
       )}
     >
       {/* P259: cross-conversation message search. */}
+      {/* §16: "secondary to conversation list, no giant card". A pill on the
+          sunken track reads as a field; the bordered rounded rectangle read as
+          another card stacked above the rows. */}
       <div className="mb-3">
         <Input
           type="search"
@@ -491,6 +504,7 @@ export function MessageConversationRail({
           placeholder="Search messages…"
           leading={<Search aria-hidden />}
           aria-label="Search messages"
+          className="rounded-full border-transparent bg-surface-sunken focus:border-accent-600"
         />
       </div>
 
@@ -536,7 +550,7 @@ export function MessageConversationRail({
       <div className="flex flex-col gap-3">
         {unread.length > 0 ? (
           <div>
-            <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
+            <p className="px-3 pb-1.5 font-fw-sans text-caption font-semibold text-accent-700">
               Unread
             </p>
             <ul className="flex flex-col gap-1">
@@ -562,7 +576,7 @@ export function MessageConversationRail({
           if (group.length === 0) return null;
           return (
             <div key={key}>
-              <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+              <p className="px-3 pb-1.5 font-fw-sans text-caption font-semibold text-text-tertiary">
                 {label}
               </p>
               <ul className="flex flex-col gap-1">
