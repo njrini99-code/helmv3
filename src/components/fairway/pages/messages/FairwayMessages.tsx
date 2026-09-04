@@ -510,7 +510,20 @@ export function FairwayMessages() {
           // and `pt-[safe-area-top]` because nothing above it is reserving
           // the notch any more. This is what makes the thread header the
           // ONE header instead of the second one.
-          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
+          // §7, THE BLANK BAND. This used to subtract
+          // `env(safe-area-inset-bottom)` from the height AND the composer
+          // added the same inset as padding — the home indicator reserved
+          // TWICE, ~34px each on an iPhone. The surface ended above the
+          // indicator, the composer padded above that, and the gap between
+          // them showed the page's own colour: the "60-120px of unexplained
+          // space" beneath the composer.
+          //
+          // The inset is now applied EXACTLY ONCE, and by the composer, which
+          // is the half that should own it — that is what lets the composer's
+          // background run to the physical bottom edge instead of leaving a
+          // band of canvas under it. The surface takes the full viewport and
+          // gives back only the keyboard.
+          ? 'flex h-[calc(100dvh-max(0px,var(--keyboard-height,0px)))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
           : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
       )}
     >
