@@ -116,6 +116,7 @@ export function FairwayMessages() {
     error: messagesError,
     refetch: refetchMessages,
     sendMessage,
+    retryMessage,
     editMessage,
     removeMessage,
     isOtherTyping,
@@ -733,6 +734,12 @@ export function FairwayMessages() {
                   });
                 }}
                 onJumpToMessage={(messageId) => setPendingScrollMessageId(messageId)}
+                onRetryMessage={(messageId) => {
+                  // No toast on failure: the bubble already says "Not
+                  // delivered" and still offers Retry. A toast would announce
+                  // what is written directly under the message.
+                  void retryMessage(messageId);
+                }}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}
                 className="flex-1 min-h-0"
               >

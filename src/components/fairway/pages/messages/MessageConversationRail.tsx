@@ -33,6 +33,7 @@
 import * as React from 'react';
 import { Inbox, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import NumberFlow from '@number-flow/react';
 import { LayoutGroup, m, useReducedMotion } from 'framer-motion';
 import { reorderSpring } from '@/lib/golf/chat-motion';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -270,7 +271,13 @@ function ConversationRow({
               numeric
               className="border-transparent bg-accent-650 text-text-on-accent"
             >
-              {conv.unread_count > 9 ? '9+' : conv.unread_count}
+              {/* §52: the count ROLLS from 1 to 2 rather than swapping. Only
+                  under 10 — past that the badge reads "9+" and there is no
+                  number to animate, and animating into a "+" would be motion
+                  describing nothing.
+                  Reduced motion resolves instantly via `respectMotionPreference`
+                  (its default), so this needs no branch of its own. */}
+              {conv.unread_count > 9 ? '9+' : <NumberFlow value={conv.unread_count} />}
             </Badge>
           ) : null}
         </div>

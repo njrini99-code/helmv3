@@ -44,6 +44,18 @@ export interface GolfConversationWithMeta {
 // Extended message type with read receipt info
 export interface GolfMessage extends GolfMessageRow {
   isRead?: boolean; // Whether the other participant has read this message
+  /**
+   * CLIENT-ONLY delivery state for an optimistic row. Absent on anything that
+   * came back from the database, which is exactly what "delivered" means here —
+   * a row the server has is a row that arrived.
+   *
+   * `failed` exists because a failed send used to be DELETED from the list. The
+   * player watched their message appear and then vanish, and the only trace was
+   * a toast. Whatever they said is now kept on screen with a Retry, which is
+   * both what every messaging app does and the only version that does not lose
+   * their words.
+   */
+  sendState?: 'sending' | 'failed';
 }
 
 // Keep old name for backward compatibility
@@ -203,6 +215,14 @@ function generateClientMessageId(): string {
 
 export function useGolfMessages(conversationId: string) {
   const [messages, setMessages] = useState<MessageWithReadStatus[]>([]);
+  // A mirror of `messages` for callbacks that must read the CURRENT list
+  // without taking it as a dependency — `retryMessage` needs the failed row's
+  // content, and depending on `messages` would rebuild that callback on every
+  // incoming message, changing the identity of a prop the thread holds.
+  const messagesRef = useRef<MessageWithReadStatus[]>([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const [loading, setLoading] = useState(true);
   // Distinguishes "this thread failed to load" from "this thread is truly empty".
   // A swallowed query error used to surface as the honest-empty state (P258); the
@@ -545,6 +565,52 @@ export function useGolfMessages(conversationId: string) {
     });
   }, [conversationId, currentUserId]);
 
+  /** Flip an optimistic row to `failed` in place — never remove it. */
+  const markSendFailed = useCallback((messageId: string) => {
+    setMessages(prev =>
+      prev.map(m => (m.id === messageId ? { ...m, sendState: 'failed' as const } : m)),
+    );
+  }, []);
+
+  /**
+   * Re-send a failed message under its ORIGINAL id.
+   *
+   * The id is what makes this safe to press twice: `golf_messages.id` is the
+   * primary key, so a retry that races a send which actually committed collides
+   * on 23505 and the server reports it back as the success it is, rather than
+   * posting the message twice. Same property the transport retry relies on.
+   */
+  const retryMessage = useCallback(async (messageId: string) => {
+    const target = messagesRef.current.find(m => m.id === messageId);
+    if (!target || target.sendState !== 'failed') return false;
+
+    setMessages(prev =>
+      prev.map(m => (m.id === messageId ? { ...m, sendState: 'sending' as const } : m)),
+    );
+
+    try {
+      const result = await sendGolfMessage(
+        conversationId,
+        target.content,
+        messageId,
+        target.reply_to_id ?? undefined,
+      );
+      if (!result || !result.success) {
+        markSendFailed(messageId);
+        return false;
+      }
+      // Success: drop the client-only flag. The realtime echo (or the next
+      // fetch) replaces this row with the server's copy.
+      setMessages(prev =>
+        prev.map(m => (m.id === messageId ? { ...m, sendState: undefined } : m)),
+      );
+      return true;
+    } catch {
+      markSendFailed(messageId);
+      return false;
+    }
+  }, [conversationId, markSendFailed]);
+
   const sendMessage = async (content: string, replyToId?: string | null) => {
     // Clear typing indicator when sending
     sendTypingStatus(false);
@@ -596,14 +662,15 @@ export function useGolfMessages(conversationId: string) {
       }
 
       if (!result || !result.success) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId);
         throw new Error('Failed to send message');
       }
 
       return true;
     } catch (error) {
-      // Roll back optimistic message on any error
-      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      // KEEP the message, marked failed. Deleting it is what made a failed send
+      // look like the app had swallowed the words.
+      markSendFailed(optimisticId);
       logError(
         error instanceof Error ? error : new Error(String(error)),
         { component: 'useGolfMessages', action: 'send-message', sport: 'golf', conversationId },
@@ -674,6 +741,7 @@ export function useGolfMessages(conversationId: string) {
     loading,
     error,
     sendMessage,
+    retryMessage,
     editMessage,
     removeMessage,
     refetch: fetchMessages,

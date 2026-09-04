@@ -31,7 +31,7 @@
 
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Reply, ChevronLeft, MoreHorizontal } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Reply, ChevronLeft, MoreHorizontal, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   CHAT_MOTION,
@@ -190,6 +190,8 @@ export interface MessageThreadPaneProps {
   onReply?: (message: MessageWithReadStatus) => void;
   /** §30: jump to a quoted message (page owns scrollToMessageId). */
   onJumpToMessage?: (messageId: string) => void;
+  /** §30: re-send a message whose send failed. Keeps its original id. */
+  onRetryMessage?: (messageId: string) => void;
 
   /**
    * Bug fix #1 — group sender resolution.
@@ -488,6 +490,7 @@ export function MessageThreadPane({
   onSetMobileActions,
   onReply,
   onJumpToMessage,
+  onRetryMessage,
   groupParticipants,
   scrollToMessageId,
   onScrolledToMessage,
@@ -505,6 +508,9 @@ export function MessageThreadPane({
    * that grows the thread re-pins it.
    */
   const stickToBottomRef = React.useRef(false);
+  // §34/§41: how many messages arrived while the reader was scrolled up.
+  const [missedCount, setMissedCount] = React.useState(0);
+  const lastSeenCountRef = React.useRef(0);
 
   /**
    * Long-press to open a message's actions.
@@ -877,8 +883,42 @@ export function MessageThreadPane({
     const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
     if (isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior });
+      setMissedCount(0);
+      return;
     }
-  }, [messages, reduceMotion]);
+    // §41: reading history is not interruptible. Count what arrived instead of
+    // moving the viewport — the button below is how they choose to catch up.
+    // Only messages from SOMEBODY ELSE count: your own send scrolls you down
+    // by design, and counting it would offer to take you to your own message.
+    const arrivals = messages.length - lastSeenCountRef.current;
+    if (arrivals > 0) {
+      const incoming = messages
+        .slice(lastSeenCountRef.current)
+        .filter(m => m.sender_id !== userId && m.sender_id !== currentUserId).length;
+      if (incoming > 0) setMissedCount(c => c + incoming);
+    }
+  }, [messages, reduceMotion, userId, currentUserId]);
+
+  // Track how far the count has been reconciled, so a re-render cannot
+  // double-count the same arrivals.
+  React.useEffect(() => {
+    lastSeenCountRef.current = messages.length;
+  }, [messages]);
+
+  // Clear the count the moment the reader reaches the bottom themselves —
+  // scrolling down IS catching up, and a button offering to take you where you
+  // already are is noise.
+  React.useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const atBottom =
+        container.scrollTop + container.clientHeight >= container.scrollHeight - 24;
+      if (atBottom) setMissedCount(0);
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
 
   // P259: scroll a search-hit message into view once the thread has loaded it.
   React.useEffect(() => {
@@ -1203,6 +1243,9 @@ export function MessageThreadPane({
                     avatar: conversation.other_participant?.avatar ?? null,
                   };
               const senderName = senderInfo?.name ?? 'Unknown';
+              // CLIENT-ONLY: present only on an optimistic row that has not
+              // been replaced by the server's copy.
+              const sendState = (msg as MessageWithReadStatus).sendState;
               const senderAvatar = senderInfo?.avatar ?? null;
 
               return (
@@ -1481,6 +1524,12 @@ export function MessageThreadPane({
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent shadow-soft'
                             : 'bg-surface text-text-primary shadow-soft',
+                          // Undelivered reads as provisional: the fill softens
+                          // rather than turning red. The message is not an
+                          // error, it just has not landed — and colour is never
+                          // the only channel, the metadata line says so in
+                          // words directly beneath it.
+                          sendState === 'failed' && 'opacity-60',
                           // 20px card radius, not 28px. At 28 a two-word reply
                           // ("Yo") has a radius larger than its own half-height
                           // and renders as a lozenge. The interior corners of a
@@ -1488,6 +1537,15 @@ export function MessageThreadPane({
                           // one block with one outer silhouette — the grouping
                           // is carried by the shape, not just the gaps.
                           'rounded-card',
+                          // §22: when a burst continues, the previous bubble
+                          // goes last -> middle and its bottom corners tighten.
+                          // That is a RADIUS change, not a position change, so
+                          // Motion's layout animation cannot smooth it — layout
+                          // only interpolates transforms, and border-radius is
+                          // neither. A CSS transition on the exact property is
+                          // both the correct tool and far cheaper than putting
+                          // every bubble under layout animation to chase it.
+                          'transition-[border-radius] duration-150 motion-reduce:transition-none',
                           !isFirstInGroup && (isOwn ? 'rounded-tr-md' : 'rounded-tl-md'),
                           !isLastInGroup && (isOwn ? 'rounded-br-md' : 'rounded-bl-md'),
                         )}
@@ -1602,7 +1660,34 @@ export function MessageThreadPane({
                   </div>
 
                   {/* Time + read receipt (last of group, tabular-nums) */}
-                  {showTime && editingMessageId !== msg.id && (
+                  {/* §29/§30: a message whose send failed keeps its place and
+                      says so. It used to be DELETED from the list — the player
+                      watched their words appear and vanish, with a toast as
+                      the only trace. The metadata line carries the state
+                      instead of the composer, and Retry re-sends under the
+                      SAME id, so pressing it twice cannot post twice. */}
+                  {sendState && editingMessageId !== msg.id ? (
+                    <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
+                      {sendState === 'failed' ? (
+                        <>
+                          <span className="font-fw-sans text-caption text-fw-danger-ink">
+                            Not delivered
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onRetryMessage?.(msg.id)}
+                            className="min-h-0 rounded px-1.5 py-0.5 font-fw-sans text-caption font-semibold text-accent-700 hover:bg-accent-100"
+                          >
+                            Retry
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="font-fw-sans text-caption text-text-tertiary">Sending…</span>
+                      )}
+                    </div>
+                  ) : showTime && editingMessageId !== msg.id && (
                     <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
                       <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
                         {formatTime(msg.created_at)}
@@ -1658,6 +1743,46 @@ export function MessageThreadPane({
             <div ref={messagesEndRef} />
           </div>
         )}
+      </div>
+
+      {/* §42 new-messages chrome. Floats over the foot of the thread rather
+          than occupying a row: it is transient, and a permanent slot for it
+          would cost every conversation height for a state most never enter.
+
+          `AnimatePresence` so it eases out when the reader catches up instead
+          of blinking off — this element appears and disappears on somebody
+          else's schedule, and a pop at the bottom of the screen reads as a
+          glitch. */}
+      <div className="pointer-events-none relative">
+        <AnimatePresence initial={false}>
+          {missedCount > 0 ? (
+            <m.div
+              key="new-messages"
+              className="pointer-events-auto absolute inset-x-0 -top-2 z-10 flex justify-center"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, scale: 0.94, y: 4 }}
+              transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.micro) }}
+            >
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  fwHaptic('selection');
+                  setMissedCount(0);
+                  messagesEndRef.current?.scrollIntoView({
+                    behavior: reduceMotion ? 'auto' : 'smooth',
+                  });
+                }}
+                className="rounded-full font-fw-sans shadow-soft"
+              >
+                <ArrowDown size={14} aria-hidden="true" />
+                {missedCount} new {missedCount === 1 ? 'message' : 'messages'}
+              </Button>
+            </m.div>
+          ) : null}
+        </AnimatePresence>
       </div>
 
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children

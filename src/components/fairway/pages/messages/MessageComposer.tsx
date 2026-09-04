@@ -202,10 +202,11 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
    * bubble is the feedback — it is already on screen, and `sending / sent /
    * read / failed` belong to it.
    *
-   * Failure does not silently eat the draft. On a failed send the text is put
-   * BACK — but only if the composer is still empty, because by then the user
-   * may already be typing the next thought and overwriting it would be worse
-   * than losing it. Same rule for pending attachments.
+   * Failure is NOT handled here any more. The message stays in the thread as a
+   * failed bubble with Retry (§29/§30) — restoring the text to the composer as
+   * well would put the same words in two places, and the one in the thread is
+   * the one the user is looking at. Attachments are the exception: they cannot
+   * live on an optimistic bubble, so a failed attachment send does come back.
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,9 +245,12 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping, reply
       return;
     }
 
-    // Restore, but never over something the user has since typed.
-    setMessage(prev => (prev.length > 0 ? prev : text));
-    setPendingAttachments(prev => (prev.length > 0 ? prev : outgoingAttachments));
+    // Attachments only, and never over something the user has since attached:
+    // a failed photo has no optimistic bubble to live on, so the composer is
+    // the only place it can wait for a retry.
+    if (hasAttachments) {
+      setPendingAttachments(prev => (prev.length > 0 ? prev : outgoingAttachments));
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
