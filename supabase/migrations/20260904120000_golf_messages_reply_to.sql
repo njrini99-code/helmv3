@@ -19,17 +19,17 @@
 -- The application never trusts the pointer to grant a read.
 
 ALTER TABLE public.golf_messages
-  ADD COLUMN IF NOT EXISTS reply_to_id uuid
-  REFERENCES public.golf_messages(id) ON DELETE SET NULL;
+ADD COLUMN IF NOT EXISTS reply_to_id uuid
+REFERENCES public.golf_messages (id) ON DELETE SET NULL;
 
 COMMENT ON COLUMN public.golf_messages.reply_to_id IS
-  'The message this one replies to (spec §30). Self-reference, ON DELETE SET '
-  'NULL so deleting a quoted message never deletes the replies to it. Confers '
-  'NO read access: the quoted row is fetched through golf_messages RLS like '
-  'any other, so a pointer into another conversation resolves to nothing.';
+'The message this one replies to (spec §30). Self-reference, ON DELETE SET '
+'NULL so deleting a quoted message never deletes the replies to it. Confers '
+'NO read access: the quoted row is fetched through golf_messages RLS like '
+'any other, so a pointer into another conversation resolves to nothing.';
 
 -- Partial: only replies carry the column, and the read is always
 -- "the replies to this message".
 CREATE INDEX IF NOT EXISTS golf_messages_reply_to_idx
-  ON public.golf_messages (reply_to_id)
-  WHERE reply_to_id IS NOT NULL;
+ON public.golf_messages (reply_to_id)
+WHERE reply_to_id IS NOT NULL;
