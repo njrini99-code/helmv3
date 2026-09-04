@@ -61,22 +61,45 @@ describe('extractRepairIncidentIds — recovering the join from PR text', () => 
     // failure indistinguishable from "no repair exists" at every call site
     // that reads this function's result.
     //
-    // MODULE DEFECT, not a test bug: this currently fails. TOKEN's optional
-    // prefix (repair-link.ts:40, `(?:rel:|row:)?`) matches only the literal
-    // strings "rel:" / "row:", and the character class that follows it
-    // accepts only hex digits and dashes — neither branch matches a literal
-    // "%3A". For input containing "rel%3Af321abcd", BRIDGE_LINK never
-    // matches at all: matchAll returns no match, `raw` is never captured, and
-    // decodeURIComponent (repair-link.ts:71) never runs, because it only
-    // decodes a substring that was already captured. Verified empirically:
-    // `extractRepairIncidentIds('/admin/errors/rel%3Af321abcd')` returns
-    // `[]`, not `['rel:f321abcd']`. Fix is either to widen TOKEN's prefix
-    // alternation to also match the percent-encoded colon, or to run a
-    // percent-decode pass over the whole input text before matching, since a
-    // PR body has no other legitimate source of percent-encoding.
+    // This described a live MODULE DEFECT when it was written — TOKEN's
+    // prefix alternation matched only the literal "rel:"/"row:", so
+    // "rel%3Af321abcd" never matched at all and decodeURIComponent never got
+    // a substring to decode. The prefix alternation now carries the encoded
+    // colon and this passes; the note is kept because the SHAPE of the
+    // failure is the thing worth remembering, not the specific prefix that
+    // had it. `sentry:` below is the same defect found again, later.
     const plain = extractRepairIncidentIds('/admin/errors/rel:f321abcd');
     const encoded = extractRepairIncidentIds('/admin/errors/rel%3Af321abcd');
     expect(encoded).toEqual(plain);
+  });
+
+  it('extracts a sentry:-prefixed id, in both the plain and URL-encoded forms', () => {
+    // `sentry:<issueId>` is the THIRD incident key kind, minted at
+    // src/lib/admin/data/triage.ts and named alongside the other two in
+    // `MergeCandidateFacts.canonicalFingerprint` (aliases.ts) and
+    // `UnifiedIncident` (types.ts). It is the LAST-RESORT identity — used
+    // exactly when there is no `admin_events` fingerprint and no
+    // `rel:<signature>` to fall back to — so an incident keyed this way has
+    // no other id a PR body could cite instead.
+    //
+    // Two things make it unmatchable by the rel:/row: machinery: the prefix
+    // is not in the alternation, and a Sentry issue id (JAVASCRIPT-NEXTJS-QZ)
+    // is not hex, so the token body rejects it as well. The consequence is
+    // the one this suite's header names: `/admin/errors/sentry:...` in a
+    // repair PR yields `[]`, the Bridge reads it as "no repair exists", and
+    // the incident stays REPAIRABLE with a merged fix sitting against it.
+    const plain = extractRepairIncidentIds('/admin/errors/sentry:JAVASCRIPT-NEXTJS-QZ');
+    expect(plain).toEqual(['sentry:javascript-nextjs-qz']);
+    const encoded = extractRepairIncidentIds('/admin/errors/sentry%3AJAVASCRIPT-NEXTJS-QZ');
+    expect(encoded).toEqual(plain);
+  });
+
+  it('does not let the widened prefix swallow ordinary prose after a link', () => {
+    // The token body for a sentry id has to accept letters, which the hex
+    // branch does not. Kept narrow deliberately: it must not run past the
+    // path segment and eat the sentence that follows.
+    const ids = extractRepairIncidentIds('/admin/errors/sentry:JAVASCRIPT-NEXTJS-QZ and the gates were green.');
+    expect(ids).toEqual(['sentry:javascript-nextjs-qz']);
   });
 
   it('dedupes when the same id appears as both a link and a branch in one body', () => {

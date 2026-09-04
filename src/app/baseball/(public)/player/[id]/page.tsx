@@ -1,4 +1,5 @@
 import { describeError } from '@/lib/utils/describe-error';
+import { isUuid } from '@/lib/utils/uuid';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
@@ -10,7 +11,12 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  // A malformed id cannot name a row, so there is nothing to ask Postgres —
+  // which answers `22P02 invalid input syntax for type uuid` and turns a
+  // crawler's bad link into a server error. Guard before the query, at every
+  // read of the param: Next runs this on the same request as the page.
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const access = await resolvePublicProfileAccess(id, user?.id ?? null);
@@ -41,6 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PublicPlayerProfilePage({ params }: PageProps) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const access = await resolvePublicProfileAccess(id, user?.id ?? null);
