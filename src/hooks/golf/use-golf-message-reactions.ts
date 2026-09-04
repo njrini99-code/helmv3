@@ -88,7 +88,10 @@ export function useGolfMessageReactions(
     let cancelled = false;
     void (async () => {
       const loaded = await getGolfMessageReactions(idKey.split(','));
-      if (!cancelled) setRows(loaded);
+      // `null` means the authenticated read failed. Keep the last confirmed
+      // rows rather than turning failure into an empty, permissive-looking
+      // reaction state.
+      if (!cancelled && loaded !== null) setRows(loaded);
     })();
     return () => {
       cancelled = true;

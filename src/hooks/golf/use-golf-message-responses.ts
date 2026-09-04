@@ -51,7 +51,9 @@ export function useGolfMessageResponses(
     let cancelled = false;
     void (async () => {
       const loaded = await getGolfMessageResponses(idKey.split(','));
-      if (!cancelled) setRows(loaded);
+      // `null` means the authenticated read failed. Keep the last confirmed
+      // rows rather than reporting a failed tally lookup as zero responses.
+      if (!cancelled && loaded !== null) setRows(loaded);
     })();
     return () => { cancelled = true; };
   }, [conversationId, idKey]);

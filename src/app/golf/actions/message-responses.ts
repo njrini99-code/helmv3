@@ -86,15 +86,16 @@ export async function respondToGolfMessage(messageId: string, choice: string | n
  * Every answer on an open thread's structured messages, in one round trip.
  *
  * Batched for the same reason reactions are: a per-card fetch would open one
- * request per RSVP in a thread. Returns [] on failure — a card that cannot load
- * its counts shows no counts, it does not fail the conversation.
+ * request per RSVP in a thread. A failed read returns `null`, deliberately
+ * distinct from an empty response set, so the client preserves its last known
+ * tallies rather than making an unavailable read look like nobody responded.
  */
-async function getGolfMessageResponsesImpl(messageIds: string[]): Promise<MessageResponse[]> {
+async function getGolfMessageResponsesImpl(messageIds: string[]): Promise<MessageResponse[] | null> {
   if (!messageIds.length) return [];
 
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return [];
+  if (authError || !user) return null;
 
   const { data, error } = await supabase
     .from('golf_message_responses')
@@ -105,7 +106,7 @@ async function getGolfMessageResponsesImpl(messageIds: string[]): Promise<Messag
     await logServerError(`[getGolfMessageResponses] ${describeError(error)}`, {
       action: 'golf.messages.getResponses',
     });
-    return [];
+    return null;
   }
   return data ?? [];
 }
@@ -116,6 +117,6 @@ const observedGetResponses = withAdminObserved(
   getGolfMessageResponsesImpl,
 );
 
-export async function getGolfMessageResponses(messageIds: string[]) {
+export async function getGolfMessageResponses(messageIds: string[]): Promise<MessageResponse[] | null> {
   return observedGetResponses(messageIds);
 }

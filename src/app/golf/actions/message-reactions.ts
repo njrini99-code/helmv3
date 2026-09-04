@@ -125,15 +125,16 @@ export async function toggleGolfMessageReaction(messageId: string, emoji: string
  *
  * Batched by message id rather than fetched per bubble: a 200-message thread
  * would otherwise open 200 requests to render a feature most messages do not
- * use. Returns [] on failure — a reaction strip that cannot load is a missing
- * ornament, never a reason to fail the thread.
+ * use. A failed read returns `null`, deliberately distinct from a genuinely
+ * empty reaction set, so the client preserves its last known state instead of
+ * silently presenting a failed read as no reactions.
  */
-async function getGolfMessageReactionsImpl(messageIds: string[]): Promise<GolfMessageReaction[]> {
+async function getGolfMessageReactionsImpl(messageIds: string[]): Promise<GolfMessageReaction[] | null> {
   if (!messageIds.length) return [];
 
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return [];
+  if (authError || !user) return null;
 
   const { data, error } = await supabase
     .from('golf_message_reactions')
@@ -144,7 +145,7 @@ async function getGolfMessageReactionsImpl(messageIds: string[]): Promise<GolfMe
     await logServerError(`[getGolfMessageReactions] ${describeError(error)}`, {
       action: 'golf.messages.getReactions',
     });
-    return [];
+    return null;
   }
 
   return data ?? [];
@@ -156,6 +157,6 @@ const observedGetGolfMessageReactions = withAdminObserved(
   getGolfMessageReactionsImpl,
 );
 
-export async function getGolfMessageReactions(messageIds: string[]) {
+export async function getGolfMessageReactions(messageIds: string[]): Promise<GolfMessageReaction[] | null> {
   return observedGetGolfMessageReactions(messageIds);
 }
