@@ -28,6 +28,16 @@ vi.mock('@/hooks/golf/use-golf-message-reactions', () => ({
   }),
 }));
 
+// Same reason as reactions above: structured-message answers open a Supabase
+// client and a realtime channel, neither of which exists here. Stub at the
+// feature boundary so the scroll assertions stay the subject of this file.
+vi.mock('@/hooks/golf/use-golf-message-responses', () => ({
+  useGolfMessageResponses: () => ({
+    getFor: () => ({ counts: {}, mine: null, total: 0 }),
+    respond: vi.fn(),
+  }),
+}));
+
 describe('MessageThreadPane initial thread position', () => {
   const groupMessages = [
     { conversation_id: 'group-1' },

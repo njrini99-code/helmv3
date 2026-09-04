@@ -12310,6 +12310,8 @@ export type Database = {
           id: string
           joined_at: string | null
           last_read_at: string | null
+          muted_until: string | null
+          notification_level: string
           user_id: string
         }
         Insert: {
@@ -12317,6 +12319,8 @@ export type Database = {
           id?: string
           joined_at?: string | null
           last_read_at?: string | null
+          muted_until?: string | null
+          notification_level?: string
           user_id: string
         }
         Update: {
@@ -12324,6 +12328,8 @@ export type Database = {
           id?: string
           joined_at?: string | null
           last_read_at?: string | null
+          muted_until?: string | null
+          notification_level?: string
           user_id?: string
         }
         Relationships: [
@@ -14094,6 +14100,38 @@ export type Database = {
           },
         ]
       }
+      golf_message_mentions: {
+        Row: {
+          created_at: string
+          id: string
+          mention_type: string
+          mentioned_user_id: string | null
+          message_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mention_type: string
+          mentioned_user_id?: string | null
+          message_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mention_type?: string
+          mentioned_user_id?: string | null
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_message_mentions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "golf_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_message_reactions: {
         Row: {
           created_at: string
@@ -14126,6 +14164,41 @@ export type Database = {
           },
         ]
       }
+      golf_message_responses: {
+        Row: {
+          choice: string
+          created_at: string
+          id: string
+          message_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          choice: string
+          created_at?: string
+          id?: string
+          message_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          choice?: string
+          created_at?: string
+          id?: string
+          message_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_message_responses_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "golf_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_messages: {
         Row: {
           content: string
@@ -14135,6 +14208,10 @@ export type Database = {
           has_attachments: boolean | null
           id: string
           is_deleted: boolean | null
+          kind: string
+          payload: Json | null
+          pinned_at: string | null
+          pinned_by: string | null
           read: boolean | null
           reply_to_id: string | null
           sender_id: string
@@ -14147,6 +14224,10 @@ export type Database = {
           has_attachments?: boolean | null
           id?: string
           is_deleted?: boolean | null
+          kind?: string
+          payload?: Json | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           read?: boolean | null
           reply_to_id?: string | null
           sender_id: string
@@ -14159,6 +14240,10 @@ export type Database = {
           has_attachments?: boolean | null
           id?: string
           is_deleted?: boolean | null
+          kind?: string
+          payload?: Json | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           read?: boolean | null
           reply_to_id?: string | null
           sender_id?: string

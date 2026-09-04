@@ -358,6 +358,11 @@ describe('global tripwire', () => {
     //   withAdminObserved-wrapped; message-reactions.ts sits under
     //   src/app/golf/actions/ which is 'ALL'-mapped, so the live scan picks
     //   them up with no manifest edit.
-    expect(total).toBe(449);
+    // 2026-09-04 (+2): respondToGolfMessage / getGolfMessageResponses
+    //   (message-responses.ts) — answers to structured Helm messages (RSVP,
+    //   poll vote, travel acknowledgement). Both withAdminObserved-wrapped;
+    //   src/app/golf/actions/ is 'ALL'-mapped so the live scan finds them with
+    //   no manifest edit.
+    expect(total).toBe(451);
   });
 });

@@ -343,7 +343,7 @@ export function useGolfMessages(conversationId: string) {
       // conversation was opened. That is the "Can't see pics" report from the
       // team chat: the sender saw it send, the recipients opened the thread
       // later and saw nothing.
-      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id')
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id, kind, payload, pinned_at, pinned_by')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -680,6 +680,13 @@ export function useGolfMessages(conversationId: string) {
       // a quote a round trip later — the layout jump the spec's arrival motion
       // exists to avoid.
       reply_to_id: replyToId ?? null,
+      // An optimistic row is always ordinary text — the structured kinds are
+      // composed elsewhere and posted through their own action, so they never
+      // take this path.
+      kind: 'text',
+      payload: null,
+      pinned_at: null,
+      pinned_by: null,
     };
     setMessages(prev => [...prev, optimisticMessage]);
 

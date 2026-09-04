@@ -736,6 +736,11 @@ export function FairwayMessages() {
                   });
                 }}
                 onJumpToMessage={(messageId) => setPendingScrollMessageId(messageId)}
+                onOpenEvent={(eventId) => {
+                  // §38: the cross-surface moment. A schedule change posted in
+                  // chat opens the exact event, so nobody has to go and find it.
+                  router.push(`/golf/dashboard/calendar?event=${encodeURIComponent(eventId)}`);
+                }}
                 onRetryMessage={(messageId) => {
                   // No toast on failure: the bubble already says "Not
                   // delivered" and still offers Retry. A toast would announce

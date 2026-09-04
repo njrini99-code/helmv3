@@ -45,6 +45,9 @@ import {
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
 import { ConversationDetailsSheet } from './ConversationDetailsSheet';
+import { StructuredMessage } from './StructuredMessage';
+import { parseStructuredPayload } from '@/lib/golf/structured-message';
+import { useGolfMessageResponses } from '@/hooks/golf/use-golf-message-responses';
 import { useGolfMessageReactions } from '@/hooks/golf/use-golf-message-reactions';
 import { GOLF_QUICK_REACTIONS } from '@/app/golf/actions/message-reactions';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -196,6 +199,8 @@ export interface MessageThreadPaneProps {
   onJumpToMessage?: (messageId: string) => void;
   /** §30: re-send a message whose send failed. Keeps its original id. */
   onRetryMessage?: (messageId: string) => void;
+  /** §38: open the calendar event a structured message links to. */
+  onOpenEvent?: (eventId: string) => void;
 
   /**
    * Bug fix #1 — group sender resolution.
@@ -501,6 +506,7 @@ export function MessageThreadPane({
   onReply,
   onJumpToMessage,
   onRetryMessage,
+  onOpenEvent,
   groupParticipants,
   scrollToMessageId,
   onScrolledToMessage,
@@ -551,6 +557,13 @@ export function MessageThreadPane({
     for (const m of messages) map.set(m.id, m);
     return map;
   }, [messages]);
+  // Answers to structured messages — same batched/realtime shape as reactions.
+  const { getFor: getResponsesFor, respond } = useGolfMessageResponses(
+    conversation?.id ?? null,
+    reactionMessageIds,
+    currentUserId ?? userId ?? null,
+  );
+
   const { getFor: getReactionsFor, toggle: toggleReaction } = useGolfMessageReactions(
     conversation?.id ?? null,
     reactionMessageIds,
@@ -1267,6 +1280,12 @@ export function MessageThreadPane({
               // CLIENT-ONLY: present only on an optimistic row that has not
               // been replaced by the server's copy.
               const sendState = (msg as MessageWithReadStatus).sendState;
+              // A structured message renders as a Helm object instead of a
+              // bubble. `null` here — a malformed or unknown payload — falls
+              // through to the ordinary text path rather than showing a broken
+              // card, which is the whole reason the parser returns null instead
+              // of throwing.
+              const structured = parseStructuredPayload(msg.kind, msg.payload);
               const senderAvatar = senderInfo?.avatar ?? null;
 
               return (
@@ -1496,7 +1515,14 @@ export function MessageThreadPane({
                     )}
 
                     {/* Bubble — edit mode */}
-                    {editingMessageId === msg.id ? (
+                    {structured ? (
+                      <StructuredMessage
+                        payload={structured}
+                        tally={getResponsesFor(msg.id)}
+                        onRespond={(choice) => void respond(msg.id, choice)}
+                        onOpenEvent={onOpenEvent}
+                      />
+                    ) : editingMessageId === msg.id ? (
                       <div className="w-full rounded-fw-lg border border-accent-200 bg-accent-50 px-3 py-2">
                         <Textarea
                           value={editContent}
