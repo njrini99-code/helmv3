@@ -29,7 +29,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -233,10 +233,26 @@ function ReadReceipt({ isRead }: { isRead?: boolean }) {
 function TypingIndicator() {
   return (
     <Inset padding="none" className="inline-flex rounded-fw-lg rounded-bl-sm px-4 py-3">
+      {/* An opacity wave, not a bounce. `animate-bounce` threw the dots a
+          third of their own height on a spring curve — energetic, and the
+          wrong register for "someone is composing a sentence". Three dots
+          breathing in sequence reads calmer, costs one compositor property
+          instead of layout, and is what the eye expects from a chat. */}
       <span className="flex items-center gap-1" aria-label="Typing">
-        <span className="h-2 w-2 rounded-full bg-text-tertiary motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="h-2 w-2 rounded-full bg-text-tertiary motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="h-2 w-2 rounded-full bg-text-tertiary motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
+        {[0, 1, 2].map((i) => (
+          <m.span
+            key={i}
+            className="h-1.5 w-1.5 rounded-full bg-text-tertiary"
+            animate={{ opacity: [0.25, 1, 0.25] }}
+            transition={{
+              duration: 1.2,
+              times: [0, 0.5, 1],
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.18,
+            }}
+          />
+        ))}
       </span>
     </Inset>
   );
@@ -374,6 +390,31 @@ export function MessageThreadPane({
   const reduceMotion = useReducedMotion() ?? false;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
+  /** The message list itself — observed for late growth (images, fonts). */
+  const messagesContentRef = React.useRef<HTMLDivElement>(null);
+  /**
+   * True from the moment a thread is pinned to its newest message until the
+   * reader deliberately scrolls away from the bottom. While armed, anything
+   * that grows the thread re-pins it.
+   */
+  const stickToBottomRef = React.useRef(false);
+  /**
+   * Ids already painted at least once, so an ARRIVAL can be told apart from
+   * history.
+   *
+   * Without this the entrance below would run on every message the first time
+   * a thread opens — twenty bubbles rippling in at once, which reads as the
+   * page rebuilding itself rather than as a message landing. Seeded on the
+   * first render of each conversation and reset on switch, so history mounts
+   * silently and only genuinely new messages animate.
+   */
+  const seenMessageIdsRef = React.useRef<Set<string>>(new Set());
+  const seededConversationRef = React.useRef<string | null>(null);
+  const activeConversationId = conversation?.id ?? null;
+  if (seededConversationRef.current !== activeConversationId) {
+    seededConversationRef.current = activeConversationId;
+    seenMessageIdsRef.current = new Set(messages.map((m) => m.id));
+  }
   const observedConversationIdRef = React.useRef<string | null>(null);
   const pendingInitialScrollConversationIdRef = React.useRef<string | null>(null);
   // P259: per-message anchors so a search hit can scroll its bubble into view.
@@ -529,9 +570,67 @@ export function MessageThreadPane({
     const container = messagesContainerRef.current;
     if (container) {
       container.scrollTop = container.scrollHeight;
+      // Hold the bottom until the reader actually moves.
+      //
+      // Setting scrollTop ONCE is not enough, and that is the "it opens at the
+      // top and I have to scroll down" report. This runs the moment the
+      // messages array is populated, but the thread keeps GROWING afterwards:
+      // signed attachment images arrive and reserve real height, the webfont
+      // swaps and reflows every bubble, day separators lay out, and on a phone
+      // the container's own dvh-derived height is still settling against the
+      // safe-area and keyboard variables. Every one of those grows
+      // `scrollHeight` while `scrollTop` stays exactly where we left it — so a
+      // pin that was correct at frame one is hundreds of pixels short by the
+      // time the thread is readable, and the further back the newest message
+      // is, the more it looks like the thread simply opened at the top.
+      //
+      // The observer below re-pins on each of those growth events until the
+      // reader scrolls, at which point their position is theirs and we stop
+      // touching it.
+      stickToBottomRef.current = true;
     }
     pendingInitialScrollConversationIdRef.current = null;
   }, [conversation?.id, loading, messages, scrollToMessageId]);
+
+  // Re-pin to the bottom while `stickToBottomRef` is armed and the content is
+  // still changing size. Released by the reader's first deliberate scroll away
+  // from the bottom (below), so this can never fight someone reading history.
+  React.useEffect(() => {
+    const container = messagesContainerRef.current;
+    const content = messagesContentRef.current;
+    if (!container || !content) return;
+
+    const observer = new ResizeObserver(() => {
+      if (!stickToBottomRef.current) return;
+      container.scrollTop = container.scrollHeight;
+    });
+    observer.observe(content);
+
+    // Images are the biggest single source of late growth and do not always
+    // trigger a content resize the observer sees in time, so pin on their load
+    // too. `capture` because `load` does not bubble.
+    const onLoad = () => {
+      if (stickToBottomRef.current) container.scrollTop = container.scrollHeight;
+    };
+    container.addEventListener('load', onLoad, true);
+
+    // A deliberate scroll away from the bottom hands control back to the
+    // reader, permanently for this thread. The near-bottom tolerance matches
+    // the auto-scroll rule below so the two agree about what "at the bottom"
+    // means.
+    const onScroll = () => {
+      if (!stickToBottomRef.current) return;
+      const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+      if (!atBottom) stickToBottomRef.current = false;
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      container.removeEventListener('load', onLoad, true);
+      container.removeEventListener('scroll', onScroll);
+    };
+  }, [conversation?.id]);
 
   // Keep the newest message in view when the scroll region itself changes
   // height. The iOS keyboard opening shrinks it (FairwayMessages subtracts
@@ -740,7 +839,7 @@ export function MessageThreadPane({
           // by the grouping (tight within a group, generous between), and a
           // uniform gap on every child would flatten that back out and
           // double-space the day separators.
-          <div>
+          <div ref={messagesContentRef}>
             {messages.map((msg, idx) => {
               // own-message check is identical for both roles (spec §4).
               const isOwn = msg.sender_id === userId || msg.sender_id === currentUserId;
@@ -764,6 +863,12 @@ export function MessageThreadPane({
                 nextGap > GROUP_WINDOW_MINUTES ||
                 !isSameCalendarDay(msg.created_at, nextMsg.created_at);
               const showTime = isLastInGroup;
+
+              // An ARRIVAL is a message this pane has not painted before.
+              // History is marked seen on the first render of the thread, so
+              // opening a conversation never ripples twenty bubbles in at once.
+              const isNew = !seenMessageIdsRef.current.has(msg.id);
+              if (isNew) seenMessageIdsRef.current.add(msg.id);
 
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
@@ -798,12 +903,26 @@ export function MessageThreadPane({
                     <span className="h-px flex-1 bg-border-subtle" />
                   </div>
                 )}
-                <div
-                  ref={(node) => {
+                <m.div
+                  ref={(node: HTMLDivElement | null) => {
                     // P259: register/unregister this message's scroll anchor.
                     if (node) messageRefs.current.set(msg.id, node);
                     else messageRefs.current.delete(msg.id);
                   }}
+                  // A message should LAND, not appear. `false` for history and
+                  // under reduced motion means no transform is ever applied to
+                  // an already-settled bubble — only a genuine arrival moves,
+                  // and only once.
+                  //
+                  // Deliberately small: 6px of rise and a fade, on the same
+                  // decelerating curve the shell uses. Anything larger reads as
+                  // the list re-laying-out, which is the opposite of the
+                  // impression it exists to give. Nothing else on screen moves,
+                  // because only this element animates — the history above it
+                  // stays exactly where the reader's eye left it.
+                  initial={isNew && !reduceMotion ? { opacity: 0, y: 6 } : false}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   className={cn(
                     'flex items-end gap-2',
                     isOwn ? 'justify-end' : 'justify-start',
@@ -813,8 +932,14 @@ export function MessageThreadPane({
                     isLastInGroup ? 'mb-1.5' : 'mb-0.5',
                   )}
                 >
-                  {/* Incoming avatar (first of group only) */}
-                  {!isOwn && (
+                  {/* Incoming avatar — GROUPS ONLY, once per group.
+                      A 1:1 thread does not need a repeated face: there is
+                      exactly one other person, their name and avatar are in
+                      the header two inches above, and the column cost 40px of
+                      width on every single line of the narrowest screen in the
+                      product. In a group it is load-bearing — it is how you
+                      tell four people apart while scrolling. */}
+                  {!isOwn && isGroup && (
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
                       {isFirstInGroup ? (
                         <Avatar decorative
@@ -827,9 +952,16 @@ export function MessageThreadPane({
                   )}
 
                   <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
-                    {/* Sender name above first incoming bubble */}
-                    {!isOwn && isFirstInGroup && (
-                      <span className="ml-1 font-fw-sans text-eyebrow font-medium text-text-tertiary">
+                    {/* Sender name — GROUPS ONLY, once per group.
+                        Redundant in a 1:1 (the header already names them) and
+                        it was `text-eyebrow` in tertiary ink, which is the
+                        quietest type in the system: in a busy group thread you
+                        could not scan who was speaking without studying the
+                        avatars. It is the label that makes a group readable, so
+                        it gets caption weight in secondary ink — still calm,
+                        actually legible. */}
+                    {!isOwn && isGroup && isFirstInGroup && (
+                      <span className="ml-1 font-fw-sans text-caption font-medium text-text-secondary">
                         {senderName}
                       </span>
                     )}
@@ -997,24 +1129,43 @@ export function MessageThreadPane({
                       {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
                     </div>
                   )}
-                </div>
+                </m.div>
                 </React.Fragment>
               );
             })}
 
-            {/* Typing indicator */}
-            {isOtherTyping && (
-              <div className="flex items-end gap-2 justify-start">
-                <div className="w-8 flex-shrink-0">
-                  <Avatar
-                    name={conversation.other_participant?.name || 'User'}
-                    src={conversation.other_participant?.avatar}
-                    size="sm"
-                  />
-                </div>
-                <TypingIndicator />
-              </div>
-            )}
+            {/* Typing indicator. Wrapped in AnimatePresence so it eases in and
+                out instead of popping — it appears and disappears constantly
+                while someone composes, and an abrupt insert at the foot of the
+                thread jolts the whole column each time.
+
+                No avatar in a GROUP: the typing broadcast carries no identity,
+                so the only face available is `other_participant`, which is a
+                1:1 concept. Showing it in a group would attribute the typing to
+                a specific person the app has no idea about. */}
+            <AnimatePresence initial={false}>
+              {isOtherTyping && (
+                <m.div
+                  key="typing"
+                  className="flex items-end justify-start gap-2"
+                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {!isGroup && (
+                    <div className="w-8 flex-shrink-0">
+                      <Avatar
+                        name={conversation.other_participant?.name || 'User'}
+                        src={conversation.other_participant?.avatar}
+                        size="sm"
+                      />
+                    </div>
+                  )}
+                  <TypingIndicator />
+                </m.div>
+              )}
+            </AnimatePresence>
             <div ref={messagesEndRef} />
           </div>
         )}
