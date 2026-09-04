@@ -184,16 +184,20 @@ mechanical, and these are the habits that keep it fixed.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 - **A Go CLI (`gh`, `gcloud`, `terraform`) fails INTERMITTENTLY in the sandbox,
-  and one successful call proves nothing.** macOS caches TLS trust decisions,
-  so the first few calls succeed and the rest die with
-  `tls: failed to verify certificate: x509: OSStatus -26276`. Measured
-  2026-09-04: a single `gh pr view` succeeded while a 25-call burst failed
-  25/25. Verify with a burst, never one call. Fix:
-  `sandbox.network.enableWeakerNetworkIsolation: true` in
-  `~/.claude/settings.json` (read at session start — effective NEXT session).
-  This is the same trap as piping a gate: a check that cannot reach its data
-  source reports "nothing found", which reads exactly like "nothing is wrong".
-  AGENTS.md's worktree-lifecycle section carries the full measurement.
+  and one successful call proves nothing.** It dies with
+  `tls: failed to verify certificate: x509: OSStatus -26276`, and the failure
+  is volume-sensitive. Measured 2026-09-04: a single `gh pr view` and 3 calls
+  after an idle gap both succeeded, while a 25-call burst failed 25/25 starting
+  at call #1, and stayed failing until a pause. The precise cause is NOT
+  confirmed — do not repeat a mechanism story you have not measured. Verify
+  with a burst, never one call.
+- **`sandbox.excludedCommands` listing a tool is not the protection it looks
+  like.** `gh *` is listed, and `gh` invoked from inside a script or a Node
+  child process still runs sandboxed and still fails — which is how a tool with
+  an exclusion entry broke anyway. Same trap as piping a gate: a check that
+  cannot reach its data source reports "nothing found", which reads exactly
+  like "nothing is wrong". AGENTS.md's worktree-lifecycle section carries the
+  full measurement and the (unverified-until-restart) config fix.
 
 ### 4. Supabase
 

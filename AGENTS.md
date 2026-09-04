@@ -261,34 +261,52 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
 
   96% of lookups failed, `failed === all` was false, the guard did not fire,
   the tool exited 0, and the summary read `0 branches deletable` —
-  indistinguishable from a genuinely clean repository. The three survivors were
-  not health: macOS caches TLS trust decisions, so the first few `gh` calls
-  succeed from that cache before it is exhausted. **A partial blackout is the
-  NORMAL shape of this failure; a total one is the special case**, and a
+  indistinguishable from a genuinely clean repository. **A partial blackout is
+  the NORMAL shape of this failure; a total one is the special case**, and a
   threshold set at the special case is a gate that cannot fire.
 
-  The cause is narrower than "`gh` is broken in the sandbox" — a single `gh`
-  call usually SUCCEEDS there, which is what makes this so easy to
-  misdiagnose. Verify with a burst, never one call:
+  **Why partial, and why one successful call proves nothing.** Sandboxed `gh`
+  fails with `tls: failed to verify certificate: x509: OSStatus -26276` — Go's
+  TLS cannot verify a certificate chain in the sandbox. (This read "cannot read
+  the macOS keychain" until 2026-09-04. `gh` authenticates from the keychain
+  fine; it is certificate VERIFICATION that fails.) The failure is
+  **intermittent and volume-sensitive**, measured 2026-09-04:
+
+  ```text
+  gh pr view 1831              OK       single call
+  3 calls after an idle gap    3/3 OK
+  25-call burst                0/25     fails at call #1
+  3 calls straight after       0/3      still failing; recovers after a pause
+  ```
+
+  So a handful of calls succeed and a sustained run fails outright — which is
+  why `node scripts/worktree-lifecycle.mjs` (about 73 sequential lookups) read
+  70 FAILED / 3 OK. **The precise cause is NOT confirmed** — throttling of the
+  system trust service by a sandboxed client is consistent with the recovery
+  behaviour, but nothing here has proven it, and this paragraph is not the
+  place to guess. What is established is the operational rule: verify with a
+  burst, never one call.
 
   ```bash
   for i in $(seq 1 25); do gh api "repos/{owner}/{repo}/pulls?per_page=1" >/dev/null || echo FAIL; done
   ```
 
-  Sandboxed, that fails 25/25 with
-  `tls: failed to verify certificate: x509: OSStatus -26276` — Go's TLS cannot
-  reach `com.apple.trustd.agent` to verify a certificate chain. (This read
-  "cannot read the macOS keychain" until 2026-09-04; `gh` authenticates fine
-  from the keychain, and it is certificate verification that fails.) The fix is
-  configuration, not avoidance:
+  **`sandbox.excludedCommands` already lists `gh *`, and that is not the
+  protection it looks like.** It exempts a `gh` command the matcher sees
+  directly; it does NOT cover `gh` spawned from inside a script or a Node
+  child process, which is exactly how this tool calls it. An exclusion entry
+  that appears to handle a tool while the tool's real call path stays
+  sandboxed is its own version of the failure this whole section is about.
 
-  ```jsonc
-  // ~/.claude/settings.json  ->  sandbox.network
-  "enableWeakerNetworkIsolation": true   // allows com.apple.trustd.agent
-  ```
-
-  It is read at session start, so it takes effect on the NEXT session, not the
-  one that sets it. Until then, re-run outside the sandbox.
+  A configuration fix exists — `sandbox.network.enableWeakerNetworkIsolation`,
+  which allows `com.apple.trustd.agent`. It is set in
+  `.claude/settings.local.json` (gitignored, helmv3-only) rather than user
+  scope deliberately: it weakens network isolation, and user scope would apply
+  that to every project on the machine. **It is read at session start, so it
+  takes effect on the NEXT session and is UNVERIFIED until then** — re-run the
+  burst above after restarting, and if it still fails, the key is not honored
+  at project scope and belongs in user settings as an owner decision. Until it
+  is confirmed, re-run outside the sandbox.
 
   Parking is what lets an open PR waiting on a human stop costing ~3.8 GiB.
   Branch deletion is proven by `PR MERGED` + `local tip === PR head OID`, never
