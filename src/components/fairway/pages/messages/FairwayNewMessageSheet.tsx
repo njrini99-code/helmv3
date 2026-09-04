@@ -53,6 +53,12 @@ interface SearchResult {
   type: 'coach' | 'player';
 }
 
+export interface SelectedRecipient {
+  userId: string;
+  name: string;
+  avatar: string | null;
+}
+
 // P158: a role label (a job title like "Head Coach") is not a name. Some
 // coach records were seeded with the title copied into `full_name` (a
 // data/labeling collision upstream), which then rendered as this row's NAME
@@ -76,6 +82,22 @@ export function canCreateConversation(
   return mode === 'direct'
     ? selectedUserIds.length === 1
     : selectedUserIds.length >= 2 && title.trim().length > 0;
+}
+
+export function updateSelectedRecipients(
+  mode: 'direct' | 'group',
+  previous: ReadonlyMap<string, SelectedRecipient>,
+  recipient: SelectedRecipient,
+) {
+  if (mode === 'direct') return new Map([[recipient.userId, recipient]]);
+
+  const next = new Map(previous);
+  if (next.has(recipient.userId)) {
+    next.delete(recipient.userId);
+  } else {
+    next.set(recipient.userId, recipient);
+  }
+  return next;
 }
 
 export interface FairwayNewMessageSheetProps {
@@ -102,7 +124,10 @@ export function FairwayNewMessageSheet({
   const [results, setResults] = React.useState<SearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [mode, setMode] = React.useState<'direct' | 'group'>('direct');
-  const [selectedUserIds, setSelectedUserIds] = React.useState<Set<string>>(new Set());
+  // Search results are intentionally ephemeral. This map is the source of
+  // truth for selected recipients, so choosing someone from a later search
+  // cannot make an earlier avatar disappear from the reviewable group strip.
+  const [selectedRecipients, setSelectedRecipients] = React.useState<Map<string, SelectedRecipient>>(new Map());
   const [groupTitle, setGroupTitle] = React.useState('');
   const [noTeamError, setNoTeamError] = React.useState(false);
   // A failed lookup is not "nobody matches". Without this the sheet renders its
@@ -309,7 +334,7 @@ export function FairwayNewMessageSheet({
       setSearchQuery('');
       setResults([]);
       setMode('direct');
-      setSelectedUserIds(new Set());
+      setSelectedRecipients(new Map());
       setGroupTitle('');
       setNoTeamError(false);
       setCreating(false);
@@ -319,30 +344,26 @@ export function FairwayNewMessageSheet({
   const selectMode = (nextMode: 'direct' | 'group') => {
     setMode(nextMode);
     if (nextMode === 'direct') {
-      setSelectedUserIds((previous) => {
+      setSelectedRecipients((previous) => {
         const first = previous.values().next().value;
-        return first ? new Set([first]) : new Set();
+        return first ? new Map([[first.userId, first]]) : new Map();
       });
     }
   };
 
-  const toggleRecipient = (userId: string) => {
-    setSelectedUserIds((previous) => {
-      if (mode === 'direct') return new Set([userId]);
-
-      const next = new Set(previous);
-      if (next.has(userId)) {
-        next.delete(userId);
-      } else {
-        next.add(userId);
-      }
-      return next;
-    });
+  const toggleRecipient = (result: SearchResult) => {
+    setSelectedRecipients((previous) =>
+      updateSelectedRecipients(mode, previous, {
+        userId: result.userId,
+        name: result.name,
+        avatar: result.avatar,
+      }),
+    );
   };
 
   const handleStartConversation = async () => {
     // Guards against double-click double-submit; server dedupe is intentionally not attempted here (client-only fix).
-    const participantUserIds = Array.from(selectedUserIds);
+    const participantUserIds = Array.from(selectedRecipients.keys());
     if (creating || !canCreateConversation(mode, participantUserIds, groupTitle)) return;
 
     setCreating(true);
@@ -414,15 +435,13 @@ export function FairwayNewMessageSheet({
         {mode === 'group' ? (
           <div className="rounded-fw-md bg-surface-sunken p-3">
             <p className="mb-2 font-fw-sans text-caption font-medium text-text-secondary">
-              {selectedUserIds.size} selected
+              {selectedRecipients.size} selected
             </p>
-            {selectedUserIds.size > 0 ? (
+            {selectedRecipients.size > 0 ? (
               <AvatarGroup size="sm" max={5}>
-                {results
-                  .filter((result) => selectedUserIds.has(result.userId))
-                  .map((result) => (
-                    <Avatar key={result.userId} name={result.name} src={result.avatar} size="sm" />
-                  ))}
+                {Array.from(selectedRecipients.values()).map((recipient) => (
+                  <Avatar key={recipient.userId} name={recipient.name} src={recipient.avatar} size="sm" />
+                ))}
               </AvatarGroup>
             ) : (
               <p className="font-fw-sans text-caption text-text-tertiary">Select at least two teammates.</p>
@@ -490,11 +509,11 @@ export function FairwayNewMessageSheet({
             ) : results.length > 0 ? (
               <ul className="flex flex-col gap-1">
                 {results.map((result) => {
-                  const isSelected = selectedUserIds.has(result.userId);
+                  const isSelected = selectedRecipients.has(result.userId);
                   return (
                     <li key={result.id}>
                       <PressTarget
-                        onClick={() => toggleRecipient(result.userId)}
+                        onClick={() => toggleRecipient(result)}
                         aria-pressed={isSelected}
                         className={cn(
                           'block w-full rounded-fw-md px-3 py-2.5 text-left',
@@ -564,7 +583,7 @@ export function FairwayNewMessageSheet({
           variant="primary"
           onClick={handleStartConversation}
           disabled={
-            !canCreateConversation(mode, Array.from(selectedUserIds), groupTitle) ||
+            !canCreateConversation(mode, Array.from(selectedRecipients.keys()), groupTitle) ||
             noTeamError ||
             creating
           }

@@ -210,11 +210,11 @@ export function FairwayTeamBroadcastSheet({
       // immediately rather than the 50% peek detent so it stays usable once
       // the keyboard is up.
       peek={false}
-      title={step === 'recipients' ? 'New team message' : 'Group details'}
+      title={step === 'recipients' ? 'Official Team channel' : 'Official channel details'}
       description={
         step === 'recipients'
-          ? 'Select players to include in this group conversation.'
-          : 'Name your group conversation.'
+          ? 'Send an official channel message to selected players.'
+          : 'Name this official channel.'
       }
     >
       <Sheet.Body className="flex flex-col gap-4">

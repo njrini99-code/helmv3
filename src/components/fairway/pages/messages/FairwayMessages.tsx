@@ -609,7 +609,7 @@ export function FairwayMessages() {
                 leftIcon={<Users size={16} aria-hidden="true" />}
                 onClick={() => setShowTeamBroadcastModal(true)}
               >
-                Team
+                Official Team channel
               </Button>
             ) : undefined
           }
@@ -662,7 +662,7 @@ export function FairwayMessages() {
                       <IconButton
                         variant="ghost"
                         size="md"
-                        aria-label="Message the team"
+                        aria-label="Open official Team channel"
                         onClick={() => setShowTeamBroadcastModal(true)}
                       >
                         <Users size={20} aria-hidden="true" />

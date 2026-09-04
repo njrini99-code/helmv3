@@ -18,10 +18,19 @@ import {
   canCreateConversation,
   resolveCoachName,
   ROLE_LABEL_PATTERN,
+  updateSelectedRecipients,
 } from './FairwayNewMessageSheet';
 
 const source = readFileSync(
   join(process.cwd(), 'src/components/fairway/pages/messages/FairwayNewMessageSheet.tsx'),
+  'utf8',
+);
+const messagesSource = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/FairwayMessages.tsx'),
+  'utf8',
+);
+const teamBroadcastSource = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/FairwayTeamBroadcastSheet.tsx'),
   'utf8',
 );
 
@@ -94,5 +103,32 @@ describe('FairwayNewMessageSheet recipient primitives', () => {
     expect(source).toContain("import { PressTarget } from '@/components/fairway/controls/press-target';");
     expect(source).not.toContain("from '@/components/fairway/forms/Input'");
     expect(source).toContain('<PressTarget');
+  });
+});
+
+describe('updateSelectedRecipients — private-group search persistence', () => {
+  it('retains prior selected recipient metadata when a later search selects another recipient', () => {
+    const first = { userId: 'player-1', name: 'Avery Lee', avatar: 'avery.png' };
+    const second = { userId: 'player-2', name: 'Blair Kim', avatar: 'blair.png' };
+
+    const afterFirstSearch = updateSelectedRecipients('group', new Map(), first);
+    const afterSecondSearch = updateSelectedRecipients('group', afterFirstSearch, second);
+
+    expect(Array.from(afterSecondSearch.keys())).toEqual(['player-1', 'player-2']);
+    expect(Array.from(afterSecondSearch.values())).toEqual([first, second]);
+  });
+
+  it('removes recipient metadata only when that recipient is selected again in group mode', () => {
+    const recipient = { userId: 'player-1', name: 'Avery Lee', avatar: 'avery.png' };
+    const selected = updateSelectedRecipients('group', new Map(), recipient);
+
+    expect(updateSelectedRecipients('group', selected, recipient)).toEqual(new Map());
+  });
+});
+
+describe('coach broadcast official-channel labels', () => {
+  it('labels both the coach entry point and broadcast sheet as the official Team channel', () => {
+    expect(messagesSource).toContain('Official Team channel');
+    expect(teamBroadcastSource).toContain('Official Team channel');
   });
 });
