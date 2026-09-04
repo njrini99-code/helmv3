@@ -26,6 +26,9 @@ interface QueryRecord {
 
 const queryLog: QueryRecord[] = [];
 let nextResults: Array<{ data: unknown[] | null; error: { message: string } | null }> = [];
+/** The realtime status callback observeRealtimeChannel registered, so a test
+ *  can drive SUBSCRIBED / CHANNEL_ERROR transitions by hand. */
+let capturedStatusCb: ((status: string, err?: Error) => void) | null = null;
 
 function makeChain(record: QueryRecord) {
   const result = nextResults.shift() ?? { data: [], error: null };
@@ -113,7 +116,13 @@ vi.mock('@/lib/supabase/client', () => ({
     channel: () => {
       const channelStub = {
         on: () => channelStub,
-        subscribe: () => channelStub,
+        // observeRealtimeChannel() calls subscribe(cb) and forwards every
+        // status to the hook's onStatus. Capturing cb is what lets a test
+        // drive a real CHANNEL_ERROR -> SUBSCRIBED reconnect.
+        subscribe: (cb?: (status: string, err?: Error) => void) => {
+          if (cb) capturedStatusCb = cb;
+          return channelStub;
+        },
       };
       return channelStub;
     },
@@ -740,5 +749,103 @@ describe('range merge evicts rows the refetch proves are gone', () => {
 
     // The near event is far outside that window and must survive.
     expect(result.current.events.map((e) => e.id)).toContain('near-keep');
+  });
+});
+
+/**
+ * Realtime reconnect recovery.
+ *
+ * Sentry JAVASCRIPT-NEXTJS-RJ (2026-09-04, iOS 18.7 WKWebView, production)
+ * captured `Realtime channel transport failure: CHANNEL_ERROR` on
+ * /golf/dashboard/calendar. A dropped WebSocket is ordinary on mobile —
+ * backgrounding, a network handover, Low Power Mode — and supabase-js
+ * reconnects on its own. What makes it HARMLESS is this hook refetching on
+ * the reconnect: while the socket was down no `postgres_changes` payload was
+ * delivered, so any event written in that gap is invisible until something
+ * asks the server again.
+ *
+ * That recovery was written but never tested. `hasSubscribedBefore` is the
+ * single line between a dropped socket and a silently stale calendar, and a
+ * silently stale calendar is indistinguishable from a correct one — the
+ * coach sees a plausible schedule that is simply missing an event. Locking
+ * it here because an untested recovery path is the half that regresses.
+ */
+describe('realtime reconnect recovers what the socket missed', () => {
+  beforeEach(() => {
+    queryLog.length = 0;
+    nextResults = [];
+    deferredResolvers = [];
+    useDeferredForNextN = 0;
+    capturedStatusCb = null;
+  });
+
+  it('refetches on reconnect, and NOT on the first subscribe', async () => {
+    const now = Date.now();
+    const onRealtimeEvent = vi.fn();
+
+    renderHook(() =>
+      useCalendarRangeEvents({
+        teamId: 'team-1',
+        initialEvents: [makeEvent('a', new Date(now).toISOString())],
+        visibleStart: new Date(now),
+        visibleEnd: new Date(now + 6 * DAY_MS),
+        loadedStart: new Date(now - 90 * DAY_MS).toISOString(),
+        loadedEnd: new Date(now + 90 * DAY_MS).toISOString(),
+        realtime: true,
+        onRealtimeEvent,
+      }),
+    );
+
+    await act(async () => {});
+    // If this is null the hook stopped subscribing at all, which would make
+    // every assertion below vacuously pass.
+    expect(capturedStatusCb).not.toBeNull();
+
+    // Initial connect. The server payload the page just rendered is current,
+    // so refetching here would be a wasted round trip on every page load.
+    await act(async () => {
+      capturedStatusCb!('SUBSCRIBED');
+    });
+    expect(onRealtimeEvent).not.toHaveBeenCalled();
+
+    // The transport drops — the exact status Sentry captured.
+    await act(async () => {
+      capturedStatusCb!('CHANNEL_ERROR');
+    });
+    expect(onRealtimeEvent).not.toHaveBeenCalled();
+
+    // supabase-js reconnects. NOW the refetch is mandatory.
+    await act(async () => {
+      capturedStatusCb!('SUBSCRIBED');
+    });
+    expect(onRealtimeEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('refetches again on a second reconnect — recovery is not once-only', async () => {
+    const now = Date.now();
+    const onRealtimeEvent = vi.fn();
+
+    renderHook(() =>
+      useCalendarRangeEvents({
+        teamId: 'team-1',
+        initialEvents: [makeEvent('a', new Date(now).toISOString())],
+        visibleStart: new Date(now),
+        visibleEnd: new Date(now + 6 * DAY_MS),
+        loadedStart: new Date(now - 90 * DAY_MS).toISOString(),
+        loadedEnd: new Date(now + 90 * DAY_MS).toISOString(),
+        realtime: true,
+        onRealtimeEvent,
+      }),
+    );
+
+    await act(async () => {});
+    for (const status of ['SUBSCRIBED', 'CHANNEL_ERROR', 'SUBSCRIBED', 'CHANNEL_ERROR', 'SUBSCRIBED']) {
+      await act(async () => {
+        capturedStatusCb!(status);
+      });
+    }
+    // A flaky mobile connection drops more than once per session; a latch that
+    // only recovered the first time would leave every later gap unhealed.
+    expect(onRealtimeEvent).toHaveBeenCalledTimes(2);
   });
 });
