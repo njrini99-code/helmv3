@@ -73,7 +73,33 @@ const DrawerContent = React.forwardRef<
       <VaulDrawer.Content
         ref={setRefs}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[92vh] flex-col rounded-t-3xl',
+          // Pinned to the bottom edge, which is exactly where the soft keyboard
+          // lands. The WebView never resizes for it (`resize: 'ionic'`, no
+          // <ion-app>) and Safari never resizes its layout viewport, so a field
+          // inside this drawer sat UNDER the keys — the same defect that was
+          // fixed for `fairway/overlays/Sheet.tsx` and the golf message
+          // composer, which this older drawer never received. It still backs
+          // ~22 call sites, several of them text-entry (CreateTaskModal,
+          // CreateItineraryModal, ExpenseForm, AddClassModal,
+          // UploadScheduleModal, UploadNewVersionModal, …).
+          //
+          // Same mechanism as Sheet's KEYBOARD_LIFT, deliberately not
+          // abstracted into a shared constant: these are two different overlay
+          // families and coupling them would make one library's layout change
+          // silently alter the other. `--keyboard-height` is 0px on desktop and
+          // whenever the keyboard is down, so this is inert there. The cap
+          // shrinks by the same amount so a lifted drawer still clears the
+          // status bar, and `dvh` replaces `vh` because `vh` measures the
+          // largest viewport and ignores mobile Safari's dynamic toolbars.
+          'fixed inset-x-0 bottom-[var(--keyboard-height,0px)] z-50 mt-24 flex h-auto flex-col rounded-t-3xl',
+          'max-h-[calc(92dvh-var(--keyboard-height,0px))]',
+          'transition-[bottom] duration-[250ms] motion-reduce:transition-none',
+          // NO safe-area-inset-bottom pad here, deliberately. 11 of this
+          // drawer's 23 call sites already apply their own (ExpenseForm,
+          // CreateTaskModal, CreateItineraryModal, DrillSheet, …), so adding
+          // one at the container would double-pad exactly those and leave the
+          // other 12 looking different again. Making that consistent is a
+          // per-call-site pass, not a one-line container change.
           'surface-stone',
           // Desktop center-mode: when the parent uses Drawer.Root with
           // direction="bottom" (default) on desktop, callers can override
