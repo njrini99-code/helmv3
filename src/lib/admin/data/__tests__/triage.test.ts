@@ -284,3 +284,69 @@ describe('mergeTriage — app-origin regression detection', () => {
     expect(items[0]?.substatus).toBe('ongoing');
   });
 });
+
+/**
+ * The renderer's own test (incident-report.test.ts) already proves it prints
+ * these fields correctly — which is exactly why the omission shipped
+ * unnoticed. Nothing was reaching the renderer: mergeTriage built every
+ * app-event report without errorCode/errorHint/requestId/helmTraceId/
+ * runtime/handled, so a report copied out of the triage queue read "Handled:
+ * —" on rows whose metadata said `handled: true`. The owner read those
+ * em-dashes as "17 unhandled crashes". These tests sit at the CALL SITE
+ * because that is the half that was broken.
+ */
+describe('mergeTriage — identity fields in the copied report', () => {
+  const withMeta = (over: Partial<AppTriageEventRow>, metadata: unknown) =>
+    appEvent({ ...over, metadata });
+
+  it('threads every identity field from metadata into the report', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        withMeta({ id: 'e1' }, {
+          errorCode: '57014',
+          errorHint: 'statement timeout',
+          requestId: 'req-abc',
+          helmTraceId: 'trace-xyz',
+          runtime: 'nodejs',
+          handled: true,
+        }),
+      ],
+    });
+    const report = items[0]!.report!;
+    expect(report).toContain('- Error code: 57014 — statement timeout');
+    expect(report).toContain('- Request id: req-abc');
+    expect(report).toContain('- Trace id: trace-xyz');
+    expect(report).toContain('- Runtime: nodejs');
+    expect(report).toContain('- Handled: yes');
+  });
+
+  it('reports the group as unhandled when ANY occurrence was unhandled', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        withMeta({ id: 'e1', created_at: '2026-07-01T03:00:00Z' }, { handled: true }),
+        withMeta({ id: 'e2', created_at: '2026-07-01T02:00:00Z' }, { handled: false }),
+        withMeta({ id: 'e3', created_at: '2026-07-01T01:00:00Z' }, { handled: true }),
+      ],
+    });
+    // A first-non-null collapse would report "yes" here — the most recent
+    // occurrence is handled — and hide the crash underneath it.
+    expect(items[0]!.report!).toContain('- Handled: no — unhandled');
+  });
+
+  it('leaves handled unknown when no occurrence stated it — never inferred', () => {
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [withMeta({ id: 'e1' }, { runtime: 'edge' })],
+    });
+    const report = items[0]!.report!;
+    expect(report).toContain('- Handled: —');
+    expect(report).toContain('- Runtime: edge');
+  });
+
+  it('still renders an em-dash when metadata is genuinely absent', () => {
+    const items = mergeTriage({ sentryIssues: [], appEvents: [appEvent({ id: 'e1' })] });
+    expect(items[0]!.report!).toContain('- Handled: —');
+  });
+});

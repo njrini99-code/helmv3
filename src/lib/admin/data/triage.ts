@@ -13,6 +13,11 @@ import {
   extractRoute,
   extractRoundId,
   extractErrorCode,
+  extractErrorHint,
+  extractRequestId,
+  extractHelmTraceId,
+  extractRuntime,
+  extractHandled,
 } from '@/lib/admin/incident-report';
 import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
 import { resolveFeatureId } from '@/lib/reliability/normalize';
@@ -367,6 +372,36 @@ export function mergeTriage(input: {
     const errorCode =
       mostRecentFirst.map((r) => extractErrorCode(r.metadata)).find((c) => c !== null) ?? null;
 
+    // Identity fields the fingerprint page has always passed and this call
+    // site never did (see fetchFingerprintDetail -> buildFingerprintIncidentReport).
+    // The renderer prints them fine; nothing was reaching it, so every
+    // incident copied out of the triage queue read "Error code: —",
+    // "Request id: —", "Trace id: —", "Runtime: —", "Handled: —" no matter
+    // what the row actually carried. Measured against production 2026-09-03:
+    // over 680 error rows in 7 days these are captured at 100/96/96/95/100/96
+    // percent respectively — so the em-dashes were this omission, not missing
+    // telemetry, and a reader could not tell those two apart.
+    const errorHint =
+      mostRecentFirst.map((r) => extractErrorHint(r.metadata)).find((v) => v !== null) ?? null;
+    const requestId =
+      mostRecentFirst.map((r) => extractRequestId(r.metadata)).find((v) => v !== null) ?? null;
+    const helmTraceId =
+      mostRecentFirst.map((r) => extractHelmTraceId(r.metadata)).find((v) => v !== null) ?? null;
+    const runtime =
+      mostRecentFirst.map((r) => extractRuntime(r.metadata)).find((v) => v !== null) ?? null;
+
+    // WORST-CASE WINS, unlike the first-non-null collapse above. If any
+    // occurrence under this fingerprint was unhandled, the group is
+    // unhandled: a handled fallback must never mask an unhandled crash that
+    // shares its fingerprint. `null` only when no occurrence stated either
+    // way — absent is reported as unknown, never inferred as handled.
+    const handledFlags = mostRecentFirst.map((r) => extractHandled(r.metadata));
+    const handled = handledFlags.some((v) => v === false)
+      ? false
+      : handledFlags.some((v) => v === true)
+        ? true
+        : null;
+
     // Catalogued defect (h): any row in the bucket naming a QA fixture round
     // makes the whole grouped incident a fixture — same "any occurrence
     // counts" reasoning `regressed` below already uses.
@@ -448,6 +483,12 @@ export function mergeTriage(input: {
         incidentClass: classification.klass,
         incidentClassReason: classification.reason,
         hasDegradedMessage: classification.hasDegradedMessage,
+        errorCode,
+        errorHint,
+        requestId,
+        helmTraceId,
+        runtime,
+        handled,
       }),
     });
   }
