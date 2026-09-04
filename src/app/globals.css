@@ -108,6 +108,37 @@
      the safe-area padding the bar applies to itself. */
   --golf-mobile-bottom-nav-offset: calc(56px + env(safe-area-inset-bottom, 0px));
 
+  /* ── IMMERSIVE SURFACES ────────────────────────────────────────────────
+     A focused destination that owns the whole screen — an open conversation
+     is the first — sets `data-fw-immersive` on <body>.
+
+     A group chat competing with a global tab bar is the "card inside a page"
+     problem in navigation form: the thread is the task, and five other
+     destinations sitting under it are noise plus 90px of the scarcest space on
+     the device. Hiding the bar for the DURATION of that destination is what
+     phone chat apps do. Deliberately NOT tied to the keyboard — a bar that
+     appears and disappears as you focus a field is worse than one that stays.
+
+     The nav's reservation must go with the nav. AppShell pads its content
+     wrapper by the bar's height, so hiding the bar alone would leave 56px of
+     dead space where the bar used to be — the padding is collapsed here in the
+     same rule, which is the whole reason both carry a stable slot. */
+  body[data-fw-immersive] {
+    --golf-mobile-bottom-nav-offset: 0px;
+  }
+  body[data-fw-immersive] [data-slot='fw-bottom-nav'] {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    /* Zero, not safe-area: the immersive surface sizes itself against the
+       viewport and carries its own home-indicator clearance, so leaving any
+       reservation here would double-count it exactly the way the bottom nav
+       was double-counted before. */
+    body[data-fw-immersive] [data-slot='fw-shell-content'] {
+      padding-bottom: 0;
+    }
+  }
+
   /* BaseballHelm-only (#481 mustFix): the coach `HubSubNav` strip
      (hub-sub-nav.tsx) publishes its OWN rendered height here via a
      ResizeObserver, so any leaf pane computing a fixed dvh-based height

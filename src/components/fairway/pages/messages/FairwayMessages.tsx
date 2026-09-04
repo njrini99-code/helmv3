@@ -59,6 +59,7 @@ import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/mess
 import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
+import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
 import { ViewHeader } from '@/components/fairway/view-header';
@@ -98,6 +99,12 @@ export function FairwayMessages() {
   const [showNewMessageModal, setShowNewMessageModal] = React.useState(false);
   const [showTeamBroadcastModal, setShowTeamBroadcastModal] = React.useState(false);
   const [mobileShowChat, setMobileShowChat] = React.useState(false);
+
+  // An open conversation owns the phone. Hides the bottom tab bar (and its
+  // reserved padding) for as long as the thread is open — see
+  // use-immersive-surface.ts for why this is scoped to the destination and NOT
+  // to the keyboard.
+  useImmersiveSurface(mobileShowChat);
 
   // ── UNCHANGED hook: messages + send/edit/delete + typing + realtime ─────────
   const {
@@ -484,7 +491,19 @@ export function FairwayMessages() {
       // alone: centring the composer in a viewport the keyboard covers would
       // scroll the thread header off the top for nothing.
       data-fw-keyboard-aware
-      className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}
+      className={fairwayScope(
+        // Two mobile budgets, because the chrome below this surface differs.
+        // With a thread OPEN the tab bar is hidden and its padding collapsed
+        // (useImmersiveSurface), so the only thing owed underneath is the
+        // home indicator. On the LIST the bar is up, and AppShell has already
+        // reserved `2rem + 56px + safe-area` for it — subtracting that same
+        // amount here is what stops the nav being counted twice, which was
+        // ~200px of dead beige between the composer and the tab bar.
+        // The keyboard term only takes what the reservation has not.
+        mobileShowChat
+          ? 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
+          : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
+      )}
     >
       {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below
           `md` there is nothing left up here that needs to breathe — the row

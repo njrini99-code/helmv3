@@ -101,6 +101,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
 
   return (
     <nav
+      data-slot="fw-bottom-nav"
       aria-label="Primary"
       className={cn(
         // Mobile-only; the desktop rail owns navigation on >=md.
