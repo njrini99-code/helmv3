@@ -326,29 +326,25 @@ export function FairwayMessages() {
     handleSelectConversation(conversationId);
   };
 
-  // ── New conversation (UNCHANGED action) ─────────────────────────────────────
-  const handleNewConversation = async (newUserId: string) => {
+  // ── New direct/private-group conversation (server action validates team scope) ──
+  const handleNewConversation = async (participantUserIds: string[], title?: string) => {
     try {
-      const result = await createGolfConversation([newUserId], teamId || undefined);
-      if (result.conversationId) {
-        await refetch();
-        handleSelectConversation(result.conversationId);
-        showToast('Conversation started', 'success');
-      } else if ('error' in result) {
-        showToast(String(result.error) || 'Failed to start conversation', 'error');
-        logError(
-          new Error(String(result.error) || 'Failed to start conversation'),
-          { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
-          'high'
-        );
+      const result = await createGolfConversation(participantUserIds, teamId || undefined, title);
+      if (!result.conversationId) {
+        throw new Error('error' in result ? String(result.error) : 'Failed to start conversation');
       }
+
+      await refetch();
+      handleSelectConversation(result.conversationId);
+      showToast(title ? 'Group created' : 'Conversation started', 'success');
     } catch (err) {
-      showToast('Failed to start conversation', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to start conversation', 'error');
       logError(
         err instanceof Error ? err : new Error('Failed to start conversation'),
         { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
         'high'
       );
+      throw err;
     }
   };
 
@@ -796,7 +792,7 @@ export function FairwayMessages() {
       <FairwayNewMessageSheet
         isOpen={showNewMessageModal}
         onClose={() => setShowNewMessageModal(false)}
-        onSelect={handleNewConversation}
+        onCreateConversation={handleNewConversation}
         currentUserRole={userRole || 'player'}
         teamId={teamId}
       />

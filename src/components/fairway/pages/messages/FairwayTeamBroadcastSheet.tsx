@@ -32,6 +32,7 @@ import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input } from '@/components/fairway/forms/Input';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { Button } from '@/components/fairway/controls/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
@@ -278,14 +279,7 @@ export function FairwayTeamBroadcastSheet({
                   const isSelected = selectedPlayerIds.has(player.id);
                   return (
                     <li key={player.id}>
-                      {/* Intentional raw <button>: a multi-select recipient row
-                          with a checkbox + avatar + stacked name/grad-year that
-                          the <Button> primitive can't express. The full
-                          interactive-state contract (hover/focus-visible) is
-                          inline. */}
-                      {/* eslint-disable-next-line helm/no-raw-button */}
-                      <button
-                        type="button"
+                      <PressTarget
                         onClick={() => togglePlayer(player.id)}
                         aria-pressed={isSelected}
                         className={cn(
@@ -320,7 +314,7 @@ export function FairwayTeamBroadcastSheet({
                             </span>
                           ) : null}
                         </span>
-                      </button>
+                      </PressTarget>
                     </li>
                   );
                 })}

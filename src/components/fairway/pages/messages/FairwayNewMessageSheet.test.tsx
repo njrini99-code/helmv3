@@ -11,8 +11,19 @@
  * detects a role-label-shaped full_name and falls back to an honest, clearly
  * non-personal label instead of parroting the role back as a name.
  * ========================================================================== */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveCoachName, ROLE_LABEL_PATTERN } from './FairwayNewMessageSheet';
+import {
+  canCreateConversation,
+  resolveCoachName,
+  ROLE_LABEL_PATTERN,
+} from './FairwayNewMessageSheet';
+
+const source = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/FairwayNewMessageSheet.tsx'),
+  'utf8',
+);
 
 describe('resolveCoachName — role label vs. real person collision', () => {
   it('passes through a real person name unchanged', () => {
@@ -57,5 +68,31 @@ describe('resolveCoachName — role label vs. real person collision', () => {
     // that same role string.
     expect(titleHolderName).toBe('Nick Rini');
     expect(collidedRowName).not.toMatch(ROLE_LABEL_PATTERN);
+  });
+});
+
+describe('canCreateConversation — direct and private-group requirements', () => {
+  it('allows a direct message only when exactly one recipient is selected', () => {
+    expect(canCreateConversation('direct', ['player-1'], '')).toBe(true);
+    expect(canCreateConversation('direct', [], '')).toBe(false);
+    expect(canCreateConversation('direct', ['player-1', 'player-2'], '')).toBe(false);
+  });
+
+  it('rejects a private group with fewer than two recipients or a blank title', () => {
+    expect(canCreateConversation('group', ['player-1'], 'Practice')).toBe(false);
+    expect(canCreateConversation('group', ['player-1', 'player-2'], '   ')).toBe(false);
+  });
+
+  it('allows a private group with at least two recipients and a title', () => {
+    expect(canCreateConversation('group', ['player-1', 'player-2'], 'Practice plans')).toBe(true);
+  });
+});
+
+describe('FairwayNewMessageSheet recipient primitives', () => {
+  it('uses the shared search and pressable primitives instead of the generic input', () => {
+    expect(source).toContain("import { SearchField } from '@/components/fairway/command/search-field';");
+    expect(source).toContain("import { PressTarget } from '@/components/fairway/controls/press-target';");
+    expect(source).not.toContain("from '@/components/fairway/forms/Input'");
+    expect(source).toContain('<PressTarget');
   });
 });
