@@ -242,16 +242,53 @@ The canonical working repository is `/Users/ricknini/Downloads/helmv3`.
   rendered as `DELETE_BRANCH`: one is recoverable from the reflog, the other
   is not.
 
-  **A total evidence blackout exits 2, and is never a clean report.** If every
-  PR lookup fails, the tool prints `INFRASTRUCTURE_FAILURE` and refuses to
-  present the result as a finding. The failure mode this closes was observed,
-  not theorised: `gh` cannot reach GitHub from inside the Bash sandbox (Go's
-  TLS cannot read the macOS keychain there), so every row read `UNKNOWN` and
-  the summary read `0 branches deletable` — indistinguishable from a genuinely
-  clean repository. Re-run outside the sandbox rather than trusting a report
-  whose every lookup failed. Same convention as `npm run guards`:
-  PASS / POLICY_FAILURE / INFRASTRUCTURE_FAILURE, where the third exits
-  non-zero and never presents as the first.
+  **A DOMINANT evidence blackout exits 2, and is never a clean report.** When
+  at least half of the PR lookups fail, the tool prints
+  `INFRASTRUCTURE_FAILURE` and refuses to present the result as a finding; any
+  failures at all are counted on their own line, because a row whose lookup
+  failed proves nothing about that branch. Same convention as
+  `npm run guards`: PASS / POLICY_FAILURE / INFRASTRUCTURE_FAILURE, where the
+  third exits non-zero and never presents as the first.
+
+  **This paragraph required unanimity until 2026-09-04, and that is exactly why
+  the guard stayed silent for the failure it was written for.** It said "if
+  every PR lookup fails". Instrumented at the guard's own line, inside the
+  sandbox:
+
+  ```text
+  total rows 72   ->   { FAILED: 69, OK: 3 }
+  ```
+
+  96% of lookups failed, `failed === all` was false, the guard did not fire,
+  the tool exited 0, and the summary read `0 branches deletable` —
+  indistinguishable from a genuinely clean repository. The three survivors were
+  not health: macOS caches TLS trust decisions, so the first few `gh` calls
+  succeed from that cache before it is exhausted. **A partial blackout is the
+  NORMAL shape of this failure; a total one is the special case**, and a
+  threshold set at the special case is a gate that cannot fire.
+
+  The cause is narrower than "`gh` is broken in the sandbox" — a single `gh`
+  call usually SUCCEEDS there, which is what makes this so easy to
+  misdiagnose. Verify with a burst, never one call:
+
+  ```bash
+  for i in $(seq 1 25); do gh api "repos/{owner}/{repo}/pulls?per_page=1" >/dev/null || echo FAIL; done
+  ```
+
+  Sandboxed, that fails 25/25 with
+  `tls: failed to verify certificate: x509: OSStatus -26276` — Go's TLS cannot
+  reach `com.apple.trustd.agent` to verify a certificate chain. (This read
+  "cannot read the macOS keychain" until 2026-09-04; `gh` authenticates fine
+  from the keychain, and it is certificate verification that fails.) The fix is
+  configuration, not avoidance:
+
+  ```jsonc
+  // ~/.claude/settings.json  ->  sandbox.network
+  "enableWeakerNetworkIsolation": true   // allows com.apple.trustd.agent
+  ```
+
+  It is read at session start, so it takes effect on the NEXT session, not the
+  one that sets it. Until then, re-run outside the sandbox.
 
   Parking is what lets an open PR waiting on a human stop costing ~3.8 GiB.
   Branch deletion is proven by `PR MERGED` + `local tip === PR head OID`, never

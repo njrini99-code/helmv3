@@ -183,6 +183,17 @@ mechanical, and these are the habits that keep it fixed.
   `${b}` followed by a literal colon.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
+- **A Go CLI (`gh`, `gcloud`, `terraform`) fails INTERMITTENTLY in the sandbox,
+  and one successful call proves nothing.** macOS caches TLS trust decisions,
+  so the first few calls succeed and the rest die with
+  `tls: failed to verify certificate: x509: OSStatus -26276`. Measured
+  2026-09-04: a single `gh pr view` succeeded while a 25-call burst failed
+  25/25. Verify with a burst, never one call. Fix:
+  `sandbox.network.enableWeakerNetworkIsolation: true` in
+  `~/.claude/settings.json` (read at session start — effective NEXT session).
+  This is the same trap as piping a gate: a check that cannot reach its data
+  source reports "nothing found", which reads exactly like "nothing is wrong".
+  AGENTS.md's worktree-lifecycle section carries the full measurement.
 
 ### 4. Supabase
 
