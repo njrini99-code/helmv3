@@ -52,6 +52,13 @@ name: Self-heal Repair
 permissions:
   contents: write
   pull-requests: write
+  # Required by claude-code-action: it exchanges a GitHub OIDC token for its
+  # own credential, and without this the action fails before Claude ever
+  # starts — "Could not fetch an OIDC token", retried 3× then fatal. Learned
+  # from the workflow's first-ever run (33821046930), which failed here.
+  # This grants an identity assertion, not repository write; it does not widen
+  # what the job can change.
+  id-token: write
 
 # One Repair at a time. Two concurrent runs would each open a PR for the same
 # finding, and the second would branch from a tree the first had already moved.
@@ -89,45 +96,71 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Invoked through the Claude Code CLI, NOT anthropics/claude-code-action.
+      #
+      # The action is trigger-driven: its own log shows `trigger_phrase:
+      # @claude`
+      # and `label_trigger: claude`, and it expects an issue or PR comment
+      # event.
+      # On a schedule or workflow_dispatch there is no such event, so it SKIPS
+      # every internal step and the job still exits 0. Run 33821349146 went
+      # green
+      # in 56ms having never started Claude — seven skipped sub-actions, no
+      # turns, no tokens, no output. A scheduled agent needs an invocation that
+      # runs unattended, which is what the CLI does and what the launchd agent
+      # this replaces has always used.
       - name: Run Repair
         id: repair
-        # v1
-        uses: >-
-          anthropics/claude-code-action@1f291e1cfe0f5fc21db2aef19af844591600ade7
         env:
-          # STEP 0 of the contract reads production through the service role.
-          # There is no MCP in this runtime, which the contract already assumes.
+          # Subscription auth. No ANTHROPIC_API_KEY here on purpose — the owner
+          # asked that agent work bill to the subscription, and its absence
+          # means there is no path to fall back to metered billing silently.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GH_TOKEN: ${{ github.token }}
           SELFHEAL_DRY_RUN: ${{ inputs.dry_run || 'false' }}
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: |
-            --max-turns 40
-            --append-system-prompt "Branch and PR only. Never push to
-            main, never merge, never deploy, never mutate production data."
-          prompt: |
-            You are the Repair stage of Helm's self-heal loop. Run it against
-            the current incident board.
+        run: |
+          set -uo pipefail
+          npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+          claude --version
 
-            Follow docs/ai-system/selfheal/repair-contract.md exactly and in
-            order, including STEP 0b's refusal to run on a stale board, and
-            STEP 3's requirement to work in a worktree outside the checkout.
-            Follow CLAUDE.md and AGENTS.md.
+          dry=""
+          if [ "${SELFHEAL_DRY_RUN}" = "true" ]; then
+            dry="THIS IS A DRY RUN. Do all the analysis, then report what you
+          WOULD repair. Do not create a branch and do not open any pull
+          request."
+          fi
 
-            Hard limits for this run:
-              - branch and PR only; never push to main, merge, or deploy
-              - open at most THREE pull requests
-              - if a finding cannot be reproduced with a failing test, do not
-                open a PR for it — say so and move on. Reproducing the bug
-                first is the point of this stage, not a formality.
+          claude -p "You are the Repair stage of Helm's self-heal loop.
+          Follow docs/ai-system/selfheal/repair-contract.md exactly and in
+          order,
+          including STEP 0b's refusal to run on a stale board and STEP 3's
+          requirement to work in a worktree outside the checkout. Follow
+          CLAUDE.md and AGENTS.md.
+          Hard limits: branch and PR only, never push to main, never merge,
+          never deploy. Open at most THREE pull requests. If a finding cannot be
+          reproduced with a failing test, do NOT open a PR for it — say so and
+          move on. ${dry}
+          End your reply with a line of the form
+          REPAIR-SUMMARY: <what you did>." \
+            --permission-mode bypassPermissions \
+            --output-format stream-json --verbose 2>&1 | tee /tmp/repair-out.log
+          rc=${PIPESTATUS[0]}
 
-            For every finding you repair, the pull request body must state the
-            failing test that reproduced it and the evidence you used. If you
-            skipped a finding, say which and why — a run that repairs nothing
-            and explains why is a successful run, and is much more useful than
-            a speculative fix.
+          # A green step must mean Claude actually ran. The action this replaces
+          # reported success after skipping everything, which is the exact
+          # failure class this loop exists to detect — so the evidence is
+          # checked
+          # here rather than trusted.
+          if ! grep -q "REPAIR-SUMMARY:" /tmp/repair-out.log; then
+            echo "::error::Repair produced no REPAIR-SUMMARY line."
+            echo "Treating as a failed run, not a quiet success."
+            echo "did_work=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "did_work=true" >> "$GITHUB_OUTPUT"
+          exit "$rc"
 
       # The Bridge Self-heal panel reads runtime from
       # background_job_logs. Without this the stage would run correctly and
@@ -141,12 +174,20 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OUTCOME: ${{ steps.repair.outcome }}
+          # `outcome` alone is not evidence. A skipped action reports success,
+          # which is how run 33821349146 wrote a `completed` heartbeat for work
+          # that never happened. did_work is set only after the run's own output
+          # is checked for a REPAIR-SUMMARY line.
+          DID_WORK: ${{ steps.repair.outputs.did_work }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           status="completed"
           [ "$OUTCOME" = "success" ] || status="failed"
+          # Both must hold. A step that succeeded without doing the work is a
+          # failed Repair, not a completed one.
+          [ "${DID_WORK:-false}" = "true" ] || status="failed"
           run_url="$REPO_URL/actions/runs/$RUN_ID"
           jt='"job_type":"selfheal-repair"'
           body=$(printf '{%s,"status":"%s",' "$jt" "$status")
