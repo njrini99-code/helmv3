@@ -678,7 +678,7 @@ export function useGolfMessages(conversationId: string) {
   };
 }
 
-export function useGolfConversations() {
+export function useGolfConversations(knownUserId?: string | null) {
   const [conversations, setConversations] = useState<GolfConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   // P257: distinguishes "the rail failed to load" from "the inbox is truly
@@ -687,14 +687,34 @@ export function useGolfConversations() {
   // a genuine empty inbox. The rail reads this to render a recoverable error
   // (explain + Retry) instead.
   const [error, setError] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(knownUserId ?? null);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
   const conversationIdsRef = useRef<Set<string>>(new Set());
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get the current user on mount
+  // Resolve the current user — but only if the caller could not tell us.
+  //
+  // `auth.getUser()` is a network round trip, and NOTHING in this hook can start
+  // until it lands: the conversation fetch is gated on `userId`. So entering
+  // Messages paid an auth hop of skeleton BEFORE the first query was even sent,
+  // on top of the route-level skeleton Next had already shown — which is what
+  // reads as the tab "hot loading" on entry.
+  //
+  // The page already knows who the user is. `useGolfUser()` carries a
+  // server-resolved id, resolved in the dashboard layout during SSR and
+  // available synchronously on the first client render. Passing it in lets the
+  // fetch start on mount instead of one round trip later.
+  //
+  // The fallback stays for any caller that has no context to hand (and so this
+  // is not a behaviour change for them), and it is skipped entirely when we were
+  // told — an authenticated round trip we do not need is latency the user pays
+  // for nothing.
   useEffect(() => {
+    if (knownUserId) {
+      setUserId((prev) => (prev === knownUserId ? prev : knownUserId));
+      return;
+    }
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -703,7 +723,7 @@ export function useGolfConversations() {
     };
     getUser();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [knownUserId]);
 
   const fetchConversations = useCallback(async () => {
     if (!userId) {

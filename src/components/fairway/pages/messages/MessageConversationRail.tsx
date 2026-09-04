@@ -336,13 +336,34 @@ export function MessageConversationRail({
     return (
       <InstrumentPanel
         depth="base"
-        padding="md"
-        header="Conversations"
-        className={cn('flex flex-col', className)}
+        // The SAME gating the loaded rail uses below. This branch hardcoded
+        // `padding="md"` and the "Conversations" bezel regardless of viewport,
+        // so entering Messages on a phone drew THREE different layouts in a row:
+        // the route skeleton (flat, search field, rows), then this bezel card
+        // with no search, then the real rail (flat, search field, rows). Two
+        // visible reconstructions on the way to a screen whose shape was known
+        // the whole time — the "it hot loads when you click Messages" report.
+        //
+        // A loading state that does not match the thing it stands in for is
+        // worse than none: it manufactures the exact layout jump it exists to
+        // prevent.
+        padding={isDesktop ? 'md' : 'none'}
+        header={isDesktop ? 'Conversations' : undefined}
+        className={cn(
+          'flex flex-col',
+          'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+          className,
+        )}
         aria-busy="true"
       >
+        {/* The search field holds its place. It is the rail's first row on a
+            phone, so omitting it let every conversation jump up by its height
+            the moment data landed. */}
+        <div className="mb-3">
+          <div className="h-11 w-full rounded-fw-md bg-surface-sunken" />
+        </div>
         <div className="flex flex-col gap-1">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="flex items-start gap-3 rounded-fw-md px-3 py-2.5">
               <div className="h-10 w-10 flex-shrink-0 rounded-full bg-surface-sunken" />
               <div className="flex-1 space-y-2">

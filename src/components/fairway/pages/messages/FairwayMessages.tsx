@@ -89,7 +89,10 @@ export function FairwayMessages() {
     loading: conversationsLoading,
     error: conversationsError,
     refetch,
-  } = useGolfConversations();
+  // The server already resolved who this is (dashboard layout -> GolfUserProvider),
+  // so hand it over rather than making the hook re-ask Supabase over the network
+  // before it can send its first query.
+  } = useGolfConversations(userId);
 
   const handleConversationsRefresh = async () => {
     await refetch();
