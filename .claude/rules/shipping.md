@@ -62,14 +62,16 @@ mechanical, and these are the habits that keep it fixed.
 ### 1b. Agent settings ownership
 
 - **`autoMemoryEnabled` must be `false` for Helm work, and
-  `.claude/settings.json` sets it.** Measured 2026-09-04 the invariant is
-  VIOLATED: `~/.claude/settings.json` sets the same key to `true`. Which
-  scope wins for this key is UNVERIFIED — the project-deny-over-user-allow
-  precedence proven in §4 is the PERMISSIONS resolver and does not
-  generalise, and the enforcement inventory reads project config only. Clear
-  the user-scope key rather than reasoning about precedence. That is an OWNER
-  action: user scope affects every project and any concurrent session, so an
-  agent reports this rather than editing it.
+  `.claude/settings.json` is the only file that should set it.** It was also
+  set in user scope, to `true`, until 2026-09-04 — so the invariant was
+  violated and nobody could tell, because which scope wins for this key is
+  UNVERIFIED: the project-deny-over-user-allow precedence proven in §4 is the
+  PERMISSIONS resolver and does not generalise, and the enforcement inventory
+  reads project config only. The user-scope key was REMOVED (owner-authorised)
+  rather than set to `false`, so project scope governs and there is no second
+  value to reconcile. Backup: `~/.claude/settings.json.bak-2026-09-04`.
+  If this key reappears in user scope, remove it again — do not reason about
+  precedence, and do not set it to `false` there either.
 - The reason is not that auto-memory is bad. It is that this repo already has
   an explicit Git-backed memory architecture — `memory/registry.yml`,
   `memory/features/**`, `memory/ledgers/**`, `memory/incidents/**`,
