@@ -1,0 +1,59 @@
+name: Dependabot auto-merge
+
+# Auto-merges Dependabot PRs for PATCH or MINOR updates to DEVELOPMENT
+# dependencies only. Everything else — any production-dependency bump, any
+# major version regardless of dependency type — always needs a human;
+# `.github/dependabot.yml`'s own grouping already keeps majors out of the
+# grouped PRs this targets (majors "ride alone" per that file's comments).
+#
+# `pull_request_target`, NOT `pull_request`. dependabot/fetch-metadata's own
+# README is explicit: a workflow triggered by Dependabot on `pull_request`
+# gets a READ-ONLY GITHUB_TOKEN with no access to repository secrets, and
+# `gh pr merge` needs write. `pull_request_target` is the action's own
+# documented fix for exactly this. It carries none of that event's usual
+# fork-PR danger here: Dependabot always opens its PRs from a branch IN
+# this repository, never a fork, and this workflow never checks out or
+# executes the PR's own code — it only reads dependabot/fetch-metadata's
+# outputs (computed from the PR's metadata via the API, not by running
+# anything from the PR branch) and calls `gh pr merge`.
+#
+# `gh pr merge --auto` REQUIRES the repository setting "Allow auto-merge".
+# Read here 2026-09-05, not changed by this workflow:
+#   gh api repos/njrini99-code/helmv3 -q .allow_auto_merge  ->  true
+# If that setting is ever turned off, `gh pr merge --auto` fails and this
+# job goes red — it does not silently no-op, and nothing in this repo
+# re-enables the setting on the workflow's behalf.
+
+on:
+  pull_request_target:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge safe Dependabot updates
+    # Scoped to Dependabot AND this exact repository — `pull_request_target`
+    # runs with the base repo's secrets even for a PR opened elsewhere, so
+    # the repository check matters here in a way it would not for a plain
+    # `pull_request` trigger.
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'njrini99-code/helmv3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98  # v3.1.0
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Enable auto-merge for patch/minor development-dependency updates
+        if: |
+          steps.metadata.outputs.dependency-type == 'direct:development' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-minor')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
