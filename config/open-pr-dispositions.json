@@ -34,11 +34,6 @@
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
     "note": "fix(golf/messages): the follow-through #1830 owed \u2014 long-press survives a thumb move, the menu closes, a message can be copied. Needs a human on a real device to confirm the touch/press behavior before merge; the checkout is safe to park once clean and pushed."
   },
-  "1834": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "chore(types): scheduled regen of database.ts from the production schema. Automation-produced, low risk, no local agent checkout needs to persist."
-  },
   "1833": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
