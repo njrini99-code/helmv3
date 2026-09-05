@@ -1,4 +1,9 @@
 {
+  "1854": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Phase 2 P4: CodeQL #584, lockfile-drift doctor check, e2e env loading, doc schema drift to zero."
+  },
   "1851": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
