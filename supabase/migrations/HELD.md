@@ -79,7 +79,7 @@ That half is defence in depth, not an exposure.
 | `20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql` | **HOLD** | Adds `registered_at`/`attended_at` (nullable timestamptz) to `baseball_camp_registrations`. `20260825224803_reconcile_baseball_active_read_contracts.sql`'s first block claimed these already existed live; the 2026-09-05 reconciliation's per-block live-column check found they do not — the one genuinely open gap out of that file's six blocks. Held rather than applied because it is unverified whether the baseball camp-registration UI actually reads/writes these column names today; see the file's own header for what to check before applying. | 2026-09-05 |
 | `20260905091000_baseball_timeline_event_acks_user_id_columns.sql` | **HOLD** | Found by `db-drift.yml`'s daily production-drift check (5 consecutive failures, 2026-08-31 -> 2026-09-04). `src/app/baseball/actions/timeline-acks.ts` dual-writes `user_id`/`acknowledged_at` alongside the real `acked_by`/`acked_at` columns and then selects `acknowledged_at` back — but production has no `user_id`/`acknowledged_at` columns at all (confirmed live 2026-09-05). Held because whether this is actually causing acknowledgement writes to fail in production (versus PostgREST silently tolerating the extra keys) was not confirmed — see the file's header for what to check first. | 2026-09-05 |
 | `20260905092000_baseball_elite_stat_event_columns_gap.sql` | **HOLD** | Found by the same `db-drift.yml` failures: `baseball_pitch_events.batter_id`/`.pitch_type_classified`/`.is_called_strike`/`.count_state` and `baseball_workload_events.count`/`.high_intent_count` are all missing live, even though `20260624000080_baseball_elite_stat_event_model.sql` — the migration that defines them — **does have a ledger row** (`list_migrations` confirms it "applied"). Root cause: that migration's `CREATE TABLE IF NOT EXISTS` silently no-op'd against these two tables because they already existed under an older, incompatible column shape (live `baseball_pitch_events` still carries `pitch_type`/`called_strike`/`pitcher_id`, not the elite-model names) — the ledger records the statement ran, not that it did anything to these two tables. This file adds only the missing columns, additively, and does not attempt to reconcile the old and new column pairs — that split (coexist permanently vs. merge vs. retire the old ones) is a schema-design decision for whoever owns the elite stat event model. | 2026-09-05 |
-| *(data divergence, not a schema gap — no migration)* `admin_allowlist` vs. `users.role='admin'` | **INVESTIGATE, not a migration** | `db-drift.yml`'s "admin_allowlist and users.role=admin stay in sync" check has failed the same 5 runs: 1 `admin_allowlist` user no longer has `users.role='admin'` in production — read live via the check's own query, not independently re-run here (no `execute_sql` access in this reconciliation's read-only Supabase MCP). Admin RPCs still work for that user via `is_super_admin()`, so nothing is broken today, but the divergence itself needs an owner decision: was the demotion intentional (in which case remove the stale `admin_allowlist` row) or accidental (in which case restore `users.role='admin'`)? Neither this reconciliation nor a migration file can make that call — it needs identifying WHICH user and why. | 2026-09-05 |
+| *(data divergence, not a schema gap — no migration)* `admin_allowlist` vs. `users.role='admin'` | **INVESTIGATE, not a migration — diagnostic + template prepared as O7** | `db-drift.yml`'s "admin_allowlist and users.role=admin stay in sync" check has failed the same 5 runs: 1 `admin_allowlist` user no longer has `users.role='admin'` in production — read live via the check's own query, not independently re-run here (no `execute_sql` access in this reconciliation's read-only Supabase MCP). Admin RPCs still work for that user via `is_super_admin()`, so nothing is broken today, but the divergence itself needs an owner decision: was the demotion intentional (in which case remove the stale `admin_allowlist` row) or accidental (in which case restore `users.role='admin'`)? Neither this reconciliation nor a migration file can make that call — it needs identifying WHICH user and why. **2026-09-05 follow-up: the id was never captured anywhere in this repo's evidence trail** (the drift check's own query returns only a count, never a row) — see "Owner SQL, prepared" below, action O7, for the read-only SELECT that identifies it and the templated UPDATE the owner fills in afterward. | 2026-09-05 |
 
 ## Applied directly, no file (2026-09-05 reconciliation)
 
@@ -264,6 +264,56 @@ unexposed: `DROP EXTENSION IF EXISTS pg_graphql;` (this also drops the
 Edge Function or Management-API-side tooling depends on the extension being
 present before running it — this reconciliation did not check Edge Function
 source for that, only `src/`).
+
+### O7 — investigate and, if warranted, restore the `admin_allowlist` vs `users.role` divergence
+
+Closes the register's "INVESTIGATE, not a migration" row above (F040 in the
+2026-09-05 coverage matrix). `db-drift.yml`'s "admin_allowlist and
+users.role=admin stay in sync" check
+(`scripts/db/check-supabase-drift.mjs`) has failed 5 straight scheduled runs:
+one `admin_allowlist` user no longer has `users.role='admin'` in production.
+
+**The specific `user_id` is NOT recorded anywhere this reconciliation (or the
+A3 track before it) had access to.** A3's own report says so directly, twice
+— once inline ("no `execute_sql` access in this session's read-only Supabase
+MCP to identify the specific user") and once in its "what could not be
+reconstructed" section ("needs identifying which specific user and why; not
+resolvable without `execute_sql` access"). The `db-drift.yml` check itself
+(`check-supabase-drift.mjs`'s query below) only returns a COUNT, never the
+row — so even the CI log that failed 5 times never printed an id. **There is
+no drift-run output anywhere in this repo's evidence trail that names an id
+to quote here.** (a) below is the read-only diagnostic that produces one;
+(b) is a template the owner fills in from (a)'s result — not a ready-to-run
+statement, because no session in this chain has ever seen the actual id.
+
+**(a) — identify every divergent id** (safe, read-only; matches the shape of
+`check-supabase-drift.mjs`'s own query, but returns rows instead of a count):
+
+```sql
+SELECT a.user_id, a.email, a.note, u.role AS current_role
+FROM public.admin_allowlist a
+LEFT JOIN public.users u ON u.id = a.user_id
+WHERE u.role IS NULL OR u.role <> 'admin';
+```
+
+**(b) — restore the role, ONLY if the demotion was accidental** (fill in the
+`user_id` from (a) — this reconciliation has no value to put there):
+
+```sql
+-- Run (a) first. Decide whether the divergence is a mistake (restore) or
+-- intentional (in which case DELETE the stale admin_allowlist row instead —
+-- see the register row above). Do not run this against a guessed id.
+UPDATE public.users
+SET role = 'admin'
+WHERE id = '<user_id from O7(a)>';
+```
+
+`admin_allowlist` (via `is_super_admin()`) is what actually gates admin
+access today — see `docs/operations/SUPABASE_DRIFT_GUARD.md`'s "source of
+truth" note — so nothing is broken while this sits uninvestigated. The
+divergence is worth closing anyway: a stale `users.role` is exactly the kind
+of two-copies-of-one-fact drift `src/lib/admin/require-super-admin.ts`'s own
+header describes causing the #736 incident in the other direction.
 
 ## Adding a row
 
