@@ -95,6 +95,29 @@ Join code
 - Join flow can create duplicate membership or request records if idempotency is not guarded.
 - Missing profile/onboarding state can cause redirect loops.
 - Auth helpers and route guards can silently drift from server-action auth requirements.
+- **A join/claim/accept-invite flow reads its target resource BEFORE the
+  membership that would authorize reading it exists — an RLS tightening on
+  that resource's SELECT policy can silently break the flow meant to create
+  that very membership.** This happened for real: closing a `golf_teams`
+  leak with `USING (is_golf_team_coach(id) OR is_golf_team_player(id))`
+  broke `validateGolfPlayerCanJoinTeam` (`src/app/golf/actions/teams.ts`),
+  whose pre-flight "does this team exist?" read used the same policy — a
+  player about to join is neither a coach nor a player yet, so the read
+  returned zero rows, reported "Team not found", and abandoned the join
+  before the `SECURITY DEFINER` insert (which works fine) ever ran. Both
+  `/golf/join/[code]` and signup-with-team-code funnel through
+  `processGolfTeamInvitation` (`src/app/golf/actions/onboarding.ts`), so the
+  blast radius of a similar future tightening would again be total. Any
+  future SELECT-policy change on a table read during onboarding/join/claim
+  must be checked with the role-impersonation technique in
+  `memory/context/engineering-methodology.md`'s Row-Level Security section,
+  specifically as a user in the PRE-membership state — a probe shaped like
+  an existing member proves nothing here. A shared-mock unit test cannot
+  catch this class either, because a mock that returns seeded data for every
+  `.from(table)` call can never express a denial. (STU, source:
+  `rls-tightening-broke-the-flow-it-guarded.md` dated 2026-08-04; verified
+  2026-09-05 that `validateGolfPlayerCanJoinTeam` and
+  `processGolfTeamInvitation` both exist at the cited paths.)
 
 ## Tests To Prefer
 

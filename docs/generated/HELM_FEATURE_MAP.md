@@ -82,7 +82,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 15 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
-- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`
+- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/golf_round_lifecycle.md`, `memory/ledgers/tests/golf_round_lifecycle.md`
 
@@ -247,7 +247,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/admin-platform.md`
 - **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 53 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
-- **Incidents:** `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
+- **Incidents:** `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`, `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
 - **History:** `memory/ledgers/changes/admin_platform.md`, `memory/ledgers/tests/admin_platform.md`
 

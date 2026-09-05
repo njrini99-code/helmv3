@@ -629,6 +629,13 @@ Key columns: id, team_id, title, due_date, status (pending/in_progress/completed
 FKs: team_id → baseball_teams.id; created_by_id → baseball_coaches.id
 RLS: coach CRUD via `is_baseball_team_coach(team_id)`; player SELECT via `is_baseball_team_player(team_id)`.
 
+**Intent note:** `due_date` here is `timestamp with time zone`, unlike golf's
+sibling table where the equivalent column is a bare `date` — this is
+deliberate, not drift, because baseball task due-dates carry a real time of
+day. See `memory/context/golfhelm-database.md`'s `golf_tasks` note for the
+full comparison-logic implication and the migration-level verification.
+(STU, source: `due-date-column-types-differ-by-sport.md` dated 2026-08-17.)
+
 ### baseball_task_assignments
 Purpose: Per-player instance of a task (completion tracking).
 Key columns: id, task_id, player_id, status (pending/in_progress/completed), completed_at, notes

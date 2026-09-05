@@ -146,6 +146,40 @@ functions.
 - **Automated sending is off by omission**, not by a flag. Someone adding the
   `process-sequences` cron to `vercel.json` to "fix a missing schedule" would
   start sending cold email automatically.
+- **Coach inbound reply mail does not arrive in a personal inbox — it is
+  meant to land in `crm_replies` via the Gmail-poll ingestion cron, and a
+  `crm_coaches` status of `'engaged'` means the email was delivered (or
+  opened/clicked), never that the coach replied.** There is no
+  `last_email_event_type` value for "replied", so any dashboard or digest
+  phrasing that reads "engaged" as "replied" is overstating the signal — call
+  it "delivered"/"opened"/"clicked" instead. As of the source note
+  `crm_replies` was empty because the ingestion cron's service-account
+  credentials were not configured; check whether that ops gap has since
+  closed before assuming the inbound-reply pipeline has any data flowing
+  through it. Unverified since 2026-07-24. (STU, source:
+  `coach-reply-digest-routine.md` dated 2026-07-24, sanitized of the
+  specific coach identities and Notion page ids in the original note; verified
+  2026-09-05 that `crm_coaches` and `demo_requests` exist in
+  `src/lib/types/database.ts`.)
+- **A large majority of recorded outreach-email clicks and demo-gate
+  sessions are corporate email-security scanners prefetching links, not
+  buying intent** — a full forensic sweep found roughly 93% of clicks and
+  most demo-gate sessions fired within two minutes of send. User-agent is
+  useless as a filter (scanners spoof real browser strings, and the same UA
+  family appears on both sides of any latency boundary); the strongest
+  discriminators are an IP `/16` fanning out across many distinct recipients
+  in one short window (Microsoft Safe Links' signature), a different
+  user-agent across two hits from the same recipient (a conclusive human
+  negative — people do not switch browsers 60 seconds apart), and cloud/
+  hosting egress ranges. `countsAsHumanEngagement()` in
+  `src/app/api/webhooks/resend/route.ts` already treats an `'unknown'`
+  classification as non-engagement at write time — this is the write-time
+  half of that same defense; a delayed second scanner pass firing hours
+  later is a known false-positive shape ("evening returners") that is not
+  new human activity. (STU, source:
+  `scanner-prefetch-poisons-crm-signals.md` dated 2026-07-24, sanitized of
+  the specific coach names/emails/IPs in the original note; verified
+  2026-09-05 that `countsAsHumanEngagement` exists in the cited route file.)
 
 ## Related Docs
 
