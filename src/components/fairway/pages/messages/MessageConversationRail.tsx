@@ -648,10 +648,10 @@ export function MessageConversationRail({
             glyph is off because three pills that reflow by ~14px as you move
             between them is motion the eye has to re-read. */}
         <div className="flex items-center gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <FilterPill size="sm" showCheck={false} selected={filter === 'all'} onClick={() => setFilter('all')}>
+          <FilterPill className="shadow-fw-tile" size="sm" showCheck={false} selected={filter === 'all'} onClick={() => setFilter('all')}>
             All
           </FilterPill>
-          <FilterPill
+          <FilterPill className="shadow-fw-tile"
             size="sm"
             showCheck={false}
             selected={filter === 'unread'}
@@ -661,7 +661,7 @@ export function MessageConversationRail({
             Unread
           </FilterPill>
           {groupCount > 0 ? (
-            <FilterPill size="sm" showCheck={false} selected={filter === 'groups'} onClick={() => setFilter('groups')}>
+            <FilterPill className="shadow-fw-tile" size="sm" showCheck={false} selected={filter === 'groups'} onClick={() => setFilter('groups')}>
               Groups
             </FilterPill>
           ) : null}
