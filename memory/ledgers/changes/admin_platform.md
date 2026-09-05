@@ -2,6 +2,8 @@
 
 # Admin Platform change ledger
 
+> **2026-09-05: the launchd Repair path this ledger documents building has been removed.** `scripts/run-selfheal-repair.mjs` no longer exists. `scripts/lib/selfheal-repair-runner.mjs` no longer exists. `scripts/selfheal-repair-install.sh` no longer exists. `scripts/selfheal-repair-doctor.mjs` no longer exists. `src/test/scripts/run-selfheal-repair.test.ts` no longer exists. `src/test/scripts/selfheal-repair-launchd.test.ts` no longer exists. Repair runs only as `.github/workflows/selfheal-repair.yml` now. See `memory/features/admin-selfheal.md`. The entries below are left exactly as written at the time; this note exists only so a path-existence check doesn't read their historical references as current.
+
 ## 2026-09-03 — Zero-cost Supabase observability, Phase 1 (foundation): envelope, classifier, out-of-band DB error store, health/stat collectors, `/admin/database`
 
 New track (`agent/supabase-observability`), Phase 1 of a multi-phase

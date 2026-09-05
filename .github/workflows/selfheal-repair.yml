@@ -117,7 +117,13 @@ jobs:
           # means there is no path to fall back to metered billing silently.
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # TODO(O6): once the owner creates HELM_REPAIR_DB_KEY from the
+          # helm_repair_ro role (supabase/migrations/HELD.md action O6(b) —
+          # SELECT on background_job_logs/admin_events/admin_error_resolutions,
+          # INSERT on only its own heartbeat), drop the SUPABASE_SERVICE_ROLE_KEY
+          # fallback below. Repair has never needed more than that scoped
+          # access; the full service-role key is wider than this contract uses.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.HELM_REPAIR_DB_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GH_TOKEN: ${{ github.token }}
           SELFHEAL_DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
@@ -172,7 +178,11 @@ jobs:
         if: always()
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # TODO(O6): same HELM_REPAIR_DB_KEY swap as the "Run Repair" step
+          # above — this write is only ever the one heartbeat row STEP 6 of
+          # repair-contract.md describes, which the scoped role's INSERT
+          # policy already permits.
+          SERVICE_KEY: ${{ secrets.HELM_REPAIR_DB_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OUTCOME: ${{ steps.repair.outcome }}
           # `outcome` alone is not evidence. A skipped action reports success,
           # which is how run 33821349146 wrote a `completed` heartbeat for work
