@@ -133,12 +133,14 @@ Don't treat a check as "stuck" before its normal window has passed:
   **production** using repo secrets, and **skipped** on fork/Dependabot PRs because
   those receive no secrets — so a skip there was expected, not stuck. After: it
   stands up a throwaway Supabase stack on the runner
-  (`.github/actions/local-supabase-stack`) and seeds that, needs **no secrets**, and
+  (`.github/actions/local-supabase-stack`) and seeds that, needs **no secrets**,
+  and
   therefore **no longer skips for anyone**. Budget in practice: ~17 min for a clean
   run (`supabase start` ≈ 1m45s, `npm run build` ≈ 9-10 min under container
   contention, seed ≈ 1 min, the smoke itself ≈ 1m30s). A run where the smoke fails
   costs ~24 min because each spec retries twice — close enough to the 30-minute
-  budget to matter: if the JOB timeout fires first, GitHub cancels outright and the
+  budget to matter: if the JOB timeout fires first, GitHub cancels outright and
+  the
   `if: always()` report upload never runs, which is how #953 produced three
   consecutive `cancelled` runs with nothing to diagnose from.
 - **Web server / auth waits** (why Playwright can be slow to even start) —
