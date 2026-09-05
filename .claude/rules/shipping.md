@@ -8,9 +8,8 @@ survive `bypassPermissions`. Nothing else here is mechanically enforced.
 
 **The canonical checkout boundary is a table, not an absolute**: the three
 editing tools are blocked; a Bash redirect, `cp`, `mv` or formatter writing
-the same bytes is not. Do not close that with a Bash command parser (deleted
-for cause: it refused an `echo` and `$(...)` bypassed it). The structural fix
-is `sandbox.filesystem`, currently disabled — owner's call.
+the same bytes is not. Do not close this with a Bash command parser (deleted
+for cause); the structural fix is `sandbox.filesystem`, disabled, owner's call.
 
 ### Docs
 
@@ -46,7 +45,7 @@ is `sandbox.filesystem`, currently disabled — owner's call.
 - `npm run dev` inside the Bash sandbox floods EMFILE and logs "Ready" while
   serving nothing — run it with `dangerouslyDisableSandbox: true` and `curl`
   it before reporting it up.
-- Recursive `rm` and force push are UNENFORCED; scope them yourself.
+- Recursive `rm` is UNENFORCED, and so is force push; scope them yourself.
 
 ### Supabase and MCP
 
