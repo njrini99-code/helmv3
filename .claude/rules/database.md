@@ -36,9 +36,17 @@ Functions, or a security audit, invoke `supabase:supabase` (and
 than working from memory. They carry the current official guidance; this file
 only carries what is specific to *this* database.
 
-Use the plugin-namespaced names. Older unnamespaced `supabase` /
-`supabase-postgres-best-practices` copies were stale (v0.1.0 vs v0.1.2) and have
-been retired.
+Use the plugin-namespaced names. This sentence used to name a version gap
+("v0.1.0 vs v0.1.2") as the reason the older, unnamespaced `supabase` /
+`supabase-postgres-best-practices` copies were "retired" — a version number
+in prose rots (shipping.md §1), and by 2026-09-05 it already had: the
+namespaced plugin skill had moved well past either number. Verified instead
+of asserted: `.claude/skills/supabase` and `.claude/skills/
+supabase-postgres-best-practices` are DANGLING symlinks in this repo (they
+point at `.agents/skills/...`, which does not exist here — the same dangling
+class AGENTS.md's tools audit found under `~/.claude/skills`), so they were
+never a live alternative to retire *from* — they simply do not resolve. The
+plugin-namespaced skills are the ones that load.
 
 ## Migrations are additive
 
