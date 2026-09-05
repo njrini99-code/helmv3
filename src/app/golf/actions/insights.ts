@@ -3488,6 +3488,9 @@ async function loadEvidenceBackedInsights(
         },
         'warning'
       );
+      // Deliberate, not a swallow — the comment above already documents
+      // this: observability was added deliberately and the empty fallback
+      // was explicitly kept unchanged.
       return [];
     }
 

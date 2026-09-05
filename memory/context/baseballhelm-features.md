@@ -148,6 +148,7 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 
 ### 3. Watchlist / Compare ⚠️
 - `actions/watchlist.ts` (`withBaseballAction` `can_manage_stats`): `addToWatchlist` (**calls `assertCoachCanRecruitPlayer`**, INSERT `baseball_watchlists {pipeline_stage:'watchlist',priority:0}` + engagement event + email), `removeFromWatchlist`, `updateWatchlistStatus/Priority`, `addWatchlistNote`, `toggleWatchlistPlayer`, `checkWatchlistStatus`. Compare fetches client-side (max 4); persistence → `baseball_player_comparisons`.
+- `dashboard/compare/actions.ts` `searchRecruitablePlayersImpl`/`getComparablePlayersImpl`: as of the Phase 2 P1 fail-open paydown, a failed `baseball_players` read now **throws** instead of returning `[]`. `CompareClient.tsx` already had a `loadError` state (for `getComparablePlayers`) and a catch+toast path (for `searchRecruitablePlayers`) built for exactly this and previously unreachable for a query-error specifically. Regression-tested in `compare/__tests__/search-recruitability.test.ts`.
 
 ### 4. Player recruiting opt-in / College Interest ⚠️
 - Activate (`/activate`): blocks `player_type==='college'`; `handleActivate()` = **direct client** `UPDATE baseball_players SET recruiting_activated=true`. This boolean is the master gate consumed by `recruitability.ts`, `discover.ts`, `public-profile-access.ts`.

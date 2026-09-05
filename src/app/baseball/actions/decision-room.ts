@@ -1,6 +1,8 @@
 'use server';
 
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 // =============================================================================
 // src/app/baseball/actions/decision-room.ts
 //
@@ -319,7 +321,17 @@ async function loadActionOutcomes(
     .order('created_at', { ascending: false })
     .limit(100);
 
-  if (error) return [];
+  if (error) {
+    await logServerError(
+      `[decision-room] loadActionOutcomes query failed: ${describeError(error)}`,
+      { action: 'baseball.decisionRoom.loadActionOutcomes', metadata: { teamId } },
+    );
+    // Same considered contract as the sibling read-models this function is
+    // assembled alongside (src/lib/baseball/read-models/decision-room/*):
+    // degrade to empty rather than throw into the page's Promise.all.
+    // Failure is now logged, not silent.
+    return [];
+  }
 
   return ((data ?? []) as unknown as ActionOutcomeRow[]).map((row) => {
     const metric = row.outcome_metric ?? '';

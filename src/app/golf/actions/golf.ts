@@ -4276,6 +4276,9 @@ async function getQualifierRoundCoursesImpl(
         },
         'warning'
       );
+      // Deliberate, not a swallow — the comment above already documents
+      // this: observability was added in a prior pass and the empty
+      // fallback was explicitly kept unchanged.
       return [];
     }
 

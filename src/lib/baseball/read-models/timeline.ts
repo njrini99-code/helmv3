@@ -28,6 +28,8 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type {
   BaseballPlayerTimelineEventRow,
   BaseballTimelineVisibility,
@@ -315,7 +317,20 @@ export async function getTimelineAcksForViewer(
     error: unknown;
   };
 
-  if (error || !data) return {};
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[timeline] getTimelineAcksForViewer query failed: ${describeError(error)}`,
+        { action: 'baseball.timeline.getTimelineAcksForViewer' },
+      );
+    }
+    // Deliberate, not a swallow — this function's own docstring above:
+    // never throws, degrades to "no ack chip" on any failure. An ack map
+    // is purely cosmetic (a checkmark), never a visibility/access decision,
+    // so an empty map cannot leak or hide a timeline event. Failure is now
+    // logged, not silent.
+    return {};
+  }
 
   const map: Record<string, boolean> = {};
   for (const row of data) map[row.timeline_event_id] = true;
@@ -376,7 +391,17 @@ export async function getTimelineAcksForSubjectPlayer(
     error: unknown;
   };
 
-  if (error || !data) return {};
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[timeline] getTimelineAcksForSubjectPlayer query failed: ${describeError(error)}`,
+        { action: 'baseball.timeline.getTimelineAcksForSubjectPlayer', metadata: { playerId } },
+      );
+    }
+    // Deliberate, not a swallow — same "no ack chip, never a 500 or a
+    // visibility decision" contract documented on this function above.
+    return {};
+  }
 
   const map: Record<string, boolean> = {};
   for (const row of data) map[row.timeline_event_id] = true;

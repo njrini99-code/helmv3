@@ -674,7 +674,15 @@ async function getWatchlistIdsImpl(): Promise<string[]> {
     .eq('coach_id', coach.id);
 
   if (error) {
-    // Silent failure for read operations - return empty array
+    await logServerError(
+      `[discover] getWatchlistIds query failed: ${describeError(error)}`,
+      { action: 'baseball.discover.getWatchlistIds', metadata: { coachId: coach.id } },
+    );
+    // Deliberate, not a swallow (now logged, previously wasn't): this only
+    // feeds an "already on your watchlist" badge in the Discover UI. An
+    // empty result on failure fails toward re-showing the add-to-watchlist
+    // action for an already-watchlisted player — annoying (a harmless
+    // re-add) but never a security or data-loss risk.
     return [];
   }
 
