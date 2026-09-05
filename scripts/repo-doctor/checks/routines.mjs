@@ -11,7 +11,7 @@
 // Update/Keystone, OpenClaw — while building this check), and none of that
 // is this repo's business to police.
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import YAML from 'yaml';
