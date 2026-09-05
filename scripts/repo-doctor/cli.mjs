@@ -28,13 +28,14 @@ import * as registry from './checks/registry.mjs';
 import * as ci from './checks/ci.mjs';
 import * as config from './checks/config.mjs';
 import * as dbObservability from './checks/db-observability.mjs';
+import * as nodeVersion from './checks/node-version.mjs';
 import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 
 // Local-only modules would be gated on `--local`; all MVP checks are shared/CI-safe.
 // db-observability's own live-credential checks self-report Status.LOCAL_ONLY
 // when SUPABASE_ACCESS_TOKEN is absent (see that module's header) rather than
 // needing the `--local` gate here — they never affect the exit code either way.
-const MODULES = [identity, workspace, scratch, ai, registry, ci, config, dbObservability];
+const MODULES = [identity, workspace, scratch, ai, registry, ci, config, dbObservability, nodeVersion];
 
 function parseArgs(argv) {
   const flags = new Set(argv.filter((a) => a.startsWith('--')).map((a) => a.slice(2)));
