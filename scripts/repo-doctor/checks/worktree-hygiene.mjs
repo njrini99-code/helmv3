@@ -10,18 +10,32 @@
 //                                   forever) and nobody can tell whether it
 //                                   is disposable. FAIL.
 //
-//                                   The harness's OWN worktree isolation
-//                                   (`.claude/worktrees/agent-*`, made by
-//                                   EnterWorktree / isolation:"worktree")
-//                                   never writes this marker — AGENTS.md
-//                                   documents that as the harness's known
-//                                   gap, not a violation of the one-door
-//                                   policy `new-worktree.sh` enforces for
-//                                   everything else. Flagging it here would
-//                                   be permanently, unfixably red on this
-//                                   machine, so those paths are excluded by
-//                                   name, not silently ignored — see the
-//                                   `isHarnessWorktree` comment below.
+//                                   `.claude/worktrees/agent-*` (the
+//                                   harness's OWN worktree isolation) is NOT
+//                                   exempt from this, even though it once
+//                                   would have had to be: this file's first
+//                                   draft (2026-09-05, this same change)
+//                                   excluded that path by name because
+//                                   nothing marked it. That stopped being
+//                                   true the moment #1840 (A1, "one door")
+//                                   merged into this same branch —
+//                                   .claude/hooks/worktree-create.mjs now
+//                                   routes the harness's own `isolation:
+//                                   "worktree"` request through
+//                                   createWorkspace(), which writes the
+//                                   marker SYNCHRONOUSLY as part of creation
+//                                   (scripts/lib/create-workspace.mjs line
+//                                   ~316) — before the worktree exists to be
+//                                   observed unmarked — and
+//                                   .claude/hooks/stamp-workspace.mjs
+//                                   backstops any OLDER harness worktree at
+//                                   its next SessionStart. Verified live: the
+//                                   two pre-existing `.claude/worktrees/
+//                                   agent-*` checkouts on this machine both
+//                                   carry a marker. An unmarked one now is a
+//                                   real finding — the backstop failed to
+//                                   run, or hooks are disabled — not an
+//                                   expected structural gap.
 //
 //   worktree.canonical-off-main     the canonical checkout's branch is not
 //                                   `main` and no open PR exists for it.
@@ -73,7 +87,15 @@ export const meta = { id: 'worktree', title: 'Worktree hygiene' };
 
 const NEXT_WARN_BYTES = 4 * 1024 * 1024 * 1024; // 4 GiB
 
-/** True for a worktree the harness itself created — never marked, by design. */
+/**
+ * True for a worktree the harness's own `isolation: "worktree"` /
+ * EnterWorktree feature created (`.claude/worktrees/agent-*`). No longer
+ * used to EXEMPT anything from the unmarked-worktree check (see that
+ * check's own header) — kept because a harness-made worktree is still worth
+ * labelling distinctly in evidence, so a reader isn't left guessing whether
+ * an unmarked one came from a hand-rolled `git worktree add` or from the
+ * harness's own door failing to stamp it.
+ */
 export function isHarnessWorktree(path, canonicalRoot) {
   return path.startsWith(join(canonicalRoot, '.claude', 'worktrees') + '/') || path === join(canonicalRoot, '.claude', 'worktrees');
 }
@@ -118,18 +140,24 @@ export async function run(ctx) {
     out.push(check('worktree.unmarked-worktree', Status.UNKNOWN, 'git worktree list failed', { detail: wt.error }));
   } else {
     const paths = parseWorktreeList(wt.value);
-    const candidates = paths.filter(
-      (p) => realpathOrSelf(p) !== canonicalRootReal && !isHarnessWorktree(realpathOrSelf(p), canonicalRootReal),
-    );
+    // The canonical checkout is the only structural exclusion left — it is
+    // not itself a "worktree" the lifecycle tool ever classifies. Harness
+    // worktrees are included: WorktreeCreate + stamp-workspace.mjs (both
+    // wired since #1840/A1) mean an unmarked one is a real finding now, not
+    // an expected gap — see this module's header.
+    const candidates = paths.filter((p) => realpathOrSelf(p) !== canonicalRootReal);
     const unmarked = candidates.filter((p) => !existsSync(join(p, '.helm', 'workspace.json')));
     out.push(
       unmarked.length === 0
         ? check('worktree.unmarked-worktree', Status.PASS,
-            `${candidates.length} non-canonical, non-harness worktree(s), all carry .helm/workspace.json`)
+            `${candidates.length} non-canonical worktree(s), all carry .helm/workspace.json`)
         : check('worktree.unmarked-worktree', Status.FAIL,
             `${unmarked.length} worktree(s) with no .helm/workspace.json — scripts/worktree-lifecycle.mjs cannot classify them`, {
-              evidence: unmarked,
-              source: 'scripts/new-worktree.sh (the one supported creator, which always writes the marker)',
+              evidence: unmarked.map((p) => ({
+                path: p,
+                harnessMade: isHarnessWorktree(p, canonicalRootReal),
+              })),
+              source: 'scripts/new-worktree.sh, or .claude/hooks/worktree-create.mjs + stamp-workspace.mjs for harness-made worktrees — every path is expected to write this marker now',
             }),
     );
   }

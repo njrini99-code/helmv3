@@ -11,9 +11,11 @@ import { parseWorktreeList, isHarnessWorktree, run as worktreeRun } from '../che
  * repo:doctor's worktree-hygiene checks exist to catch exactly the incident
  * class autonomy.md and AGENTS.md record: a worktree made outside
  * scripts/new-worktree.sh that the lifecycle tool can never classify. These
- * pin the parser, the harness exemption (which must hold or this check is
- * permanently red on every machine running Claude Code's own worktree
- * isolation), and one real end-to-end FAIL against a disposable git repo.
+ * pin the parser, the harness-worktree LABEL (isHarnessWorktree — used for
+ * evidence, not as an exemption: since #1840/A1's WorktreeCreate +
+ * stamp-workspace.mjs merged into this same branch, a harness-made worktree
+ * is expected to carry the marker too, so an unmarked one FAILs the same as
+ * any other), and one real end-to-end FAIL against a disposable git repo.
  */
 
 describe('parseWorktreeList', () => {
@@ -28,13 +30,13 @@ describe('parseWorktreeList', () => {
 
 describe('isHarnessWorktree', () => {
   const canonical = '/Users/x/Downloads/helmv3';
-  it('exempts a path under .claude/worktrees/ — the harness never writes a marker there', () => {
+  it('identifies a path under .claude/worktrees/ as harness-made', () => {
     expect(isHarnessWorktree(`${canonical}/.claude/worktrees/agent-abc123`, canonical)).toBe(true);
   });
-  it('does not exempt a worktree under ~/worktrees/helmv3/ (the supported creator writes a marker there)', () => {
+  it('does not label a worktree under ~/worktrees/helmv3/ as harness-made (the supported creator lives there)', () => {
     expect(isHarnessWorktree('/Users/x/worktrees/helmv3/some-task', canonical)).toBe(false);
   });
-  it('does not exempt the canonical checkout itself (handled separately by the caller)', () => {
+  it('does not label the canonical checkout itself as harness-made (handled separately by the caller)', () => {
     expect(isHarnessWorktree(canonical, canonical)).toBe(false);
   });
 });
@@ -71,7 +73,7 @@ describe('worktree.unmarked-worktree — end to end against a disposable repo', 
     // `git worktree list` reports its own resolved spelling — the same
     // mismatch the check itself normalises for (see worktree-hygiene.mjs's
     // realpathOrSelf comment).
-    expect(r?.evidence).toContain(realpathSync(extra));
+    expect(r?.evidence).toEqual([expect.objectContaining({ path: realpathSync(extra), harnessMade: false })]);
   });
 
   it('PASSes when the linked worktree carries the marker', async () => {
@@ -82,5 +84,20 @@ describe('worktree.unmarked-worktree — end to end against a disposable repo', 
     const results = await worktreeRun({ repoRoot: base, homeDir: mkdtempSync(join(tmpdir(), 'a6-home-')) });
     const r = results.find((x) => x.id === 'worktree.unmarked-worktree');
     expect(r?.status).toBe(Status.PASS);
+  });
+
+  it('FAILs a harness-made worktree (.claude/worktrees/agent-*) too — no exemption any more', async () => {
+    // #1840/A1's WorktreeCreate + stamp-workspace.mjs mean a harness worktree
+    // is expected to carry the marker just like any other; this pins that an
+    // unmarked one under the harness's own path is a real finding, not a
+    // silently-excluded case (see worktree-hygiene.mjs's header for the
+    // 2026-09-05 history of why this test flipped from "does not flag").
+    extra = join(base, '.claude', 'worktrees', 'agent-test123');
+    mkdirSync(join(base, '.claude', 'worktrees'), { recursive: true });
+    execFileSync('git', ['worktree', 'add', '--detach', extra, 'HEAD'], { cwd: base });
+    const results = await worktreeRun({ repoRoot: base, homeDir: mkdtempSync(join(tmpdir(), 'a6-home-')) });
+    const r = results.find((x) => x.id === 'worktree.unmarked-worktree');
+    expect(r?.status).toBe(Status.FAIL);
+    expect(r?.evidence).toEqual([expect.objectContaining({ path: realpathSync(extra), harnessMade: true })]);
   });
 });

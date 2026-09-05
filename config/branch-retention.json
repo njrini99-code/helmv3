@@ -4,7 +4,8 @@
     "requiredFields": ["owner", "expires"],
     "expires": "YYYY-MM-DD, or \"never\" for material that must be kept permanently",
     "onExpiry": "The branch is REPORTED as needing review. Nothing is deleted automatically.",
-    "guidance": "Prefer an annotated tag over an indefinite branch: a tag conveys the same commits, is not a merge target, and does not appear in branch listings agents scan for work."
+    "guidance": "Prefer an annotated tag over an indefinite branch: a tag conveys the same commits, is not a merge target, and does not appear in branch listings agents scan for work.",
+    "archivedToTags": "The protected-prefix branches this file used to need entries for (backup/, preserve/, recovered/, stage/) were archived to archive/<branch> tags on 2026-09-05 and the branches deleted, both locally and on the remote. That is the 'prefer an annotated tag' guidance above, applied: the commits are preserved, nothing is a merge target any more, and nothing shows up in a branch listing agents scan for work. `branches` is empty because there is currently nothing left needing a retention entry — verify with `git branch -a --list 'backup/*' 'preserve/*' 'recovered/*' 'stage/*'` before assuming this is stale."
   },
   "branches": {},
 

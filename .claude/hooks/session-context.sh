@@ -175,8 +175,8 @@ fi
 # deploymentEnabled all-false; production is an on-demand promote).
 if [ "$BRANCH" != "main" ]; then
   CTX="${CTX}
-- NOTE: you are on task branch '${BRANCH}'. Work here; do not switch to main
-  unless asked. Merging to main does not deploy."
+- NOTE: the canonical checkout should rest on main. It is on '${BRANCH}';
+  if that is not a task you are doing, say so before editing."
 fi
 
 jq -nc --arg ctx "$CTX" \

@@ -38,6 +38,8 @@ asserted here — see `.claude/rules/database.md`.
 | --- | --- | --- | --- | --- |
 | SessionStart | `(all tools)` | `.claude/hooks/session-context.sh` | yes | no — records/reports only |
 | SessionStart | `(all tools)` | `.claude/hooks/init-session-state.mjs` | yes | no — records/reports only |
+| SessionStart | `(all tools)` | `.claude/hooks/stamp-workspace.mjs` | yes | no — records/reports only |
+| WorktreeCreate | `(all tools)` | `.claude/hooks/worktree-create.mjs` | yes | no — records/reports only |
 | PreToolUse | `Write\|Edit\|MultiEdit` | `.claude/hooks/guard-canonical-write.mjs` | yes | yes |
 | PostToolUse | `Read\|Bash` | `.claude/hooks/record-context-load.mjs` | yes | no — records/reports only |
 | PostToolUse | `Write\|Edit\|MultiEdit` | `.claude/hooks/record-session-touch.mjs` | yes | no — records/reports only |
@@ -49,8 +51,8 @@ Exactly one hook can refuse a tool call: `guard-canonical-write.mjs` under match
 
 | Kind | Count |
 | --- | --- |
-| `permissions.deny` total | 62 |
-| …covering `mcp__` | 40 |
+| `permissions.deny` total | 145 |
+| …covering `mcp__` | 123 |
 | …covering `Bash(` | 15 |
 | …other | 7 |
 

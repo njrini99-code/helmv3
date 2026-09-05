@@ -1,66 +1,25 @@
-<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
----
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
----
-
+<!-- markdownlint-disable MD022 MD012 -->
 ## Code Review Tooling
+No AI reviewer bots run on PRs — Review Gate + CodeQL cover the same hard
+rules deterministically. `.coderabbit.yaml` is a disable stub. The custom
+rule packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` remain
+load-bearing — CI consumes them directly; the directory name is historical.
 
-> 2026-07-20: the external AI reviewers were DROPPED by founder decision —
-> their credit quota had become the slowest step in shipping, and the Review
-> Gate + CodeQL cover the same hard rules deterministically. `.coderabbit.yaml`
-> is now a disable stub, and the bots were removed from main's required status
-> checks. No bot checks appear on current PRs. The custom rule packs under
-> `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` REMAIN — CI consumes
-> them directly; treat that directory name as historical.
+**Review Gate** (`.github/workflows/review-gate.yml`) runs ast-grep,
+semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint,
+ruff+pylint, sqlfluff, hadolint, and an env-secrets check, aggregating to
+`Review Gate aggregate`. Its blocking hard rules: service-role key in a
+client bundle, RLS missing on a new table, a server action without an auth
+check, a bare (non-sport-prefixed) table name, and DELETE-then-INSERT in a
+save/submit/sync path.
 
-> PR check is red or stuck pending? `docs/CI_RUNBOOK.md` classifies every
-> check as hard-gate vs. advisory, with expected wait windows and exact
-> GHA/CircleCI rerun commands.
+**CI split**: GitHub Actions (`ci.yml`) owns the per-PR fast path —
+typecheck, lint, vitest, build, Supabase lint + RLS tests, BaseballHelm
+smoke — aggregating to `CI aggregate`. CircleCI (`.circleci/config.yml`)
+owns the weekly heavy jobs and two native compile checks gated by branch
+name (iOS on `main`/`release/*`/`ios/*`/`capacitor/*`; Android on those plus
+`android/*`/`ci/android-*`). See `.circleci/README.md` for setup.
 
-**Review Gate** (`.github/workflows/review-gate.yml`) — the deterministic
-review toolchain (ast-grep, semgrep, gitleaks, actionlint, yamllint,
-shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint). Aggregate
-status check: `Review Gate aggregate` (renamed from `all` on 2026-08-19 —
-`Review Gate / all` posts NOTHING, and required contexts are matched by
-name, so looking for the old name is the phantom-check trap that made
-every PR unsatisfiable; CI's is `CI aggregate`). The blocking hard rules
-live in the
-custom packs: service-role key in a client bundle, RLS missing on a new
-table, server action without an auth check, sport-prefixed table name
-violation, destructive DELETE-then-INSERT in a save/submit/sync path.
-
-Layout since 2026-09-02: every tool except semgrep runs as a named STEP of
-one `Review Gate checks` job (semgrep keeps its pinned-container job), and
-the aggregate reads `steps.*.outcome` so one failing tool cannot hide
-another. Twelve jobs became three; nothing stopped running. ci.yml made the
-same move (`Static checks`, `Lint`). The reason was runner-slot starvation:
-~47 check runs per PR on a pool that behaves like 20 concurrent jobs.
-
-**CI split — GitHub Actions vs CircleCI**
-
-GitHub Actions owns the per-PR fast path: typecheck, lint, vitest,
-next build, Supabase RLS tests (`ci.yml`), and the Review Gate above.
-
-CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
-
-- `weekly` workflow — Knip dead-code, Stryker mutation tests on
-  `src/lib/coachhelm/v2/`, full-repo sqlfluff, npm audit, Squawk
-  migration safety, Janitor entropy report (`scripts/janitor/`, advisory).
-  Scheduled Mondays 06:00 UTC; triggered via the
-  `run-weekly=true` pipeline parameter (configure in CircleCI
-  project settings → Triggers).
-- `ios` workflow — iOS Capacitor compile verification on M-series
-  macOS runners (~2× faster, ~⅓ the cost of GHA `macos-13`). Runs on
-  push to `main`, `release/*`, `ios/*`, `capacitor/*` branches.
-
-See `.circleci/README.md` for one-time project setup steps (CircleCI
-dashboard) and the planned upgrade path (TestFlight publish via
-Fastlane, parallel Playwright, Lighthouse on Vercel previews).
-
-Shared config:
-
-- `.gitleaks.toml` — project-specific secret patterns (rotated
-  2026-05-17 Supabase dev DB password is allowlisted only in audit
-  docs).
-
----
+`docs/CI_RUNBOOK.md` classifies every check as hard-gate vs. advisory with
+rerun commands — use it when a check is red or stuck. `.gitleaks.toml`'s
+`[allowlist]` `paths` are global across every rule, not scoped to one entry.
