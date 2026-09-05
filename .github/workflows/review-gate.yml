@@ -186,7 +186,7 @@ jobs:
           # semgrep rule (helmv3-service-role-outside-admin).
           run_rule .coderabbit/ast-grep/no-service-role-in-client.yml \
             '\.(ts|tsx)$' \
-            '^(src/lib/supabase/admin|src/lib/supabase/service|src/lib/auth/supabase-rate-limit|src/lib/notifications/push|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)' \
+            '^(src/lib/supabase/admin|src/lib/supabase/keys|src/lib/supabase/service|src/lib/auth/supabase-rate-limit|src/lib/notifications/push|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)' \
             'no-admin/scripts/edge'
 
           # Server-action rule — a catch whose entire body returns []/null/{}
