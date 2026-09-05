@@ -357,6 +357,14 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
       // hook (no PreToolUse matcher reaches mcp__) and outside the Bash sandbox
       // (it is not Bash). Denied at project scope 2026-09-01. This is a NEW
       // restriction the owner can drop by deleting the rules.
+      //
+      // The `mcp__plugin_desktop-commander_desktop-commander__*` spelling was
+      // removed 2026-09-05: the desktop-commander plugin is not in
+      // ~/.claude/plugins (repo:doctor's settings-ownership.project-
+      // uninstalled-plugin check exists specifically to catch a deny rule
+      // gating a plugin nothing has installed). The account-connector
+      // spelling (`mcp__Desktop_Commander__*`) stays — that connector IS
+      // observed in live tool inventories.
       claim: 'A file write or process spawn through the Desktop Commander MCP is refused',
       resolve: () => {
         const hits = denies.mcp.filter((r) => /Desktop_Commander__|desktop-commander__/.test(r));
@@ -364,7 +372,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
           ? {
               mechanism: `${hits.length} deny rules`,
               where: '.claude/settings.json → permissions.deny',
-              observed: 'CONFIGURED 2026-09-01 — both the account connector and plugin spellings; NOT probed. Read tools stay allowed',
+              observed: 'CONFIGURED 2026-09-01 — the account-connector spelling; NOT probed. Read tools stay allowed. (The plugin-namespace spelling was removed 2026-09-05 as a dead rule for an uninstalled plugin.)',
             }
           : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED — Desktop Commander bypasses guard-canonical-write.mjs and the Bash sandbox' };
       },

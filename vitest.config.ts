@@ -172,6 +172,12 @@ export default defineConfig({
             // its neighbours; it is the failure-injection suite for the
             // tools/mcp-deny-connector-ids verifier check.
             'scripts/__tests__/mcp-deny-connector-ids.test.ts',
+            // Settings ownership (A6): user-scope leaks of repo-specific
+            // rules, project-scope rules gating an uninstalled plugin
+            // namespace, and rule files naming an unrecorded connector id.
+            // Failure-injection suite for repo:doctor's settings-ownership.*
+            // checks (scripts/check-settings-ownership.mjs).
+            'scripts/__tests__/check-settings-ownership.test.mjs',
             // The anchored matcher behind the enforcement inventory's "Vercel
             // deploy/purchase refused" claim. Pinned so a rule naming a
             // DIFFERENT tool with the same prefix can never count as cover.
