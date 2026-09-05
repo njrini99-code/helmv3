@@ -50,15 +50,26 @@ describe('MessageThreadPane — bubble grammar', () => {
     );
   });
 
-  it('draws both bubbles with the LIT recipes, never the specular-less shadow-flat', () => {
-    expect(pane).toContain("'bg-accent-650 text-text-on-accent shadow-fw-accent-lift'");
-    expect(pane).toContain("'bg-surface text-text-primary shadow-fw-card'");
-    // `shadow-flat` is the same geometry with the inset specular removed, and
-    // it is exactly what both bubbles used to carry. Matched on the two class
-    // strings themselves rather than on a window of the file, so the assertion
-    // cannot be satisfied or broken by a comment that merely says the words.
+  it('gives the LIT recipes to the bubble that ENDS a group, and a contact shadow to the rest', () => {
+    // The fill and the cast are separate decisions now, because a group casts
+    // ONCE — from its silhouette, not once per bubble. Seen on the real thread:
+    // four consecutive messages 2px apart, each throwing its own 20px ambient,
+    // and every bubble's glow washed around its neighbours until a single
+    // utterance read as four separate cards. The corner grammar above said
+    // "one thing" and the shadows said "four"; the shadows won.
+    expect(pane).toContain("isOwn && 'bg-accent-650 text-text-on-accent'");
+    expect(pane).toContain("!isOwn && 'bg-surface text-text-primary'");
+    expect(pane).toContain("isLastInGroup");
+    expect(pane).toContain("(isOwn ? 'shadow-fw-accent-lift' : 'shadow-fw-card')");
+    expect(pane).toContain("'shadow-sm'");
+
+    // `shadow-flat` remains wrong in BOTH positions: as the group's cast it is
+    // `shadow-fw-card` with the inset specular removed — the one part the token
+    // file calls "the 'lit from above' tell" — and as a middle's cast it still
+    // carries the 10px ambient that is the whole thing being removed.
     expect(pane).not.toContain("'bg-accent-650 text-text-on-accent shadow-flat'");
     expect(pane).not.toContain("'bg-surface text-text-primary shadow-flat'");
+    expect(pane).not.toContain(": 'shadow-flat'");
   });
 
   it('caps the measure absolutely, not only as a share of the column', () => {

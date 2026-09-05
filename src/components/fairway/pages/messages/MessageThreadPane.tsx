@@ -1318,9 +1318,29 @@ export function MessageThreadPane({
                           // and whose ambient is tinted with the accent, so
                           // their depth carries their own colour instead of
                           // greying it.
-                          isOwn
-                            ? 'bg-accent-650 text-text-on-accent shadow-fw-accent-lift'
-                            : 'bg-surface text-text-primary shadow-fw-card',
+                          // A GROUP casts once, from its silhouette — not once
+                          // per bubble. Seen on the real thread: four
+                          // consecutive messages 2px apart, each throwing its
+                          // own 20px ambient, and every bubble's glow washed
+                          // around its neighbours until the run read as four
+                          // separate objects. The corner grammar was saying
+                          // "one utterance" and the shadows were saying "four
+                          // cards", and the shadows won.
+                          //
+                          // So the full lift belongs to the bubble that ENDS
+                          // the group; the ones above it keep the contact
+                          // shadow that holds their own edge and drop the
+                          // ambient that was bleeding onto the next.
+                          // `shadow-sm` and not `shadow-flat` for the middles:
+                          // flat still carries a 10px ambient, which is the
+                          // thing being removed. A contact shadow holds the
+                          // bubble's own edge and casts nothing onto its
+                          // neighbour 2px below.
+                          isOwn && 'bg-accent-650 text-text-on-accent',
+                          !isOwn && 'bg-surface text-text-primary',
+                          isLastInGroup
+                            ? (isOwn ? 'shadow-fw-accent-lift' : 'shadow-fw-card')
+                            : 'shadow-sm',
                           // CORNER GRAMMAR — the tail corner marks where an
                           // utterance ENDS, and only there.
                           //
