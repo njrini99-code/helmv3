@@ -4,6 +4,14 @@ name: Feature Awareness
 # It maps changed files through memory/registry.yml and uploads a context
 # pack that Codex/Claude reviewers can use. Keep this non-blocking
 # until registry coverage is stable across normal PR traffic.
+#
+# Gated on code-relevant paths (added 2026-09-05): the report only makes
+# sense for a diff that touches feature code — a docs-only or CI-config PR
+# has nothing for memory/registry.yml to map. `detect-changes` below copies
+# ci.yml's own classification (same fail-closed rule: any inability to
+# classify, or any non-pull_request event such as workflow_dispatch,
+# resolves to code=true) so this workflow and ci.yml never disagree about
+# what counts as "docs-only".
 
 on:
   pull_request:
@@ -18,8 +26,53 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    name: Detect code-relevant paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Classify changed paths (fail closed to code=true)
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # Non-PR events (workflow_dispatch) always run the full report.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "non-PR event -> full report"; exit 0
+          fi
+          # FAIL CLOSED, same rule as ci.yml's detect-changes: any inability
+          # to classify the diff resolves to code=true.
+          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "missing base/head sha -> code (fail closed)"; exit 0
+          fi
+          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "git diff failed -> code (fail closed)"; exit 0
+          fi
+          if [ -z "$changed" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "empty diff -> code (fail closed)"; exit 0
+          fi
+          # docs-only = EVERY changed file is under docs/ or ends in .md.
+          nondoc="$(echo "$changed" | grep -cvE '^docs/|\.md$' || true)"
+          if [ "${nondoc:-1}" -gt 0 ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "code-relevant paths changed ($nondoc) -> full report"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "docs/markdown-only diff -> report skips"
+          fi
+          echo "--- changed files ---"; echo "$changed"
+
   report:
     name: Build context pack
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

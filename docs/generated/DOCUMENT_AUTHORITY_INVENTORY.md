@@ -595,12 +595,12 @@ them would bury everything above.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.devin/AGENTS-POINTER.md` | current | - | - | - | 0 | 0 | - |
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | 1 |
-| `.github/branch-protection.md` | current | - | - | - | 9 | 2 | 1 |
+| `.github/branch-protection.md` | current | - | - | - | 9 | 3 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 27 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 7 | 8 | 1 |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 7 | 7 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |

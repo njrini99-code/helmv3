@@ -1,8 +1,20 @@
 name: migration-lockdown
+
+# NO `paths:` filter, deliberately. A GitHub required status context must be
+# reported on EVERY run of the event it's required for, or a PR that never
+# triggers the workflow sits on "Expected — waiting for status to be
+# reported" forever (see docs/CI_RUNBOOK.md's `all`/CodeQL phantom-context
+# incidents — same failure shape, different cause). With the old
+# `pull_request: paths: supabase/migrations/**` filter, a PR that didn't
+# touch migrations never started this workflow at all, so
+# `block-historical-edits` could never be added to branch protection's
+# required contexts without breaking every non-migration PR. Fixed by
+# running on every PR and doing the path check as the first STEP instead —
+# the job now always reports a conclusion, which is what a required check
+# needs.
 on:
+  merge_group:
   pull_request:
-    paths:
-      - 'supabase/migrations/**'
 
 # Least privilege: this guard only reads git history.
 permissions:
@@ -16,15 +28,36 @@ jobs:
   block-historical-edits:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # Same BASE_SHA/HEAD_SHA resolution review-gate.yml uses for its
+      # merge_group + pull_request triggers: pull_request reads the PR's own
+      # base/head; merge_group falls back to `before`/`sha`, and
+      # changed-files.sh further falls back to the immediate parent commit
+      # when BASE_SHA can't be resolved at all.
+      BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
+
+      - name: Detect changed migration files
+        id: touched
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'supabase/migrations/*.sql')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "no migration files changed"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          printf 'Migration files touched by this PR:\n'
+          printf '  %s\n' "${files[@]}"
+
       - name: Detect edits to historical migrations
         id: check
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        if: steps.touched.outputs.changed == 'true'
         run: |
           set -euo pipefail
           BASELINE="20260527120000"
@@ -34,7 +67,12 @@ jobs:
           # OUT of supabase/migrations/ (e.g., archive sweeps to
           # supabase/migrations_archive/) and deletions don't count as edits.
           # Renames INTO supabase/migrations/ still show up as A on the target
-          # side and are caught.
+          # side and are caught. (Deliberately narrower than the previous
+          # step's changed-files.sh scan, which uses --diff-filter=ACMRT and
+          # exists only to decide whether this step should run at all — a
+          # rename-only PR can trip that fast filter and still land here with
+          # an empty CHANGED below, which is a harmless extra few seconds of
+          # work, not a false positive.)
           # NO `|| true` here, deliberately. `git diff` without --exit-code
           # returns 0 whether or not there are differences, so a trailing
           # `|| true` could never absorb "no changes" — it could ONLY absorb a
