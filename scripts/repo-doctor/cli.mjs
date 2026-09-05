@@ -14,6 +14,7 @@
 // reported as green.
 
 import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
@@ -28,13 +29,27 @@ import * as registry from './checks/registry.mjs';
 import * as ci from './checks/ci.mjs';
 import * as config from './checks/config.mjs';
 import * as dbObservability from './checks/db-observability.mjs';
+import * as nodeVersion from './checks/node-version.mjs';
+import * as settingsOwnership from '../check-settings-ownership.mjs';
+import * as worktreeHygiene from './checks/worktree-hygiene.mjs';
+import * as diskHygiene from './checks/disk-hygiene.mjs';
+import * as routines from './checks/routines.mjs';
 import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 
 // Local-only modules would be gated on `--local`; all MVP checks are shared/CI-safe.
 // db-observability's own live-credential checks self-report Status.LOCAL_ONLY
 // when SUPABASE_ACCESS_TOKEN is absent (see that module's header) rather than
 // needing the `--local` gate here — they never affect the exit code either way.
-const MODULES = [identity, workspace, scratch, ai, registry, ci, config, dbObservability];
+// settings-ownership reads $HOME (ctx.homeDir) — a real machine-global path,
+// not repo state, but it degrades to WARN/UNKNOWN (never a manufactured FAIL)
+// when that state can't be read, so it needs no `--local` gate either.
+// worktree-hygiene's canonical-off-main sub-check shells out to `gh`, which
+// degrades to LOCAL_ONLY (never UNKNOWN/FAIL) when gh cannot reach GitHub —
+// the same reasoning, so it stays in the shared list too.
+const MODULES = [
+  identity, workspace, scratch, ai, registry, ci, config, dbObservability,
+  nodeVersion, settingsOwnership, worktreeHygiene, diskHygiene, routines,
+];
 
 function parseArgs(argv) {
   const flags = new Set(argv.filter((a) => a.startsWith('--')).map((a) => a.slice(2)));
@@ -89,7 +104,7 @@ async function main() {
   } else if (manifest.__error) {
     checks.push(check('manifest', Status.BLOCKED, 'config/repo/manifest.yml is not valid YAML', { detail: manifest.__error }));
   } else {
-    const ctx = { repoRoot, manifest, mode };
+    const ctx = { repoRoot, manifest, mode, homeDir: homedir() };
     for (const mod of MODULES) {
       try {
         const results = await mod.run(ctx);

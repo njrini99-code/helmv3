@@ -7,5 +7,8 @@
     "guidance": "Prefer an annotated tag over an indefinite branch: a tag conveys the same commits, is not a merge target, and does not appear in branch listings agents scan for work.",
     "archivedToTags": "The protected-prefix branches this file used to need entries for (backup/, preserve/, recovered/, stage/) were archived to archive/<branch> tags on 2026-09-05 and the branches deleted, both locally and on the remote. That is the 'prefer an annotated tag' guidance above, applied: the commits are preserved, nothing is a merge target any more, and nothing shows up in a branch listing agents scan for work. `branches` is empty because there is currently nothing left needing a retention entry — verify with `git branch -a --list 'backup/*' 'preserve/*' 'recovered/*' 'stage/*'` before assuming this is stale."
   },
-  "branches": {}
+  "branches": {},
+
+  "$comment_ci_prefix_branch_reviews": "A SEPARATE feature that happens to share this file (A6, 2026-09-05) — do not confuse the two. `branches` above is keyed by PROTECTED_PREFIXES (backup/preserve/recovered/stage/, an OBJECT, read by scripts/worktree-lifecycle.mjs). This key is for release/ios/android/capacitor branches — the prefixes that gate .circleci/config.yml's `ios`/`android` compile jobs by branch NAME (filters.branches.only) — read by control-plane-verify.mjs's protected-prefix-branch-retention check, which FAILs when such a branch's tip is older than 14 days and has no entry here. It is an ARRAY, not an object, because control-plane-verify.mjs only ever needs 'is this name present', never a keyed lookup. `hotfix/*` does not appear in this key's scope: grepped 2026-09-05 across every .github/workflows/*.yml and .circleci/config.yml, and the only two hits for the literal string were a code comment about a past incident and this sentence — nothing in either CI system actually gates on that prefix, so it is not one of the prefixes this check protects.",
+  "ci_prefix_branch_reviews": []
 }

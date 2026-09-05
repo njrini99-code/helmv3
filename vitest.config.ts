@@ -156,6 +156,16 @@ export default defineConfig({
             // accepted as a loopback suffix) both passed a grep happily.
             'scripts/lib/__tests__/seed-target-guard.test.ts',
             'scripts/repo-doctor/__tests__/repo-doctor.test.ts',
+            // Worktree/disk hygiene (A6): unmarked worktrees, canonical off
+            // main with no open PR, oversized .next caches, untracked bloat,
+            // and a stray harness auto-memory store. Failure-injection suites
+            // for repo:doctor's worktree.* and disk.* checks.
+            'scripts/repo-doctor/__tests__/worktree-hygiene.test.ts',
+            'scripts/repo-doctor/__tests__/disk-hygiene.test.ts',
+            // Routine registry (A6): config/routines.yml vs. undocumented
+            // launchd plists / Claude Code scheduled-task directories.
+            // Failure-injection suite for repo:doctor's routines.* checks.
+            'scripts/repo-doctor/__tests__/routines.test.ts',
             // Phase 3 Track E (Supabase observability certification). Named
             // here for the same reason as every neighbour: a file under
             // scripts/ that is NOT listed runs under nothing, and a guard that
@@ -172,6 +182,24 @@ export default defineConfig({
             // its neighbours; it is the failure-injection suite for the
             // tools/mcp-deny-connector-ids verifier check.
             'scripts/__tests__/mcp-deny-connector-ids.test.ts',
+            // Settings ownership (A6): user-scope leaks of repo-specific
+            // rules, project-scope rules gating an uninstalled plugin
+            // namespace, and rule files naming an unrecorded connector id.
+            // Failure-injection suite for repo:doctor's settings-ownership.*
+            // checks (scripts/check-settings-ownership.mjs).
+            'scripts/__tests__/check-settings-ownership.test.mjs',
+            // Weekly control-plane report (A6): the pure decision functions
+            // behind control-plane-weekly.yml's four hard checks (secret
+            // scanning, Dependabot severity ceiling, full-history gitleaks
+            // summarization with no secret material retained, the static
+            // verifier) and its soft no-PR-ever branch listing.
+            'scripts/__tests__/control-plane-weekly-report.test.mjs',
+            // Protected-prefix (release/ios/android/capacitor) branch
+            // retention (A6): the pure classifier behind control-plane-
+            // verify.mjs's protected-prefix-branch-retention check, and the
+            // regression pin that hotfix/ was excluded because it gates
+            // nothing in either CI system.
+            'scripts/__tests__/protected-prefix-branch-retention.test.mjs',
             // The anchored matcher behind the enforcement inventory's "Vercel
             // deploy/purchase refused" claim. Pinned so a rule naming a
             // DIFFERENT tool with the same prefix can never count as cover.

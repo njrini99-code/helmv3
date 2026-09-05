@@ -51,8 +51,8 @@ Exactly one hook can refuse a tool call: `guard-canonical-write.mjs` under match
 
 | Kind | Count |
 | --- | --- |
-| `permissions.deny` total | 174 |
-| …covering `mcp__` | 152 |
+| `permissions.deny` total | 166 |
+| …covering `mcp__` | 144 |
 | …covering `Bash(` | 15 |
 | …other | 7 |
 
@@ -74,7 +74,7 @@ deny overrides a user-scope allow (probed 2026-08-29).
 | Account-wide Supabase MCP mutation is refused (display-name spelling `mcp__claude_ai_Supabase__*`) | 10 deny rules | .claude/settings.json → permissions.deny | EXERCISED 2026-08-29 — the denied tools left the session tool set; list_tables still loaded. Measured 2026-09-01: no mcp__claude_ai_* name exists in the session inventory, so these rules match nothing the session can call today; kept because the spelling may return |
 | Account-wide Supabase MCP mutation is refused (UUID spelling the session exposes) | 10 deny rules | .claude/settings.json → permissions.deny (ids: config/mcp-connector-ids.json) | CONFIGURED 2026-09-01 — written against the prefix observed in that session; NOT yet observed to remove the tools; id stability across sessions UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS) |
 | A production deploy, purchase, pause or deployment-protection change through the Vercel MCP is refused | 8 deny rules (7 under the UUID spelling) | .claude/settings.json → permissions.deny | CONFIGURED — display-name and UUID spellings; NOT probed (the only probe is a real production deploy, a purchase, or a protection change); id stability UNVERIFIED |
-| A file write or process spawn through the Desktop Commander MCP is refused | 16 deny rules | .claude/settings.json → permissions.deny | CONFIGURED 2026-09-01 — both the account connector and plugin spellings; NOT probed. Read tools stay allowed |
+| A file write or process spawn through the Desktop Commander MCP is refused | 8 deny rules | .claude/settings.json → permissions.deny | CONFIGURED 2026-09-01 — the account-connector spelling; NOT probed. Read tools stay allowed. (The plugin-namespace spelling was removed 2026-09-05 as a dead rule for an uninstalled plugin.) |
 | The uninstalled Supabase plugin namespace cannot activate on install | mcp__plugin_supabase_supabase | .claude/settings.json → permissions.deny | CONFIGURED — server-level deny |
 | Arbitrary SQL against production through MCP is refused | NONE | — | UNENFORCED, KNOWINGLY — the only working query path; no read_only enforcement on it |
 | Direct psql / service-role writes to production are refused | NONE | — | UNENFORCED — guard-sql.sh deleted 2026-08-27; SUPABASE_SERVICE_ROLE_KEY carries write capability |
