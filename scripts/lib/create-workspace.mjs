@@ -235,7 +235,7 @@ export async function createWorkspace(opts = {}) {
       'Already in use:',
       ...spaces.filter((s) => s.counts).map((s) => `  ${s.path}\n    ${s.kind} — ${s.reason}`),
       '',
-      'One mutation workspace at a time. Finish or park the existing one:',
+      `Budget is ${budget} mutation workspace(s) at a time. Finish or park one:`,
       '',
       '  npm run worktrees          # report',
       '  npm run worktrees:park     # remove disposable checkouts',

@@ -162,7 +162,11 @@ around. Two fixes, pick per worktree:
   at SessionStart for whichever worktree is ACTIVE in that session (it cannot
   reach an idle one it isn't running from); or write the marker by hand:
   `{"kind":"task","parkPolicy":"KEEP","createdBy":"manual"}` into
-  `<worktree>/.helm/workspace.json`.
+  `<worktree>/.helm/workspace.json`. For the **canonical checkout itself**
+  (the WARN case, not FAIL), the equivalent is
+  `{"kind":"canonical"}` written into `.helm/workspace.json` at the repo
+  root — harmless to add since the file is gitignored, and it turns that WARN
+  into a PASS.
 - **remove it** — `git worktree remove <path>` if the work is done or
   reproducible from a pushed branch (prefer `npm run worktrees:park`, which
   makes that determination for you).
@@ -209,6 +213,24 @@ does real work synchronously — a `git fetch`, a `git worktree add`, and
 optionally an `npm ci` when the harness passes `install`-equivalent intent
 (today it never does, so this always symlinks; see the module for how to
 change that if the harness contract grows an install flag).
+
+### Known interaction: harness exit-cleanup vs. this repo's own refusals
+
+`parkPolicy: KEEP` in the marker is **this repo's own convention** — read by
+`scripts/lib/worktree-lifecycle.mjs`, not by the harness. Per the harness's
+own worktree-lifecycle docs, an interactive `--worktree` session's exit
+prompt, if the caller chooses to remove, "deletes the worktree directory and
+its branch, along with all the work in them" — regardless of what
+`.helm/workspace.json` says. So once `worktree-create.mjs` is wired in, a
+human answering that exit prompt "yes" can delete an `agent/<name>` branch
+that `worktree-lifecycle.mjs` would have refused to touch without a recorded
+disposition. This is a **different** cleanup path from the periodic
+subagent/background-session sweep — the harness docs say that sweep "keeps
+any worktree without one [the harness's own git marker], including a
+worktree a WorktreeCreate hook created," so the sweep is not the risk here.
+Whoever wires this hook into `.claude/settings.json` should decide
+consciously whether that interaction is acceptable as-is, rather than
+discover it later.
 
 ## The one-line rule for AGENTS.md
 
