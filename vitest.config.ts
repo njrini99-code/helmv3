@@ -323,6 +323,14 @@ export default defineConfig({
             // iterated character by character. Fixed in the same change;
             // this is the regression pin.
             'scripts/knowledge/lib/__tests__/registry.test.mjs',
+            // The "one workspace door" change (2026-09-05): every worktree in
+            // this repo — scripts/new-worktree.sh, and the WorktreeCreate hook
+            // once wired — now goes through scripts/lib/create-workspace.mjs.
+            // Named here for the same reason as its neighbours: no scripts/**
+            // glob, so an unlisted file here executes nowhere at all. Also
+            // exercises .claude/hooks/worktree-create.mjs as a real
+            // subprocess against a disposable git fixture.
+            'scripts/__tests__/create-workspace.test.ts',
           ],
           exclude: [
             'node_modules',
