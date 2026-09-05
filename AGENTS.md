@@ -23,7 +23,9 @@ GolfHelm and GolfHelm-facing CoachHelm work operates through
 `memory/system/golfhelm-engineering-os.md`. `memory/registry.yml` is the
 router; `memory/features/*` is the canonical corpus; generated/live/code
 truth outranks prose. Daily reliability work never deploys, promotes, rolls
-back, or mutates production.
+back, or mutates production. No AI reviewers run on PRs — Review Gate +
+CodeQL cover the same hard rules deterministically; `.claude/rules/
+code-review-tooling.md` is the authority on what actually runs.
 
 ## Mobile UI rules
 Canonical sources, in authority order: `src/styles/design-tokens.css`
@@ -43,11 +45,6 @@ use `ui-stability-debugger-v2`.
   icon, short title, one sentence, one CTA. One clear primary action per
   screen; push the rest to overflow or a bottom sheet.
 
-## Automated review
-No AI reviewers run on PRs — Review Gate + CodeQL cover the same hard rules
-deterministically. `.claude/rules/code-review-tooling.md` is the authority
-on what actually runs.
-
 ## Cursor Cloud
 Services are not running after a fresh VM boot — only disk state persists.
 Point `.env.local` at the `supabase start` API URL
@@ -64,9 +61,8 @@ lint`/`test` need no backend; `test:rls`/`test:integration` need it running.
 Canonical working repo: `/Users/ricknini/Downloads/helmv3`. **Agent teams
 work through one door**: `scripts/new-worktree.sh` — never a raw
 `git worktree add`/`remove`, `git checkout -b`, or `git switch -c`. The
-door is what supplies `--no-track`, the mutation-budget check, and the
-`.helm/workspace.json` stamp that the lifecycle tool and the
-`WorktreeCreate` hook both rely on.
+door supplies `--no-track`, the mutation-budget check, and the
+`.helm/workspace.json` stamp the lifecycle tool and `WorktreeCreate` rely on.
 
 - **Resting state**: `main` is home. Task branches are temporary. Retire a
   branch/worktree once merged and verified; never assume `main` is what's
@@ -98,18 +94,15 @@ door is what supplies `--no-track`, the mutation-budget check, and the
   `gh pr merge <n> --squash && node scripts/worktree-lifecycle.mjs --retire`.
 - **Git hygiene**: `git add <explicit paths>`, never `-A` — the tree is
   shared. Confirm the branch before editing. Check a branch's upstream
-  before pushing (`git for-each-ref --format='%(refname:short) ->
-  %(upstream:short)' refs/heads`) — an accidental `merge = refs/heads/main`
-  makes a plain push target main.
-- **Archives**: `archive/**` and `docs/archive/**` are historical evidence
-  only, never the source of truth. Use repo-local CLIs
-  (`./node_modules/.bin/supabase`, `./node_modules/.bin/vercel`), never a
-  global binary.
+  before pushing (`git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads`)
+  — an accidental `merge = refs/heads/main` makes a plain push target main.
+- **Archives**: `archive/**`/`docs/archive/**` are historical evidence
+  only. Use repo-local CLIs (`./node_modules/.bin/{supabase,vercel}`),
+  never a global binary.
 - **Supabase MCP**: the account-wide connector is the connected query path
   today; its migration/branch/project mutators are denied by UUID in
-  `permissions.deny`. Check current tool authority in
-  `docs/TOOL_AUTHORITY_MATRIX.md` / `docs/CONTROL_PLANE_ENFORCEMENT.md`
-  rather than assuming.
-- Never treat an agent memory store, code index, or cache as more
-  authoritative than the current repository and database evidence, and
-  never deploy/promote/rollback Vercel production unless explicitly asked.
+  `permissions.deny`. Check `docs/TOOL_AUTHORITY_MATRIX.md` /
+  `docs/CONTROL_PLANE_ENFORCEMENT.md` rather than assuming.
+- Never treat an agent memory store or cache as more authoritative than
+  the current repo/database, and never deploy/promote/rollback Vercel
+  production unless explicitly asked.

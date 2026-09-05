@@ -56,7 +56,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
+| `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 1 | 3 | - |
 | `.claude/rules/database.md` | current | - | - | - | 1 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 3 | 6 | 1 |
@@ -66,8 +66,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 0 | 11 | 2 |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 4 | 6 | 1 |
-| `AGENTS.md` | current | yes | - | yes | 0 | 15 | - |
-| `CLAUDE.md` | current | yes | - | yes | 0 | 5 | 1 |
+| `AGENTS.md` | current | yes | - | yes | 0 | 14 | - |
+| `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | 2 |
 | `README.md` | current | - | - | - | 0 | 2 | - |
 | `SECURITY.md` | current | - | - | - | 0 | 1 | 1 |
@@ -259,7 +259,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/shipping.md` | current | - | - | yes | 20 | 5 | 1 |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 11 | 10 | 2 |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 12 | 10 | 2 |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 4 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 199 | - |

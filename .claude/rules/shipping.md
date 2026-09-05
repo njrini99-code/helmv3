@@ -8,6 +8,13 @@ wired `PreToolUse` hook (`guard-canonical-write.mjs`, refusing
 survive `bypassPermissions`. Nothing else in this file is mechanically
 enforced — treat the rest as discipline, not a safety net.
 
+**The canonical checkout boundary is a table, not an absolute**:
+`Write`/`Edit`/`MultiEdit` into canonical is blocked; a Bash redirect,
+`cp`, `mv`, or formatter writing the same bytes is not.
+Do not close this with a Bash command parser — that shape was deleted for
+cause (refused an `echo` for containing a blocked word; `$(...)` bypassed
+it anyway). `sandbox.filesystem` is the structural fix, disabled, owner's call.
+
 ### Docs
 - Never write a count into prose (tables, scripts, checks, branches) — put
   it in an AUTOGEN block, a baseline file, or leave it out. Never document
