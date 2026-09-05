@@ -99,14 +99,12 @@ door supplies `--no-track`, the mutation-budget check, and the
 - **Archives**: `archive/**`/`docs/archive/**` are historical evidence
   only. Use repo-local CLIs (`./node_modules/.bin/{supabase,vercel}`),
   never a global binary.
-- **Supabase MCP**: one sanctioned path, `mcp__supabase__*`, declared in
-  this repo's `.mcp.json` (production project, `read_only=true`); its
-  `apply_migration` is owner-authorized, migrations reviewed before apply.
-  The account-wide connector is the connected query path today; its
-  migration/branch/project mutators are denied by UUID in
-  `permissions.deny` and its read tools are kept. Check
-  `docs/TOOL_AUTHORITY_MATRIX.md` / `docs/CONTROL_PLANE_ENFORCEMENT.md`
-  rather than assuming.
+- **Supabase MCP**: one sanctioned path, `mcp__supabase__*` (this repo's
+  `.mcp.json`, production project, `read_only=true`); its `apply_migration`
+  is owner-authorized, migrations reviewed first. The account-wide connector
+  is the connected query path today: mutators denied by UUID in
+  `permissions.deny`, read tools kept. `docs/TOOL_AUTHORITY_MATRIX.md` /
+  `docs/CONTROL_PLANE_ENFORCEMENT.md` are the authority, not this bullet.
 - Never treat an agent memory store or cache as more authoritative than
   the current repo/database, and never deploy/promote/rollback Vercel
   production unless explicitly asked.
