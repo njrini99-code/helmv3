@@ -64,12 +64,85 @@ function parseAttrs(raw: string): Record<string, string> {
  */
 export function parseXml(input: string): XmlParseResult {
   const warnings: string[] = [];
-  // Strip BOM, prolog, comments, CDATA-wrap (keep CDATA inner text), doctype.
+  // Strip BOM, CDATA-wrap (keep CDATA inner text), prolog, comments, and
+  // doctype, in that order; see the comment on the CDATA extraction below
+  // for why CDATA must come before both the prolog/PI strip and the
+  // comment cleanup.
   let xml = input.replace(/^\uFEFF/, '');
+  // Extract CDATA sections FIRST — before the prolog/PI strip below and
+  // before the comment-stripping pass further down — and restore them
+  // verbatim at the very end. Per XML, CDATA content is not parsed as
+  // markup at all, so none of the preprocessing regexes below may see
+  // inside it:
+  //
+  //   - The bare-marker cleanup added for #459 (further down) strips every
+  //     stray `-->` in the whole document, comment or not; a `-->` that is
+  //     legal, literal CDATA content (verified: `<![CDATA[a --> b]]>` came
+  //     out as `a  b` before this fix) is not exempt from a blind
+  //     document-wide replace.
+  //   - The prolog/PI strip `/<\?[\s\S]*?\?>/g` right below is lazy but not
+  //     anchored to any one processing instruction: given a real
+  //     `<?xml ... ?>` prolog earlier in the document and a `?>` inside a
+  //     LATER CDATA section, the lazy `[\s\S]*?` is satisfied by the FIRST
+  //     `?>` it finds — which can be the one inside CDATA — silently
+  //     consuming every real element in between as if it were part of the
+  //     prolog.
+  //
+  // Placeholders are delimited with U+E000, a Private Use Area code point
+  // that cannot arise from real GameChanger/StatCrew text and, unlike a NUL
+  // byte, is not an ASCII control character — so it does not trip eslint's
+  // no-control-regex or turn this file into something grep/diff tooling
+  // treats as binary.
+  const cdataSections: string[] = [];
+  xml = xml.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, inner: string) => {
+    const token = `CDATA${cdataSections.length}`;
+    cdataSections.push(inner);
+    return token;
+  });
+
   xml = xml.replace(/<\?[\s\S]*?\?>/g, ''); // prolog / PIs
-  xml = xml.replace(/<!--[\s\S]*?-->/g, ''); // comments
+
+  // js/incomplete-multi-character-sanitization (#459, then #615/#616 when
+  // the bare-marker cleanup was chained onto the same assignment): a
+  // single-pass `<!--...-->/g` replace can leave a `<!--` behind \u2014 removing
+  // one comment-pair match can concatenate what survives on either side of
+  // it into a NEW, unremoved `<!--`/`-->` in the SAME global pass (the
+  // classic "input.replace only scans once" gap). Vendor feeds are external
+  // data (GameChanger/StatCrew), so this reruns each regex to its own fixed
+  // point \u2014 CodeQL's incomplete-sanitization check only recognizes a loop as
+  // resolving a flagged regex when nothing else is chained between that
+  // replace() call and the before/after comparison that closes the loop, so
+  // the paired regex, the bare opener, and the bare closer each get their
+  // own loop rather than one loop chaining all three. `--!?>` is accepted as
+  // a terminator alongside `-->` (js/bad-tag-filter, #612): HTML's own
+  // "bogus comment" state ends on either. Matches the pattern in
+  // src/lib/admin/pr-body-parser.ts's stripHtmlComments.
+  let previousPaired: string;
+  do {
+    previousPaired = xml;
+    xml = xml.replace(/<!--[\s\S]*?--!?>/g, ''); // comments
+  } while (xml !== previousPaired);
+
+  let previousOpener: string;
+  do {
+    previousOpener = xml;
+    xml = xml.replace(/<!--/g, '');
+  } while (xml !== previousOpener);
+
+  let previousCloser: string;
+  do {
+    previousCloser = xml;
+    xml = xml.replace(/--!?>/g, '');
+  } while (xml !== previousCloser);
+
   xml = xml.replace(/<!DOCTYPE[\s\S]*?>/gi, ''); // doctype
-  xml = xml.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, inner) => inner); // unwrap CDATA
+
+  // Restore CDATA content verbatim, now that comment-stripping is done and
+  // can no longer see (or corrupt) it.
+  xml = xml.replace(
+    /CDATA(\d+)/g,
+    (_m, idx: string) => cdataSections[Number(idx)] ?? '',
+  );
 
   const stack: XmlNode[] = [];
   let root: XmlNode | null = null;

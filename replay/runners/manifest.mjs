@@ -14,7 +14,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const REPLAY_DIR = resolve(HERE, '..');
@@ -106,6 +106,14 @@ export function listManifestFiles() {
     .map((f) => join(MANIFESTS_DIR, f));
 }
 
+/**
+ * js-yaml 5's `.load()` types its return as `unknown` (was `any` in 4.x) —
+ * this manifest is validated dynamically by `validateManifest`/`checkObject`
+ * above, never by a static type, so re-annotate it `any` here rather than
+ * let `unknown` leak into every .ts consumer (replay-manifest-schema.test.ts
+ * destructures and reads properties off this return value directly).
+ * @returns {{ manifest: any, path: string }}
+ */
 export function loadManifest(pathOrReplayId) {
   const path = pathOrReplayId.endsWith('.yml') || pathOrReplayId.endsWith('.yaml')
     ? resolve(pathOrReplayId)

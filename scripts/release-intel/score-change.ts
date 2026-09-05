@@ -22,7 +22,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 import { scoreChange } from '../../src/lib/admin/release-intel/risk-score';
 import type { ChangeRiskInput } from '../../src/lib/admin/release-intel/types';

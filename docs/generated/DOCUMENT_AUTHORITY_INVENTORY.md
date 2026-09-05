@@ -27,22 +27,22 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 20 | 2 | 9 | 9 |
+| `POLICY` | 20 | 2 | 9 | 10 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
 | `CURRENT_FEATURE` | 26 | 26 | 11 | 31 |
-| `REFERENCE` | 62 | 15 | 18 | 105 |
+| `REFERENCE` | 63 | 15 | 18 | 105 |
 | `GENERATED_TRUTH` | 22 | 3 | 7 | 37 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
 | `PLAN` | 64 | 5 | 33 | 174 |
-| `AUDIT_SNAPSHOT` | 83 | 6 | 38 | 139 |
+| `AUDIT_SNAPSHOT` | 77 | 6 | 38 | 139 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 7 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 85 |
 | `INCIDENT` | 28 | 15 | 2 | 3 |
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
-| `ARCHIVE` | 1206 | 0 | 419 | 535 |
+| `ARCHIVE` | 1212 | 0 | 419 | 535 |
 | `UNKNOWN` | 115 | 12 | 47 | 151 |
 
 ## Files
@@ -68,7 +68,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 6 | 1 |
 | `AGENTS.md` | current | yes | - | yes | 0 | 14 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
-| `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | 2 |
+| `CONTRIBUTING.md` | current | - | - | yes | 0 | 3 | 3 |
 | `README.md` | current | - | - | yes | 0 | 4 | 1 |
 | `SECURITY.md` | current | - | - | - | 0 | 1 | 1 |
 
@@ -215,6 +215,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/features/coachhelm/coachhelm-master-blueprint.md` | superseded | - | - | - | 0 | 0 | - |
 | `docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md` | current | - | - | - | 3 | 37 | 7 |
 | `docs/research/coach-outreach-legal-and-best-practices.md` | current | - | - | - | 1 | 0 | - |
+| `docs/security/accepted-risks.md` | current | - | - | - | 0 | 0 | - |
 | `docs/security/auth-config.md` | current | yes | - | yes | 3 | 0 | - |
 | `docs/setup/BACKUP_AND_DISASTER_RECOVERY.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/COACHHELM_DATABASE_SETUP.md` | current | - | - | - | 0 | 0 | - |
@@ -445,12 +446,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | 0 | 0 | - |
 | `docs/features/coachhelm/COACHHELM_ENGINE_AUDIT_2026-03-11.md` | current | - | - | - | 0 | 19 | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 1 | 35 | 6 |
-| `docs/qa/baseball-fairway-visual-audit-2026-07-04/NAV_ISSUES.md` | current | - | - | - | 0 | 0 | - |
-| `docs/qa/baseball-fairway-visual-audit-2026-07-04/README.md` | current | - | - | - | 0 | 0 | - |
-| `docs/qa/baseball-fairway-visual-audit-2026-07-04/coach/ERRORS.md` | current | - | - | - | 0 | 2 | - |
-| `docs/qa/baseball-fairway-visual-audit-2026-07-04/coach/INDEX.md` | current | - | - | - | 0 | 5 | - |
-| `docs/qa/baseball-fairway-visual-audit-2026-07-04/player/ERRORS.md` | current | - | - | - | 0 | 1 | - |
-| `docs/qa/baseball-fairway-visual-audit-2026-07-04/player/INDEX.md` | current | - | - | - | 0 | 5 | - |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | 1 |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 0 | 3 | 1 |
@@ -488,7 +483,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/README.md` | current | - | - | yes | 5 | 2 | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | 0 | 1 | - |
 | `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 162 | 33 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 7 | 161 | 33 |
 | `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 22 | 2 |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | 1 | 11 | - |
 | `memory/ledgers/changes/admin_slo.md` | current | - | - | - | 1 | 14 | - |
@@ -509,7 +504,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | 1 |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
-| `memory/ledgers/tests/admin_platform.md` | current | - | - | yes | 3 | 56 | 2 |
+| `memory/ledgers/tests/admin_platform.md` | current | - | - | yes | 3 | 55 | 2 |
 | `memory/ledgers/tests/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/tests/admin_slo.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/tests/calendar_events.md` | current | - | - | - | 1 | 2 | - |
@@ -590,7 +585,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 ### `ARCHIVE`
 
-1206 file(s) under `docs/archive/` — historical evidence only, listed
+1212 file(s) under `docs/archive/` — historical evidence only, listed
 by count rather than by name because none of them is a reference and enumerating
 them would bury everything above.
 

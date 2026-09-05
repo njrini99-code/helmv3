@@ -36,7 +36,7 @@
  * whose whole point is that two things are NOT related must not become an
  * edge asserting they are.
  */
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 /** Word-boundary backtick-quoted token extractor, shared by every doc scan. */
 const BACKTICK_TOKEN_RE = /`([a-z][a-z0-9_]*)`/g;

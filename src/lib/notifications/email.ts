@@ -206,6 +206,30 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Strips HTML tags for a plain-text preview excerpt.
+ *
+ * js/incomplete-multi-character-sanitization (#94): a single-pass
+ * `.replace(/<[^>]*>/g, '')` can leave a tag behind — removing one match can
+ * concatenate what survives on either side into a NEW `<...>` span the same
+ * global pass never re-scans (e.g. '<<a>a>' loses only the outer angle
+ * brackets in one pass, leaving '<a>'). Looping until the string stops
+ * changing closes that gap. This is a defense-in-depth improvement, not the
+ * actual sanitization boundary: every caller already runs the result through
+ * `escapeHtml` before it reaches the HTML body (see emailShell above), so a
+ * surviving tag fragment here was never renderable as markup — it would only
+ * have shown up as literal, escaped text.
+ */
+function stripHtmlTags(value: string): string {
+  let result = value;
+  let previous: string;
+  do {
+    previous = result;
+    result = result.replace(/<[^>]*>/g, '');
+  } while (result !== previous);
+  return result;
+}
+
 /** Renders an icon in a circle on dark bg for use in the body */
 function iconCircle(iconKey: string, size = 48): string {
   const svg = ICONS[iconKey] ?? ICONS['bell']!;
@@ -224,10 +248,13 @@ function iconCircle(iconKey: string, size = 48): string {
 /** Small icon for the header pill (white, 16×16) */
 function headerPillIcon(iconKey: string): string {
   const svg = ICONS[iconKey] ?? ICONS['bell']!;
+  // js/identity-replacement (#109): a `viewBox="0 0 20 20"` -> itself
+  // replace used to sit here — a no-op (the viewBox coordinate system is
+  // deliberately kept while width/height shrink the rendered size), removed
+  // rather than left as dead code implying an edit that never happens.
   return svg
     .replace(/width="20"/g, 'width="14"')
     .replace(/height="20"/g, 'height="14"')
-    .replace(/viewBox="0 0 20 20"/g, 'viewBox="0 0 20 20"')
     .replace(/currentColor/g, 'rgba(255,255,255,0.85)');
 }
 
@@ -481,7 +508,7 @@ function generateEmailTemplate(
       const announcementUrl = String(data.announcementUrl || '#');
       const urgency         = String(data.urgency || 'normal');
       const urg             = URGENCY[urgency] ?? URGENCY['normal']!;
-      const preview         = content.replace(/<[^>]*>/g, '').slice(0, 160);
+      const preview         = stripHtmlTags(content).slice(0, 160);
       return {
         subject: `Team Announcement: ${title}`,
         html: emailShell({

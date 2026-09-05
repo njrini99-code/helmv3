@@ -195,7 +195,18 @@ function parseLeadingCourseCode(text: string): string {
  * Handles: MWF, TTh, TR, MW, M, T, W, Th, F, MTWTHF, etc.
  * Also handles full day names separated by / or , (Mon/Wed/Fri, Monday, Wednesday)
  */
-const DAYS_INLINE_RE = /\b((?:M|Tu?|W|Th?|R|F|Sa?|Su?)(?:(?:M|Tu?|W|Th?|R|F|Sa?|Su?))*)\b/;
+// js/redos (#559): the inner alternation is genuinely ambiguous — a bare
+// "T" matches both `Tu?` (0 u's) and `Th?` (0 h's), and a bare "S" matches
+// both `Sa?` and `Su?`. Repeating that ambiguous group unbounded (`*`) lets
+// a long run of "S"/"T" characters in untrusted schedule text be partitioned
+// exponentially many ways before the trailing `\b` finally fails, which is
+// exactly the catastrophic-backtracking shape CodeQL flagged. No real day
+// code needs more than all 7 days spelled with their longest 2-letter forms
+// (M Tu W Th F Sa Su = 12 chars) — bounding the repeat to a generous 14
+// caps the backtracking search space to a small constant (2^14) regardless
+// of how long the surrounding text is, without changing what any legitimate
+// input matches.
+const DAYS_INLINE_RE = /\b((?:M|Tu?|W|Th?|R|F|Sa?|Su?){1,14})\b/;
 // The separator alternation must include PLAIN WHITESPACE. It used to be only
 // `[/,&]`, which caught "Monday, Wednesday" and "Monday/Wednesday" but not the
 // equally common "Monday Wednesday Friday" — that matched just "Monday" and
