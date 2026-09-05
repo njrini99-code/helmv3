@@ -914,9 +914,17 @@ export function MessageThreadPane({
           size="sm"
           onClick={onBack}
           aria-label="Back to conversations"
-          className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
+          // The arrow goes in `leftIcon`, NOT in children, and that is the whole
+          // bug. Button wraps its children in one content span; passing the icon
+          // as a child put the glyph and the word inside that span together,
+          // where — measured — it resolved to 61px against the ~80px they need
+          // and stacked them, so the one control naming where Back goes became
+          // two lines. `leftIcon` renders outside the span, leaving it holding
+          // only text. Nothing about nowrap or shrink could fix it from the
+          // outside; the primitive already had the slot.
+          leftIcon={<ArrowLeft size={20} aria-hidden="true" />}
+          className="-ml-2 min-h-[44px] shrink-0 gap-1 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
         >
-          <ArrowLeft size={20} aria-hidden="true" />
           Messages
         </Button>
         {isGroup ? (
