@@ -109,8 +109,16 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
       <span
         className={cn(
           'flex h-full w-full select-none items-center justify-center overflow-hidden',
-          'bg-surface-sunken text-text-secondary font-fw-sans font-semibold uppercase',
-          'ring-1 ring-inset ring-border-subtle',
+          // A gradient fill and a tile shadow, not a flat swatch with a
+          // hairline. At 40px the old treatment — one flat `surface-sunken`
+          // disc plus `ring-border-subtle` — read as a placeholder pasted onto
+          // the row rather than a component in it. A single flat colour cannot
+          // be lit from above, so the fill gets the two-stop ramp the token's
+          // comment asks for. Deliberately changed in the PRIMITIVE: an avatar
+          // should be an object on every surface that has one, not only on the
+          // screen that noticed.
+          'bg-gradient-to-b from-surface to-surface-sunken',
+          'text-text-secondary font-fw-sans font-semibold uppercase shadow-fw-tile',
           square ? 'rounded-fw-md' : 'rounded-full',
           fwTransition,
           className,

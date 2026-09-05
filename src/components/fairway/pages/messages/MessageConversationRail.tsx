@@ -198,7 +198,7 @@ function ConversationRow({
     >
       <div className="flex items-start gap-3">
         {isGroup ? (
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-accent-50 to-accent-100 text-accent-700 shadow-fw-tile">
             <Users size={18} aria-hidden="true" />
           </span>
         ) : (
@@ -678,7 +678,7 @@ export function MessageConversationRail({
                 size="sm"
                 aria-label="Message the whole team"
                 onClick={onTeamBroadcast}
-                className="rounded-full"
+                className="rounded-full shadow-fw-tile"
               >
                 <Users size={18} aria-hidden="true" />
               </IconButton>
@@ -688,7 +688,7 @@ export function MessageConversationRail({
               size="sm"
               aria-label="New message"
               onClick={onNewMessage}
-              className="rounded-full"
+              className="rounded-full shadow-fw-tile"
             >
               <Plus size={18} aria-hidden="true" />
             </IconButton>
