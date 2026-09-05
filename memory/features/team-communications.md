@@ -140,6 +140,50 @@ Announcement create
   (an `override` local state cleared once the prop's own fields catch up via
   `router.refresh()`) rather than waiting on a full reload.
 
+## Approved Messages Design (2026-09-04)
+
+The owner-approved design pass. Behaviour that changed, and what each change
+depends on — three of these are load-bearing for anyone reading the rail or
+the thread:
+
+- **Unread is a SURFACE, not a position.** The rail no longer hoists unread
+  conversations into a block above the recency groups. An unread row lifts onto
+  `bg-surface` + `shadow-fw-card`; a read row has no surface of its own, and
+  the day sections (Today / Yesterday / This Week / Earlier) keep their real
+  chronology. Triage moved to a scope pill row (All · Unread · Groups), so it
+  is available on demand rather than imposed on every visit. Anything asserting
+  "unread conversations render first" is asserting the OLD contract.
+- **Compose moved into the rail**, onto that scope row, and off the phone
+  masthead. The masthead row now renders only for a coach with a team (its one
+  remaining action is Team broadcast) and renders NOTHING for a player.
+- **`shadow-fw-card` / `shadow-fw-accent-lift`** are the two Tailwind
+  utilities this pass added (`tailwind.config.ts`). The first bridges
+  `--fw-shadow-card`, which had existed with no utility since the design-system
+  foundation; the second is its accent-fill counterpart, defined in both
+  themes. `shadow-card` remains the unrelated LEGACY flat shadow — the names
+  are one character apart and mean different things.
+- **`.fw-glass-chrome`** (`src/app/globals.css`) is the material for the thread
+  header, the composer and the sticky day pill: tint + blur + the `<=768px`
+  downshift to `--fw-blur-mobile`, plus the reduced-transparency and
+  forced-colors fallbacks. Material only — radius, shadow and z-index stay on
+  the consumer, which is what distinguishes it from `.fw-glass-regular` in
+  `components/fairway/overlays/fairway-overlays.css`.
+- **A failed send is stated.** `MessageComposer` surfaces a `role="alert"`
+  notice with Retry when `onSend`/`onSendWithAttachments` resolves false. The
+  draft was already preserved; only the statement of it is new.
+- **The "Recent" people rail says Recent, not Pinned.** The design draws it as
+  PINNED and `golf_conversations` on `main` carries no pin column, so the rail
+  ships labelled with the fact it actually has (the hook's recency order). It
+  renders 1:1 conversations only, and only from three of them. A pin column
+  makes this rail read that instead and the heading change with it.
+
+NOT in this pass, and each for a stated reason — reactions, reply/quote and
+group member avatars belong to #1833 (`agent/messages-instant-entry`), which
+also carries the migrations they need; the deleted-message tombstone needs the
+thread query to stop filtering `is_deleted` (`use-golf-messages.ts` filters at
+both fetch and realtime); per-message "not delivered" needs optimistic sends
+the hook does not do; presence dots need presence data that does not exist.
+
 ## Conversation Rail Failure Semantics (2026-08-27)
 
 The rail distinguishes "backend failed" from "genuinely empty" — a failed load
