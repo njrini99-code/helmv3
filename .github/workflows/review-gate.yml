@@ -184,9 +184,12 @@ jobs:
           # rate-limit / push-notification / Edge Function paths. Mirrors the
           # exclude list in .coderabbit/semgrep/helmv3.yml for the equivalent
           # semgrep rule (helmv3-service-role-outside-admin).
+          excl='^(src/lib/supabase/admin|src/lib/supabase/keys|src/lib/supabase/service'
+          excl+='|src/lib/auth/supabase-rate-limit|src/lib/notifications/push'
+          excl+='|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)'
           run_rule .coderabbit/ast-grep/no-service-role-in-client.yml \
             '\.(ts|tsx)$' \
-            '^(src/lib/supabase/admin|src/lib/supabase/keys|src/lib/supabase/service|src/lib/auth/supabase-rate-limit|src/lib/notifications/push|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)' \
+            "$excl" \
             'no-admin/scripts/edge'
 
           # Server-action rule — a catch whose entire body returns []/null/{}
