@@ -396,24 +396,14 @@ jobs:
             exit 0
           fi
           semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions "${files[@]}"
-      - name: Scan with default p/ci ruleset
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: |
-          set -eu
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          changed_files="$(bash .github/scripts/changed-files.sh)"
-          mapfile -t files < <(printf '%s\n' "$changed_files" \
-            | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' \
-            | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
-            || :)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No changed files for semgrep p/ci."
-            exit 0
-          fi
-          semgrep --error --config p/ci --skip-unknown-extensions "${files[@]}"
+      # The "Scan with default p/ci ruleset" step that used to run here was
+      # removed 2026-09-05: it was a bare community ruleset with no
+      # repo-specific tuning, redundant with either the custom-rules step
+      # above (the actual hard-rule enforcement AGENTS.md names) or with
+      # Semgrep Cloud Platform's own hosted scan if that App is kept — see
+      # the pr-checks-review audit §2(f)/§5. The `all` aggregate below reads
+      # `needs.*.result` for the whole `semgrep` JOB, not per-step outcomes,
+      # so removing a step here needed no change to that logic.
 
   all:
     # Renamed from the bare `all` (2026-08-19): ci.yml's aggregate job was
