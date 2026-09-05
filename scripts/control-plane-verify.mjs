@@ -712,9 +712,18 @@ function checkUserGlobal() {
   const p = resolve(process.env.HOME ?? '', '.claude/settings.json');
   if (!existsSync(p)) return add('user-global', 'readable', UNKNOWN, 'user-global settings not readable from here');
   const text = readFileSync(p, 'utf-8');
-  const stale = /blocked by a PreToolUse hook/.test(text);
+  // Match the actual claim that has gone stale — that guard-bash.sh and/or
+  // guard-sql.sh are wired and enforcing something. Both files were deleted
+  // and had been unwired before that. The literal phrase "blocked by a
+  // PreToolUse hook" was one wording of this claim, seen once, and matching
+  // only that string let the claim survive under different wording — e.g.
+  // "NOT suspended by allow rules and remain the real safety layer... stay
+  // blocked there" without ever saying the checked phrase. Match the thing
+  // that is actually false (naming the deleted files), not one sentence
+  // that once described it.
+  const stale = /guard-bash\.sh|guard-sql\.sh/.test(text);
   add('user-global', 'no-stale-hook-claim', stale ? FAIL : PASS,
-    stale ? 'autoMode prose still claims a PreToolUse hook blocks destructive SQL' : 'no stale hook claim');
+    stale ? 'autoMode prose still names guard-bash.sh/guard-sql.sh as if they were wired — both are deleted' : 'no stale hook claim');
 
   const d = readJson(p);
   const allow = (d?.permissions?.allow ?? []);

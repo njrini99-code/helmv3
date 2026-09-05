@@ -197,13 +197,19 @@ describe('the three corrected claims stay corrected', () => {
   });
 
   it('autonomy.md does not justify autonomy with hooks that do not exist', () => {
-    // The most consequential of the four. This paragraph told the reader it was
-    // safe to proceed without asking, and named three shapes — force push,
-    // destructive SQL, unscoped recursive rm — as deterministically blocked.
-    // None of the three is covered by any hook or deny rule.
+    // The most consequential of the four. A now-deleted paragraph told the
+    // reader it was safe to proceed without asking, and named three shapes —
+    // force push, destructive SQL, unscoped recursive rm — as
+    // deterministically blocked. None of the three is covered by any hook or
+    // deny rule. The correction narrative itself was later removed (rules
+    // files state current behavior only, per docs:rules-current) — what
+    // this suite pins now is that the current-state fact survived the
+    // narrative's removal, not the story of how it got there.
     const a = asserted('.claude/rules/autonomy.md');
     expect(a).not.toMatch(/they block the shapes\s+that actually matter/);
-    expect(read('.claude/rules/autonomy.md')).toMatch(/All three examples were false/);
+    expect(read('.claude/rules/autonomy.md')).toMatch(
+      /no hook covers force push, destructive SQL, (or )?recursive/,
+    );
   });
 
   it('all four point readers at the generated inventory', () => {

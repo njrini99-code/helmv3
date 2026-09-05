@@ -1,7 +1,6 @@
 ---
 paths:
   - "src/**/*"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 ## File Structure (Key Paths)
