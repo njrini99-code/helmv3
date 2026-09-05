@@ -1,4 +1,9 @@
 {
+  "1855": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Phase 2 P1 batch 1: fail-open ratchet 51\u219248."
+  },
   "1852": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
