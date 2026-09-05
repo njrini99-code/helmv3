@@ -16,6 +16,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
 
 export type ApproachBucket = '50_125ft' | '125_175ft' | '175_plus_ft';
 
@@ -269,12 +270,22 @@ export async function loadSandShots(
     // rounds/90d) would otherwise truncate, dropping later holes' flags and
     // silently demoting those attempts to the heuristic. Same pattern + stable
     // order key as the golf_shots fetch above.
-    const { data: holes } = await fetchAllRowsResult<HoleFlagRow>((from, to) =>
+    const { data: holes, error: holesError } = await fetchAllRowsResult<HoleFlagRow>((from, to) =>
       fromUntyped(supabase, 'golf_holes')
         .select('round_id, hole_number, sand_save')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
         .range(from, to));
+    if (holesError) {
+      await logServerError(
+        'shot-source sand_save flag read failed — falling back to the shot-derived heuristic for this window',
+        {
+          action: 'shot-source.sandSaveFlags',
+          featureArea: 'coachhelm.engine',
+          metadata: { dbError: holesError as unknown },
+        },
+      );
+    }
     for (const h of holes ?? []) {
       if (h.hole_number == null) continue;
       flagByHole.set(`${h.round_id}:${h.hole_number}`, h.sand_save ?? null);

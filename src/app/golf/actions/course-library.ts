@@ -447,7 +447,7 @@ async function getCourseTeeCountsImpl(courseIds: string[]): Promise<Record<strin
   // PostgREST caps a single response at 1000 rows. A library of ~250 courses with
   // several tee sets each exceeds that, silently undercounting the "N tees" badge
   // for whichever courses fall past row 1000. Paginate with a stable `id` order.
-  const { data } = await fetchAllRowsResult<{ id: string; course_id: string }>((from, to) =>
+  const { data, error } = await fetchAllRowsResult<{ id: string; course_id: string }>((from, to) =>
     supabase
       .from('golf_course_tees')
       .select('id, course_id')
@@ -458,6 +458,14 @@ async function getCourseTeeCountsImpl(courseIds: string[]): Promise<Record<strin
     undefined,
     { table: 'golf_course_tees', action: 'getCourseTeeCounts', feature: 'course_library', sport: 'golf' },
   );
+  // Same leniency, same duty to say so as getRecentlyPlayedCourses above: a
+  // failed read here silently zeroes every "N tees" badge.
+  if (error) {
+    await logServerError(
+      `[getCourseTeeCounts] tee count read failed — every "N tees" badge will read zero: ${describeError(error)}`,
+      { action: 'courseLibrary.teeCounts', featureArea: 'course_library' },
+    );
+  }
   const counts: Record<string, number> = {};
   for (const r of data ?? []) {
     const cid = r.course_id;
