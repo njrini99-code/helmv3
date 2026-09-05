@@ -21,6 +21,30 @@ import { type HTMLAttributes, type ReactNode, forwardRef, useEffect, useState } 
 import { cn } from '@/lib/utils';
 import { fwTransition } from './_internal';
 
+/**
+ * Which of the eight shipped tints this person gets.
+ *
+ * An initials avatar in neutral grey is the weakest element on a warm screen —
+ * a near-white disc with grey letters on a near-white card reads as a
+ * placeholder that has not loaded yet. Every app that does this well (Slack,
+ * Linear, Notion, Google) derives a colour from the identity, so a face you
+ * cannot see is still a thing you recognise down a list.
+ *
+ * `--fw-tint-1..8` already exist for exactly this kind of use and carry their
+ * own dark-mode values, so this costs no new colour: the palette was tokenized
+ * because "inline styles can't be re-skinned by a `.dark` rule", which is
+ * precisely the constraint here.
+ *
+ * Deterministic on the name — the same person is the same colour on every
+ * screen, every session — and deliberately NOT random: a colour that moves is
+ * worse than no colour, because the eye learns it and is then lied to.
+ */
+function tintIndexFor(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i += 1) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return (h % 8) + 1;
+}
+
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
 
@@ -98,6 +122,10 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
 
   const showImage = !!src && !errored;
   const initials = initialsFromName(name);
+  // Colour only where there is a name to derive it from and no photo to show:
+  // a decorative or nameless avatar stays neutral rather than inventing an
+  // identity it does not have.
+  const tint = !showImage && name && !decorative ? tintIndexFor(name) : null;
 
   return (
     <span
@@ -107,10 +135,19 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
       {...props}
     >
       <span
+        style={tint ? { backgroundColor: `var(--fw-tint-${tint}-bg)`, color: `var(--fw-tint-${tint}-ink)` } : undefined}
         className={cn(
           'flex h-full w-full select-none items-center justify-center overflow-hidden',
-          'bg-surface-sunken text-text-secondary font-fw-sans font-semibold uppercase',
-          'ring-1 ring-inset ring-border-subtle',
+          // A gradient fill and a tile shadow, not a flat swatch with a
+          // hairline. At 40px the old treatment — one flat `surface-sunken`
+          // disc plus `ring-border-subtle` — read as a placeholder pasted onto
+          // the row rather than a component in it. A single flat colour cannot
+          // be lit from above, so the fill gets the two-stop ramp the token's
+          // comment asks for. Deliberately changed in the PRIMITIVE: an avatar
+          // should be an object on every surface that has one, not only on the
+          // screen that noticed.
+          !tint && 'bg-gradient-to-b from-surface to-surface-sunken text-text-secondary',
+          'font-fw-sans font-semibold uppercase shadow-fw-tile',
           square ? 'rounded-fw-md' : 'rounded-full',
           fwTransition,
           className,

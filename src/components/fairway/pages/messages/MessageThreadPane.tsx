@@ -42,6 +42,7 @@ import type {
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar } from '@/components/fairway/controls/avatar';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
@@ -75,6 +76,37 @@ const GROUP_WINDOW_MINUTES = 5;
  * the app is ignoring you.
  */
 const LONG_PRESS_MS = 450;
+
+/**
+ * How far the finger may travel during a hold before it counts as a scroll.
+ *
+ * A threshold, not a tripwire. Cancelling on the FIRST pointermove reads as
+ * correct — "movement means they meant to scroll" — but a finger resting on
+ * glass is never still: capacitive digitizers emit a steady dribble of
+ * sub-pixel moves for the whole press, so a zero-tolerance cancel throws away
+ * the deliberate stationary hold it was meant to protect, and the menu simply
+ * never opens on real hardware. 10px is the platform convention on both sides
+ * (Android `getScaledTouchSlop()` ≈ 8dp; iOS `UILongPressGestureRecognizer
+ * .allowableMovement` = 10pt), and is comfortably under the distance a real
+ * scroll covers in 450ms.
+ */
+const LONG_PRESS_SLOP_PX = 10;
+
+/**
+ * Has the finger travelled far enough during a hold to count as a scroll?
+ *
+ * Exported so the threshold is pinned by a test rather than by reading the
+ * component: the failure this guards against is invisible in jsdom and in a
+ * screenshot — it only shows up on a real digitizer, where the previous
+ * cancel-on-any-move meant the menu never opened at all.
+ */
+export function exceedsLongPressSlop(
+  origin: { x: number; y: number },
+  point: { x: number; y: number },
+  slopPx: number = LONG_PRESS_SLOP_PX,
+): boolean {
+  return Math.abs(point.x - origin.x) > slopPx || Math.abs(point.y - origin.y) > slopPx;
+}
 
 /**
  * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
@@ -275,16 +307,28 @@ function TypingIndicator() {
  * attachments have resolved (signed) successfully; renders nothing otherwise so
  * the bubble stays honest-empty until real data lands.
  */
+/**
+ * Attachments inside a bubble.
+ *
+ * `photoOnly` is the photo-message case, where the bubble is a 6px frame and
+ * the image is the message. The image takes `rounded-fw-md` (14px) — the bubble's
+ * 20px outer radius less that frame, and step 2 of the radius ramp — and the wrapper drops the `mt-1.5` it carries for a
+ * text message, because a photo bubble has nothing above the picture and that
+ * margin is what would leave a cream band across the top of it.
+ */
 function MessageAttachments({
   attachments,
   isOwn,
+  photoOnly = false,
 }: {
   attachments: ResolvedAttachment[];
   isOwn: boolean;
+  /** Every attachment is a signed image and the bubble is its frame. */
+  photoOnly?: boolean;
 }) {
   if (!attachments.length) return null;
   return (
-    <div className="mt-1.5 flex flex-col gap-1.5">
+    <div className={cn('flex flex-col gap-1.5', photoOnly ? '' : 'mt-1.5')}>
       {attachments.map((att) => {
         const isImage = att.fileType === 'image' && !!att.url;
         if (isImage) {
@@ -303,28 +347,40 @@ function MessageAttachments({
                 width={att.width ?? undefined}
                 height={att.height ?? undefined}
                 loading="lazy"
-                className="max-h-64 w-full max-w-[260px] object-cover"
+                className="max-h-72 w-full rounded-fw-md object-cover"
               />
             </a>
           );
         }
         // Non-image (or unsigned image) → download chip.
+        // A file is an OBJECT, so it gets an object's shape: a tinted type
+        // tile, the name at reading size, the size beneath it, and the
+        // download glyph on the trailing edge. It read as a caption-sized
+        // line of grey text with a 16px paperclip beside it, which is how you
+        // render metadata, not how you render the thing that was sent.
         const chip = (
           <span
             className={cn(
-              'inline-flex max-w-[260px] items-center gap-2 rounded-fw-md px-2.5 py-2',
+              'inline-flex max-w-[260px] items-center gap-3 rounded-fw-md px-3 py-2.5',
               isOwn ? 'bg-text-on-accent/15' : 'bg-surface',
             )}
           >
-            <FileText
-              size={16}
-              aria-hidden="true"
-              className={cn('flex-shrink-0', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}
-            />
+            <span
+              className={cn(
+                'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-sm',
+                isOwn ? 'bg-text-on-accent/20' : 'bg-accent-50',
+              )}
+            >
+              <FileText
+                size={17}
+                aria-hidden="true"
+                className={isOwn ? 'text-text-on-accent' : 'text-accent-700'}
+              />
+            </span>
             <span className="min-w-0 flex-1">
               <span
                 className={cn(
-                  'block truncate font-fw-sans text-eyebrow font-medium',
+                  'block truncate font-fw-sans text-caption font-medium',
                   isOwn ? 'text-text-on-accent' : 'text-text-primary',
                 )}
               >
@@ -341,7 +397,7 @@ function MessageAttachments({
             </span>
             {att.url ? (
               <Download
-                size={14}
+                size={17}
                 aria-hidden="true"
                 className={cn('flex-shrink-0', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}
               />
@@ -421,11 +477,25 @@ export function MessageThreadPane({
    * islands instead of one utterance.
    *
    * Press-and-hold is what a phone user already expects here, and it costs no
-   * permanent pixels. The timer is cancelled by movement, so a scroll that
-   * happens to start on a bubble never opens the menu.
+   * permanent pixels. The timer is cancelled once the finger travels past
+   * LONG_PRESS_SLOP_PX, so a scroll that happens to start on a bubble never
+   * opens the menu while a stationary hold still does.
    */
+  /**
+   * The message the action sheet is for. The parent owns only the id, so the
+   * row is resolved here — a stale id (the message was deleted by the other
+   * device while the sheet was open) resolves to undefined and closes the
+   * sheet rather than acting on a row that no longer exists.
+   */
+  const mobileActionsMessage = React.useMemo(
+    () => (mobileActionsId ? (messages.find((row) => row.id === mobileActionsId) ?? null) : null),
+    [mobileActionsId, messages],
+  );
+
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressOriginRef = React.useRef<{ x: number; y: number } | null>(null);
   const cancelLongPress = React.useCallback(() => {
+    longPressOriginRef.current = null;
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -435,8 +505,9 @@ export function MessageThreadPane({
 
   const longPressHandlers = React.useCallback(
     (messageId: string) => ({
-      onPointerDown: () => {
+      onPointerDown: (e: React.PointerEvent) => {
         cancelLongPress();
+        longPressOriginRef.current = { x: e.clientX, y: e.clientY };
         longPressTimerRef.current = setTimeout(() => {
           // The detent tick, so the menu opening is felt as well as seen.
           fwHaptic('selection');
@@ -444,7 +515,15 @@ export function MessageThreadPane({
         }, LONG_PRESS_MS);
       },
       onPointerUp: cancelLongPress,
-      onPointerMove: cancelLongPress,
+      // Distance, not motion. See LONG_PRESS_SLOP_PX — a resting finger still
+      // emits pointermove, so only a real drag may cancel the hold.
+      onPointerMove: (e: React.PointerEvent) => {
+        const origin = longPressOriginRef.current;
+        if (!origin) return;
+        if (exceedsLongPressSlop(origin, { x: e.clientX, y: e.clientY })) {
+          cancelLongPress();
+        }
+      },
       onPointerCancel: cancelLongPress,
       onPointerLeave: cancelLongPress,
       // Suppress the native callout so iOS does not race our menu with its own.
@@ -500,6 +579,22 @@ export function MessageThreadPane({
     // Never draw it above the very first message — a line at the top of a
     // thread separates nothing and just reads as a stray rule.
     return index <= 0 ? -1 : index;
+  })();
+  /**
+   * Index of the LAST message the reader sent, or -1.
+   *
+   * The read receipt is a fact about the CONVERSATION — how far the other
+   * person has got — not a property of each utterance. Rendered once per
+   * group it printed "Read" three times in a single screen of a real thread,
+   * which states one fact repeatedly and reads as noise. Every chat that
+   * feels finished shows it once, against the newest thing you said.
+   */
+  const lastOwnIndex = (() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      if (m && (m.sender_id === userId || m.sender_id === currentUserId)) return i;
+    }
+    return -1;
   })();
   const observedConversationIdRef = React.useRef<string | null>(null);
   const pendingInitialScrollConversationIdRef = React.useRef<string | null>(null);
@@ -852,8 +947,17 @@ export function MessageThreadPane({
         className,
       )}
     >
-      {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-w-0 items-center gap-2.5 border-b border-border-subtle px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+      {/* Thread header — the warm glass bar the conversation lives under.
+          `fw-glass-chrome` (globals.css) carries ONLY the material: the
+          champagne tint, the blur, and its <=768px downshift to
+          --fw-blur-mobile. The edges are here because they are this bar's, not
+          the material's — a cream specular above, the deeper warm glass edge
+          below, and a short ambient so the bar reads as sitting ON the thread
+          rather than being ruled off from it. That pair replaces the
+          `border-b`: a hairline AND a shadow on the same edge is the "border
+          or shadow, never both" rule the card recipes already follow.
+          `z-raised` keeps it above the scroll region it fronts. */}
+      <header className="fw-glass-chrome relative z-raised flex min-w-0 items-center gap-2.5 px-4 py-2.5 shadow-[inset_0_1px_0_var(--fw-glass-highlight),0_1px_0_var(--fw-glass-border-bot),var(--fw-shadow-flat)] sm:gap-3 sm:px-5 sm:py-3">
         {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
             an open thread this is the only way out AND the only thing naming
             where "out" is, so it says so — the platform convention, and the
@@ -865,9 +969,17 @@ export function MessageThreadPane({
           size="sm"
           onClick={onBack}
           aria-label="Back to conversations"
-          className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
+          // The arrow goes in `leftIcon`, NOT in children, and that is the whole
+          // bug. Button wraps its children in one content span; passing the icon
+          // as a child put the glyph and the word inside that span together,
+          // where — measured — it resolved to 61px against the ~80px they need
+          // and stacked them, so the one control naming where Back goes became
+          // two lines. `leftIcon` renders outside the span, leaving it holding
+          // only text. Nothing about nowrap or shrink could fix it from the
+          // outside; the primitive already had the slot.
+          leftIcon={<ArrowLeft size={20} aria-hidden="true" />}
+          className="-ml-2 min-h-[44px] shrink-0 gap-1 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
         >
-          <ArrowLeft size={20} aria-hidden="true" />
           Messages
         </Button>
         {isGroup ? (
@@ -901,7 +1013,13 @@ export function MessageThreadPane({
           reads cleanly against the raised glass bezel. */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-surface px-4 py-5 sm:px-5"
+        // `canvas`, not `surface`. The tier was inverted: the well was the
+        // CARD colour (0.984) and incoming bubbles were `sunken` (0.963), so
+        // the messages sat BELOW their own container and had to be found
+        // rather than seen. design-tokens.css sets canvas 0.03 below surface
+        // precisely so "cards now clearly LIFT off it" — the bubbles are the
+        // cards here, and this is that pairing, the right way up.
+        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
         data-scroll-container
       >
         {loading ? (
@@ -977,6 +1095,18 @@ export function MessageThreadPane({
               if (isNew) seenMessageIdsRef.current.add(msg.id);
 
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
+              // A photo message is not text with a picture under it — the
+              // image IS the bubble, and any words are its caption. When every
+              // resolved attachment is a signed image, the bubble drops to a
+              // 6px frame so the picture reaches its own corners instead of
+              // floating inside 16px of cream, and the caption moves BELOW the
+              // image, which is also the order it should be read in.
+              const isPhotoBubble =
+                Boolean(
+                  (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments,
+                ) &&
+                (attachmentsByMessage[msg.id] ?? []).length > 0 &&
+                (attachmentsByMessage[msg.id] ?? []).every((a) => a.fileType === 'image' && !!a.url);
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
               const resolvedAttachments = attachmentsByMessage[msg.id] ?? [];
               const hasAttachmentError = attachmentErrors.has(msg.id);
@@ -1014,13 +1144,37 @@ export function MessageThreadPane({
                     <span className="h-px flex-1 bg-accent-500/45" />
                   </div>
                 )}
+                {/* A quiet centred label, with no rules through it.
+                    The New marker above draws accent rules BECAUSE, in its own
+                    words, "this line means something the day separators do
+                    not" — but the day separator drew the same two rules, so the
+                    only thing carrying that distinction was hue. Two full-width
+                    hairlines per day also cut the column into slabs and compete
+                    with the bubbles for the eye. Dropping them makes the New
+                    marker the only ruled thing in the thread, which is what it
+                    was always described as being. */}
+                {/* `pointer-events-none` belongs on the BAND, not on the pill
+                    inside it. The wrapper is full-width and ~48px tall with
+                    this padding, and `sticky` + `z-raised` park it over the
+                    bubbles as soon as the thread scrolls — so with only the
+                    pill opted out, the band swallowed every tap in a 48px
+                    strip of the one screen whose primary gesture is a
+                    long-press on a bubble.
+                    `role="separator"` went with it: it described the
+                    full-width ruled line this used to be, and a pinned day
+                    header is a header, not a rule. */}
                 {startsDay && (
-                  <div className="flex items-center gap-3 pb-1 pt-2" role="separator">
-                    <span className="h-px flex-1 bg-border-subtle" />
-                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                  <div className="pointer-events-none sticky top-0 z-raised flex items-center justify-center pb-2 pt-5">
+                    {/* Sticky, and on the same glass as the header above it.
+                        A day label that scrolls away with its first message
+                        answers "what day is this" only at the moment you
+                        already know; pinned, it answers it for the whole day
+                        you are reading. It is the one element in this pane the
+                        thread genuinely passes BEHIND, which is what the
+                        material is for. */}
+                    <span className="fw-glass-chrome rounded-full px-3.5 py-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-secondary shadow-[inset_0_1px_0_var(--fw-glass-highlight),var(--fw-shadow-pop)]">
                       {formatDaySeparator(msg.created_at)}
                     </span>
-                    <span className="h-px flex-1 bg-border-subtle" />
                   </div>
                 )}
                 <m.div
@@ -1080,7 +1234,15 @@ export function MessageThreadPane({
                     </div>
                   )}
 
-                  <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                  {/* A PERCENTAGE cap alone is a cap that stops capping on a
+                      desktop: 70% of the 720px thread panel is a 504px line of
+                      15px type, roughly 100 characters, where typography puts
+                      the comfortable limit near 45-75. The phone was never the
+                      problem — 78% of a 358px column is 279px. Adding the
+                      absolute term makes the same rule hold at both ends: the
+                      proportion governs the phone, the 288px ceiling governs
+                      everything wider. */}
+                  <div className={cn('group relative flex min-w-0 max-w-[min(78%,288px)] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name — GROUPS ONLY, once per group.
                         Redundant in a 1:1 (the header already names them) and
                         it was `text-eyebrow` in tertiary ink, which is the
@@ -1106,29 +1268,10 @@ export function MessageThreadPane({
                             <Trash2 size={14} aria-hidden="true" />
                           </IconButton>
                         </div>
-                        {/* No persistent kebab. The actions appear on long-press
-                            (see longPressHandlers) and otherwise cost nothing.
-                            Copy is included because taking over long-press takes
-                            over the gesture iOS uses to select text — without it
-                            the message would become uncopyable. */}
-                        {mobileActionsId === msg.id && (
-                          <div className="relative mt-0.5 flex items-center lg:hidden">
-                            <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
-                              <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
-                                <Copy size={18} aria-hidden="true" />
-                              </IconButton>
-                              <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
-                                <Pencil size={18} aria-hidden="true" />
-                              </IconButton>
-                              <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => { onDeleteClick(msg.id); onSetMobileActions(null); }}>
-                                <Trash2 size={18} aria-hidden="true" />
-                              </IconButton>
-                              <IconButton variant="ghost" size="sm" aria-label="Close" onClick={() => onSetMobileActions(null)}>
-                                <X size={16} aria-hidden="true" />
-                              </IconButton>
-                            </Inset>
-                          </div>
-                        )}
+                        {/* No persistent kebab, and no inline row either. The
+                            actions open as a bottom sheet (MessageActionsSheet,
+                            rendered once at the end of this component) on
+                            long-press — see longPressHandlers. */}
                       </>
                     )}
 
@@ -1189,23 +1332,80 @@ export function MessageThreadPane({
                       <div
                         {...(isOwn ? longPressHandlers(msg.id) : {})}
                         className={cn(
-                          'px-4 py-2.5',
+                          // Reading size and real padding. `text-body-sm` in a
+                          // tight box is caption treatment, and it made the
+                          // content of the product read as metadata about
+                          // itself. The message IS the product on this screen.
+                          isPhotoBubble ? 'p-1.5' : 'px-4 py-3 sm:px-4',
                           // Own bubbles opt out of the iOS text-selection callout
                           // because long-press is now the actions gesture; Copy
                           // in that menu replaces what selection provided.
                           // Incoming messages keep native selection untouched.
                           isOwn && 'select-none [-webkit-touch-callout:none]',
-                          isOwn
-                            ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-surface-sunken text-text-primary',
-                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
-                          isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',
-                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-tr-md rounded-br-sm' : 'rounded-fw-lg rounded-tl-md rounded-bl-sm'),
-                          !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
+                          // Both bubbles now LIFT off the deeper well, which is
+                          // the whole reason the well moved to `canvas` above.
+                          // Incoming takes `surface` — the card cream — so it
+                          // is the same 0.03 separation the token file was
+                          // tuned around, carried by fill instead of a
+                          // hairline. Shadow OR border, never both.
+                          // `shadow-flat`, which both bubbles had, is
+                          // `shadow-fw-card` MINUS its inset specular — the one
+                          // part of the recipe the token file calls "the 'lit
+                          // from above' tell of a premium surface". The lit edge
+                          // is what makes a cream plane read as lifted rather
+                          // than merely lighter, so incoming bubbles take the
+                          // whole recipe.
+                          //
+                          // Own bubbles cannot: a 0.55-alpha white inset on a
+                          // mid-green fill is a chalk line. They take
+                          // `shadow-fw-accent-lift`, whose inset drops to 0.14
+                          // and whose ambient is tinted with the accent, so
+                          // their depth carries their own colour instead of
+                          // greying it.
+                          // A GROUP casts once, from its silhouette — not once
+                          // per bubble. Seen on the real thread: four
+                          // consecutive messages 2px apart, each throwing its
+                          // own 20px ambient, and every bubble's glow washed
+                          // around its neighbours until the run read as four
+                          // separate objects. The corner grammar was saying
+                          // "one utterance" and the shadows were saying "four
+                          // cards", and the shadows won.
+                          //
+                          // So the full lift belongs to the bubble that ENDS
+                          // the group; the ones above it keep the contact
+                          // shadow that holds their own edge and drop the
+                          // ambient that was bleeding onto the next.
+                          // `shadow-sm` and not `shadow-flat` for the middles:
+                          // flat still carries a 10px ambient, which is the
+                          // thing being removed. A contact shadow holds the
+                          // bubble's own edge and casts nothing onto its
+                          // neighbour 2px below.
+                          isOwn && 'bg-accent-650 text-text-on-accent',
+                          !isOwn && 'bg-surface text-text-primary',
+                          isLastInGroup
+                            ? (isOwn ? 'shadow-fw-accent-lift' : 'shadow-fw-card')
+                            : 'shadow-sm',
+                          // CORNER GRAMMAR — the tail corner marks where an
+                          // utterance ENDS, and only there.
+                          //
+                          // Every bubble was `rounded-fw-lg` (28px, the SHEET
+                          // step) with the tail cut on the last one. At 28px on
+                          // a ~40px-tall bubble the arc consumes most of the
+                          // side, so a burst of three short lines read as three
+                          // lozenges rather than one thing said. `card` (20px)
+                          // is the surface step and the radius the design
+                          // draws; the two INNER corners of a middle bubble
+                          // tighten to `fw-sm` (10px) so consecutive lines
+                          // nest into a single stacked shape, and only the
+                          // final bubble cuts its tail to 6px.
+                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-br-sm' : 'rounded-card rounded-bl-sm'),
+                          isFirstInGroup && !isLastInGroup && 'rounded-card',
+                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-tr-fw-sm rounded-br-sm' : 'rounded-card rounded-tl-fw-sm rounded-bl-sm'),
+                          !isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-card rounded-tr-fw-sm rounded-br-fw-sm' : 'rounded-card rounded-tl-fw-sm rounded-bl-fw-sm'),
                         )}
                       >
-                        {msg.content ? (
-                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body-sm leading-relaxed">
+                        {msg.content && !isPhotoBubble ? (
+                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body leading-relaxed">
                             {decodeMessageContent(msg.content)}
                           </p>
                         ) : null}
@@ -1217,7 +1417,7 @@ export function MessageThreadPane({
                             the placeholder forever. */}
                         {hasAttachments ? (
                           resolvedAttachments.length ? (
-                            <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
+                            <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} photoOnly={isPhotoBubble} />
                           ) : hasAttachmentError ? (
                             <Button
                               type="button"
@@ -1243,6 +1443,12 @@ export function MessageThreadPane({
                             </span>
                           )
                         ) : null}
+                        {/* The photo's caption, under its picture. */}
+                        {msg.content && isPhotoBubble ? (
+                          <p className="whitespace-pre-wrap break-words px-2.5 pb-1 pt-2 font-fw-sans text-caption leading-relaxed">
+                            {decodeMessageContent(msg.content)}
+                          </p>
+                        ) : null}
                         {/* Edited badge — DORMANT unless edited_at. */}
                         {editedAt ? (
                           <span className={cn('mt-1 block font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
@@ -1251,23 +1457,40 @@ export function MessageThreadPane({
                         ) : null}
                       </div>
                     )}
-                  </div>
 
-                  {/* Time + read receipt (last of group, tabular-nums) */}
-                  {showTime && editingMessageId !== msg.id && (
-                    <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
-                      <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                        {formatTime(msg.created_at)}
-                      </span>
-                      {/* P264 no-data-lies: per-message "Read" is only honest in a
-                          1:1 thread. In a group the hook can only see ONE arbitrary
-                          other participant's last_read_at, so "Read" would imply the
-                          whole group has read when a single (random) member has.
-                          Suppress the receipt in groups rather than imply group-read
-                          off one member. */}
-                      {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
-                    </div>
-                  )}
+                    {/* Time + receipt, INSIDE the bubble column rather than
+                        beside it in the row.
+
+                        As a sibling of the column it occupied horizontal space
+                        on the same flex line, so it shortened the line it sat
+                        on: three bubbles ran flush to the edge and the fourth —
+                        always the last of the group, the only one that shows a
+                        time — was pushed inboard by the exact width of
+                        "Read 4:06 PM". Every group in the thread ended on a
+                        different x. That ragged edge is the single most visible
+                        thing separating this from a finished chat, and it is
+                        structural, not a spacing value.
+
+                        The column already carries items-end / items-start, so
+                        the meta aligns to the bubble's own edge and the bubbles
+                        keep the full width of the line. */}
+                    {showTime && editingMessageId !== msg.id && (
+                      <div className="flex items-center gap-1.5 px-0.5">
+                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                          {formatTime(msg.created_at)}
+                        </span>
+                        {/* P264 no-data-lies: per-message "Read" is only honest in a
+                            1:1 thread. In a group the hook can only see ONE arbitrary
+                            other participant's last_read_at, so "Read" would imply the
+                            whole group has read when a single (random) member has.
+                            Suppress the receipt in groups rather than imply group-read
+                            off one member. */}
+                        {isOwn && !isGroup && idx === lastOwnIndex && (
+                          <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </m.div>
                 </React.Fragment>
               );
@@ -1313,6 +1536,123 @@ export function MessageThreadPane({
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children
           so FairwayMessages owns the send wiring to the unchanged hooks. */}
       {children}
+
+      {/* Long-press actions. One sheet for the whole thread, resolved by id —
+          not one per bubble: the previous inline row rendered at the MESSAGE's
+          position, so the actions for a message near the top of the screen
+          landed out of thumb reach, and an icon-only row made Delete a guess.
+          A bottom sheet is thumb-anchored wherever the message sits, labels
+          each action, and gets scrim + focus trap + drag-to-dismiss + Escape
+          from the primitive instead of the hand-rolled listeners this
+          replaces. */}
+      <MessageActionsSheet
+        message={mobileActionsMessage}
+        onClose={() => onSetMobileActions(null)}
+        onStartEdit={onStartEdit}
+        onDeleteClick={onDeleteClick}
+      />
     </InstrumentPanel>
+  );
+}
+
+/**
+ * The long-press action sheet for an own message.
+ *
+ * `message` null closes it — the open state IS the selection, so there is no
+ * second source of truth to keep in step.
+ *
+ * Copy is first and is not optional: taking over long-press takes over the
+ * gesture iOS uses to select text, so without it the message would become
+ * uncopyable on a phone. Delete sits below a divider because it is the one
+ * action here that cannot be undone.
+ */
+function MessageActionsSheet({
+  message,
+  onClose,
+  onStartEdit,
+  onDeleteClick,
+}: {
+  message: MessageWithReadStatus | null;
+  onClose: () => void;
+  onStartEdit: (messageId: string, currentContent: string) => void;
+  onDeleteClick: (messageId: string) => void;
+}) {
+  return (
+    <Sheet
+      open={message !== null}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      side="bottom"
+      peek={false}
+      showHandle
+      hideClose
+      title="Message actions"
+      hideTitle
+      data-slot="fw-message-actions"
+    >
+      <Sheet.Body className="flex flex-col gap-0.5 pb-2">
+        <MessageActionRow
+          icon={<Copy size={21} aria-hidden="true" />}
+          label="Copy"
+          onClick={() => {
+            if (message) void navigator.clipboard?.writeText(decodeMessageContent(message.content));
+            onClose();
+          }}
+        />
+        <MessageActionRow
+          icon={<Pencil size={21} aria-hidden="true" />}
+          label="Edit"
+          onClick={() => {
+            if (message) onStartEdit(message.id, message.content);
+            onClose();
+          }}
+        />
+        <div className="mx-3 my-1.5 h-px bg-border-subtle" />
+        <MessageActionRow
+          icon={<Trash2 size={21} aria-hidden="true" />}
+          label="Delete"
+          destructive
+          onClick={() => {
+            if (message) onDeleteClick(message.id);
+            onClose();
+          }}
+        />
+      </Sheet.Body>
+    </Sheet>
+  );
+}
+
+/** One 52px labelled row of the action sheet. */
+function MessageActionRow({
+  icon,
+  label,
+  destructive,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  destructive?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      fullWidth
+      onClick={onClick}
+      // The icon goes through the primitive's own slot, not a hand-rolled span:
+      // Button wraps its children in a single content span, so an icon passed
+      // as a child shares that span's layout and cannot be spaced or shrunk
+      // independently of the label.
+      leftIcon={icon}
+      className={cn(
+        'h-[3.25rem] justify-start gap-3.5 rounded-fw-md px-3 text-left',
+        'font-fw-sans text-body font-medium',
+        destructive ? 'text-fw-danger-ink hover:text-fw-danger-ink' : 'text-text-primary',
+      )}
+    >
+      {label}
+    </Button>
   );
 }

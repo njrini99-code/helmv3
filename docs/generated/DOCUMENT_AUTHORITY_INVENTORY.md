@@ -182,7 +182,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 53 | 2 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | 1 |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
-| `memory/features/team-communications.md` | current | yes | - | - | 2 | 11 | - |
+| `memory/features/team-communications.md` | current | yes | - | - | 2 | 12 | - |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 18 | - |
 
 ### `REFERENCE`

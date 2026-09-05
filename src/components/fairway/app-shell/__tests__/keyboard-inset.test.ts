@@ -58,7 +58,26 @@ describe('keyboard inset — who consumes it', () => {
 
   it('the composer drops its home-indicator pad while the keyboard covers the home indicator', () => {
     const src = read('src/components/fairway/pages/messages/MessageComposer.tsx');
-    expect(src).toContain('[.keyboard-open_&]:pb-4');
+
+    // Asserts the PROPERTY this test was written for, not the pad's numeric
+    // value. It read `toContain('[.keyboard-open_&]:pb-4')`, which failed the
+    // moment the composer's resting padding changed from 16px to the design's
+    // 12px — a change that cannot affect the keyboard guarantee at all, since
+    // the guarantee is about the SAFE-AREA TERM being dropped, not about how
+    // much padding replaces it. Same move FairwayMessages.threadWidth.test.ts
+    // documents at its #1768 assertion: pin the invariant, not the spelling
+    // that happened to carry it.
+    //
+    // 1 · at rest the pad owes the home indicator
+    const resting = src.match(/pb-\[calc\([^\]]*env\(safe-area-inset-bottom\)[^\]]*\)\]/);
+    expect(resting, 'the resting composer pad must clear the home indicator').not.toBeNull();
+
+    // 2 · with the keyboard up there is an override, and
+    // 3 · it does NOT re-add the safe-area term — the keys are over the
+    //     indicator, so paying for it again is the dead space the bug was.
+    const override = src.match(/\[\.keyboard-open_&\]:pb-\S+/);
+    expect(override, 'the composer must override its bottom pad while the keyboard is up').not.toBeNull();
+    expect(override?.[0]).not.toContain('safe-area-inset-bottom');
   });
 
   it('<body> grows by the keyboard height so a focused field on ANY page can be scrolled above it', () => {

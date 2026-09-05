@@ -24,7 +24,7 @@
  * ========================================================================== */
 
 import { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { AlertCircle, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
@@ -60,6 +60,8 @@ export interface MessageComposerProps {
 export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  /** The last attempt came back false. Recoverable, and the draft is intact. */
+  const [failed, setFailed] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -178,6 +180,10 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     e.preventDefault();
     const hasAttachments = pendingAttachments.length > 0;
     if ((!message.trim() && !hasAttachments) || sending) return;
+    // A new attempt is not still-failed. Cleared here rather than in the
+    // success branch so a retry drops the notice the moment it starts, which
+    // is what makes pressing Retry feel like it did something.
+    setFailed(false);
 
     // Clear typing indicator before sending (PRESERVED).
     if (onTyping) {
@@ -202,6 +208,13 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       });
       setMessage('');
       setPendingAttachments([]);
+    } else {
+      // The send already kept the draft — the clear above is inside the
+      // success branch — but nothing SAID so, so a failed send looked
+      // identical to a slow one: the text sat in the field and the thread
+      // never grew. This states it, and gives the recovery a button instead
+      // of asking the sender to guess that pressing Send again is safe.
+      setFailed(true);
     }
     setSending(false);
   };
@@ -220,11 +233,33 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
-    // Sunken matte composer track — mirrors AskThreadPane's composer slot.
+    // The composer is the other glass bar the thread lives between — the same
+    // material as the thread header, mirrored: the specular runs along its TOP
+    // edge, the deeper warm glass edge sits above it, and the ambient throws
+    // UPWARD onto the conversation. `border-t` is gone for the reason the
+    // header's `border-b` is: a hairline and a shadow on one edge is both of
+    // the two ways this system draws a boundary, drawn at once.
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border-subtle bg-surface-sunken p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-4 lg:pb-4"
+      className="fw-glass-chrome relative z-raised p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[inset_0_1px_0_var(--fw-glass-highlight),0_-1px_0_var(--fw-glass-border-bot)] [.keyboard-open_&]:pb-3 lg:pb-3"
     >
+      {/* Didn't send — stated, and recoverable in one tap. */}
+      {failed && (
+        <div className="mb-2 flex items-center gap-2.5 rounded-fw-md bg-fw-danger-bg px-3 py-2" role="alert">
+          <AlertCircle size={16} aria-hidden="true" className="flex-shrink-0 text-fw-danger-ink" />
+          <p className="flex-grow font-fw-sans text-caption text-fw-danger-ink">
+            Couldn’t send — your message is still here.
+          </p>
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="min-h-[32px] shrink-0 px-2 font-fw-sans text-caption font-semibold text-fw-danger-ink hover:bg-fw-danger/10"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
       {/* Pending attachment previews — REUSED component, render only when present. */}
       {pendingAttachments.length > 0 && (
         <AttachmentPreview
@@ -234,12 +269,26 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
         />
       )}
 
+      {/* The TRACK: a cream lane on the glass, carrying the pill radius the
+          send button inside it also has, so the two read as one control rather
+          than a button parked in a box.
+
+          The focus treatment is `Input.tsx`'s, class for class — solid
+          `accent-600` ring, offset 1, on the canvas — rather than a
+          hand-rolled box-shadow. Two reasons, and the second is the one that
+          matters: an inline `oklch(0.648 …)` ring is a LIGHT-MODE ring with no
+          dark counterpart, and the specular I first wrote for the track
+          (`inset 0 1px 0 oklch(1 0 0 / 0.6)`) is the same 0.6-alpha white line
+          on a dark espresso surface that `--fw-shadow-accent-lift` exists to
+          avoid on the green bubble. `shadow-fw-card` carries that specular as
+          a THEMED token, and the ring tokens flip with the theme too, so both
+          halves are now correct in dark instead of only one. */}
       <div
         className={cn(
-          'flex items-end gap-2 rounded-fw-lg p-1.5',
-          'border border-border-subtle bg-surface',
-          'transition-colors duration-200',
-          'focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-border-focus/30',
+          'flex items-end gap-2 rounded-fw-lg border border-border-subtle p-1.5 pl-3',
+          'bg-surface shadow-fw-card',
+          'transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
+          'focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-600 focus-within:ring-offset-1 focus-within:ring-offset-canvas',
         )}
       >
         {/* Attachment trigger — REUSED UNCHANGED. */}
@@ -281,13 +330,20 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-fw-md p-0 md:h-10 md:w-10',
+            // Round, not rounded. In a pill track a squared button is the one
+            // shape fighting the geometry around it, and the send control is
+            // the single most-pressed target on the screen.
+            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-full p-0 md:h-10 md:w-10',
             'outline-none transition-all duration-200',
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
             'active:scale-95 motion-reduce:active:scale-100',
+            // Armed, it carries the accent lift — the same green ambient the
+            // sender's own bubbles have, so the button visibly belongs to the
+            // messages it produces. Inert, it is a quiet well: no shadow, no
+            // fill, nothing implying a press would do something.
             canSend
-              ? 'bg-accent-650 text-text-on-accent shadow-flat hover:bg-accent-600 hover:shadow-soft'
-              : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',
+              ? 'bg-accent-650 text-text-on-accent shadow-fw-accent-lift hover:bg-accent-750'
+              : 'cursor-not-allowed border border-border-subtle bg-surface-sunken text-text-tertiary',
           )}
         >
           {sending ? (

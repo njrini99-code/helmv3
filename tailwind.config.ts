@@ -532,6 +532,20 @@ const config: Config = {
         'soft':          'var(--fw-shadow-soft)',   // hover / raised cards
         'raise':         'var(--fw-shadow-raise)',  // popovers / floating glass (spec "lift")
         'pop':           'var(--fw-shadow-pop)',    // anchored panels
+        // THE lit-from-above card shadow. `--fw-shadow-card` has existed in
+        // design-tokens.css since the foundation and had NO utility, so every
+        // consumer that wanted it reached for `shadow-flat` (the same shadow
+        // MINUS the inset specular) or, worse, `shadow-card`, which is the
+        // LEGACY flat `0 1px 3px rgba(0,0,0,0.04)` above and carries no warmth
+        // and no lit edge. Namespaced `fw-card` for exactly that reason: plain
+        // `card` is taken by the legacy value and must stay taken.
+        'fw-card':       'var(--fw-shadow-card)',
+        // Its accent-fill counterpart — see the token for why the inset drops
+        // to 0.14 and the ambient is tinted green. Only on accent-650/600.
+        'fw-accent-lift':'var(--fw-shadow-accent-lift)',
+        // Small objects that sit ON a card — avatars, icon chips. See the
+        // token: shadow-fw-card's ambient vanishes at 40px.
+        'fw-tile':       'var(--fw-shadow-tile)',
         'fw-modal':      'var(--fw-shadow-modal)',  // sheets / modals
         'fw-glow-accent':'var(--fw-glow-accent)',   // accent emphasis ring
       },

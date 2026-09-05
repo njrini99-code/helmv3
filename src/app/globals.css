@@ -137,8 +137,37 @@
      the scarcest 111px of the screen.
      Hidden only below `md`: on desktop the thread is one pane of a two-pane
      inbox and the shell bar is still the app's chrome. */
+  /* HEADERLESS — the header only, never the tab bar.
+     A surface that claims its own masthead (the messages inbox) hides the two
+     bands above it and draws one in their place. Deliberately separate from
+     `data-fw-immersive`: that one also removes the bottom tab bar and collapses
+     its reservation, which is right for an open conversation and wrong for a
+     list you need to navigate away from. */
+  @media (max-width: 767px) {
+    body[data-fw-headerless] [data-slot='fw-topbar'],
+    body[data-fw-headerless] [data-slot='fairway-hub-subnav'] {
+      display: none;
+    }
+  }
   @media (max-width: 767px) {
     body[data-fw-immersive] [data-slot='fw-topbar'] {
+      display: none;
+    }
+    /* And the hub sub-nav, for a reason stronger than tidiness: it was
+       OCCLUDING the thread header. Measured on a 390px viewport, the thread
+       header renders at top 51 with height 75 — and the sticky sub-nav paints
+       over it, so the one header this mechanism exists to leave standing was
+       reduced to a ~10px sliver, with the person's name and the Back button
+       both invisible. The header was never missing; it was underneath.
+
+       It is also the same class of thing as the bar above: a switcher between
+       sibling DESTINATIONS (Messages / Announcements) pinned over a surface
+       that has claimed the screen. And the surface already sizes itself as
+       though it were gone — the `mobileShowChat` branch in FairwayMessages
+       carries no term for it — which is why the document overflowed its
+       viewport by 39px, almost exactly this bar's height. Hiding it makes the
+       arithmetic that was already written correct. */
+    body[data-fw-immersive] [data-slot='fairway-hub-subnav'] {
       display: none;
     }
   }
@@ -180,6 +209,58 @@
 @media (min-width: 1024px) {
   :root {
     --golf-mobile-header-offset: 0px;
+  }
+}
+
+/* ── Fairway glass CHROME — the material, and nothing else ──────────────────
+   A pinned bar that a conversation scrolls under (the thread header and the
+   composer): the warm champagne tint reads through, blurred and saturated, so
+   the content passing behind stays legible as motion without becoming
+   readable as content.
+
+   Deliberately MATERIAL ONLY — background, backdrop-filter and the two
+   specular edges. Radius, shadow, padding and z-index stay on the consumer's
+   Tailwind classes, because a bar and a pill want the same glass and nothing
+   else in common. That is what separates this from `.fw-glass-regular`
+   (overlays/fairway-overlays.css), which bakes in a border, `--fw-shadow-raise`
+   and `contain: layout paint style` for a floating popover.
+
+   The blur DOWNSHIFTS to --fw-blur-mobile (16px) at <=768px, which is what
+   that token exists for and is labelled "low-power downshift". This is a
+   large, permanently-composited backdrop-filter with a thread scrolling
+   through it — the single most expensive thing on the screen on an older
+   iPhone — so the phone gets the cheaper blur, not the prettier one.
+
+   Both a11y fallbacks are mandatory and mirror the overlay recipe: with
+   reduced transparency the material collapses to an opaque token surface, and
+   under forced colors it becomes the system canvas. A glass bar with no
+   fallback is an unreadable bar for the people who turned the setting on. */
+.fw-glass-chrome {
+  background: var(--fw-glass-bg);
+  -webkit-backdrop-filter: blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
+  backdrop-filter: blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
+}
+
+@media (max-width: 768px) {
+  .fw-glass-chrome {
+    -webkit-backdrop-filter: blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
+    backdrop-filter: blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .fw-glass-chrome {
+    background: var(--fw-color-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .fw-glass-chrome {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 

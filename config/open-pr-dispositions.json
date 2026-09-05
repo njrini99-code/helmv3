@@ -7,7 +7,7 @@
   "1836": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "feat(golf/messages): the approved design — unread lifts, tail marks the end, the dead token removed. In-flight feature work on the Messages redesign track."
+    "note": "feat(golf/messages): the approved design — unread lifts, tail marks the end, the dead token removed. Also carries the two defects the design pass left standing: long-press now cancels on DISTANCE (10px slop) rather than on the first pointermove, and the message actions open as the Fairway Sheet the design specifies instead of an inline icon row. Reply stays out — it needs #1833's reply_to column. In-flight feature work on the Messages redesign track."
   },
   "1835": {
     "disposition": "HUMAN_TEST_PENDING",
