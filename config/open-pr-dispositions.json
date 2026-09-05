@@ -1,4 +1,9 @@
 {
+  "1850": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Control-plane reset A6: never-again checks, weekly control-plane workflow, Dependabot auto-merge."
+  },
   "1848": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
