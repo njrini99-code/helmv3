@@ -1,0 +1,97 @@
+# Temporary ops workflow: blast Wake-on-LAN magic packets at a home router's
+# forwarded UDP ports and probe the forwarded SSH port until the target answers.
+# Manual-only (workflow_dispatch). Safe to delete once the machine is back.
+name: mini-wake
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ip:
+        description: Public IP of the home router
+        default: "98.121.19.27"
+        required: true
+      mac:
+        description: Target Wi-Fi MAC address
+        default: "0E:61:5F:B5:80:E4"
+        required: true
+      udp_ports:
+        description: Comma-separated UDP ports forwarded to the target
+        default: "9,7,2222"
+        required: true
+      tcp_port:
+        description: Forwarded TCP port that reaches the target's SSH
+        default: "2222"
+        required: true
+      minutes:
+        description: How long to keep trying (job hard cap is 360)
+        default: "350"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 358
+    steps:
+      - name: Show runner egress IP
+        run: |
+          echo "Runner public IP (allow this in Security Shield if it gets blocked):"
+          curl -sS --max-time 10 https://api.ipify.org || curl -sS --max-time 10 https://ifconfig.me || true
+          echo
+      - name: Wake loop + reachability probe
+        env:
+          TARGET_IP: ${{ inputs.target_ip }}
+          TARGET_MAC: ${{ inputs.mac }}
+          UDP_PORTS: ${{ inputs.udp_ports }}
+          TCP_PORT: ${{ inputs.tcp_port }}
+          MINUTES: ${{ inputs.minutes }}
+        run: |
+          python3 - <<'PY'
+          import os, socket, time
+          ip = os.environ["TARGET_IP"]
+          mac = bytes.fromhex(os.environ["TARGET_MAC"].replace(":", "").replace("-", ""))
+          magic = b"\xff" * 6 + mac * 16
+          ports = [int(p) for p in os.environ["UDP_PORTS"].split(",") if p.strip()]
+          tcp_port = int(os.environ["TCP_PORT"])
+          end = time.time() + int(os.environ["MINUTES"]) * 60
+          sent = 0; probes = 0; last_state = None; first_open = None
+          def probe():
+              s = socket.socket(); s.settimeout(6)
+              try:
+                  s.connect((ip, tcp_port))
+                  try:
+                      s.settimeout(4); banner = s.recv(128)
+                  except Exception:
+                      banner = b""
+                  return True, banner
+              except Exception as e:
+                  return False, str(e).encode()
+              finally:
+                  s.close()
+          print(f"start {time.strftime('%H:%M:%S')}Z target={ip} udp={ports} tcp={tcp_port}", flush=True)
+          next_probe = 0; next_beat = time.time() + 600
+          while time.time() < end:
+              u = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+              for p in ports:
+                  for _ in range(3):
+                      u.sendto(magic, (ip, p)); sent += 1
+              u.close()
+              if time.time() >= next_probe:
+                  ok, info = probe(); probes += 1
+                  state = "OPEN" if ok else "closed"
+                  if state != last_state:
+                      msg = f"{time.strftime('%H:%M:%S')}Z tcp {tcp_port} -> {state} {info[:80]!r}"
+                      print(msg, flush=True)
+                      if ok:
+                          first_open = first_open or time.time()
+                          print(f"::notice title=MINI IS REACHABLE::{msg}", flush=True)
+                      last_state = state
+                  next_probe = time.time() + (15 if ok else 30)
+              if time.time() >= next_beat:
+                  print(f"{time.strftime('%H:%M:%S')}Z heartbeat sent={sent} probes={probes} state={last_state}", flush=True)
+                  next_beat = time.time() + 600
+              time.sleep(10)
+          print(f"done sent={sent} probes={probes} first_open={'yes' if first_open else 'no'}")
+          PY
