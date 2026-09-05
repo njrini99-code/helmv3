@@ -58,6 +58,8 @@ export interface MessageConversationRailProps {
   onSelect: (id: string) => void;
   /** Open the New message modal from the honest-empty CTA. */
   onNewMessage: () => void;
+  /** Coach-only team broadcast. Omitted for players, who have no such action. */
+  onTeamBroadcast?: () => void;
   /** First-paint skeleton rail. */
   loading?: boolean;
   /**
@@ -349,6 +351,7 @@ export function MessageConversationRail({
   selectedId,
   onSelect,
   onNewMessage,
+  onTeamBroadcast,
   loading = false,
   error = false,
   onRetry,
@@ -551,7 +554,16 @@ export function MessageConversationRail({
         // Same reasoning as the thread pane: a card that fills the screen has
         // stopped being a card (Doctrine Rule 11). `!` is required because the
         // border comes from a CSS module class of equal specificity.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+        // `!` on the FILL too, and it is not decoration: the three overrides
+        // beside it carry it because the depth treatment comes from a CSS
+        // module class of equal specificity, and stylesheet order decides.
+        // `bg-transparent` was the one that did not, so it lost — measured
+        // live, the phone rail still painted `--fw-color-surface` (lab 98.2)
+        // and every row sat on a cream slab. Unread rows lift with
+        // `bg-surface shadow-fw-card`; a surface-on-surface card cannot
+        // lift off anything. One character, and it was the difference
+        // between the design and a flat list.
+        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:!bg-transparent',
         className,
       )}
     >
@@ -633,15 +645,34 @@ export function MessageConversationRail({
               Groups
             </FilterPill>
           ) : null}
-          <IconButton
-            variant="secondary"
-            size="sm"
-            aria-label="New message"
-            onClick={onNewMessage}
-            className="ml-auto flex-shrink-0 rounded-full"
-          >
-            <Plus size={18} aria-hidden="true" />
-          </IconButton>
+          {/* Both actions live on the scope row. A coach's "Team" broadcast
+              had a whole row of its own above the search field — one control,
+              one band, on the screen with the least vertical room in the
+              product (Doctrine: do not stack utility rows). It is the same
+              KIND of thing as compose — start a conversation — so it belongs
+              in the same cluster. */}
+          <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
+            {onTeamBroadcast ? (
+              <IconButton
+                variant="secondary"
+                size="sm"
+                aria-label="Message the whole team"
+                onClick={onTeamBroadcast}
+                className="rounded-full"
+              >
+                <Users size={18} aria-hidden="true" />
+              </IconButton>
+            ) : null}
+            <IconButton
+              variant="secondary"
+              size="sm"
+              aria-label="New message"
+              onClick={onNewMessage}
+              className="rounded-full"
+            >
+              <Plus size={18} aria-hidden="true" />
+            </IconButton>
+          </div>
         </div>
 
         {/* A filter that matches nothing must say so. Without this the rail

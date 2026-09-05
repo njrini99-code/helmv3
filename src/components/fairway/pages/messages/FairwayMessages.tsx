@@ -559,18 +559,6 @@ export function FairwayMessages() {
             (FairwayTopBar.tsx, `md:hidden`), and a second copy is exactly the
             triple-naming this row was cut down to fix. The artboard's masthead
             IS that top bar, drawn in one piece because a mockup has no shell. */}
-        {!mobileShowChat && userRole === 'coach' && teamId ? (
-          <div className="flex items-center justify-end md:hidden">
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Users size={16} aria-hidden="true" />}
-              onClick={() => setShowTeamBroadcastModal(true)}
-            >
-              Team
-            </Button>
-          </div>
-        ) : null}
 
         <div className="hidden md:block">
         <ViewHeader
@@ -632,6 +620,7 @@ export function FairwayMessages() {
                 selectedId={selectedConversationId}
                 onSelect={handleSelectConversation}
                 onNewMessage={() => setShowNewMessageModal(true)}
+                onTeamBroadcast={userRole === 'coach' && teamId ? () => setShowTeamBroadcastModal(true) : undefined}
                 loading={conversationsLoading}
                 error={conversationsError}
                 onRetry={refetch}
