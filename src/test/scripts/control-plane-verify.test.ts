@@ -31,6 +31,7 @@ const FIXTURE_PATHS = [
   'docs/CONTROL_PLANE_ENFORCEMENT.md',
   'docs/TOOL_AUTHORITY_MATRIX.md',
   'scripts/new-worktree.sh',
+  'scripts/lib/create-workspace.mjs',
   'CLAUDE.md',
   'AGENTS.md',
   '.mcp.json',
@@ -231,13 +232,16 @@ describe('failure injection — each control goes red for its own reason', () =>
 
   it('MOVE the budget check after allocation -> ordering FAILS', () => {
     // Enforcing a budget after `git worktree add` means a refusal has already
-    // allocated what it was refusing to spend.
+    // allocated what it was refusing to spend. The mechanism lives in
+    // scripts/lib/create-workspace.mjs now, not scripts/new-worktree.sh (a
+    // thin wrapper since the "one workspace door" change) — see
+    // docs/operations/WORKSPACES.md.
     const fx = makeFixture();
     try {
-      const p = join(fx, 'scripts/new-worktree.sh');
+      const p = join(fx, 'scripts/lib/create-workspace.mjs');
       const src = readFileSync(p, 'utf-8');
       const lines = src.split('\n');
-      const bi = lines.findIndex((l) => !l.trimStart().startsWith('#') && l.includes('check-mutation-budget.mjs'));
+      const bi = lines.findIndex((l) => !l.trimStart().startsWith('//') && l.includes('check-mutation-budget.mjs'));
       expect(bi, 'fixture must contain the budget call').toBeGreaterThan(-1);
       const moved = lines.splice(bi, 1)[0] ?? '';
       lines.push(moved);
@@ -253,7 +257,7 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('REMOVE the budget check entirely -> ordering FAILS', () => {
     const fx = makeFixture();
     try {
-      const p = join(fx, 'scripts/new-worktree.sh');
+      const p = join(fx, 'scripts/lib/create-workspace.mjs');
       writeFileSync(p, readFileSync(p, 'utf-8').replace(/check-mutation-budget\.mjs/g, 'nothing.mjs'));
       expect(checkIn(fx, 'mutation-budget-enforced')?.state).toBe('FAIL');
     } finally {

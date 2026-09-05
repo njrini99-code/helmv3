@@ -20,9 +20,25 @@ authority:
   feature_registry: memory/registry.yml
 
 workspace:
-  # A worktree whose path is INSIDE the repo root poisons file search (two copies
-  # of every file). Forbidden, mechanically.
-  nested_worktrees: forbidden
+  # A worktree whose path is INSIDE the repo root poisons file search (two
+  # copies of every file) — still forbidden, but repo:doctor
+  # (scripts/repo-doctor/checks/workspace.mjs) now grades the violation by
+  # whether the worktree carries the .helm/workspace.json marker every
+  # workspace made through the door (scripts/lib/create-workspace.mjs) has:
+  #
+  #   nested,   marked    -> WARN  mis-placed, but tooling can account for it
+  #   nested,   unmarked  -> FAIL  mis-placed AND untracked
+  #   external, unmarked  -> FAIL  every worktree must carry the marker,
+  #                                wherever it lives — see
+  #                                docs/operations/WORKSPACES.md
+  #   canonical, absent   -> WARN  the marker is gitignored/machine-local;
+  #                                absence on a fresh clone is expected
+  #
+  # A marker is not optional decoration: it is what lets the mutation budget
+  # and scripts/worktree-lifecycle.mjs tell a governed workspace from one that
+  # bypassed the door.
+  nested_worktrees: warn_if_marked
+  worktree_marker_required: true
 
 scratch:
   # Gitignored top-level dirs that are legitimately allowed to be large.
