@@ -7,10 +7,11 @@
 //     extra flags after `--`, but Node's --env-file must come before the
 //     script path to take effect, so prefer the explicit `node` form above)
 //
-// `--env-file` on purpose, same convention as scripts/run-selfheal-repair.mjs:
-// the service-role key is USED by this process without ever becoming a file
-// inside a task worktree, and loading it is the CALLER's responsibility, not
-// this script's — it never reads .env.local itself.
+// `--env-file` on purpose: the service-role key is USED by this process
+// without ever becoming a file inside a task worktree, and loading it is the
+// CALLER's responsibility, not this script's — it never reads .env.local
+// itself. (scripts/lib/load-env-local.mjs is the shared helper for scripts
+// that DO need to resolve and read .env.local themselves.)
 //
 // WHY THIS EXISTS. The two in-flight Flight Recorder branches
 // (agent/flight-recorder-real-timings, agent/flight-recorder-db-checkpoints)
@@ -57,9 +58,8 @@ function readEnv() {
 
 /**
  * Distinguishes UNREADABLE (the RPC call itself failed — network, auth,
- * function missing) from an EMPTY result, same discipline as
- * scripts/run-selfheal-repair.mjs's `findByRunId`: a store that could not be
- * read must never be read as "the store has nothing in it".
+ * function missing) from an EMPTY result: a store that could not be read
+ * must never be read as "the store has nothing in it".
  */
 async function callRpc(client, name, args) {
   const { data, error } = await client.rpc(name, args);

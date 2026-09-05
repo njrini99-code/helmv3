@@ -1428,11 +1428,6 @@
         "category": "services"
       },
       {
-        "id": "services:config/launchd/**",
-        "pattern": "config/launchd/**",
-        "category": "services"
-      },
-      {
         "id": "services:docs/ai-system/selfheal/**",
         "pattern": "docs/ai-system/selfheal/**",
         "category": "services"
@@ -1488,11 +1483,6 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/lib/selfheal-repair-runner.mjs",
-        "pattern": "scripts/lib/selfheal-repair-runner.mjs",
-        "category": "services"
-      },
-      {
         "id": "services:scripts/release-intel/**",
         "pattern": "scripts/release-intel/**",
         "category": "services"
@@ -1500,21 +1490,6 @@
       {
         "id": "services:scripts/repo-doctor/checks/db-observability.mjs",
         "pattern": "scripts/repo-doctor/checks/db-observability.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/run-selfheal-repair.mjs",
-        "pattern": "scripts/run-selfheal-repair.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/selfheal-repair-doctor.mjs",
-        "pattern": "scripts/selfheal-repair-doctor.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/selfheal-repair-install.sh",
-        "pattern": "scripts/selfheal-repair-install.sh",
         "category": "services"
       },
       {
@@ -2022,16 +1997,6 @@
       {
         "id": "tests:src/test/observability/**",
         "pattern": "src/test/observability/**",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/test/scripts/run-selfheal-repair.test.ts",
-        "pattern": "src/test/scripts/run-selfheal-repair.test.ts",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/test/scripts/selfheal-repair-launchd.test.ts",
-        "pattern": "src/test/scripts/selfheal-repair-launchd.test.ts",
         "category": "tests"
       },
       {
@@ -2580,6 +2545,24 @@
         ]
       },
       {
+        "id": "golf_message_mentions",
+        "definedIn": [
+          "supabase/migrations/20260904120000_golf_messages_reply_to.sql"
+        ]
+      },
+      {
+        "id": "golf_message_reactions",
+        "definedIn": [
+          "supabase/migrations/20260904103000_golf_message_reactions.sql"
+        ]
+      },
+      {
+        "id": "golf_message_responses",
+        "definedIn": [
+          "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        ]
+      },
+      {
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
@@ -2818,6 +2801,12 @@
         "id": "helm_lifting_weight_checkin_schedules",
         "definedIn": [
           "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+        ]
+      },
+      {
+        "id": "in",
+        "definedIn": [
+          "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
         ]
       },
       {
@@ -3488,11 +3477,6 @@
           "value": "0 14 * * 1"
         },
         "definedIn": "src/lib/inngest/functions.ts"
-      },
-      {
-        "id": "launchd:config/launchd/com.helm.bridge-rca-repair.plist",
-        "kind": "launchd",
-        "path": "config/launchd/com.helm.bridge-rca-repair.plist"
       },
       {
         "id": "vercel_cron:/api/cron/admin-digest",
@@ -4922,17 +4906,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 379
+          "line": 381
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 399
+          "line": 401
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 604
+          "line": 606
         },
         {
           "kind": "import_graph",
@@ -5181,7 +5165,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 398
+          "line": 400
         }
       ]
     },
@@ -5208,12 +5192,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 408
+          "line": 410
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 490
+          "line": 492
         },
         {
           "kind": "import_graph",
@@ -5735,7 +5719,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 1087
+          "line": 1089
         },
         {
           "kind": "import_graph",
@@ -5774,7 +5758,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 734
+          "line": 736
         }
       ]
     },
@@ -6057,7 +6041,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 735
+          "line": 737
         },
         {
           "kind": "import_graph",
@@ -6781,18 +6765,6 @@
     },
     {
       "source": "admin_platform",
-      "target": "services:config/launchd/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "config/launchd/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
       "target": "services:scripts/check-feature-flags.mjs",
       "kind": "feature_service",
       "evidence": [
@@ -6824,54 +6796,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/janitor/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "services:scripts/lib/selfheal-repair-runner.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/lib/selfheal-repair-runner.mjs"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "services:scripts/run-selfheal-repair.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/run-selfheal-repair.mjs"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "services:scripts/selfheal-repair-doctor.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/selfheal-repair-doctor.mjs"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "services:scripts/selfheal-repair-install.sh",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/selfheal-repair-install.sh"
         }
       ]
     },
@@ -7301,17 +7225,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 63
+          "line": 76
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 109
+          "line": 126
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 164
+          "line": 181
         },
         {
           "kind": "import_graph",
@@ -7571,18 +7495,6 @@
     },
     {
       "source": "admin_selfheal",
-      "target": "services:config/launchd/**",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "config/launchd/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
       "target": "services:docs/ai-system/selfheal/**",
       "kind": "feature_service",
       "evidence": [
@@ -7590,54 +7502,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "docs/ai-system/selfheal/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "services:scripts/lib/selfheal-repair-runner.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/lib/selfheal-repair-runner.mjs"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "services:scripts/run-selfheal-repair.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/run-selfheal-repair.mjs"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "services:scripts/selfheal-repair-doctor.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/selfheal-repair-doctor.mjs"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "services:scripts/selfheal-repair-install.sh",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/selfheal-repair-install.sh"
         }
       ]
     },
@@ -7758,30 +7622,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/admin/ensemble/__tests__/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "tests:src/test/scripts/run-selfheal-repair.test.ts",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/test/scripts/run-selfheal-repair.test.ts"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
-      "target": "tests:src/test/scripts/selfheal-repair-launchd.test.ts",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/test/scripts/selfheal-repair-launchd.test.ts"
         }
       ]
     },
@@ -11186,6 +11026,17 @@
     },
     {
       "source": "baseball_core",
+      "target": "in",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
       "target": "invariant:src/lib/baseball/operational-rule-engine.ts:document_missing",
       "kind": "feature_invariant",
       "evidence": [
@@ -11884,6 +11735,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
+      "target": "in",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
         }
       ]
     },
@@ -15423,17 +15285,6 @@
       ]
     },
     {
-      "source": "launchd:config/launchd/com.helm.bridge-rca-repair.plist",
-      "target": "admin_platform",
-      "kind": "job_feature",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "config/launchd/com.helm.bridge-rca-repair.plist"
-        }
-      ]
-    },
-    {
       "source": "observability_sentry",
       "target": "admin_platform",
       "kind": "feature_relation",
@@ -15441,7 +15292,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/observability/cron-monitors.ts",
-          "line": 58
+          "line": 62
         },
         {
           "kind": "import_graph",
@@ -17532,6 +17383,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "in",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
         }
       ]
     },
@@ -20580,6 +20442,39 @@
     },
     {
       "source": "team_access_control",
+      "target": "golf_message_mentions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904120000_golf_messages_reply_to.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
+      "target": "golf_message_reactions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904103000_golf_message_reactions.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
+      "target": "golf_message_responses",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
       "target": "golf_qualifier_round_courses",
       "kind": "feature_table",
       "evidence": [
@@ -21037,6 +20932,17 @@
     },
     {
       "source": "team_access_control",
+      "target": "in",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
       "target": "public",
       "kind": "feature_table",
       "evidence": [
@@ -21455,6 +21361,39 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/golf/messages/**"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "golf_message_mentions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904120000_golf_messages_reply_to.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "golf_message_reactions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904103000_golf_message_reactions.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "golf_message_responses",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
         }
       ]
     },
