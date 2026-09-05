@@ -48,6 +48,25 @@ Every one of these was a wrong conclusion first, and a fix second.
   `w-[390px]` present in the markup and absent from the CSS. The route is warmed
   before it is read, and anything still unresolved is printed as a WARN.
 
+## One snapshot only ever proves one breakpoint
+
+Media queries are **resolved into the stylesheet at the width you pass**, so a
+390px snapshot deletes every `lg:` rule and a 1280px one inlines them. That is
+what makes the phone render trustworthy — and it means a responsive change is
+only half-checked by a single render. A change written as
+`hidden lg:block` / `min-w-[52px] lg:min-w-[72px]` needs **two** snapshots,
+one per branch, or the branch you did not render ships unverified.
+
+The silent-zero guard does not close this for you: it skips responsive and
+state prefixes (`lg:`, `hover:`, …) precisely because those rules are legitimately
+absent once collapsed, so it cannot tell "collapsed away" from "never compiled".
+To check a breakpoint's rules really exist, grep the raw sheet the dev server
+serves rather than the snapshot:
+
+```bash
+curl -s localhost:3000/_next/static/chunks/<the .css the page links> | grep -c 'lg\\:min-w-'
+```
+
 ## What it does not do
 
 Static markup only — no hover, focus, scroll or open-overlay states, and no
