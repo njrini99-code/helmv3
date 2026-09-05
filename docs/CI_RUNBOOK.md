@@ -202,6 +202,84 @@ your diff — `main` itself was already red when you branched.
   runner), so on `main` pushes it runs unconditionally — a skip THERE is not
   expected and means the `if:` or path-detect logic changed.
 
+## 5. `claude-code.yml`'s trigger gate — reviewed 2026-09-05
+
+`.github/workflows/claude-code.yml` runs a Claude Code agent with
+`contents: write`, `pull-requests: write`, `issues: write` and
+`id-token: write` on three triggers: `issue_comment` (created),
+`pull_request_review_comment` (created), and `issues` (labeled). On a public
+repo, "who can post a comment or open an issue" is "anyone with a GitHub
+account" — so the workflow's `if:` condition on the `claude` job is the whole
+access-control boundary. This section records what that condition actually
+allows, evidenced against the live repo, so the next person auditing it does
+not have to re-derive it from the YAML.
+
+**Who can trigger it, and how:**
+
+- **Comment paths** (`issue_comment`, `pull_request_review_comment`): the
+  comment body must contain `@claude` AND
+  `github.event.comment.author_association` must be one of `OWNER`, `MEMBER`,
+  `COLLABORATOR`. `CONTRIBUTOR` (someone with a past merged commit but no
+  push access) and `FIRST_TIME_CONTRIBUTOR`/`NONE` (a fork PR author with no
+  prior relationship to the repo) are excluded — a first-time or repeat
+  outside contributor cannot trigger this by commenting, on their own PR or
+  anyone else's.
+- **Label path** (`issues`, `labeled`): triggers when the `agent:ready` label
+  is applied — with no author-association check on the label event itself.
+  This is safe only because GitHub's own permission model requires **triage**
+  role or higher to add a label to an issue or PR; a fork contributor without
+  that role cannot add `agent:ready` at all, so the label being present is
+  itself evidence the actor who applied it already had elevated access. The
+  workflow does not re-verify this — it relies entirely on GitHub's label
+  permission, which is correct but worth stating explicitly since nothing in
+  the YAML enforces it directly.
+- **A plain fork PR triggers nothing.** `pull_request` / `pull_request_target`
+  are not in the trigger list at all, so opening or pushing to a PR — from a
+  fork or otherwise — cannot start this job by itself. It only starts from an
+  explicit comment or label action, both gated as above. This avoids the
+  classic `pull_request_target`-with-write-permissions exfiltration pattern
+  outright, by never listening to that event.
+
+**What a triggering actor's Claude run can actually do, once started:**
+
+- `contents: write` cannot reach `main` directly. Verified live
+  (`gh api repos/njrini99-code/helmv3/branches/main/protection`,
+  2026-09-05): `required_pull_request_reviews: true`, `enforce_admins: true`,
+  `required_linear_history: true`, `allow_force_pushes: false` — main accepts
+  merges through a reviewed PR only, with no admin/token bypass. The Claude
+  job's own system prompt also says "Branch + PR only; never push to main",
+  but that is a request to the model, not a mechanical control — the
+  mechanical control is branch protection, and it holds independently of
+  whether the model follows the instruction.
+- The "Refuse unsafe labels before agent run" step (a second, content-based
+  gate on top of the author gate) blocks the run when the target issue/PR
+  carries `risk:high`, `agent:needs-human-review`, `severity:p0`, or
+  `source:security`.
+
+**Gap found in that second gate, not previously documented:** the step reads
+`context.payload.issue` and returns early (`if (!issue) return;`) when it is
+absent. For `pull_request_review_comment` events, GitHub's webhook payload
+carries `context.payload.pull_request`, not `.issue` — so on that trigger the
+blocked-labels check is silently skipped, every time. A PR labeled
+`risk:high` can still be driven by a `pull_request_review_comment` (inline
+review comment) containing `@claude` from an OWNER/MEMBER/COLLABORATOR,
+because the label check never runs for that event type. The primary author
+gate (association check) still applies and is unaffected — this is a gap in
+the second, content-based layer only, not the access-control boundary itself.
+
+**Verdict:** the access-control boundary (who can start a run) is sound: no
+event a fork PR generates on its own can trigger the job, and every trigger
+that can requires either recorded repo access (`author_association`) or a
+GitHub-enforced permission (adding a label). The blast radius of a triggered
+run is also bounded independently by branch protection, not just by the
+model's own instructions.
+
+**Recommended change (not applied here — `claude-code.yml` is out of this
+change's scope):** extend the "Refuse unsafe labels" step to also check
+`context.payload.pull_request?.labels` when `context.payload.issue` is
+undefined, so the blocked-labels gate applies uniformly across all three
+trigger types instead of silently no-opping on one of them.
+
 ---
 
 See also:
