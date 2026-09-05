@@ -5,7 +5,6 @@ paths:
   - "src/lib/inngest/**"
   - "src/lib/email/**"
   - "src/lib/notifications/**"
-verified: 2026-08-20-mechanical  # paths + table names machine-checked this date (docs:path-drift / docs:schema-drift); PROSE not re-read against code
 ---
 
 ## Product integrations
