@@ -962,10 +962,12 @@ since both change behaviour the first pass shipped.
   - `src/lib/utils/date-only.test.ts` — removed the pinned call-site entry for
     the deleted `tracer/DataQualityIssueRow.tsx`.
   - `scripts/__tests__/admin-tables-mobile.test.mjs`,
-    `scripts/__tests__/badge-consolidation.test.mjs` — dropped the deleted
-    files from their target lists (both currently run under `node --test`
-    only, which nothing in this repo invokes — see vitest.config.ts's own
-    comment on that — so neither was breaking CI, but both stayed accurate).
+    `archive/scripts/__tests__/badge-consolidation.test.mjs` (moved there
+    2026-09-05 as a confirmed orphan; path updated here so this entry keeps
+    resolving) — dropped the deleted files from their target lists (both
+    currently run under `node --test` only, which nothing in this repo
+    invokes — see vitest.config.ts's own comment on that — so neither was
+    breaking CI, but both stayed accurate).
   - `.duplicate-exports-baseline.json` — regenerated via
     `node scripts/check-duplicate-exports.mjs --update`: 32 → 27 known
     duplicates. Deleting the legacy copies resolved `ActivityFeed`,
