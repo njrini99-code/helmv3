@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
 | `CURRENT_FEATURE` | 26 | 26 | 11 | 31 |
 | `REFERENCE` | 62 | 15 | 18 | 105 |
-| `GENERATED_TRUTH` | 22 | 3 | 7 | 37 |
+| `GENERATED_TRUTH` | 24 | 3 | 9 | 37 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1206 | 0 | 419 | 535 |
-| `UNKNOWN` | 115 | 12 | 47 | 150 |
+| `UNKNOWN` | 115 | 12 | 47 | 151 |
 
 ## Files
 
@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 1 | 3 | - |
-| `.claude/rules/database.md` | current | - | - | - | 1 | 5 | - |
+| `.claude/rules/database.md` | current | - | - | - | 3 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | 1 |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
@@ -260,8 +260,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/security-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/shipping.md` | current | - | - | yes | 22 | 6 | 1 |
+| `.claude/rules/shipping.md` | current | - | - | yes | 23 | 6 | 1 |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 13 | 10 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 13 | 10 | - |
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 13 | 10 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 5 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
@@ -600,12 +602,12 @@ them would bury everything above.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.devin/AGENTS-POINTER.md` | current | - | - | - | 0 | 0 | - |
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | 1 |
-| `.github/branch-protection.md` | current | - | - | - | 9 | 2 | 1 |
+| `.github/branch-protection.md` | current | - | - | - | 9 | 3 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 27 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 7 | 9 | 1 |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 7 | 8 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
@@ -680,7 +682,7 @@ them would bury everything above.
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 4 | 4 | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 2 | 1 | - |
-| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 4 | - |
+| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 5 | - |
 | `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 11 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | 1 |
@@ -707,7 +709,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 17 | 24 | 1 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 18 | 30 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |

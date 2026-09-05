@@ -89,3 +89,8 @@ not just a boolean.
   verification pass this guard operationalizes.
 - `docs/operations/2026-07-03-p0-service-role-key-rotation-runbook.md` —
   separate P0 secret-hygiene finding from the same stabilization pass.
+- `supabase/migrations/HELD.md`'s **O11** — the Supabase GitHub branching
+  integration is live and its failing "Supabase Preview" check on every merge
+  to `main` is, right now, the only thing stopping this repo's HELD/OBSOLETE
+  migrations from reaching production automatically; disabling it is an owner
+  action this guard does not substitute for.
