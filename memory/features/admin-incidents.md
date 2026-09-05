@@ -327,6 +327,26 @@ always derived at read time.
   read model was being established. Twenty incidents opened in a row is twenty
   boards. If that starts to bite, the fix is a narrowed by-id query, not a
   shorter window.
+- **A non-actionable classification reached by the severity fallback is not
+  the same as a non-actionable classification reached by a content rule, and
+  auto-close must not treat them alike.** `classifyIncident`
+  (`src/lib/admin/incident-classification.ts`) is an ordered first-match-wins
+  ladder; rules 1-7 match on content and mean "this is a recognised, expected
+  case," while the final severity fallback means only "nothing recognised
+  this row, and it happens to be logged at a quiet level." Both read as
+  `actionable: false` downstream, but closing on the fallback is closing on
+  silence someone else chose the severity for. A confirmed 2026-08-27 audit
+  found roughly a third of rows offered for auto-close were fallback-only.
+  `IncidentClassification` carries an explicit `matched: boolean` field for
+  this reason — verified present in the source 2026-09-05 — and any
+  auto-resolve path should route unmatched rows to a reported "quiet" bucket
+  rather than closing them. A second instance of the identical shape: a
+  phrase list can only ever over-match, so a bare `permission denied` entry
+  classified our own service code's Postgres 42501 refusals (a missing
+  GRANT, not an expected access denial) as harmless — check any phrase-based
+  rule against "what real failure also contains this string?" before trusting
+  it. (STU, source: `silence-is-not-a-classification-verdict.md`, no date
+  field.)
 
 ## Tests To Prefer
 

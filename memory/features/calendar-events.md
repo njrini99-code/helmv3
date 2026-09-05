@@ -161,6 +161,44 @@ Calendar renders views
 - iCal/feed code has token security implications.
 - Calendar links to travel, qualifiers, classes, and notifications; changes can have broad downstream effects.
 - Push notification support for urgent announcements/events may lag behind in-app/email behavior.
+- **Class meetings are `golf_events` rows on the TEAM calendar, not a
+  side table.** `syncClassToCalendar` (`src/app/golf/actions/calendar-sync.ts`)
+  writes one row per class meeting with `event_type = 'class'` (filterable —
+  `NOT NULL text`, so `.neq()` cannot silently drop rows) and a
+  `[class:<uuid>]` tag inside `description` as the only owner link
+  (`created_by` is null). Any sweep of `golf_events` by `team_id` that calls
+  the result "someone's schedule" without both filters is wrong — shipped that
+  way until a 2026-08-06 fix, when a coach filtering the calendar to their own
+  avatar saw the whole roster's classes. `expandRecurringClass` must stay
+  bounded by the class's persisted `semester`; an unbounded weekly rule marks
+  players busy over the summer. A player sees only their own classes; a coach
+  sees the whole team — this deliberately matches `golf_player_classes` RLS,
+  don't "fix" it back. (STILL-TRUE-AND-USEFUL, source: auto-memory note
+  `class-events-are-team-events.md` dated 2026-08-06; verified 2026-09-05
+  against `src/lib/calendar/class-events.ts` and
+  `src/app/golf/actions/calendar-sync.ts`, both present.)
+- **`golf_events.end_time` for an all-day event is the INCLUSIVE last day at
+  UTC midnight, not exclusive.** Comparing it as an instant against a day
+  boundary reintroduces the classic "event shows one day early" bug for any
+  non-UTC team, because a local day can straddle the UTC-midnight line by
+  several hours. `eventDaySpan(ev, timezone)`
+  (`src/lib/calendar/timezone.ts`) is the shared, correct comparison — a new
+  surface reading `start_time`/`end_time` directly should call it rather than
+  writing a seventh copy of the day-math. As of the source note, the coach and
+  player dashboard "Today/Upcoming" surfaces still read only `start_time`
+  (their fix needs a `p_today_date date` signature change on a
+  `SECURITY DEFINER` function) — treat that as open until re-verified.
+  (STILL-TRUE-AND-USEFUL, source: auto-memory note
+  `instant-overlap-is-not-day-overlap.md` dated 2026-08-17; verified
+  2026-09-05 against `src/lib/calendar/timezone.ts`, present; the dashboard
+  fix status is unverified since 2026-08-17.)
+- **`golf_events` has no `is_mandatory` column.** The concept is
+  baseball-only (`baseball_events.is_mandatory` is real). The player-hub RPC
+  `get_player_hub_events` returns `is_mandatory: FALSE` hardcoded for golf, by
+  design — a bug report describing "editing a mandatory golf event clears its
+  mandatory flag" is a false alarm against a stub, not a data bug. See
+  `memory/context/golfhelm-database.md` for the schema fact. (STU, source:
+  `golf-has-no-mandatory-event-flag.md` dated 2026-08-16.)
 
 ## Tests To Prefer
 

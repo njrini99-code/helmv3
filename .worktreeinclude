@@ -19,3 +19,8 @@
 # Local editor/tooling config that is ignored but harmless and useful.
 .vscode/settings.json
 .vscode/extensions.json
+
+# The incremental typecheck cache. Gitignored machine state, and exactly why
+# the workspace door has to carry it: without it a new worktree's first
+# typecheck is a cold full run (~8,700 files, several GB). Measured 2026-09-05.
+tsconfig.tsbuildinfo
