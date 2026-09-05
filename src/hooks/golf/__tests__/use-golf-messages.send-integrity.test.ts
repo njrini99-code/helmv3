@@ -84,8 +84,12 @@ describe('use-golf-messages — realtime INSERT no longer reconciles by "first o
   });
 
   it('the same client id is reused across the transport retry, not regenerated per attempt', () => {
-    const sendStart = source.indexOf('const sendMessage = async (content: string)');
-    expect(sendStart).toBeGreaterThan(-1);
+    // Locate the function, do not pin its full parameter list. This pinned
+    // `'const sendMessage = async (content: string)'` and broke on 2026-09-04
+    // when a second parameter (replyToId, §30) was added — a signature change
+    // that has nothing to do with the retry/id invariant this test guards.
+    const sendStart = source.indexOf('const sendMessage = async (content: string');
+    expect(sendStart, 'sendMessage not found — has it been renamed?').toBeGreaterThan(-1);
     const retryStart = source.indexOf('withOneTransportRetry(', sendStart);
     expect(retryStart).toBeGreaterThan(sendStart);
     const retryCall = source.slice(retryStart, source.indexOf(');', retryStart));
@@ -97,6 +101,16 @@ describe('use-golf-messages — realtime INSERT no longer reconciles by "first o
     const generatorIdx = source.indexOf('function generateClientMessageId()');
     expect(generatorIdx).toBeGreaterThan(-1);
     expect(generatorIdx).toBeLessThan(retryStart);
+  });
+});
+
+describe('use-golf-messages — server-declared send failures remain retryable (defect 4)', () => {
+  it('marks a server-returned error failed without filtering the optimistic row away', () => {
+    const start = source.indexOf('const sendMessage = async');
+    const end = source.indexOf('// Edit a message', start);
+    const send = source.slice(start, end);
+    expect(send).toContain('markSendFailed(optimisticId)');
+    expect(send).not.toContain('prev.filter(m => m.id !== optimisticId)');
   });
 });
 

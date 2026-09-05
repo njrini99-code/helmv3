@@ -111,6 +111,12 @@ describe('createGolfConversation — withGolfAction retrofit', () => {
     expect(unvalidatedMock).toHaveBeenCalledWith(['roster-user'], TEAM_ID);
   });
 
+  it('forwards an optional private-group title to the shared implementation', async () => {
+    await createGolfConversation(['roster-user'], TEAM_ID, 'Pins & Putts');
+
+    expect(unvalidatedMock).toHaveBeenCalledWith(['roster-user'], TEAM_ID, 'Pins & Putts');
+  });
+
   it('throws the exact "not on this team" message, unsanitized, when the caller is outside the audience', async () => {
     userFake = createFakeSupabase({ user: { id: 'outsider-user' } });
     await expect(createGolfConversation(['roster-user'], TEAM_ID)).rejects.toThrow(

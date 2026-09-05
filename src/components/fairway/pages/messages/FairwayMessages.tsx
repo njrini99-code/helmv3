@@ -45,7 +45,7 @@
 
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Users } from 'lucide-react';
+import { Users, SquarePen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -60,15 +60,24 @@ import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
 import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
-import { ViewHeader } from '@/components/fairway/view-header';
-import { Button } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 
 import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
 import { MessageComposer } from './MessageComposer';
+import { isGroupConversation } from './conversation-kind';
+
+type GroupParticipant = { name: string; avatar: string | null };
+type GroupParticipantMap = Map<string, GroupParticipant>;
+
+interface ScopedGroupParticipants {
+  conversationId: string | null;
+  participants: GroupParticipantMap;
+}
 
 export function FairwayMessages() {
   const { showToast } = useToast();
@@ -89,7 +98,10 @@ export function FairwayMessages() {
     loading: conversationsLoading,
     error: conversationsError,
     refetch,
-  } = useGolfConversations();
+  // The server already resolved who this is (dashboard layout -> GolfUserProvider),
+  // so hand it over rather than making the hook re-ask Supabase over the network
+  // before it can send its first query.
+  } = useGolfConversations(userId);
 
   const handleConversationsRefresh = async () => {
     await refetch();
@@ -99,6 +111,8 @@ export function FairwayMessages() {
   const [showNewMessageModal, setShowNewMessageModal] = React.useState(false);
   const [showTeamBroadcastModal, setShowTeamBroadcastModal] = React.useState(false);
   const [mobileShowChat, setMobileShowChat] = React.useState(false);
+  const isDesktopMessages = useMediaQuery('(min-width: 768px)');
+  const threadVisible = isDesktopMessages || mobileShowChat;
 
   // An open conversation owns the phone. Hides the bottom tab bar (and its
   // reserved padding) for as long as the thread is open — see
@@ -113,6 +127,8 @@ export function FairwayMessages() {
     error: messagesError,
     refetch: refetchMessages,
     sendMessage,
+    retryMessage,
+    typingUserIds,
     editMessage,
     removeMessage,
     isOtherTyping,
@@ -134,11 +150,12 @@ export function FairwayMessages() {
   // For group conversations, each incoming bubble's sender_id is resolved to a
   // real name + avatar by fetching golf_conversation_participants → coaches/players.
   // Mirrors the legacy fetchGroupParticipants / groupParticipants pattern.
-  const [groupParticipants, setGroupParticipants] = React.useState<
-    Map<string, { name: string; avatar: string | null }>
-  >(new Map());
+  const [groupParticipantState, setGroupParticipantState] = React.useState<ScopedGroupParticipants>({
+    conversationId: null,
+    participants: new Map(),
+  });
 
-  const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
+  const fetchGroupParticipants = React.useCallback(async (conversationId: string): Promise<GroupParticipantMap> => {
     const supabase = createClient();
     const { data: participants, error: participantsError } = await supabase
       .from('golf_conversation_participants')
@@ -153,7 +170,7 @@ export function FairwayMessages() {
       );
     }
 
-    if (!participants || participants.length === 0) return;
+    if (!participants || participants.length === 0) return new Map();
 
     const userIds = participants.map(p => p.user_id);
 
@@ -176,7 +193,7 @@ export function FairwayMessages() {
       );
     }
 
-    const map = new Map<string, { name: string; avatar: string | null }>();
+    const map: GroupParticipantMap = new Map();
     (coaches ?? []).forEach(c => {
       if (c.user_id) {
         map.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
@@ -188,25 +205,47 @@ export function FairwayMessages() {
         map.set(p.user_id, { name, avatar: p.avatar_url ?? null });
       }
     });
-    setGroupParticipants(map);
+    return map;
   }, []);
 
-  // Fetch participant names whenever we enter a group conversation; clear on 1:1.
+  // Fetch participant names whenever we enter a group conversation. Identity
+  // is scoped to the conversation that produced it: the selected id can change
+  // before an older request resolves, and an unscoped Map would paint the old
+  // group's faces into the new thread until (or even after) its fetch completes.
   React.useEffect(() => {
+    let cancelled = false;
+
     if (!selectedConversationId) {
-      setGroupParticipants(new Map());
-      return;
+      setGroupParticipantState({ conversationId: null, participants: new Map() });
+      return undefined;
     }
+
     const conv = conversations.find(c => c.id === selectedConversationId);
     if (conv?.is_group) {
-      fetchGroupParticipants(selectedConversationId);
+      // Clear before the request. The render-time identity gate below also
+      // protects the first render after selection, before this effect runs.
+      setGroupParticipantState({
+        conversationId: selectedConversationId,
+        participants: new Map(),
+      });
+      void fetchGroupParticipants(selectedConversationId).then((participants) => {
+        if (cancelled) return;
+        setGroupParticipantState({
+          conversationId: selectedConversationId,
+          participants,
+        });
+      });
     } else {
-      setGroupParticipants(new Map());
+      setGroupParticipantState({
+        conversationId: selectedConversationId,
+        participants: new Map(),
+      });
     }
-  }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
-  // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
-  const threadCount = conversations.length;
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
   // ── ?player= deep-link: find-or-create, then select (PRESERVED verbatim) ─────
   const [handledPlayerParam, setHandledPlayerParam] = React.useState(false);
@@ -275,9 +314,14 @@ export function FairwayMessages() {
     router.replace('/golf/dashboard/messages', { scroll: false });
   }, [conversations, conversationsLoading, conversationIdFromUrl, handledConversationParam, router]);
 
-  // ── Auto-select first conversation (only when no deep-link param) (PRESERVED) ─
+  // ── Auto-select a live identity first (only when no deep-link param) ─────────
+  // An unresolved direct row is retained in the inbox for history, but it must
+  // not become the first thing a coach sees. Prefer a thread with a usable
+  // person or team identity; this is selection only, never a silent reorder.
   React.useEffect(() => {
-    const firstConversation = conversations[0];
+    const firstConversation = conversations.find(
+      (conversation) => isGroupConversation(conversation) || Boolean(conversation.other_participant?.name?.trim()),
+    ) ?? conversations[0];
     if (
       !conversationsLoading &&
       firstConversation &&
@@ -293,6 +337,10 @@ export function FairwayMessages() {
     if (!selectedConversationId) return null;
     return conversations.find(c => c.id === selectedConversationId) ?? null;
   }, [conversations, selectedConversationId]);
+  const activeGroupParticipants =
+    selectedConversation && groupParticipantState.conversationId === selectedConversation.id
+      ? groupParticipantState.participants
+      : undefined;
 
   // ── Selection + mobile master-detail (PRESERVED) ────────────────────────────
   const handleSelectConversation = (id: string) => {
@@ -304,34 +352,39 @@ export function FairwayMessages() {
   // ── P259: open a conversation FROM a cross-conversation search hit, then
   // scroll the thread to the matched message once it loads.
   const [pendingScrollMessageId, setPendingScrollMessageId] = React.useState<string | null>(null);
+
+  // §30: the pending reply. The PAGE owns it, not the composer, because it is
+  // conversation state — switching threads must drop it. It is stamped with the
+  // conversation it belongs to for the same reason drafts are scoped per
+  // conversation: a reply target leaking across threads is the composer-draft
+  // misdirection bug in a new costume.
+  const [replyTo, setReplyTo] = React.useState<
+    { id: string; conversationId: string; name: string; preview: string } | null
+  >(null);
   const handleOpenFromSearch = (conversationId: string, messageId: string) => {
     setPendingScrollMessageId(messageId);
     handleSelectConversation(conversationId);
   };
 
-  // ── New conversation (UNCHANGED action) ─────────────────────────────────────
-  const handleNewConversation = async (newUserId: string) => {
+  // ── New direct/private-group conversation (server action validates team scope) ──
+  const handleNewConversation = async (participantUserIds: string[], title?: string) => {
     try {
-      const result = await createGolfConversation([newUserId], teamId || undefined);
-      if (result.conversationId) {
-        await refetch();
-        handleSelectConversation(result.conversationId);
-        showToast('Conversation started', 'success');
-      } else if ('error' in result) {
-        showToast(String(result.error) || 'Failed to start conversation', 'error');
-        logError(
-          new Error(String(result.error) || 'Failed to start conversation'),
-          { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
-          'high'
-        );
+      const result = await createGolfConversation(participantUserIds, teamId || undefined, title);
+      if (!result.conversationId) {
+        throw new Error('error' in result ? String(result.error) : 'Failed to start conversation');
       }
+
+      await refetch();
+      handleSelectConversation(result.conversationId);
+      showToast(title ? 'Group created' : 'Conversation started', 'success');
     } catch (err) {
-      showToast('Failed to start conversation', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to start conversation', 'error');
       logError(
         err instanceof Error ? err : new Error('Failed to start conversation'),
         { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
         'high'
       );
+      throw err;
     }
   };
 
@@ -345,8 +398,13 @@ export function FairwayMessages() {
   // ── Send (UNCHANGED hook; realtime replaces the optimistic stub) ────────────
   const handleSendMessage = async (content: string) => {
     if (!selectedConversationId) return false;
+    // Read the target BEFORE the await and clear it immediately: the composer
+    // clears optimistically, so leaving the preview up for the round trip
+    // would show a reply target for a message already sent.
+    const replyToId = replyTo?.conversationId === selectedConversationId ? replyTo.id : undefined;
+    setReplyTo(null);
     try {
-      await sendMessage(content);
+      await sendMessage(content, replyToId);
       return true;
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
@@ -507,7 +565,20 @@ export function FairwayMessages() {
           // and `pt-[safe-area-top]` because nothing above it is reserving
           // the notch any more. This is what makes the thread header the
           // ONE header instead of the second one.
-          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
+          // §7, THE BLANK BAND. This used to subtract
+          // `env(safe-area-inset-bottom)` from the height AND the composer
+          // added the same inset as padding — the home indicator reserved
+          // TWICE, ~34px each on an iPhone. The surface ended above the
+          // indicator, the composer padded above that, and the gap between
+          // them showed the page's own colour: the "60-120px of unexplained
+          // space" beneath the composer.
+          //
+          // The inset is now applied EXACTLY ONCE, and by the composer, which
+          // is the half that should own it — that is what lets the composer's
+          // background run to the physical bottom edge instead of leaving a
+          // band of canvas under it. The surface takes the full viewport and
+          // gives back only the keyboard.
+          ? 'flex h-[calc(100dvh-max(0px,var(--keyboard-height,0px)))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
           : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
       )}
     >
@@ -523,7 +594,7 @@ export function FairwayMessages() {
           edge and is doing real work. */}
       <div
         className={`mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden py-3 sm:px-6 sm:py-6 lg:py-8 ${
-          mobileShowChat ? 'px-0' : 'px-4'
+          'px-0'
         }`}
       >
         {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ──
@@ -544,52 +615,37 @@ export function FairwayMessages() {
             Only the two ACTIONS are not carried by other chrome, so only they
             survive here. The conversation count is dropped rather than moved:
             the rail beneath it is the count, rendered. */}
-        {!mobileShowChat && (
-          <div className="flex items-center justify-end gap-2 md:hidden">
-            {userRole === 'coach' && teamId ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Users size={16} aria-hidden="true" />}
-                onClick={() => setShowTeamBroadcastModal(true)}
-              >
-                Team
-              </Button>
-            ) : null}
-            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-              New message
-            </Button>
-          </div>
-        )}
+        {/* §16: "remove giant green New message pill … compose is a compact
+            icon button". A solid green lozenge on its own row was the largest,
+            highest-contrast object on the Messages screen — louder than any
+            conversation in the list it sits above, and it consumed a full band
+            of vertical space to say something a 44px glyph says. Icons now,
+            right-aligned, on a row that no longer needs to be tall.
 
-        <div className="hidden md:block">
-        <ViewHeader
-          eyebrow="Messages"
-          title="Team messages"
-          description={teamName || undefined}
-          meta={
-            <span className="font-fw-mono tabular-nums">
-              {threadCount} {threadCount === 1 ? 'conversation' : 'conversations'}
-            </span>
-          }
-          secondaryActions={
-            userRole === 'coach' && teamId ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Users size={16} aria-hidden="true" />}
-                onClick={() => setShowTeamBroadcastModal(true)}
-              >
-                Team
-              </Button>
-            ) : undefined
-          }
-          primaryAction={
-            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-              New message
-            </Button>
-          }
-        />
+            Both keep 44px targets and real labels: IconButton renders
+            `aria-label`, so this loses nothing for VoiceOver, and the pencil
+            square is the platform-conventional compose glyph. */}
+        {/* The mobile action band is GONE. It held a giant green pill, then
+            (briefly) two icons — either way a full row of vertical space, on
+            the smallest screen, above the list it was pushing down. Its
+            contents now sit on the rail's search row: one row that says "find
+            one, or start one". */}
+
+        <div className="hidden h-10 items-center justify-between px-1 md:flex">
+          <div className="min-w-0">
+            {teamName ? <p className="truncate font-fw-sans text-caption text-text-secondary">{teamName}</p> : null}
+          </div>
+          {userRole === 'coach' && teamId ? (
+            <IconButton
+              variant="ghost"
+              size="md"
+              aria-label="Open official team channel"
+              onClick={() => setShowTeamBroadcastModal(true)}
+              className="text-text-secondary hover:bg-surface-sunken hover:text-text-primary"
+            >
+              <Users size={19} aria-hidden="true" />
+            </IconButton>
+          ) : null}
         </div>
 
         {/* ── Two-pane inbox: rail (supporting aside) + thread (focal hero) ──── */}
@@ -605,7 +661,7 @@ export function FairwayMessages() {
             fractional tracks cannot leave dead space). No grid/width change
             here; see the inner max-w wrapper below for the one real gap this
             audit surfaced (an uncapped thread column on wide desktops). */}
-        <div className={`${mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6`}>
+        <div className={`${mobileShowChat ? 'mt-0 md:mt-4' : 'mt-3 md:mt-4'} flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-0 md:border-y md:border-border-subtle md:bg-surface`}>
           {/* TRIAGE — conversation rail. On mobile it hides when a chat is open. */}
           <aside
             className={
@@ -613,7 +669,7 @@ export function FairwayMessages() {
                 ? 'hidden md:col-span-5 md:flex md:flex-col lg:col-span-4'
                 : // P263: w-full so the rail spans the full viewport on mobile
                   // (flex parent — col-span is a no-op there; w-full governs width).
-                  'col-span-12 flex w-full flex-col md:w-auto md:col-span-5 lg:col-span-4'
+                  'col-span-12 flex w-full flex-col md:w-auto md:col-span-5 md:border-r md:border-border-subtle lg:col-span-4'
             }
           >
             <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
@@ -627,6 +683,17 @@ export function FairwayMessages() {
                 onRetry={refetch}
                 teamId={teamId}
                 onOpenMessage={handleOpenFromSearch}
+                trailingActions={
+                  <IconButton
+                    variant="primary"
+                    size="md"
+                    aria-label="New message"
+                    onClick={() => setShowNewMessageModal(true)}
+                    className="shadow-soft"
+                  >
+                    <SquarePen size={20} aria-hidden="true" />
+                  </IconButton>
+                }
               />
             </PullToRefresh>
           </aside>
@@ -649,6 +716,7 @@ export function FairwayMessages() {
                 conversation={selectedConversation}
                 messages={messages}
                 loading={messagesLoading}
+                threadVisible={threadVisible}
                 error={messagesError}
                 onRetry={refetchMessages}
                 userId={userId}
@@ -669,8 +737,32 @@ export function FairwayMessages() {
                 onConfirmDelete={handleConfirmDelete}
                 onCancelDelete={handleCancelDelete}
                 onSetMobileActions={setMobileActionsId}
-                groupParticipants={groupParticipants}
+                groupParticipants={activeGroupParticipants}
+                typingUserIds={typingUserIds}
                 scrollToMessageId={pendingScrollMessageId}
+                onReply={(message) => {
+                  const isOwn = message.sender_id === userId;
+                  setReplyTo({
+                    id: message.id,
+                    conversationId: message.conversation_id,
+                    name: isOwn ? 'yourself' : (selectedConversation?.other_participant?.name ?? 'teammate'),
+                    preview: message.content
+                      ? decodeMessageContent(message.content).slice(0, 90)
+                      : 'Attachment',
+                  });
+                }}
+                onJumpToMessage={(messageId) => setPendingScrollMessageId(messageId)}
+                onOpenEvent={(eventId) => {
+                  // §38: the cross-surface moment. A schedule change posted in
+                  // chat opens the exact event, so nobody has to go and find it.
+                  router.push(`/golf/dashboard/calendar?event=${encodeURIComponent(eventId)}`);
+                }}
+                onRetryMessage={(messageId) => {
+                  // No toast on failure: the bubble already says "Not
+                  // delivered" and still offers Retry. A toast would announce
+                  // what is written directly under the message.
+                  void retryMessage(messageId);
+                }}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}
                 className="flex-1 min-h-0"
               >
@@ -698,6 +790,12 @@ export function FairwayMessages() {
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}
+                    replyTo={
+                      replyTo && replyTo.conversationId === selectedConversation.id
+                        ? { name: replyTo.name, preview: replyTo.preview }
+                        : null
+                    }
+                    onCancelReply={() => setReplyTo(null)}
                   />
                 ) : null}
               </MessageThreadPane>
@@ -710,7 +808,7 @@ export function FairwayMessages() {
       <FairwayNewMessageSheet
         isOpen={showNewMessageModal}
         onClose={() => setShowNewMessageModal(false)}
-        onSelect={handleNewConversation}
+        onCreateConversation={handleNewConversation}
         currentUserRole={userRole || 'player'}
         teamId={teamId}
       />

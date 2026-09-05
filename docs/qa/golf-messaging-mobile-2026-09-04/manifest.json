@@ -1,0 +1,117 @@
+{
+  "command": "npx tsx scripts/qa/golf-messaging-mobile/capture.ts",
+  "renderer": "Vite browser page importing the product messaging components and product Tailwind/token CSS",
+  "viewportHeight": 844,
+  "overflowAssertion": "document.documentElement.scrollWidth <= document.documentElement.clientWidth",
+  "observedLimitations": [
+    "Chromium component evidence does not prove physical iPhone Safari/WebView keyboard, safe-area, touch, or native-sheet behavior."
+  ],
+  "failedSendVisualCheck": "After the flat mobile reset, visual inspection confirmed reply, body, and retry metadata remain inside the viewport at 320px, 390px, and 430px. Document overflow remained zero at every width.",
+  "results": [
+    {
+      "fixture": "inbox-unread-group",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "png": "inbox-unread-group-320.png"
+    },
+    {
+      "fixture": "inbox-unread-group",
+      "width": 390,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "png": "inbox-unread-group-390.png"
+    },
+    {
+      "fixture": "inbox-unread-group",
+      "width": 430,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "png": "inbox-unread-group-430.png"
+    },
+    {
+      "fixture": "thread-short-group",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "png": "thread-short-group-320.png"
+    },
+    {
+      "fixture": "thread-short-group",
+      "width": 390,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "png": "thread-short-group-390.png"
+    },
+    {
+      "fixture": "thread-short-group",
+      "width": 430,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "png": "thread-short-group-430.png"
+    },
+    {
+      "fixture": "thread-group-details",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "png": "thread-group-details-320.png"
+    },
+    {
+      "fixture": "thread-group-details",
+      "width": 390,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "png": "thread-group-details-390.png"
+    },
+    {
+      "fixture": "thread-group-details",
+      "width": 430,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "png": "thread-group-details-430.png"
+    },
+    {
+      "fixture": "thread-failed-send",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "png": "thread-failed-send-320.png"
+    },
+    {
+      "fixture": "thread-failed-send",
+      "width": 390,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "png": "thread-failed-send-390.png"
+    },
+    {
+      "fixture": "thread-failed-send",
+      "width": 430,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "png": "thread-failed-send-430.png"
+    },
+    {
+      "fixture": "new-private-group",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "png": "new-private-group-320.png"
+    },
+    {
+      "fixture": "new-private-group",
+      "width": 390,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "png": "new-private-group-390.png"
+    },
+    {
+      "fixture": "new-private-group",
+      "width": 430,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "png": "new-private-group-430.png"
+    }
+  ]
+}

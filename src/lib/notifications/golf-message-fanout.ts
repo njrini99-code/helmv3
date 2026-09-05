@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -109,32 +108,35 @@ export async function notifyGolfMessageRecipients(
       return;
     }
 
-    // Per-recipient delivery preferences. `users.notification_preferences` is
-    // the store the settings panel already writes (updateNotificationPreferences),
-    // and `gatedDelivery` is the gate CoachHelm v3 already uses — including
-    // quiet-mode handling and the documented defaults (email_messages ON,
-    // push_messages OFF). Nothing new is invented here; this fan-out was simply
-    // never wired to any of it.
+    // NO EMAIL ON AN ORDINARY MESSAGE. Removed 2026-09-04 by owner instruction:
+    // "stop sending emails every time there's a message. It should just be the
+    // app notification."
     //
-    // Before this, every message emailed AND pushed AND belled every other
-    // participant unconditionally. In a 12-player group chat one coach post is
-    // twelve emails, and a player told their coach "Stop spamming my email" on
-    // 2026-08-31 after 33 notifications in a day. Their only remedy was the
-    // coach's advice — "just turn the notifications off" — because the toggle
-    // they DID have was read by nothing.
+    // Email is the wrong channel for a chat message and was the loudest one we
+    // had: every participant got a mail per message, so an active thread of ten
+    // messages sent ten emails to everyone in it. Push and the in-app bell below
+    // already carry the same payload, immediately, to the app the conversation
+    // lives in — which is where a reply can actually happen.
+    //
+    // Deliberately deleted rather than flag-gated: a dormant flag on a fanout
+    // path is a thing that gets flipped back on by accident. If email ever
+    // returns here it must be for a DIFFERENT event (a mention, a critical
+    // announcement, a digest of what you missed while away) with its own
+    // opt-out, not for "somebody typed".
+
+    // Merged with #1827 ("honour the Messages notification toggles"), which
+    // landed on main while this branch was open. That change answered the SAME
+    // complaint — a player sent 33 notifications in a day, whose toggle was
+    // read by nothing — by gating email behind `email_messages`, a preference
+    // that defaults ON. Removing the channel is the stronger answer to the same
+    // report, and the owner asked for it in those words, so the removal wins.
+    //
+    // What survives from #1827 is the part that is right either way: the gate
+    // itself. `prefsFor` stays because PUSH below is gated on it, and that
+    // wiring — settings the user can actually set, read by the fan-out that
+    // sends — is the durable half of that change.
     const prefsFor = (r: { notification_preferences?: unknown }) =>
       (r.notification_preferences ?? null) as Partial<DeliveryNotificationPreferences> | null;
-
-    // Email notifications. Reasons are reported, not just counted — see
-    // src/lib/settled-failures.ts and INC-2026-08-27.
-    await allSettledReported(
-      recipientProfiles.map(r =>
-        r.email && gatedDelivery(prefsFor(r), 'email_messages')
-          ? notifyNewMessage(r.id, r.email, senderName, previewText, conversationId, 'golf')
-          : Promise.resolve()
-      ),
-      { action: 'notifications.notifyGolfMessageRecipients', featureArea: 'messaging', label: 'email' },
-    );
 
     // Push notifications — carry the conversation id so the push payload
     // deep-links straight to the thread that fired it (P260).

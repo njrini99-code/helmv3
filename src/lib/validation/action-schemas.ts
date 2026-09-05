@@ -70,6 +70,8 @@ export const WatchlistSchemas = {
  * Message Schemas
  */
 export const MessageSchemas = {
+  conversation_title: z.string().trim().min(1, 'Conversation title cannot be empty').max(80),
+
   send: z.object({
     conversation_id: CommonSchemas.uuid,
     content: z.string().min(1, 'Message cannot be empty').max(5000).trim(),
@@ -78,6 +80,11 @@ export const MessageSchemas = {
     // don't send one, and `sendMessage` falls back to the DB default
     // (`golf_messages.id uuid DEFAULT uuid_generate_v4()`) when it's absent.
     client_message_id: CommonSchemas.uuid.optional(),
+    // §30 reply/quote. Optional everywhere: baseball has no reply column, and
+    // an ordinary golf send has nothing to quote. Validated as a uuid so a
+    // malformed pointer is rejected here rather than by a foreign-key error
+    // deep in the insert.
+    reply_to_id: CommonSchemas.uuid.optional(),
   }),
 
   createConversation: z.object({
@@ -116,4 +123,3 @@ export const TeamSchemas = {
     secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a hex color').optional().nullable(),
   }),
 };
-

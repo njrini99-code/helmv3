@@ -15,26 +15,31 @@
  *   teammates), the `teamId`-required guard, and the SQL-wildcard escaping are
  *   byte-for-byte the same. The onSelect → onClose contract is NOT identical:
  *   GolfNewMessageModal fires `onSelect(selectedId); onClose();` synchronously
- *   with no guard. Here, `handleStartConversation` AWAITS `onSelect(selectedId)`
+ *   with no guard. Here, `handleStartConversation` AWAITS `onCreateConversation`
  *   behind a `creating` pending guard (blocking double-click double-submit)
  *   and only calls `onClose()` once it resolves. Only the presentation moves
  *   onto Fairway primitives:
- *     Sheet (overlays) · Input (forms) · Button/Avatar/Chip (controls) ·
+ *     Sheet (overlays) · SearchField/TextArea (forms) · Button/Avatar/Chip (controls) ·
  *     EmptyState/Skeleton/InlineNotice (feedback) · fw tokens + Fraunces.
  * ========================================================================== */
 
 import { describeError } from '@/lib/utils/describe-error';
 import * as React from 'react';
-import { Check, Users, Search } from 'lucide-react';
+import { Check, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { escapeLikePattern } from '@/lib/utils/escape-like';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
-import { Input } from '@/components/fairway/forms/Input';
+import { SearchField } from '@/components/fairway/command/search-field';
+import { TextArea } from '@/components/fairway/forms';
+import { FormField } from '@/components/fairway/forms/FormField';
 import { Button } from '@/components/fairway/controls/button';
-import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
+import { Chip } from '@/components/fairway/controls/badge';
+import { PressTarget } from '@/components/fairway/controls/press-target';
+import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
+import { Avatar } from '@/components/fairway/controls/avatar';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
@@ -46,6 +51,12 @@ interface SearchResult {
   subtitle: string;
   avatar: string | null;
   type: 'coach' | 'player';
+}
+
+export interface SelectedRecipient {
+  userId: string;
+  name: string;
+  avatar: string | null;
 }
 
 // P158: a role label (a job title like "Head Coach") is not a name. Some
@@ -63,10 +74,60 @@ export function resolveCoachName(fullName: string | null | undefined): string {
   return trimmed;
 }
 
+export function canCreateConversation(
+  mode: 'direct' | 'group',
+  selectedUserIds: string[],
+  title: string,
+) {
+  return mode === 'direct'
+    ? selectedUserIds.length === 1
+    : selectedUserIds.length >= 2 && title.trim().length > 0;
+}
+
+export function updateSelectedRecipients(
+  mode: 'direct' | 'group',
+  previous: ReadonlyMap<string, SelectedRecipient>,
+  recipient: SelectedRecipient,
+) {
+  if (mode === 'direct') return new Map([[recipient.userId, recipient]]);
+
+  const next = new Map(previous);
+  if (next.has(recipient.userId)) {
+    next.delete(recipient.userId);
+  } else {
+    next.set(recipient.userId, recipient);
+  }
+  return next;
+}
+
+export interface SelectedRecipientStripProps {
+  recipients: ReadonlyMap<string, SelectedRecipient>;
+  onRemove: (userId: string) => void;
+}
+
+export function SelectedRecipientStrip({ recipients, onRemove }: SelectedRecipientStripProps) {
+  return (
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Selected recipients">
+      {Array.from(recipients.values()).map((recipient) => (
+        <Chip
+          key={recipient.userId}
+          size="sm"
+          tone="accent"
+          leadingIcon={recipient.avatar ? <Avatar decorative name={recipient.name} src={recipient.avatar} size="xs" /> : undefined}
+          onRemove={() => onRemove(recipient.userId)}
+          removeLabel={`Remove ${recipient.name}`}
+        >
+          {recipient.name}
+        </Chip>
+      ))}
+    </div>
+  );
+}
+
 export interface FairwayNewMessageSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (userId: string) => void;
+  onCreateConversation: (participantUserIds: string[], title?: string) => Promise<void>;
   currentUserRole: 'coach' | 'player';
   /** CRITICAL: must be passed and valid for the search to run. */
   teamId?: string;
@@ -75,7 +136,7 @@ export interface FairwayNewMessageSheetProps {
 export function FairwayNewMessageSheet({
   isOpen,
   onClose,
-  onSelect,
+  onCreateConversation,
   currentUserRole,
   teamId,
 }: FairwayNewMessageSheetProps) {
@@ -86,7 +147,12 @@ export function FairwayNewMessageSheet({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [results, setResults] = React.useState<SearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [mode, setMode] = React.useState<'direct' | 'group'>('direct');
+  // Search results are intentionally ephemeral. This map is the source of
+  // truth for selected recipients, so choosing someone from a later search
+  // cannot make an earlier avatar disappear from the reviewable group strip.
+  const [selectedRecipients, setSelectedRecipients] = React.useState<Map<string, SelectedRecipient>>(new Map());
+  const [groupTitle, setGroupTitle] = React.useState('');
   const [noTeamError, setNoTeamError] = React.useState(false);
   // A failed lookup is not "nobody matches". Without this the sheet renders its
   // ordinary empty state, so a coach searching their own full roster is told
@@ -291,23 +357,52 @@ export function FairwayNewMessageSheet({
     if (!isOpen) {
       setSearchQuery('');
       setResults([]);
-      setSelectedId(null);
+      setMode('direct');
+      setSelectedRecipients(new Map());
+      setGroupTitle('');
       setNoTeamError(false);
       setCreating(false);
     }
   }, [isOpen]);
 
+  const selectMode = (nextMode: 'direct' | 'group') => {
+    setMode(nextMode);
+    if (nextMode === 'direct') {
+      setSelectedRecipients((previous) => {
+        const first = previous.values().next().value;
+        return first ? new Map([[first.userId, first]]) : new Map();
+      });
+    }
+  };
+
+  const toggleRecipient = (result: SearchResult) => {
+    setSelectedRecipients((previous) =>
+      updateSelectedRecipients(mode, previous, {
+        userId: result.userId,
+        name: result.name,
+        avatar: result.avatar,
+      }),
+    );
+  };
+
   const handleStartConversation = async () => {
     // Guards against double-click double-submit; server dedupe is intentionally not attempted here (client-only fix).
-    if (creating || !selectedId) return;
+    const participantUserIds = Array.from(selectedRecipients.keys());
+    if (creating || !canCreateConversation(mode, participantUserIds, groupTitle)) return;
 
     setCreating(true);
     try {
-      await onSelect(selectedId);
+      await onCreateConversation(
+        participantUserIds,
+        mode === 'group' ? groupTitle.trim() : undefined,
+      );
+      onClose();
+    } catch {
+      // The parent owns action-specific error messaging. Keep this sheet open
+      // so the selected recipients and group title are not lost on a retry.
     } finally {
       setCreating(false);
     }
-    onClose();
   };
 
   const noun = currentUserRole === 'coach' ? 'player' : 'team member';
@@ -329,11 +424,13 @@ export function FairwayNewMessageSheet({
       // immediately — open straight to full height instead of the 50% peek
       // detent so the search field + results stay usable with the keyboard up.
       peek={false}
-      title="New message"
+      title={mode === 'group' ? 'New group' : 'New message'}
       description={
-        currentUserRole === 'coach'
-          ? 'Select a player to start a conversation.'
-          : 'Select a team member to start a conversation.'
+        mode === 'group'
+          ? 'Choose teammates and a name for this private group.'
+          : currentUserRole === 'coach'
+            ? 'Select a player to start a conversation.'
+            : 'Select a team member to start a conversation.'
       }
     >
       {/* min-h-0 flex-1 (call-site override of Sheet.Body's base flex-auto):
@@ -342,16 +439,67 @@ export function FairwayNewMessageSheet({
           silently falls back to natural/unbounded height instead of
           scrolling — see the Results comment below. */}
       <Sheet.Body className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="flex gap-2" aria-label="Conversation type">
+          <SelectablePill
+            shape="round"
+            selected={mode === 'direct'}
+            onClick={() => selectMode('direct')}
+          >
+            Direct
+          </SelectablePill>
+          <SelectablePill
+            shape="round"
+            selected={mode === 'group'}
+            onClick={() => selectMode('group')}
+          >
+            Group
+          </SelectablePill>
+        </div>
+
+        {mode === 'group' ? (
+          <div className="rounded-fw-md bg-surface-sunken p-3">
+            <p className="mb-2 font-fw-sans text-caption font-medium text-text-secondary">
+              {selectedRecipients.size} selected
+            </p>
+            {selectedRecipients.size > 0 ? (
+              <SelectedRecipientStrip
+                recipients={selectedRecipients}
+                onRemove={(userId) => {
+                  setSelectedRecipients((previous) => {
+                    const next = new Map(previous);
+                    next.delete(userId);
+                    return next;
+                  });
+                }}
+              />
+            ) : (
+              <p className="font-fw-sans text-caption text-text-tertiary">Select at least two teammates.</p>
+            )}
+          </div>
+        ) : null}
+
+        {mode === 'group' ? (
+          <FormField label="Group name" required>
+            <TextArea
+              value={groupTitle}
+              onChange={(event) => setGroupTitle(event.target.value)}
+              placeholder="e.g., Practice plans"
+              aria-label="Group name"
+              rows={1}
+            />
+          </FormField>
+        ) : null}
+
         {noTeamError ? (
           <InlineNotice tone="warning" title="No team found">
             You need to be assigned to a team before you can message team members.
           </InlineNotice>
         ) : (
-          <Input
+          <SearchField
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            onClear={() => setSearchQuery('')}
             placeholder={currentUserRole === 'coach' ? 'Search players…' : 'Search team members…'}
-            leading={<Search aria-hidden />}
             aria-label={`Search ${noun}s`}
             // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={finePointer}
@@ -390,17 +538,11 @@ export function FairwayNewMessageSheet({
             ) : results.length > 0 ? (
               <ul className="flex flex-col gap-1">
                 {results.map((result) => {
-                  const isSelected = selectedId === result.userId;
+                  const isSelected = selectedRecipients.has(result.userId);
                   return (
                     <li key={result.id}>
-                      {/* Intentional raw <button>: a single-select recipient row
-                          with an avatar + stacked name/subtitle + selected check that
-                          the <Button> primitive can't express. The full interactive
-                          -state contract (hover/focus-visible, §7.1) is inline. */}
-                      {/* eslint-disable-next-line helm/no-raw-button */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(result.userId)}
+                      <PressTarget
+                        onClick={() => toggleRecipient(result)}
                         aria-pressed={isSelected}
                         className={cn(
                           'block w-full rounded-fw-md px-3 py-2.5 text-left',
@@ -411,24 +553,30 @@ export function FairwayNewMessageSheet({
                             : 'hover:bg-surface-sunken',
                         )}
                       >
-                        {/* Shared identity (avatar + name + subtitle); the selection
-                            check is this surface's trailing affordance. The button
-                            wrapper keeps the transparent-rest / tinted-hover-selected
-                            contract intact. */}
-                        <PlayerIdentity
-                          name={result.name}
-                          avatarUrl={result.avatar}
-                          size="md"
-                          meta={result.subtitle || undefined}
-                          trailing={
-                            isSelected ? (
-                              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
-                                <Check className="h-3.5 w-3.5" aria-hidden />
-                              </span>
-                            ) : undefined
-                          }
-                        />
-                      </button>
+                        {/* Do not manufacture initials as an avatar. A real
+                            roster photo earns the visual anchor; everyone else
+                            remains a clean text identity until they upload one. */}
+                        <div className={cn('min-w-0 items-center', result.avatar ? 'flex gap-3' : 'flex')}>
+                          {result.avatar ? (
+                            <Avatar decorative name={result.name} src={result.avatar} size="md" />
+                          ) : null}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                              {result.name}
+                            </p>
+                            {result.subtitle ? (
+                              <p className="mt-0.5 truncate font-fw-sans text-body-sm text-text-secondary">
+                                {result.subtitle}
+                              </p>
+                            ) : null}
+                          </div>
+                          {isSelected ? (
+                            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
+                              <Check className="h-3.5 w-3.5" aria-hidden />
+                            </span>
+                          ) : null}
+                        </div>
+                      </PressTarget>
                     </li>
                   );
                 })}
@@ -469,10 +617,14 @@ export function FairwayNewMessageSheet({
         <Button
           variant="primary"
           onClick={handleStartConversation}
-          disabled={!selectedId || noTeamError || creating}
+          disabled={
+            !canCreateConversation(mode, Array.from(selectedRecipients.keys()), groupTitle) ||
+            noTeamError ||
+            creating
+          }
           busy={creating}
         >
-          Start conversation
+          {mode === 'group' ? 'Create group' : 'Start message'}
         </Button>
       </Sheet.Footer>
     </Sheet>

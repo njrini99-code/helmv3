@@ -31,17 +31,23 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { Inbox, Users, Search } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import NumberFlow from '@number-flow/react';
+import { LayoutGroup, m, useReducedMotion } from 'framer-motion';
+import { reorderSpring } from '@/lib/golf/chat-motion';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 import { searchGolfMessages } from '@/app/golf/actions/messages';
 import type { MessageSearchResult } from '@/app/actions/messages';
 import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { Input } from '@/components/fairway/forms/Input';
+import { SearchField } from '@/components/fairway/command/search-field';
 import { Button } from '@/components/fairway/controls/button';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
+import { useGolfGroupAvatars, type GroupMember } from '@/hooks/golf/use-golf-group-avatars';
+import { PressTarget } from '@/components/fairway/controls/press-target';
+import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -54,6 +60,14 @@ export interface MessageConversationRailProps {
   selectedId: string | null;
   /** Select a conversation (page sets selected id + mobile master-detail). */
   onSelect: (id: string) => void;
+  /**
+   * §16: actions that belong on the search row — compose, team broadcast.
+   * Rendered INLINE with the search field rather than in a band above it.
+   * Removing the giant green pill left the row it used to stand in, and an
+   * otherwise-empty band holding two icons is the same wasted vertical space
+   * with less in it.
+   */
+  trailingActions?: React.ReactNode;
   /** Open the New message modal from the honest-empty CTA. */
   onNewMessage: () => void;
   /** First-paint skeleton rail. */
@@ -93,46 +107,22 @@ function formatTime(dateStr: string | null | undefined): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** Recency buckets — PRESERVES the legacy groupConversationsByTime boundaries. */
-function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-  const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-  const groups = {
-    today: [] as GolfConversationWithMeta[],
-    yesterday: [] as GolfConversationWithMeta[],
-    thisWeek: [] as GolfConversationWithMeta[],
-    older: [] as GolfConversationWithMeta[],
-  };
-
-  conversations.forEach(conv => {
-    const lastMsgDate = conv.last_message?.created_at
-      ? new Date(conv.last_message.created_at)
-      : new Date(0);
-    if (lastMsgDate >= today) groups.today.push(conv);
-    else if (lastMsgDate >= yesterday) groups.yesterday.push(conv);
-    else if (lastMsgDate >= lastWeek) groups.thisWeek.push(conv);
-    else groups.older.push(conv);
-  });
-
-  return groups;
-}
-
-const GROUP_ORDER: ReadonlyArray<{ key: keyof ReturnType<typeof groupConversationsByTime>; label: string }> = [
-  { key: 'today', label: 'Today' },
-  { key: 'yesterday', label: 'Yesterday' },
-  { key: 'thisWeek', label: 'This Week' },
-  { key: 'older', label: 'Earlier' },
-];
+/* `groupConversationsByTime` and its recency buckets were deleted on
+   2026-09-04 with the date-section headers they existed to label. The list is
+   ordered purely by recency now (the hook already sorts newest-first) and the
+   per-row timestamp carries the same information without cutting a short list
+   into three labelled blocks. If date sections ever return, they should return
+   as a deliberate design decision rather than by reviving dead code. */
 
 function ConversationRow({
+  members,
   conv,
   isSelected,
   onSelect,
 }: {
   conv: GolfConversationWithMeta;
+  /** Resolved member faces for a GROUP row; absent for DMs and while loading. */
+  members?: GroupMember[];
   isSelected: boolean;
   onSelect: () => void;
 }) {
@@ -144,82 +134,166 @@ function ConversationRow({
   const isGroup = isGroupConversation(conv);
   const displayName = isGroup
     ? conv.title || 'Team Group'
-    : conv.other_participant?.name || 'Unknown User';
+    // See MessageThreadPane: "Unknown User" is a debug string. A participant
+    // with no coach/player row has left the roster, and the list should say so.
+    : conv.other_participant?.name || 'Former team member';
+  const isUnresolvedDirect = !isGroup && !conv.other_participant?.name?.trim();
+  const groupPhotoMembers = members?.filter((member) => Boolean(member.avatar)) ?? [];
+  const hasGroupPhotoStack = groupPhotoMembers.length >= 2;
+  const hasDirectPhoto = Boolean(conv.other_participant?.avatar);
   const time = formatTime(conv.last_message?.created_at);
 
   return (
-    <Button
+    /* §17/§49/§107: PressTarget, not Button.
+       A conversation is not a pill CTA, and the generic Button was being fought
+       the whole way — `h-auto min-h-0 border-0 font-normal justify-start
+       text-left` is eleven overrides undoing a control that wanted to be a
+       rounded green capsule, plus its own 180ms cinematic transition and its
+       coupled click haptic. PressTarget is deliberately unstyled: real <button>
+       semantics, focus and disabled handling, reduced-motion safety, and no
+       opinion about shape.
+
+       §50: a row press is subtler than a CTA press. A warm tint on touch-down,
+       no compression — a list row that visibly shrinks 2% reads as a button
+       pretending to be a row. */
+    <PressTarget
       type="button"
-      variant="ghost"
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
-        '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
+        'group block w-full border-l-2 border-transparent px-[14px] py-3.5 text-left md:py-3',
+        'transition-colors duration-150 motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        // Acknowledgement must not wait for navigation — `active:` paints on
+        // touch-down, before any route work.
+        'active:bg-surface-sunken',
         isSelected
-          ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
+          ? 'border-accent-500 bg-surface-tint'
           : 'hover:bg-surface-sunken/60',
       )}
     >
       <div className="flex items-start gap-3">
+        {/* §12/§16. Every group rendered the SAME generic two-person glyph,
+            so a list of three conversations showed three identical icons and
+            the avatar column carried no information at all. A group now gets
+            its own initials, like a person does — "Team Updates" reads TU,
+            "Demo University Golf" reads DU — on the accent wash that still
+            distinguishes it from a DM at a glance. 48px per §16 (was 40). */}
         {isGroup ? (
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
-            <Users size={18} aria-hidden="true" />
-          </span>
+          hasGroupPhotoStack ? (
+            // §33: REAL FACES. The photos were always in the app — the inbox
+            // just never asked for them, because participant resolution was
+            // scoped to the one open conversation. A team channel now shows who
+            // is in it.
+            //
+            // `md` inside a stack, not `lg`: three overlapping 48px discs are
+            // wider than the avatar column and would shove the text. The stack
+            // reads at roughly the same optical weight as one large avatar.
+            // The stack must fit the SAME 48px column a DM avatar occupies, or
+            // the text beside it starts at a different x on half the list.
+            //
+            // Two `xs` (24px) faces at the default 6px overlap is 42px — inside
+            // 48 with room, and both faces stay legible. The two versions
+            // before this were geometry failures worth recording: three `md`
+            // (40px) faces plus AvatarGroup's "+N" chip is ~130px and hung out
+            // of the row entirely; two `sm` (32px) at a 16px overlap fit the
+            // box but hid the back avatar behind the front one, leaving a
+            // sliver of half a letter that reads as a rendering bug rather than
+            // as layering.
+            //
+            // No `max`, so no "+N" chip — the chip is another full-size element
+            // and puts the stack straight back out of the column.
+            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
+              <AvatarGroup size="xs">
+                {groupPhotoMembers.slice(0, 2).map((m, i) => (
+                  <Avatar
+                    key={`${m.name}-${i}`}
+                    name={m.name}
+                    src={m.avatar ?? undefined}
+                    size="xs"
+                    className="shadow-soft"
+                  />
+                ))}
+              </AvatarGroup>
+            </span>
+          ) : null
         ) : (
-          <Avatar
-            name={conv.other_participant?.name || 'User'}
-            src={conv.other_participant?.avatar}
-            size="md"
-          />
+          hasDirectPhoto ? (
+            <Avatar
+              name={isUnresolvedDirect ? null : displayName}
+              src={conv.other_participant?.avatar}
+              size="lg"
+              className="shadow-soft"
+            />
+          ) : null
         )}
 
+        {/* Name over preview on the left; time over count on the right. The
+            time used to sit on the name's row and the unread badge on the
+            preview's, so the row had FOUR alignment edges and the badge
+            competed with the message text for the same horizontal space —
+            a long preview pushed it around. One right rail, two stacked
+            metadata items, one edge. */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className={cn(
-                'truncate font-fw-sans text-body-sm',
-                hasUnread || isSelected ? 'font-medium text-text-primary' : 'font-medium text-text-secondary',
-              )}
-            >
-              {displayName}
-            </span>
-            {time ? (
-              <time
-                dateTime={conv.last_message?.created_at ?? undefined}
-                className={cn(
-                  'flex-shrink-0 font-fw-mono text-eyebrow tabular-nums',
-                  hasUnread ? 'text-accent-700' : 'text-text-tertiary',
-                )}
-              >
-                {time}
-              </time>
-            ) : null}
-          </div>
+          <span
+            className={cn(
+              'block truncate font-fw-sans text-body',
+              hasUnread ? 'font-semibold text-text-primary' : 'font-medium text-text-primary',
+            )}
+          >
+            {displayName}
+          </span>
+          <p
+            className={cn(
+              // §16 wants 14-15px here. This was `text-eyebrow` — 11px at
+              // 0.06em tracking, the role built for ALL-CAPS labels, applied
+              // to a sentence somebody actually said. It is the message
+              // preview; it should read like one.
+              'mt-0.5 truncate font-fw-sans text-body-sm',
+              hasUnread ? 'text-text-primary' : 'text-text-secondary',
+            )}
+          >
+            {conv.last_message?.content
+              ? decodeMessageContent(conv.last_message.content)
+              : 'No messages yet'}
+          </p>
+        </div>
 
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <p
-              className={cn(
-                'min-w-0 flex-1 truncate font-fw-sans text-eyebrow leading-relaxed',
-                hasUnread ? 'text-text-primary' : 'text-text-tertiary',
-              )}
+        <div className="flex flex-shrink-0 flex-col items-end gap-1.5 pt-0.5">
+          {time ? (
+            <time
+              dateTime={conv.last_message?.created_at ?? undefined}
+              className="font-fw-sans text-caption tabular-nums text-text-tertiary"
             >
-              {conv.last_message?.content
-                ? decodeMessageContent(conv.last_message.content)
-                : 'No messages yet'}
-            </p>
-            {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
-                dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
-            {hasUnread ? (
-              <Badge tone="accent" size="sm" numeric className="flex-shrink-0">
-                {conv.unread_count > 9 ? '9+' : conv.unread_count}
-              </Badge>
-            ) : null}
-          </div>
+              {time}
+            </time>
+          ) : null}
+          {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
+              dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
+          {/* SOLID, not a wash. `tone="accent"` renders a pale accent-50 fill
+              with accent-700 text — at 12px on a cream row that is the quietest
+              thing in the right rail, competing with a timestamp for attention
+              and losing. Every reference uses a solid filled count. It is the
+              one place on this screen that should be loud, so it is. */}
+          {hasUnread ? (
+            <Badge
+              tone="accent"
+              size="sm"
+              numeric
+              className="border-transparent bg-accent-650 text-text-on-accent"
+            >
+              {/* §52: the count ROLLS from 1 to 2 rather than swapping. Only
+                  under 10 — past that the badge reads "9+" and there is no
+                  number to animate, and animating into a "+" would be motion
+                  describing nothing.
+                  Reduced motion resolves instantly via `respectMotionPreference`
+                  (its default), so this needs no branch of its own. */}
+              {conv.unread_count > 9 ? '9+' : <NumberFlow value={conv.unread_count} />}
+            </Badge>
+          ) : null}
         </div>
       </div>
-    </Button>
+    </PressTarget>
   );
 }
 
@@ -233,21 +307,29 @@ function SearchResultRow({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const hasSenderPhoto = Boolean(result.senderAvatar);
+
   return (
-    <Button
+    <PressTarget
       type="button"
-      variant="ghost"
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
+        'group block w-full px-3 py-3 text-left transition-colors [transition-duration:150ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        isSelected ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60' : 'hover:bg-surface-sunken/60',
+        'active:bg-surface-sunken',
+        isSelected ? 'bg-surface-tint' : 'hover:bg-surface-sunken/60',
       )}
     >
-      <div className="flex items-start gap-3">
-        <Avatar name={result.senderName || 'User'} src={result.senderAvatar} size="md" />
+      <div className={cn('items-start', hasSenderPhoto ? 'flex gap-3' : 'block')}>
+        {hasSenderPhoto ? (
+          <Avatar
+            name={result.senderName || 'User'}
+            src={result.senderAvatar}
+            size="md"
+          />
+        ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
@@ -262,7 +344,7 @@ function SearchResultRow({
           </p>
         </div>
       </div>
-    </Button>
+    </PressTarget>
   );
 }
 
@@ -271,6 +353,7 @@ export function MessageConversationRail({
   selectedId,
   onSelect,
   onNewMessage,
+  trailingActions,
   loading = false,
   error = false,
   onRetry,
@@ -284,6 +367,15 @@ export function MessageConversationRail({
   // Drives the bezel/padding gate on the panel below — see the note there.
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [filter, setFilter] = React.useState<'all' | 'unread' | 'teams'>('all');
+  const reduceMotion = useReducedMotion();
+  // Real member faces for group rows (§33). Batched across the whole inbox —
+  // see the hook for why this is three queries and not one per row.
+  const groupConversationIds = React.useMemo(
+    () => conversations.filter(c => isGroupConversation(c)).map(c => c.id),
+    [conversations],
+  );
+  const groupAvatars = useGolfGroupAvatars(groupConversationIds);
   const [searchResults, setSearchResults] = React.useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchError, setSearchError] = React.useState(false);
@@ -336,13 +428,34 @@ export function MessageConversationRail({
     return (
       <InstrumentPanel
         depth="base"
-        padding="md"
-        header="Conversations"
-        className={cn('flex flex-col', className)}
+        // The SAME gating the loaded rail uses below. This branch hardcoded
+        // `padding="md"` and the "Conversations" bezel regardless of viewport,
+        // so entering Messages on a phone drew THREE different layouts in a row:
+        // the route skeleton (flat, search field, rows), then this bezel card
+        // with no search, then the real rail (flat, search field, rows). Two
+        // visible reconstructions on the way to a screen whose shape was known
+        // the whole time — the "it hot loads when you click Messages" report.
+        //
+        // A loading state that does not match the thing it stands in for is
+        // worse than none: it manufactures the exact layout jump it exists to
+        // prevent.
+        padding={isDesktop ? 'md' : 'none'}
+        header={isDesktop ? 'Conversations' : undefined}
+        className={cn(
+          'flex flex-col',
+          '!rounded-none !border-0 !shadow-none !bg-transparent',
+          className,
+        )}
         aria-busy="true"
       >
+        {/* The search field holds its place. It is the rail's first row on a
+            phone, so omitting it let every conversation jump up by its height
+            the moment data landed. */}
+        <div className="mb-3">
+          <div className="h-11 w-full rounded-fw-md bg-surface-sunken" />
+        </div>
         <div className="flex flex-col gap-1">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="flex items-start gap-3 rounded-fw-md px-3 py-2.5">
               <div className="h-10 w-10 flex-shrink-0 rounded-full bg-surface-sunken" />
               <div className="flex-1 space-y-2">
@@ -368,9 +481,13 @@ export function MessageConversationRail({
     return (
       <InstrumentPanel
         depth="base"
-        padding="md"
-        header="Conversations"
-        className={cn('flex flex-col', className)}
+        padding={isDesktop ? 'md' : 'none'}
+        header={isDesktop ? 'Conversations' : undefined}
+        className={cn(
+          'flex flex-col',
+          '!rounded-none !border-0 !shadow-none !bg-transparent',
+          className,
+        )}
       >
         <InlineNotice
           tone="danger"
@@ -394,9 +511,13 @@ export function MessageConversationRail({
     return (
       <InstrumentPanel
         depth="base"
-        padding="md"
-        header="Conversations"
-        className={cn('flex flex-col', className)}
+        padding={isDesktop ? 'md' : 'none'}
+        header={isDesktop ? 'Conversations' : undefined}
+        className={cn(
+          'flex flex-col',
+          '!rounded-none !border-0 !shadow-none !bg-transparent',
+          className,
+        )}
       >
         <EmptyState
           variant="subtle"
@@ -409,7 +530,6 @@ export function MessageConversationRail({
               variant="primary"
               size="sm"
               onClick={onNewMessage}
-              className="min-h-[36px] px-4 py-1.5"
             >
               New message
             </Button>
@@ -421,9 +541,33 @@ export function MessageConversationRail({
 
   // TRIAGE: unread floats to top, then recency groups (each kept in the hook's
   // most-recent-first order within the bucket).
-  const unread = conversations.filter(c => c.unread_count > 0);
-  const read = conversations.filter(c => c.unread_count === 0);
-  const grouped = groupConversationsByTime(read);
+  // ── Inbox filter ──────────────────────────────────────────────────────
+  // Every modern chat inbox carries one of these. Ours is keyed to what Helm
+  // actually knows rather than to a generic All/Favorites: a golf program's
+  // inbox is a mix of one-to-one coaching and team channels, and "just the
+  // team channels" is a real thing a coach wants at 6am on a travel day.
+  //
+  // The counts on the chips are the honest kind — they come from the same
+  // `unread_count` the rows render, so a chip can never claim a number the
+  // list below it does not show.
+  const unreadTotal = conversations.filter(c => c.unread_count > 0).length;
+  const teamTotal = conversations.filter(c => isGroupConversation(c)).length;
+
+  // A control that cannot change what you see is chrome. Each option earns its
+  // place only if it would produce a DIFFERENT list from "All" — which means
+  // some, but not all, conversations match it.
+  const unreadFilterUseful = unreadTotal > 0 && unreadTotal < conversations.length;
+  const teamFilterUseful = teamTotal > 0 && teamTotal < conversations.length;
+  const showFilters = unreadFilterUseful || teamFilterUseful;
+
+  // Not `useMemo`: this sits BELOW the loading/error/empty early returns, so a
+  // hook here is called conditionally — React's rules-of-hooks error, and a
+  // real one, since the branch taken changes between renders. A plain filter is
+  // also what the two lines under it already do, over the same array.
+  const visible =
+    filter === 'unread' ? conversations.filter(c => c.unread_count > 0)
+    : filter === 'teams' ? conversations.filter(c => isGroupConversation(c))
+    : conversations;
 
   return (
     <InstrumentPanel
@@ -455,21 +599,90 @@ export function MessageConversationRail({
         // Same reasoning as the thread pane: a card that fills the screen has
         // stopped being a card (Doctrine Rule 11). `!` is required because the
         // border comes from a CSS module class of equal specificity.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none max-md:bg-transparent',
+        '!rounded-none !border-0 !shadow-none !bg-transparent',
         className,
       )}
     >
       {/* P259: cross-conversation message search. */}
-      <div className="mb-3">
-        <Input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search messages…"
-          leading={<Search aria-hidden />}
-          aria-label="Search messages"
-        />
+      {/* §16: "secondary to conversation list, no giant card". SearchField is
+          the canonical sunken Fairway search track and owns its clear control. */}
+      <div className="mb-2 flex items-center gap-2 px-4 md:px-0">
+        <div className="min-w-0 flex-1">
+          <SearchField
+            size="md"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
+            placeholder="Search messages…"
+            aria-label="Search messages"
+          />
+        </div>
+        {/* Compose sits ON this row (§16). Removing the green pill left the
+            band it used to stand in; two icons alone in that band is the same
+            wasted height with less in it. One row: find, or start. */}
+        {trailingActions}
       </div>
+
+      {/* Filters, under search. Rendered only when they can actually change
+          what you see — see `showFilters`. An inbox of three conversations
+          that are all team channels does not get a "Teams" chip that filters
+          to the same three. */}
+      {showFilters ? (
+        /* FREE-STANDING PILLS, not a Segmented track. Segmented is this repo's
+           view-SWITCHER: a bordered sunken well with a sliding pill, sized to
+           fill its row. Stretched across three options it reads as a squeezed
+           tab bar, and it draws two more boxes onto a screen that is trying to
+           be a list. Every reference uses loose pills, left-aligned, and they
+           are right — a filter is a set of optional narrowings, not a segmented
+           view of the same thing.
+
+           Scrolls rather than wraps: a fourth chip (a role filter is the
+           obvious next one) must not silently become a second row that pushes
+           the list down. */
+        <div
+          role="group"
+          aria-label="Filter conversations"
+          className="mb-2 flex gap-1.5 overflow-x-auto px-4 pb-1 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {([
+            { value: 'all' as const, label: 'All', show: true },
+            { value: 'unread' as const, label: 'Unread', count: unreadTotal, show: unreadFilterUseful },
+            { value: 'teams' as const, label: 'Teams', show: teamFilterUseful },
+          ]).filter(o => o.show).map((o) => (
+            <SelectablePill
+              key={o.value}
+              shape="round"
+              active={filter === o.value}
+              aria-pressed={filter === o.value}
+              onClick={() => setFilter(o.value)}
+              className={cn(
+                // §6: cut visual weight. These were full-height pills with a
+                // card shadow, which put the CONTROLS above the PEOPLE in the
+                // visual hierarchy (§3) — the eye landed on "All / Unread /
+                // Teams" before it reached a single name. 32px, no shadow, and
+                // an unselected chip is a warm tint rather than a raised card.
+                'min-h-[32px] flex-shrink-0 px-3.5 font-fw-sans text-body-sm',
+                'shadow-none',
+                filter === o.value
+                  ? '!bg-accent-100 !text-accent-800 !shadow-none'
+                  : '!border-transparent !bg-transparent !text-text-secondary !shadow-none hover:!bg-surface-sunken',
+              )}
+            >
+              {o.label}
+              {typeof o.count === 'number' ? (
+                <span
+                  className={cn(
+                    'ml-1.5 tabular-nums',
+                    filter === o.value ? 'text-text-on-accent/80' : 'text-accent-700',
+                  )}
+                >
+                  {o.count}
+                </span>
+              ) : null}
+            </SelectablePill>
+          ))}
+        </div>
+      ) : null}
 
       {isSearching ? (
         // ── Search results view (replaces the triage list while searching) ──
@@ -491,9 +704,9 @@ export function MessageConversationRail({
             Something went wrong searching your messages. Check your connection and try again.
           </InlineNotice>
         ) : searchResults.length > 0 ? (
-          <ul className="flex flex-col gap-1">
-            {searchResults.map((result) => (
-              <li key={result.messageId}>
+          <ul className="flex flex-col">
+            {searchResults.map((result, index) => (
+              <li key={result.messageId} className={index > 0 ? 'border-t border-border-subtle/50' : undefined}>
                 <SearchResultRow
                   result={result}
                   isSelected={selectedId === result.conversationId}
@@ -509,58 +722,79 @@ export function MessageConversationRail({
             description="Try a different word, or clear the search to see all conversations."
           />
         )
+      ) : visible.length === 0 ? (
+        // Reachable without the list being empty: read the last unread message
+        // while the Unread filter is on and this is what is left. It must not
+        // say "No conversations yet" — there are conversations, just none here.
+        <EmptyState
+          variant="subtle"
+          icon={Inbox}
+          title={filter === 'unread' ? 'Nothing unread' : 'No team channels'}
+          description="Every conversation is still here — clear the filter to see them."
+          action={
+            <Button variant="secondary" size="sm" onClick={() => setFilter('all')}>
+              Show all
+            </Button>
+          }
+        />
       ) : (
-      <div className="flex flex-col gap-3">
-        {unread.length > 0 ? (
-          <div>
-            <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
-              Unread
-            </p>
-            <ul className="flex flex-col gap-1">
-              {unread.map((conv, i) => (
-                <li
-                  key={conv.id}
-                  className="animate-fade-in-up motion-reduce:animate-none"
-                  style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
-                >
-                  <ConversationRow
-                    conv={conv}
-                    isSelected={selectedId === conv.id}
-                    onSelect={() => onSelect(conv.id)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        /* ONE CONTINUOUS LIST. The "Unread" / "Today" / "Earlier" sections are
+           gone, and that is the biggest single change on this screen: NONE of
+           the four reference inboxes has a date-section header. They order by
+           recency and let the timestamp column do that work, which is why they
+           read as one calm surface — my version broke a five-row list into
+           three labelled blocks, so the eye had to re-acquire the rhythm twice
+           on the way down.
 
-        {GROUP_ORDER.map(({ key, label }) => {
-          const group = grouped[key];
-          if (group.length === 0) return null;
-          return (
-            <div key={key}>
-              <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
-                {label}
-              </p>
-              <ul className="flex flex-col gap-1">
-                {group.map((conv, i) => (
-                  <li
-                    key={conv.id}
-                    className="animate-fade-in-up motion-reduce:animate-none"
-                    style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
-                  >
-                    <ConversationRow
-                      conv={conv}
-                      isSelected={selectedId === conv.id}
-                      onSelect={() => onSelect(conv.id)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
+           Floating unread to the top went with them. It was solving "show me
+           what I have not read", and the Unread CHIP now does that explicitly,
+           on demand, without permanently reordering the list under the reader.
+           Recency is the one ordering that never surprises.
+
+           Unread still reads instantly — semibold name, primary-ink preview,
+           and a solid count in the right rail. Three signals, no section. */
+        /* §12: when a message arrives its conversation moves to the top, and
+           it must not TELEPORT there. `layout="position"` animates only the
+           transform — the row's contents are never re-laid-out, so the avatar
+           does not remount and its photo cannot flash. The DATA still owns the
+           order; motion only makes the change legible.
+
+           `position` rather than full layout on purpose: full layout animation
+           would scale the row's box, which distorts text and avatars mid-flight
+           — the exact "mushy" result §10 warns about. */
+        <ul className="flex flex-col border-y border-border-subtle/60 bg-surface md:border-y-0 md:bg-transparent">
+          <LayoutGroup>
+          {visible.map((conv, i) => (
+            <m.li
+              key={conv.id}
+              layout={reduceMotion ? false : 'position'}
+              transition={reorderSpring}
+              className="relative animate-fade-in-up motion-reduce:animate-none"
+              style={{ animationDelay: `${Math.min(i, 8) * 35}ms`, animationFillMode: 'both' }}
+            >
+              {/* Hairline INSET to the text column, never through the avatar
+                  (§47). Absolutely positioned rather than a border on the row,
+                  because a border would have to sit inside the row's own
+                  padding and would cut the avatar in half. */}
+              {i > 0 ? (
+                <span
+                  aria-hidden="true"
+                  // §8: "almost disappear". At full border-subtle a five-row
+                  // inbox read as a table. Half opacity keeps the structure
+                  // available to the eye without drawing it.
+                  className="pointer-events-none absolute left-[76px] right-4 top-0 h-px bg-border-subtle/60 md:left-[72px] md:right-3"
+                />
+              ) : null}
+              <ConversationRow
+                conv={conv}
+                members={groupAvatars.get(conv.id)}
+                isSelected={selectedId === conv.id}
+                onSelect={() => onSelect(conv.id)}
+              />
+            </m.li>
+          ))}
+          </LayoutGroup>
+        </ul>
       )}
     </InstrumentPanel>
   );

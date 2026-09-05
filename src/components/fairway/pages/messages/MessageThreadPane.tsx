@@ -4,10 +4,12 @@
  * ============================================================================
  * Fairway · messages · MessageThreadPane — the PULSE focal hero (open thread)
  * ----------------------------------------------------------------------------
- * The two-pane inbox's RIGHT pane and the page's ONE focal hero: a flat matte
- * `InstrumentPanel` depth='raised' thread well with a sunken composer track —
- * mirrors AskThreadPane. The conversation bubbles read on matte surfaces
- * (own = bg-accent tint, other = bg-surface-sunken); NEVER bg-white/backdrop-blur.
+ * The two-pane inbox's RIGHT pane on desktop and the full-bleed conversation
+ * canvas on mobile. The responsive `InstrumentPanel` keeps desktop's paired
+ * pane geometry but removes its bezel, background and elevation below `md`.
+ * Conversation bubbles are tactile speech shapes (own = dimensional accent,
+ * other = softly lifted surface); NEVER generic card stacks, bg-white or
+ * backdrop blur.
  *
  * It owns NO send/edit/delete logic — the parent FairwayMessages drives those
  * through the UNCHANGED useGolfMessages hook + server actions and passes the
@@ -30,10 +32,41 @@
 
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
+import {
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  Copy,
+  Paperclip,
+  MessageSquare,
+  FileText,
+  Download,
+  AlertTriangle,
+  RotateCw,
+  Reply,
+  ChevronLeft,
+  MoreHorizontal,
+  ArrowDown,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  CHAT_MOTION,
+  secs,
+  bubbleSpring,
+  bubbleEnter,
+  reactionEnter,
+  bubbleLift,
+  avatarEnter,
+} from '@/lib/golf/chat-motion';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
+import { ConversationDetailsSheet } from './ConversationDetailsSheet';
+import { StructuredMessage } from './StructuredMessage';
+import { parseStructuredPayload } from '@/lib/golf/structured-message';
+import { useGolfMessageResponses } from '@/hooks/golf/use-golf-message-responses';
+import { useGolfMessageReactions } from '@/hooks/golf/use-golf-message-reactions';
+import { GOLF_QUICK_REACTIONS } from '@/lib/golf/message-reactions';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
   GolfConversationWithMeta,
@@ -41,8 +74,9 @@ import type {
 } from '@/hooks/golf/use-golf-messages';
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
 import { Button, IconButton } from '@/components/fairway/controls/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
@@ -141,6 +175,8 @@ export interface MessageThreadPaneProps {
   /** Messages from the unchanged useGolfMessages() hook. */
   messages: MessageWithReadStatus[];
   loading: boolean;
+  /** True when the thread is visible (desktop or mobile detail view). */
+  threadVisible: boolean;
   /**
    * True when the thread fetch FAILED (distinct from a truly-empty thread).
    * Renders a recoverable error state with Retry instead of the honest-empty
@@ -155,6 +191,8 @@ export interface MessageThreadPaneProps {
   currentUserId: string | null;
   /** True while the other participant is typing (unchanged hook state). */
   isOtherTyping: boolean;
+  /** §49: WHO is typing, excluding you. Empty when nobody is. */
+  typingUserIds?: string[];
   /** Mobile back to the rail (page owns mobileShowChat). */
   onBack: () => void;
   /** Open the New message modal (the no-select prompt CTA). */
@@ -174,6 +212,14 @@ export interface MessageThreadPaneProps {
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
   onSetMobileActions: (id: string | null) => void;
+  /** §30: begin a reply to this message (page owns the pending-reply state). */
+  onReply?: (message: MessageWithReadStatus) => void;
+  /** §30: jump to a quoted message (page owns scrollToMessageId). */
+  onJumpToMessage?: (messageId: string) => void;
+  /** §30: re-send a message whose send failed. Keeps its original id. */
+  onRetryMessage?: (messageId: string) => void;
+  /** §38: open the calendar event a structured message links to. */
+  onOpenEvent?: (eventId: string) => void;
 
   /**
    * Bug fix #1 — group sender resolution.
@@ -228,22 +274,111 @@ export function shouldScrollThreadToLatestOnOpen(
 
 /** Quiet text read receipt — "Read" / "Sent" (color is never the only channel). */
 function ReadReceipt({ isRead }: { isRead?: boolean }) {
+  const reduceMotion = useReducedMotion();
+  const status = isRead ? 'Read' : 'Sent';
+  // §20: Sent -> Read crossfades IN PLACE and never relayouts. `mode="wait"` so
+  // the two words never overlap, and the wrapper is an `inline-grid` with both
+  // states in one cell — that reserves the wider label up front, so the
+  // timestamp beside it cannot shift when the receipt changes. A receipt that
+  // nudges its own line is the kind of one-frame defect people feel and cannot
+  // name.
   return (
-    <span
-      className={cn(
-        'font-fw-sans text-eyebrow',
-        isRead ? 'text-accent-700' : 'text-text-tertiary',
-      )}
-    >
-      {isRead ? 'Read' : 'Sent'}
+    <span className="inline-grid [&>*]:col-start-1 [&>*]:row-start-1">
+      <AnimatePresence mode="wait" initial={false}>
+        <m.span
+          key={status}
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.metadata) }}
+          className={cn(
+            'font-fw-sans text-caption',
+            isRead ? 'text-accent-700' : 'text-text-tertiary',
+          )}
+        >
+          {status}
+        </m.span>
+      </AnimatePresence>
     </span>
   );
 }
 
-/** Typing indicator — three dim dots on a matte Inset (NOT a glass bubble). */
+/**
+ * Reaction chips — spec §18, sitting UNDER the bubble rather than floating
+ * beside it.
+ *
+ * The count is `tabular-nums` so a chip going 9 -> 10 does not change width and
+ * shove its neighbours sideways under the reader's thumb, and the chips are
+ * ordered by count (see the hook) rather than by arrival for the same reason.
+ *
+ * Your own reaction is marked by BORDER AND FILL, not colour alone — the same
+ * rule the read receipt follows. A chip is a toggle, so which ones are yours
+ * has to survive a user who cannot separate the accent green from the hairline.
+ */
+function ReactionChips({
+  reactions,
+  onToggle,
+  align,
+}: {
+  reactions: { emoji: string; count: number; mine: boolean }[];
+  onToggle: (emoji: string) => void;
+  align: 'start' | 'end';
+}) {
+  const reduceMotion = useReducedMotion();
+  if (!reactions.length) return null;
+  return (
+    <div
+      className={cn(
+        'relative z-[1] -mt-2 flex flex-wrap gap-1 px-2',
+        align === 'end' ? 'justify-end' : 'justify-start',
+      )}
+    >
+      {reactions.map((r) => (
+        // A reaction chip is a ~24px inline token; <Button>'s 36/44px
+        // min-height would make the strip taller than the bubble it annotates.
+        // (No no-raw-button suppression needed: `m.button` is not a raw
+        // <button> as far as the rule is concerned, and the directive that used
+        // to sit here became an unused-disable warning the moment this gained
+        // motion.)
+        <m.button
+          key={r.emoji}
+          type="button"
+          // §22: the chip should land under the bubble, not appear. Small and
+          // quick — a dramatic spring here pulls attention off the message the
+          // reaction is about.
+          initial={reduceMotion ? false : reactionEnter.initial}
+          animate={reactionEnter.animate}
+          transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.micro) }}
+          onClick={() => onToggle(r.emoji)}
+          aria-pressed={r.mine}
+          aria-label={`${r.emoji} ${r.count}${r.mine ? ', including you' : ''}`}
+          className={cn(
+            // The slight overlap and soft lift physically attach the reaction
+            // to its message. Yours gets an accent wash while the chip remains
+            // secondary to the words above it.
+            'inline-flex min-h-7 items-center gap-1 rounded-full border px-2 py-0.5 shadow-soft',
+            'font-fw-sans text-caption transition-transform active:scale-95',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
+            r.mine
+              ? 'border-accent-300 bg-accent-50 font-medium text-accent-800'
+              : 'border-border-subtle bg-surface text-text-secondary',
+          )}
+        >
+          <span aria-hidden="true">{r.emoji}</span>
+          <span className="tabular-nums">{r.count}</span>
+        </m.button>
+      ))}
+    </div>
+  );
+}
+
+/** Typing indicator — three calm dots on a small lifted speech surface. */
 function TypingIndicator() {
   return (
-    <Inset padding="none" className="inline-flex rounded-fw-lg rounded-bl-sm px-4 py-3">
+    <Inset
+      padding="none"
+      className="inline-flex rounded-card border border-border-subtle bg-surface px-3.5 py-3 shadow-soft"
+    >
       {/* An opacity wave, not a bounce. `animate-bounce` threw the dots a
           third of their own height on a spring curve — energetic, and the
           wrong register for "someone is composing a sentence". Three dots
@@ -372,11 +507,13 @@ export function MessageThreadPane({
   conversation,
   messages,
   loading,
+  threadVisible,
   error,
   onRetry,
   userId,
   currentUserId,
   isOtherTyping,
+  typingUserIds,
   onBack,
   onNewMessage,
   editingMessageId,
@@ -392,6 +529,10 @@ export function MessageThreadPane({
   onConfirmDelete,
   onCancelDelete,
   onSetMobileActions,
+  onReply,
+  onJumpToMessage,
+  onRetryMessage,
+  onOpenEvent,
   groupParticipants,
   scrollToMessageId,
   onScrolledToMessage,
@@ -399,16 +540,33 @@ export function MessageThreadPane({
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
   const reduceMotion = useReducedMotion() ?? false;
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   /** The message list itself — observed for late growth (images, fonts). */
   const messagesContentRef = React.useRef<HTMLDivElement>(null);
+  // Never use Element.scrollIntoView for conversation navigation. It is allowed
+  // to scroll every ancestor, including the dashboard document, which was
+  // pulling the entire Messages page upward when a thread opened. The message
+  // list is the only scroll owner for chat navigation.
+  const scrollMessageListToBottom = React.useCallback((behavior: ScrollBehavior) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (typeof container.scrollTo === 'function') {
+      container.scrollTo({ top: container.scrollHeight, behavior });
+    } else {
+      // JSDOM deliberately omits Element.scrollTo. Keeping the fallback here
+      // also makes embedded/older WebViews retain the same bounded owner.
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
   /**
    * True from the moment a thread is pinned to its newest message until the
    * reader deliberately scrolls away from the bottom. While armed, anything
    * that grows the thread re-pins it.
    */
   const stickToBottomRef = React.useRef(false);
+  // §34/§41: how many messages arrived while the reader was scrolled up.
+  const [missedCount, setMissedCount] = React.useState(0);
+  const lastSeenCountRef = React.useRef(0);
 
   /**
    * Long-press to open a message's actions.
@@ -424,6 +582,50 @@ export function MessageThreadPane({
    * permanent pixels. The timer is cancelled by movement, so a scroll that
    * happens to start on a bubble never opens the menu.
    */
+  // Reactions for the open thread. Keyed off the rendered message ids so the
+  // batched read covers exactly what is on screen — see the hook for why this
+  // is one request rather than one per bubble.
+  const reactionMessageIds = React.useMemo(() => messages.map((m) => m.id), [messages]);
+
+  // §30: quoted messages are resolved from the LOADED window, not fetched.
+  // A reply almost always quotes something recent, and a per-bubble fetch
+  // would open one request per quote. When the quoted message is older than
+  // the window the quote degrades to a neutral label rather than disappearing
+  // — the reply still makes sense, and nothing about it lies.
+  const messagesById = React.useMemo(() => {
+    const map = new Map<string, MessageWithReadStatus>();
+    for (const m of messages) map.set(m.id, m);
+    return map;
+  }, [messages]);
+  // Answers to structured messages — same batched/realtime shape as reactions.
+  const { getFor: getResponsesFor, respond } = useGolfMessageResponses(
+    conversation?.id ?? null,
+    reactionMessageIds,
+    currentUserId ?? userId ?? null,
+  );
+
+  const { getFor: getReactionsFor, toggle: toggleReaction } = useGolfMessageReactions(
+    conversation?.id ?? null,
+    reactionMessageIds,
+    currentUserId ?? userId ?? null,
+  );
+
+  // §37: conversation details. Local state — the sheet is a detail OF this
+  // pane, and lifting it to the page would make every keystroke in the
+  // composer re-render a component that only the header opens.
+  const [detailsOpen, setDetailsOpen] = React.useState(false);
+
+  // Resolve typists to names locally. An unresolved id is DROPPED rather than
+  // rendered as "Someone" — a group line naming the wrong count is worse than
+  // the plain dots.
+  const typingNames = React.useMemo(() => {
+    if (!typingUserIds?.length || !groupParticipants) return [];
+    return typingUserIds
+      .map(id => groupParticipants.get(id)?.name)
+      .filter((n): n is string => Boolean(n))
+      .map(n => n.split(' ')[0] ?? n);
+  }, [typingUserIds, groupParticipants]);
+
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelLongPress = React.useCallback(() => {
     if (longPressTimerRef.current) {
@@ -654,8 +856,8 @@ export function MessageThreadPane({
     }
 
     const container = messagesContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
+    if (!threadVisible || !container || container.clientHeight <= 0) return;
+    container.scrollTop = container.scrollHeight;
       // Hold the bottom until the reader actually moves.
       //
       // Setting scrollTop ONCE is not enough, and that is the "it opens at the
@@ -673,10 +875,9 @@ export function MessageThreadPane({
       // The observer below re-pins on each of those growth events until the
       // reader scrolls, at which point their position is theirs and we stop
       // touching it.
-      stickToBottomRef.current = true;
-    }
+    stickToBottomRef.current = true;
     pendingInitialScrollConversationIdRef.current = null;
-  }, [conversation?.id, loading, messages, scrollToMessageId]);
+  }, [conversation?.id, loading, messages, scrollToMessageId, threadVisible]);
 
   // Re-pin to the bottom while `stickToBottomRef` is armed and the content is
   // still changing size. Released by the reader's first deliberate scroll away
@@ -748,23 +949,60 @@ export function MessageThreadPane({
   React.useEffect(() => {
     const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
     const container = messagesContainerRef.current;
-    if (!container) {
-      messagesEndRef.current?.scrollIntoView({ behavior });
-      return;
-    }
+    if (!container) return;
     const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
     if (isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior });
+      scrollMessageListToBottom(behavior);
+      setMissedCount(0);
+      return;
     }
-  }, [messages, reduceMotion]);
+    // §41: reading history is not interruptible. Count what arrived instead of
+    // moving the viewport — the button below is how they choose to catch up.
+    // Only messages from SOMEBODY ELSE count: your own send scrolls you down
+    // by design, and counting it would offer to take you to your own message.
+    const arrivals = messages.length - lastSeenCountRef.current;
+    if (arrivals > 0) {
+      const incoming = messages
+        .slice(lastSeenCountRef.current)
+        .filter(m => m.sender_id !== userId && m.sender_id !== currentUserId).length;
+      if (incoming > 0) setMissedCount(c => c + incoming);
+    }
+  }, [messages, reduceMotion, userId, currentUserId, scrollMessageListToBottom]);
+
+  // Track how far the count has been reconciled, so a re-render cannot
+  // double-count the same arrivals.
+  React.useEffect(() => {
+    lastSeenCountRef.current = messages.length;
+  }, [messages]);
+
+  // Clear the count the moment the reader reaches the bottom themselves —
+  // scrolling down IS catching up, and a button offering to take you where you
+  // already are is noise.
+  React.useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const atBottom =
+        container.scrollTop + container.clientHeight >= container.scrollHeight - 24;
+      if (atBottom) setMissedCount(0);
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
 
   // P259: scroll a search-hit message into view once the thread has loaded it.
   React.useEffect(() => {
     if (!scrollToMessageId) return;
     if (loading) return;
     const node = messageRefs.current.get(scrollToMessageId);
-    if (node) {
-      node.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    const container = messagesContainerRef.current;
+    if (node && container) {
+      const targetTop = Math.max(0, node.offsetTop - container.clientHeight / 2 + node.clientHeight / 2);
+      if (typeof container.scrollTo === 'function') {
+        container.scrollTo({ top: targetTop, behavior: reduceMotion ? 'auto' : 'smooth' });
+      } else {
+        container.scrollTop = targetTop;
+      }
     }
     // Consume the request whether or not the node is present (e.g. the matched
     // message scrolled off the fetched window) so it doesn't re-fire on refetch.
@@ -779,7 +1017,7 @@ export function MessageThreadPane({
         depth="raised"
         padding="none"
         aria-label="Conversation"
-        className={cn('flex min-h-[40vh] flex-col overflow-hidden', className)}
+        className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', className)}
       >
         <div className="flex flex-1 items-center justify-center bg-surface px-4 py-5">
           <EmptyState
@@ -812,7 +1050,14 @@ export function MessageThreadPane({
   const isGroup = isGroupConversation(conversation);
   const headerName = isGroup
     ? conversation.title || 'Team Group'
-    : conversation.other_participant?.name || 'Unknown User';
+    // §5: "Unknown User" is ship-blocking. It is a DEBUG string, and it was
+    // rendering as ordinary UI for a real DM. The participant is built from a
+    // coach/player lookup, so an unresolved one is not "unknown" — it is
+    // somebody with no current roster row: they left, or the account is gone.
+    // Say that. A truthful label beats a placeholder that reads like a fault.
+    : conversation.other_participant?.name || 'Former team member';
+  const directAvatarName = conversation.other_participant?.name?.trim() || null;
+  const directAvatarSrc = conversation.other_participant?.avatar || null;
   // `is_group` is set for anything carrying `is_team_chat`, and a broadcast
   // sent to ONE player carries it too (the flag is load-bearing for the
   // conversation-create RLS workaround, so it can't just be dropped there).
@@ -827,6 +1072,12 @@ export function MessageThreadPane({
         ? 'Direct message'
         : ''
     : conversation.other_participant?.subtitle || '';
+  const headerGroupMembers = isGroup
+    ? Array.from(groupParticipants?.entries() ?? [])
+        .sort(([, a], [, b]) => Number(Boolean(b.avatar)) - Number(Boolean(a.avatar)))
+        .slice(0, 2)
+    : [];
+  const headerGroupPhotoMembers = headerGroupMembers.filter(([, member]) => Boolean(member.avatar));
 
   return (
     <InstrumentPanel
@@ -835,53 +1086,94 @@ export function MessageThreadPane({
       padding="none"
       aria-label="Conversation"
       className={cn(
-        'flex min-h-[40vh] flex-col overflow-hidden',
-        // On a phone with a thread open this panel IS the whole screen, so the
-        // elevation stops reading as "a pane beside the rail" and starts
-        // reading as a full-screen card floating on a page — which is Doctrine
-        // Rule 11 (no full-screen monolith cards) and the "chat feels like a
-        // card inside a page" complaint. The conversation should be the
-        // canvas. Flattened below `md` only; from `md` up it is genuinely one
-        // pane of a two-pane inbox and keeps its lift.
+        'flex min-h-0 flex-1 flex-col overflow-hidden',
+        // This is a workspace, not a card. The rail and thread meet on one
+        // continuous plane; their divider provides the structure. Depth lives
+        // in the tactile objects inside the thread, not in a massive rounded
+        // rectangle around it.
         //
         // `!` is required because the depth treatment comes from a CSS module
         // class (instrument-panel.module.css `.panelRaised` / `.panel`), which
         // has the same single-class specificity as a Tailwind utility — without
         // it the winner would depend on stylesheet order.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none',
+        '!rounded-none !border-0 !shadow-none',
+        '!bg-canvas !min-h-0 fw-message-canvas',
         className,
       )}
     >
-      {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-w-0 items-center gap-2.5 border-b border-border-subtle px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
-        {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
-            an open thread this is the only way out AND the only thing naming
-            where "out" is, so it says so — the platform convention, and the
-            same reason iOS labels its back buttons. `-ml-2` pulls the glyph to
-            the gutter so the label starts on the content grid rather than
-            floating inboard of it. */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          aria-label="Back to conversations"
-          className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
+      {/* §4 FairwayMessageNavBar. A THREE-COLUMN nav bar, not a row of things.
+          It used to be `flex` with back, avatar and name packed left, so the
+          title sat at whatever x the back label happened to end at — a
+          different position for every conversation, and nothing on the right at
+          all. A symmetric grid gives the identity a fixed centre it can be
+          trusted to occupy, which is what makes a nav bar read as chrome rather
+          than as content that happens to be at the top.
+
+          The label is gone from the back control. "‹ Messages" was defended
+          here as naming the destination, but a chevron out of a conversation
+          has exactly one meaning, and the label was costing the left column
+          enough width to shove the title off centre. The destination is still
+          named — for screen readers, by `aria-label`, which is where that
+          information belongs. */}
+      <header className="fw-message-thread-header relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-1.5 py-1 sm:px-3 sm:py-1.5">
+        <div className="flex min-w-0 justify-start">
+          <IconButton
+            variant="ghost"
+            size="md"
+            onClick={onBack}
+            aria-label="Back to conversations"
+            className="lg:hidden"
+          >
+            <ChevronLeft size={22} aria-hidden="true" />
+          </IconButton>
+        </div>
+        {/* §5/§37: the identity is the control that opens conversation
+            details. It named the conversation and did nothing when touched,
+            which on a phone reads as a dead control — the one place a group's
+            membership is obviously "behind" was unreachable. */}
+        {/* eslint-disable-next-line helm/no-raw-button -- a nav-bar identity
+            region, not a button shape: <Button>'s padding and min-height would
+            push the header past its 48-54px budget (§4). */}
+        <button
+          type="button"
+          onClick={() => setDetailsOpen(true)}
+          aria-label={`Conversation details for ${headerName}`}
+          className={cn(
+            'flex min-w-0 items-center justify-center gap-2 rounded-fw-md px-2 py-1 text-center',
+            'transition-colors active:bg-surface-sunken',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+          )}
         >
-          <ArrowLeft size={20} aria-hidden="true" />
-          Messages
-        </Button>
-        {isGroup ? (
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
-            <Users size={18} aria-hidden="true" />
-          </span>
-        ) : (
-          <Avatar
-            name={conversation.other_participant?.name || 'User'}
-            src={conversation.other_participant?.avatar}
-            size="sm"
-          />
-        )}
-        <div className="min-w-0 flex-1">
+          {isGroup ? (
+            headerGroupPhotoMembers.length >= 2 ? (
+              <AvatarGroup
+                size="sm"
+                role="img"
+                aria-label={`Participants: ${headerGroupMembers.map(([, member]) => member.name).join(', ')}`}
+                className="flex-shrink-0"
+              >
+                {headerGroupPhotoMembers.map(([id, member]) => (
+                  <Avatar
+                    key={id}
+                    name={member.name}
+                    src={member.avatar}
+                    size="sm"
+                    decorative
+                    className="shadow-soft"
+                  />
+                ))}
+              </AvatarGroup>
+            ) : null
+          ) : directAvatarSrc ? (
+            <Avatar
+              name={directAvatarName}
+              src={directAvatarSrc}
+              size="md"
+              decorative
+              className="shadow-soft"
+            />
+          ) : null}
+          <div className="min-w-0 flex-1">
           {/* One line, truncated — this is a nav bar now, not a page masthead.
               `line-clamp-2` let a long group title push the bar to two rows and
               shove the thread down. */}
@@ -895,20 +1187,47 @@ export function MessageThreadPane({
             <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
           ) : null}
         </div>
+        </button>
+
+        {/* §4: the overflow the header never had. Same destination as tapping
+            the identity — one action, two affordances, because a nav bar with
+            an empty right column reads as unfinished and the "···" is where a
+            phone user looks for a conversation's settings. */}
+        <div className="flex justify-end">
+          <IconButton
+            variant="ghost"
+            size="md"
+            onClick={() => setDetailsOpen(true)}
+            aria-label="Conversation details"
+          >
+            <MoreHorizontal size={20} aria-hidden="true" />
+          </IconButton>
+        </div>
       </header>
 
-      {/* Thread scroll region — a MATTE well (bg-surface) so the conversation
-          reads cleanly against the raised glass bezel. */}
+      <ConversationDetailsSheet
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        name={headerName}
+        isGroup={isGroup}
+        avatar={conversation.other_participant?.avatar}
+        participants={isGroup ? groupParticipants : undefined}
+      />
+
+      {/* Thread scroll region — the page canvas itself, full bleed. The mobile
+          InstrumentPanel has no bezel/background/elevation, and this region
+          deliberately keeps that same plane rather than introducing an inset
+          well inside the conversation. */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-surface px-4 py-5 sm:px-5"
+        className="fw-message-canvas flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y px-4 py-5 sm:px-5 md:px-7 lg:px-10"
         data-scroll-container
       >
         {loading ? (
           <div className="space-y-3 py-8">
-            <div className="h-4 w-3/4 rounded bg-surface-sunken" />
-            <div className="h-4 w-1/2 rounded bg-surface-sunken" />
-            <div className="h-4 w-2/3 rounded bg-surface-sunken" />
+            <div className="h-9 w-3/4 rounded-card bg-surface" />
+            <div className="h-9 w-1/2 rounded-card bg-surface" />
+            <div className="ml-auto h-9 w-2/3 rounded-card bg-accent-100" />
           </div>
         ) : error ? (
           // P258: the fetch FAILED — render a recoverable error state with Retry,
@@ -945,8 +1264,28 @@ export function MessageThreadPane({
           // by the grouping (tight within a group, generous between), and a
           // uniform gap on every child would flatten that back out and
           // double-space the day separators.
-          <div ref={messagesContentRef}>
-            {messages.map((msg, idx) => {
+          // §6: bottom-anchored. `mt-auto` in a flex column pushes a SHORT
+          // thread down to sit above the composer instead of hugging the top
+          // with a void beneath it, and does nothing at all once the content
+          // is taller than the region — so long threads and history prepend
+          // are untouched. No absolute positioning, no scroll maths.
+          <div ref={messagesContentRef} className="mt-auto w-full md:mx-auto md:max-w-[40rem]">
+            {messages.map((msg, idx, all) => {
+              // The receipt belongs to the CONVERSATION, not to each group.
+              // It used to render under every outgoing group, which stacked
+              // "Read 4:07 PM" three times down one screen and made a quiet
+              // status line into the loudest repeated element in the thread.
+              // iOS shows exactly one, under the newest thing you sent, and
+              // that is all the information there ever was.
+              const lastOwnMessageIndex = (() => {
+                for (let i = all.length - 1; i >= 0; i -= 1) {
+                  // NOT `m` — that is framer-motion's namespace in this file.
+                  const candidate = all[i];
+                  if (!candidate) continue;
+                  if (candidate.sender_id === userId || candidate.sender_id === currentUserId) return i;
+                }
+                return -1;
+              })();
               // own-message check is identical for both roles (spec §4).
               const isOwn = msg.sender_id === userId || msg.sender_id === currentUserId;
               const prevMsg = messages[idx - 1];
@@ -991,6 +1330,15 @@ export function MessageThreadPane({
                     avatar: conversation.other_participant?.avatar ?? null,
                   };
               const senderName = senderInfo?.name ?? 'Unknown';
+              // CLIENT-ONLY: present only on an optimistic row that has not
+              // been replaced by the server's copy.
+              const sendState = (msg as MessageWithReadStatus).sendState;
+              // A structured message renders as a Helm object instead of a
+              // bubble. `null` here — a malformed or unknown payload — falls
+              // through to the ordinary text path rather than showing a broken
+              // card, which is the whole reason the parser returns null instead
+              // of throwing.
+              const structured = parseStructuredPayload(msg.kind, msg.payload);
               const senderAvatar = senderInfo?.avatar ?? null;
 
               return (
@@ -1008,19 +1356,23 @@ export function MessageThreadPane({
                 {idx === firstUnreadIndex && (
                   <div className="flex items-center gap-3 pb-1.5 pt-3" role="separator" aria-label="New messages">
                     <span className="h-px flex-1 bg-accent-500/45" />
-                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-accent-700">
-                      New
+                    <span className="font-fw-sans text-caption font-semibold text-accent-700">
+                      New messages
                     </span>
                     <span className="h-px flex-1 bg-accent-500/45" />
                   </div>
                 )}
                 {startsDay && (
-                  <div className="flex items-center gap-3 pb-1 pt-2" role="separator">
-                    <span className="h-px flex-1 bg-border-subtle" />
-                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                  // §11: the full-width rules are gone. Two hairlines
+                  // spanning the thread made the DATE the strongest horizontal
+                  // element on screen — louder than any message. A centred
+                  // label orients just as well and competes with nothing. The
+                  // unread landmark below KEEPS its rules on purpose: that one
+                  // is meant to be found.
+                  <div className="flex justify-center pb-2 pt-6" role="separator">
+                    <span className="font-fw-sans text-caption font-semibold text-text-tertiary">
                       {formatDaySeparator(msg.created_at)}
                     </span>
-                    <span className="h-px flex-1 bg-border-subtle" />
                   </div>
                 )}
                 <m.div
@@ -1040,26 +1392,39 @@ export function MessageThreadPane({
                   // impression it exists to give. Nothing else on screen moves,
                   // because only this element animates — the history above it
                   // stays exactly where the reader's eye left it.
-                  initial={isNew && !reduceMotion ? { opacity: 0, y: 6 } : false}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  // §5: a message RISES into the conversation. The old tween
+                  // was `y: 6` over a flat 200ms — the curve the shell uses for
+                  // a card, which is why an arriving message read as the list
+                  // re-laying out rather than as something being said. A
+                  // restrained spring with a hair of scale gives it weight;
+                  // damping is high relative to stiffness so it never bounces.
+                  initial={isNew && !reduceMotion ? bubbleEnter.initial : false}
+                  animate={bubbleEnter.animate}
+                  transition={reduceMotion ? { duration: 0 } : bubbleSpring}
                   className={cn(
                     'flex items-end gap-2',
                     isOwn ? 'justify-end' : 'justify-start',
                     // Tight inside a group, generous between them — the
                     // spacing carries the grouping now, rather than every
                     // message sitting in the same undifferentiated rhythm.
-                    isLastInGroup ? 'mb-1.5' : 'mb-0.5',
+                    isLastInGroup ? 'mb-3' : 'mb-0.5',
                   )}
                 >
-                  {/* Incoming avatar — GROUPS ONLY, once per group.
-                      A 1:1 thread does not need a repeated face: there is
-                      exactly one other person, their name and avatar are in
-                      the header two inches above, and the column cost 40px of
-                      width on every single line of the narrowest screen in the
-                      product. In a group it is load-bearing — it is how you
-                      tell four people apart while scrolling. */}
-                  {!isOwn && isGroup && (
+                  {/* Incoming avatar, once per group — in DMs TOO now (§12).
+                      This was groups-only, on the argument that a 1:1 has one
+                      other person whose face is already in the header. That
+                      reasoning was about information and the spec's point is
+                      about PRESENCE: a thread with a face in it feels like a
+                      person is on the other end, and one without reads as a
+                      log. The width cost is real, so the avatar is 28px here
+                      rather than the header's 36, and the bubble column keeps
+                      its 78%.
+
+                      `decorative` because the sender is already named for
+                      screen readers by the group's sender label (and by the
+                      thread header in a DM) — an alt here would read the same
+                      name twice per group. */}
+                  {!isOwn && (isGroup ? Boolean(senderAvatar) : Boolean(directAvatarSrc)) && (
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
                       {/* On the LAST message of the group, not the first.
                           The row is `items-end`, so anchoring the avatar to the
@@ -1071,16 +1436,30 @@ export function MessageThreadPane({
                           below it. Every phone chat does it this way for the
                           same reason. */}
                       {isLastInGroup ? (
-                        <Avatar decorative
-                          name={senderName}
-                          src={senderAvatar}
-                          size="sm"
-                        />
+                        <m.div
+                          // §28: a new speaker's face APPEARS rather than pops.
+                          // Scale only — a sliding avatar reads as a bug.
+                          initial={isNew && !reduceMotion ? avatarEnter.initial : false}
+                          animate={avatarEnter.animate}
+                          transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.bubbleIn) }}
+                        >
+                          <Avatar
+                            decorative
+                            name={isGroup ? senderName : directAvatarName}
+                            src={isGroup ? senderAvatar : directAvatarSrc}
+                            size="sm"
+                            // 28px: the size class only, no type override —
+                            // `xs` already carries its own scale, and an
+                            // arbitrary text-[Npx] is exactly what the
+                            // token lint exists to catch.
+                            className="h-8 w-8 shadow-soft"
+                          />
+                        </m.div>
                       ) : null}
                     </div>
                   )}
 
-                  <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                  <div className={cn('group relative flex min-w-0 max-w-[82%] flex-col gap-1 sm:max-w-[72%]', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name — GROUPS ONLY, once per group.
                         Redundant in a 1:1 (the header already names them) and
                         it was `text-eyebrow` in tertiary ink, which is the
@@ -1095,9 +1474,10 @@ export function MessageThreadPane({
                       </span>
                     )}
 
-                    {/* Own-message controls (desktop hover / mobile tap row) */}
-                    {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
+                    {/* Message controls (desktop hover / mobile long-press row) */}
+                    {editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
                       <>
+                        {isOwn && (
                         <div className="absolute right-full top-1/2 mr-1 hidden -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 lg:flex">
                           <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => onStartEdit(msg.id, msg.content)}>
                             <Pencil size={14} aria-hidden="true" />
@@ -1106,23 +1486,65 @@ export function MessageThreadPane({
                             <Trash2 size={14} aria-hidden="true" />
                           </IconButton>
                         </div>
+                        )}
                         {/* No persistent kebab. The actions appear on long-press
                             (see longPressHandlers) and otherwise cost nothing.
                             Copy is included because taking over long-press takes
                             over the gesture iOS uses to select text — without it
                             the message would become uncopyable. */}
                         {mobileActionsId === msg.id && (
-                          <div className="relative mt-0.5 flex items-center lg:hidden">
+                          <div className={cn('relative mt-1 flex flex-col gap-1 lg:hidden', isOwn ? 'items-end' : 'items-start')}>
+                            {/* Quick reactions FIRST — spec §17 puts the strip
+                                above the action list because reacting is the
+                                common case and copy/edit/delete are the rare
+                                ones. Full-size 44px targets: these are the
+                                smallest things on screen and the ones most
+                                likely to be tapped in a hurry. */}
+                            <div className="flex items-center gap-0.5 rounded-full border border-border-subtle bg-surface px-1 py-0.5 shadow-raise">
+                              {GOLF_QUICK_REACTIONS.map((emoji) => {
+                                const picked = getReactionsFor(msg.id).some((r) => r.emoji === emoji && r.mine);
+                                return (
+                                  // A 44x44 circular emoji target; <Button>
+                                  // adds horizontal padding and a text scale
+                                  // that would break the round hit area.
+                                  // eslint-disable-next-line helm/no-raw-button -- see above
+                                  <button
+                                    key={emoji}
+                                    type="button"
+                                    aria-label={`React ${emoji}`}
+                                    aria-pressed={picked}
+                                    onClick={() => { void toggleReaction(msg.id, emoji); onSetMobileActions(null); }}
+                                    className={cn(
+                                      'flex h-11 w-11 items-center justify-center rounded-full text-body-lg leading-none',
+                                      'transition-transform active:scale-90',
+                                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                                      picked && 'bg-accent-50',
+                                    )}
+                                  >
+                                    <span aria-hidden="true">{emoji}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
+                              {onReply ? (
+                                <IconButton variant="ghost" size="sm" aria-label="Reply to message" onClick={() => { onReply(msg); onSetMobileActions(null); }}>
+                                  <Reply size={18} aria-hidden="true" />
+                                </IconButton>
+                              ) : null}
                               <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
                                 <Copy size={18} aria-hidden="true" />
                               </IconButton>
-                              <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
-                                <Pencil size={18} aria-hidden="true" />
-                              </IconButton>
-                              <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => { onDeleteClick(msg.id); onSetMobileActions(null); }}>
-                                <Trash2 size={18} aria-hidden="true" />
-                              </IconButton>
+                              {isOwn && (
+                                <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
+                                  <Pencil size={18} aria-hidden="true" />
+                                </IconButton>
+                              )}
+                              {isOwn && (
+                                <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => { onDeleteClick(msg.id); onSetMobileActions(null); }}>
+                                  <Trash2 size={18} aria-hidden="true" />
+                                </IconButton>
+                              )}
                               <IconButton variant="ghost" size="sm" aria-label="Close" onClick={() => onSetMobileActions(null)}>
                                 <X size={16} aria-hidden="true" />
                               </IconButton>
@@ -1146,7 +1568,14 @@ export function MessageThreadPane({
                     )}
 
                     {/* Bubble — edit mode */}
-                    {editingMessageId === msg.id ? (
+                    {structured ? (
+                      <StructuredMessage
+                        payload={structured}
+                        tally={getResponsesFor(msg.id)}
+                        onRespond={(choice) => void respond(msg.id, choice)}
+                        onOpenEvent={onOpenEvent}
+                      />
+                    ) : editingMessageId === msg.id ? (
                       <div className="w-full rounded-fw-lg border border-accent-200 bg-accent-50 px-3 py-2">
                         <Textarea
                           value={editContent}
@@ -1185,27 +1614,129 @@ export function MessageThreadPane({
                         </div>
                       </div>
                     ) : (
-                      // Bubble — normal mode. own = accent tint, other = sunken matte.
-                      <div
-                        {...(isOwn ? longPressHandlers(msg.id) : {})}
+                      // Bubble — normal mode. Own = dimensional accent plane,
+                      // other = softly lifted warm surface. Shape and spacing
+                      // still carry the grouping without turning speech into a
+                      // stack of generic cards.
+                      // Long-press on ANY message, not just your own: reacting to
+                      // what SOMEBODY ELSE said is the whole point of a reaction,
+                      // and gating the gesture on ownership made the feature
+                      // unreachable exactly where it matters.
+                      <m.div
+                        {...longPressHandlers(msg.id)}
+                        // §24: long-press does not just open a menu — the
+                        // touched bubble answers the thumb first. 1.5% and one
+                        // pixel: enough to feel, small enough that it never
+                        // reads as the bubble growing.
+                        animate={
+                          reduceMotion || mobileActionsId !== msg.id
+                            ? { scale: 1, y: 0 }
+                            : bubbleLift
+                        }
+                        transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.press) }}
                         className={cn(
-                          'px-4 py-2.5',
-                          // Own bubbles opt out of the iOS text-selection callout
-                          // because long-press is now the actions gesture; Copy
-                          // in that menu replaces what selection provided.
-                          // Incoming messages keep native selection untouched.
-                          isOwn && 'select-none [-webkit-touch-callout:none]',
+                          // §14: 14px / 10px. Vertical was 8, which made a
+                          // one-line bubble read as a chip rather than a line
+                          // of speech.
+                          'px-3.5 py-2.5',
+                          // Opt out of the iOS text-selection callout, because
+                          // long-press is the actions gesture now. Copy lives in
+                          // that menu and is what replaces native selection —
+                          // which is why the menu offers it for incoming
+                          // messages too, not only your own.
+                          'select-none [-webkit-touch-callout:none]',
+                          // Depth belongs to the speech itself. Incoming gets a
+                          // fine lit edge plus a soft token shadow; outgoing
+                          // gets a restrained green gradient and the same lift.
+                          // The conversation canvas itself remains flat.
                           isOwn
-                            ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-surface-sunken text-text-primary',
-                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
-                          isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',
-                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-tr-md rounded-br-sm' : 'rounded-fw-lg rounded-tl-md rounded-bl-sm'),
-                          !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
+                            ? 'fw-message-bubble-outgoing text-text-on-accent'
+                            : 'fw-message-bubble-incoming border text-text-primary',
+                          // Undelivered reads as provisional: the fill softens
+                          // rather than turning red. The message is not an
+                          // error, it just has not landed — and colour is never
+                          // the only channel, the metadata line says so in
+                          // words directly beneath it. Keep enough opacity for
+                          // the reply quote and body text to remain readable.
+                          sendState === 'failed' && 'opacity-80',
+                          // 20px card radius, not 28px. At 28 a two-word reply
+                          // ("Yo") has a radius larger than its own half-height
+                          // and renders as a lozenge. The interior corners of a
+                          // group tighten to 6px so a run of messages reads as
+                          // one block with one outer silhouette — the grouping
+                          // is carried by the shape, not just the gaps.
+                          'rounded-card',
+                          // §22: when a burst continues, the previous bubble
+                          // goes last -> middle and its bottom corners tighten.
+                          // That is a RADIUS change, not a position change, so
+                          // Motion's layout animation cannot smooth it — layout
+                          // only interpolates transforms, and border-radius is
+                          // neither. A CSS transition on the exact property is
+                          // both the correct tool and far cheaper than putting
+                          // every bubble under layout animation to chase it.
+                          'transition-[border-radius] duration-150 motion-reduce:transition-none',
+                          !isFirstInGroup && (isOwn ? 'rounded-tr-md' : 'rounded-tl-md'),
+                          !isLastInGroup && (isOwn ? 'rounded-br-md' : 'rounded-bl-md'),
                         )}
                       >
+                        {/* §30: the quote sits INSIDE the bubble, above the
+                            words that answer it, so a reply is one object
+                            rather than two stacked ones. Tapping it jumps to
+                            the source (the pane already has the scroll-anchor
+                            machinery that notification deep-links use). */}
+                        {msg.reply_to_id ? (() => {
+                          const quoted = messagesById.get(msg.reply_to_id);
+                          const quotedName = quoted
+                            ? (quoted.sender_id === userId || quoted.sender_id === currentUserId
+                                ? 'You'
+                                : (isGroup
+                                    ? groupParticipants?.get(quoted.sender_id)?.name
+                                    : conversation.other_participant?.name)
+                                  ?? 'Teammate')
+                            : null;
+                          return (
+                            // An inline quote block inside a bubble; <Button>'s
+                            // min-height would make the quote taller than the
+                            // reply it introduces.
+                            // eslint-disable-next-line helm/no-raw-button -- see above
+                            <button
+                              type="button"
+                              disabled={!quoted || !onJumpToMessage}
+                              onClick={() => quoted && onJumpToMessage?.(quoted.id)}
+                              aria-label={quoted ? `Go to ${quotedName}'s message` : 'Original message unavailable'}
+                              className={cn(
+                                'mb-1 block w-full border-l-2 pl-2 py-0.5 text-left',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                                quoted ? 'cursor-pointer' : 'cursor-default',
+                                isOwn ? 'border-text-on-accent/50' : 'border-accent-600',
+                              )}
+                            >
+                              {/* §19: the quote supports the reply, it does not
+                                  compete with it. Weight drops from semibold to
+                                  medium and both lines lose contrast — at
+                                  17px response over 12px quote, the response
+                                  has to be the thing the eye lands on. */}
+                              <span className={cn(
+                                'block truncate font-fw-sans text-caption font-medium',
+                                isOwn ? 'text-text-on-accent/75' : 'text-text-secondary',
+                              )}>
+                                {quotedName ?? 'Original message'}
+                              </span>
+                              <span className={cn(
+                                'block truncate font-fw-sans text-caption',
+                                isOwn ? 'text-text-on-accent/60' : 'text-text-tertiary',
+                              )}>
+                                {quoted
+                                  ? (quoted.is_deleted
+                                      ? 'Message deleted'
+                                      : decodeMessageContent(quoted.content) || 'Attachment')
+                                  : 'Not in this part of the conversation'}
+                              </span>
+                            </button>
+                          );
+                        })() : null}
                         {msg.content ? (
-                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body-sm leading-relaxed">
+                          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-fw-sans text-body-lg leading-snug">
                             {decodeMessageContent(msg.content)}
                           </p>
                         ) : null}
@@ -1230,7 +1761,7 @@ export function MessageThreadPane({
                                 'focus-visible:ring-offset-1',
                                 isOwn
                                   ? 'text-text-on-accent/90 hover:bg-text-on-accent/15 focus-visible:ring-offset-accent-500'
-                                  : 'text-text-secondary hover:bg-surface focus-visible:ring-offset-surface-sunken',
+                                  : 'text-text-secondary hover:bg-canvas focus-visible:ring-offset-surface',
                               )}
                             >
                               <RotateCw size={12} aria-hidden="true" />
@@ -1249,14 +1780,62 @@ export function MessageThreadPane({
                             edited
                           </span>
                         ) : null}
-                      </div>
+                      </m.div>
                     )}
-                  </div>
+                    {/* Reactions sit UNDER the bubble (spec §18) and only
+                        occupy space when they exist — an empty strip on every
+                        message would cost a line of height per row for a
+                        feature most messages never use. */}
+                    <ReactionChips
+                      reactions={getReactionsFor(msg.id)}
+                      onToggle={(emoji) => void toggleReaction(msg.id, emoji)}
+                      align={isOwn ? 'end' : 'start'}
+                    />
 
-                  {/* Time + read receipt (last of group, tabular-nums) */}
-                  {showTime && editingMessageId !== msg.id && (
+                    {/* Time + read receipt (last of group, tabular-nums).
+                        Keep this metadata inside the same constrained column as
+                        the bubble. As a sibling in the outer flex row, a failed
+                        status consumed width while the reply bubble retained its
+                        intrinsic width, pushing message text past the viewport. */}
+                    {/* §29/§30: a message whose send failed keeps its place and
+                      says so. It used to be DELETED from the list — the player
+                      watched their words appear and vanish, with a toast as
+                      the only trace. The metadata line carries the state
+                      instead of the composer, and Retry re-sends under the
+                      SAME id, so pressing it twice cannot post twice. */}
+                  {sendState && editingMessageId !== msg.id ? (
                     <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
-                      <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                      {sendState === 'failed' ? (
+                        /* §22: ONE tappable line, not two controls that read as
+                           web links side by side. The whole metadata region is
+                           the retry target, which is also a bigger, easier
+                           thing to hit than the word "Retry" was. */
+                        <PressTarget
+                          type="button"
+                          onClick={() => onRetryMessage?.(msg.id)}
+                          className={cn(
+                            'flex items-center gap-1 rounded px-1 py-0.5',
+                            'font-fw-sans text-caption text-fw-danger-ink',
+                            'transition-colors active:bg-surface-sunken',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                          )}
+                        >
+                          <AlertTriangle size={12} aria-hidden="true" />
+                          Not delivered · Tap to retry
+                        </PressTarget>
+                      ) : (
+                        <span className="font-fw-sans text-caption text-text-tertiary">Sending…</span>
+                      )}
+                    </div>
+                  ) : showTime && editingMessageId !== msg.id && (
+                    /* §21: ONE quiet line. `Read` used to be a separate accent
+                       chip beside the time, which made a routine status the
+                       second-greenest thing in the thread (§31). It is a
+                       middot-joined phrase now, in the same tertiary ink as the
+                       timestamp — present when you look for it, silent when you
+                       are not. */
+                    <div className={cn('flex items-center gap-1 pb-1', isOwn ? 'flex-row-reverse' : '')}>
+                      <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
                         {formatTime(msg.created_at)}
                       </span>
                       {/* P264 no-data-lies: per-message "Read" is only honest in a
@@ -1265,9 +1844,15 @@ export function MessageThreadPane({
                           whole group has read when a single (random) member has.
                           Suppress the receipt in groups rather than imply group-read
                           off one member. */}
-                      {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
+                      {isOwn && !isGroup && idx === lastOwnMessageIndex && (
+                        <>
+                          <span aria-hidden="true" className="font-fw-sans text-caption text-text-tertiary">·</span>
+                          <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />
+                        </>
+                      )}
                     </div>
                   )}
+                  </div>
                 </m.div>
                 </React.Fragment>
               );
@@ -1292,22 +1877,86 @@ export function MessageThreadPane({
                   exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
                   transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {!isGroup && (
+                  {!isGroup && directAvatarSrc && (
                     <div className="w-8 flex-shrink-0">
                       <Avatar
-                        name={conversation.other_participant?.name || 'User'}
-                        src={conversation.other_participant?.avatar}
+                        name={directAvatarName}
+                        src={directAvatarSrc}
                         size="sm"
+                        decorative
+                        className="shadow-soft"
                       />
                     </div>
                   )}
-                  <TypingIndicator />
+                  {/* §49: a group says WHO. The typing broadcast has always
+                      carried `userId`; the hook used to discard it and collapse
+                      every typist into one boolean, which is the only reason
+                      this could not be named before. Names resolve locally from
+                      the participant map — never from anything the sender put
+                      on the wire.
+
+                      Caps at two names. Five people typing must not grow this
+                      line and push the thread, so three or more becomes a
+                      count. */}
+                  {isGroup && typingNames.length > 0 ? (
+                    <span className="font-fw-sans text-caption text-text-tertiary">
+                      {typingNames.length === 1
+                        ? `${typingNames[0]} is typing…`
+                        : typingNames.length === 2
+                          ? `${typingNames[0]} and ${typingNames[1]} are typing…`
+                          : `${typingNames.length} people are typing…`}
+                    </span>
+                  ) : (
+                    <TypingIndicator />
+                  )}
                 </m.div>
               )}
             </AnimatePresence>
-            <div ref={messagesEndRef} />
           </div>
         )}
+      </div>
+
+      {/* §42 new-messages chrome. Floats over the foot of the thread rather
+          than occupying a row: it is transient, and a permanent slot for it
+          would cost every conversation height for a state most never enter.
+
+          `AnimatePresence` so it eases out when the reader catches up instead
+          of blinking off — this element appears and disappears on somebody
+          else's schedule, and a pop at the bottom of the screen reads as a
+          glitch. */}
+      <div className="pointer-events-none relative">
+        <AnimatePresence initial={false}>
+          {missedCount > 0 ? (
+            <m.div
+              key="new-messages"
+              className="pointer-events-auto absolute inset-x-0 -top-2 z-10 flex justify-center"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, scale: 0.94, y: 4 }}
+              transition={{ duration: reduceMotion ? 0 : secs(CHAT_MOTION.micro) }}
+            >
+              {/* §23: floating CHROME, not a primary CTA. A solid green pill
+                  here competed with the outgoing bubbles it sits among and read
+                  as the most important thing on screen — it is a way back to
+                  the bottom, not an action. Warm surface, dark text, one small
+                  accent glyph. */}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  fwHaptic('selection');
+                  setMissedCount(0);
+                  scrollMessageListToBottom(reduceMotion ? 'auto' : 'smooth');
+                }}
+                className="rounded-full border-border-subtle bg-surface font-fw-sans text-text-primary shadow-raise"
+              >
+                <ArrowDown size={14} aria-hidden="true" className="text-accent-700" />
+                {missedCount} new {missedCount === 1 ? 'message' : 'messages'}
+              </Button>
+            </m.div>
+          ) : null}
+        </AnimatePresence>
       </div>
 
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children

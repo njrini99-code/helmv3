@@ -46,9 +46,13 @@ describe('mobile audit 2026-09-02', () => {
     // Asserting the PROPERTY UI-4 protects — the masthead never occupies phone
     // height — rather than the conditional it originally used, which is
     // strictly weaker than what ships now.
-    expect(src).toContain('<div className="hidden md:block">');
-    expect(src).toContain('<ViewHeader');
-    expect(src).toContain("mobileShowChat ? 'mt-0 md:mt-6' : 'mt-3 md:mt-6'");
+    // Satisfied by ABSENCE now: ViewHeader is gone entirely, so the masthead
+    // cannot occupy phone height in any state. Stronger than the wrapper this
+    // originally pinned.
+    expect(src).not.toContain('<ViewHeader');
+    // The contract is "no top margin above the grid while a thread is open on
+    // a phone" — the desktop value is free to change (it did: 6 -> 4).
+    expect(src).toMatch(/mobileShowChat \? 'mt-0 md:mt-\d+' : 'mt-3 md:mt-\d+'/);
   });
 
   it('UI-5: the event editor scrolls its own error banner into view', () => {

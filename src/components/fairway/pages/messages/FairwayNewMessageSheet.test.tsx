@@ -11,8 +11,33 @@
  * detects a role-label-shaped full_name and falls back to an honest, clearly
  * non-personal label instead of parroting the role back as a name.
  * ========================================================================== */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import * as React from 'react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { resolveCoachName, ROLE_LABEL_PATTERN } from './FairwayNewMessageSheet';
+import { Button } from '@/components/fairway/controls/button';
+import {
+  canCreateConversation,
+  resolveCoachName,
+  ROLE_LABEL_PATTERN,
+  SelectedRecipientStrip,
+  updateSelectedRecipients,
+} from './FairwayNewMessageSheet';
+
+const source = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/FairwayNewMessageSheet.tsx'),
+  'utf8',
+);
+const messagesSource = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/FairwayMessages.tsx'),
+  'utf8',
+);
+const teamBroadcastSource = readFileSync(
+  join(process.cwd(), 'src/components/fairway/pages/messages/FairwayTeamBroadcastSheet.tsx'),
+  'utf8',
+);
 
 describe('resolveCoachName — role label vs. real person collision', () => {
   it('passes through a real person name unchanged', () => {
@@ -57,5 +82,113 @@ describe('resolveCoachName — role label vs. real person collision', () => {
     // that same role string.
     expect(titleHolderName).toBe('Nick Rini');
     expect(collidedRowName).not.toMatch(ROLE_LABEL_PATTERN);
+  });
+});
+
+describe('canCreateConversation — direct and private-group requirements', () => {
+  it('allows a direct message only when exactly one recipient is selected', () => {
+    expect(canCreateConversation('direct', ['player-1'], '')).toBe(true);
+    expect(canCreateConversation('direct', [], '')).toBe(false);
+    expect(canCreateConversation('direct', ['player-1', 'player-2'], '')).toBe(false);
+  });
+
+  it('rejects a private group with fewer than two recipients or a blank title', () => {
+    expect(canCreateConversation('group', ['player-1'], 'Practice')).toBe(false);
+    expect(canCreateConversation('group', ['player-1', 'player-2'], '   ')).toBe(false);
+  });
+
+  it('allows a private group with at least two recipients and a title', () => {
+    expect(canCreateConversation('group', ['player-1', 'player-2'], 'Practice plans')).toBe(true);
+  });
+});
+
+describe('FairwayNewMessageSheet recipient primitives', () => {
+  it('uses the shared search and pressable primitives instead of the generic input', () => {
+    expect(source).toContain("import { SearchField } from '@/components/fairway/command/search-field';");
+    expect(source).toContain("import { PressTarget } from '@/components/fairway/controls/press-target';");
+    expect(source).not.toContain("from '@/components/fairway/forms/Input'");
+    expect(source).toContain('<PressTarget');
+  });
+});
+
+describe('updateSelectedRecipients — private-group search persistence', () => {
+  it('retains prior selected recipient metadata when a later search selects another recipient', () => {
+    const first = { userId: 'player-1', name: 'Avery Lee', avatar: 'avery.png' };
+    const second = { userId: 'player-2', name: 'Blair Kim', avatar: 'blair.png' };
+
+    const afterFirstSearch = updateSelectedRecipients('group', new Map(), first);
+    const afterSecondSearch = updateSelectedRecipients('group', afterFirstSearch, second);
+
+    expect(Array.from(afterSecondSearch.keys())).toEqual(['player-1', 'player-2']);
+    expect(Array.from(afterSecondSearch.values())).toEqual([first, second]);
+  });
+
+  it('removes recipient metadata only when that recipient is selected again in group mode', () => {
+    const recipient = { userId: 'player-1', name: 'Avery Lee', avatar: 'avery.png' };
+    const selected = updateSelectedRecipients('group', new Map(), recipient);
+
+    expect(updateSelectedRecipients('group', selected, recipient)).toEqual(new Map());
+  });
+});
+
+function SelectedRecipientStripHarness() {
+  const [recipients, setRecipients] = React.useState(
+    new Map([
+      ['player-1', { userId: 'player-1', name: 'Avery Lee', avatar: 'avery.png' }],
+      ['player-2', { userId: 'player-2', name: 'Blair Kim', avatar: 'blair.png' }],
+    ]),
+  );
+  const participantIds = Array.from(recipients.keys());
+
+  return (
+    <>
+      <p>{recipients.size} selected</p>
+      <SelectedRecipientStrip
+        recipients={recipients}
+        onRemove={(userId) => {
+          setRecipients((previous) => {
+            const next = new Map(previous);
+            next.delete(userId);
+            return next;
+          });
+        }}
+      />
+      <Button
+        variant="primary"
+        disabled={!canCreateConversation('group', participantIds, 'Practice plans')}
+      >
+        Create group
+      </Button>
+    </>
+  );
+}
+
+describe('SelectedRecipientStrip', () => {
+  it('removes a selected recipient from the visible strip and disables an ineligible group', async () => {
+    const user = userEvent.setup();
+    render(<SelectedRecipientStripHarness />);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create group' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Remove Avery Lee' }));
+
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove Avery Lee' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create group' })).toBeDisabled();
+  });
+});
+
+describe('coach broadcast official-channel labels', () => {
+  it('labels both the coach entry point and broadcast sheet as the official Team channel', () => {
+    // The coach ENTRY POINT is an icon button now, so its label lives in the
+    // accessible name — "Open official team channel" — rather than in visible
+    // text, and it reads as a sentence rather than the sheet's title-case
+    // heading. The contract is that BOTH surfaces name this the official team
+    // channel, not that both spell it with the same capitals; asserting the
+    // literal string made a compose row becoming an icon look like the
+    // labelling had been dropped, when it had moved.
+    expect(messagesSource).toMatch(/official team channel/i);
+    expect(teamBroadcastSource).toContain('Official Team channel');
   });
 });

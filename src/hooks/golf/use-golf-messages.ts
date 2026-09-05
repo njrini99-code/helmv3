@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
+import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds, getGolfMessageParticipantIdentities } from '@/app/golf/actions/messages';
 import { withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
@@ -44,6 +44,18 @@ export interface GolfConversationWithMeta {
 // Extended message type with read receipt info
 export interface GolfMessage extends GolfMessageRow {
   isRead?: boolean; // Whether the other participant has read this message
+  /**
+   * CLIENT-ONLY delivery state for an optimistic row. Absent on anything that
+   * came back from the database, which is exactly what "delivered" means here —
+   * a row the server has is a row that arrived.
+   *
+   * `failed` exists because a failed send used to be DELETED from the list. The
+   * player watched their message appear and then vanish, and the only trace was
+   * a toast. Whatever they said is now kept on screen with a Retry, which is
+   * both what every messaging app does and the only version that does not lose
+   * their words.
+   */
+  sendState?: 'sending' | 'failed';
 }
 
 // Keep old name for backward compatibility
@@ -203,13 +215,24 @@ function generateClientMessageId(): string {
 
 export function useGolfMessages(conversationId: string) {
   const [messages, setMessages] = useState<MessageWithReadStatus[]>([]);
+  // A mirror of `messages` for callbacks that must read the CURRENT list
+  // without taking it as a dependency — `retryMessage` needs the failed row's
+  // content, and depending on `messages` would rebuild that callback on every
+  // incoming message, changing the identity of a prop the thread holds.
+  const messagesRef = useRef<MessageWithReadStatus[]>([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const [loading, setLoading] = useState(true);
   // Distinguishes "this thread failed to load" from "this thread is truly empty".
   // A swallowed query error used to surface as the honest-empty state (P258); the
   // consumer (MessageThreadPane) reads this to render a recoverable error instead.
   const [error, setError] = useState<boolean>(false);
   const [otherParticipantLastReadAt, setOtherParticipantLastReadAt] = useState<string | null>(null);
-  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  // DERIVED, not stored. Two sources for "is anyone typing" is two things that
+  // can disagree — the old boolean could stay true after the last typist's
+  // entry was removed.
+  
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   /**
    * The same value, readable without becoming a dependency.
@@ -236,6 +259,10 @@ export function useGolfMessages(conversationId: string) {
    */
   const currentUserIdRef = useRef<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  /** Everyone currently typing in this conversation, excluding you. */
+  const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
+  /** One expiry timer PER typist — see the broadcast handler for why. */
+  const typingExpiryRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const lastTypingBroadcastRef = useRef<number>(0);
   const supabaseRef = useRef(createClient());
   const channelRef = useRef<ReturnType<typeof supabaseRef.current.channel> | null>(null);
@@ -316,7 +343,7 @@ export function useGolfMessages(conversationId: string) {
       // conversation was opened. That is the "Can't see pics" report from the
       // team chat: the sender saw it send, the recipients opened the thread
       // later and saw nothing.
-      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at')
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id, kind, payload, pinned_at, pinned_by')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -425,6 +452,12 @@ export function useGolfMessages(conversationId: string) {
       }, MARK_READ_ON_ARRIVAL_DEBOUNCE_MS);
     };
 
+    // Capture the ref objects ONCE, for the cleanup below. Reading
+    // `ref.current` inside a cleanup can see a different object than the effect
+    // installed timers into, and clearing the wrong one silently leaks them.
+    const expiryTimers = typingExpiryRef.current;
+    const sharedTypingTimer = typingTimeoutRef;
+
     // Set up real-time subscription for messages and typing
     const channel = supabase.channel(`golf-conversation:${conversationId}`);
     channelRef.current = channel;
@@ -444,7 +477,14 @@ export function useGolfMessages(conversationId: string) {
           setMessages(prev => applyRealtimeMessageInsert(prev, newMessage));
           // Clear typing indicator when message is received
           if (newMessage.sender_id !== currentUserIdRef.current) {
-            setIsOtherTyping(false);
+            // They sent it, so they have stopped typing. Drop just THEM —
+            // clearing the whole set would silence everyone else mid-sentence.
+            setTypingUserIds(prev => prev.filter(id => id !== newMessage.sender_id));
+            const t = typingExpiryRef.current.get(newMessage.sender_id);
+            if (t) {
+              clearTimeout(t);
+              typingExpiryRef.current.delete(newMessage.sender_id);
+            }
             // ...and mark it read, because the reader is looking at it RIGHT NOW.
             //
             // `markGolfMessagesAsRead` used to run only inside `fetchMessages`,
@@ -495,17 +535,32 @@ export function useGolfMessages(conversationId: string) {
         { event: 'typing' },
         (payload) => {
           const { userId, isTyping } = payload.payload as { userId: string; isTyping: boolean };
-          if (userId !== currentUserIdRef.current) {
-            setIsOtherTyping(isTyping);
-            // Auto-clear typing indicator after 3 seconds if no update
-            if (isTyping) {
-              if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current);
-              }
-              typingTimeoutRef.current = setTimeout(() => {
-                setIsOtherTyping(false);
-              }, 3000);
-            }
+          if (userId === currentUserIdRef.current) return;
+
+          // WHO is typing, not just THAT somebody is. The payload has always
+          // carried `userId` — this handler simply discarded it and collapsed
+          // every typist into one boolean, which is why a group could only ever
+          // say "typing…". Nothing new is broadcast here; the identity was on
+          // the wire the whole time.
+          setTypingUserIds(prev =>
+            isTyping
+              ? (prev.includes(userId) ? prev : [...prev, userId])
+              : prev.filter(id => id !== userId),
+          );
+
+          // Expiry is PER USER. One shared 3s timer meant the second person to
+          // start typing reset the first person's countdown, so a busy group
+          // could show somebody as typing indefinitely after they stopped.
+          const timers = typingExpiryRef.current;
+          const existing = timers.get(userId);
+          if (existing) clearTimeout(existing);
+          if (isTyping) {
+            timers.set(userId, setTimeout(() => {
+              setTypingUserIds(prev => prev.filter(id => id !== userId));
+              timers.delete(userId);
+            }, 3000));
+          } else {
+            timers.delete(userId);
           }
         }
       );
@@ -514,8 +569,17 @@ export function useGolfMessages(conversationId: string) {
     return () => {
       supabase.removeChannel(channel);
       channelRef.current = null;
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
+      // Every per-typist expiry timer, not just the legacy shared one — a
+      // surviving timer would call setState on an unmounted subscription.
+      //
+      // Read through the captured locals, not `ref.current`: by the time a
+      // cleanup runs the ref may point at a different object, and clearing the
+      // WRONG map would leave the real timers running. (react-hooks flags this;
+      // it is right to.)
+      expiryTimers.forEach(t => clearTimeout(t));
+      expiryTimers.clear();
+      if (sharedTypingTimer.current) {
+        clearTimeout(sharedTypingTimer.current);
       }
       // A pending read-mark belongs to the conversation being left, so it dies
       // with it rather than landing against a thread the player has moved on
@@ -545,7 +609,53 @@ export function useGolfMessages(conversationId: string) {
     });
   }, [conversationId, currentUserId]);
 
-  const sendMessage = async (content: string) => {
+  /** Flip an optimistic row to `failed` in place — never remove it. */
+  const markSendFailed = useCallback((messageId: string) => {
+    setMessages(prev =>
+      prev.map(m => (m.id === messageId ? { ...m, sendState: 'failed' as const } : m)),
+    );
+  }, []);
+
+  /**
+   * Re-send a failed message under its ORIGINAL id.
+   *
+   * The id is what makes this safe to press twice: `golf_messages.id` is the
+   * primary key, so a retry that races a send which actually committed collides
+   * on 23505 and the server reports it back as the success it is, rather than
+   * posting the message twice. Same property the transport retry relies on.
+   */
+  const retryMessage = useCallback(async (messageId: string) => {
+    const target = messagesRef.current.find(m => m.id === messageId);
+    if (!target || target.sendState !== 'failed') return false;
+
+    setMessages(prev =>
+      prev.map(m => (m.id === messageId ? { ...m, sendState: 'sending' as const } : m)),
+    );
+
+    try {
+      const result = await sendGolfMessage(
+        conversationId,
+        target.content,
+        messageId,
+        target.reply_to_id ?? undefined,
+      );
+      if (!result || !result.success) {
+        markSendFailed(messageId);
+        return false;
+      }
+      // Success: drop the client-only flag. The realtime echo (or the next
+      // fetch) replaces this row with the server's copy.
+      setMessages(prev =>
+        prev.map(m => (m.id === messageId ? { ...m, sendState: undefined } : m)),
+      );
+      return true;
+    } catch {
+      markSendFailed(messageId);
+      return false;
+    }
+  }, [conversationId, markSendFailed]);
+
+  const sendMessage = async (content: string, replyToId?: string | null) => {
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
@@ -565,6 +675,18 @@ export function useGolfMessages(conversationId: string) {
       created_at: new Date().toISOString(),
       edited_at: null,
       is_deleted: false,
+      // §30: carried on the optimistic row too, so the quote renders in the
+      // same frame as the bubble. Without it the reply would appear, then grow
+      // a quote a round trip later — the layout jump the spec's arrival motion
+      // exists to avoid.
+      reply_to_id: replyToId ?? null,
+      // An optimistic row is always ordinary text — the structured kinds are
+      // composed elsewhere and posted through their own action, so they never
+      // take this path.
+      kind: 'text',
+      payload: null,
+      pinned_at: null,
+      pinned_by: null,
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
@@ -580,25 +702,26 @@ export function useGolfMessages(conversationId: string) {
       // reports it back as the success it is (see sendMessage/action's 23505
       // handling) instead of creating a second, duplicate row.
       const result = await withOneTransportRetry(
-        () => sendGolfMessage(conversationId, content, optimisticId),
+        () => sendGolfMessage(conversationId, content, optimisticId, replyToId ?? undefined),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
 
       // Check if the result indicates an error
       if (result && 'error' in result && result.error) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId);
         throw new Error(result.error);
       }
 
       if (!result || !result.success) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId);
         throw new Error('Failed to send message');
       }
 
       return true;
     } catch (error) {
-      // Roll back optimistic message on any error
-      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      // KEEP the message, marked failed. Deleting it is what made a failed send
+      // look like the app had swallowed the words.
+      markSendFailed(optimisticId);
       logError(
         error instanceof Error ? error : new Error(String(error)),
         { component: 'useGolfMessages', action: 'send-message', sport: 'golf', conversationId },
@@ -669,16 +792,18 @@ export function useGolfMessages(conversationId: string) {
     loading,
     error,
     sendMessage,
+    retryMessage,
     editMessage,
     removeMessage,
     refetch: fetchMessages,
-    isOtherTyping,
+    isOtherTyping: typingUserIds.length > 0,
+    typingUserIds,
     sendTypingStatus,
     currentUserId,
   };
 }
 
-export function useGolfConversations() {
+export function useGolfConversations(knownUserId?: string | null) {
   const [conversations, setConversations] = useState<GolfConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   // P257: distinguishes "the rail failed to load" from "the inbox is truly
@@ -687,14 +812,34 @@ export function useGolfConversations() {
   // a genuine empty inbox. The rail reads this to render a recoverable error
   // (explain + Retry) instead.
   const [error, setError] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(knownUserId ?? null);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
   const conversationIdsRef = useRef<Set<string>>(new Set());
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get the current user on mount
+  // Resolve the current user — but only if the caller could not tell us.
+  //
+  // `auth.getUser()` is a network round trip, and NOTHING in this hook can start
+  // until it lands: the conversation fetch is gated on `userId`. So entering
+  // Messages paid an auth hop of skeleton BEFORE the first query was even sent,
+  // on top of the route-level skeleton Next had already shown — which is what
+  // reads as the tab "hot loading" on entry.
+  //
+  // The page already knows who the user is. `useGolfUser()` carries a
+  // server-resolved id, resolved in the dashboard layout during SSR and
+  // available synchronously on the first client render. Passing it in lets the
+  // fetch start on mount instead of one round trip later.
+  //
+  // The fallback stays for any caller that has no context to hand (and so this
+  // is not a behaviour change for them), and it is skipped entirely when we were
+  // told — an authenticated round trip we do not need is latency the user pays
+  // for nothing.
   useEffect(() => {
+    if (knownUserId) {
+      setUserId((prev) => (prev === knownUserId ? prev : knownUserId));
+      return;
+    }
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -703,7 +848,7 @@ export function useGolfConversations() {
     };
     getUser();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [knownUserId]);
 
   const fetchConversations = useCallback(async () => {
     if (!userId) {
@@ -1022,6 +1167,22 @@ export function useGolfConversations() {
       if (p.user_id) playerByUserId.set(p.user_id, p as PlayerLookup);
     });
 
+    // Client RLS reads are still useful as the no-network fallback, but the
+    // server identity action is authoritative for Messaging: it also resolves
+    // an existing upload in the avatars bucket when an older roster record was
+    // never given its public avatar_url.
+    const resolvedIdentities = await getGolfMessageParticipantIdentities(
+      conversationsData.map((conversation) => conversation.id),
+    );
+    const identityByUserId = new Map(resolvedIdentities.map((identity) => [identity.userId, identity]));
+    const directIdentityByConversationId = new Map(
+      resolvedIdentities.flatMap((identity) =>
+        identity.userId === userId
+          ? []
+          : identity.conversationIds.map((conversationId) => [conversationId, identity] as const),
+      ),
+    );
+
     // Transform to GolfConversationWithMeta format
     const transformedConversations = conversationsData.map((conv) => {
       // Handle group conversations differently
@@ -1046,15 +1207,29 @@ export function useGolfConversations() {
       }
 
       // Find the other user in this conversation
-      const otherUserId = conv.participant_ids?.find((id) => id !== userId);
+      // The RPC normally supplies all participant ids. For older/direct rows
+      // where that array is incomplete, the authorized server identity action
+      // still has the exact conversation membership. Use it as a safe fallback
+      // rather than rendering a real teammate as a generic former member.
+      const otherUserId = conv.participant_ids?.find((id) => id !== userId)
+        ?? directIdentityByConversationId.get(conv.id)?.userId;
 
       let otherParticipant: GolfConversationParticipant | undefined;
 
       if (otherUserId) {
+        const resolvedIdentity = identityByUserId.get(otherUserId);
         const coach = coachByUserId.get(otherUserId);
         const player = playerByUserId.get(otherUserId);
 
-        if (coach) {
+        if (resolvedIdentity) {
+          otherParticipant = {
+            id: otherUserId,
+            name: resolvedIdentity.name,
+            subtitle: resolvedIdentity.subtitle,
+            avatar: resolvedIdentity.avatarUrl,
+            type: resolvedIdentity.type,
+          };
+        } else if (coach) {
           otherParticipant = {
             id: otherUserId, // Use user_id for consistent comparison (conversations use user IDs)
             name: coach.full_name || 'Coach',

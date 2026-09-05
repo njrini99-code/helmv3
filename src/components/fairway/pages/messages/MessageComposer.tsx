@@ -4,8 +4,8 @@
  * ============================================================================
  * Fairway · messages · MessageComposer — the "what's-next" composer track
  * ----------------------------------------------------------------------------
- * The WHAT'S-NEXT section of the two-pane inbox: a sunken matte composer track
- * (mirrors AskThreadPane's `border-t bg-surface-sunken` composer slot). It is a
+ * The WHAT'S-NEXT section of the two-pane inbox: a flat attached composer band
+ * separated from the thread by one quiet token hairline. It is a
  * pure PRESENTATION re-skin of the legacy `MessageInput` — the behavior is
  * PRESERVED byte-for-byte in intent:
  *   • auto-resize textarea (height clamps 40→120px on the message value)
@@ -24,13 +24,14 @@
  * ========================================================================== */
 
 import { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
 import type { PendingAttachment } from '@/lib/storage/attachments';
-import { Textarea } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/fairway/controls/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 /* ─── Length limit — mirrors sendMessageSchema (action-schemas.ts:42,
@@ -55,11 +56,23 @@ export interface MessageComposerProps {
   onSendWithAttachments?: (content: string, attachments: PendingAttachment[]) => Promise<boolean>;
   /** Throttled typing broadcast (the unchanged useGolfMessages.sendTypingStatus). */
   onTyping?: (isTyping: boolean) => void;
+  /**
+   * §30: the message being replied to, if any. The composer only DISPLAYS it —
+   * the page owns the state and passes the id to its own send handler, so the
+   * composer keeps its "text in, promise out" contract and does not grow a
+   * second way to send.
+   */
+  replyTo?: { name: string; preview: string } | null;
+  /** Dismiss the reply preview without sending. */
+  onCancelReply?: () => void;
 }
 
-export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: MessageComposerProps) {
+export function MessageComposer({ onSend, onSendWithAttachments, onTyping, replyTo, onCancelReply }: MessageComposerProps) {
   const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
+  // No `sending` state. §63: a normal text send must not turn the composer
+  // into a loading indicator — the optimistic bubble already carries every
+  // network state there is. Attachment UPLOAD progress still belongs on the
+  // attachment preview, which owns it.
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -174,10 +187,31 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     });
   };
 
+  /**
+   * §19: NETWORK STATE LIVES ON THE MESSAGE, NOT ON THE SEND BUTTON.
+   *
+   * This used to `setSending(true)`, `await` the send, and only then clear the
+   * field — so the text a player had already committed to sat in the composer
+   * for the entire round trip while the send button ran a bouncing-dot loader.
+   * That is form-submission feedback, and it is the single reason sending felt
+   * like a web app: the user had said the thing, and the interface was still
+   * holding it.
+   *
+   * The composer clears in the SAME tick as the commit now. The optimistic
+   * bubble is the feedback — it is already on screen, and `sending / sent /
+   * read / failed` belong to it.
+   *
+   * Failure is NOT handled here any more. The message stays in the thread as a
+   * failed bubble with Retry (§29/§30) — restoring the text to the composer as
+   * well would put the same words in two places, and the one in the thread is
+   * the one the user is looking at. Attachments are the exception: they cannot
+   * live on an optimistic bubble, so a failed attachment send does come back.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasAttachments = pendingAttachments.length > 0;
-    if ((!message.trim() && !hasAttachments) || sending) return;
+    const text = message.trim();
+    if (!text && !hasAttachments) return;
 
     // Clear typing indicator before sending (PRESERVED).
     if (onTyping) {
@@ -187,23 +221,35 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       clearTimeout(typingTimeoutRef.current);
     }
 
-    setSending(true);
-
-    let success = false;
-    if (hasAttachments && onSendWithAttachments) {
-      success = await onSendWithAttachments(message.trim(), pendingAttachments);
-    } else {
-      success = await onSend(message.trim());
+    // ── The commit tick: clear before any await touches the network. ────────
+    const outgoingAttachments = pendingAttachments;
+    setMessage('');
+    setPendingAttachments([]);
+    // Collapse the field back to one line in the same frame; letting it stay
+    // tall after a multi-line send leaves a hole where the text used to be.
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
     }
+    fwHaptic('light');
+
+    const success =
+      hasAttachments && onSendWithAttachments
+        ? await onSendWithAttachments(text, outgoingAttachments)
+        : await onSend(text);
 
     if (success) {
-      pendingAttachments.forEach(a => {
+      outgoingAttachments.forEach(a => {
         if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
       });
-      setMessage('');
-      setPendingAttachments([]);
+      return;
     }
-    setSending(false);
+
+    // Attachments only, and never over something the user has since attached:
+    // a failed photo has no optimistic bubble to live on, so the composer is
+    // the only place it can wait for a retry.
+    if (hasAttachments) {
+      setPendingAttachments(prev => (prev.length > 0 ? prev : outgoingAttachments));
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -216,15 +262,49 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     }
   };
 
-  const canSend = (message.trim().length > 0 || pendingAttachments.length > 0) && !sending;
+  // Deliberately NOT gated on an in-flight send: §20 wants the composer ready
+  // for the next message at ~150ms, and a `sending` gate makes two quick
+  // messages impossible. An empty field is the only thing that disables send,
+  // and clearing on commit means a double-tap cannot double-send.
+  const canSend = message.trim().length > 0 || pendingAttachments.length > 0;
   const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
-    // Sunken matte composer track — mirrors AskThreadPane's composer slot.
+    // Composer chrome is allowed to float: the canvas remains flat, while the
+    // control the player is actively touching gets a clear physical layer.
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border-subtle bg-surface-sunken p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-4 lg:pb-4"
+      className={cn(
+        'fw-message-composer relative z-10 border-t border-border-subtle px-3 pt-2.5',
+        'pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2.5 lg:pb-2.5',
+      )}
     >
+      {/* §30 reply preview. Above the field, inside the composer's own track,
+          an inline two-pixel rule and two lines of copy — not another rounded
+          container inside the composer. Dismiss is a 44px target: it is the
+          only way out of reply mode and sits next to a send button. */}
+      {replyTo ? (
+        <div className="mb-2 flex min-h-11 items-center gap-2 border-l-2 border-accent-600 pl-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-fw-sans text-caption font-semibold text-accent-700">
+              Replying to {replyTo.name}
+            </p>
+            <p className="truncate font-fw-sans text-caption text-text-secondary">
+              {replyTo.preview}
+            </p>
+          </div>
+          <IconButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Cancel reply"
+            onClick={onCancelReply}
+          >
+            <X size={16} aria-hidden="true" />
+          </IconButton>
+        </div>
+      ) : null}
+
       {/* Pending attachment previews — REUSED component, render only when present. */}
       {pendingAttachments.length > 0 && (
         <AttachmentPreview
@@ -236,20 +316,28 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
 
       <div
         className={cn(
-          'flex items-end gap-2 rounded-fw-lg p-1.5',
-          'border border-border-subtle bg-surface',
-          'transition-colors duration-200',
-          'focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-border-focus/30',
+          // §22: radius 20px (was 28 — a composer is a field, not a sheet),
+          // and ONE focus treatment. It used to draw a colour-shifted border
+          // AND a 2px ring: two concentric rounded rectangles around a field
+          // that already sits inside a bordered track. The border alone says
+          // "focused" perfectly well and is what the spec means by "no giant
+          // green ring".
+          'flex items-end gap-2 rounded-card p-1.5',
+          'fw-message-composer-field border',
+          'transition-[border-color,box-shadow] duration-150',
+          'focus-within:border-accent-400 focus-within:shadow-raise',
         )}
       >
         {/* Attachment trigger — REUSED UNCHANGED. */}
         <AttachmentButton
           onFilesSelected={handleFilesSelected}
-          disabled={sending}
           className="mb-0.5 text-text-tertiary"
         />
 
-        <Textarea
+        {/* The native textarea owns IME, selection, and touch-keyboard newline
+            behavior; the surrounding Fairway track owns its visual state. */}
+        {/* eslint-disable-next-line helm/no-raw-input */}
+        <textarea
           ref={textareaRef}
           value={message}
           onChange={handleChange}
@@ -273,33 +361,40 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           style={{ minHeight: '40px', maxHeight: '120px' }}
         />
 
-        {/* GOTCHA §a: the send button is a NATIVE <button> with matte token
-            classes — NOT a Surface as="button". ONE primary action. */}
-        <Button
+        {/* PressTarget provides the native button semantics without adding a
+            second pill surface around the visible 36px send affordance. */}
+        <PressTarget
           type="submit"
-          variant="ghost"
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-fw-md p-0 md:h-10 md:w-10',
-            'outline-none transition-all duration-200',
+            // §22: the HIT TARGET stays 44px; the VISIBLE circle is 36. They
+            // were the same object before, which is why the send button read as
+            // an oversized tile. §50: name the properties — `transition-all`
+            // on a control pressed this often animates layout too.
+            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-full bg-transparent p-0',
+            'outline-none hover:bg-transparent',
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
-            'active:scale-95 motion-reduce:active:scale-100',
-            canSend
-              ? 'bg-accent-650 text-text-on-accent shadow-flat hover:bg-accent-600 hover:shadow-soft'
-              : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',
+            // §50: name the property. `transition-all` on a control pressed
+            // this often animates layout as well as paint.
+            'transition-transform duration-150 active:scale-95 motion-reduce:active:scale-100',
+            !canSend && 'cursor-not-allowed',
           )}
         >
-          {sending ? (
-            <span className="flex items-center gap-1" aria-hidden="true">
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
-            </span>
-          ) : (
+          {/* §22: the hit target is the 44px PressTarget; the VISIBLE control is
+              this 36px circle. They used to be the same box, which is why send
+              read as an oversized tile rather than a send button. */}
+          <span
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150',
+              canSend
+                ? 'bg-accent-650 text-text-on-accent'
+                : 'bg-surface-sunken text-text-tertiary',
+            )}
+          >
             <Send size={18} aria-hidden="true" />
-          )}
-        </Button>
+          </span>
+        </PressTarget>
       </div>
 
       {/* The hint describes keys a touch keyboard does not have, so it is
@@ -308,23 +403,20 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           vertical space a phone composer has, and on mobile the counter is
           usually the only occupant. `ml-auto` keeps the counter right-aligned
           once the hint beside it is gone. */}
-      {(isPointerFine || charsLeft) && (
-        <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
-          {isPointerFine && (
-            <p className="font-fw-sans text-eyebrow text-text-tertiary">
-              Press Enter to send, Shift+Enter for a new line.
-            </p>
-          )}
-          {charsLeft && (
-            <span
-              className="ml-auto flex-shrink-0 font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
-              aria-live="polite"
-            >
-              {charsLeft}
-            </span>
-          )}
+      {charsLeft ? (
+        <div className="mt-1.5 flex items-center justify-end px-2">
+          <span
+            className="font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
+            aria-live="polite"
+          >
+            {charsLeft}
+          </span>
         </div>
-      )}
+      ) : isPointerFine ? (
+        <p className="mt-1.5 hidden px-2 font-fw-sans text-eyebrow text-text-tertiary md:block">
+          Press Enter to send, Shift+Enter for a new line.
+        </p>
+      ) : null}
     </form>
   );
 }

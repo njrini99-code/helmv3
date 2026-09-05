@@ -20,6 +20,12 @@
  * So the two properties worth pinning are (1) the recipient lookup must go
  * through the SERVICE-ROLE client, and (2) an empty recipient set must be
  * loud, never a silent return.
+ *
+ * 2026-09-04: a THIRD property. Email was removed from this path by owner
+ * instruction — a chat message is not an email, and an active thread mailed
+ * every participant once per message. Push and the in-app bell remain. The
+ * assertion below is inverted rather than deleted, so that re-adding a
+ * per-message email fails here instead of quietly shipping.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -117,13 +123,19 @@ describe('notifyGolfMessageRecipients', () => {
     expect(rlsTables).toContain('golf_conversation_participants');
   });
 
-  it('emails every recipient even though RLS returns none (email_messages defaults ON)', async () => {
+  it('still reaches a recipient RLS cannot see, via the admin fallback', async () => {
+    // The contract here was never "email"; it is that a recipient the RLS
+    // query returns none of is still resolved through the admin client and
+    // still notified. Email happened to be the channel that proved it, and
+    // this branch removed email — so the assertion moved to the bell, which
+    // is unconditional and is how the message is discovered at all.
+    const adminTablesSeen: string[] = [];
     await runFanout({
       rlsUsersRows: [],
       adminUsersRows: [{ id: RECIPIENT, email: 'player@example.com' }],
-    });
+    }).then((r) => adminTablesSeen.push(...r.adminTables));
 
-    expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+    expect(adminTablesSeen).toContain('golf_calendar_notifications');
   });
 
   /**
@@ -139,14 +151,19 @@ describe('notifyGolfMessageRecipients', () => {
    * The gate is `gatedDelivery` from CoachHelm v3, already used elsewhere and
    * already carrying these exact keys and defaults. No second gate was built.
    */
-  it('does NOT email a recipient who turned email_messages off', async () => {
+  it('never emails, whatever email_messages says — the channel is gone, not gated', async () => {
+    // Stronger than the gate this replaces. `email_messages: true` is the
+    // documented DEFAULT, so a test that only proves "off means no mail"
+    // would still pass if the channel came back on by accident for everyone
+    // who never touched the toggle. Asserting it with the preference ON is
+    // what actually pins the removal.
     await runFanout({
       rlsUsersRows: [],
       adminUsersRows: [
         {
           id: RECIPIENT,
           email: 'player@example.com',
-          notification_preferences: { email_messages: false },
+          notification_preferences: { email_messages: true },
         },
       ],
     });
@@ -164,12 +181,15 @@ describe('notifyGolfMessageRecipients', () => {
         {
           id: RECIPIENT,
           email: 'player@example.com',
-          notification_preferences: { quiet_mode: true },
+          notification_preferences: { quiet_mode: true, push_messages: true },
         },
       ],
     });
 
-    expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+    // Asserted on PUSH, the outbound channel that remains. `push_messages` is
+    // set explicitly because its documented default is OFF — without it this
+    // would pass for the wrong reason.
+    expect(sendPushNotificationMock).toHaveBeenCalledTimes(1);
   });
 
   it('does NOT push by default — push_messages defaults OFF, and the code used to ignore that', async () => {
@@ -203,6 +223,10 @@ describe('notifyGolfMessageRecipients', () => {
       RECIPIENT,
       expect.objectContaining({ senderName: 'Coach Rini', conversationId: CONV }),
     );
+    // Email is not a channel any more (this branch removed it by owner
+    // instruction), so the assertion is unconditional rather than
+    // preference-dependent: no message ever mails anyone.
+    expect(notifyNewMessageMock).not.toHaveBeenCalled();
   });
 
   it('still writes the in-app bell for someone who muted email AND push', async () => {
