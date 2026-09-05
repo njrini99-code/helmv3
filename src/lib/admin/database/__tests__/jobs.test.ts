@@ -26,6 +26,14 @@ describe('fetchJobsHealth', () => {
   });
 
   it('maps cron jobs and evaluates each with the pure classifier', async () => {
+    // fetchJobsHealth evaluates against the real clock, and the classifier
+    // flags a daily job with no run inside 48h as telemetry_defect. A literal
+    // start_time here was a time bomb: it passed until 2026-09-05T04:10Z and
+    // then failed every CI run on every branch. Keep the run one hour old
+    // relative to now so the fixture never ages into a finding.
+    const oneHourAgo = new Date(Date.now() - 60 * 60_000);
+    const startTime = oneHourAgo.toISOString();
+    const endTime = new Date(oneHourAgo.getTime() + 2_000).toISOString();
     mocks.rpc.mockResolvedValue({
       data: {
         cron: [
@@ -35,7 +43,7 @@ describe('fetchJobsHealth', () => {
             schedule: '10 4 * * *',
             active: true,
             recent_runs: [
-              { status: 'succeeded', start_time: '2026-09-03T04:10:00.000Z', end_time: '2026-09-03T04:10:02.000Z', duration_ms: 2000, return_message: 'ok' },
+              { status: 'succeeded', start_time: startTime, end_time: endTime, duration_ms: 2000, return_message: 'ok' },
             ],
           },
         ],

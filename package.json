@@ -45,6 +45,7 @@
     "flags:generate": "node scripts/flags/generate-flags.mjs",
     "flight-recorder:audit": "node scripts/flight-recorder-audit.mjs",
     "guards": "node scripts/repo-guards.mjs",
+    "hooks:install": "git config core.hooksPath scripts/git-hooks",
     "janitor": "node scripts/janitor/run.mjs",
     "knowledge:check": "node scripts/knowledge/check.mjs",
     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
@@ -87,8 +88,6 @@
     "seed:baseball:ci": "tsx scripts/seed-baseball-demo.ts --confirm",
     "seed:baseball:demo": "tsx -r dotenv/config scripts/seed-baseball-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-lifting-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts --confirm && tsx -r dotenv/config scripts/seed-baseball-demo-program.ts --confirm && tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts",
     "seed:baseball:e2e": "tsx -r dotenv/config scripts/seed-baseball-e2e.ts",
-    "selfheal:repair:doctor": "node scripts/selfheal-repair-doctor.mjs",
-    "selfheal:repair:install": "bash scripts/selfheal-repair-install.sh",
     "sql:ratchet": "node scripts/sql-lint-ratchet.mjs",
     "start": "next start",
     "test": "vitest --project unit --project unit-dom",
@@ -136,7 +135,7 @@
   "license": "ISC",
   "type": "module",
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.20",
