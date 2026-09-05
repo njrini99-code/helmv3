@@ -31,21 +31,28 @@ const NOW = new Date();
 
 function conv(over: Partial<GolfConversationWithMeta> & { id: string }): GolfConversationWithMeta {
   return {
-    id: over.id,
     title: null,
     is_group: false,
-    team_id: 't1',
     created_at: NOW.toISOString(),
     updated_at: NOW.toISOString(),
     unread_count: 0,
-    participants: [],
     last_message: {
       id: `m-${over.id}`,
       content: 'the last thing said',
       created_at: NOW.toISOString(),
       sender_id: 'u2',
     },
-    other_participant: { id: 'u2', name: 'Cole Bennett', avatar: null, subtitle: 'Class of 2027' },
+    other_participant: {
+      id: 'u2',
+      name: 'Cole Bennett',
+      avatar: null,
+      subtitle: 'Class of 2027',
+      type: 'player',
+    },
+    // Spread LAST so `id` and every override actually win. Spreading it first
+    // and then restating `id: over.id` is the TS2783 shape where the later
+    // literal silently overwrites the caller — here it happened to agree, which
+    // is exactly why it would have gone unnoticed.
     ...over,
   } as GolfConversationWithMeta;
 }
@@ -72,7 +79,7 @@ describe('MessageConversationRail — unread is a surface, not a sort order', ()
       <MessageConversationRail
         conversations={[
           conv({ id: 'a', unread_count: 3 }),
-          conv({ id: 'b', other_participant: { id: 'u3', name: 'Alexis Bennett', avatar: null, subtitle: '' } }),
+          conv({ id: 'b', other_participant: { id: 'u3', name: 'Alexis Bennett', avatar: null, subtitle: '', type: 'player' } }),
         ]}
         selectedId={null}
         onSelect={vi.fn()}
@@ -100,7 +107,7 @@ describe('MessageConversationRail — unread is a surface, not a sort order', ()
     render(
       <MessageConversationRail
         conversations={[
-          conv({ id: 'a', other_participant: { id: 'u3', name: 'Alexis Bennett', avatar: null, subtitle: '' } }),
+          conv({ id: 'a', other_participant: { id: 'u3', name: 'Alexis Bennett', avatar: null, subtitle: '', type: 'player' } }),
           conv({ id: 'b', unread_count: 2 }),
         ]}
         selectedId={null}
@@ -126,7 +133,7 @@ describe('MessageConversationRail — unread is a surface, not a sort order', ()
       <MessageConversationRail
         conversations={[
           conv({ id: 'a', unread_count: 1 }),
-          conv({ id: 'b', other_participant: { id: 'u3', name: 'Alexis Bennett', avatar: null, subtitle: '' } }),
+          conv({ id: 'b', other_participant: { id: 'u3', name: 'Alexis Bennett', avatar: null, subtitle: '', type: 'player' } }),
         ]}
         selectedId={null}
         onSelect={vi.fn()}
@@ -210,7 +217,7 @@ describe('MessageConversationRail — the Recent rail claims only what it knows'
         conversations={[
           conv({ id: 'a' }),
           conv({ id: 'b' }),
-          conv({ id: 'c', is_group: true, title: 'Travel — Kiawah', participants: [{}, {}, {}] as never }),
+          conv({ id: 'c', is_group: true, title: 'Travel — Kiawah', participant_count: 9 }),
         ]}
         selectedId={null}
         onSelect={vi.fn()}
