@@ -30,7 +30,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `POLICY` | 20 | 2 | 9 | 14 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
 | `CURRENT_FEATURE` | 26 | 26 | 12 | 25 |
-| `REFERENCE` | 62 | 15 | 18 | 107 |
+| `REFERENCE` | 62 | 15 | 18 | 105 |
 | `GENERATED_TRUTH` | 21 | 3 | 6 | 26 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 11 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
@@ -40,7 +40,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 7 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 74 |
 | `INCIDENT` | 13 | 0 | 0 | 3 |
-| `ADR` | 4 | 0 | 3 | 2 |
+| `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1206 | 0 | 419 | 535 |
 | `UNKNOWN` | 112 | 12 | 46 | 146 |
@@ -238,13 +238,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-testing-standards.md` | current | yes | - | - | 9 | 9 | 1 |
 | `docs/v3-wave-sequence.md` | superseded | - | - | yes | 6 | 5 | 1 |
 | `memory/brand/logos.md` | current | - | - | - | 0 | 0 | - |
-| `memory/context/agent-operations.md` | current | yes | - | - | 2 | 4 | - |
-| `memory/context/agent-traps.md` | current | yes | - | - | 1 | 8 | 1 |
+| `memory/context/agent-operations.md` | current | yes | - | - | 2 | 5 | - |
+| `memory/context/agent-traps.md` | current | yes | - | - | 1 | 8 | - |
 | `memory/context/baseballhelm-database.md` | current | yes | - | yes | 5 | 42 | 1 |
 | `memory/context/baseballhelm-features.md` | current | yes | - | yes | 14 | 24 | 1 |
 | `memory/context/baseballhelm-workflows.md` | current | - | - | yes | 2 | 5 | - |
 | `memory/context/coachhelm-ai.md` | current | yes | - | yes | 20 | 20 | 13 |
-| `memory/context/engineering-methodology.md` | current | yes | - | yes | 6 | 12 | 3 |
+| `memory/context/engineering-methodology.md` | current | yes | - | yes | 6 | 12 | 2 |
 | `memory/context/golfhelm-features.md` | historical | - | - | yes | 41 | 63 | 23 |
 | `memory/prompts/docs-update.md` | current | - | - | - | 1 | 0 | - |
 | `memory/prompts/pr-review.md` | current | - | - | - | 1 | 1 | - |
@@ -545,7 +545,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/decisions/ADR-2026-08-30-helm-knowledge-authority.md` | current | - | - | yes | 4 | 21 | - |
 | `memory/decisions/ADR-2026-08-30-sandbox-filesystem-allowwrite.md` | current | - | - | yes | 0 | 3 | - |
 | `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` | current | - | - | - | 4 | 3 | - |
-| `memory/decisions/ADR-2026-09-05-control-plane-reset.md` | current | - | - | yes | 0 | 10 | 2 |
+| `memory/decisions/ADR-2026-09-05-control-plane-reset.md` | current | - | - | yes | 3 | 9 | 1 |
 
 ### `INDEX`
 
