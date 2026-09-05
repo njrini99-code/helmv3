@@ -42,6 +42,13 @@
 --
 -- THIS FILE MUST NOT BE APPLIED TO PRODUCTION. Every object below already
 -- exists there; it exists for a local `supabase db reset` and the ledger.
+--
+-- 2026-09-05 A3b follow-up: independently re-read against the live catalog
+-- (`list_tables`/`list_migrations`, fresh session) — `reply_to_id`'s
+-- nullability/FK and every `golf_message_mentions` column (including
+-- `mentioned_user_id` being nullable) still match production exactly, and
+-- the ledger row above still exists under this exact name/version. No
+-- content changed.
 
 ALTER TABLE public.golf_messages
 ADD COLUMN IF NOT EXISTS reply_to_id uuid REFERENCES public.golf_messages (id);
