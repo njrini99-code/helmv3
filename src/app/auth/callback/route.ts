@@ -22,13 +22,23 @@ const ALLOWED_REDIRECTS = [
 ];
 
 /**
- * js/log-injection (#112, #113, #114): the three `console.warn` calls below
- * log the REJECTED `?next=` value verbatim — fully attacker-controlled, and
- * these are exactly the branches that fire when it looks malicious. A value
- * carrying `\n` or other control characters would forge what looks like a
- * separate log line to anyone reading raw log output. Strip control
- * characters and cap the length before logging; this changes only what
- * lands in logs, never `validateRedirectPath`'s actual decision.
+ * js/log-injection (#112, #113, #114, then #617/#618/#619 once this helper
+ * was already in place at every call site): the three `console.warn` calls
+ * below log the REJECTED `?next=` value verbatim — fully attacker-controlled,
+ * and these are exactly the branches that fire when it looks malicious. A
+ * value carrying `\n` or other control characters would forge what looks
+ * like a separate log line to anyone reading raw log output. This strips
+ * control characters and caps the length; it changes only what lands in
+ * logs, never `validateRedirectPath`'s actual decision.
+ *
+ * CodeQL's log-injection sanitizer recognition keys on a `.replace()` call
+ * matching `\n`/`\r` literally, applied in the same expression that reaches
+ * the sink — a hex character-class range (`[\x00-\x1f\x7f]`) inside a
+ * helper's body isn't enough on its own for it to treat the value as clean.
+ * Each call site below therefore chains an explicit `.replace(/\n|\r/g, '')`
+ * onto this helper's result, directly in the `console.warn(...)` argument,
+ * so the recognized shape sits right before the sink even though this
+ * function already removes the same bytes as part of its broader cleanup.
  */
 export function sanitizeForLog(value: string): string {
   // eslint-disable-next-line no-control-regex -- deliberately stripping control chars for log safety
@@ -51,7 +61,7 @@ function validateRedirectPath(
 
   // Must start with /
   if (!path.startsWith('/')) {
-    console.warn('[Security] Invalid redirect attempted:', sanitizeForLog(path), {
+    console.warn('[Security] Invalid redirect attempted:', sanitizeForLog(path).replace(/\n|\r/g, ''), {
       ip: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
     });
@@ -60,7 +70,7 @@ function validateRedirectPath(
 
   // Must not be protocol-relative
   if (path.startsWith('//')) {
-    console.warn('[Security] Protocol-relative redirect blocked:', sanitizeForLog(path), {
+    console.warn('[Security] Protocol-relative redirect blocked:', sanitizeForLog(path).replace(/\n|\r/g, ''), {
       ip: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
     });
@@ -73,7 +83,7 @@ function validateRedirectPath(
                    allowedPrefixes.some(prefix => path.startsWith(prefix));
 
   if (!isAllowed) {
-    console.warn('[Security] Blocked invalid redirect attempt:', sanitizeForLog(path), {
+    console.warn('[Security] Blocked invalid redirect attempt:', sanitizeForLog(path).replace(/\n|\r/g, ''), {
       ip: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
     });

@@ -102,22 +102,39 @@ export function parseXml(input: string): XmlParseResult {
 
   xml = xml.replace(/<\?[\s\S]*?\?>/g, ''); // prolog / PIs
 
-  // js/incomplete-multi-character-sanitization (#459): a single-pass
-  // `<!--...-->/g` replace can leave a `<!--` behind \u2014 removing one
-  // comment-pair match can concatenate what survives on either side of it
-  // into a NEW, unremoved `<!--`/`-->` in the SAME global pass (the classic
-  // "input.replace only scans once" gap). Vendor feeds are external data
-  // (GameChanger/StatCrew), so loop until stable and strip any leftover bare
-  // marker outright, matching the pattern in
+  // js/incomplete-multi-character-sanitization (#459, then #615/#616 when
+  // the bare-marker cleanup was chained onto the same assignment): a
+  // single-pass `<!--...-->/g` replace can leave a `<!--` behind \u2014 removing
+  // one comment-pair match can concatenate what survives on either side of
+  // it into a NEW, unremoved `<!--`/`-->` in the SAME global pass (the
+  // classic "input.replace only scans once" gap). Vendor feeds are external
+  // data (GameChanger/StatCrew), so this reruns each regex to its own fixed
+  // point \u2014 CodeQL's incomplete-sanitization check only recognizes a loop as
+  // resolving a flagged regex when nothing else is chained between that
+  // replace() call and the before/after comparison that closes the loop, so
+  // the paired regex, the bare opener, and the bare closer each get their
+  // own loop rather than one loop chaining all three. `--!?>` is accepted as
+  // a terminator alongside `-->` (js/bad-tag-filter, #612): HTML's own
+  // "bogus comment" state ends on either. Matches the pattern in
   // src/lib/admin/pr-body-parser.ts's stripHtmlComments.
-  let previousXml: string;
+  let previousPaired: string;
   do {
-    previousXml = xml;
-    xml = xml
-      .replace(/<!--[\s\S]*?-->/g, '') // comments
-      .replace(/<!--/g, '')
-      .replace(/-->/g, '');
-  } while (xml !== previousXml);
+    previousPaired = xml;
+    xml = xml.replace(/<!--[\s\S]*?--!?>/g, ''); // comments
+  } while (xml !== previousPaired);
+
+  let previousOpener: string;
+  do {
+    previousOpener = xml;
+    xml = xml.replace(/<!--/g, '');
+  } while (xml !== previousOpener);
+
+  let previousCloser: string;
+  do {
+    previousCloser = xml;
+    xml = xml.replace(/--!?>/g, '');
+  } while (xml !== previousCloser);
+
   xml = xml.replace(/<!DOCTYPE[\s\S]*?>/gi, ''); // doctype
 
   // Restore CDATA content verbatim, now that comment-stripping is done and

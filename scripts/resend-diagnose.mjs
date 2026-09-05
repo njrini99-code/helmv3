@@ -16,15 +16,14 @@ for (const file of ['../.env.local', '../.env']) {
 }
 
 const apiKey = env.RESEND_API_KEY;
-console.log('RESEND_API_KEY present:', Boolean(apiKey));
-// js/clear-text-logging (#382, #383): a 4-character prefix of the real key
-// used to print here. It confirmed nothing this diagnostic doesn't already
-// confirm (presence + a plausible length), while putting real secret
-// material into terminal history / CI log capture. Length alone is enough
-// to sanity-check "looks like a real key vs. a placeholder".
-if (apiKey) {
-  console.log('  length:', apiKey.length);
-}
+// js/clear-text-logging (#382, #383, then #610 when a length readout — a
+// value still derived from the secret — replaced the raw prefix): nothing
+// derived from the key, not a prefix, not its length, not a hash, may reach
+// a log. Presence alone is enough to explain a non-delivered test send when
+// the key is simply missing; a plausible-vs-placeholder check on the value
+// itself belongs in a debugger with the variable inspected locally, never
+// in output that lands in terminal history or CI log capture.
+console.log('RESEND_API_KEY:', apiKey ? 'set' : 'not set');
 console.log('HELM_FROM_EMAIL:', env.HELM_FROM_EMAIL ?? '(default) Helm Sports Labs <admin@helmsportslabs.com>');
 if (!apiKey) process.exit(0);
 
