@@ -27,10 +27,21 @@ output" (distinct from `/admin/jobs`, which answers "did the crons run").
 Collect (admin_reliability_collector, Vercel cron, 3h)
   -> Diagnose (Vercel cron, 6h, since 2026-09-02 — moved off an
      Anthropic-hosted cloud routine)
-  -> Repair (launchd agent on the owner's Mac, com.helm.bridge-rca-repair,
-     06:40 ET daily — opens a PR, never merges/deploys)
+  -> Repair (GitHub Actions, .github/workflows/selfheal-repair.yml,
+     06:40 UTC daily — opens a PR, never merges/deploys)
   -> Close (Vercel cron log-retention -> auto-resolve.ts)
 ```
+
+**Repair runs as a GitHub Actions workflow only, as of 2026-09-05.** It
+previously also ran as a launchd agent on the owner's Mac
+(`com.helm.bridge-rca-repair`) in parallel with the GHA workflow — a live
+duplicate-effort risk (two separately-billed agent sessions per day, each
+capable of opening a PR against the same backlog, with no cross-runner
+concurrency control). The launchd agent and its supporting scripts were all
+removed in the same change that closed that duplication — `scripts/run-selfheal-repair.mjs` no longer exists, `scripts/lib/selfheal-repair-runner.mjs` no longer exists, `scripts/selfheal-repair-install.sh` no longer exists, `scripts/selfheal-repair-doctor.mjs` no longer exists, and `config/launchd/**` no longer exists.
+The plist is archived outside the repo, in
+`~/.claude/backups/reset-2026-09-05` on the
+owner's machine, for anyone who needs to see exactly what ran before.
 
 ## Primary Entry Points
 
@@ -66,9 +77,13 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
   shared with the `npm run triage` CLI (`scripts/run-triage.ts`, now a thin
   wrapper over both).
 - `src/lib/admin/auto-resolve.ts` — the Close stage's nightly auto-resolution.
-- `scripts/run-selfheal-repair.mjs`, `scripts/lib/selfheal-repair-runner.mjs`,
-  `scripts/selfheal-repair-install.sh`, `scripts/selfheal-repair-doctor.mjs`,
-  `config/launchd/**` — the Repair stage's outer runner and launchd install.
+- `.github/workflows/selfheal-repair.yml` — the Repair stage's ONLY runner as
+  of 2026-09-05. Invokes the Claude Code CLI directly (not
+  `anthropics/claude-code-action`, which is trigger-driven and skips
+  everything on a `schedule`/`workflow_dispatch` event) following
+  `docs/ai-system/selfheal/repair-contract.md`. The launchd agent and its
+  supporting scripts this replaced are gone — see the Current State section
+  above.
 - `src/lib/admin/ensemble/verification-ensemble.ts` (2026-09-03,
   control-plane plan §6 J remainder) — `runVerificationEnsemble`, a
   REPRODUCER→HEALER→{ADVERSARY, conditional SECURITY, PRODUCT}→JUDGE
@@ -179,36 +194,18 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
   Self-heal page. Counts only on the Overview: a stalled incident already
   earns its attention row, and a third list is the split this read model
   exists to remove.
-- **The Repair stage's launchd config is tracked in the repo, not only on the
-  owner's Mac.** `config/launchd/com.helm.bridge-rca-repair.plist` is the
-  source of truth for `~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`;
-  `npm run selfheal:repair:install` installs/reloads it and
-  `npm run selfheal:repair:doctor` checks it end to end — installed and
-  byte-identical to the repo copy, loaded (`launchctl print`), the env file's
-  variable names present, the `claude` binary and prompt file resolve, the
-  `-p` argument does not start with `-` or `$(`, and the newest production
-  `selfheal-repair` heartbeat is fresh (<26h) and not a runner failure. This
-  closes the 2026-09-02 fire that failed in 0.6s: the plist passed SKILL.md's
-  raw YAML-frontmatter text as `claude -p`'s argument and the CLI parsed the
-  leading `---` as an unknown option, exiting before writing anything. The
-  outer runner (`scripts/run-selfheal-repair.mjs`) now pipes the child's
-  stdout/stderr (forwarding every byte to its own stdout/stderr in real time,
-  so the plist's `>> log 2>&1` still sees the same output) and, on a
-  runner-level failure, redacts and truncates (`redactSecrets`/`truncateTail`
-  in `scripts/lib/selfheal-repair-runner.mjs`) the child's last ~4KB into the
-  fallback heartbeat's `metadata.child_output_tail`, so a future failure like
-  this one explains itself on `/admin/self-heal` instead of reading only
-  "child exited 1". A static vitest
-  (`src/test/scripts/selfheal-repair-launchd.test.ts`) parses every plist
-  under `config/launchd/**` and fails if the `-p` argument trap, a missing
-  `--strict-mcp-config`, or a wrong `--mcp-config` target ever regresses.
-  `redactSecrets`'s per-pattern replacement is keyed on an explicit
-  `keyGroup` flag stored on each `SECRET_PATTERNS` entry, not inferred from
-  whether the replace callback's second argument is truthy — a zero-capture
-  pattern's second callback argument is `String.replace`'s numeric match
-  OFFSET, not a capture group, and treating it as one produced a mangled
-  `"<offset>=[REDACTED]"` for any secret not located at index 0 of the
-  matched text.
+- **Historical: the Repair stage used to run as a launchd agent on the
+  owner's Mac, retired 2026-09-05.** `config/launchd/com.helm.bridge-rca-repair.plist`,
+  its outer bounded-runner (`scripts/run-selfheal-repair.mjs`,
+  `scripts/lib/selfheal-repair-runner.mjs`), and its install/doctor tooling
+  (`npm run selfheal:repair:install`/`:doctor`) are gone from the repo — the
+  plist is archived outside it, in `~/.claude/backups/reset-2026-09-05` on
+  the owner's machine. They existed to solve problems specific to running an
+  unattended agent on a laptop (a frontmatter argument trap that made `claude
+  -p` exit in 0.6s having written nothing, secret redaction on a fallback
+  heartbeat, byte-for-byte plist verification) that do not apply to the GHA
+  runner replacing it — GitHub Actions' own scheduler, secrets, and
+  `if: always()` step semantics cover the same ground natively.
 
 ## Known Behaviour
 
@@ -269,8 +266,6 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
 
 ## Tests To Prefer
 
-- `src/test/scripts/run-selfheal-repair.test.ts`
-- `src/test/scripts/selfheal-repair-launchd.test.ts`
 - `src/app/api/cron/selfheal-triage/__tests__/route.test.ts`
 - `src/app/api/cron/log-retention/__tests__/route.test.ts`
 - `src/lib/admin/ensemble/__tests__/verification-ensemble.test.ts`,

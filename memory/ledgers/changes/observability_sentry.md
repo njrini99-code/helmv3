@@ -5,6 +5,8 @@
      memory/features/observability-sentry.md's own marker for why. -->
 # Change ledger — observability_sentry
 
+> **2026-09-05:** `scripts/lib/sentry-cron-checkin.mjs` (removed) and the launchd `scripts/run-selfheal-repair.mjs` (removed) it served no longer exist — both were removed when Repair moved to `.github/workflows/selfheal-repair.yml` only. See `memory/features/admin-selfheal.md`. The entry below is left exactly as written at the time.
+
 ## 2026-09-02 — client "maximum observability" build: profiling, replay privacy, third-party filter, feedback, breadcrumbs, feature tags
 
 - Branch: `agent/sentry-max-client` (Phase D of a multi-phase Sentry build;

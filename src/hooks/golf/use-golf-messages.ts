@@ -565,6 +565,16 @@ export function useGolfMessages(conversationId: string) {
       created_at: new Date().toISOString(),
       edited_at: null,
       is_deleted: false,
+      // A plain text message from the composer — never one of the
+      // structured kinds (poll/rsvp/event/etc), never a reply, never pinned.
+      // These columns (and golf_message_reactions/_mentions/_responses)
+      // shipped to production 2026-09-04 with no committed migration; see
+      // supabase/migrations/20260904160000_golf_messaging_structured.sql.
+      kind: 'text',
+      payload: null,
+      pinned_at: null,
+      pinned_by: null,
+      reply_to_id: null,
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
