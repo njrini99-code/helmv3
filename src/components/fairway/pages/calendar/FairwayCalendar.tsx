@@ -5,10 +5,34 @@
  * Fairway · Calendar · FairwayCalendar — the flag-on Calendar SHELL orchestrator
  * ----------------------------------------------------------------------------
  * The single re-skinned Calendar surface for /golf/dashboard/calendar behind the
- * isRedesignEnabled() fork. The SHELL owns ALL calendar chrome (one hero, one
- * Segmented view toggle, one member rail, one "New event" affordance) and the
+ * isRedesignEnabled() fork. The SHELL owns ALL calendar chrome (one masthead,
+ * one Segmented view toggle, one member rail, one create affordance) and the
  * body is now fully-native Fairway in every view + role. It REUSES the existing
  * SERVER ACTIONS unchanged — it does NOT rebuild the data layer.
+ *
+ * ── S1 · CHROME COLLAPSE (mobile-calendar-rebuild-brief §4) ─────────────────
+ *   Measured at 390x844, ~780px of the 844px viewport was chrome before a
+ *   single event rendered: a hero plinth stacking eyebrow + 32px month title +
+ *   counts line + prev/Today/next row + a full-width "New event" button + the
+ *   day strip, then the view toggle, then an "Add to phone" row, then the
+ *   member rail, then a "Show N earlier events" wall. Five stacked utility
+ *   rows, ~14 competing controls — against four rules AGENTS.md already states.
+ *
+ *   What changed here:
+ *     • `FairwayCalendarHero` is RETIRED, replaced by `FairwayCalendarMasthead`
+ *       — month-as-page-title + picker chevron + one overflow control + the
+ *       day strip. The "Calendar" eyebrow is gone: the Calendar bottom-nav tab
+ *       and the calendar sub-tab strip both already name this page.
+ *     • the day strip IS the week navigation (swipe / arrow keys); the
+ *       prev/Today/next cluster is gone and "Jump to today" lives in the month
+ *       picker.
+ *     • the counts collapse to ONE meta line, sharing a row with the view
+ *       toggle instead of owning one.
+ *     • "Add to phone" moves into the masthead overflow — it was a permanent
+ *       row for an action taken roughly once per season.
+ *     • the full-width "New event" button becomes `FairwayCalendarFab` in the
+ *       thumb zone (see that file for why the legacy `QuickAddEventFAB` could
+ *       not be reused).
  *
  * ── WHAT IS REUSED UNCHANGED (cite) ─────────────────────────────────────────
  *   • Create/edit/delete/restore call the EXISTING golf event server actions
@@ -60,7 +84,8 @@ import {
   addMonths,
   isSameDay,
 } from 'date-fns';
-import { CalendarPlus, RefreshCw } from 'lucide-react';
+import { CalendarCheck, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Segmented, Sheet, Button as FwButton, Skeleton, fairwayToast } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
@@ -74,7 +99,8 @@ import { PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar'
 import type { CalendarFeed } from '@/components/golf/calendar/FeedCard';
 import type { FeedType } from '@/components/golf/calendar/CalendarFeedManager';
 import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
-import { FairwayCalendarHero } from './FairwayCalendarHero';
+import { FairwayCalendarMasthead } from './FairwayCalendarMasthead';
+import { FairwayCalendarFab } from './FairwayCalendarFab';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
@@ -160,10 +186,36 @@ export function sortEventsStably(list: readonly CalendarEvent[]): CalendarEvent[
   });
 }
 
-const VIEW_OPTIONS: ReadonlyArray<{ value: ViewId; label: string }> = [
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
+/**
+ * The view toggle's labels abbreviate to D / W / M below `sm` and spell
+ * themselves out from `sm` up.
+ *
+ * WHY: since S1 the toggle SHARES its row with the counts meta line instead of
+ * owning a full-width row of its own. Four spelled-out `size="lg"` segments
+ * measure ~307px of the ~358px content width at 390px, which leaves the meta
+ * line ~39px and shatters it into four wrapped fragments. The abbreviations
+ * measure ~233px and leave it ~113px, on one line.
+ *
+ * The full word is ALWAYS in the accessible name (`sr-only` below `sm`,
+ * `not-sr-only` above) — a screen reader never hears "D". "Agenda" is never
+ * abbreviated: there is no conventional one-letter form of it, and it is the
+ * default lens.
+ */
+function viewLabel(short: string, full: string) {
+  return (
+    <>
+      <span aria-hidden className="sm:hidden">
+        {short}
+      </span>
+      <span className="sr-only sm:not-sr-only">{full}</span>
+    </>
+  );
+}
+
+const VIEW_OPTIONS: ReadonlyArray<{ value: ViewId; label: React.ReactNode }> = [
+  { value: 'day', label: viewLabel('D', 'Day') },
+  { value: 'week', label: viewLabel('W', 'Week') },
+  { value: 'month', label: viewLabel('M', 'Month') },
   { value: 'agenda', label: 'Agenda' },
 ];
 
@@ -935,7 +987,9 @@ export function FairwayCalendar({
   // SINGLE create surface on every view (audit P240): the legacy grid create
   // entry points (QuickAddEventFAB, grid "+", N-key → EventDetailModal) are gone
   // because the legacy PremiumCalendarClient grid is retired on this route
-  // (audit P232). No competing create UI is reachable.
+  // (audit P232). No competing create UI is reachable. Since S1 the affordance
+  // is `FairwayCalendarFab` (thumb zone) rather than a full-width button in the
+  // masthead — one action, one surface, still.
   const mostImminentUnrsvpd = React.useMemo(() => {
     if (isCoach) return null;
     const nowMs = new Date(serverNow).getTime();
@@ -978,60 +1032,84 @@ export function FairwayCalendar({
   const isAgenda = view === 'agenda';
   const isDay = view === 'day';
 
+  // The window noun for the meta line. Each lens owns its OWN full phrase (not
+  // a noun a sentence re-prefixes with "this ") so there is no seam where a
+  // second "this" can sneak in, and no fallthrough where an un-handled lens
+  // silently inherits another lens's wording. Day view once had no branch at
+  // all and fell through to "week", mislabeling a one-day window as "this
+  // week" because the fetch buffer for Day reuses the week range internally —
+  // an implementation detail that must never leak into this label.
+  const windowLabel = isAgenda
+    ? 'in view'
+    : view === 'month'
+      ? 'this month'
+      : isDay
+        ? 'today'
+        : 'this week';
+
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-2 md:gap-6 md:px-6">
-      {/* ── ONE HERO (plinth + day strip) ────────────────────────────────────── */}
-      <FairwayCalendarHero
+    <div
+      className={cn(
+        'mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-4 pb-2 pt-2 md:gap-4 md:px-6',
+        // The FAB is `position: fixed` and 56px tall sitting ~20px above the
+        // bottom-nav offset, so it covers the tail of the list unless the
+        // scroll container reserves for it. AppShell's own bottom padding
+        // reserves for the NAV BAR, not for something floating above it.
+        primaryAction && 'pb-[88px]',
+      )}
+    >
+      {/* ── ONE MASTHEAD (month title + overflow + the week strip) ───────────── */}
+      <FairwayCalendarMasthead
         focusDate={focusDate}
         selectedDate={focusDate}
         events={events}
         nowRef={nowRef}
-        upcomingCount={liveUpcomingCount}
-        windowCount={windowCount}
-        isMonthView={view === 'month'}
-        isAgendaView={isAgenda}
-        isDayView={isDay}
-        isCoach={isCoach}
         onNavigate={navigate}
         onSelectDate={(d) => setFocusDate(d)}
-        onPrimaryAction={primaryAction}
-        primaryActionLabel={primaryActionLabel}
+        onSubscribe={() => setSubscribeOpen(true)}
         teamTimezone={teamTimezone}
       />
 
-      {/* ── View toggle (default Agenda) + Subscribe entry point ─────────────── */}
-      {/* "Add to phone" is reachable for BOTH roles, including mobile — the
-          flagship "team schedule in my phone" path was previously desktop-
-          coach-only (audit finding #10). Stacks (Segmented full-width, then
-          the button at its natural size) below `sm`; on `sm`+ it's the
-          original side-by-side row. `flex-wrap` alone (Segmented shrinking
-          via `min-w-0 flex-1` + its own internal scroll-fade) left the two
-          controls sharing one line at phone widths, where the button's
-          `whitespace-nowrap` label floors it at its natural width and
-          crowds/overlaps the segmented control's clipped tail — the same
-          stack-then-row idiom used elsewhere in Fairway (e.g. ViewHeader,
-          FairwayQualifierDetail) sidesteps that shrink math entirely. */}
-      <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
+      {/* ── ONE meta line + the view toggle, sharing a row ───────────────────── */}
+      {/* Before S1 these were two full rows and a third for "Add to phone": the
+          hero's counts line, then a full-width Segmented, then the subscribe
+          button. The counts are context, not a headline, so they read as a
+          caption beside the control they describe. "Add to phone" is still
+          reachable for BOTH roles including mobile (audit finding #10) — it
+          moved into the masthead overflow, it did not go away. */}
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 font-fw-sans text-caption leading-[1.4] text-text-tertiary">
+          {liveUpcomingCount > 0 ? (
+            <>
+              <span className="font-fw-mono font-semibold tabular-nums text-text-secondary">
+                {windowCount}
+              </span>
+              {` ${windowLabel} · `}
+              <span className="font-fw-mono font-semibold tabular-nums text-text-secondary">
+                {liveUpcomingCount}
+              </span>
+              {' upcoming'}
+            </>
+          ) : (
+            // HONEST-EMPTY: the all-past demo season has no upcoming events.
+            // No fabricated count, and no fake CTA to go with it.
+            'No upcoming events'
+          )}
+        </p>
+        <div className="flex-shrink-0">
           <Segmented<ViewId>
             options={VIEW_OPTIONS}
             value={view}
             onValueChange={setView}
             // `lg` = 44px segments — this is the single most-used calendar
             // control on mobile; it must clear the WCAG 2.2 AA touch target.
+            // NOT `fullWidth` any more: it shares this row with the meta line,
+            // and the labels abbreviate below `sm` so both fit at 390px (see
+            // VIEW_OPTIONS).
             size="lg"
-            fullWidth
             aria-label="Calendar view"
           />
         </div>
-        <FwButton
-          variant="secondary"
-          size="sm"
-          leftIcon={<CalendarPlus className="h-4 w-4" aria-hidden />}
-          onClick={() => setSubscribeOpen(true)}
-        >
-          Add to phone
-        </FwButton>
       </div>
 
       {/* ── Range-fetch affordances (loading + retryable error ≠ empty) ──────── */}
@@ -1128,7 +1206,7 @@ export function FairwayCalendar({
       ) : view === 'month' ? (
         // ── Week / Month → fully-native Fairway for BOTH roles (audit P232).
         //    The Fairway shell ALREADY owns every piece of calendar chrome: ONE
-        //    hero (prev/today/next + "New event"), ONE Segmented view toggle, and
+        //    masthead (month title + week strip), ONE Segmented view toggle, and
         //    ONE member rail. The legacy PremiumCalendarClient grid was previously
         //    mounted here for coaches and brought its OWN CalendarHeader (a second
         //    Day/Week/Month toggle), its own CalendarAvatarSidebar, and its own
@@ -1209,6 +1287,23 @@ export function FairwayCalendar({
           teamPlayers={teamMembers}
           currentUserId={currentUserId}
           timezone={teamTimezone}
+        />
+      ) : null}
+
+      {/* ── THE ONE PRIMARY ACTION, in the thumb zone ────────────────────────── */}
+      {/* Replaces the hero's full-width button. `primaryAction` is undefined
+          for a player with nothing to respond to (the all-past demo), and the
+          FAB then renders NOTHING — an honest calm absence, exactly as the
+          hero CTA behaved. */}
+      {primaryAction ? (
+        <FairwayCalendarFab
+          onClick={primaryAction}
+          label={primaryActionLabel}
+          icon={
+            isCoach ? undefined : (
+              <CalendarCheck className="h-6 w-6" strokeWidth={2.2} aria-hidden />
+            )
+          }
         />
       ) : null}
 

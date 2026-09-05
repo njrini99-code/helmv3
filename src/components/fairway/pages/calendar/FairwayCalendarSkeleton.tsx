@@ -1,24 +1,38 @@
 /**
  * ============================================================================
- * Fairway · Calendar · FairwayCalendarSkeleton (P235)
+ * Fairway · Calendar · FairwayCalendarSkeleton (P235, reshaped for S1)
  * ----------------------------------------------------------------------------
  * The loading placeholder for the FAIRWAY calendar route. It mirrors the real
- * first paint of {@link FairwayCalendar} in its default AGENDA view — a hero
- * plinth (eyebrow + month title + nav cluster), a 7-pill day strip, the
- * Segmented view toggle + "Add to phone" row, and a short stack of agenda-card
- * skeletons — all in Fairway design tokens.
+ * first paint of {@link FairwayCalendar} in its default AGENDA view — the
+ * masthead band (month title + overflow + the sunken week track), the one meta
+ * line + view-toggle row, and a short stack of agenda-card skeletons — all in
+ * Fairway design tokens.
  *
- * WHY: the legacy `CalendarSkeleton` draws a 7am–6pm WEEK time-grid in the
+ * WHY THE SHAPE MATTERS, TWICE OVER.
+ *
+ * Round one: the legacy `CalendarSkeleton` drew a 7am–6pm WEEK time-grid in the
  * legacy cream/warm palette. The live Fairway page never renders a week
  * time-grid on first paint (it defaults to Agenda), so that skeleton caused a
- * palette flip + layout shift when the real surface mounted. This token-true
- * skeleton matches the agenda first paint, so there's no CLS or palette flip.
+ * palette flip + layout shift when the real surface mounted.
+ *
+ * Round two (S1): this file then drew the RETIRED hero — a `Surface
+ * padding="lg"` plinth with an eyebrow, a 32px title, a status line, a
+ * prev/Today/next cluster, a full-width CTA and 78/88px day pills. Left alone
+ * it would have flashed the old hero on every navigation to the calendar and
+ * then collapsed ~200px when the real masthead mounted — the exact trap the
+ * rebuild brief calls out in §6. A skeleton that outlives the layout it copies
+ * is worse than no skeleton: it advertises the old design one paint at a time.
+ *
+ * This file is used in THREE places (route `loading.tsx`, page.tsx's
+ * `dynamic()` fallback, and page.tsx's interior `<Suspense>`), so it is the
+ * single place that shape has to be right.
  *
  * Pure presentation — no data, no interactivity. Marked `aria-busy` via the
  * group wrapper so assistive tech announces the loading state once.
  * ========================================================================== */
 
-import { Surface, Skeleton } from '@/components/fairway';
+import { Skeleton } from '@/components/fairway';
+import { SEGMENTED_TRACK_SUNKEN_SHADOW } from '@/components/fairway/controls';
 
 export function FairwayCalendarSkeleton() {
   return (
@@ -26,69 +40,57 @@ export function FairwayCalendarSkeleton() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-2 md:gap-6 md:px-6"
+      className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-4 pb-2 pt-2 md:gap-4 md:px-6"
     >
       <span className="sr-only">Loading calendar…</span>
 
-      {/* ── Hero plinth — mirrors FairwayCalendarHero (Surface shadow + lg pad) ── */}
-      <Surface elevation="shadow" padding="lg" className="bg-surface">
-        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-6">
-          {/* Title column: eyebrow · month title · status line (gap-2, matching
-              FairwayCalendarHero's title column — was gap-3). */}
-          <div className="flex min-w-0 flex-col gap-2">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-9 w-56" />
-            <Skeleton className="h-5 w-44" />
+      {/* ── Masthead band — mirrors FairwayCalendarMasthead exactly: the same
+          full-bleed negative gutter, the same bg-elevated plane, the same
+          bottom hairline, the same paddings. ─────────────────────────────── */}
+      <div className="-mx-4 border-b border-border-subtle bg-elevated px-4 pb-2.5 pt-1 md:-mx-6 md:px-6 md:pb-3">
+        <div className="flex min-h-[44px] items-center justify-between gap-3">
+          {/* Month + year title with its picker chevron. */}
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-5 w-5 rounded-full" />
           </div>
-
-          {/* Action cluster — DESKTOP (md+): prev · today · next · primary,
-              one row (mirrors FairwayCalendarHero's `hidden md:flex` row). */}
-          <div className="hidden flex-shrink-0 items-center gap-2 md:flex">
-            <Skeleton className="h-11 w-11 rounded-fw-md" />
-            <Skeleton className="h-11 w-16 rounded-fw-md" />
-            <Skeleton className="h-11 w-11 rounded-fw-md" />
-            <Skeleton className="ml-1 h-11 w-28 rounded-fw-md" />
-          </div>
-
-          {/* Action cluster — PHONE ONLY: centered prev/today/next row, then a
-              full-width primary CTA below (mirrors FairwayCalendarHero's
-              `md:hidden` two-row layout — the real hero hand-composes this
-              because the single-row shape overflows at ~390px). */}
-          <div className="flex flex-col gap-3 md:hidden">
-            <div className="grid grid-cols-3 items-center">
-              <Skeleton className="h-11 w-11 justify-self-start rounded-fw-md" />
-              <Skeleton className="h-9 w-14 justify-self-center rounded-fw-md" />
-              <Skeleton className="h-11 w-11 justify-self-end rounded-fw-md" />
-            </div>
-            <Skeleton className="h-11 w-full rounded-fw-md" />
-          </div>
+          {/* The one trailing overflow control (IconButton size="sm"). */}
+          <Skeleton className="h-9 w-9 rounded-full" />
         </div>
 
-        {/* Day strip — seven day pills beneath the title (min-h-[78px]/[88px]
-            + gap-1.5/2.5, matching FairwayDayStrip's real pill sizing — was a
-            flat h-16/gap-2 that undershot both breakpoints). */}
-        <div className="mt-6 grid grid-cols-7 gap-1.5 md:mt-8 md:gap-2.5">
+        {/* The week track — ONE sunken well, seven cells inside it, not seven
+            separate tiles. Painted for real (bg + the shared sunken shadow)
+            rather than skeleton-greyed, because the track itself is chrome that
+            does not depend on data: it is already correct on the first paint. */}
+        <div
+          className="mt-1 grid grid-cols-7 gap-0.5 rounded-full bg-surface-sunken p-1"
+          style={{ boxShadow: SEGMENTED_TRACK_SUNKEN_SHADOW }}
+        >
           {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-[78px] w-full rounded-card md:h-[88px]" />
+            <div
+              key={i}
+              className="flex min-h-[44px] flex-col items-center justify-center gap-[3px] px-0.5 py-1.5"
+            >
+              <Skeleton className="h-2 w-6" />
+              <Skeleton className="h-3 w-4" />
+              <span className="h-[3px]" />
+            </div>
           ))}
         </div>
-      </Surface>
+      </div>
 
-      {/* ── View toggle row + "Add to phone" ──────────────────────────────────── */}
-      {/* Shape-matches the real row's stack-then-row breakpoint (see
-          FairwayCalendar.tsx) so there's no CLS when the real controls
-          mount. */}
-      <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-        <Skeleton className="h-11 w-full min-w-0 rounded-fw-md sm:w-auto sm:flex-1" />
-        <Skeleton className="h-9 w-32 rounded-fw-md" />
+      {/* ── Meta line + view toggle, sharing one row ───────────────────────── */}
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-4 w-40" />
+        {/* Segmented size="lg", intrinsic width — narrower below `sm` where the
+            labels abbreviate to D / W / M (see FairwayCalendar's VIEW_OPTIONS). */}
+        <Skeleton className="h-11 w-[232px] flex-shrink-0 rounded-fw-sm sm:w-[308px]" />
       </div>
 
       {/* ── Agenda body — day-grouped event-card skeletons ─────────────────────
           Matches FairwayAgendaView's real composition: `gap-7` between day
-          sections (was gap-4), a day header with an eyebrow label + hairline
-          rule + count (was a bare label), and each event as its OWN bordered
-          card (was one shared Surface wrapping avatar-led rows — the real
-          FairwayEventCard has no avatar and no shared wrapper). */}
+          sections, a day header with an eyebrow label + hairline rule + count,
+          and each event as its OWN bordered card. */}
       <div className="flex flex-col gap-7">
         {Array.from({ length: 3 }).map((_, group) => (
           <div key={group} className="flex flex-col gap-2.5">

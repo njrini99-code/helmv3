@@ -298,33 +298,46 @@ export function FairwayAgendaView({
         own header while keeping every past event one tap away.
       */}
       {mode === 'range' && pastBuckets.length > 0 ? (
-        // Centered, intrinsic-width control — matches the "Show N more" convention
-        // used elsewhere in Fairway (FairwayQualifiers' concluded-list expander:
-        // `<div className="flex justify-center ..."><Button variant="secondary">`).
+        // A QUIET INLINE LINK, not a control bar (S1, mobile-calendar-rebuild
+        // brief §4: "'Show N earlier' becomes a quiet inline link, never a
+        // wall").
         //
-        // `secondary`, not `ghost` — a `ghost` Button is transparent at rest by
-        // design, and the `bg-surface-sunken` override this used to carry RECEDES
-        // below canvas in dark theme (a "well" cue that only reads correctly
-        // nested inside a lighter Surface). `secondary` is the Fairway "matte
-        // surface + warm hairline + shadow" recipe: bg-surface LIFTS off canvas
-        // in both themes (dark: surface L=0.228 vs canvas L=0.188; light:
-        // surface L=0.984 vs canvas L=0.953 — checked in design-tokens.css).
+        // History, because this has now been wrong twice in two directions.
+        // It began as a `w-full` `rounded-fw-sm` bar across the ~1130px content
+        // column, which reads as a divider, not a control. That became a
+        // centered intrinsic-width `secondary` pill — a real button, correctly
+        // NOT `ghost` (transparent at rest) and correctly NOT `bg-surface-sunken`
+        // (a well recedes BELOW canvas in the dark scope; it only reads nested
+        // inside something lighter).
         //
-        // That alone wasn't enough, though: this row previously stretched
-        // `w-full` across the ~1130px content column with a squared-off
-        // `rounded-fw-sm` corner radius. No other button in the app spans full
-        // content width, so at that width even a bordered/shadowed fill reads as
-        // a divider bar, not a control — regardless of variant. Letting the
-        // Button size to its own content (default `rounded-full` pill, no
-        // `w-full`) and centering it in a `flex justify-center` wrapper is what
-        // actually restores the button affordance.
-        <div className="flex justify-center">
+        // But a centered filled pill is still a full-width ROW, and it was
+        // sitting between the chrome and the first real event — one of the five
+        // stacked bands the S1 audit measured at ~780px of an 844px viewport.
+        // A `Button` cannot be quiet enough here: its smallest size still costs
+        // a 44px band plus the list's `gap-7`.
+        //
+        // So this is a text link, left-aligned with the day headers below it,
+        // in `accent-700` (the token that survives cream AND the dark scope —
+        // it is what FairwayEventDetailDrawer and the masthead's overflow row
+        // use for the same job). It keeps a 44px hit area via padding while
+        // occupying ~20px of visible band, and the `-my-2` pulls the invisible
+        // half of that padding back out of the flow so the touch target does
+        // not re-inflate the layout it was shrunk out of.
+        // `-mb-4` claws back most of the list's own `gap-7` under this row: the
+        // link is a 20px-tall aside, and letting a 28px section gap sit beneath
+        // it would hand back the band the link was made small to save.
+        <div className="-mb-4 flex">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
+            className={cn(
+              '-my-2 -ml-1 h-auto min-h-[44px] rounded-fw-sm border-0 px-1 py-2',
+              'text-caption font-semibold text-accent-700',
+              'hover:bg-transparent hover:text-accent-600',
+            )}
           >
             {showPast
               ? 'Hide earlier events'

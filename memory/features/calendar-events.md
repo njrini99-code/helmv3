@@ -61,6 +61,9 @@ The route is shared by coaches and players, but permissions and actions differ. 
 ### Components
 
 - `src/components/fairway/pages/calendar/FairwayCalendar.tsx`
+- `src/components/fairway/pages/calendar/FairwayCalendarMasthead.tsx`
+- `src/components/fairway/pages/calendar/FairwayCalendarFab.tsx`
+- `src/components/fairway/pages/calendar/FairwayDayStrip.tsx`
 - `src/components/golf/calendar/PremiumCalendarClient.tsx`
 - `src/components/golf/calendar/MonthView.tsx`
 - `src/components/golf/calendar/WeekView.tsx`
@@ -146,6 +149,36 @@ Calendar renders views
 - Event detail needs visible status, attendee/RSVP state, documents, and conflict warnings where relevant.
 - Empty states should distinguish no events from filtered-out events.
 - The header should avoid stacking multiple utility rows; lower-priority controls should move into sheets/menus.
+- **The Fairway calendar's mobile chrome is TWO rows, not five (S1 chrome
+  collapse, 2026-09-04).** `FairwayCalendarHero` is retired — deleted, not
+  hidden. What replaced it:
+  - `FairwayCalendarMasthead` is the header: the month + year IS the page `h1`
+    and also the trigger for a month-picker `Sheet` (which carries "Jump to
+    today"); one overflow `IconButton` on the right holds everything
+    lower-priority. There is no "Calendar" eyebrow — the bottom-nav tab and the
+    calendar sub-tab strip already name the page, and it was the third copy.
+  - `FairwayDayStrip` IS the week navigation. It renders as ONE sunken track
+    (`bg-surface-sunken` + the shared `SEGMENTED_TRACK_SUNKEN_SHADOW`) with the
+    selected day as the only raised cell, and pages the week on horizontal
+    swipe. There is no prev/Today/next row. Swipe is not the only route:
+    `FairwayCalendar`'s window-level ←/→ (and `T`) remain the sole keyboard
+    owner, and the picker carries a visible "Jump to today".
+  - The counts are ONE caption line sharing a row with the view `Segmented`
+    (whose labels abbreviate to D / W / M below `sm`, full word always in the
+    accessible name). "Add to phone" moved into the masthead overflow; it is
+    still reachable for BOTH roles including mobile.
+  - The create/respond affordance is `FairwayCalendarFab`, a Fairway
+    `IconButton variant="primary"` fixed above `--golf-mobile-bottom-nav-offset`.
+    The legacy `QuickAddEventFAB` is deliberately NOT mounted here: its palette
+    is the retired `amber-*`/`purple-*`/`cream-*`/`warm-*` language, it is live
+    on the baseball calendar, and its six-way speed dial has no counterpart in
+    `openCreate()`, which takes no arguments.
+  - `FairwayCalendarSkeleton` shape-matches this, and it is the ONLY skeleton on
+    the route — `loading.tsx`, page.tsx's `dynamic()` fallback and page.tsx's
+    interior `<Suspense>` all render it.
+- The Agenda's "Show N earlier events" control is a quiet inline text link, not
+  a filled pill and not a full-width bar. It has been both of those and both
+  read as a band of chrome between the header and the first real event.
 - The Agenda anchors "Today" into view only when earlier buckets are visible
   above it and the range genuinely changes; on a fresh load past buckets are
   collapsed, "Today" already heads the list, and nothing scrolls — the old
