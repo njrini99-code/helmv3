@@ -232,4 +232,55 @@ describe('convertToModelMessages with ignoreIncompleteToolCalls (real SDK)', () 
       TOOL_ID,
     ]);
   });
+
+  it('DOCUMENTS A GAP: isIncompleteToolPart does not drop a preliminary output-available part', async () => {
+    // `output-available` can carry `preliminary: true` — the SDK's shape for
+    // a tool result from a still-streaming multi-yield `execute` (an async
+    // generator), before the final value lands. `isIncompleteToolPart` only
+    // checks `state`, not `preliminary`, so this part survives the route's
+    // pre-filter, and the SDK's own `convertToModelMessages` does not
+    // special-case `preliminary` either (see the
+    // `case "output-error": case "output-available":` branch in
+    // node_modules/ai/dist/index.js) — a preliminary result converts to a
+    // full `tool-result` block exactly like a final one.
+    //
+    // This is safe TODAY only because nothing in
+    // src/lib/coachhelm/v3/chat/agent-tools.ts (`buildCoachTools`) can ever
+    // produce `preliminary: true` — every `execute` is a plain `async`
+    // function returning one value, never an async generator. If a future
+    // tool streams partial output that way, add
+    // `(part.state === 'output-available' && part.preliminary === true)` to
+    // `isIncompleteToolPart`'s drop condition — otherwise a preliminary
+    // result can precede the final one for the same `toolCallId` and
+    // reintroduce the "Tool result is missing for tool call" bug this file
+    // exists to fix, for a state neither defence currently watches.
+    const part = {
+      type: 'tool-create_goal_for_player',
+      toolCallId: TOOL_ID,
+      state: 'output-available',
+      input: { player_id: 'p1', metric_id: 'putting_sg' },
+      output: { status: 'partial' },
+      preliminary: true,
+    };
+
+    expect(isIncompleteToolPart(part)).toBe(false);
+
+    const messages = [userTurn, assistantWith([part])].map((m) => ({
+      ...m,
+      parts: m.parts.filter((p) => !isIncompleteToolPart(p as { type: string; state?: unknown })),
+    }));
+    const converted = await convertToModelMessages(messages);
+    const emitted = converted.flatMap((m) =>
+      Array.isArray(m.content) ? m.content : [{ type: 'text', text: m.content }],
+    ) as Array<{ type: string; toolCallId?: string }>;
+
+    // Pinned current behavior, not desired behavior: the preliminary part
+    // reaches the model as a genuine tool-result. If this assertion ever
+    // flips to an empty array, the SDK itself started dropping preliminary
+    // parts and the extra guard described above is no longer needed — update
+    // this test's comment rather than deleting the coverage.
+    expect(emitted.filter((b) => b.type === 'tool-result').map((c) => c.toolCallId)).toEqual([
+      TOOL_ID,
+    ]);
+  });
 });

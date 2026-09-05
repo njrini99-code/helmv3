@@ -382,6 +382,23 @@ export async function POST(req: NextRequest) {
         // proven correct and covered by chat-incomplete-tool-calls.test.ts —
         // makes this correctness independent of the SDK's internal state
         // list, which just changed under us once already.
+        //
+        // One state our predicate does NOT drop, unlike the SDK's retired
+        // filter: an `output-available` part with `preliminary: true` — a
+        // tool result from a still-streaming step, before the final value
+        // lands. The SDK's own `convertToModelMessages` (index.js, the
+        // `case "output-error": case "output-available":` branch) does not
+        // special-case it either — a preliminary part converts to a full
+        // `tool-result` content block same as a final one. That is safe here
+        // ONLY because nothing in `buildCoachTools` (agent-tools.ts) can ever
+        // produce one: every `execute` is a plain `async` function returning
+        // a single value, never an async generator / multi-yield tool, which
+        // is the only shape the SDK uses to emit `preliminary: true`. If a
+        // future tool streams partial output this way, add
+        // `(part.state === 'output-available' && part.preliminary === true)`
+        // to `isIncompleteToolPart`'s drop condition before shipping it —
+        // otherwise a preliminary result can precede the final one for the
+        // same `toolCallId` and reintroduce this exact bug class.
         messages: await convertToModelMessages(
           uiMessages.map((m) => ({
             ...m,
