@@ -194,6 +194,12 @@ export default defineConfig({
             // summarization with no secret material retained, the static
             // verifier) and its soft no-PR-ever branch listing.
             'scripts/__tests__/control-plane-weekly-report.test.mjs',
+            // Protected-prefix (release/ios/android/capacitor) branch
+            // retention (A6): the pure classifier behind control-plane-
+            // verify.mjs's protected-prefix-branch-retention check, and the
+            // regression pin that hotfix/ was excluded because it gates
+            // nothing in either CI system.
+            'scripts/__tests__/protected-prefix-branch-retention.test.mjs',
             // The anchored matcher behind the enforcement inventory's "Vercel
             // deploy/purchase refused" claim. Pinned so a rule naming a
             // DIFFERENT tool with the same prefix can never count as cover.

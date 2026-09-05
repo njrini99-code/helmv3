@@ -334,6 +334,75 @@ export function classifyBranchProtection(facts) {
   };
 }
 
+/**
+ * Prefixes that actually gate a native-compile CircleCI job by BRANCH NAME
+ * (`.circleci/config.yml`'s `ios`/`android` workflows' `filters.branches.only`).
+ * Verified 2026-09-05 by grep, not assumed:
+ *
+ *   grep -n "release/\|hotfix/\|ios/\|android/\|capacitor/" \
+ *     .github/workflows/*.yml .circleci/config.yml
+ *
+ * `hotfix/*` is the one prefix this check was ORIGINALLY specced to include
+ * that does not appear as a real branch filter anywhere in either CI system
+ * (the only two hits for the literal string "hotfix" in any workflow are a
+ * code comment in ci.yml about a past incident and this comment). Excluded
+ * from the active list rather than silently kept: a "protected" prefix that
+ * protects nothing is worse than an honest gap, because it reads as coverage
+ * that was checked and confirmed. `agent/fix-circleci-ios-*` and
+ * `ci/android-*` are real filter entries too, but they are branch NAMES an
+ * agent opts into deliberately for one PR, not a class of long-lived release
+ * branch this check is about retention hygiene for — left out for that
+ * reason, not because they weren't found.
+ */
+export const PROTECTED_CI_PREFIXES = ['release/', 'ios/', 'android/', 'capacitor/'];
+
+/**
+ * Pure: which protected-prefix branches are stale (tip older than
+ * `staleDays`) with no matching record in config/branch-retention.json's
+ * `ci_prefix_branch_reviews` array. `branches` is [{name, committedDate}];
+ * `reviewed` is the array of {name, reason, reviewed} records already on
+ * file. A record's PRESENCE is what clears a branch — its `reviewed` date
+ * is informational for a human re-reviewing, not re-checked against
+ * staleness here, so re-tagging a branch as reviewed always clears it
+ * (matching the plain English of "has no record", not "has a RECENT
+ * record" — the task this check exists for is "does someone know this
+ * branch is here", not "was it looked at this month").
+ */
+export function classifyProtectedPrefixBranches(branches, reviewed, { now = new Date(), staleDays = 14 } = {}) {
+  const cutoff = now.getTime() - staleDays * 24 * 60 * 60 * 1000;
+  const reviewedNames = new Set((reviewed ?? []).map((r) => r.name));
+  const protectedBranches = (branches ?? []).filter((b) => PROTECTED_CI_PREFIXES.some((p) => b.name.startsWith(p)));
+  const stale = protectedBranches.filter((b) => b.committedDate && new Date(b.committedDate).getTime() < cutoff);
+  const unreviewed = stale.filter((b) => !reviewedNames.has(b.name));
+  if (unreviewed.length === 0) {
+    return { state: PASS, detail: `${protectedBranches.length} protected-prefix branch(es), ${stale.length} stale, all recorded in config/branch-retention.json` };
+  }
+  return {
+    state: FAIL,
+    detail: `${unreviewed.length} protected-prefix branch(es) older than ${staleDays}d with no config/branch-retention.json record: ${unreviewed.map((b) => b.name).join(', ')}`,
+  };
+}
+
+function checkProtectedPrefixBranchRetention() {
+  const r = sh(GH, ['api', 'repos/{owner}/{repo}/branches', '--paginate', '--jq', '.[] | "\\(.name)\\t\\(.commit.sha)"']);
+  if (r.status !== 0) return add('github', 'protected-prefix-branch-retention', UNKNOWN, 'could not list branches');
+  const lines = (r.stdout ?? '').trim().split('\n').filter(Boolean);
+  const relevant = lines
+    .map((l) => { const [name, shaVal] = l.split('\t'); return { name, sha: shaVal }; })
+    .filter((b) => PROTECTED_CI_PREFIXES.some((p) => b.name.startsWith(p)));
+
+  const branches = [];
+  for (const b of relevant) {
+    const d = sh(GH, ['api', `repos/{owner}/{repo}/commits/${b.sha}`, '--jq', '.commit.committer.date']);
+    branches.push({ name: b.name, committedDate: d.status === 0 ? (d.stdout ?? '').trim() : null });
+  }
+
+  const retentionFile = readJson(resolve(ROOT, 'config/branch-retention.json'));
+  const reviewed = Array.isArray(retentionFile?.ci_prefix_branch_reviews) ? retentionFile.ci_prefix_branch_reviews : [];
+  const verdict = classifyProtectedPrefixBranches(branches, reviewed);
+  add('github', 'protected-prefix-branch-retention', verdict.state, verdict.detail);
+}
+
 // ---------------------------------------------------------------------------
 // STATIC — everything provable from the repository alone.
 
@@ -873,6 +942,7 @@ async function run() {
     checkSandbox();
     checkOpenPrResidue();
     checkMainBranchProtection();
+    checkProtectedPrefixBranchRetention();
   }
 
   const gaps = readJson(resolve(ROOT, 'config/control-plane-gaps.json'))?.gaps ?? [];
