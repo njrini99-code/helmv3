@@ -200,6 +200,58 @@
   }
 }
 
+/* ── Fairway glass CHROME — the material, and nothing else ──────────────────
+   A pinned bar that a conversation scrolls under (the thread header and the
+   composer): the warm champagne tint reads through, blurred and saturated, so
+   the content passing behind stays legible as motion without becoming
+   readable as content.
+
+   Deliberately MATERIAL ONLY — background, backdrop-filter and the two
+   specular edges. Radius, shadow, padding and z-index stay on the consumer's
+   Tailwind classes, because a bar and a pill want the same glass and nothing
+   else in common. That is what separates this from `.fw-glass-regular`
+   (overlays/fairway-overlays.css), which bakes in a border, `--fw-shadow-raise`
+   and `contain: layout paint style` for a floating popover.
+
+   The blur DOWNSHIFTS to --fw-blur-mobile (16px) at <=768px, which is what
+   that token exists for and is labelled "low-power downshift". This is a
+   large, permanently-composited backdrop-filter with a thread scrolling
+   through it — the single most expensive thing on the screen on an older
+   iPhone — so the phone gets the cheaper blur, not the prettier one.
+
+   Both a11y fallbacks are mandatory and mirror the overlay recipe: with
+   reduced transparency the material collapses to an opaque token surface, and
+   under forced colors it becomes the system canvas. A glass bar with no
+   fallback is an unreadable bar for the people who turned the setting on. */
+.fw-glass-chrome {
+  background: var(--fw-glass-bg);
+  -webkit-backdrop-filter: blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
+  backdrop-filter: blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
+}
+
+@media (max-width: 768px) {
+  .fw-glass-chrome {
+    -webkit-backdrop-filter: blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
+    backdrop-filter: blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .fw-glass-chrome {
+    background: var(--fw-color-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .fw-glass-chrome {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Focus-visible halo for the warm-black Fairway nav rail (`.on-dark` scope).
    FairwaySidebar marks itself `.on-dark`; without this the green focus ring sits
    on a dark surface with a light ring-offset and reads poorly. A solid green

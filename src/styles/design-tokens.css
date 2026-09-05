@@ -242,6 +242,18 @@
   --fw-shadow-card:  inset 0 1px 0 oklch(1 0 0 / 0.55),
                      0 1px 2px oklch(0.18 0.01 60 / 0.05),
                      0 4px 10px oklch(0.18 0.01 60 / 0.06);
+  /* The accent counterpart of --fw-shadow-card, for a surface whose FILL is the
+     brand green (the messages thread's own bubbles). --fw-shadow-card's
+     0.55-alpha white inset is a specular for a CREAM plane; on a mid-green one
+     it reads as a chalk line, so the inset drops to 0.14. The ambient is tinted
+     with the accent rather than the neutral warm-black, so depth carries the
+     surface's own colour instead of greying it — the same argument the card
+     recipe makes for warmth over pure black.
+     Applied only where the fill is accent-650/600; on any cream surface use
+     --fw-shadow-card. */
+  --fw-shadow-accent-lift: inset 0 1px 0 oklch(1 0 0 / 0.14),
+                     0 1px 2px oklch(0.18 0.01 60 / 0.07),
+                     0 8px 20px oklch(0.488 0.124 150 / 0.22);
   --fw-shadow-pop:   0 2px 4px   oklch(0.18 0.01 60 / 0.06),
                      0 12px 32px oklch(0.18 0.01 60 / 0.10);   /* alias of raise — anchored panels */
   --fw-shadow-modal: 0 8px 16px  oklch(0.15 0.01 55 / 0.10),
@@ -586,6 +598,12 @@
   --fw-shadow-card:  inset 0 1px 0 oklch(1 0 0 / 0.07),
                      0 1px 2px oklch(0 0 0 / 0.30),
                      0 4px 10px oklch(0 0 0 / 0.38);
+  /* On a dark ground the green ambient would sit under a green bubble on an
+     espresso page and read as a smear, so the lift goes back to near-black and
+     the LIT EDGE carries it — the same reversal --fw-shadow-card makes above. */
+  --fw-shadow-accent-lift: inset 0 1px 0 oklch(1 0 0 / 0.10),
+                     0 1px 2px oklch(0 0 0 / 0.32),
+                     0 8px 20px oklch(0 0 0 / 0.42);
   --fw-shadow-pop:   0 2px 4px   oklch(0 0 0 / 0.34),
                      0 12px 32px oklch(0 0 0 / 0.44);
   --fw-shadow-modal: 0 8px 16px  oklch(0 0 0 / 0.42),

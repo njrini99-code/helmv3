@@ -544,23 +544,33 @@ export function FairwayMessages() {
             Only the two ACTIONS are not carried by other chrome, so only they
             survive here. The conversation count is dropped rather than moved:
             the rail beneath it is the count, rendered. */}
-        {!mobileShowChat && (
-          <div className="flex items-center justify-end gap-2 md:hidden">
-            {userRole === 'coach' && teamId ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Users size={16} aria-hidden="true" />}
-                onClick={() => setShowTeamBroadcastModal(true)}
-              >
-                Team
-              </Button>
-            ) : null}
-            <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-              New message
+        {/* ONE trailing action on the phone row, and only when there is one.
+            Compose moved INTO the rail, onto the scope row beside All / Unread
+            / Groups, where the design puts it: it belongs with the list it
+            acts on, and it is a 34px round target rather than a text button
+            competing with the destination name. That left this row holding a
+            single secondary action for coaches — which is the mobile header
+            contract ("at most one visible trailing action") — and for a player
+            holding nothing at all, so it no longer renders and stops charging
+            them for an empty flex row above the search field.
+
+            The row deliberately does NOT gain the design's 28px "Messages"
+            title: FairwayTopBar already prints that on mobile
+            (FairwayTopBar.tsx, `md:hidden`), and a second copy is exactly the
+            triple-naming this row was cut down to fix. The artboard's masthead
+            IS that top bar, drawn in one piece because a mockup has no shell. */}
+        {!mobileShowChat && userRole === 'coach' && teamId ? (
+          <div className="flex items-center justify-end md:hidden">
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Users size={16} aria-hidden="true" />}
+              onClick={() => setShowTeamBroadcastModal(true)}
+            >
+              Team
             </Button>
           </div>
-        )}
+        ) : null}
 
         <div className="hidden md:block">
         <ViewHeader

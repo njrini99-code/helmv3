@@ -868,8 +868,17 @@ export function MessageThreadPane({
         className,
       )}
     >
-      {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-w-0 items-center gap-2.5 border-b border-border-subtle px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+      {/* Thread header — the warm glass bar the conversation lives under.
+          `fw-glass-chrome` (globals.css) carries ONLY the material: the
+          champagne tint, the blur, and its <=768px downshift to
+          --fw-blur-mobile. The edges are here because they are this bar's, not
+          the material's — a cream specular above, the deeper warm glass edge
+          below, and a short ambient so the bar reads as sitting ON the thread
+          rather than being ruled off from it. That pair replaces the
+          `border-b`: a hairline AND a shadow on the same edge is the "border
+          or shadow, never both" rule the card recipes already follow.
+          `z-raised` keeps it above the scroll region it fronts. */}
+      <header className="fw-glass-chrome relative z-raised flex min-w-0 items-center gap-2.5 px-4 py-2.5 shadow-[inset_0_1px_0_var(--fw-glass-highlight),0_1px_0_var(--fw-glass-border-bot),var(--fw-shadow-flat)] sm:gap-3 sm:px-5 sm:py-3">
         {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
             an open thread this is the only way out AND the only thing naming
             where "out" is, so it says so — the platform convention, and the
@@ -1046,8 +1055,17 @@ export function MessageThreadPane({
                     marker the only ruled thing in the thread, which is what it
                     was always described as being. */}
                 {startsDay && (
-                  <div className="flex items-center justify-center pb-2 pt-5" role="separator">
-                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                  <div className="sticky top-0 z-raised flex items-center justify-center pb-2 pt-5" role="separator">
+                    {/* Sticky, and on the same glass as the header above it.
+                        A day label that scrolls away with its first message
+                        answers "what day is this" only at the moment you
+                        already know; pinned, it answers it for the whole day
+                        you are reading. It is the one element in this pane the
+                        thread genuinely passes BEHIND, which is what the
+                        material is for. `pointer-events-none` because it is a
+                        readout — it must never eat a tap meant for the bubble
+                        travelling under it. */}
+                    <span className="fw-glass-chrome pointer-events-none rounded-full px-3.5 py-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-secondary shadow-[inset_0_1px_0_var(--fw-glass-highlight),var(--fw-shadow-pop)]">
                       {formatDaySeparator(msg.created_at)}
                     </span>
                   </div>
@@ -1109,7 +1127,15 @@ export function MessageThreadPane({
                     </div>
                   )}
 
-                  <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                  {/* A PERCENTAGE cap alone is a cap that stops capping on a
+                      desktop: 70% of the 720px thread panel is a 504px line of
+                      15px type, roughly 100 characters, where typography puts
+                      the comfortable limit near 45-75. The phone was never the
+                      problem — 78% of a 358px column is 279px. Adding the
+                      absolute term makes the same rule hold at both ends: the
+                      proportion governs the phone, the 288px ceiling governs
+                      everything wider. */}
+                  <div className={cn('group relative flex min-w-0 max-w-[min(78%,288px)] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name — GROUPS ONLY, once per group.
                         Redundant in a 1:1 (the header already names them) and
                         it was `text-eyebrow` in tertiary ink, which is the
@@ -1234,13 +1260,40 @@ export function MessageThreadPane({
                           // is the same 0.03 separation the token file was
                           // tuned around, carried by fill instead of a
                           // hairline. Shadow OR border, never both.
+                          // `shadow-flat`, which both bubbles had, is
+                          // `shadow-fw-card` MINUS its inset specular — the one
+                          // part of the recipe the token file calls "the 'lit
+                          // from above' tell of a premium surface". The lit edge
+                          // is what makes a cream plane read as lifted rather
+                          // than merely lighter, so incoming bubbles take the
+                          // whole recipe.
+                          //
+                          // Own bubbles cannot: a 0.55-alpha white inset on a
+                          // mid-green fill is a chalk line. They take
+                          // `shadow-fw-accent-lift`, whose inset drops to 0.14
+                          // and whose ambient is tinted with the accent, so
+                          // their depth carries their own colour instead of
+                          // greying it.
                           isOwn
-                            ? 'bg-accent-650 text-text-on-accent shadow-flat'
-                            : 'bg-surface text-text-primary shadow-flat',
-                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
-                          isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',
-                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-tr-md rounded-br-sm' : 'rounded-fw-lg rounded-tl-md rounded-bl-sm'),
-                          !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
+                            ? 'bg-accent-650 text-text-on-accent shadow-fw-accent-lift'
+                            : 'bg-surface text-text-primary shadow-fw-card',
+                          // CORNER GRAMMAR — the tail corner marks where an
+                          // utterance ENDS, and only there.
+                          //
+                          // Every bubble was `rounded-fw-lg` (28px, the SHEET
+                          // step) with the tail cut on the last one. At 28px on
+                          // a ~40px-tall bubble the arc consumes most of the
+                          // side, so a burst of three short lines read as three
+                          // lozenges rather than one thing said. `card` (20px)
+                          // is the surface step and the radius the design
+                          // draws; the two INNER corners of a middle bubble
+                          // tighten to `fw-sm` (10px) so consecutive lines
+                          // nest into a single stacked shape, and only the
+                          // final bubble cuts its tail to 6px.
+                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-br-sm' : 'rounded-card rounded-bl-sm'),
+                          isFirstInGroup && !isLastInGroup && 'rounded-card',
+                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-tr-fw-sm rounded-br-sm' : 'rounded-card rounded-tl-fw-sm rounded-bl-sm'),
+                          !isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-card rounded-tr-fw-sm rounded-br-fw-sm' : 'rounded-card rounded-tl-fw-sm rounded-bl-fw-sm'),
                         )}
                       >
                         {msg.content ? (
