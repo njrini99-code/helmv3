@@ -57,7 +57,8 @@ trial it, run both side by side on a few branches:
 
 ```bash
 npx tsc --noEmit > /tmp/tsc.txt 2>&1; echo "tsc $?"
-npx -p @typescript/native-preview tsgo --noEmit > /tmp/tsgo.txt 2>&1; echo "tsgo $?"
+npx -p @typescript/native-preview tsgo --noEmit > /tmp/tsgo.txt 2>&1; \
+  echo "tsgo $?"
 diff <(sort /tmp/tsc.txt) <(sort /tmp/tsgo.txt)
 ```
 
