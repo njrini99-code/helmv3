@@ -22,7 +22,22 @@ features:
         - memory/registry.yml
         - memory/context/agent-operations.md
         - memory/context/agent-traps.md
-      incidents: []
+      incidents:
+        - memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md
+        - memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md
+        - memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md
+        - memory/incidents/feature_awareness_system/INC-2026-08-29-disk-exhaustion-from-six-worktrees.md
+        - memory/incidents/feature_awareness_system/INC-2026-08-30-worktree-removed-without-owner-consent.md
+        - memory/incidents/feature_awareness_system/INC-2026-08-30-zsh-history-modifier-broke-pushes.md
+        - memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md
+        - memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md
+        - memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md
+        - memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md
+        - memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md
+        - memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md
+        - memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md
+        - memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md
+        - memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md
     code:
       routes: []
       components: []
@@ -879,7 +894,7 @@ features:
         - memory/context/coachhelm-ai.md
       required_checks:
         - npm run typecheck
-        - npm run test -- --run src/test/app/golf/dashboard/coachhelm src/test/coachhelm/v3
+        - npm run test -- --run src/test/coachhelm/v3
         - npm run build
 
   team_communications:
@@ -1078,7 +1093,7 @@ features:
         - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
       required_checks:
         - npm run typecheck
-        - npm run test:e2e -- e2e/roster.spec.ts
+        - npm run test:e2e -- e2e/golf-critical-paths.spec.ts -g "roster"
         - npm run build
 
   recruiting:

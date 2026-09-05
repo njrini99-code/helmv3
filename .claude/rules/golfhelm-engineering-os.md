@@ -9,7 +9,6 @@ paths:
   - "supabase/migrations/**"
   - "memory/features/**"
   - "memory/registry.yml"
-verified: 2026-08-21  # paths audited against memory/registry.yml's actual code.* globs (see memory/system/golfhelm-engineering-os.md) + confirmed on disk this date
 ---
 
 # GolfHelm Engineering OS — path-scoped rule

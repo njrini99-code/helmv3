@@ -10,10 +10,11 @@ file that states rules. This adapter adds nothing; it points.
 - Design/UI work: the binding rule is `.claude/rules/design-system.md`; the
   canonical tokens are `src/styles/design-tokens.css`; the shipped components
   are `src/components/fairway/**`. Tokens beat prose. Do not use external UI
-  kits, Google Fonts, or `!important` — a previous stock design rule here said
-  otherwise and was deleted for contradicting the design system.
+  kits, Google Fonts, or `!important`.
 - Database work: `src/lib/types/database.ts` is the generated source of truth
-  for every table and column; sport prefixes (`golf_`, `baseball_`) are
-  load-bearing.
-- Branch: work on the currently checked-out branch; never switch branches or
-  create worktrees unless asked. Merging to main does not deploy.
+  for every table and column; sport prefixes (`golf_`, `baseball_`,
+  `helm_lifting_`) are load-bearing.
+- Branch: one active session may work on the currently checked-out branch
+  directly. A concurrent session takes its own worktree through the one
+  door — `scripts/new-worktree.sh <task>` — never a raw `git checkout -b`,
+  `git switch -c`, or `git worktree add`. Merging to main does not deploy.

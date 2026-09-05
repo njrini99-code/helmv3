@@ -2,14 +2,13 @@
 paths:
   - "**/*.tsx"
   - "**/*.css"
-verified: 2026-08-16  # re-checked against code this date
 ---
 
 ## Design System
 
 **Fairway is the only dashboard design system.** `src/lib/redesign/flag.ts`
-`isRedesignEnabled()` is hardcoded `return true` (Wave W1, 2026-07-09) — on
-in every environment including prod. The old GolfDashboardShell/GolfSidebar
+`isRedesignEnabled()` is hardcoded `return true` — on in every environment
+including prod. The old GolfDashboardShell/GolfSidebar
 fork and its `glass-standard`/`cream-100`/`warm-*` visual language are
 retired under `src/app/golf/(dashboard)/` — don't reintroduce them.
 
@@ -22,8 +21,8 @@ retired under `src/app/golf/(dashboard)/` — don't reintroduce them.
 `Surface`/`Inset`/`Elevated` (`surfaces/`, THE card — `bg-surface` +
 `rounded-card` + border-subtle *or* `shadow-soft`, never both, no forced
 min-height) · `InstrumentPanel`/`Readout` (`instrument/`, dense metric
-displays) · `Segmented` (`controls/segmented.tsx`, THE tab-switcher —
-~15 call sites, style once here) · `ViewHeader` (`view-header/`) ·
+displays) · `Segmented` (`controls/segmented.tsx`, THE tab-switcher — style once
+here) · `ViewHeader` (`view-header/`) ·
 `EmptyState`/`InsufficientData` (`feedback/`, never hand-roll a raw
 "No X yet" line) · `InlineNotice` · `ModalShell`/`Sheet` (`overlays/`,
 the ONE modal / ONE slide-over) · `Skeleton` (`feedback/Skeleton.tsx` —
