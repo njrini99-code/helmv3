@@ -275,16 +275,28 @@ function TypingIndicator() {
  * attachments have resolved (signed) successfully; renders nothing otherwise so
  * the bubble stays honest-empty until real data lands.
  */
+/**
+ * Attachments inside a bubble.
+ *
+ * `photoOnly` is the photo-message case, where the bubble is a 6px frame and
+ * the image is the message. The image takes `rounded-fw-md` (14px) — the bubble's
+ * 20px outer radius less that frame, and step 2 of the radius ramp — and the wrapper drops the `mt-1.5` it carries for a
+ * text message, because a photo bubble has nothing above the picture and that
+ * margin is what would leave a cream band across the top of it.
+ */
 function MessageAttachments({
   attachments,
   isOwn,
+  photoOnly = false,
 }: {
   attachments: ResolvedAttachment[];
   isOwn: boolean;
+  /** Every attachment is a signed image and the bubble is its frame. */
+  photoOnly?: boolean;
 }) {
   if (!attachments.length) return null;
   return (
-    <div className="mt-1.5 flex flex-col gap-1.5">
+    <div className={cn('flex flex-col gap-1.5', photoOnly ? '' : 'mt-1.5')}>
       {attachments.map((att) => {
         const isImage = att.fileType === 'image' && !!att.url;
         if (isImage) {
@@ -303,28 +315,40 @@ function MessageAttachments({
                 width={att.width ?? undefined}
                 height={att.height ?? undefined}
                 loading="lazy"
-                className="max-h-64 w-full max-w-[260px] object-cover"
+                className="max-h-72 w-full rounded-fw-md object-cover"
               />
             </a>
           );
         }
         // Non-image (or unsigned image) → download chip.
+        // A file is an OBJECT, so it gets an object's shape: a tinted type
+        // tile, the name at reading size, the size beneath it, and the
+        // download glyph on the trailing edge. It read as a caption-sized
+        // line of grey text with a 16px paperclip beside it, which is how you
+        // render metadata, not how you render the thing that was sent.
         const chip = (
           <span
             className={cn(
-              'inline-flex max-w-[260px] items-center gap-2 rounded-fw-md px-2.5 py-2',
+              'inline-flex max-w-[260px] items-center gap-3 rounded-fw-md px-3 py-2.5',
               isOwn ? 'bg-text-on-accent/15' : 'bg-surface',
             )}
           >
-            <FileText
-              size={16}
-              aria-hidden="true"
-              className={cn('flex-shrink-0', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}
-            />
+            <span
+              className={cn(
+                'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-sm',
+                isOwn ? 'bg-text-on-accent/20' : 'bg-accent-50',
+              )}
+            >
+              <FileText
+                size={17}
+                aria-hidden="true"
+                className={isOwn ? 'text-text-on-accent' : 'text-accent-700'}
+              />
+            </span>
             <span className="min-w-0 flex-1">
               <span
                 className={cn(
-                  'block truncate font-fw-sans text-eyebrow font-medium',
+                  'block truncate font-fw-sans text-caption font-medium',
                   isOwn ? 'text-text-on-accent' : 'text-text-primary',
                 )}
               >
@@ -341,7 +365,7 @@ function MessageAttachments({
             </span>
             {att.url ? (
               <Download
-                size={14}
+                size={17}
                 aria-hidden="true"
                 className={cn('flex-shrink-0', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}
               />
@@ -1008,6 +1032,18 @@ export function MessageThreadPane({
               if (isNew) seenMessageIdsRef.current.add(msg.id);
 
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
+              // A photo message is not text with a picture under it — the
+              // image IS the bubble, and any words are its caption. When every
+              // resolved attachment is a signed image, the bubble drops to a
+              // 6px frame so the picture reaches its own corners instead of
+              // floating inside 16px of cream, and the caption moves BELOW the
+              // image, which is also the order it should be read in.
+              const isPhotoBubble =
+                Boolean(
+                  (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments,
+                ) &&
+                (attachmentsByMessage[msg.id] ?? []).length > 0 &&
+                (attachmentsByMessage[msg.id] ?? []).every((a) => a.fileType === 'image' && !!a.url);
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
               const resolvedAttachments = attachmentsByMessage[msg.id] ?? [];
               const hasAttachmentError = attachmentErrors.has(msg.id);
@@ -1054,18 +1090,26 @@ export function MessageThreadPane({
                     with the bubbles for the eye. Dropping them makes the New
                     marker the only ruled thing in the thread, which is what it
                     was always described as being. */}
+                {/* `pointer-events-none` belongs on the BAND, not on the pill
+                    inside it. The wrapper is full-width and ~48px tall with
+                    this padding, and `sticky` + `z-raised` park it over the
+                    bubbles as soon as the thread scrolls — so with only the
+                    pill opted out, the band swallowed every tap in a 48px
+                    strip of the one screen whose primary gesture is a
+                    long-press on a bubble.
+                    `role="separator"` went with it: it described the
+                    full-width ruled line this used to be, and a pinned day
+                    header is a header, not a rule. */}
                 {startsDay && (
-                  <div className="sticky top-0 z-raised flex items-center justify-center pb-2 pt-5" role="separator">
+                  <div className="pointer-events-none sticky top-0 z-raised flex items-center justify-center pb-2 pt-5">
                     {/* Sticky, and on the same glass as the header above it.
                         A day label that scrolls away with its first message
                         answers "what day is this" only at the moment you
                         already know; pinned, it answers it for the whole day
                         you are reading. It is the one element in this pane the
                         thread genuinely passes BEHIND, which is what the
-                        material is for. `pointer-events-none` because it is a
-                        readout — it must never eat a tap meant for the bubble
-                        travelling under it. */}
-                    <span className="fw-glass-chrome pointer-events-none rounded-full px-3.5 py-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-secondary shadow-[inset_0_1px_0_var(--fw-glass-highlight),var(--fw-shadow-pop)]">
+                        material is for. */}
+                    <span className="fw-glass-chrome rounded-full px-3.5 py-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-secondary shadow-[inset_0_1px_0_var(--fw-glass-highlight),var(--fw-shadow-pop)]">
                       {formatDaySeparator(msg.created_at)}
                     </span>
                   </div>
@@ -1248,7 +1292,7 @@ export function MessageThreadPane({
                           // tight box is caption treatment, and it made the
                           // content of the product read as metadata about
                           // itself. The message IS the product on this screen.
-                          'px-4 py-3 sm:px-4',
+                          isPhotoBubble ? 'p-1.5' : 'px-4 py-3 sm:px-4',
                           // Own bubbles opt out of the iOS text-selection callout
                           // because long-press is now the actions gesture; Copy
                           // in that menu replaces what selection provided.
@@ -1296,7 +1340,7 @@ export function MessageThreadPane({
                           !isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-card rounded-tr-fw-sm rounded-br-fw-sm' : 'rounded-card rounded-tl-fw-sm rounded-bl-fw-sm'),
                         )}
                       >
-                        {msg.content ? (
+                        {msg.content && !isPhotoBubble ? (
                           <p className="whitespace-pre-wrap break-words font-fw-sans text-body leading-relaxed">
                             {decodeMessageContent(msg.content)}
                           </p>
@@ -1309,7 +1353,7 @@ export function MessageThreadPane({
                             the placeholder forever. */}
                         {hasAttachments ? (
                           resolvedAttachments.length ? (
-                            <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
+                            <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} photoOnly={isPhotoBubble} />
                           ) : hasAttachmentError ? (
                             <Button
                               type="button"
@@ -1334,6 +1378,12 @@ export function MessageThreadPane({
                               Attachment
                             </span>
                           )
+                        ) : null}
+                        {/* The photo's caption, under its picture. */}
+                        {msg.content && isPhotoBubble ? (
+                          <p className="whitespace-pre-wrap break-words px-2.5 pb-1 pt-2 font-fw-sans text-caption leading-relaxed">
+                            {decodeMessageContent(msg.content)}
+                          </p>
                         ) : null}
                         {/* Edited badge — DORMANT unless edited_at. */}
                         {editedAt ? (

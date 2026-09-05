@@ -66,9 +66,33 @@ describe('MessageThreadPane — bubble grammar', () => {
     expect(pane).toContain('max-w-[min(78%,288px)]');
   });
 
-  it('puts the day label on glass and pins it, so it answers for the whole day', () => {
-    expect(pane).toContain('sticky top-0 z-raised');
-    expect(pane).toMatch(/fw-glass-chrome pointer-events-none rounded-full/);
+  it('makes the bubble a FRAME when every attachment is a signed image', () => {
+    // The photo case is decided from resolved attachments, never from
+    // `has_attachments` alone — an unresolved or failed attachment still shows
+    // the retry chip, and a 6px frame around a retry chip is not a photo.
+    expect(pane).toContain('const isPhotoBubble =');
+    expect(pane).toContain("(a) => a.fileType === 'image' && !!a.url");
+    expect(pane).toContain("isPhotoBubble ? 'p-1.5' : 'px-4 py-3 sm:px-4'");
+    // And the words become a caption UNDER the picture, not a paragraph above
+    // it — so the same `msg.content` renders in exactly one of the two places.
+    expect(pane).toContain('{msg.content && !isPhotoBubble ? (');
+    expect(pane).toContain('{msg.content && isPhotoBubble ? (');
+  });
+
+  it('gives a file the shape of an object, not of a caption', () => {
+    // A tinted type tile, the name at reading size, the size beneath it. It
+    // was a 16px paperclip beside two lines of `text-eyebrow`, which is how
+    // this system renders metadata about a thing, not the thing itself.
+    expect(pane).toContain("'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-sm'");
+    expect(pane).toContain("'block truncate font-fw-sans text-caption font-medium'");
+  });
+
+  it('puts the day label on glass, pins it, and does not let the band eat taps', () => {
+    // `pointer-events-none` must be on the STICKY WRAPPER. On the pill alone,
+    // the full-width ~48px band still absorbed every press that landed in it —
+    // on the one screen whose primary gesture is a long-press on a bubble.
+    expect(pane).toContain('pointer-events-none sticky top-0 z-raised');
+    expect(pane).toContain('fw-glass-chrome rounded-full');
   });
 
   it('gives the header the glass material and its two edges instead of a hairline', () => {

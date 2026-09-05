@@ -241,7 +241,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     // the two ways this system draws a boundary, drawn at once.
     <form
       onSubmit={handleSubmit}
-      className="fw-glass-chrome relative z-raised p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[inset_0_1px_0_var(--fw-glass-highlight),0_-1px_0_var(--fw-glass-border-bot),0_-10px_28px_oklch(0.18_0.01_60_/_0.06)] [.keyboard-open_&]:pb-3 lg:pb-3"
+      className="fw-glass-chrome relative z-raised p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[inset_0_1px_0_var(--fw-glass-highlight),0_-1px_0_var(--fw-glass-border-bot)] [.keyboard-open_&]:pb-3 lg:pb-3"
     >
       {/* Didn't send — stated, and recoverable in one tap. */}
       {failed && (
@@ -269,19 +269,26 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
         />
       )}
 
-      {/* The TRACK: a cream lane on the glass, with the pill radius the send
-          button inside it also has, so the two read as one control rather than
-          a button parked in a box. The resting ring is the token hairline
-          drawn as a ring instead of a border, because a border would change
-          the track's box and shift the field 1px on focus; on focus it becomes
-          the accent hairline plus a wider, fainter breath — the same two-step
-          treatment the Fairway inputs use, at the composer's scale. */}
+      {/* The TRACK: a cream lane on the glass, carrying the pill radius the
+          send button inside it also has, so the two read as one control rather
+          than a button parked in a box.
+
+          The focus treatment is `Input.tsx`'s, class for class — solid
+          `accent-600` ring, offset 1, on the canvas — rather than a
+          hand-rolled box-shadow. Two reasons, and the second is the one that
+          matters: an inline `oklch(0.648 …)` ring is a LIGHT-MODE ring with no
+          dark counterpart, and the specular I first wrote for the track
+          (`inset 0 1px 0 oklch(1 0 0 / 0.6)`) is the same 0.6-alpha white line
+          on a dark espresso surface that `--fw-shadow-accent-lift` exists to
+          avoid on the green bubble. `shadow-fw-card` carries that specular as
+          a THEMED token, and the ring tokens flip with the theme too, so both
+          halves are now correct in dark instead of only one. */}
       <div
         className={cn(
-          'flex items-end gap-2 rounded-fw-lg p-1.5 pl-3',
-          'bg-surface shadow-[inset_0_1px_0_oklch(1_0_0_/_0.6),0_0_0_1px_var(--fw-color-border-subtle)]',
-          'transition-shadow duration-200 motion-reduce:transition-none',
-          'focus-within:shadow-[inset_0_1px_0_oklch(1_0_0_/_0.6),0_0_0_1px_oklch(0.648_0.149_149.6_/_0.30),0_0_0_4px_oklch(0.648_0.149_149.6_/_0.10)]',
+          'flex items-end gap-2 rounded-fw-lg border border-border-subtle p-1.5 pl-3',
+          'bg-surface shadow-fw-card',
+          'transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
+          'focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-600 focus-within:ring-offset-1 focus-within:ring-offset-canvas',
         )}
       >
         {/* Attachment trigger — REUSED UNCHANGED. */}
@@ -336,7 +343,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
             // fill, nothing implying a press would do something.
             canSend
               ? 'bg-accent-650 text-text-on-accent shadow-fw-accent-lift hover:bg-accent-750'
-              : 'cursor-not-allowed bg-surface-sunken text-text-tertiary shadow-[inset_0_1px_0_oklch(1_0_0_/_0.5),0_0_0_1px_var(--fw-color-border-subtle)]',
+              : 'cursor-not-allowed border border-border-subtle bg-surface-sunken text-text-tertiary',
           )}
         >
           {sending ? (
