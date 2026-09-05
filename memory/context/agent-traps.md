@@ -8,7 +8,7 @@ current fact is authoritatively documented. This is not a place for general
 lessons — see `memory/context/engineering-methodology.md` and
 `memory/context/agent-operations.md` for those. Created 2026-09-05 while
 folding the machine-local auto-memory corpus into this repo's Git-backed
-memory (`memory/decisions/2026-09-05-control-plane-reset.md`).
+memory (`memory/decisions/ADR-2026-09-05-control-plane-reset.md`).
 
 - **Old belief:** reading `.env.local` is denied by the permission layer, so
   authenticated browser verification needs owner approval before it can

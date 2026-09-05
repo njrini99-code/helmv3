@@ -4,8 +4,9 @@ Durable facts about how agents should operate in this environment and how
 specific tools misbehave here — as opposed to `memory/context/
 engineering-methodology.md`, which holds product/codebase verification
 lessons. Created 2026-09-05 while folding the machine-local auto-memory
-corpus into this repo's Git-backed memory; see `memory/decisions/
-2026-09-05-control-plane-reset.md` for the whole operation. Each entry cites
+corpus into this repo's Git-backed memory; see
+`memory/decisions/ADR-2026-09-05-control-plane-reset.md` for the whole
+operation. Each entry cites
 its source auto-memory note by filename and date.
 
 ## Standing working-style orders

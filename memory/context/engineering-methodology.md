@@ -4,7 +4,7 @@ This file holds engineering-verification and audit-methodology lessons that
 are true across features rather than about one feature's behavior. It is one
 of the new context files created 2026-09-05 while folding the machine-local
 auto-memory corpus into this repo's Git-backed memory
-(`memory/decisions/2026-09-05-control-plane-reset.md` records the whole
+(`memory/decisions/ADR-2026-09-05-control-plane-reset.md` records the whole
 operation). Every entry below cites its source auto-memory note by filename
 and date, and states what was verified against the current repository on
 2026-09-05 versus what is unverified.

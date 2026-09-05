@@ -20,8 +20,9 @@ the incidents/feature-doc edits committed alongside this record).
 - **One constitution** — `AGENTS.md` is current-state only; `CLAUDE.md`,
   `.cursor/rules`, `.codex` and `.devin` are pointer files into it.
 - **One workspace door** — every worktree is created through
-  `scripts/new-worktree.sh` / `scripts/lib/create-workspace.mjs`, a
-  `WorktreeCreate` hook, and a `SessionStart` stamp for anything else;
+  `scripts/new-worktree.sh` (a lower-level `scripts/lib/` module, a
+  `WorktreeCreate` hook, and a `SessionStart` stamp for anything else are
+  the A1 track's in-flight deliverable, not yet merged as of this record);
   always under `~/worktrees/helmv3/`, budget 3, dependencies symlinked,
   never a shared build cache.
 - **One owner per setting** — user scope holds machine preferences and the
@@ -90,9 +91,9 @@ the incidents/feature-doc edits committed alongside this record).
 
 ## Note on this file's name
 
-The operation's own internal notes call this file
-`memory/decisions/2026-09-05-control-plane-reset.md`. It is filed here as
-`ADR-2026-09-05-control-plane-reset.md` instead, because
+The operation's own internal notes call this file, informally,
+"2026-09-05-control-plane-reset.md" with no `ADR-` prefix. It is filed here
+with the prefix instead, because
 `scripts/knowledge/check-ledger-integrity.mjs` (run by `npm run
 knowledge:check`) validates every file in this directory except `README.md`
 against `^ADR-\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$` — the same convention the
