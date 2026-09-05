@@ -1,28 +1,8 @@
 {
-  "1850": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Control-plane reset A6: never-again checks, weekly control-plane workflow, Dependabot auto-merge."
-  },
-  "1848": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Control-plane reset A2b: the 21 deny rules the constitution PR left in the canonical working copy."
-  },
-  "1847": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Control-plane reset A3c: the migration register completed and the Supabase branching integration flagged (O11)."
-  },
   "1846": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
     "note": "Draft: the rounds preview harness work that lived only in the canonical checkout, stacked on #1837. Owner decides rebase or close."
-  },
-  "1845": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Control-plane reset A4: scripts archived, Dependabot bumps applied, code-scanning fixes. Merges when CodeQL reports zero alerts on its merge ref."
   },
   "1837": {
     "disposition": "ACTIVE",
