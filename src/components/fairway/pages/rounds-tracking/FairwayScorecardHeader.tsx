@@ -245,7 +245,12 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         onClick={() => canNavigate && onNavigateToHole?.(holeIndex)}
         disabled={!canNavigate}
         className={cn(
-          'relative min-w-[72px] rounded-none border-r border-border-subtle px-2 py-2.5 text-center transition-colors [&>div]:block [&>div]:w-full',
+          // Phone columns carry hole number + score only, so the sticky chrome
+          // stops eating half the viewport and more of the round stays in view
+          // at once. Par and yardage are not lost: for the hole being played
+          // they sit in the hole hero immediately below, and every column keeps
+          // them in its aria-label, so a screen-reader reading is unchanged.
+          'relative min-w-[52px] rounded-none border-r border-border-subtle px-2 py-2 text-center transition-colors lg:min-w-[72px] lg:py-2.5 [&>div]:block [&>div]:w-full',
           'outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
           isCurrent
             ? 'bg-accent-50'
@@ -263,22 +268,22 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         <div className={cn('font-fw-sans text-microlabel font-semibold', isCurrent ? 'text-accent-700' : 'text-text-secondary')}>
           {hole.number}
         </div>
-        <div className="truncate font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
-        <div className="truncate font-fw-sans text-microbadge text-text-tertiary/80">
+        <div className="hidden truncate font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary lg:block">Par {hole.par}</div>
+        <div className="hidden truncate font-fw-sans text-microbadge text-text-tertiary/80 lg:block">
           {isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} {isMeters ? 'm' : 'yds'}
         </div>
-        <div className={cn('mt-1 font-fw-display text-body-lg font-semibold tabular-nums', scoreColor)}>
+        <div className={cn('mt-0.5 font-fw-display text-body-lg font-semibold tabular-nums lg:mt-1', scoreColor)}>
           {hasScore ? hole.score : '–'}
         </div>
         {hasScore && !isCurrent && (
-          <div className="mt-0.5 text-eyebrow text-fw-success-ink">
+          <div className="mt-0.5 hidden text-eyebrow text-fw-success-ink lg:block">
             <svg className="mx-auto h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
         )}
         {canNavigate && !isCurrent && !hasScore && (
-          <div className="mt-0.5 truncate font-fw-sans text-microbadge text-text-tertiary">Edit</div>
+          <div className="mt-0.5 hidden truncate font-fw-sans text-microbadge text-text-tertiary lg:block">Edit</div>
         )}
       </Button>
     );
@@ -295,14 +300,14 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
   ) => (
     <div
       className={cn(
-        'min-w-[78px] border-r border-border-strong px-2 py-2.5 text-center',
+        'min-w-[58px] border-r border-border-strong px-2 py-2 text-center lg:min-w-[78px] lg:py-2.5',
         emphasis ? 'bg-surface-tint' : 'bg-surface-sunken',
       )}
     >
       <div className="truncate font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
-      <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {par}</div>
-      <div className="font-fw-sans text-microbadge text-text-tertiary/80">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
-      <div className="mt-1 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary">{hasScores ? score : '–'}</div>
+      <div className="hidden font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary lg:block">Par {par}</div>
+      <div className="hidden font-fw-sans text-microbadge text-text-tertiary/80 lg:block">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
+      <div className="mt-0.5 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary lg:mt-1">{hasScores ? score : '–'}</div>
     </div>
   );
 

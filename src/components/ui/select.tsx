@@ -345,12 +345,21 @@ export function Select({
             className
           )}
         >
+          {/* `truncate` and `flex` cannot sit on the SAME element: the label text
+              then becomes an anonymous flex item, and `text-overflow: ellipsis`
+              — which only applies to a block container's own inline content —
+              silently does nothing. A long option cut off mid-word with no
+              ellipsis and no other sign it had been cut ("Fall Travel Qualifier
+              (1/3 rounds comple"), which reads as a data error rather than as
+              truncation. The flex row keeps the icon beside the text; the text
+              gets its own truncating block, and `min-w-0` lets that block
+              actually shrink below its content width inside the row. */}
           <span className={cn(
-            'truncate flex items-center gap-2',
+            'flex min-w-0 items-center gap-2',
             selectedOption ? 'text-warm-900' : 'text-warm-400'
           )}>
             {selectedOption?.icon && <span className="flex-shrink-0">{selectedOption.icon}</span>}
-            {selectedOption?.label || placeholder}
+            <span className="truncate">{selectedOption?.label || placeholder}</span>
             {/* Carries the requirement into the trigger's accessible name. The
                 visible asterisk sits on the label, which does NOT name a button
                 — a button is not a labelable element — so without this a screen
