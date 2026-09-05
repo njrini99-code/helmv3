@@ -32,3 +32,12 @@ release:
 emergency:
   automatic_override: false
   owner_decision_required: true
+
+security:
+  # Read by .github/workflows/control-plane-weekly.yml's hard check: the
+  # weekly run fails when open Dependabot alerts at severity high or
+  # critical exceed this number. Not zero — a hard gate that can never be
+  # green while an alert is triaged-but-unfixed just gets ignored; this is a
+  # ceiling on how much can accumulate before it becomes a required action,
+  # not a claim that this many is fine to carry indefinitely.
+  max_open_high_dependabot: 5
