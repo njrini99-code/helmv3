@@ -1,103 +1,99 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
+import { chmodSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { Status } from '../result.mjs';
-import { parseWorktreeList, isHarnessWorktree, run as worktreeRun } from '../checks/worktree-hygiene.mjs';
+import { run as worktreeRun } from '../checks/worktree-hygiene.mjs';
 
 /**
- * repo:doctor's worktree-hygiene checks exist to catch exactly the incident
- * class autonomy.md and AGENTS.md record: a worktree made outside
- * scripts/new-worktree.sh that the lifecycle tool can never classify. These
- * pin the parser, the harness-worktree LABEL (isHarnessWorktree — used for
- * evidence, not as an exemption: since #1840/A1's WorktreeCreate +
- * stamp-workspace.mjs merged into this same branch, a harness-made worktree
- * is expected to carry the marker too, so an unmarked one FAILs the same as
- * any other), and one real end-to-end FAIL against a disposable git repo.
+ * repo:doctor's worktree-hygiene module owns two checks: canonical drift
+ * (off main, no open PR) and oversized .next caches. It used to own a third
+ * — "every worktree carries .helm/workspace.json" — built 2026-09-05 and
+ * deleted the same day, in the same change, once merging origin/main
+ * revealed checks/workspace.mjs (#1840/A1) already implements the identical
+ * check as `workspace.worktree-markers`. See worktree-hygiene.mjs's own
+ * header for the full account; that check's tests now live in
+ * workspace.mjs's own test coverage, not here — this file does not
+ * duplicate them.
  */
 
-describe('parseWorktreeList', () => {
-  it('extracts worktree paths from porcelain output', () => {
-    const porcelain = 'worktree /a/b\nHEAD abc\nbranch refs/heads/main\n\nworktree /a/c\nHEAD def\n';
-    expect(parseWorktreeList(porcelain)).toEqual(['/a/b', '/a/c']);
-  });
-  it('returns an empty array for empty input', () => {
-    expect(parseWorktreeList('')).toEqual([]);
-  });
-});
+function makeFakeGh(dir: string, script: string) {
+  const p = join(dir, 'gh');
+  writeFileSync(p, `#!/bin/sh\n${script}\n`);
+  chmodSync(p, 0o755);
+  return dir;
+}
 
-describe('isHarnessWorktree', () => {
-  const canonical = '/Users/x/Downloads/helmv3';
-  it('identifies a path under .claude/worktrees/ as harness-made', () => {
-    expect(isHarnessWorktree(`${canonical}/.claude/worktrees/agent-abc123`, canonical)).toBe(true);
-  });
-  it('does not label a worktree under ~/worktrees/helmv3/ as harness-made (the supported creator lives there)', () => {
-    expect(isHarnessWorktree('/Users/x/worktrees/helmv3/some-task', canonical)).toBe(false);
-  });
-  it('does not label the canonical checkout itself as harness-made (handled separately by the caller)', () => {
-    expect(isHarnessWorktree(canonical, canonical)).toBe(false);
-  });
-});
-
-describe('worktree.unmarked-worktree — end to end against a disposable repo', () => {
+describe('worktree.canonical-off-main / worktree.oversized-next — against a disposable repo', () => {
   let base: string;
-  let extra: string;
+  let home: string;
+  let originalPath: string | undefined;
+
   beforeEach(() => {
-    base = mkdtempSync(join(tmpdir(), 'a6-wt-base-'));
+    base = mkdtempSync(join(tmpdir(), 'a6-wt-canon-'));
     execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: base });
     execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: base });
     execFileSync('git', ['config', 'user.name', 'test'], { cwd: base });
     writeFileSync(join(base, 'f.txt'), 'x');
     execFileSync('git', ['add', 'f.txt'], { cwd: base });
     execFileSync('git', ['commit', '-q', '-m', 'init'], { cwd: base });
+    home = mkdtempSync(join(tmpdir(), 'a6-wt-home-'));
+    originalPath = process.env.PATH;
   });
   afterEach(() => {
-    try {
-      execFileSync('git', ['worktree', 'remove', '--force', extra], { cwd: base });
-    } catch {
-      /* already removed by the test */
-    }
+    process.env.PATH = originalPath;
     rmSync(base, { recursive: true, force: true });
-    rmSync(extra, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
   });
 
-  it('FAILs when a linked worktree has no .helm/workspace.json', async () => {
-    extra = mkdtempSync(join(tmpdir(), 'a6-wt-extra-')) + '-wt';
-    execFileSync('git', ['worktree', 'add', '--detach', extra, 'HEAD'], { cwd: base });
-    const results = await worktreeRun({ repoRoot: base, homeDir: mkdtempSync(join(tmpdir(), 'a6-home-')) });
-    const r = results.find((x) => x.id === 'worktree.unmarked-worktree');
-    expect(r?.status).toBe(Status.FAIL);
-    // Compare realpaths: macOS resolves tmpdir()'s /var -> /private/var, and
-    // `git worktree list` reports its own resolved spelling — the same
-    // mismatch the check itself normalises for (see worktree-hygiene.mjs's
-    // realpathOrSelf comment).
-    expect(r?.evidence).toEqual([expect.objectContaining({ path: realpathSync(extra), harnessMade: false })]);
+  it('PASSes canonical-off-main when the checkout is on main', async () => {
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    expect(results.find((r) => r.id === 'worktree.canonical-off-main')?.status).toBe(Status.PASS);
   });
 
-  it('PASSes when the linked worktree carries the marker', async () => {
-    extra = mkdtempSync(join(tmpdir(), 'a6-wt-extra-')) + '-wt';
-    execFileSync('git', ['worktree', 'add', '--detach', extra, 'HEAD'], { cwd: base });
-    mkdirSync(join(extra, '.helm'), { recursive: true });
-    writeFileSync(join(extra, '.helm', 'workspace.json'), JSON.stringify({ kind: 'task', parkPolicy: 'KEEP' }));
-    const results = await worktreeRun({ repoRoot: base, homeDir: mkdtempSync(join(tmpdir(), 'a6-home-')) });
-    const r = results.find((x) => x.id === 'worktree.unmarked-worktree');
-    expect(r?.status).toBe(Status.PASS);
+  it('WARNs canonical-off-main when off main with no open PR (gh reachable)', async () => {
+    execFileSync('git', ['checkout', '-q', '-b', 'some-task'], { cwd: base });
+    const binDir = mkdtempSync(join(tmpdir(), 'a6-wt-bin-'));
+    makeFakeGh(binDir, 'echo 0');
+    process.env.PATH = `${binDir}:${originalPath}`;
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    expect(results.find((r) => r.id === 'worktree.canonical-off-main')?.status).toBe(Status.WARN);
   });
 
-  it('FAILs a harness-made worktree (.claude/worktrees/agent-*) too — no exemption any more', async () => {
-    // #1840/A1's WorktreeCreate + stamp-workspace.mjs mean a harness worktree
-    // is expected to carry the marker just like any other; this pins that an
-    // unmarked one under the harness's own path is a real finding, not a
-    // silently-excluded case (see worktree-hygiene.mjs's header for the
-    // 2026-09-05 history of why this test flipped from "does not flag").
-    extra = join(base, '.claude', 'worktrees', 'agent-test123');
-    mkdirSync(join(base, '.claude', 'worktrees'), { recursive: true });
-    execFileSync('git', ['worktree', 'add', '--detach', extra, 'HEAD'], { cwd: base });
-    const results = await worktreeRun({ repoRoot: base, homeDir: mkdtempSync(join(tmpdir(), 'a6-home-')) });
-    const r = results.find((x) => x.id === 'worktree.unmarked-worktree');
-    expect(r?.status).toBe(Status.FAIL);
-    expect(r?.evidence).toEqual([expect.objectContaining({ path: realpathSync(extra), harnessMade: true })]);
+  it('PASSes canonical-off-main when off main WITH an open PR (gh reachable)', async () => {
+    execFileSync('git', ['checkout', '-q', '-b', 'some-task'], { cwd: base });
+    const binDir = mkdtempSync(join(tmpdir(), 'a6-wt-bin-'));
+    makeFakeGh(binDir, 'echo 1');
+    process.env.PATH = `${binDir}:${originalPath}`;
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    expect(results.find((r) => r.id === 'worktree.canonical-off-main')?.status).toBe(Status.PASS);
+  });
+
+  it('degrades canonical-off-main to LOCAL_ONLY (never FAIL/UNKNOWN) when gh cannot run', async () => {
+    execFileSync('git', ['checkout', '-q', '-b', 'some-task'], { cwd: base });
+    // /usr/bin keeps git resolvable (Xcode CLT git, separate from Homebrew's
+    // git+gh, which both live in /opt/homebrew/bin) while `gh` is nowhere on
+    // this PATH at all — isolates "gh specifically is unreachable" from
+    // "nothing is reachable", which a blanket PATH='' would conflate (the
+    // git call this check ALSO makes would fail first and mask the case
+    // this test exists to prove).
+    process.env.PATH = '/usr/bin:/bin';
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    const r = results.find((x) => x.id === 'worktree.canonical-off-main');
+    expect(r?.status).toBe(Status.LOCAL_ONLY);
+  });
+
+  it('PASSes oversized-next when no .next directory exists anywhere', async () => {
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    expect(results.find((r) => r.id === 'worktree.oversized-next')?.status).toBe(Status.PASS);
+  });
+
+  it('does not flag a small .next directory', async () => {
+    mkdirSync(join(base, '.next'), { recursive: true });
+    writeFileSync(join(base, '.next', 'small.bin'), Buffer.alloc(1024));
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    expect(results.find((r) => r.id === 'worktree.oversized-next')?.status).toBe(Status.PASS);
   });
 });
