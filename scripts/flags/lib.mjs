@@ -42,6 +42,9 @@ const ENV_KEYS = ['production', 'preview', 'development'];
 
 /** Parses `config/feature-flags.yml` text into an array of raw flag rows. */
 export function parseFlagsYaml(text) {
+  // js-yaml 5 throws on an empty document where 4 returned undefined; an
+  // empty flags file is a legitimate "no flags" state, not a parse error.
+  if (typeof text !== 'string' || text.trim() === '') return [];
   const doc = yaml.load(text);
   if (doc == null) return [];
   if (!Array.isArray(doc.flags)) {
