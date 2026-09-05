@@ -137,6 +137,18 @@
      the scarcest 111px of the screen.
      Hidden only below `md`: on desktop the thread is one pane of a two-pane
      inbox and the shell bar is still the app's chrome. */
+  /* HEADERLESS — the header only, never the tab bar.
+     A surface that claims its own masthead (the messages inbox) hides the two
+     bands above it and draws one in their place. Deliberately separate from
+     `data-fw-immersive`: that one also removes the bottom tab bar and collapses
+     its reservation, which is right for an open conversation and wrong for a
+     list you need to navigate away from. */
+  @media (max-width: 767px) {
+    body[data-fw-headerless] [data-slot='fw-topbar'],
+    body[data-fw-headerless] [data-slot='fairway-hub-subnav'] {
+      display: none;
+    }
+  }
   @media (max-width: 767px) {
     body[data-fw-immersive] [data-slot='fw-topbar'] {
       display: none;

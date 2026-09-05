@@ -59,7 +59,8 @@ import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/mess
 import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
-import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
+import { useImmersiveSurface, useHeaderlessSurface } from '@/hooks/use-immersive-surface';
+import { NotificationBell } from '@/components/fairway/notifications/NotificationBell';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
 import { ViewHeader } from '@/components/fairway/view-header';
@@ -105,6 +106,14 @@ export function FairwayMessages() {
   // use-immersive-surface.ts for why this is scoped to the destination and NOT
   // to the keyboard.
   useImmersiveSurface(mobileShowChat);
+
+  // The INBOX claims its header too — not the whole screen, because you still
+  // need the tab bar to leave. Measured before this: the first conversation row
+  // sat 255px down an 844px viewport, behind the shell top bar and the hub
+  // sub-nav, neither of which this page can restyle. Taking them on obliges the
+  // page to draw the destination's name and the bell itself, which it does
+  // below.
+  useHeaderlessSurface(!mobileShowChat);
 
   // ── UNCHANGED hook: messages + send/edit/delete + typing + realtime ─────────
   const {
@@ -508,7 +517,11 @@ export function FairwayMessages() {
           // the notch any more. This is what makes the thread header the
           // ONE header instead of the second one.
           ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
-          : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
+          // No `4rem` on phone any more: that term was the shell top bar, and
+          // the inbox now hides it. `pt-[safe-area-top]` because nothing above
+          // is reserving the notch. Desktop is untouched — the bar is still
+          // there at `md`.
+          : 'flex h-[calc(100dvh-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
       )}
     >
       {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below
@@ -559,6 +572,18 @@ export function FairwayMessages() {
             (FairwayTopBar.tsx, `md:hidden`), and a second copy is exactly the
             triple-naming this row was cut down to fix. The artboard's masthead
             IS that top bar, drawn in one piece because a mockup has no shell. */}
+
+        {/* THE masthead — the debt the headerless claim above incurs. One band
+            carrying what the two hidden ones did: the destination's name, and
+            the bell. Large and left, the way a native inbox opens. */}
+        {!mobileShowChat && (
+          <div className="flex items-center justify-between gap-3 pb-1 md:hidden">
+            <h1 className="font-fw-sans text-h1 text-text-primary">
+              Messages
+            </h1>
+            <NotificationBell />
+          </div>
+        )}
 
         <div className="hidden md:block">
         <ViewHeader

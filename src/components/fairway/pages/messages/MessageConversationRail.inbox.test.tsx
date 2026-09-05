@@ -73,8 +73,8 @@ function rowFor(name: string): HTMLElement {
   return rows[0] as HTMLElement;
 }
 
-describe('MessageConversationRail — unread is a surface, not a sort order', () => {
-  it('lifts an unread row onto the lit card and leaves a read row flat', () => {
+describe('MessageConversationRail — every row is a surface, unread is an edge', () => {
+  it('lifts EVERY row onto the lit card, and marks unread with an accent edge', () => {
     render(
       <MessageConversationRail
         conversations={[
@@ -90,17 +90,26 @@ describe('MessageConversationRail — unread is a surface, not a sort order', ()
     const unread = rowFor('Cole Bennett').className;
     const read = rowFor('Alexis Bennett').className;
 
-    // The unread row is the card: the cream fill AND the lit-from-above shadow.
+    // BOTH rows are cards: the cream fill AND the lit-from-above shadow.
     // `shadow-flat` would render the same geometry without the inset specular
     // that makes it read as lifted, so the token name is asserted, not "a
     // shadow is present".
-    expect(unread).toContain('bg-surface');
-    expect(unread).toContain('shadow-fw-card');
+    //
+    // This assertion was the inverse until the design was seen on a real
+    // account: read rows had NO surface, on the reasoning that "if both tiers
+    // are cards the lift says nothing". An inbox someone keeps up with is
+    // entirely read, and the screen went completely flat — the structure
+    // existed only in the state the user is trying to eliminate.
+    for (const row of [unread, read]) {
+      expect(row).toContain('bg-surface');
+      expect(row).toContain('shadow-fw-card');
+    }
 
-    // The read row has neither. If it ever gains one, the lift stops meaning
-    // anything, which is the failure this pins.
-    expect(read).not.toContain('shadow-fw-card');
-    expect(read).not.toMatch(/(^|\s)bg-surface(\s|$)/);
+    // The distinction moved to a channel that costs no depth. If unread ever
+    // stops carrying its own edge, the two tiers become indistinguishable —
+    // that is the failure this now pins.
+    expect(unread).toContain('ring-accent-500/30');
+    expect(read).not.toContain('ring-accent-500/30');
   });
 
   it('does not hoist unread conversations above the recency groups', () => {

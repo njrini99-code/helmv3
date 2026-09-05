@@ -175,10 +175,25 @@ function ConversationRow({
         // "Unread" bucket at the top of the rail is gone — the rows can sit in
         // their real chronology now, because the eye no longer needs them
         // sorted to find them.
-        hasUnread && 'bg-surface shadow-fw-card',
-        isSelected
-          ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
-          : !hasUnread && 'hover:bg-surface-sunken/60',
+        // EVERY row is an object on the champagne, and unread earns an accent
+        // edge rather than earning existence.
+        //
+        // The comment above used to argue the opposite — that a read row gets
+        // no surface at all, because "if both tiers were cards the lift would
+        // say nothing". That reasoning is tidy and it is wrong, and the live
+        // screen is what proved it: with every conversation read, which is the
+        // normal state of an inbox someone keeps up with, NOTHING was a card.
+        // The whole surface went flat and the depth appeared only in the one
+        // condition the user is trying to get rid of. A design whose structure
+        // is contingent on having unread mail has no structure.
+        //
+        // So the lift is unconditional and the DIFFERENCE moved to a channel
+        // that costs no depth: an accent ring, plus the badge and the heavier
+        // name the row already carried. Same distinction, always-on structure.
+        'bg-surface shadow-fw-card',
+        hasUnread && 'ring-1 ring-inset ring-accent-500/30',
+        isSelected && 'ring-2 ring-inset ring-accent-500/55',
+        !isSelected && 'hover:shadow-fw-soft',
       )}
     >
       <div className="flex items-start gap-3">
@@ -576,6 +591,11 @@ export function MessageConversationRail({
           placeholder="Search messages…"
           leading={<Search aria-hidden />}
           aria-label="Search messages"
+          // Everything sitting on the champagne is a lifted object, the field
+          // included. `surface-sunken` is the documented input-track colour but
+          // it is LIGHTER than canvas (0.963 vs 0.953), so on this ground it
+          // recedes into nothing — a sunken well only reads inside a card.
+          className="bg-surface shadow-fw-card"
         />
       </div>
 
