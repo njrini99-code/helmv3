@@ -165,7 +165,22 @@ describe('convertToModelMessages with ignoreIncompleteToolCalls (real SDK)', () 
     ]);
   });
 
-  it('does not strip an approval-suspended call — the Confirm flow survives the flag', async () => {
+  it('REGRESSION (ai 7.0.79): the raw SDK flag now strips approval-requested too', async () => {
+    // Pinned, not desired. Until `ai` 7.0.37 this flag's keep-list included
+    // `approval-requested` — an awaiting-coach call is output-less exactly
+    // like a dangling one, but it is the entire Confirm flow, not an
+    // abandoned call. `ai` 7.0.79 (pulled in transitively by the
+    // @ai-sdk/anthropic and @ai-sdk/react bumps) narrowed
+    // `ignoreIncompleteToolCalls`'s keep-list to `approval-responded` /
+    // `output-available` (non-preliminary) / `output-error` / `output-denied`
+    // only — silently stripping `approval-requested` and reintroducing the
+    // exact bug this file exists to fix, just for a different state.
+    //
+    // The route no longer depends on this flag for that guarantee (see the
+    // next test and src/app/api/coachhelm/v3/chat/stream/route.ts) — this
+    // test exists only to catch the SDK doing it again with a state the
+    // route's own pre-filter also doesn't expect, and to explain why the
+    // flag alone is no longer trusted.
     const emitted = await blocks(
       [
         userTurn,
@@ -181,6 +196,37 @@ describe('convertToModelMessages with ignoreIncompleteToolCalls (real SDK)', () 
       ],
       true,
     );
+
+    expect(emitted.filter((b) => b.type === 'tool-call').map((c) => c.toolCallId)).toEqual([]);
+  });
+
+  it('the route\'s actual approach — pre-filter with isIncompleteToolPart, then convert without the flag — keeps an approval-suspended call', async () => {
+    // This is what src/app/api/coachhelm/v3/chat/stream/route.ts does today:
+    // filter dangling tool parts ourselves with the same predicate
+    // `publishableParts` uses for persistence, then call
+    // `convertToModelMessages` with no `ignoreIncompleteToolCalls` option at
+    // all. Correctness here does not depend on the SDK's internal state
+    // list, which is exactly what the test above shows changing under us.
+    const messages = [
+      userTurn,
+      assistantWith([
+        {
+          type: 'tool-create_goal_for_player',
+          toolCallId: TOOL_ID,
+          state: 'approval-requested',
+          input: { player_id: 'p1', metric_id: 'putting_sg' },
+          approval: { id: 'appr_1' },
+        },
+      ]),
+    ].map((m) => ({
+      ...m,
+      parts: m.parts.filter((p) => !isIncompleteToolPart(p as { type: string; state?: unknown })),
+    }));
+
+    const converted = await convertToModelMessages(messages);
+    const emitted = converted.flatMap((m) =>
+      Array.isArray(m.content) ? m.content : [{ type: 'text', text: m.content }],
+    ) as Array<{ type: string; toolCallId?: string }>;
 
     expect(emitted.filter((b) => b.type === 'tool-call').map((c) => c.toolCallId)).toEqual([
       TOOL_ID,

@@ -150,6 +150,10 @@ vi.mock('@/lib/coachhelm/v3/chat/persistence', () => ({
 vi.mock('@/lib/coachhelm/v3/chat/ui-parts', () => ({
   hasPersistableAssistantContent: () => true,
   publishableParts: (parts: unknown[]) => parts,
+  isIncompleteToolPart: (part: { type?: string; state?: unknown }) =>
+    typeof part?.type === 'string' &&
+    part.type.startsWith('tool-') &&
+    (part.state === 'input-streaming' || part.state === 'input-available'),
 }));
 vi.mock('@/lib/coachhelm/v3/llm/chat-call-row', () => ({ buildChatLlmCallRow: vi.fn(() => ({})) }));
 

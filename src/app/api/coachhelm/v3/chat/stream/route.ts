@@ -81,6 +81,7 @@ import {
 // times in ninety seconds as the coach retried.
 import {
   hasPersistableAssistantContent,
+  isIncompleteToolPart,
   publishableParts,
 } from '@/lib/coachhelm/v3/chat/ui-parts';
 import { describeError } from '@/lib/utils/describe-error';
@@ -358,23 +359,36 @@ export async function POST(req: NextRequest) {
         // Pass the tool set so tool parts from earlier turns convert correctly —
         // without it, a resumed approval loses the call it belongs to.
         //
-        // `ignoreIncompleteToolCalls` drops any tool call left in
-        // `input-streaming`/`input-available` (see isIncompleteToolPart). The
-        // thread here is the CLIENT's `useChat` state, not the database, so a
-        // server-side persistence guard alone cannot save this request: the
-        // browser resends whatever it is holding. Without the flag, one
-        // unresolved call makes every subsequent turn in that thread fail
-        // upstream with "Tool result is missing for tool call toolu_…" —
-        // there is no matching `tool_result` block to pair it with, and the
-        // coach cannot recover except by starting a new conversation.
+        // We drop dangling tool calls (`input-streaming`/`input-available` —
+        // see isIncompleteToolPart) OURSELVES, with the same predicate
+        // `publishableParts` uses for persistence, rather than delegating to
+        // the SDK's `ignoreIncompleteToolCalls` flag. The thread here is the
+        // CLIENT's `useChat` state, not the database, so a server-side
+        // persistence guard alone cannot save this request: the browser
+        // resends whatever it is holding. Without filtering, one unresolved
+        // call makes every subsequent turn in that thread fail upstream with
+        // "Tool result is missing for tool call toolu_…" — there is no
+        // matching `tool_result` block to pair it with, and the coach cannot
+        // recover except by starting a new conversation.
         //
-        // Approval-suspended calls are untouched: the SDK filters on the two
-        // input states only, and an awaiting-coach call is
-        // `approval-requested`/`approval-responded`.
-        messages: await convertToModelMessages(uiMessages, {
-          tools,
-          ignoreIncompleteToolCalls: true,
-        }),
+        // This used to rely on `ignoreIncompleteToolCalls: true` instead, on
+        // the assumption the SDK's own filter left `approval-requested` (an
+        // awaiting-coach call, not an abandoned one — the entire Confirm
+        // flow) untouched. `ai` 7.0.79 changed that: its filter now keeps
+        // only `approval-responded`/`output-available`/`output-error`/
+        // `output-denied`, silently stripping `approval-requested` too and
+        // reintroducing exactly the bug this file exists to fix, just for a
+        // different state. Filtering with our own predicate first — already
+        // proven correct and covered by chat-incomplete-tool-calls.test.ts —
+        // makes this correctness independent of the SDK's internal state
+        // list, which just changed under us once already.
+        messages: await convertToModelMessages(
+          uiMessages.map((m) => ({
+            ...m,
+            parts: m.parts.filter((p) => !isIncompleteToolPart(p)),
+          })),
+          { tools },
+        ),
         tools,
         // Every mutating tool suspends for an explicit coach decision. This is
         // the gate the whole action framework rests on — a model cannot reach

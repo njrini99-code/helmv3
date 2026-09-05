@@ -21,7 +21,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 // Mirrors src/lib/flags/never-gate.ts NEVER_GATE_KEYWORDS.
 export const NEVER_GATE_KEYWORDS = [

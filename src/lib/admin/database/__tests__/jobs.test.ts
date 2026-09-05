@@ -26,6 +26,17 @@ describe('fetchJobsHealth', () => {
   });
 
   it('maps cron jobs and evaluates each with the pure classifier', async () => {
+    // fetchJobsHealth() reads the wall clock internally (jobs.ts calls
+    // `new Date()`, not injectable), and evaluateCronJob() flags a
+    // 'telemetry_defect' once a job's last run is stale relative to `now` —
+    // so a fixture with a fixed `start_time` and a real, moving clock is a
+    // time bomb: it silently started failing once real time drifted more
+    // than 2x this job's daily cadence past 2026-09-03. Pin the clock a few
+    // hours after the fixture's start_time so this test is durable
+    // regardless of what day it actually runs.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-03T12:00:00.000Z'));
+
     mocks.rpc.mockResolvedValue({
       data: {
         cron: [
@@ -49,6 +60,7 @@ describe('fetchJobsHealth', () => {
     });
 
     const result = await fetchJobsHealth();
+    vi.useRealTimers();
     expect(result.status).toBe('ok');
     expect(result.data!.cronJobs).toHaveLength(1);
     expect(result.data!.cronJobs[0]!.findings).toEqual([]);

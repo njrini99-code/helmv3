@@ -39,7 +39,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 const ROOT = process.cwd();
 const OUT = resolve(ROOT, 'docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md');
