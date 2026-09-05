@@ -92,17 +92,23 @@ describe('a new workspace starts undisposable', () => {
   // is clean, pushed and lsof-silent — every signal the old rule read as
   // "disposable". So the marker starts at KEEP and releasing it is a positive
   // act. Asserted at the SOURCE because creating a real worktree here would
-  // spend the single-mutation budget the script itself enforces.
-  const script = readFileSync(SCRIPT, 'utf-8');
+  // spend the mutation budget scripts/lib/create-workspace.mjs itself
+  // enforces (default 3 as of the "one workspace door" change — see
+  // docs/operations/WORKSPACES.md).
+  //
+  // The marker is written by scripts/lib/create-workspace.mjs, not
+  // scripts/new-worktree.sh directly — that file is now a thin CLI wrapper
+  // that only parses flags and hands them to the shared module.
+  const module = readFileSync(resolve(REPO, 'scripts/lib/create-workspace.mjs'), 'utf-8');
 
-  /** The heredoc that is actually written, not the prose around it. */
+  /** The object literal that is actually written, not the prose around it. */
   const emitted = (() => {
-    const open = script.indexOf('<<JSON', script.indexOf('.helm/workspace.json'));
-    return script.slice(open, script.indexOf('\nJSON', open));
+    const open = module.indexOf('const marker = {', module.indexOf('.helm/workspace.json'));
+    return module.slice(open, module.indexOf('};', open));
   })();
 
-  it('scripts/new-worktree.sh writes parkPolicy: KEEP into the marker', () => {
-    expect(emitted).toMatch(/"parkPolicy":\s*"KEEP"/);
+  it('scripts/lib/create-workspace.mjs writes parkPolicy: KEEP into the marker', () => {
+    expect(emitted).toMatch(/parkPolicy:\s*'KEEP'/);
   });
 
   it('it never EMITS PARK_IF_REPRODUCIBLE at creation', () => {

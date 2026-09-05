@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1206 | 0 | 419 | 535 |
-| `UNKNOWN` | 113 | 12 | 46 | 149 |
+| `UNKNOWN` | 114 | 12 | 47 | 149 |
 
 ## Files
 
@@ -51,7 +51,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.claude/rules/autonomy.md` | current | - | - | yes | 5 | 3 | - |
+| `.claude/rules/autonomy.md` | current | - | - | yes | 6 | 3 | - |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | 0 | 5 | - |
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
@@ -664,6 +664,7 @@ them would bury everything above.
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 3 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 4 | - |
+| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 11 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | 1 |
 | `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 11 | 3 |
