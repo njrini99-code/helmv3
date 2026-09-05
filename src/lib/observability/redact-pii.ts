@@ -76,16 +76,34 @@ export function redactPiiDeep<T>(value: T, depth = 0, seen = new WeakSet<object>
   }
 
   const rec = value as Record<string, unknown>;
-  for (const k of Object.keys(rec)) {
-    // js/remote-property-injection (#584): `rec` can be a JSON-parsed Sentry
-    // event/extra payload, and JSON.parse happily creates a normal OWN
-    // property literally named "__proto__" (it does NOT trigger the special
-    // accessor at parse time) — but `rec[k] = ...` below WOULD trigger it for
-    // k === '__proto__', reassigning this object's actual prototype instead
-    // of writing a data property. Skip the three names that resolve to
-    // something other than an own data property assignment.
+  // js/remote-property-injection (#584): `rec` can be a JSON-parsed Sentry
+  // event/extra payload, and JSON.parse happily creates a normal OWN
+  // property literally named "__proto__" (it does NOT trigger the special
+  // accessor at parse time) — but a bracket-notation write, `rec[k] = ...`,
+  // WOULD trigger it for k === '__proto__', reassigning this object's actual
+  // prototype instead of writing a data property. CodeQL's
+  // js/remote-property-injection query flags that write shape wherever the
+  // key is tainted, and does not treat the `k === '__proto__'` string-literal
+  // guard as a barrier — the guard is a convention the query cannot verify,
+  // not a structural property of the write.
+  //
+  // The restructure below follows the query's own documented remedy for a
+  // map-shaped write: compute every redacted value into an ES2015 `Map`
+  // first, then write each one back with `Object.defineProperty`, which
+  // defines an OWN data property directly and never walks the prototype
+  // chain looking for a setter — an adversarial key can only ever produce an
+  // ordinary property literally named "__proto__", never a real
+  // reassignment. `Object.hasOwn` keeps the write scoped to keys genuinely
+  // present on `rec`. The three names below are still skipped outright,
+  // matching the previous behaviour exactly.
+  const redacted = new Map<string, unknown>();
+  for (const [k, v] of Object.entries(rec)) {
+    redacted.set(k, redactPiiDeep(v, depth + 1, seen));
+  }
+  for (const [k, v] of redacted) {
     if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
-    rec[k] = redactPiiDeep(rec[k], depth + 1, seen);
+    if (!Object.hasOwn(rec, k)) continue;
+    Object.defineProperty(rec, k, { value: v, writable: true, enumerable: true, configurable: true });
   }
   return value;
 }
