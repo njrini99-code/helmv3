@@ -66,6 +66,20 @@ it anyway). `sandbox.filesystem` is the structural fix, disabled, owner's call.
   `execute_sql` is unenforced — a live production write path, not a
   sandbox.
 
+### MCP
+
+- `.mcp.json` declares exactly one server *in this repo*: Supabase, scoped to
+  the production project, `read_only=true`. Never edit that flag out.
+- **`.mcp.json` is not the list of MCP tools you have.** Account-level
+  connectors add more and appear in no file here; check your own tool
+  inventory. Which namespace is sanctioned for each service is generated into
+  `docs/TOOL_AUTHORITY_MATRIX.md`, not written in prose.
+- **The Sentry MCP is the working Sentry read path** (org `helm-xs`). The
+  `SENTRY_AUTH_TOKEN` in `.env.local` is real since 2026-09-03 and will
+  rotate; a `401 Invalid token` from a local read means rotate it, not that
+  the read path is gone. (Until that date the three values were placeholders
+  that passed `usableSecret()`, which is why local reads failed soft.)
+
 ### Vercel
 - Pushing does not deploy — the git integration is disconnected;
   production ships only through `scripts/deploy-prod.sh`, which is where
