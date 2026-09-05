@@ -106,7 +106,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error(`    ${b.kind} — ${b.reason}`);
   }
   console.error('');
-  console.error('One mutation workspace at a time. Finish or park the existing one:');
+  console.error(`Budget is ${decision.budget} mutation workspace(s) at a time. Finish or park one:`);
   console.error('');
   console.error('  npm run worktrees          # report');
   console.error('  npm run worktrees:park     # remove a disposable checkout, KEEP its branch');
