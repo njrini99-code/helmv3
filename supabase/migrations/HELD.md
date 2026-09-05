@@ -336,31 +336,38 @@ divergence is worth closing anyway: a stale `users.role` is exactly the kind
 of two-copies-of-one-fact drift `src/lib/admin/require-super-admin.ts`'s own
 header describes causing the #736 incident in the other direction.
 
-### O8 — set `INNGEST_SIGNING_KEY` in Vercel production
+### O8 — confirm the Inngest signing key in Vercel production actually works
 
-F127 in the 2026-09-05 coverage matrix. Ten runtime errors on `/api/inngest`
-over 2026-09-01→09-02 read "In cloud mode but no signing key found" — Inngest
-Cloud calling back into `/api/inngest` with a signed request while
-`INNGEST_SIGNING_KEY` is absent from the production environment.
-`src/lib/inngest/credentials.ts` and `src/lib/inngest/client.ts` cover the
-mechanism in detail: whenever `INNGEST_EVENT_KEY` is set (which puts the SDK
-into "cloud mode"), `INNGEST_SIGNING_KEY` must also be a shape-valid,
-non-placeholder value or every inbound Inngest request fails and every
-outbound send silently falls back to running inline with no retry — durable
-round analysis, reminders and the reliability automation all degrade without
-a trace beyond the SDK's own `console.error`.
+F127 in the 2026-09-05 coverage matrix. Sentry issue `JAVASCRIPT-NEXTJS-QC`
+("In cloud mode but no signing key found", culprit `POST /api/inngest`) has
+five events, first seen 2026-09-02 and last seen 2026-09-03. Inngest Cloud was
+calling back into `/api/inngest` with a signed request and the SDK could not
+find a usable `INNGEST_SIGNING_KEY`.
 
-**Action**: copy the current signing key from app.inngest.com into Vercel's
-Production environment (or let the Inngest↔Vercel integration manage it),
-then redeploy — Vercel bakes env vars in at build time, so setting the
-dashboard value alone does not fix an already-built deployment. Verify with
-`node scripts/inngest-health-check.mjs`.
+The variable is NOT absent, though. `vercel env ls production`, run
+2026-09-05, lists both `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY` in the
+Production environment, created about four days earlier (≈2026-09-01). So one
+of two things is true, and the owner has to tell which:
+
+1. the deployment that served those requests was built before the variable
+   existed — Vercel injects env at build time, so a value added after a
+   deploy does nothing until the next promote; or
+2. the value itself fails the shape check in `src/lib/inngest/credentials.ts`
+   (`classifyCredential('inngest_signing_key', …)` returns `placeholder` or
+   `malformed`), which the SDK reports with the same message.
+
+**Action**: after the next production promote, run
+`node scripts/inngest-health-check.mjs` against production and look at the
+Sentry issue for any event newer than that deploy. No new events → resolve
+`JAVASCRIPT-NEXTJS-QC` and this row is closed. New events → the stored value is
+wrong; paste the current signing key from app.inngest.com into the Production
+variable and promote again.
 
 `scripts/check-required-env.mjs` now refuses a production/preview build that
 has `INNGEST_EVENT_KEY` set without `INNGEST_SIGNING_KEY` (added 2026-09-05,
-alongside this row), so this specific gap cannot silently ship again on a
-fresh build — but the *current* production deployment was built before that
-check existed and still needs the key set and a redeploy to pick it up.
+alongside this row). Production already satisfies it, so no deploy is blocked
+by it today; it exists so the absent-variable case can never ship again. It
+cannot see a wrong value — only the runtime health check can.
 
 ## Dismiss in the Supabase advisor UI (F097, 2026-09-05)
 

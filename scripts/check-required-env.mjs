@@ -23,10 +23,14 @@ export function checkRequiredEnv(env = process.env) {
   // F127 (2026-09-05): setting INNGEST_EVENT_KEY puts the Inngest SDK into
   // "cloud mode" (src/lib/inngest/client.ts), and cloud mode without a
   // signing key fails every /api/inngest request — "In cloud mode but no
-  // signing key found" — with no build-time signal until now. Ten such
-  // runtime errors hit production on 2026-09-01/02. Only checked when an
-  // event key is actually present: an app that isn't using Inngest at all
-  // (both unset) is a legitimate, unrelated state. See
+  // signing key found" — with no build-time signal until now. Sentry issue
+  // JAVASCRIPT-NEXTJS-QC recorded five such events on 2026-09-02/03. Only
+  // checked when an event key is actually present: an app that isn't using
+  // Inngest at all
+  // (both unset) is a legitimate, unrelated state. Production has both set
+  // (vercel env ls, 2026-09-05), so this gate blocks nothing today; it exists
+  // so the absent-key case can never ship again. It cannot see a WRONG value
+  // (that is scripts/inngest-health-check.mjs at runtime). See
   // src/lib/inngest/credentials.ts for the full runtime-side handling and
   // supabase/migrations/HELD.md's O8 for the one-time production fix.
   if (env['INNGEST_EVENT_KEY'] && env['INNGEST_EVENT_KEY'].trim()) {
