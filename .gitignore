@@ -170,7 +170,15 @@ playwright/.auth/
 /capacitor.config.js
 /middleware.js
 e2e/**/*.js
-scripts/*.js
+# `scripts/*.js` (blanket) was replaced 2026-09-05 — it silently hid 13
+# untracked local scratch files (wf_p34*.js, wf_p112_p410.js,
+# baseballhelm-verification.workflow.js) from `git status`/`git log` for
+# months, the exact "blanket .gitignore hides a whole class of files" trap
+# quality-gates.md §4 warns about generically. Narrowed to the specific
+# scratch-file names below so a real, committed scripts/*.js is never hidden
+# again; a stray top-level tsc-emitted .js should be deleted, not ignored.
+scripts/wf_*.js
+scripts/baseballhelm-verification.workflow.js
 scripts/ui-intelligence/*.js
 supabase/functions/**/*.js
 landing/**/*.js
