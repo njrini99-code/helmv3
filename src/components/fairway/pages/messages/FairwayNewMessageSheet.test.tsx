@@ -181,7 +181,14 @@ describe('SelectedRecipientStrip', () => {
 
 describe('coach broadcast official-channel labels', () => {
   it('labels both the coach entry point and broadcast sheet as the official Team channel', () => {
-    expect(messagesSource).toContain('Official Team channel');
+    // The coach ENTRY POINT is an icon button now, so its label lives in the
+    // accessible name — "Open official team channel" — rather than in visible
+    // text, and it reads as a sentence rather than the sheet's title-case
+    // heading. The contract is that BOTH surfaces name this the official team
+    // channel, not that both spell it with the same capitals; asserting the
+    // literal string made a compose row becoming an icon look like the
+    // labelling had been dropped, when it had moved.
+    expect(messagesSource).toMatch(/official team channel/i);
     expect(teamBroadcastSource).toContain('Official Team channel');
   });
 });

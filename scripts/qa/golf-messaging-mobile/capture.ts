@@ -105,11 +105,20 @@ async function main() {
       }, null, 2)}\n`,
     );
     console.log(`Captured ${results.length} mobile component renders with no document overflow.`);
+  } catch (error) {
+    // `viteOutput` exists to make a startup failure diagnosable, and until now
+    // nothing ever read it — the harness collected every line Vite wrote and
+    // threw them away, so a config or port failure surfaced as a bare
+    // `waitForServer` timeout with the actual reason discarded. The `finally`
+    // below asserted this had "already surfaced any Vite startup failure
+    // above"; it had not. Now it has.
+    if (viteOutput.trim()) {
+      console.error(`--- vite output ---\n${viteOutput.trim()}\n--- end vite output ---`);
+    }
+    throw error;
   } finally {
     vite.kill('SIGTERM');
     if (vite.exitCode === null) await new Promise<void>((resolve) => vite.once('exit', () => resolve()));
-    // SIGTERM is our normal teardown path; the capture itself has already
-    // surfaced any Vite startup or browser failure above.
   }
 }
 

@@ -2580,6 +2580,24 @@
         ]
       },
       {
+        "id": "golf_message_mentions",
+        "definedIn": [
+          "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        ]
+      },
+      {
+        "id": "golf_message_reactions",
+        "definedIn": [
+          "supabase/migrations/20260904103000_golf_message_reactions.sql"
+        ]
+      },
+      {
+        "id": "golf_message_responses",
+        "definedIn": [
+          "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        ]
+      },
+      {
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
@@ -3059,6 +3077,10 @@
       {
         "id": "golf_conversation_created_by_me",
         "definedIn": "supabase/migrations/20260807080000_golf_dm_join_requires_creator.sql"
+      },
+      {
+        "id": "golf_conversation_has_me",
+        "definedIn": "supabase/migrations/20260904103000_golf_message_reactions.sql"
       },
       {
         "id": "golf_conversation_has_other_participant",
@@ -20580,6 +20602,39 @@
     },
     {
       "source": "team_access_control",
+      "target": "golf_message_mentions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
+      "target": "golf_message_reactions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904103000_golf_message_reactions.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
+      "target": "golf_message_responses",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
       "target": "golf_qualifier_round_courses",
       "kind": "feature_table",
       "evidence": [
@@ -21460,6 +21515,39 @@
     },
     {
       "source": "team_communications",
+      "target": "golf_message_mentions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "golf_message_reactions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904103000_golf_message_reactions.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "golf_message_responses",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -21487,6 +21575,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/messages.ts",
           "line": 18
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/messages.ts",
+          "line": 20
         }
       ]
     },
