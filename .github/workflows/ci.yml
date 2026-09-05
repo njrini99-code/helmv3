@@ -15,13 +15,18 @@ name: CI
 # The fix is not fewer CHECKS — every command that ran before still runs, and
 # every one still reports under its own name. It is fewer JOBS:
 #
-#   Static checks   one job, one install, sixteen named steps (the eight tiny
-#                   jobs above plus schema invariants and the Deno type-check).
-#                   Each step is continue-on-error and an aggregate step at the
-#                   end fails the job naming every step that did not succeed —
-#                   so one failure cannot mask another, and a failing control
-#                   still surfaces under its own name (the reason `Control
-#                   plane` was once a dedicated job is preserved as a step).
+#   Static checks   one job, one install, every check below as a named step
+#                   (the eight tiny jobs above plus schema invariants and the
+#                   Deno type-check, and steps added since — never count
+#                   these in a comment, `.claude/rules/shipping.md` §1's
+#                   "never write a count into prose" applies to workflow
+#                   comments too; count them with `grep -c '^\s*id:'` over
+#                   the job body when you need the number). Each step is
+#                   continue-on-error and an aggregate step at the end fails
+#                   the job naming every step that did not succeed — so one
+#                   failure cannot mask another, and a failing control still
+#                   surfaces under its own name (the reason `Control plane`
+#                   was once a dedicated job is preserved as a step).
 #   Lint            ESLint folded into the ratchet job; same aggregate pattern.
 #   TypeScript, Lint   now skip on docs-only PRs like the other heavy jobs —
 #                   a .md diff cannot change what tsc or eslint reports.

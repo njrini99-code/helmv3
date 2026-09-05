@@ -92,13 +92,13 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 | ~~`Smoke checks`~~ | ~~`playwright.yml`~~ | ~~build-only smoke: `npm ci` + `next build`~~ | **REMOVED 2026-09-02** — a duplicate of `Next build`; context dropped first, job second |
 | `Playwright PR smoke (a11y)` | `pr-smoke.yml` | public-route accessibility Playwright only when frontend/e2e paths change | Advisory |
 | `CodeRabbit` | CodeRabbit GitHub App | ~~assertive line-level review + blocking custom checks~~ | **DROPPED 2026-07-20** — removed from the required set by founder decision; `.coderabbit.yaml` is a disable stub. If a `CodeRabbit` status still appears, it is informational. The custom rule packs under `.coderabbit/` REMAIN and are consumed directly by the Review Gate. |
-| `CodeQL` | `codeql.yml` | code-scanning security analysis | **Hard gate** |
+| `CodeQL` | GitHub's code-scanning app, posted for `codeql.yml`'s scans | summarizes alert-count deltas for the commit (distinct from the three `Analyze (...)` runs the callout above documents, which only assert the scan completed) | **Not required** — the callout above already says so; this row used to say "Hard gate" directly under it, contradicting it. It can show `failure` (new alerts introduced) while all three `Analyze (...)` show `success` simultaneously, so it is real signal that nothing currently blocks on. |
 | `the external review bot` | the external review bot GitHub App | ~~whole-codebase review~~ | **DROPPED 2026-07-20** — the retired rules directory is deleted. Neither external AI reviewer is a gate any more; the deterministic Review Gate + CodeQL cover the same hard rules. |
 | `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E (mandatory Baseball smoke + mobile-viewport regression + broader chromium suite) — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches. **Note:** `Playwright (chromium)`'s broader-suite step no longer masks its exit code (`|| echo ...` removed) — a red run here now means a real failure, not just "see artifact." |
 | `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; usually skips when no preview exists (non-main Vercel builds disabled) | Advisory |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |
 | `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | Advisory |
-| `Vercel` / `Vercel Preview Comments` | Vercel | production deploy on `main` only; non-main branches skip build (`scripts/vercel-ignore-build.sh`) | Advisory (informational) |
+| `Vercel` / `Vercel Preview Comments` | Vercel GitHub App | was posting a Vercel Toolbar comment-sync status as recently as PR #1835; absent from every PR audited from #1839 on | **No longer posts on PRs.** Git deploys are disconnected (`vercel.json`'s `deploymentEnabled: {"*": false}`, no branch auto-deploys, production is an on-demand CLI promote) — there is nothing left for the GitHub App to report against. Do not wait on this check; its absence is expected, not stuck. |
 
 ## 2. Expected wait windows
 
@@ -133,12 +133,14 @@ Don't treat a check as "stuck" before its normal window has passed:
   **production** using repo secrets, and **skipped** on fork/Dependabot PRs because
   those receive no secrets — so a skip there was expected, not stuck. After: it
   stands up a throwaway Supabase stack on the runner
-  (`.github/actions/local-supabase-stack`) and seeds that, needs **no secrets**, and
+  (`.github/actions/local-supabase-stack`) and seeds that, needs **no secrets**,
+  and
   therefore **no longer skips for anyone**. Budget in practice: ~17 min for a clean
   run (`supabase start` ≈ 1m45s, `npm run build` ≈ 9-10 min under container
   contention, seed ≈ 1 min, the smoke itself ≈ 1m30s). A run where the smoke fails
   costs ~24 min because each spec retries twice — close enough to the 30-minute
-  budget to matter: if the JOB timeout fires first, GitHub cancels outright and the
+  budget to matter: if the JOB timeout fires first, GitHub cancels outright and
+  the
   `if: always()` report upload never runs, which is how #953 produced three
   consecutive `cancelled` runs with nothing to diagnose from.
 - **Web server / auth waits** (why Playwright can be slow to even start) —
