@@ -33,6 +33,20 @@ import {
 } from '@/components/icons';
 import { haptic } from '@/lib/lifting/haptics';
 import { submitBodyweightEntry } from '@/app/lifting/actions/weight-checkins';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { cn } from '@/lib/utils';
+
+// The WebView never resizes for the soft keyboard (`resize: 'ionic'`, no
+// <ion-app> — CapacitorProvider), and Safari doesn't resize its layout
+// viewport either, so a sheet pinned to `bottom-0` sits under the keys the
+// moment the (auto-focused) Bodyweight input is tapped. Same fix as
+// Sheet.tsx's bottom side: lift by `--keyboard-height` (CapacitorProvider
+// publishes it, 0px on desktop and with the keyboard down) instead of
+// pinning to the literal viewport edge, and mark the panel
+// `data-fw-keyboard-aware` so the provider's global keyboardWillShow
+// scrollIntoView leaves this surface to its own clearance.
+const KEYBOARD_LIFT =
+  'bottom-[var(--keyboard-height,0px)] transition-[bottom] duration-[250ms] motion-reduce:transition-none';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,6 +92,7 @@ export function WeightEntryModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const prefersReducedMotion = useReducedMotionGuard();
 
   // Focus the input whenever the modal opens.
   useEffect(() => {
@@ -149,7 +164,7 @@ export function WeightEntryModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
             onClick={onClose}
             aria-hidden="true"
           />
@@ -160,10 +175,14 @@ export function WeightEntryModal({
             role="dialog"
             aria-modal="true"
             aria-label="Enter weight"
-            className="fixed inset-x-0 bottom-0 z-50 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4"
-            initial={{ opacity: 0, y: 40 }}
+            data-fw-keyboard-aware
+            className={cn(
+              'fixed inset-x-0 z-50 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4',
+              KEYBOARD_LIFT,
+            )}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 40 }}
             transition={{ type: 'spring', stiffness: 340, damping: 32 }}
           >
             <div className="relative w-full rounded-t-3xl bg-[#FFFEFA] px-6 pb-10 pt-5 shadow-2xl sm:max-w-sm sm:rounded-3xl sm:pb-8">

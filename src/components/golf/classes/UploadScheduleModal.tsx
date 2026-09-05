@@ -462,7 +462,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             <div
               role="button"
               tabIndex={0}
-              aria-label="Upload a screenshot, PDF, or TXT schedule file. Press Enter or Space to browse files, or drop a file here."
+              aria-label="Upload a screenshot, PDF, or TXT schedule file, or drop a file here."
               aria-disabled={loading || undefined}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
