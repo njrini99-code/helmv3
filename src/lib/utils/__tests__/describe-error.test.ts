@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { describeError } from '@/lib/utils/describe-error';
+import { describeError, collapseHtmlErrorBody } from '@/lib/utils/describe-error';
 
 describe('describeError', () => {
   // ── The safety net had the original bug inside it ────────────────────────
@@ -276,5 +276,36 @@ describe('describeError', () => {
         expect(describeError(new Error(plain))).toBe(plain);
       }
     });
+  });
+});
+
+describe('collapseHtmlErrorBody', () => {
+  it('extracts the <title> from a real gateway error page', () => {
+    const body =
+      '<!doctype html><html><head><title>supabase.co | 522: Connection timed out</title></head><body>Cloudflare Ray ID: a22a42d3dbe0d4c1 Your IP: 35.175.113.239</body></html>';
+    const collapsed = collapseHtmlErrorBody(body);
+    expect(collapsed).toContain('522');
+    expect(collapsed).not.toContain('Ray ID');
+    expect(collapsed).not.toContain('35.175.113.239');
+  });
+
+  it('returns null for non-HTML text', () => {
+    expect(collapseHtmlErrorBody('canceling statement due to statement timeout')).toBeNull();
+  });
+
+  /**
+   * js/polynomial-redos (#551): the title regex used to run against the
+   * FULL response body, unbounded. A run of unclosed `<title` substrings
+   * drove its backtracking to quadratic time on that unbounded input. Now it
+   * only ever sees the first 2000 characters, so this must stay fast
+   * regardless of how large `text` is — proven here with a genuinely large,
+   * pathological body rather than asserted from reading the fix.
+   */
+  it('stays fast on a large body with many unclosed <title substrings (ReDoS regression)', () => {
+    const evil = '<html><head>' + '<title'.repeat(50_000) + '</head></html>';
+    const started = performance.now();
+    collapseHtmlErrorBody(evil);
+    const elapsedMs = performance.now() - started;
+    expect(elapsedMs).toBeLessThan(500);
   });
 });

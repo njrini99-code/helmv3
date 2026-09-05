@@ -17,8 +17,13 @@ for (const file of ['../.env.local', '../.env']) {
 
 const apiKey = env.RESEND_API_KEY;
 console.log('RESEND_API_KEY present:', Boolean(apiKey));
+// js/clear-text-logging (#382, #383): a 4-character prefix of the real key
+// used to print here. It confirmed nothing this diagnostic doesn't already
+// confirm (presence + a plausible length), while putting real secret
+// material into terminal history / CI log capture. Length alone is enough
+// to sanity-check "looks like a real key vs. a placeholder".
 if (apiKey) {
-  console.log('  key prefix:', apiKey.slice(0, 4), '· length:', apiKey.length);
+  console.log('  length:', apiKey.length);
 }
 console.log('HELM_FROM_EMAIL:', env.HELM_FROM_EMAIL ?? '(default) Helm Sports Labs <admin@helmsportslabs.com>');
 if (!apiKey) process.exit(0);

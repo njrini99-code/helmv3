@@ -12,8 +12,21 @@ if not API_KEY:
     print("Error: ANTHROPIC_API_KEY environment variable is not set")
     sys.exit(1)
 
+def mask_key(key: str) -> str:
+    """py/clear-text-logging-sensitive-data (#7): this used to print the
+    first 20 and last 10 characters of the real key — 30 characters is
+    enough, for most key formats, to identify or substantially narrow down
+    which specific credential this is to anyone who later sees this
+    terminal output or a captured log. Show just enough to let a human
+    recognize "yes, this is the key I meant to test" without exposing
+    reusable key material."""
+    if len(key) <= 8:
+        return "*" * len(key)
+    return f"{key[:4]}{'*' * (len(key) - 8)}{key[-4:]}"
+
+
 print("=== Testing Anthropic API Key ===")
-print(f"Key: {API_KEY[:20]}...{API_KEY[-10:]}")
+print(f"Key: {mask_key(API_KEY)} (length: {len(API_KEY)})")
 print()
 
 # Set environment variable

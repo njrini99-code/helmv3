@@ -22,6 +22,20 @@ const ALLOWED_REDIRECTS = [
 ];
 
 /**
+ * js/log-injection (#112, #113, #114): the three `console.warn` calls below
+ * log the REJECTED `?next=` value verbatim — fully attacker-controlled, and
+ * these are exactly the branches that fire when it looks malicious. A value
+ * carrying `\n` or other control characters would forge what looks like a
+ * separate log line to anyone reading raw log output. Strip control
+ * characters and cap the length before logging; this changes only what
+ * lands in logs, never `validateRedirectPath`'s actual decision.
+ */
+export function sanitizeForLog(value: string): string {
+  // eslint-disable-next-line no-control-regex -- deliberately stripping control chars for log safety
+  return value.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 200);
+}
+
+/**
  * Validates and sanitizes redirect path to prevent open redirect vulnerability
  * Only allows internal paths starting with /baseball/ or /golf/
  */
@@ -37,7 +51,7 @@ function validateRedirectPath(
 
   // Must start with /
   if (!path.startsWith('/')) {
-    console.warn('[Security] Invalid redirect attempted:', path, {
+    console.warn('[Security] Invalid redirect attempted:', sanitizeForLog(path), {
       ip: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
     });
@@ -46,7 +60,7 @@ function validateRedirectPath(
 
   // Must not be protocol-relative
   if (path.startsWith('//')) {
-    console.warn('[Security] Protocol-relative redirect blocked:', path, {
+    console.warn('[Security] Protocol-relative redirect blocked:', sanitizeForLog(path), {
       ip: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
     });
@@ -59,7 +73,7 @@ function validateRedirectPath(
                    allowedPrefixes.some(prefix => path.startsWith(prefix));
 
   if (!isAllowed) {
-    console.warn('[Security] Blocked invalid redirect attempt:', path, {
+    console.warn('[Security] Blocked invalid redirect attempt:', sanitizeForLog(path), {
       ip: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
     });

@@ -77,6 +77,14 @@ export function redactPiiDeep<T>(value: T, depth = 0, seen = new WeakSet<object>
 
   const rec = value as Record<string, unknown>;
   for (const k of Object.keys(rec)) {
+    // js/remote-property-injection (#584): `rec` can be a JSON-parsed Sentry
+    // event/extra payload, and JSON.parse happily creates a normal OWN
+    // property literally named "__proto__" (it does NOT trigger the special
+    // accessor at parse time) — but `rec[k] = ...` below WOULD trigger it for
+    // k === '__proto__', reassigning this object's actual prototype instead
+    // of writing a data property. Skip the three names that resolve to
+    // something other than an own data property assignment.
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
     rec[k] = redactPiiDeep(rec[k], depth + 1, seen);
   }
   return value;

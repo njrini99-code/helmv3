@@ -43,7 +43,7 @@
  *                                   would silently destroy it.)
  *   - any path that escapes memory/incidents/
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';
 import { renderDbIncident, type DbIncidentRecord, type IncidentProblem } from './incident-memory';
 
@@ -123,22 +123,29 @@ export function writeDbIncident(options: WriteDbIncidentOptions): WriteDbInciden
     };
   }
 
-  if (existsSync(absolutePath)) {
-    return {
-      ok: false,
-      problems: [
-        {
-          kind: 'ALREADY_EXISTS',
-          detail: `${rendered.relativePath} already exists — a repeat occurrence updates that file's count, last_seen and evidence by hand rather than overwriting it`,
-        },
-      ],
-    };
-  }
-
+  // js/file-system-race (#608): a separate `existsSync` check followed by a
+  // plain `writeFileSync` (default flag 'w') is a TOCTOU race — anything
+  // that creates `absolutePath` between the check and the write is silently
+  // overwritten, defeating the "don't clobber a repeat occurrence" guarantee
+  // this function exists to provide. `writeFileSync` with flag 'wx' makes
+  // "create only if absent" a single atomic filesystem operation instead of
+  // two: it opens for writing and fails with EEXIST if the path already
+  // exists, closing the race window entirely.
   try {
     mkdirSync(dirname(absolutePath), { recursive: true });
-    writeFileSync(absolutePath, rendered.markdown, 'utf8');
+    writeFileSync(absolutePath, rendered.markdown, { encoding: 'utf8', flag: 'wx' });
   } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST') {
+      return {
+        ok: false,
+        problems: [
+          {
+            kind: 'ALREADY_EXISTS',
+            detail: `${rendered.relativePath} already exists — a repeat occurrence updates that file's count, last_seen and evidence by hand rather than overwriting it`,
+          },
+        ],
+      };
+    }
     return {
       ok: false,
       problems: [{ kind: 'WRITE_FAILED', detail: `write failed: ${error instanceof Error ? error.message : 'unknown'}` }],

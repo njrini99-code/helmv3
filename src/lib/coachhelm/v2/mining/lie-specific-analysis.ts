@@ -1735,7 +1735,13 @@ class LieSpecificAnalyzer {
 
     // Approach insights by bracket
     for (const approach of approaches) {
-      const bracketKey = approach.bracket.label.replace(/[^0-9-+]/g, '').replace('-', '-') as keyof typeof DISPERSION_BENCHMARKS.approach;
+      // js/identity-replacement (#108): a trailing `.replace('-', '-')`
+      // used to sit here — a no-op against every APPROACH_BRACKETS label
+      // ('50-100 yards', '200+ yards', ...), all of which already use a
+      // plain ASCII hyphen. The digit/hyphen/plus strip below is sufficient
+      // to turn '50-100 yards' into '50-100', matching DISPERSION_BENCHMARKS
+      // .approach's keys exactly.
+      const bracketKey = approach.bracket.label.replace(/[^0-9-+]/g, '') as keyof typeof DISPERSION_BENCHMARKS.approach;
       const benchmarkData = DISPERSION_BENCHMARKS.approach[bracketKey];
 
       if (!benchmarkData) continue;

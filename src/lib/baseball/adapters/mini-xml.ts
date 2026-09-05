@@ -67,7 +67,22 @@ export function parseXml(input: string): XmlParseResult {
   // Strip BOM, prolog, comments, CDATA-wrap (keep CDATA inner text), doctype.
   let xml = input.replace(/^\uFEFF/, '');
   xml = xml.replace(/<\?[\s\S]*?\?>/g, ''); // prolog / PIs
-  xml = xml.replace(/<!--[\s\S]*?-->/g, ''); // comments
+  // js/incomplete-multi-character-sanitization (#459): a single-pass
+  // `<!--...-->/g` replace can leave a `<!--` behind \u2014 removing one
+  // comment-pair match can concatenate what survives on either side of it
+  // into a NEW, unremoved `<!--`/`-->` in the SAME global pass (the classic
+  // "input.replace only scans once" gap). Vendor feeds are external data
+  // (GameChanger/StatCrew), so loop until stable and strip any leftover bare
+  // marker outright, matching the pattern in
+  // src/lib/admin/pr-body-parser.ts's stripHtmlComments.
+  let previousXml: string;
+  do {
+    previousXml = xml;
+    xml = xml
+      .replace(/<!--[\s\S]*?-->/g, '') // comments
+      .replace(/<!--/g, '')
+      .replace(/-->/g, '');
+  } while (xml !== previousXml);
   xml = xml.replace(/<!DOCTYPE[\s\S]*?>/gi, ''); // doctype
   xml = xml.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, inner) => inner); // unwrap CDATA
 

@@ -49,23 +49,29 @@ const AREA_ALIASES: Record<string, WorkArea> = {
   auth: 'shared',
 };
 
-function stripHtmlComments(text: string): string {
+export function stripHtmlComments(text: string): string {
   let result = text;
   let previous: string;
-  // Loop until stable rather than a single pass: removing one comment pair
-  // can expose a sequence that only becomes a matchable `<!--...-->` once
-  // the markers around it are gone (the classic incomplete-multi-character-
-  // sanitization failure mode for single-pass strips of nested/overlapping
-  // comment-like input).
+  // Loop ALL THREE replacements together until stable, not just the paired
+  // one (js/incomplete-multi-character-sanitization + js/bad-tag-filter,
+  // #514/#515). The bare-marker cleanup used to run once, after the loop —
+  // but a single non-overlapping global replace can itself concatenate a
+  // new match out of what was on either side of a removed one:
+  // '<!<!----' (8 chars) has no matchable `<!--...-->` pair (no `-->`
+  // follows far enough right), so the paired regex is a no-op; the bare
+  // `/<!--/g` pass then removes chars [2,5] ("<!--"), leaving '<!' + '--' =
+  // '<!--' behind in a SINGLE pass — exactly the "removing a match creates a
+  // new one" failure this class of finding is about. Rerunning the same
+  // three replacements until the string stops changing closes that gap for
+  // both the paired and the bare-marker patterns.
   do {
     previous = result;
-    result = result.replace(/<!--[\s\S]*?-->/g, '');
+    result = result
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<!--/g, '')
+      .replace(/-->/g, '');
   } while (result !== previous);
-  // Defense-in-depth: an UNTERMINATED opener (`<!--` with no matching `-->`
-  // anywhere after it in the input) is never matched by the pair-based regex
-  // above and would otherwise survive verbatim into the parsed output —
-  // strip any remaining bare markers outright so `<!--` can never survive.
-  return result.replace(/<!--/g, '').replace(/-->/g, '');
+  return result;
 }
 
 function cleanSectionText(raw: string): string {
