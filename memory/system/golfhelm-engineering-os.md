@@ -58,13 +58,11 @@ governed edit made without the mapped context after the fact; no PreToolUse hook
 refuses it. You can complete an entire governed change with no context loaded
 and only find out when you try to stop.
 
-This paragraph read "The `guard-feature-context` PreToolUse hook enforces this
-mechanically: edits to governed files are denied…" until 2026-08-30. There is no
-`guard-feature-context.mjs` on disk and no such hook in `.claude/settings.json`;
-the only wired PreToolUse hook matches `Write|Edit|MultiEdit` and refuses writes
-into the canonical checkout. `docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated
-from the live configuration and has recorded the true state — POST-HOC — the
-whole time.
+No `guard-feature-context.mjs` exists on disk and no such hook is wired in
+`.claude/settings.json`; the only wired PreToolUse hook matches
+`Write|Edit|MultiEdit` and refuses writes into the canonical checkout.
+`docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from the live
+configuration and records the true state.
 
 Load the context because the work needs it. Nothing will stop you if you don't.
 
@@ -191,11 +189,8 @@ it refuses writes into the canonical checkout — `guard-canonical-write.mjs`.
 Production deploy shapes are refused by `permissions.deny` in
 `.claude/settings.json`, which is a permission rule rather than a hook.
 
-Two mechanisms named here until 2026-08-30 do not exist:
-`guard-feature-context.mjs` was never on disk, and `guard-bash.sh` was deleted
-on 2026-08-27 after a period of sitting unwired. Neither absence changed what
-the deny rules do; both made this contract claim more enforcement than the
-repository has.
+Neither `guard-feature-context.mjs` nor `guard-bash.sh` exists on disk or is
+wired anywhere. Do not cite either as an enforcement mechanism.
 
 **Do not take an enforcement claim from this file.**
 `docs/CONTROL_PLANE_ENFORCEMENT.md` is regenerated from `.claude/settings.json`

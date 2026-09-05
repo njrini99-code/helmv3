@@ -1,0 +1,39 @@
+schema_version: 1
+replay_id: golf-alerts-coach-identity-pgrst116-2026-09-04
+incident_id: /admin/errors/sentry:JAVASCRIPT-NEXTJS-QZ
+feature_id: coach_intelligence_triage
+title: >-
+  The coach-identity read behind the alert badge used .single(), so an
+  expected no-row match (a lapsed session) was reported to Sentry as a
+  PGRST116 exception on every poll.
+bad_version: b865306e0fdf8366d25219a041c2afbf12928467
+fixed_version: 29118786372823e8ed3a00222b99cd2b5f928b15
+fixture:
+  - source: alerts-coach-identity-no-pgrst116.test.ts
+    target: src/test/golf/actions/alerts-coach-identity-no-pgrst116.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/test/golf/actions/alerts-coach-identity-no-pgrst116.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Fixture is the repair commit's own regression test. Its Supabase client is
+    a hand-built stub with literal ids ('coach-1', 'user-1'); no production
+    rows, PII, tokens, stacks or logs. The one production string it carries is
+    the Sentry ISSUE SHORT ID (JAVASCRIPT-NEXTJS-QZ), which names a bug, not a
+    person or a record.
+source_incident_status: open at time of repair; PR opened, not merged, not deployed
+created_at: "2026-09-04"
+notes: >-
+  Forward-filled by the self-heal Repair stage rather than backfilled from a
+  memory/incidents/INC-*.md — this incident has no INC file, so incident_id
+  carries the Bridge address that STEP 5 of the repair contract mandates and
+  that admin_events actually stores the rca_analysis row under. The failure
+  mode is 'assertion', not the usual 'missing-export': the test exercises
+  getAlertCounts, which exists at both SHAs, so at bad_version it fails on the
+  produced error object being PGRST116 rather than null. The second describe
+  block is a source contract over alerts.ts and fails at bad_version too, on
+  the .single() still present at all three coach-identity reads.

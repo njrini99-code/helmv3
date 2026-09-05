@@ -71,11 +71,15 @@ describe('repair-contract — the worktree authority', () => {
     expect(commands).not.toMatch(/ln\s+-s\S*\s+\S*\.env\.local/);
   });
 
-  it('still reads production through an explicit --env-file, never a copied secret', () => {
+  it('reads production from the process environment, never from a file it copied or pointed at', () => {
     // The secret is used BY the process without becoming a file in the
-    // workspace. This is the pattern that survived #1658 and must not be
-    // removed while deleting the symlink.
-    expect(commands).toContain('--env-file');
+    // workspace. That invariant survived #1658 as `--env-file=<canonical>/.env.local`;
+    // since 2026-09-05 the contract runs on GitHub-hosted runners with the
+    // credentials in the job's env, so the active command must read
+    // process.env and must not point at, copy or print any .env file.
+    expect(commands).toContain('process.env.SUPABASE_SERVICE_ROLE_KEY');
+    expect(commands).not.toContain('--env-file');
+    expect(commands).not.toMatch(/\b(cp|cat|source|\.)\s+\S*\.env(\.local)?\b/);
   });
 });
 

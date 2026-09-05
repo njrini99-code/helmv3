@@ -54,9 +54,12 @@ describe('MCP access documentation — the repo file is not the tool inventory',
     expect(text).toContain('helm-xs');
   });
 
-  it('records that the local .env.local Sentry credentials do not work', () => {
-    // Without this, the next session re-derives the 401 from scratch.
-    expect(text).toMatch(/Invalid token|NOT usable/);
+  it('records what a 401 from the local Sentry token means', () => {
+    // Until 2026-09-03 the .env.local Sentry values were placeholders that
+    // passed usableSecret(); since then they are real and can rotate. Either
+    // way the next session must not re-derive the 401 from scratch.
+    expect(text).toMatch(/Invalid token/);
+    expect(text).toMatch(/rotate/);
     expect(text).toContain('usableSecret');
   });
 });

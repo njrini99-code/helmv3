@@ -53,6 +53,12 @@ export default defineConfig({
   },
   test: {
     ...sharedTestConfig,
+    // Worker cap for a shared machine. Five agent shells each forking ten
+    // vitest workers was most of the RAM (measured 2026-09-05); three per run,
+    // with scripts/serialize.mjs letting two runs through at once, is at most
+    // six forks machine-wide. docs/operations/GATES.md has the numbers.
+    pool: 'forks',
+    maxWorkers: 3,
     // NO root-level `include`. Every project below defines its own, and
     // `extends: true` MERGES array options rather than replacing them — so a
     // root-level include is unioned into every project, not overridden by it.
@@ -323,6 +329,14 @@ export default defineConfig({
             // iterated character by character. Fixed in the same change;
             // this is the regression pin.
             'scripts/knowledge/lib/__tests__/registry.test.mjs',
+            // The "one workspace door" change (2026-09-05): every worktree in
+            // this repo — scripts/new-worktree.sh, and the WorktreeCreate hook
+            // once wired — now goes through scripts/lib/create-workspace.mjs.
+            // Named here for the same reason as its neighbours: no scripts/**
+            // glob, so an unlisted file here executes nowhere at all. Also
+            // exercises .claude/hooks/worktree-create.mjs as a real
+            // subprocess against a disposable git fixture.
+            'scripts/__tests__/create-workspace.test.ts',
           ],
           exclude: [
             'node_modules',

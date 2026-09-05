@@ -27,7 +27,7 @@ is a second thing to keep true.
 - **Behaviour:** `docs/ai-system/helmv3-ai-codebase-intelligence.md`
 - **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 2 more in the registry
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
-- **Incidents:** none recorded
+- **Incidents:** `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md`, `memory/incidents/feature_awareness_system/INC-2026-08-29-disk-exhaustion-from-six-worktrees.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-worktree-removed-without-owner-consent.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-zsh-history-modifier-broke-pushes.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md`
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/feature_awareness_system.md`
 
@@ -82,7 +82,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 15 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
-- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`
+- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/golf_round_lifecycle.md`, `memory/ledgers/tests/golf_round_lifecycle.md`
 
@@ -245,9 +245,9 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 58 more in the registry
+- **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 53 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
-- **Incidents:** `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
+- **Incidents:** `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`, `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
 - **History:** `memory/ledgers/changes/admin_platform.md`, `memory/ledgers/tests/admin_platform.md`
 
@@ -289,7 +289,7 @@ is a second thing to keep true.
 **Admin Self-Heal** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-selfheal.md`
-- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 16 more in the registry
+- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 9 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

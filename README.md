@@ -30,6 +30,17 @@ schema references, and code patterns before you touch anything.
 
 For the full documentation map, see [`docs/README.md`](docs/README.md).
 
+**Git hooks:** run `npm run hooks:install` once, from the **canonical
+checkout**. It points `core.hooksPath` at the tracked `scripts/git-hooks/`
+directory instead of the untracked, unreviewable `.git/hooks/`. Today that's
+one `pre-commit` hook: regenerate `src/lib/types/database.ts` when a
+migration is staged, and run `gitleaks protect --staged` if `gitleaks` is on
+PATH (skipped, not failed, if it isn't — CI's Review Gate still runs it).
+**`core.hooksPath` lives in the SHARED git config** (`.git/config` at the
+common dir), not per-worktree — running this from a task worktree changes
+hook behavior for the canonical checkout and every other worktree too, so
+run it once, from canonical, not from an agent's task worktree.
+
 ## Common commands
 
 ```bash

@@ -2,12 +2,14 @@
 // scripts/inngest-health-check.mjs — prove Inngest is accepting events AND
 // executing the jobs behind them, against production, harmlessly.
 //
-// Usage:
-//   node --env-file=/Users/ricknini/Downloads/helmv3/.env.local \
+// Usage (from the canonical checkout — resolve the root rather than
+// hardcoding a path that is only correct on one machine):
+//   node --env-file="$(git rev-parse --show-toplevel)/.env.local" \
 //     scripts/inngest-health-check.mjs
 //
-// `--env-file` on purpose (same reason as run-selfheal-repair.mjs): the keys
-// are USED by this process and never copied into a file.
+// `--env-file` on purpose: the keys are USED by this process and never
+// copied into a file. Worktrees do not get one (.worktreeinclude withholds
+// .env.local deliberately) — run this from the canonical checkout.
 //
 // WHY THIS EXISTS, AND WHY "the keys are set" IS NOT THE SAME ANSWER.
 //

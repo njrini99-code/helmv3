@@ -1,8 +1,68 @@
 {
+  "1837": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "The canonical checkout's own docs/rules/worktree-retirement/golf-messages-header PR, opened from the fix/cron-checkin-flush-realtime-recovery branch. Landing this is what clears the canonical checkout's accumulated commits."
+  },
   "1836": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Opened 2026-09-04 from ~/worktrees/helmv3/messages-approved-design (branch agent/messages-approved-design, base c761e5e52). The owner-approved Messages design: the inbox rail, the thread chrome and bubble grammar, the composer, and two Tailwind utilities bridging --fw-shadow-card plus a new --fw-shadow-accent-lift. Cherry-picks 6f69523fd, which was the design's first step and sat on no PR branch. NO MIGRATION and none needed: reactions, reply and structured messages are deferred to #1833, which carries those files (their columns are already applied to production). The long-press gesture is left to #1835. Deliberately contradicts two unmerged choices in #1833 — day sections in the inbox, and the composer's sending state — both stated in the PR body; whichever lands second rebases. KEEP: the checkout is live work with a session on it."
+    "note": "feat(golf/messages): the approved design — unread lifts, tail marks the end, the dead token removed. Also carries the two defects the design pass left standing: long-press now cancels on DISTANCE (10px slop) rather than on the first pointermove, and the message actions open as the Fairway Sheet the design specifies instead of an inline icon row. Reply stays out — it needs #1833's reply_to column. In-flight feature work on the Messages redesign track."
+  },
+  "1835": {
+    "disposition": "HUMAN_TEST_PENDING",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "fix(golf/messages): the follow-through #1830 owed — long-press survives a thumb move, the menu closes, a message can be copied. Needs a human on a real device to confirm the touch/press behavior before merge; the checkout is safe to park once clean and pushed."
+  },
+  "1834": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "chore(types): scheduled regen of database.ts from the production schema. Automation-produced, low risk, no local agent checkout needs to persist."
+  },
+  "1833": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "feat(golf/messages): premium mobile rebuild — the thread was sunken, not flat. In-flight feature work on the Messages redesign track."
+  },
+  "1832": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "fix(worktrees/docs): the subtractions that could never happen — worktree-lifecycle/docs correctness fix."
+  },
+  "1831": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "fix(auth/observability): a discarded refresh is not a sign-out, and a span must measure its own workflow."
+  },
+  "1759": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "chore(scripts): make the QA-fixture removal safe to run — owner-only trigger disable, scoped post-check, cascade capture. Script-only change, no production state."
+  },
+  "1758": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: bump framer-motion 12.42.2 -> 13.1.1. No local agent checkout to park."
+  },
+  "1757": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: production-dependencies group, 9 updates. No local agent checkout to park."
+  },
+  "1756": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: dev-dependencies group, 7 updates across 1 directory. No local agent checkout to park."
+  },
+  "1755": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: github-actions group, 2 updates. No local agent checkout to park."
+  },
+  "1753": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: bump js-yaml 4.3.2 -> 5.2.2. No local agent checkout to park."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",

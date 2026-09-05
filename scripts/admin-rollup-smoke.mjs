@@ -1,15 +1,9 @@
 // Smoke test for the 8 admin rollup RPCs (slices A/B/C + existing admin rollup + existing platform health).
 // Anon key: expect 42501 Forbidden on all (admin guard rejects). Proves functions exist with expected signatures.
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
+import { loadEnvLocal } from './lib/load-env-local.mjs';
 
-const env = Object.fromEntries(
-  readFileSync('/Users/ricknini/Downloads/helmv3/.env.local', 'utf8')
-    .split('\n')
-    .filter(Boolean)
-    .map(l => l.split('=').map(s => s.trim()))
-    .map(([k, ...v]) => [k, v.join('=')])
-);
+const env = loadEnvLocal();
 
 const anon = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 

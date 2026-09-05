@@ -93,6 +93,77 @@ Round completion
 - `golf_putting_tendencies` has schema/RLS but no active app write path.
 - Lazy-refresh cache behavior can surprise agents expecting stats to update synchronously.
 - Some stat calculations rely on detailed shot data; rounds without shot detail need explicit fallback behavior.
+- **`golf_shots.distance_unit` is legacy — always `'yards'`, even for putts.
+  `distance_unit_before` is the correct unit column** (`'feet'` for putts,
+  `'yards'` otherwise); `putt_distance_feet` stores putt distance in feet.
+  `golf-stats-calculator-shots.ts` already reads `distance_unit_before`
+  correctly. CoachHelm insight generation enforces minimum-sample floors below
+  which an insight must not fire: short putt (0-3ft) needs 10 first putts;
+  break-type weakness needs 15 putts per break type AND 8 per distance bucket;
+  GIR-by-lie gap needs 20 approach attempts from each lie; root-cause chains
+  need 20 fairway + 15 rough approach samples. Owning files: the stats
+  calculator (`src/lib/utils/golf-stats-calculator-shots.ts`), the insight
+  generator (`src/lib/coachhelm/v2/mining/stats-insight-generator.ts`), the
+  orchestrator (`src/lib/coachhelm/v2/orchestrator.ts`), and the two actions
+  (`src/app/golf/actions/stats-data.ts`,
+  `src/app/golf/actions/shot-analytics.ts`). (STU, source:
+  `golf-shot-schema-and-insight-thresholds.md` dated 2026-08-17; verified
+  2026-09-05 against `src/lib/types/database.ts` — `golf_shots.distance_unit`,
+  `.distance_unit_before` and `.putt_distance_feet` all present — and the five
+  files above, all present.)
+- **`GolfStats`'s rate fields are null-honest; its raw integer counters are
+  not.** Rates (`safePercent`/`safeAverage`) return `null` on a zero
+  denominator. Raw counters (`totalBirdies`, `totalPars`, `totalPutts`,
+  `threePuttsTotal`, `onePuttsTotal`, `totalPenalties`, `girTotal`,
+  `fairwaysHit`, `scrambleAttempts`, …) are plain numbers initialised to 0, so
+  0 means both "none happened" and "nothing was logged" — rendering one
+  directly for a scorecard-only round (no shot detail) fabricates a zero.
+  Gate each counter on something having actually been observed
+  (`holesPlayed > 0` for scoring, `totalPutts > 0` for putting) before
+  rendering it; `holesPlayed` comes from hole rows, not shots, so it is the
+  wrong gate for anything shot-derived. (STU, source:
+  `golfstats-raw-counters-fabricate-zeros.md` dated 2026-08-17.)
+- **The naive level-vs-downhill putting gap is a distance confound, not a
+  slope effect.** Level putts average far shorter than downhill putts in this
+  data, so the roster-wide make-rate gap is mostly explained by distance. A
+  real, smaller slope effect survives once you control for a distance bucket
+  (largest inside 3ft), but it fires for essentially every player, so
+  per-player "downhill is your weakness" is only an insight when compared
+  against the squad's own spread, never against zero. Any putting insight
+  built on the unbucketed split repeats the "basic, not root" mistake.
+  (STU, source: `putt-slope-gap-is-a-distance-confound.md` dated 2026-08-18,
+  re-verified in source 2026-08-18.)
+- **A lookup table or threshold in the CoachHelm insight engine is only as
+  good as the distribution it was checked against.** Constants authored
+  against an *expected* shape of the data — a metric-name key list, a
+  proximity-in-feet gate — can go green in CI forever if the tests share the
+  same imagined vocabulary, while the rule silently never fires (or fires
+  backwards) in production. Before trusting a threshold or key list under
+  `src/lib/coachhelm/`, query the live distribution it selects on
+  (`select evidence->>'metric', count(*) from golf_coach_insights group by 1`
+  takes seconds) and prefer keying on a closed, populated vocabulary —
+  `golf_coach_insights.category` is non-null and maps 1:1 onto
+  strokes-gained families, `evidence.metric` is dozens of free-form strings
+  and drifts. When a fix changes what a value MEANS (a unit conversion, a
+  bug in the underlying measurement), re-derive every constant compared
+  against it — a threshold calibrated against the old, wrong values can
+  silently stop matching anything once the measurement is corrected, and
+  nothing fails loudly. (STU, source:
+  `lookup-tables-calibrated-against-imagined-values.md` dated 2026-08-17 and
+  `thresholds-outlive-the-bug-they-calibrated-against.md` dated 2026-08-16;
+  verified 2026-09-05 that `golf_coach_insights.category` exists in
+  `src/lib/types/database.ts`.)
+- **`pga-standards.ts` (gender-aware LPGA/PGA tour benchmarks, migration-backed)
+  had zero production callers** as of the source note — the live pipeline read
+  `cohort-baselines.ts` instead, a smaller hardcoded 12-metric estimate table,
+  so women's teams were shown approximated benchmarks while real measured LPGA
+  data sat unused. The gap was wiring, not missing domain modelling — SG
+  computation, leak-map benchmarks and multi-level tour comparisons already
+  exist. Re-verify before relying on this: unverified since 2026-08-15. (STU,
+  source: `lpga-standards-loader-is-unwired.md`; verified 2026-09-05 only that
+  `src/lib/coachhelm/v3/standing/pga-standards.ts` exists and that the
+  hardcoded table lives at `src/lib/coachhelm/v3/counterfactual/cohort-baselines.ts`
+  — not that the wiring gap itself still holds.)
 
 ## Tests To Prefer
 

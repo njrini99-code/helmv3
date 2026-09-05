@@ -406,6 +406,22 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 ## Known Risk Areas
 
+- **Golf player round and shot history is an owner-level absolute
+  constraint: never deletable outside the two protected write paths**
+  (`submit_round_atomic`/`save_partial_round_atomic`, both `SECURITY
+  DEFINER` and self-checking `player_id`; or the player-scoped JS
+  fallback authorized by the player's own delete policies). A confirmed
+  2026-08-19 defect let any `assistant_coach` (not just the head coach)
+  delete a team's entire round/shot history through three role-blind
+  DELETE policies — closed by
+  `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`.
+  Any new DELETE/ALL policy on `golf_rounds`/`golf_shots`/`golf_holes`/
+  `golf_round_reviews` must use `is_golf_team_head_coach()`, never the
+  existence-only `is_golf_team_coach()` — see
+  `memory/context/engineering-methodology.md`'s Row-Level Security
+  section for the verification technique. A decrease in `golf_rounds`,
+  `golf_shots`, `golf_holes`, `golf_players` or `golf_round_reviews` row
+  counts is this class of incident recurring, not a discrepancy.
 - Race conditions between save draft, submit, and recovery.
 - Undo, edit, and delete actions share a local single-flight guard. If the
   authorized server lookup confirms a shot is already absent, Undo and Delete
