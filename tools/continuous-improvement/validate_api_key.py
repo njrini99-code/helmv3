@@ -53,7 +53,7 @@ except anthropic.AuthenticationError as e:
     print("The API key is invalid or expired.")
     sys.exit(1)
     
-except Exception as e:
+except Exception as e:  # noqa: BLE001 — diagnostic: report whatever failed, then exit 1
     print(f"❌ Error: {e}")
     sys.exit(1)
 
@@ -81,7 +81,7 @@ try:
     
     asyncio.run(test_sdk())
     
-except Exception as e:
+except Exception as e:  # noqa: BLE001 — diagnostic: report whatever failed, then exit 1
     print(f"❌ SDK Error: {e}")
     import traceback
     traceback.print_exc()
