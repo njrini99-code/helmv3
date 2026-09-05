@@ -1,4 +1,9 @@
 {
+  "1852": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Phase 2 P3: SECURITY DEFINER EXECUTE classification and the held revoke migration."
+  },
   "1851": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
