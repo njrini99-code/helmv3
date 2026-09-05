@@ -72,14 +72,15 @@ export async function run(ctx) {
     if (!existsSync(dir)) continue;
     for (const name of readdirSync(dir).filter((n) => n.endsWith('.plist'))) {
       const full = join(dir, name);
-      let stat;
+      // Read directly and let a missing or non-file entry throw: a stat first
+      // is the check-then-use race CodeQL flags (js/file-system-race).
+      let contents;
       try {
-        stat = statSync(full);
+        contents = readFileSync(full, 'utf-8');
       } catch {
         continue;
       }
-      if (!stat.isFile()) continue;
-      const label = plistLabel(readFileSync(full, 'utf-8')) ?? name.replace(/\.plist$/, '');
+      const label = plistLabel(contents) ?? name.replace(/\.plist$/, '');
       if (!/helm/i.test(label) && !/helm/i.test(name)) continue; // out of scope: not this repo's routine
       plistsScanned += 1;
       if (!known.has(label)) undocumentedPlists.push({ file: full, label });
