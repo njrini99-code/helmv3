@@ -1,0 +1,91 @@
+#!/bin/bash
+# scripts/git-hooks/pre-commit — tracked equivalent of the untracked
+# .git/hooks/pre-commit this repo has run locally for a while: regenerate
+# database types when a migration is staged, so a commit that adds a
+# migration doesn't also leave database.ts stale.
+#
+# Install with: npm run hooks:install  (git config core.hooksPath scripts/git-hooks)
+#
+# WHY THIS FILE EXISTS. The hook it reproduces lived only in
+# .git/hooks/pre-commit — untracked, unreviewable, and silently different
+# between machines. It also read `.env.local` relative to `pwd`, which is
+# wrong from a worktree: `.worktreeinclude` withholds `.env.local`
+# deliberately, so every migration commit made from a worktree printed
+# "SUPABASE_PROJECT_ID not found" and skipped the regen, even when the
+# canonical checkout sitting one level up had the real file. This version
+# resolves the CANONICAL root the same way scripts/deploy-prod.sh does (the
+# parent of `git rev-parse --git-common-dir`) before falling back to `.env.local`,
+# so it finds the real credentials from any worktree, not just the checkout
+# it happens to run in.
+#
+# Also adds a gitleaks pre-commit scan, gated on the binary actually being on
+# PATH — this repo does not want a missing dev-tool install to block every
+# commit, only to skip the check it can't run.
+
+set -uo pipefail
+
+STAGED_FILES="$(git diff --cached --name-only)"
+
+# --- gitleaks, if installed -------------------------------------------------
+if command -v gitleaks >/dev/null 2>&1; then
+  CANON="$(cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd -P)"
+  GITLEAKS_CONFIG="${CANON:-.}/.gitleaks.toml"
+  if [ -f "$GITLEAKS_CONFIG" ]; then
+    if ! gitleaks protect --staged --config "$GITLEAKS_CONFIG"; then
+      echo "❌ gitleaks found a likely secret in the staged diff. Fix or allowlist it in .gitleaks.toml before committing." >&2
+      exit 1
+    fi
+  else
+    gitleaks protect --staged || {
+      echo "❌ gitleaks found a likely secret in the staged diff." >&2
+      exit 1
+    }
+  fi
+else
+  echo "ℹ️  gitleaks not on PATH — skipping the local secret scan (CI's Review Gate still runs it)."
+fi
+
+# --- regenerate database types when a migration is staged ------------------
+MIGRATIONS_CHANGED=false
+if echo "$STAGED_FILES" | grep -q "supabase/migrations/.*\.sql$"; then
+  MIGRATIONS_CHANGED=true
+fi
+
+if [ "$MIGRATIONS_CHANGED" = true ]; then
+  echo "📝 Migration files changed - regenerating database types..."
+
+  if [ -z "${SUPABASE_PROJECT_ID:-}" ]; then
+    # Resolve .env.local from the CANONICAL root, not `pwd` — a worktree's
+    # own directory never has one (.worktreeinclude withholds it).
+    CANON="$(cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd -P)"
+    ENV_LOCAL="${CANON:-.}/.env.local"
+
+    if [ -f "$ENV_LOCAL" ]; then
+      SUPABASE_PROJECT_ID="$(grep -E '^SUPABASE_PROJECT_ID=' "$ENV_LOCAL" | cut -d '=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')"
+
+      if [ -z "$SUPABASE_PROJECT_ID" ]; then
+        SUPABASE_URL="$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' "$ENV_LOCAL" | cut -d '=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')"
+        if [ -n "$SUPABASE_URL" ]; then
+          SUPABASE_PROJECT_ID="$(echo "$SUPABASE_URL" | sed -n 's/.*https:\/\/\([^.]*\)\.supabase\.co.*/\1/p')"
+        fi
+      fi
+    fi
+  fi
+
+  if [ -n "${SUPABASE_PROJECT_ID:-}" ]; then
+    export SUPABASE_PROJECT_ID
+    npm run db:types
+
+    # Stage the updated types file.
+    git add src/lib/types/database.ts
+
+    echo "✅ Database types regenerated and staged"
+  else
+    echo "⚠️  Warning: SUPABASE_PROJECT_ID not found (checked the environment and"
+    echo "   \$CANON/.env.local, where \$CANON is the canonical checkout resolved via"
+    echo "   git rev-parse --git-common-dir). Types not regenerated."
+    echo "   Run 'SUPABASE_PROJECT_ID=your-id npm run db:types' manually."
+  fi
+fi
+
+exit 0

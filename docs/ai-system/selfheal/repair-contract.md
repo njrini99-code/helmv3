@@ -1,8 +1,14 @@
 # Contract: the Repair stage (`selfheal-repair`)
 
-> Runner: a launchd agent on the owner's Mac, daily 06:40 local
-> (`~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`). Heartbeat
-> `job_type`: `selfheal-repair`. Read [`README.md`](README.md) first.
+> Runner: `.github/workflows/selfheal-repair.yml`, a GitHub Actions workflow,
+> scheduled daily 06:40 UTC (plus `workflow_dispatch` for a manual/dry run).
+> Heartbeat `job_type`: `selfheal-repair`. Read [`README.md`](README.md) first.
+>
+> **Previously also ran as a launchd agent on the owner's Mac in parallel
+> with this workflow — retired 2026-09-05, see README.md.** If you are
+> reading an older copy of this contract or a cached prompt that still says
+> "launchd agent" or references `--env-file=/Users/ricknini/...`, it is
+> stale; this file is the current contract.
 >
 > **`src/lib/admin/rca.ts` is authoritative for the category vocabulary.**
 
@@ -22,18 +28,26 @@ Repo: `njrini99-code/helmv3`, canonical checkout
 
 ## STEP 0 — how you read production (you have NO MCP)
 
-You run with **`--strict-mcp-config` and an empty MCP config** — deliberately.
-Do not reach for an `mcp__Supabase__*` tool; there isn't one. A bare
+The runner (`.github/workflows/selfheal-repair.yml`) does not pass
+`--strict-mcp-config`, but its checked-out `.mcp.json` carries a Supabase MCP
+entry that sits `needs-auth` on a headless runner — treat it as unusable, the
+same as if it were absent. Do not reach for an `mcp__Supabase__*` tool. A bare
 `claude -p` HUNG three times on 2026-08-27/28 (15-47 minutes, zero output, no
-work) because the Supabase MCP server is OAuth-gated, and a headless process
-with no browser can never complete that OAuth. Removing MCP entirely is what
-fixes it.
+work) under the earlier launchd runner because the Supabase MCP server is
+OAuth-gated, and a headless process with no browser can never complete that
+OAuth — the same is true on a GitHub-hosted runner.
 
-Read production the headless way, with `Bash` + Node, using the service-role
-key already in the canonical checkout's `.env.local`:
+Read production the headless way, with `Bash` + Node, using credentials
+**already in the process environment** — the workflow's `env:` block passes
+them as GitHub Actions secrets. **Never `--env-file` a local `.env.local` and
+never read one from disk.** There is no canonical checkout on this runner (the
+whole job is an ephemeral clone), and even from a real checkout this would be
+wrong: a task worktree never gets `.env.local` (`.worktreeinclude` withholds
+it deliberately), so a contract that depends on reading it from a filesystem
+path breaks the moment it runs anywhere but one specific machine.
 
 ```bash
-node --env-file=/Users/ricknini/Downloads/helmv3/.env.local -e '
+node -e '
 const { createClient } = require("@supabase/supabase-js");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -46,10 +60,13 @@ const { createClient } = require("@supabase/supabase-js");
 '
 ```
 
-This is READ-ONLY by discipline, not by grant: the service-role key can write,
-so you must only ever `select`. No `insert`/`update`/`delete` except the single
-heartbeat row STEP 6 describes. Everything the `STEP 0b`/`STEP 1` SQL below
-asks for, run through this Node path.
+This is READ-ONLY by discipline, not by grant: whichever credential is in
+`SUPABASE_SERVICE_ROLE_KEY` (or, once provisioned, the narrower
+`HELM_REPAIR_DB_KEY` — see `supabase/migrations/HELD.md` action O6(b), a role
+scoped to exactly what this contract reads and writes) can write, so you must
+only ever `select`. No `insert`/`update`/`delete` except the single heartbeat
+row STEP 6 describes. Everything the `STEP 0b`/`STEP 1` SQL below asks for,
+run through this Node path.
 
 ---
 
@@ -221,9 +238,9 @@ instructions used to live here and both are now wrong:
   test against whichever was installed last — that manufactures fake failures
   *and* fake passes.
 - **`ln -s <canonical>/.env.local`** puts production credentials inside a task
-  worktree. `.worktreeinclude` withholds that file deliberately; the STEP 0b
-  `--env-file` form already lets the process USE the key without it ever
-  becoming a file you could commit.
+  worktree. `.worktreeinclude` withholds that file deliberately; STEP 0 reads
+  the key from the process environment, so the process can USE it without it
+  ever becoming a file you could commit.
 
 **Why the script rather than your own `worktree add`:** it guarantees
 `--no-track`. Without that flag, branching from a remote-tracking ref sets the
@@ -420,38 +437,49 @@ died before you could speak — it is not a Repair verdict.
 `'failed'` only when the run itself broke — a gate you could not read, a
 worktree you could not create — not when you correctly decided to open nothing.
 
-### The launchd config is tracked in the repo, not hand-edited on the Mac
+### Historical: the launchd config used to be tracked in the repo
 
-`config/launchd/com.helm.bridge-rca-repair.plist` is the source of truth for
-the live agent at `~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`.
-Install (or reinstall after editing the repo copy) with:
+Until 2026-09-05, `config/launchd/com.helm.bridge-rca-repair.plist` was the
+source of truth for a launchd agent on the owner's Mac running in parallel
+with this workflow, installed via `npm run selfheal:repair:install` and
+checked with `npm run selfheal:repair:doctor`. Both the plist and those two
+npm scripts are gone — see README.md for why (duplicate-effort risk between
+the two runners) and where the plist is archived. This subsection is kept
+only so the 2026-09-02 frontmatter incident it fixed (a `-p` argument must
+never start with `-` or `$(` — a raw `SKILL.md` file starting with YAML
+frontmatter `---` made the CLI parse it as an unknown option and exit having
+written nothing, not even its own heartbeat) stays discoverable if this
+class of bug ever resurfaces in the GHA prompt construction.
+
+---
+
+## STEP 7 — clean up after yourself
+
+**Delete `.next` in the worktree before exiting**, success or failure. A
+build's output directory is several GB, and leaving it behind is exactly what
+filled this machine's disk to 100% twice in one week (2026-08-27, 2026-08-28)
+under the old launchd runner — a risk this GHA runner's ephemeral VM does not
+share, but the worktree this contract still tells you to create (STEP 3) does
+persist on whatever host runs Repair next, if this contract is ever run
+somewhere other than the current GitHub-hosted runner.
 
 ```bash
-npm run selfheal:repair:install
+rm -rf "$(git rev-parse --show-toplevel)/.next" 2>/dev/null || true
 ```
 
-which copies the repo plist over the live one, lints it with `plutil`,
-reloads it (`launchctl bootout` + `bootstrap`), and prints its loaded state.
-Verify the whole chain — plist installed and matching, job loaded, env file
-present, binary and prompt file resolve, the `-p` argument is safe, and the
-newest production heartbeat is fresh — with:
+**When the PR merges, retire the worktree.** Do not leave it for someone else
+to notice:
 
 ```bash
-npm run selfheal:repair:doctor
+node scripts/worktree-lifecycle.mjs --retire
 ```
 
-**The frontmatter trap.** The 06:40 fire on 2026-09-02 failed in 0.6s because
-the plist passed `SKILL.md`'s raw text as the `claude -p` argument, and that
-file opens with YAML frontmatter (`---`). The CLI parsed `---` as an unknown
-option and exited before writing anything, including its own heartbeat — the
-outer runner's fallback row carried no stderr, so `/admin/jobs` could only say
-"child exited 1", not why. The rule this leaves behind: **a `-p` argument must
-never start with `-` or `$(`.** Put a plain sentence before any
-`$(cat ...)` substitution, the way the current plist does
-(`"Follow the instructions in the text below exactly. $(cat ...)"`). The
-doctor's check (f) enforces this on every run, and the vitest at
-`src/test/scripts/selfheal-repair-launchd.test.ts` enforces it statically
-against every plist under `config/launchd/`.
+This is the lifecycle authority (AGENTS.md) — it verifies the branch is
+actually `MERGED` at an exact head OID before removing anything, and reports
+rather than acts on anything it cannot classify. Run it with no flags first
+(`node scripts/worktree-lifecycle.mjs`) if the PR's merge state is not yet
+certain — that mode only ever reports, never mutates — and pass `--retire`
+once it is.
 
 ---
 

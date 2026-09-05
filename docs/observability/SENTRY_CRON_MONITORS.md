@@ -35,7 +35,7 @@ alert exists for, and exactly the gap this deliverable closes.
 | Vercel cron (`vercel.json`) | `recordJobRun` → `src/lib/observability/cron-monitors.ts` | `api-cron-<path>` (slashes to dashes), derived from the route path | The REAL crontab schedule, from `CRON_REGISTRY.schedule` — byte-identical to `vercel.json`, contract-tested |
 | A `recordJobRun` call with no `CRON_REGISTRY` entry (manual-trigger-only route, or a sub-step inside another job's single invocation) | Same `cron-monitors.ts`, same `recordJobRun` | `job-<jobType>` | A deliberately generous 30-day fallback interval (see below) |
 | Inngest function (`src/lib/inngest/functions.ts`) | The shared `withBridgeLogging(fnId, run)` wrapper every function routes through | `job-<function id>` (no `CRON_REGISTRY` entry — Inngest scheduling isn't `vercel.json`) | Same 30-day fallback |
-| launchd Repair job (`scripts/run-selfheal-repair.mjs`) | `scripts/lib/sentry-cron-checkin.mjs` — a standalone, dependency-injectable equivalent of `cron-monitors.ts` (that module can't be imported from a bare Node script: no `@/` path alias / Next bundler outside `next build`/`next dev`) | `job-selfheal-repair` | Hand-built (`{type:'interval', value:1, unit:'day'}`, `checkinMargin:15`) matching `selfheal-registry.ts`'s `cadenceMinutes: DAILY` for this job |
+| ~~launchd Repair job~~ (RETIRED 2026-09-05 — see §7) | ~~`scripts/lib/sentry-cron-checkin.mjs`~~ (removed) | `job-selfheal-repair` (no longer written) | Repair now reports via a `background_job_logs` heartbeat step in `.github/workflows/selfheal-repair.yml`, not a Sentry Cron Monitor |
 
 **Every check-in carries a `monitorConfig` — never omitted.** Sentry's own
 "upsert" mechanism only creates/attaches a monitor when `monitor_config` is
@@ -187,7 +187,14 @@ reaching Inngest, so the function never runs and never gets to start its own
 check-in either. Both signals point at the same underlying problem from two
 different places.
 
-## 7. launchd Repair job
+## 7. launchd Repair job (RETIRED 2026-09-05)
+
+**Historical.** The launchd agent, `scripts/run-selfheal-repair.mjs`,
+`scripts/lib/selfheal-repair-runner.mjs`, and `scripts/lib/sentry-cron-checkin.mjs`
+described in this section were all removed 2026-09-05 — Repair now runs only
+as `.github/workflows/selfheal-repair.yml`, which reports through a
+`background_job_logs` heartbeat step, not a Sentry Cron Monitor check-in.
+This section is kept for anyone reconstructing what the launchd path did.
 
 One check-in pair per invocation, around the whole run (`in_progress` at
 start, resolved in `finish()`):

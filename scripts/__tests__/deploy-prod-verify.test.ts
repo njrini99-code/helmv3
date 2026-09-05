@@ -82,6 +82,14 @@ beforeAll(() => {
   // checkout after this commit must be ignored — exactly as in the real repo.
   writeFileSync(join(seed, '.gitignore'), 'node_modules/\n.vercel/\n.claude/\n');
   writeFileSync(join(seed, 'app.txt'), 'app\n');
+  // Committed (not gitignored): the project-link and weekly-budget guards
+  // read this from the deploying checkout, same as the real repo's
+  // config/release-policy.yml.
+  mkdirSync(join(seed, 'config'), { recursive: true });
+  writeFileSync(
+    join(seed, 'config/release-policy.yml'),
+    'version: 1\n\nproduction:\n  routine_max_deploys_per_calendar_week: 2\n  timezone: America/New_York\n  vercel_project_id: prj_FIXTURE\n',
+  );
   git(['add', '-A'], seed);
   git(['commit', '-qm', 'seed'], seed);
   git(['remote', 'add', 'origin', originDir], seed);
@@ -208,13 +216,16 @@ describe('a deploy that cannot be proven live is never recorded as live', () => 
 });
 
 describe('nothing after the deploy step runs when there was no deploy', () => {
-  it('DRY_RUN=1 deploys nothing, verifies nothing, writes nothing', () => {
+  it('DRY_RUN=1 deploys nothing, verifies nothing, writes nothing, but still prints the week budget', () => {
     const r = deploy(wt, { DRY_RUN: '1' });
     expect(r.status, r.out).toBe(0);
     expect(r.stdout).toContain('DRY_RUN=1 — nothing deployed.');
+    expect(r.out).toContain("this week's production deploys -> 0 / budget 2");
     expect(r.out).not.toContain('DEPLOY NOT VERIFIED');
     expect(r.out).not.toMatch(/VERIFIED LIVE/);
-    expect(vercelCalls()).toHaveLength(0);
+    // The budget guard's `vercel ls` runs even in DRY_RUN (it is a guard, not
+    // part of the deploy step) — only `deploy --prod` must never be called.
+    expect(vercelCalls().some((c) => c.startsWith('deploy --prod'))).toBe(false);
     for (const root of [clone, wt]) expect(existsSync(marker(root))).toBe(false);
   });
 
@@ -225,5 +236,93 @@ describe('nothing after the deploy step runs when there was no deploy', () => {
     expect(r.out).not.toContain('DEPLOY NOT VERIFIED');
     expect(vercelCalls()).toHaveLength(0);
     for (const root of [clone, wt]) expect(existsSync(marker(root))).toBe(false);
+  });
+});
+
+// The two accidental Vercel projects (helmv3-golf-reliability-release-20260825,
+// helmv3-main-release-c350) both trace to a `vercel deploy` run from a
+// directory that was not linked to the real helmv3 project — the CLI's
+// fallback there is to silently create a NEW project, not to fail. This guard
+// is what stands between "unlinked directory" and "accidental project" now.
+describe('the deploying directory must be linked to the correct Vercel project', () => {
+  const projectJsonPath = () => join(wt, '.vercel/project.json');
+
+  it('refuses when .vercel/project.json is missing entirely', () => {
+    const saved = readFileSync(projectJsonPath(), 'utf-8');
+    rmSync(projectJsonPath());
+    try {
+      const r = deploy(wt);
+      expect(r.status, r.out).toBe(1);
+      expect(r.stderr).toContain('REFUSING: no .vercel/project.json');
+      expect(vercelCalls()).toHaveLength(0);
+      for (const root of [clone, wt]) expect(existsSync(marker(root))).toBe(false);
+    } finally {
+      writeFileSync(projectJsonPath(), saved);
+    }
+  });
+
+  it("refuses when .vercel/project.json names a project other than helmv3's", () => {
+    const saved = readFileSync(projectJsonPath(), 'utf-8');
+    writeFileSync(projectJsonPath(), JSON.stringify({ orgId: 'team_FIXTURE', projectId: 'prj_WRONG' }));
+    try {
+      const r = deploy(wt);
+      expect(r.status, r.out).toBe(1);
+      expect(r.stderr).toContain("points at project 'prj_WRONG', not helmv3's");
+      expect(vercelCalls()).toHaveLength(0);
+      for (const root of [clone, wt]) expect(existsSync(marker(root))).toBe(false);
+    } finally {
+      writeFileSync(projectJsonPath(), saved);
+    }
+  });
+});
+
+// release-policy.yml caps routine production deploys at 2/calendar week
+// (America/New_York); the Vercel audit found actual weeks running 4-16x that,
+// unenforced. These pin the guard that makes the cap real.
+describe('the weekly production-deploy budget (config/release-policy.yml)', () => {
+  // 2026-06-10T12:00:00Z is a Wednesday, comfortably clear of any ISO-week
+  // (Mon 00:00 - Sun 23:59:59, America/New_York) boundary, so a "1h ago" row
+  // is unambiguously in the same week as "now" regardless of DST.
+  const MID_WEEK_NOW = '2026-06-10T12:00:00Z';
+
+  it("refuses when this week's count is already at or over budget", () => {
+    const r = deploy(wt, { FAKE_LS_MODE: 'rows', FAKE_LS_COUNT: '2', HELM_DEPLOY_WEEK_COUNT_NOW: MID_WEEK_NOW });
+    expect(r.status, r.out).toBe(1);
+    expect(r.stderr).toContain('REFUSING: 2 production deploy(s) already this ISO week');
+    expect(vercelCalls().some((c) => c.startsWith('deploy --prod'))).toBe(false);
+    for (const root of [clone, wt]) expect(existsSync(marker(root))).toBe(false);
+  });
+
+  it('HELM_DEPLOY_OVERRIDE deploys anyway and logs the reason into the release marker', () => {
+    const r = deploy(wt, {
+      FAKE_LS_MODE: 'rows',
+      FAKE_LS_COUNT: '2',
+      HELM_DEPLOY_WEEK_COUNT_NOW: MID_WEEK_NOW,
+      HELM_DEPLOY_OVERRIDE: 'hotfix for #1234, owner approved',
+    });
+    expect(r.status, r.out).toBe(0);
+    expect(r.out).toContain('OVERRIDE: 2 >= budget 2, deploying anyway. Reason: hotfix for #1234, owner approved');
+    expect(vercelCalls().some((c) => c.startsWith('deploy --prod'))).toBe(true);
+    for (const root of [clone, wt]) {
+      expect(readFileSync(marker(root), 'utf-8')).toContain(
+        'HELM_DEPLOY_OVERRIDE=hotfix for #1234, owner approved',
+      );
+    }
+  });
+
+  it('an unparseable `vercel ls` output is UNKNOWN, and UNKNOWN refuses rather than guessing', () => {
+    const r = deploy(wt, { FAKE_LS_MODE: 'unparseable' });
+    expect(r.status, r.out).toBe(1);
+    expect(r.stderr).toContain('REFUSING: could not parse `vercel ls helmv3 --prod`');
+    expect(vercelCalls().some((c) => c.startsWith('deploy --prod'))).toBe(false);
+    for (const root of [clone, wt]) expect(existsSync(marker(root))).toBe(false);
+  });
+
+  it('a failing `vercel ls` (e.g. an auth error) is also UNKNOWN, never a silent 0', () => {
+    const r = deploy(wt, { FAKE_LS_MODE: 'error' });
+    expect(r.status, r.out).toBe(1);
+    expect(r.stderr).toContain('REFUSING: could not parse `vercel ls helmv3 --prod`');
+    expect(r.stderr).toContain('vercel ls exited 1');
+    expect(vercelCalls().some((c) => c.startsWith('deploy --prod'))).toBe(false);
   });
 });
