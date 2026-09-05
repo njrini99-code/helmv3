@@ -315,6 +315,28 @@ divergence is worth closing anyway: a stale `users.role` is exactly the kind
 of two-copies-of-one-fact drift `src/lib/admin/require-super-admin.ts`'s own
 header describes causing the #736 incident in the other direction.
 
+## Dismiss in the Supabase advisor UI (F097, 2026-09-05)
+
+Four ERROR-level `security_definer_view` advisor findings are intentional,
+not defects, and should be dismissed in the advisor UI (Dashboard → Advisors
+→ Security) rather than left open. Each view's creating migration now also
+carries a comment block stating the same reasoning at the object itself, so a
+future reader hits it there, not only in this file.
+
+| View | Reason to dismiss |
+|---|---|
+| `public.baseball_coaches_public` | Non-PII coach-identity boundary for messaging + cross-org display (authenticated only, not anon). `security_invoker = false` is required — the view must run with owner rights so it returns non-PII identity for any authenticated caller regardless of that caller's own row-level access to `baseball_coaches`. |
+| `public.organizations_public_profile` | Anon-facing security boundary for the public `/baseball/program/[id]` page. Base table `organizations` stays authenticated-only via RLS; anon reads are served exclusively through this view's owner-rights execution. |
+| `public.baseball_team_coach_staff_public` | Anon-facing security boundary for the public `/baseball/team/[id]` staff card. Base tables `baseball_team_coach_staff` and `baseball_coaches` stay authenticated-only via RLS. |
+| `public.baseball_teams_public_profile` | Anon-facing security boundary for the public `/baseball/team/[id]` and `/baseball/program/[id]` pages. Base table `baseball_teams` stays authenticated-only via RLS. |
+
+This is a different advisor category from O6(c) above — that one is the ~430
+WARN-level `pg_graphql_*_table_exposed` findings, closed by unexposing
+`graphql_public`. These four are ERROR-level `security_definer_view` findings
+on views this repo deliberately built as security-definer boundaries; the
+advisor's usual fix for that finding (`security_invoker = true`, or removing
+the view) would break each view's actual purpose, described per-row above.
+
 ## Adding a row
 
 Anything here must say what would go wrong if it were applied, not merely that
