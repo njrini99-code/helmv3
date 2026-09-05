@@ -70,6 +70,10 @@ printed report), `2` missing credentials.
 - **`admin_allowlist` / `users.role='admin'` sync** — flags if the
   allowlist and the legacy role column diverge, so a future demotion is
   caught even though the RPCs no longer depend on `users.role` alone.
+  **Source of truth**: `admin_allowlist`, read through `is_super_admin()`
+  (`src/lib/admin/require-super-admin.ts`), is authoritative for admin
+  access; `users.role='admin'` is a legacy column this check watches so a
+  divergence never sits invisible, not the gate anything actually enforces.
 
 ## Extending it
 

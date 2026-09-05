@@ -74,8 +74,322 @@ That half is defence in depth, not an exposure.
 | `20260903180000_helm_debug_db_error_events.sql` + `20260903180100_helm_debug_db_health_samples.sql` + `20260903180200_helm_debug_db_stat_deltas.sql` + `20260903180300_helm_debug_observability_retention.sql` | **APPLIED 2026-09-03 — R3 — hold discharged** | Four new `helm_debug` tables (`db_error_events`, `db_health_samples`, `db_stat_deltas`, `db_stat_prior_state`) plus SECURITY DEFINER facades (`record_db_error_event`, `helm_debug_db_health_snapshot`/`record_db_health_sample`, `helm_debug_stat_statements_snapshot`/`record_db_stat_snapshot`, `helm_debug_prune_observability`) and grant changes on the `helm_debug` schema — same privileged shape as `20260825200811`/`20260826010000`. Same isolation pattern as those two: schema revoked from public/anon/authenticated, EXECUTE granted service_role-only on every facade, ACL tripwire in each file, no direct table grant to any role (confirmed against production 2026-09-03 that even `service_role` lacks `USAGE` on `helm_debug` — access is mediated entirely by the facades). All four files are purely additive (`create schema/table/index if not exists`, `create or replace function`) and touch no existing table, function, or grant outside this new surface — no golf_*/baseball_* object, no change to `helm_debug.trace_runs`/`trace_steps`/`helm_debug_prune`. `db-migration-reviewer` review has **not** been requested. Apply in file order (error_events, health_samples, stat_deltas, retention — the retention function references all three preceding tables by name only inside PL/pgSQL, so `CREATE FUNCTION` itself would succeed out of order, but calling it before the tables exist fails at execution time). Cron routes calling these RPCs (`src/app/api/cron/db-health-sampler`, `db-stat-delta`) degrade cleanly while unapplied, following the exact `isMigrationNotAppliedError` pattern `src/app/api/cron/helm-debug-prune/route.ts` already uses (`PGRST202`/`42883`/`42P01`/`3F000` → 200 no-op, not a failed job run). **Owner-authorised apply 2026-09-03 (~13:0xZ) through the Supabase Management API `POST /v1/projects/<prod>/database/query`, in file order, each file's own ACL tripwire passing.** Verified against the LIVE catalog, not the response: the four tables exist in `helm_debug`; `information_schema.role_table_grants` returns ZERO rows for `anon`/`authenticated`/`public` on that schema; `pg_namespace.nspacl` for `helm_debug` is `postgres=UC/postgres` alone; all nine facades carry `proacl` `postgres=X/postgres,service_role=X/postgres` and nothing else. Ledger stamped: `supabase_migrations.schema_migrations` now carries versions `20260903180000`, `20260903180100`, `20260903180200`, `20260903180300` with their statements. Smoke-tested live: `helm_debug_db_health_snapshot()`, `helm_debug_read_db_health_history(5)`, `helm_debug_read_db_error_events(5,null,null)` and `helm_debug_prune_observability(90,90,90,90)` all return; `helm_debug_stat_statements_snapshot(5)` FAILED `42P01` on first call and is fixed by `20260903190000` (next row) — see it before assuming the delta collector ever worked. | 2026-09-03 |
 | `20260903191000_helm_debug_db_lock_incidents.sql` + `20260903191100_helm_debug_db_table_samples.sql` + `20260903191200_helm_debug_jobs_health_read.sql` + `20260903191300_helm_debug_observability_retention_v2.sql` | **APPLIED 2026-09-03 — R3 — hold discharged** | Owner-authorised apply, executed and verified by the session that owns the apply path, NOT by the session that wrote these files — this row records their evidence and is explicit that the author did not re-read the production catalog itself (no credential is reachable from a task worktree; `.env.local` is withheld by `.worktreeinclude`). Their reported procedure, kept because the method is the evidence: a local stack was started first and exited 0, which proved NOTHING — `supabase start` resumed a stale volume, the local ledger held 342 versions with nothing from 2026-09-03, and `helm_debug` had only `trace_runs`/`trace_steps`. Reporting "exit 0, applies cleanly" at that point would have been precisely the green-from-a-check-that-never-ran failure this program exists to detect. `db reset` and `migration up` are denied by `permissions.deny`, correctly, so the fifteen missing migrations were applied by hand through psql with `ON_ERROR_STOP=1`, deliberately EXCLUDING `20260903150000` agent_runs so the local schema mirrored production rather than something better than it. Against that mirror all five applied clean, and the checks that actually decide safety passed: three new tables (`db_lock_incidents`, `db_table_samples`, `db_platform_samples`), every facade definer-rights, ZERO EXECUTE for `anon`/`authenticated` on any `helm_debug` facade, 19 of 19 for `service_role`, no schema USAGE granted to `anon`/`authenticated`, and all five read facades executing as `service_role`. Then applied to production one at a time, HTTP 201 each, each stamped into `schema_migrations` under its own filename version rather than letting anything restamp it, and every one of those checks re-verified against the production catalog afterwards. Anyone relying on this row for a security claim should re-read the catalog rather than trust the transcription. | Phase 2 of the same observability program, same isolation pattern as the row above: two new `helm_debug` tables (`db_lock_incidents`, `db_table_samples`) plus definer-rights facades, all EXECUTE granted service_role-only with an ACL tripwire per function, no direct table grant to any role, nothing PostgREST-exposed. `…190000` adds bounded current-state lock/blocking capture (capped at 50 rows, a two-token safe query class only, never full query text) folded into the existing `db-health-sampler` cron rather than a new schedule. `…190100` adds hourly table-health sampling (dead tuples, vacuum recency, scan/write deltas) via a new `db-table-health` cron (`7 * * * *`, registered in both `vercel.json` and `src/lib/admin/cron-registry.ts`). `…190200` adds NO new table — one read-only facade over `cron.job`/`cron.job_run_details` and `net.http_request_queue`/`net._http_response`, each independently capability-detected (catches both an absent extension and an unreadable-but-present one), never returning a job's own defined SQL or a pg_net response body. `…190300` `CREATE OR REPLACE`s Phase 1's `helm_debug_prune_observability` with a **byte-identical 4-argument signature** (deliberately — adding parameters would create a second, ambiguous overload that the existing zero-argument cron call would then fail against) to also prune the two new tables on fixed internal 30-day windows, plus adds a sizes/self-monitoring facade over all six `helm_debug` observability tables. Depends on Phase 1's four files being applied first (referenced tables/pattern), and its own four files must apply in filename order — `…190300`'s body references `…190000`'s and `…190100`'s tables by name, so `CREATE FUNCTION` succeeds regardless of order but calling it before those two tables exist fails at execution time, same caveat the Phase 1 row already states for its own retention file. `db-migration-reviewer` review has **not** been requested. Every new/replaced cron route (`db-health-sampler`, `db-table-health`, `db-observability-prune`) degrades cleanly while unapplied via the same `isMigrationNotAppliedError` pattern. Test coverage for this phase is unit-level TypeScript fixtures against the pure evaluators (locks, connection-saturation/rollback-rate rules, table health, jobs/pg_net health, freshness) — 241 tests passing at commit time — not database-level (pgTAP) tests; no pgTAP suite was written or run for these four migrations, consistent with Phase 1's own row, which also names no pgTAP coverage. | 2026-09-03 |
 | `20260903191400_helm_debug_db_platform_samples.sql` | **APPLIED 2026-09-03 — R3 — hold discharged** | Owner-authorised apply, executed and verified by the session that owns the apply path, NOT by the session that wrote these files — this row records their evidence and is explicit that the author did not re-read the production catalog itself (no credential is reachable from a task worktree; `.env.local` is withheld by `.worktreeinclude`). Their reported procedure, kept because the method is the evidence: a local stack was started first and exited 0, which proved NOTHING — `supabase start` resumed a stale volume, the local ledger held 342 versions with nothing from 2026-09-03, and `helm_debug` had only `trace_runs`/`trace_steps`. Reporting "exit 0, applies cleanly" at that point would have been precisely the green-from-a-check-that-never-ran failure this program exists to detect. `db reset` and `migration up` are denied by `permissions.deny`, correctly, so the fifteen missing migrations were applied by hand through psql with `ON_ERROR_STOP=1`, deliberately EXCLUDING `20260903150000` agent_runs so the local schema mirrored production rather than something better than it. Against that mirror all five applied clean, and the checks that actually decide safety passed: three new tables (`db_lock_incidents`, `db_table_samples`, `db_platform_samples`), every facade definer-rights, ZERO EXECUTE for `anon`/`authenticated` on any `helm_debug` facade, 19 of 19 for `service_role`, no schema USAGE granted to `anon`/`authenticated`, and all five read facades executing as `service_role`. Then applied to production one at a time, HTTP 201 each, each stamped into `schema_migrations` under its own filename version rather than letting anything restamp it, and every one of those checks re-verified against the production catalog afterwards. Anyone relying on this row for a security claim should re-read the catalog rather than trust the transcription. | One new `helm_debug` table (`db_platform_samples`) plus two definer-rights facades (`record_db_platform_sample`, `helm_debug_read_db_platform_history`) — same isolation pattern as the four-migration row above: schema/table/sequence privileges revoked from public/anon/authenticated, EXECUTE granted service_role-only on both facades, ACL tripwire, no direct table grant to any role. Purely additive (`create table/index if not exists`, `create or replace function`); touches no existing table, function, or grant. Every metric column is nullable by design — the allow-list `src/lib/observability/supabase/metrics-api.ts` reads from is docs-derived, not live-verified against this project's Metrics API endpoint (no `SUPABASE_ACCESS_TOKEN`/`SUPABASE_SERVICE_ROLE_KEY` available in the worktree this was written in), so a metric name this project's live scrape does not actually expose stores `NULL`, never a fabricated `0`. `db-migration-reviewer` review has **not** been requested. No cross-dependency on the four migrations above beyond sharing the already-created `helm_debug` schema (`create schema if not exists`, idempotent). The cron route calling these RPCs (`src/app/api/cron/db-health-sampler`, extended — see that route's own `recordPlatformSampleFailOpen`) degrades cleanly while unapplied, same `isMigrationNotAppliedError` pattern. Retention is NOT wired for this table — see `docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md` §8 for why (folding it into the shared `helm_debug_prune_observability` migration would edit a file another track already shipped) — a named, documented gap, surfaced as a `WARN` in `npm run repo:doctor`. | 2026-09-03 |
-| `20260903190000_helm_debug_stat_snapshot_extensions_search_path.sql` | **APPLIED 2026-09-03 — hold discharged on creation** | Corrective, written and applied in the same session as the four above. `20260903180200` pinned `helm_debug_stat_statements_snapshot` to `search_path = pg_catalog, helm_debug`, but `pg_stat_statements` 1.11 is installed into the `extensions` schema on this project, so the function's unqualified `pg_stat_statements_info` / `pg_stat_statements` references resolved to nothing and every call raised `42P01`. `/api/cron/db-stat-delta` would have raised it every 15 minutes and the delta engine would never have recorded a row. `ALTER FUNCTION ... SET search_path = pg_catalog, extensions, helm_debug` — one schema added, path still pinned, `public` still excluded, body untouched (ALTER rather than CREATE OR REPLACE so no classification logic can change silently). Verified live after apply: the function returns, `proconfig` reads `pg_catalog, extensions, helm_debug`, and `proacl` is unchanged at `postgres=X/postgres,service_role=X/postgres`. | 2026-09-03 |
-| `20260903193000_helm_debug_error_events_individual_rows.sql` | **APPLIED 2026-09-03 — hold discharged on creation** | Corrective, found by the review of PR #1792 on a migration already applied. `20260903180000` created `db_error_events_fingerprint_bucket_idx` as unique on `(fingerprint, bucket_started_at) where occurrence_count >= 1`, described in its own comment as partial — but `occurrence_count` is `integer not null default 1 check (>= 1)`, so the predicate is true for every row that can exist and the index was a FULL unique index. `record_db_error_event(p_force_individual_row => true)` — reserved for P0/P1, live caller `src/lib/observability/supabase/integrity.ts` — does a plain INSERT with no conflict handling, so a second forced occurrence with the same fingerprint in the same hour raised 23505 and was swallowed by the deliberately fail-open writer: the flag guaranteed the opposite of what it exists for. Adds `is_individual boolean not null default false`, rebuilds the unique index as `where not is_individual`, and replaces the function (patched from its own live `pg_get_functiondef`, not retyped) so the forced branch sets the flag and the upsert's ON CONFLICT names the same predicate. Applied to an EMPTY table (`count(*) = 0` verified immediately before), so no backfill and no collision during the index swap. Proven live after apply: two forced writes with one fingerprint in one hour produced two rows with distinct ids and `is_individual = true`; two aggregated writes produced one row with `occurrence_count = 2` and the same id returned twice; probe rows deleted, table back to 0. | 2026-09-03 |
+| `20260903190000_helm_debug_stat_snapshot_extensions_search_path.sql` | **APPLIED 2026-09-03 — hold discharged on creation — NO LEDGER ROW (found 2026-09-05)** | Corrective, written and applied in the same session as the four above. `20260903180200` pinned `helm_debug_stat_statements_snapshot` to `search_path = pg_catalog, helm_debug`, but `pg_stat_statements` 1.11 is installed into the `extensions` schema on this project, so the function's unqualified `pg_stat_statements_info` / `pg_stat_statements` references resolved to nothing and every call raised `42P01`. `/api/cron/db-stat-delta` would have raised it every 15 minutes and the delta engine would never have recorded a row. `ALTER FUNCTION ... SET search_path = pg_catalog, extensions, helm_debug` — one schema added, path still pinned, `public` still excluded, body untouched (ALTER rather than CREATE OR REPLACE so no classification logic can change silently). Verified live after apply: the function returns, `proconfig` reads `pg_catalog, extensions, helm_debug`, and `proacl` is unchanged at `postgres=X/postgres,service_role=X/postgres`. **2026-09-05 reconciliation: `list_migrations` has NO row at version `20260903190000`, under this name, at ANY version.** The function-body fingerprint evidence above is trusted as-is (this reconciliation had no `execute_sql` access to re-verify `pg_get_functiondef` independently), but the ledger itself is wrong — the apply happened and was never stamped. See "Owner actions, prepared" below, action O6(a), for the exact `INSERT` that closes this. | 2026-09-03, ledger gap found 2026-09-05 |
+| `20260903193000_helm_debug_error_events_individual_rows.sql` | **APPLIED 2026-09-03 — hold discharged on creation — NO LEDGER ROW (found 2026-09-05)** | Corrective, found by the review of PR #1792 on a migration already applied. `20260903180000` created `db_error_events_fingerprint_bucket_idx` as unique on `(fingerprint, bucket_started_at) where occurrence_count >= 1`, described in its own comment as partial — but `occurrence_count` is `integer not null default 1 check (>= 1)`, so the predicate is true for every row that can exist and the index was a FULL unique index. `record_db_error_event(p_force_individual_row => true)` — reserved for P0/P1, live caller `src/lib/observability/supabase/integrity.ts` — does a plain INSERT with no conflict handling, so a second forced occurrence with the same fingerprint in the same hour raised 23505 and was swallowed by the deliberately fail-open writer: the flag guaranteed the opposite of what it exists for. Adds `is_individual boolean not null default false`, rebuilds the unique index as `where not is_individual`, and replaces the function (patched from its own live `pg_get_functiondef`, not retyped) so the forced branch sets the flag and the upsert's ON CONFLICT names the same predicate. Applied to an EMPTY table (`count(*) = 0` verified immediately before), so no backfill and no collision during the index swap. Proven live after apply: two forced writes with one fingerprint in one hour produced two rows with distinct ids and `is_individual = true`; two aggregated writes produced one row with `occurrence_count = 2` and the same id returned twice; probe rows deleted, table back to 0. **2026-09-05 reconciliation: `list_migrations` has NO row at version `20260903193000`, under this name, at ANY version** — same gap as the row above, same fix (O6(a) below). | 2026-09-03, ledger gap found 2026-09-05 |
+| `20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql` | **HOLD** | Adds `registered_at`/`attended_at` (nullable timestamptz) to `baseball_camp_registrations`. `20260825224803_reconcile_baseball_active_read_contracts.sql`'s first block claimed these already existed live; the 2026-09-05 reconciliation's per-block live-column check found they do not — the one genuinely open gap out of that file's six blocks. Held rather than applied because it is unverified whether the baseball camp-registration UI actually reads/writes these column names today; see the file's own header for what to check before applying. | 2026-09-05 |
+| `20260905091000_baseball_timeline_event_acks_user_id_columns.sql` | **HOLD** | Found by `db-drift.yml`'s daily production-drift check (5 consecutive failures, 2026-08-31 -> 2026-09-04). `src/app/baseball/actions/timeline-acks.ts` dual-writes `user_id`/`acknowledged_at` alongside the real `acked_by`/`acked_at` columns and then selects `acknowledged_at` back — but production has no `user_id`/`acknowledged_at` columns at all (confirmed live 2026-09-05). Held because whether this is actually causing acknowledgement writes to fail in production (versus PostgREST silently tolerating the extra keys) was not confirmed — see the file's header for what to check first. | 2026-09-05 |
+| `20260905092000_baseball_elite_stat_event_columns_gap.sql` | **HOLD** | Found by the same `db-drift.yml` failures: `baseball_pitch_events.batter_id`/`.pitch_type_classified`/`.is_called_strike`/`.count_state` and `baseball_workload_events.count`/`.high_intent_count` are all missing live, even though `20260624000080_baseball_elite_stat_event_model.sql` — the migration that defines them — **does have a ledger row** (`list_migrations` confirms it "applied"). Root cause: that migration's `CREATE TABLE IF NOT EXISTS` silently no-op'd against these two tables because they already existed under an older, incompatible column shape (live `baseball_pitch_events` still carries `pitch_type`/`called_strike`/`pitcher_id`, not the elite-model names) — the ledger records the statement ran, not that it did anything to these two tables. This file adds only the missing columns, additively, and does not attempt to reconcile the old and new column pairs — that split (coexist permanently vs. merge vs. retire the old ones) is a schema-design decision for whoever owns the elite stat event model. | 2026-09-05 |
+| *(data divergence, not a schema gap — no migration)* `admin_allowlist` vs. `users.role='admin'` | **INVESTIGATE, not a migration — diagnostic + template prepared as O7** | `db-drift.yml`'s "admin_allowlist and users.role=admin stay in sync" check has failed the same 5 runs: 1 `admin_allowlist` user no longer has `users.role='admin'` in production — read live via the check's own query, not independently re-run here (no `execute_sql` access in this reconciliation's read-only Supabase MCP). Admin RPCs still work for that user via `is_super_admin()`, so nothing is broken today, but the divergence itself needs an owner decision: was the demotion intentional (in which case remove the stale `admin_allowlist` row) or accidental (in which case restore `users.role='admin'`)? Neither this reconciliation nor a migration file can make that call — it needs identifying WHICH user and why. **2026-09-05 follow-up: the id was never captured anywhere in this repo's evidence trail** (the drift check's own query returns only a count, never a row) — see "Owner actions, prepared" below, action O7, for the read-only SELECT that identifies it and the templated UPDATE the owner fills in afterward. | 2026-09-05 |
+| `20260730030000_avatars_storage_bucket_rls.sql` | **UNVERIFIED** | The file's own header says "NOT APPLIED BY THE AUTHOR. Production already has all five objects" — written to describe a state its author believed already existed, not applied and not independently confirmed at write time. This reconciliation does not relabel it local-only or applied either, for the same reason: `storage.objects` is outside every `public`-schema read this reconciliation's tools (`list_tables`, `get_advisors`) can see, so neither claim can be checked from here. **Prepared owner query** (read-only, `storage` schema): `SELECT policyname, cmd FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname ILIKE '%avatar%';`. **What "verified" looks like**: exactly four rows — one each for `cmd` = `SELECT`, `INSERT`, `UPDATE`, `DELETE` — matching the four policy names in the file (`Avatars accessible to authenticated`, `Users can upload their own avatar`, `Users can update their own avatar`, `Users can delete their own avatar`). Fewer than four, or a `cmd`/predicate that doesn't match the file, means production and this file have diverged and the file needs a follow-up, not a status flip to APPLIED. | 2026-09-05 |
+
+## Applied directly, no file (2026-09-05 reconciliation)
+
+The 2026-09-05 ledger reconciliation cross-checked all 358 migration files
+against the 871-row production ledger. 41 files had no ledger row (32 resolve
+to a file authored under a different name/version stamp — benign, not listed
+here) and 314 ledger rows had no file (271 resolve the same way; 28 more via
+fuzzy/same-day name matching). The remainder — **15 rows with no plausible
+file match at all** — read as one-off direct-apply hardening or data sweeps
+that never got a committed file. Three of the fifteen are the golf-messaging
+change this same reconciliation gave files to (see
+`20260904103000_golf_message_reactions.sql` and
+`20260904160000_golf_messaging_structured.sql`, plus
+`20260904120000_golf_messages_reply_to.sql` for the closely-related 16th row
+noted below) — listed here anyway for a complete record of what the audit
+found, with their new status noted.
+
+| Ledger version | Ledger name | What the name says it did | File status |
+|---|---|---|---|
+| `20260527190000` | `harden_public_rpc_grants` | Tightened grants on one or more public RPCs. | No file. |
+| `20260607162823` | `calculate_round_sg_gender_aware` | Part of the same-day gender-aware strokes-gained cluster (`20260607170000_gender_aware_strokes_gained.sql` is the closest filed sibling). | No file. |
+| `20260610155053` | `golf_teams_season_active_email_gate` | Plausibly gates an email send on `golf_teams.season_active` (confirmed live 2026-08-25 by `20260825212613_reconcile_golf_team_season_active_production_contract.sql`). | No file. |
+| `20260617023458` | `add_division_levels_d1_naia_juco` | Adds NCAA division labels (D1/NAIA/JUCO); corroborated by `20260825211909_reconcile_ncaa_division_production_contract.sql`'s claim that production already had these labels. | No file. |
+| `20260617165330` | `crm_engagement_revoke_default_grants` | Revoked a default-privilege grant on CRM engagement objects. | No file. |
+| `20260621220953` | `chat_message_status` | Added a status column/enum to a messaging table (pre-dates this week's golf-messaging work by ~2.5 months). | No file. |
+| `20260701182842` | `baseball_teams_program_type_backfill_prod` | The `_prod` suffix names this as a one-off production data backfill on `baseball_teams.program_type`, not a schema change meant to have a file. | No file — by its own name, likely never meant to. |
+| `20260703195259` | `supabase_drift_fixes_and_function_relation_guard` | A drift-fix sweep plus a relation guard on one or more functions. | No file. |
+| `20260703212357` | `advisor_low_risk_hardening_20260703` | Date-stamped in its own name — a same-day sweep applying low-risk Supabase-advisor findings. | No file. |
+| `20260729173447` | `baseball_messages_drop_self_comparison_policies` | Dropped one or more RLS policies on `baseball_messages` that compared a row to itself (a common self-referential-policy-recursion fix pattern in this repo, e.g. `20260625204205_fix_baseball_team_members_select_recursion`). | No file. |
+| `20260729175000` | `revoke_anon_execute_on_definer_rpcs` | Revoked `anon` EXECUTE on one or more SECURITY DEFINER RPCs — the exact hardening class `shipping.md` §4 calls out repeatedly. | No file. |
+| `20260729175027` | `revoke_public_execute_on_crm_trigger_fn` | Revoked `PUBLIC` EXECUTE on a CRM trigger function (closing the public-schema default-privilege auto-grant this repo's view/function migrations otherwise always state explicitly). | No file. |
+| `20260803152021` | `helm_lifting_coaches_insert_own_in_editable_org` | Added or restated an INSERT policy letting a lifting coach insert their own row within an org they can edit. | No file. |
+| `20260904103000` | `golf_message_reactions` | Created `golf_message_reactions`. | **Now reconstructed** — `20260904103000_golf_message_reactions.sql` (this reconciliation). |
+| `20260904160000` | `golf_messaging_structured` | Added `golf_messages.kind`/`.payload`/`.pinned_at`/`.pinned_by` and created `golf_message_responses` (this file's own best-effort split — see its header). | **Now reconstructed** — `20260904160000_golf_messaging_structured.sql` (this reconciliation). |
+
+A 16th row, `20260904120000_golf_messages_reply_to`, scored only a 0.33 fuzzy
+match against an unrelated file and is functionally in this same "no file"
+bucket, even though it fell just outside the audit's top-15 cut. It is the
+third of the three 2026-09-04 golf-messaging rows and is **also now
+reconstructed** — `20260904120000_golf_messages_reply_to.sql` (this
+reconciliation) — adding `golf_messages.reply_to_id` and creating
+`golf_message_mentions`.
+
+None of the twelve still-unreconstructed rows above were verifiable against
+the live catalog with the read-only tools this reconciliation had (most are
+grant/policy changes, which `list_tables`/`get_advisors` do not enumerate in
+enough detail to confirm or refute a specific historical grant). They are
+recorded here as a complete accounting of the ledger, not as a claim that any
+of them needs a follow-up migration file — per this file's own pattern
+elsewhere (the 13-row and 271-row same-migration-different-stamp findings),
+"no committed file" for a small, self-contained, already-applied change is
+this repo's normal drift pattern, not evidence of a problem.
+
+**2026-09-05 A3b follow-up — the three golf-messaging files independently
+re-checked against the live catalog** (`list_tables`, verbose, project
+`qmnssrrolpinvwjjnufo`, and `list_migrations`, both read fresh in this
+follow-up session, not reused from A3's own read): all three live tables
+(`golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`)
+exist exactly once each across the three files, every column/nullability/
+default/CHECK/FK in each file matches the live catalog byte-for-byte (down to
+`mentioned_user_id` being nullable and `kind`'s CHECK array), and no file
+describes a table absent from the catalog. `list_migrations` confirms all
+three ledger rows (`20260904103000 golf_message_reactions`,
+`20260904120000 golf_messages_reply_to`, `20260904160000
+golf_messaging_structured`) exist under exactly those names, and confirms
+`20260903190000`/`20260903193000` (O6(a) above) genuinely have no row under
+any name or version. No content or header disagreed with the catalog — the
+three files needed no fix. The table-to-file attribution remains each file's
+own disclosed inference (the catalog only shows end state, never which
+transaction created which object), not upgraded to fact by this re-check.
+
+## Owner actions, prepared
+
+Prepared by the 2026-09-05 reconciliation. None of this was run — every
+statement (or, for O8, the env var change itself) needs the owner's own
+credentials and, per `repair-contract.md` and this repo's R3 convention,
+deliberate execution outside any agent's `bypassPermissions` session.
+(Section renamed from "Owner SQL, prepared" on 2026-09-05 when O8 added the
+first prepared action that is not SQL — a Vercel environment variable.)
+
+### O6(a) — insert the two missing ledger rows
+
+Closes the "NO LEDGER ROW" note on `20260903190000` and `20260903193000`
+above. `supabase_migrations.schema_migrations` columns (confirmed live via
+`list_tables`, schema `supabase_migrations`): `version` (text, PK),
+`statements` (text[], nullable), `name` (text, nullable), `created_by` (text,
+nullable), `idempotency_key` (text, nullable, unique), `rollback` (text[],
+nullable). `statements`/`rollback` are left `NULL` — the exact executed SQL
+text was never captured, only the resulting function bodies (verified via
+`pg_get_functiondef` md5, per each row's HELD.md entry); this INSERT records
+that the version applied, not what its literal statements were.
+
+```sql
+INSERT INTO supabase_migrations.schema_migrations (version, name, created_by)
+VALUES (
+  '20260903190000',
+  'helm_debug_stat_snapshot_extensions_search_path',
+  'owner action O6(a), 2026-09-05 reconciliation — applied 2026-09-03, ledger row missing'
+)
+ON CONFLICT (version) DO NOTHING;
+
+INSERT INTO supabase_migrations.schema_migrations (version, name, created_by)
+VALUES (
+  '20260903193000',
+  'helm_debug_error_events_individual_rows',
+  'owner action O6(a), 2026-09-05 reconciliation — applied 2026-09-03, ledger row missing'
+)
+ON CONFLICT (version) DO NOTHING;
+```
+
+### O6(b) — a read-only role for the Repair stage
+
+`docs/ai-system/selfheal/repair-contract.md` names exactly what Repair reads
+and writes: SELECT on `public.background_job_logs` (STEP 0b), `public.admin_events`
+and `public.admin_error_resolutions` (STEP 1); INSERT — never UPDATE or
+DELETE — on `public.background_job_logs`, and only its own heartbeat row
+(STEP 6). This role is what
+`.github/workflows/selfheal-repair.yml`'s planned `HELM_REPAIR_DB_KEY` secret
+(see that workflow's TODO) should actually authenticate as, in place of the
+full `SUPABASE_SERVICE_ROLE_KEY` the workflow uses today — the contract has
+never needed write access to anything but its own heartbeat, so the
+credential should not be able to do more than that.
+
+All three tables have RLS enabled (confirmed live, `list_tables`: 276 of 276
+`public` tables carry `rls_enabled = true`), so a bare `GRANT` is necessary
+but not sufficient — the role also needs policies, added here rather than
+`BYPASSRLS`, which would grant this role more than the contract ever uses.
+
+```sql
+CREATE ROLE helm_repair_ro NOLOGIN NOINHERIT;
+
+-- PostgREST's connection role must be able to switch into this one — the
+-- same mechanism Supabase's own `anon`/`authenticated` roles use.
+GRANT helm_repair_ro TO authenticator;
+
+GRANT USAGE ON SCHEMA public TO helm_repair_ro;
+
+GRANT SELECT ON public.background_job_logs TO helm_repair_ro;
+GRANT SELECT ON public.admin_events TO helm_repair_ro;
+GRANT SELECT ON public.admin_error_resolutions TO helm_repair_ro;
+GRANT INSERT ON public.background_job_logs TO helm_repair_ro;
+
+CREATE POLICY helm_repair_ro_select_background_job_logs
+  ON public.background_job_logs FOR SELECT
+  TO helm_repair_ro
+  USING (true);
+
+CREATE POLICY helm_repair_ro_select_admin_events
+  ON public.admin_events FOR SELECT
+  TO helm_repair_ro
+  USING (true);
+
+CREATE POLICY helm_repair_ro_select_admin_error_resolutions
+  ON public.admin_error_resolutions FOR SELECT
+  TO helm_repair_ro
+  USING (true);
+
+-- Scoped to exactly what STEP 6 writes: its own heartbeat, never another
+-- job_type's row and never an update/delete of an existing one.
+CREATE POLICY helm_repair_ro_insert_own_heartbeat
+  ON public.background_job_logs FOR INSERT
+  TO helm_repair_ro
+  WITH CHECK (job_type = 'selfheal-repair');
+```
+
+Minting a working `HELM_REPAIR_DB_KEY` from this role additionally needs a
+JWT signed with the project's JWT secret carrying `{"role": "helm_repair_ro"}`
+— that step needs the project's JWT secret, which this reconciliation does
+not have access to and does not attempt to derive here.
+
+### O6(c) — stop exposing `graphql_public` over the API
+
+Independently confirmed 2026-09-05 (`grep -rn "graphql" src/ --include="*.ts"
+--include="*.tsx" -i`): exactly 4 lines, all references to the
+`graphql_public`/`graphql` schema keys Supabase's own `db:types` generator
+always emits into `src/lib/types/database.ts`, plus one test asserting
+against that same generated structure. **Zero application code issues a
+GraphQL query, imports a GraphQL client, or calls `/graphql/v1` anywhere in
+`src/`.** The ~430 `pg_graphql_anon_table_exposed`/`pg_graphql_authenticated_table_exposed`
+WARN-level security-advisor findings (126 + 308 unique tables) are dead
+surface with no code path depending on them.
+
+`supabase/config.toml`'s `[api] schemas = ["public", "graphql_public"]`
+governs the **local** stack only. In production the exposed-schemas list is a
+project setting (Dashboard → Settings → API → Exposed schemas), which can
+also be changed at the database level via the `authenticator` role's
+`pgrst.db_schemas` GUC, reloaded live with `NOTIFY pgrst`:
+
+```sql
+-- Remove graphql_public from PostgREST's exposed-schema list. Confirm the
+-- current value first — this REPLACES the list, it does not remove one entry:
+--   SHOW pgrst.db_schemas;   -- or: SELECT rolconfig FROM pg_roles WHERE rolname = 'authenticator';
+ALTER ROLE authenticator SET pgrst.db_schemas = 'public';
+NOTIFY pgrst, 'reload config';
+```
+
+This does not disable the `pg_graphql` extension itself (still installed,
+schema `graphql`, version 1.5.11) — only removes it from what PostgREST
+serves. If the extension is to be dropped entirely rather than just
+unexposed: `DROP EXTENSION IF EXISTS pg_graphql;` (this also drops the
+`graphql`/`graphql_public` schemas' generated views/functions; confirm no
+Edge Function or Management-API-side tooling depends on the extension being
+present before running it — this reconciliation did not check Edge Function
+source for that, only `src/`).
+
+### O7 — investigate and, if warranted, restore the `admin_allowlist` vs `users.role` divergence
+
+Closes the register's "INVESTIGATE, not a migration" row above (F040 in the
+2026-09-05 coverage matrix). `db-drift.yml`'s "admin_allowlist and
+users.role=admin stay in sync" check
+(`scripts/db/check-supabase-drift.mjs`) has failed 5 straight scheduled runs:
+one `admin_allowlist` user no longer has `users.role='admin'` in production.
+
+**The specific `user_id` is NOT recorded anywhere this reconciliation (or the
+A3 track before it) had access to.** A3's own report says so directly, twice
+— once inline ("no `execute_sql` access in this session's read-only Supabase
+MCP to identify the specific user") and once in its "what could not be
+reconstructed" section ("needs identifying which specific user and why; not
+resolvable without `execute_sql` access"). The `db-drift.yml` check itself
+(`check-supabase-drift.mjs`'s query below) only returns a COUNT, never the
+row — so even the CI log that failed 5 times never printed an id. **There is
+no drift-run output anywhere in this repo's evidence trail that names an id
+to quote here.** (a) below is the read-only diagnostic that produces one;
+(b) is a template the owner fills in from (a)'s result — not a ready-to-run
+statement, because no session in this chain has ever seen the actual id.
+
+**(a) — identify every divergent id** (safe, read-only; matches the shape of
+`check-supabase-drift.mjs`'s own query, but returns rows instead of a count):
+
+```sql
+SELECT a.user_id, a.email, a.note, u.role AS current_role
+FROM public.admin_allowlist a
+LEFT JOIN public.users u ON u.id = a.user_id
+WHERE u.role IS NULL OR u.role <> 'admin';
+```
+
+**(b) — restore the role, ONLY if the demotion was accidental** (fill in the
+`user_id` from (a) — this reconciliation has no value to put there):
+
+```sql
+-- Run (a) first. Decide whether the divergence is a mistake (restore) or
+-- intentional (in which case DELETE the stale admin_allowlist row instead —
+-- see the register row above). Do not run this against a guessed id.
+UPDATE public.users
+SET role = 'admin'
+WHERE id = '<user_id from O7(a)>';
+```
+
+`admin_allowlist` (via `is_super_admin()`) is what actually gates admin
+access today — see `docs/operations/SUPABASE_DRIFT_GUARD.md`'s "source of
+truth" note — so nothing is broken while this sits uninvestigated. The
+divergence is worth closing anyway: a stale `users.role` is exactly the kind
+of two-copies-of-one-fact drift `src/lib/admin/require-super-admin.ts`'s own
+header describes causing the #736 incident in the other direction.
+
+### O8 — confirm the Inngest signing key in Vercel production actually works
+
+F127 in the 2026-09-05 coverage matrix. Sentry issue `JAVASCRIPT-NEXTJS-QC`
+("In cloud mode but no signing key found", culprit `POST /api/inngest`) has
+five events, first seen 2026-09-02 and last seen 2026-09-03. Inngest Cloud was
+calling back into `/api/inngest` with a signed request and the SDK could not
+find a usable `INNGEST_SIGNING_KEY`.
+
+The variable is NOT absent, though. `vercel env ls production`, run
+2026-09-05, lists both `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY` in the
+Production environment, created about four days earlier (≈2026-09-01). So one
+of two things is true, and the owner has to tell which:
+
+1. the deployment that served those requests was built before the variable
+   existed — Vercel injects env at build time, so a value added after a
+   deploy does nothing until the next promote; or
+2. the value itself fails the shape check in `src/lib/inngest/credentials.ts`
+   (`classifyCredential('inngest_signing_key', …)` returns `placeholder` or
+   `malformed`), which the SDK reports with the same message.
+
+**Action**: after the next production promote, run
+`node scripts/inngest-health-check.mjs` against production and look at the
+Sentry issue for any event newer than that deploy. No new events → resolve
+`JAVASCRIPT-NEXTJS-QC` and this row is closed. New events → the stored value is
+wrong; paste the current signing key from app.inngest.com into the Production
+variable and promote again.
+
+`scripts/check-required-env.mjs` now refuses a production/preview build that
+has `INNGEST_EVENT_KEY` set without `INNGEST_SIGNING_KEY` (added 2026-09-05,
+alongside this row). Production already satisfies it, so no deploy is blocked
+by it today; it exists so the absent-variable case can never ship again. It
+cannot see a wrong value — only the runtime health check can.
+
+## Dismiss in the Supabase advisor UI (F097, 2026-09-05)
+
+Four ERROR-level `security_definer_view` advisor findings are intentional,
+not defects, and should be dismissed in the advisor UI (Dashboard → Advisors
+→ Security) rather than left open. Each view's creating migration now also
+carries a comment block stating the same reasoning at the object itself, so a
+future reader hits it there, not only in this file.
+
+| View | Reason to dismiss |
+|---|---|
+| `public.baseball_coaches_public` | Non-PII coach-identity boundary for messaging + cross-org display (authenticated only, not anon). `security_invoker = false` is required — the view must run with owner rights so it returns non-PII identity for any authenticated caller regardless of that caller's own row-level access to `baseball_coaches`. |
+| `public.organizations_public_profile` | Anon-facing security boundary for the public `/baseball/program/[id]` page. Base table `organizations` stays authenticated-only via RLS; anon reads are served exclusively through this view's owner-rights execution. |
+| `public.baseball_team_coach_staff_public` | Anon-facing security boundary for the public `/baseball/team/[id]` staff card. Base tables `baseball_team_coach_staff` and `baseball_coaches` stay authenticated-only via RLS. |
+| `public.baseball_teams_public_profile` | Anon-facing security boundary for the public `/baseball/team/[id]` and `/baseball/program/[id]` pages. Base table `baseball_teams` stays authenticated-only via RLS. |
+
+This is a different advisor category from O6(c) above — that one is the ~430
+WARN-level `pg_graphql_*_table_exposed` findings, closed by unexposing
+`graphql_public`. These four are ERROR-level `security_definer_view` findings
+on views this repo deliberately built as security-definer boundaries; the
+advisor's usual fix for that finding (`security_invoker = true`, or removing
+the view) would break each view's actual purpose, described per-row above.
 
 ## Adding a row
 

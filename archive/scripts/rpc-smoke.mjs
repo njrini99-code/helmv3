@@ -7,15 +7,9 @@
 //   so our guards also return 'Forbidden' — that's the expected outcome
 //   and still proves the functions exist with the right signatures.
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
+import { loadEnvLocal } from './lib/load-env-local.mjs';
 
-const env = Object.fromEntries(
-  readFileSync('/Users/ricknini/Downloads/helmv3/.env.local', 'utf8')
-    .split('\n')
-    .filter(Boolean)
-    .map(l => l.split('=').map(s => s.trim()))
-    .map(([k, ...v]) => [k, v.join('=')])
-);
+const env = loadEnvLocal();
 
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

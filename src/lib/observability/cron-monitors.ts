@@ -1,8 +1,12 @@
 /**
  * Sentry Cron Monitor check-ins for every scheduled job this codebase runs —
- * Vercel crons via `recordJobRun` (job-log.ts), Inngest functions
- * (functions.ts), and the launchd Self-Heal Repair job
- * (scripts/run-selfheal-repair.mjs).
+ * Vercel crons via `recordJobRun` (job-log.ts) and Inngest functions
+ * (functions.ts). (The Self-Heal Repair job used to check in here too, via a
+ * separate launchd agent and its own standalone helper
+ * (scripts/lib/sentry-cron-checkin.mjs); both were retired 2026-09-05 —
+ * Repair now runs as .github/workflows/selfheal-repair.yml and reports
+ * through a background_job_logs heartbeat instead. See
+ * memory/features/admin-selfheal.md.)
  *
  * WHY THIS EXISTS. Phase A found `automaticVercelMonitors: true` configured
  * but structurally inert (the withSentryConfig argument-position bug fixed

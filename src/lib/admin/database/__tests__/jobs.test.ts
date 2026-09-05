@@ -26,17 +26,14 @@ describe('fetchJobsHealth', () => {
   });
 
   it('maps cron jobs and evaluates each with the pure classifier', async () => {
-    // fetchJobsHealth() reads the wall clock internally (jobs.ts calls
-    // `new Date()`, not injectable), and evaluateCronJob() flags a
-    // 'telemetry_defect' once a job's last run is stale relative to `now` —
-    // so a fixture with a fixed `start_time` and a real, moving clock is a
-    // time bomb: it silently started failing once real time drifted more
-    // than 2x this job's daily cadence past 2026-09-03. Pin the clock a few
-    // hours after the fixture's start_time so this test is durable
-    // regardless of what day it actually runs.
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-09-03T12:00:00.000Z'));
-
+    // fetchJobsHealth evaluates against the real clock, and the classifier
+    // flags a daily job with no run inside 48h as telemetry_defect. A literal
+    // start_time here was a time bomb: it passed until 2026-09-05T04:10Z and
+    // then failed every CI run on every branch. Keep the run one hour old
+    // relative to now so the fixture never ages into a finding.
+    const oneHourAgo = new Date(Date.now() - 60 * 60_000);
+    const startTime = oneHourAgo.toISOString();
+    const endTime = new Date(oneHourAgo.getTime() + 2_000).toISOString();
     mocks.rpc.mockResolvedValue({
       data: {
         cron: [
@@ -46,7 +43,7 @@ describe('fetchJobsHealth', () => {
             schedule: '10 4 * * *',
             active: true,
             recent_runs: [
-              { status: 'succeeded', start_time: '2026-09-03T04:10:00.000Z', end_time: '2026-09-03T04:10:02.000Z', duration_ms: 2000, return_message: 'ok' },
+              { status: 'succeeded', start_time: startTime, end_time: endTime, duration_ms: 2000, return_message: 'ok' },
             ],
           },
         ],
@@ -60,7 +57,6 @@ describe('fetchJobsHealth', () => {
     });
 
     const result = await fetchJobsHealth();
-    vi.useRealTimers();
     expect(result.status).toBe('ok');
     expect(result.data!.cronJobs).toHaveLength(1);
     expect(result.data!.cronJobs[0]!.findings).toEqual([]);

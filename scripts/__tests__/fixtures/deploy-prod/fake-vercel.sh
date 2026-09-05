@@ -17,6 +17,15 @@
 #
 # FAKE_INSPECT_MODE=abort makes `inspect` die immediately with 134 instead,
 # which is what a CLI abort looks like to the script when the pipe is intact.
+#
+# `ls` backs the weekly-budget guard (scripts/lib/deploy-week-count.mjs).
+# FAKE_LS_MODE selects the shape:
+#   empty (default)  "No deployments found." -> count 0
+#   rows             FAKE_LS_COUNT age-"1h" rows -> count FAKE_LS_COUNT
+#                    (pair with HELM_DEPLOY_WEEK_COUNT_NOW so "1h ago" and
+#                    "now" are unambiguously the same ISO week)
+#   unparseable      output with no row matching the age-column shape
+#   error            exit 1, as if the CLI itself failed (e.g. auth)
 
 printf '%s\n' "$*" >> "${FAKE_VERCEL_LOG:?FAKE_VERCEL_LOG must be set}"
 
@@ -24,6 +33,43 @@ case "${1:-}" in
   deploy)
     printf '{"status":"ok","deployment":{"id":"dpl_FIXTURE","readyState":"READY","target":"production"}}\n'
     exit 0
+    ;;
+  ls)
+    case "${FAKE_LS_MODE:-empty}" in
+      empty)
+        echo 'Vercel CLI 59.5.0 (Node.js 22.23.2)'
+        echo '> Deployments for helmv3 under fixture-team [200ms]'
+        echo
+        echo 'No deployments found.'
+        exit 0
+        ;;
+      rows)
+        echo 'Vercel CLI 59.5.0 (Node.js 22.23.2)'
+        echo '> Deployments for helmv3 under fixture-team [200ms]'
+        echo
+        printf '  Age     Deployment                                Status     Environment   Duration   Username\n'
+        n="${FAKE_LS_COUNT:-0}"
+        i=0
+        while [ "$i" -lt "$n" ]; do
+          printf '  1h      helmv3-fixture-%02d.vercel.app             %s Ready    Production    2m         fixture-user\n' "$i" '\xe2\x97\x8f'
+          i=$((i + 1))
+        done
+        exit 0
+        ;;
+      unparseable)
+        echo 'Vercel CLI 59.5.0 (Node.js 22.23.2)'
+        echo 'this output does not look like a deployment table at all'
+        exit 0
+        ;;
+      error)
+        echo 'Error: The specified token is not valid.' >&2
+        exit 1
+        ;;
+      *)
+        echo "fake vercel: unknown FAKE_LS_MODE '${FAKE_LS_MODE}'" >&2
+        exit 2
+        ;;
+    esac
     ;;
   inspect)
     case "${FAKE_INSPECT_MODE:-chatty}" in

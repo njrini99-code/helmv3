@@ -63,6 +63,18 @@
 -- organizations_public_profile — branding/identity only, no PII columns exist
 -- on organizations to begin with, but we still allowlist (not `SELECT *`) so
 -- any future sensitive column added to organizations doesn't silently leak.
+--
+-- SUPABASE ADVISOR NOTE (2026-09-05, F097): the advisor's ERROR-level
+-- `security_definer_view` finding on this view is INTENTIONAL — dismiss it,
+-- do not "fix" it. This view IS the security boundary for anonymous readers
+-- of the public /baseball/program/[id] page; base table `organizations` stays
+-- RLS-locked to `authenticated` (see the file header above), so anon reads
+-- are served exclusively through this view's owner-rights execution.
+-- `security_invoker` MUST stay `false` — `true` would make anon's read apply
+-- `organizations`' own RLS, and anon would get zero rows back (the exact
+-- 404/notFound() this migration exists to fix), not a narrower-but-working
+-- result. See supabase/migrations/HELD.md's "Dismiss in the Supabase advisor
+-- UI" list.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.organizations_public_profile
 WITH (security_invoker = false)

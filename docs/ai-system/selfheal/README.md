@@ -5,7 +5,7 @@ An error in production is supposed to travel a closed circuit:
 ```text
   CAPTURE          DIAGNOSE           REPAIR          CLOSE
   admin_events  →  rca_analysis  →  a verified PR  →  admin_error_resolutions
-  (the app)        (vercel cron)    (local agent)     (log-retention cron)
+  (the app)        (vercel cron)   (GitHub Actions)   (log-retention cron)
                        │                  │                    │
                        └──────────────────┴────────────────────┘
                        heartbeats → background_job_logs → /admin/jobs
@@ -38,11 +38,30 @@ writes a row there.
 > automated cron cannot perform (no git checkout in a Vercel function) — see
 > `triage-contract.md` STEP 4.
 
-**Repair** — heartbeat `selfheal-repair`. A launchd agent on the owner's Mac
-(`~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`), daily 06:40
-local, installed from the repo-tracked `config/launchd/com.helm.bridge-rca-repair.plist`
-via `npm run selfheal:repair:install` and checked with
-`npm run selfheal:repair:doctor`. Follows [`repair-contract.md`](repair-contract.md).
+**Repair** — heartbeat `selfheal-repair`. As of 2026-09-05, a **GitHub Actions
+workflow only**: `.github/workflows/selfheal-repair.yml`, scheduled daily
+06:40 UTC (plus `workflow_dispatch` for a manual/dry run), invoking the Claude
+Code CLI directly and following [`repair-contract.md`](repair-contract.md).
+Reports through a `background_job_logs` heartbeat step written by the
+workflow itself, `if: always()`.
+>
+> **Previously ran as a launchd agent on the owner's Mac in parallel with the
+> GHA workflow, retired 2026-09-05.** Both runners read the same
+> `admin_events`/`rca_analysis` board independently with no cross-runner
+> concurrency control — a live duplicate-effort risk (two separately-billed
+> agent sessions per day, each capable of opening a PR against the same
+> backlog). The launchd agent
+> (`~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`, installed from
+> the then-repo-tracked `config/launchd/com.helm.bridge-rca-repair.plist` via
+> `npm run selfheal:repair:install`/`:doctor`), its outer bounded-runner
+> script (`scripts/run-selfheal-repair.mjs`,
+> `scripts/lib/selfheal-repair-runner.mjs`), and its Sentry check-in helper
+> (`scripts/lib/sentry-cron-checkin.mjs`) are all gone from the repo. The
+> plist is archived on the owner's machine at
+> `~/.claude/backups/reset-2026-09-05/com.helm.bridge-rca-repair.plist`. The
+> `~/.claude/scheduled-tasks/helm-bridge-rca-repair/` pointer this doc used to
+> reference no longer exists on the owner's machine either — it was removed
+> in the same reset, not merely renamed; nothing in this repo depended on it.
 
 **Close** — heartbeat `log-retention`. A Vercel cron:
 `src/app/api/cron/log-retention/route.ts` → `src/lib/admin/auto-resolve.ts`.

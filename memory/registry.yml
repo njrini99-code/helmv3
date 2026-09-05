@@ -1439,17 +1439,14 @@ features:
         # subtree is admin/Bridge-facing infrastructure, not round-tracking
         # specific, even though it shares the parent directory.
         - src/lib/observability/supabase/**
-        # The self-heal loop's REPAIR-stage runner and its launchd config —
-        # mapped here 2026-09-02 after `knowledge:map` resolved these paths to
-        # `impactedFeatures: []`. The Bridge (self-heal loop) lives under
-        # admin_platform alongside src/lib/admin/** and src/lib/reliability/**
-        # above; the runner and its config are the same feature's Repair
-        # stage, not a separate one.
-        - scripts/run-selfheal-repair.mjs
-        - scripts/lib/selfheal-repair-runner.mjs
-        - scripts/selfheal-repair-install.sh
-        - scripts/selfheal-repair-doctor.mjs
-        - config/launchd/**
+        # The self-heal loop's Repair stage runs ONLY as the GitHub Actions
+        # workflow (.github/workflows/selfheal-repair.yml) as of 2026-09-05 —
+        # the launchd agent, its outer bounded-runner script, and its
+        # launchd-only support tooling (scripts/run-selfheal-repair.mjs,
+        # scripts/lib/selfheal-repair-runner.mjs,
+        # scripts/selfheal-repair-install.sh, scripts/selfheal-repair-doctor.mjs,
+        # config/launchd/**) were retired in the same change that closed the
+        # two-schedule duplicate-effort risk (see memory/features/admin-selfheal.md).
         # Feature-flag registry + governance gate (Phase F.4.2,
         # docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md §4).
         # config/feature-flags.yml is the source of truth; src/lib/flags/**
@@ -1694,11 +1691,11 @@ features:
         - src/lib/admin/rca*.ts
         - src/lib/admin/triage-*.ts
         - src/lib/admin/auto-resolve.ts
-        - scripts/run-selfheal-repair.mjs
-        - scripts/lib/selfheal-repair-runner.mjs
-        - scripts/selfheal-repair-install.sh
-        - scripts/selfheal-repair-doctor.mjs
-        - config/launchd/**
+        # Repair runs ONLY as .github/workflows/selfheal-repair.yml as of
+        # 2026-09-05 — the launchd agent, its outer runner
+        # (scripts/run-selfheal-repair.mjs, scripts/lib/selfheal-repair-runner.mjs),
+        # its install/doctor tooling, and config/launchd/** were retired in
+        # the same change (see memory/features/admin-selfheal.md).
         - docs/ai-system/selfheal/**
         # Phase J remainder (control-plane plan §6 J.4.2-J.4.4): verification
         # ensemble (default OFF via the verification_ensemble flag —
@@ -1713,8 +1710,6 @@ features:
         - src/lib/admin/autonomy/**
       db: []
       tests:
-        - src/test/scripts/run-selfheal-repair.test.ts
-        - src/test/scripts/selfheal-repair-launchd.test.ts
         - src/lib/admin/ensemble/__tests__/**
         - src/lib/admin/causal/__tests__/**
         - src/lib/admin/autonomy/__tests__/**
@@ -1728,7 +1723,6 @@ features:
         - docs/ai-system/selfheal/README.md
       required_checks:
         - npm run typecheck
-        - npx vitest run src/test/scripts/run-selfheal-repair.test.ts src/test/scripts/selfheal-repair-launchd.test.ts
         - npx vitest run src/lib/admin/ensemble src/lib/admin/causal src/lib/admin/autonomy
         - npm run build
 
