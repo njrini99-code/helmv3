@@ -1,4 +1,4 @@
--- Production recorded the rich-event-model migration after CREATE TABLE IF NOT
+-- LOCAL-ONLY. Production recorded the rich-event-model migration after CREATE TABLE IF NOT
 -- EXISTS skipped older live pitch/workload tables. The current CoachHelm and
 -- Stat Visuals reads select the richer contract, so PostgREST rejected those
 -- reads before returning any rows. Keep this strictly additive: preserve the

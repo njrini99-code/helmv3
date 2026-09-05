@@ -1,3 +1,14 @@
+-- MIXED — not purely local-only. Five of this file's six ALTER blocks are
+-- LOCAL-ONLY (production already has those columns; verified live 2026-09-05
+-- via list_tables: baseball_coach_notes, baseball_import_sources,
+-- baseball_signals, baseball_video_events, crm_coaches all match). The FIRST
+-- block — baseball_camp_registrations.registered_at/.attended_at — is
+-- GENUINELY MISSING from production as of the same check. That gap now has
+-- its own HELD migration: see
+-- supabase/migrations/20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql
+-- and its HELD.md entry. Do not assume this whole file is a no-op against
+-- production because most of it is.
+
 BEGIN;
 
 -- These are active read/write contracts, not a wholesale attempt to merge the
