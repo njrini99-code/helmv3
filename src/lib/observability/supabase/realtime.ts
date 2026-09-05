@@ -32,7 +32,11 @@
  * gives a human an actual issue to look at when a channel's transport is
  * failing, gated to ONCE PER `channelClass` PER SESSION so a reconnect loop
  * cannot flood Sentry with duplicate issues (a metric increment has no such
- * cost; a captured message does). The tags on that message
+ * cost; a captured message does), and DEFERRED by a grace window so a blip
+ * that reconnects on its own never opens an issue at all — see
+ * `TRANSPORT_FAILURE_GRACE_MS` below for why an immediate capture asserted an
+ * impact this file cannot observe. The rate signal is never deferred. The
+ * tags on that message
  * (`helm.feature`, `supabase.service`, `supabase.operation`, `realtime.state`)
  * are Sentry TAGS on a captured event — a completely different surface from
  * `ALLOWED_METRIC_DIMENSIONS` (`metrics.ts`'s closed allow-list governs
@@ -75,6 +79,35 @@ export interface ObserveRealtimeChannelOptions {
 
 const CAPTURED_ONCE_PER_SESSION = new Set<string>();
 
+/**
+ * How long a transport failure must PERSIST before it is reported as an issue
+ * a human should look at.
+ *
+ * `CHANNEL_ERROR` is not, on its own, an outage. `@supabase/realtime-js`
+ * reconnects on its own with backoff, and the call sites that care already
+ * recover from it: `use-calendar-range-events.ts` refetches the visible range
+ * on every re-`SUBSCRIBED`, and `use-qualifier-realtime.ts` now does the same.
+ * A blip that self-heals in a second or two costs the user nothing, and
+ * `Sentry.captureMessage(..., level: 'error')` fired the instant it happened
+ * asserted an impact this file cannot observe — the exact over-claim #1824
+ * ("the catch-all must not assert impact it cannot know") corrected
+ * elsewhere. Measured: `/golf/dashboard/calendar` produced a live, unresolved
+ * error-level issue at a steady drip for a channel whose own hook refetches
+ * the moment it comes back.
+ *
+ * So the capture is DEFERRED by this window and cancelled if the channel
+ * returns to `SUBSCRIBED` (recovered) or reaches `CLOSED` (torn down) first.
+ * What survives is the honest signal: a feed that is still down after this
+ * long is a real outage and still pages.
+ *
+ * The rate signal is NOT deferred — `recordRealtimeChannelFailure`, the
+ * breadcrumb and the `helmLog.warn` all still fire immediately on every
+ * transition, so Bridge keeps a per-occurrence count nobody has to notice,
+ * and a spike of self-healing blips (a Realtime incident) is still visible
+ * even though no single one of them opens an issue.
+ */
+const TRANSPORT_FAILURE_GRACE_MS = 30_000;
+
 /** Test-only: forget which channelClasses already captured a Sentry message
  *  this session, so a test can assert the dedupe behavior from a clean state. */
 export function __resetRealtimeCaptureDedupeForTests(): void {
@@ -101,6 +134,14 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
   const subscribeStartedAt = Date.now();
   let subscribedOnce = false;
   let reconnectCount = 0;
+  let pendingCapture: ReturnType<typeof setTimeout> | null = null;
+
+  /** Recovered, or torn down — either way the deferred capture is void. */
+  const cancelPendingCapture = (): void => {
+    if (pendingCapture === null) return;
+    clearTimeout(pendingCapture);
+    pendingCapture = null;
+  };
 
   try {
     channel.subscribe((status: string, err?: Error) => {
@@ -112,6 +153,7 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
 
       try {
         if (status === 'SUBSCRIBED') {
+          cancelPendingCapture();
           if (!subscribedOnce) {
             subscribedOnce = true;
             const latencyMs = Date.now() - subscribeStartedAt;
@@ -139,6 +181,7 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
           // 11 call sites threading an "I'm unsubscribing on purpose" flag
           // through cleanup, which is out of scope for this pass — see
           // brief §12 doc note). Breadcrumb only, no metric, no capture.
+          cancelPendingCapture();
           recordHelmBreadcrumb('realtime', 'realtime.closed', { feature: options.feature, result: 'CLOSED' });
           return;
         }
@@ -156,7 +199,14 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
           operation: 'subscribe',
         });
 
-        if (!CAPTURED_ONCE_PER_SESSION.has(options.channelClass)) {
+        // Already reported for this channelClass this session, or already
+        // waiting out the grace window for an earlier transition — either way
+        // a reconnect loop must not queue a second timer per attempt.
+        if (CAPTURED_ONCE_PER_SESSION.has(options.channelClass) || pendingCapture !== null) return;
+
+        pendingCapture = setTimeout(() => {
+          pendingCapture = null;
+          if (CAPTURED_ONCE_PER_SESSION.has(options.channelClass)) return;
           CAPTURED_ONCE_PER_SESSION.add(options.channelClass);
           Sentry.captureMessage(`Realtime channel transport failure: ${status}`, {
             level: severity,
@@ -167,7 +217,12 @@ export function observeRealtimeChannel<C extends RealtimeChannelLike>(
               'realtime.state': status,
             },
           });
-        }
+        }, TRANSPORT_FAILURE_GRACE_MS);
+
+        // Node only (tests, any SSR import): a pending 30s timer must not be
+        // what keeps a process alive. `unref` does not exist on the browser's
+        // numeric handle, hence the optional call rather than a cast.
+        (pendingCapture as unknown as { unref?: () => void }).unref?.();
       } catch {
         // This file's own observation logic must never break the caller's
         // subscription — same fail-open contract every file in this

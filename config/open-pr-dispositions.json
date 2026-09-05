@@ -1,14 +1,4 @@
 {
-  "1738": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Opened 2026-09-02 from /private/tmp/helmv3-worktrees/fix-repo-config (branch agent/fix-repo-config, base 6a7577c71). Repo-configuration only: deny rules for the Supabase CLI spellings the repo prescribes and for the UUID-keyed MCP connector names, .vercelignore coverage plus its check, the release marker written to the canonical checkout, claude-code.yml author gate, and stale rule text. No src/**, no migration, no production state. Clears #1698 (merged at 57b292203). KEEP until the owner releases it; the checkout is clean and pushed, so PARK_IF_REPRODUCIBLE is safe whenever that is decided."
-  },
-  "1725": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Opened 2026-09-01. Integrity: a sixth run_integrity_checks() check alerting on a completed round with no scored hole, plus the reviewed QA-fixture removal plan (a script, not run by merge). Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in and the new migration reflowed to lint clean so the sqlfluff ratchet stays at baseline. Carries a migration: merging lands the FILE only; applying is a separate owner step. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
-  },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
     "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",
@@ -68,5 +58,77 @@
     "",
     "ACTIVE and UNKNOWN always KEEP, whatever this field says — a mis-typed",
     "policy beside them fails safe."
-  ]
+  ],
+  "1831": {
+    "branch": "agent/sentry-auth-refresh-noise",
+    "disposition": "PARKABLE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Owner released 2026-09-04: checkout is clean and pushed (tip === PR head). Parking removes the CHECKOUT only; the branch and the open PR are untouched."
+  },
+  "1832": {
+    "branch": "agent/docs-guard-truth",
+    "disposition": "PARKABLE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Owner released 2026-09-04: checkout is clean and pushed (tip === PR head). Parking removes the CHECKOUT only; the branch and the open PR are untouched."
+  },
+  "1834": {
+    "branch": "types/auto-regen",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. no local checkout."
+  },
+  "1833": {
+    "branch": "agent/messages-instant-entry",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. worktree is ACTIVE — dirty, live process cwd."
+  },
+  "1829": {
+    "branch": "agent/selfheal-repair-20260904",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. worktree is ACTIVE — uncommitted work."
+  },
+  "1827": {
+    "branch": "agent/honor-message-notification-prefs",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. no local checkout."
+  },
+  "1759": {
+    "branch": "agent/fix-qa-fixture-removal-scripts",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. no local checkout."
+  },
+  "1758": {
+    "branch": "dependabot/npm_and_yarn/framer-motion-13.1.1",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. dependabot — no local checkout."
+  },
+  "1757": {
+    "branch": "dependabot/npm_and_yarn/production-dependencies-4faec55fbc",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. dependabot — no local checkout."
+  },
+  "1756": {
+    "branch": "dependabot/npm_and_yarn/dev-dependencies-81b2a4a51f",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. dependabot — no local checkout."
+  },
+  "1755": {
+    "branch": "dependabot/github_actions/github-actions-f1ba23a83b",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. dependabot — no local checkout."
+  },
+  "1753": {
+    "branch": "dependabot/npm_and_yarn/js-yaml-5.2.2",
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Recorded 2026-09-04. KEEP is the conservative default — never parked automatically. dependabot — no local checkout."
+  }
 }

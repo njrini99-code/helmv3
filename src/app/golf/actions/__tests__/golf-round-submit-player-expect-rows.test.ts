@@ -180,7 +180,9 @@ describe('submitGolfRoundComprehensive — expectRows on the golf_players player
     expect((context as unknown as Record<string, unknown>).metadata).toMatchObject({ table: 'golf_players' });
 
     // Unaffected: the action's own pre-existing graceful failure path.
-    expect(result).toEqual({ success: false, error: 'Player profile not found' });
+    // `code` added 2026-09-04 so describeRoundWriteResult can replace the bare
+    // string with a sentence that says where the player's shots are.
+    expect(result).toEqual({ success: false, error: 'Player profile not found', code: 'player_missing' });
   });
 
   it('preserves the action-level result unchanged for the empty-player read — fail-open, no control-flow change', async () => {
@@ -275,6 +277,6 @@ describe('submitGolfRoundComprehensive — expectRows on the golf_players player
 
     const result = await submitGolfRoundComprehensive(makeRoundInput());
 
-    expect(result).toEqual({ success: false, error: 'Player profile not found' });
+    expect(result).toEqual({ success: false, error: 'Player profile not found', code: 'player_missing' });
   });
 });

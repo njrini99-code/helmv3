@@ -78,6 +78,24 @@ Verified 2026-08-20. Do not treat these as coverage:
   belongs here — `package.json`'s `prebuild` runs
   `scripts/check-required-env.mjs` on every `npm run build`, so it fires in
   CI's `next-build` job and on every local build.)
+- **The Golf e2e suite self-skips on credentials Playwright itself injected,
+  and exits 0.** `e2e/golf-critical-paths.spec.ts` — the only spec that loads
+  `/golf/dashboard/messages`, `/roster`, `/calendar`, `/intelligence` — gates
+  every test on `hasGolfCoachAuth`, a module-level
+  `process.env.GOLFHELM_COACH_EMAIL && ...GOLFHELM_COACH_PASSWORD`. Those ARE
+  in `.env.local`, and Playwright prints `injected env (80) from .env.local`
+  on startup, yet the constant still evaluates false: the injection does not
+  reach the spec module's top-level read. Measured 2026-09-04, same command
+  either side of one change:
+
+  ```text
+  npx playwright test ... -g "messages loads a conversation"   -> 1 skipped, exit 0
+  set -a; . ./.env.local; set +a; <same command>               -> 1 passed,  exit 0
+  ```
+
+  Both are green. The first verified nothing. Export the credentials into the
+  ENVIRONMENT before the run — `.env.local` alone is not enough — and check the
+  passed/skipped counts, because the exit code cannot tell you which you got.
 - **`orphans:mounts`** exists as a script with no CI caller. (`db:drift:check`
   was in this bullet until 2026-09-01; it now runs in ci.yml's `supabase` job
   against the migrations-rebuilt local stack, and in `db-drift.yml` against
@@ -90,10 +108,16 @@ Verified 2026-08-20. Do not treat these as coverage:
   stays available, not as evidence of anything (`vitest.config.ts` says the
   same at the project definition). CI runs the pgTAP suites in the
   "Supabase lint + RLS tests" job.
-- **A file under `scripts/__tests__/` runs only if `vitest.config.ts` names
-  it.** Nothing references `node --test` — not one npm script, not one
-  workflow — and the `unit` project lists these files explicitly, **with no
-  glob**, so a new file there executes never unless you add it by name. Some
+- **A file under `scripts/__tests__/` runs only if something names it — and
+  there are TWO mechanisms, not one.** `vitest.config.ts` lists files
+  explicitly, **with no glob**, so nothing there is picked up by pattern. The
+  second is `node --test`, named directly in npm scripts that CI runs:
+  `flags:check` names `scripts/__tests__/check-feature-flags.test.mjs`, and
+  ci.yml also runs the `knowledge:*-check:test` scripts, with CircleCI running
+  `test:janitor` and `test:mutation-gate`. This bullet claimed "Nothing
+  references `node --test` — not one npm script, not one workflow" until
+  2026-09-04; package.json has eight such scripts and four run in GitHub
+  Actions. Named either way it runs; named neither way it is decorative. Some
   legacy hold-outs still fail against `main` (`single-<h1>` violations,
   unconsolidated badges, and similar) — real drift that accumulated while they
   sat unrun. How many of each is a count, and counts rot: this bullet carried
@@ -109,11 +133,14 @@ Verified 2026-08-20. Do not treat these as coverage:
 |---|---|---|---|
 | Unit / unit-dom / integration / business / contract | vitest projects | `src/**/*.test.{ts,tsx}` + the `scripts/**` files named in `vitest.config.ts` | `test:run`, `test:integration` |
 | RLS | **pgTAP**, not vitest | `supabase/tests/rls/*.sql` | "Supabase lint + RLS tests" |
-| E2E | Playwright | `e2e/**` | `smoke` on PRs; the full chromium suite is **manual only** (`workflow_dispatch` with `full_e2e=true`) |
+| E2E | Playwright | `e2e/**` | `pr-smoke.yml` on PRs (path-gated); the full chromium suite is **manual only** (`playwright.yml`, `workflow_dispatch` with `full_e2e=true`) |
 
 - `npm test` runs **unit + unit-dom only** — the fast inner loop, not coverage.
   `npm run test:all` runs every project.
-- CI does **not** run `npm run test:e2e`. `playwright.yml` runs `smoke` on PRs;
+- CI does **not** run `npm run test:e2e`. PR e2e is `pr-smoke.yml`
+  (`Playwright PR smoke (a11y)`), gated on a `detect-changes` job.
+  `playwright.yml` is `workflow_dispatch`-only — its `smoke` job was deleted
+  2026-09-02 and it now fires on no push, no PR, no merge group;
   the full suite has not run automatically since 2026-08-20 (owner decision —
   its post-merge run seeded PRODUCTION fixtures). It runs only when someone
   dispatches the workflow with `full_e2e=true`. Nothing runs "on push to
@@ -164,8 +191,10 @@ Verified 2026-08-20. Do not treat these as coverage:
   non-mutating, unlike the old `docs:regen && git diff` shape), `docs:schema-drift`,
   `docs:path-drift`, `enforcement:check` and `tool-authority:check`. All five
   run in CI: the inventory check directly, and the enforcement and
-  tool-authority checks through `control-plane:verify:static`, in ci.yml's
-  `control-plane` job; the two drift ratchets in its `feature-knowledge` job. (This
+  tool-authority checks through `control-plane:verify:static` — all of them
+  steps of ci.yml's `Static checks` job (`static-checks`). There is no
+  `control-plane` job and no `feature-knowledge` job; those names were carried
+  here until 2026-09-04 and match nothing in the workflow. (This
   bullet named a `docs:diff-check` half that does not exist and called the
   script local-only; both were stale by 2026-09-01.)
 - Renaming any job means updating the required-checks list on GitHub. There is

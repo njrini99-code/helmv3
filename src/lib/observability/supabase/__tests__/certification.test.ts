@@ -169,10 +169,16 @@ describe('certification matrix - Realtime capture, exercised rather than read', 
     vi.resetModules();
   });
 
-  it('actually captures to Sentry on CHANNEL_ERROR, once per channel class', async () => {
+  it('actually captures to Sentry on a CHANNEL_ERROR that does not recover, once per channel class', async () => {
     // The matrix settles this statically. This proves the static claim is
     // true by running the real wrapper against a fake channel - belt and
     // braces, so a wiring claim is backed by behaviour somewhere.
+    //
+    // The capture is DEFERRED by TRANSPORT_FAILURE_GRACE_MS (realtime.ts): a
+    // blip that reconnects on its own is not an outage and opens no issue. So
+    // this scenario has to hold the channel DOWN across the window to observe
+    // the capture at all - which is the claim worth certifying anyway.
+    vi.useFakeTimers();
     const captureMessage = vi.fn();
     vi.doMock('@sentry/nextjs', () => ({
       captureMessage,
@@ -202,7 +208,12 @@ describe('certification matrix - Realtime capture, exercised rather than read', 
     emit!('CHANNEL_ERROR');
     emit!('CHANNEL_ERROR');
 
+    // Nothing yet - the channel still has the grace window to come back.
+    expect(captureMessage).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(30_000);
     expect(captureMessage).toHaveBeenCalledTimes(1);
     expect(captureMessage.mock.calls[0]![0]).toContain('CHANNEL_ERROR');
+    vi.useRealTimers();
   });
 });

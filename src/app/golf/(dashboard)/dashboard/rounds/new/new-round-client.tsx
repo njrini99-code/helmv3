@@ -49,6 +49,8 @@ import {
 import {
   describeRoundWriteFailure,
   describeRoundWriteResult,
+  isUnrecoverableRoundWriteFailure,
+  isAutoSaveStoppedFailure,
   writeRoundRecreatingIfMissing,
   isQualifierClosedError,
 } from '@/lib/golf/round-missing-recovery';
@@ -265,6 +267,11 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0); // Timestamp to throttle warning toasts
+  // Fired at most once per round: server saving has stopped for a reason no
+  // retry can clear (see isAutoSaveStoppedFailure). Without this guard the
+  // toast would re-fire on every shot the player enters afterwards, since the
+  // auto-save effect re-runs on each shot change and re-hits the same refusal.
+  const autoSaveStoppedNotifiedRef = useRef(false);
   const savedRoundIdRef = useRef<string | null>(null);
   const [isStartingRound, setIsStartingRound] = useState(false);
   // Optimistic locking: tracks the last server-side updated_at for conflict detection
@@ -1870,6 +1877,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
           );
           if (result.success) {
             consecutiveSaveFailuresRef.current = 0;
+            // Saving RECOVERED (the player signed back in, say). Re-arm the
+            // stopped-saving warning: without this the ref latches for the life of
+            // the round, so a session that drops a second time stops saving in
+            // silence, with only an inline error the player may already have
+            // dismissed. The player is told once EACH TIME saving stops.
+            autoSaveStoppedNotifiedRef.current = false;
             if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
             if (!savedRoundIdRef.current) {
               savedRoundIdRef.current = result.data.roundId;
@@ -1912,13 +1925,24 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
               if (consecutiveSaveFailuresRef.current >= 2) showAutoSaveWarning();
               throw new Error(`Auto-save could not re-create the round: ${recreated.error}`);
             }
-          } else if (result.error === 'hole_invalid') {
-            // B5: not a transient network failure — the identical payload
-            // will keep failing until the flagged hole/field is fixed, so
-            // this must not throw into the circuit breaker (which exists
-            // for outages, and would keep retrying a failure retrying can
-            // never clear). Surface the specific sentence immediately.
-            setError(describeRoundWriteResult(result));
+          } else if (isUnrecoverableRoundWriteFailure(result)) {
+            // B5, widened 2026-09-04. Not a transient network failure: the
+            // identical payload will keep failing until the cause is fixed, and
+            // for a missing session or a missing player profile it cannot be
+            // fixed mid-round at all. So this must not throw into the circuit
+            // breaker, which exists for outages and would otherwise retry at
+            // 5s/15s/30s and then probe every 60 seconds for the rest of the
+            // round - re-failing and re-logging identically every time.
+            // Surface the specific sentence immediately instead.
+            const sentence = describeRoundWriteResult(result);
+            setError(sentence);
+            if (isAutoSaveStoppedFailure(result) && !autoSaveStoppedNotifiedRef.current) {
+              // Server saving has STOPPED, not slowed - showAutoSaveWarning's
+              // "sync may be delayed" would be untrue here. The player is looking
+              // at the course, so say it once, plainly, in a toast.
+              autoSaveStoppedNotifiedRef.current = true;
+              showToast(sentence, 'error');
+            }
           } else {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
@@ -1986,6 +2010,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       }
     }
   }, [
+    showToast,
     buildPartialRoundData,
     completedRoundId,
     dropStaleRoundId,

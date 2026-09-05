@@ -56,6 +56,7 @@
  */
 import * as Sentry from '@sentry/nextjs';
 import { CRON_REGISTRY } from '@/lib/admin/cron-registry';
+import { flushTelemetryNow } from './flush';
 import { getRuntimeEnv } from '@/lib/telemetry-gate';
 
 /** Sane defaults when a Vercel-scheduled job has no better basis for either value. */
@@ -158,6 +159,25 @@ export function startCronCheckIn(jobType: string): string | null {
  * callers can unconditionally call this in a `finally`-shaped block without
  * their own branching.
  *
+ * DELIVERY IS PART OF THE CONTRACT, and this is the half that was missing.
+ * `captureCheckIn` only BUFFERS an envelope; on Vercel the invocation returns
+ * immediately afterwards and the instance freezes with the buffer unsent
+ * unless something keeps it alive. The `in_progress` check-in survives that
+ * by luck — the job's own work runs after it, and some other emitter's flush
+ * carries it — but the terminal check-in is by construction the LAST thing
+ * this invocation emits, so nothing comes along behind it. Measured in
+ * production 2026-09-04: `api-cron-db-health-sampler` (every 5 minutes)
+ * landed `in_progress` on essentially every run and its terminal check-in on
+ * 1-4 runs in 12, and Sentry read the rest as `timeout` — ~95 false
+ * "Cron failure" outage events in 19 hours for a job that never once failed
+ * (`error=0`, `missed=0`, traces under a second, every hour of the window).
+ *
+ * `flushTelemetryNow` rather than `scheduleTelemetryFlush`, deliberately: the
+ * latter drops a flush request while one is already in flight, and on the
+ * FAILURE path below `recordJobRun` has just awaited a `logServerEvent`
+ * write, so a flush is likely in flight and may already have drained the
+ * buffer this envelope has not entered yet. See flush.ts for the full note.
+ *
  * NEVER THROWS.
  */
 export function finishCronCheckIn(
@@ -175,6 +195,7 @@ export function finishCronCheckIn(
       checkInId,
       ...(durationMs !== undefined ? { duration: durationMs / 1000 } : {}),
     });
+    flushTelemetryNow();
   } catch {
     // Diagnostic infrastructure about the job must never affect the job.
   }

@@ -61,9 +61,17 @@ mechanical, and these are the habits that keep it fixed.
 
 ### 1b. Agent settings ownership
 
-- **Helm project scope owns `autoMemoryEnabled`, and the value is `false`.**
-  `.claude/settings.json` is authoritative; do not set this key in user scope
-  for Helm work, and do not flip it per branch.
+- **`autoMemoryEnabled` must be `false` for Helm work, and
+  `.claude/settings.json` is the only file that should set it.** It was also
+  set in user scope, to `true`, until 2026-09-04 — so the invariant was
+  violated and nobody could tell, because which scope wins for this key is
+  UNVERIFIED: the project-deny-over-user-allow precedence proven in §4 is the
+  PERMISSIONS resolver and does not generalise, and the enforcement inventory
+  reads project config only. The user-scope key was REMOVED (owner-authorised)
+  rather than set to `false`, so project scope governs and there is no second
+  value to reconcile. Backup: `~/.claude/settings.json.bak-2026-09-04`.
+  If this key reappears in user scope, remove it again — do not reason about
+  precedence, and do not set it to `false` there either.
 - The reason is not that auto-memory is bad. It is that this repo already has
   an explicit Git-backed memory architecture — `memory/registry.yml`,
   `memory/features/**`, `memory/ledgers/**`, `memory/incidents/**`,
@@ -128,8 +136,12 @@ mechanical, and these are the habits that keep it fixed.
   so `git push` from it targeted `main`. Verify:
   `git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads`
 - **Make worktrees with `scripts/new-worktree.sh <task>`.** It is the one
-  supported path: `~/worktrees/helmv3/<task>`, `--no-track`, isolated
-  dependencies. Never `.worktrees/` inside the repo — `.gitignore` hides an
+  supported path: `~/worktrees/helmv3/<task>`, `--no-track`, a known base.
+  It does NOT install dependencies — this read "isolated dependencies" until
+  2026-09-04, while the script itself prints `not installed — run: node
+  scripts/ensure-worktree-deps.mjs <dir>` and AGENTS.md says so outright. An
+  agent that trusted the old wording and ran `npm test` got a bare checkout.
+  Never `.worktrees/` inside the repo — `.gitignore` hides an
   internal one from git but `find`/`grep` still return it, so agents edit the
   copy nobody ships.
 - **Prune with `npm run worktrees{,:park,:retire}`, never by hand.** This repo
@@ -181,6 +193,25 @@ mechanical, and these are the habits that keep it fixed.
   same command typed literally works, so it reads as a git problem. Seven
   branch pushes failed this way on 2026-08-30. Use `git push origin "$b"`, or
   `${b}` followed by a literal colon.
+- **`npm run dev` inside the Bash sandbox does not work, and it fails while
+  looking healthy.** Measured 2026-09-04: a flood of
+  `Watchpack Error (watcher): Error: EMFILE: too many open files, watch`
+  (with `ulimit -n` reporting 1048576, so this is the sandbox's own limit, not
+  the shell's), then a loop of
+
+  ```text
+  ⨯ The directory at ".next/dev" was deleted. ... Restarting the server to recover...
+  ▲ Next.js — Local: http://localhost:3000 — ✓ Ready in 133ms
+  ```
+
+  The log says READY. `curl localhost:3000` says `(52) Empty reply from
+  server`, then `(7) Failed to connect`. The obvious diagnosis is a second dev
+  server fighting over `.next/` — check `lsof -a -p <pid> -d cwd` before
+  believing it; on that date the other two `next` processes were in
+  `~/worktrees/helmv3/controlplane-d` with their own `.next`, and were
+  innocent. Run it with `dangerouslyDisableSandbox: true` and it is ready in
+  158ms and answers 200. **`curl` the server before reporting it as running** —
+  the log alone cannot distinguish the two cases.
 - **`ls` is aliased to `eza` here.** Scripted `ls` with flags it doesn't share
   errors out. Use `/bin/ls` in scripts.
 

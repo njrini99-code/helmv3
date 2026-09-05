@@ -42,11 +42,20 @@ live hook configuration.)
 
 ## Trusting what you read
 
-Generated artifacts outrank prose, always: `src/lib/types/database.ts`,
-`src/lib/golf/surface-registry.ts`, and the `AUTOGEN:*` blocks in `memory/`.
-Never hand-edit inside an AUTOGEN block. Hand-written narrative is a hint —
-verify identifiers before acting. `npm run docs:schema-drift` and
-`npm run docs:path-drift` are what make that checkable.
+Generated artifacts outrank prose, always: `src/lib/types/database.ts`
+(regen: `npm run db:types`, guarded by `db:types:check`) and the `AUTOGEN:*`
+blocks in `memory/`. Never hand-edit inside an AUTOGEN block. Hand-written
+narrative is a hint — verify identifiers before acting.
+`npm run docs:schema-drift` and `npm run docs:path-drift` are what make that
+checkable.
+
+`src/lib/golf/surface-registry.ts` sat in that list until 2026-09-04 and does
+NOT belong to it: nothing generates it (`grep -rn surface-registry scripts/
+package.json` is empty) and it carries no stamp. It is HAND-MAINTAINED, and
+it is still the single source of truth for every golf surface name and href —
+edit it there rather than duplicating a surface name elsewhere. Asserting a
+generator that does not exist is `shipping.md` §1 inverted, and the effect was
+to put the canonical registry off-limits to the agents who need to add to it.
 
 ## Four rules the compiler will not catch
 
@@ -75,7 +84,7 @@ npm run lint          # eslint, --max-warnings 0
 npm test              # unit + unit-dom only (the fast loop, not coverage)
 npm run test:all      # every vitest project
 npm run build         # required when a 'use server' surface changed
-npm run docs:check    # regen + both drift gates
+npm run docs:check    # 5 gates: AUTOGEN inventory + 2 drift + enforcement + tool-authority (non-mutating)
 
 ./node_modules/.bin/supabase   # repo-local; do not assume a global binary
 ./node_modules/.bin/vercel

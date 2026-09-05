@@ -765,7 +765,9 @@ describe('savePartialRound — transient auth-check failure is not a sign-out', 
     }) as any;
 
     const result = await savePartialRound(partialData, 'round-auth');
-    expect(result).toEqual({ success: false, error: 'You must be signed in' });
+    // `code` added 2026-09-04: the auto-save ladder needs to know this refusal
+    // is terminal without matching on player-facing prose.
+    expect(result).toEqual({ success: false, error: 'You must be signed in', code: 'auth_required' });
 
     const { logServerError } = await import('@/lib/server-error-logger');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

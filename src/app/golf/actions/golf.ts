@@ -16,6 +16,7 @@ import {
 import { inngest, isInngestConfigured } from '@/lib/inngest/client';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
+import { AUTO_SAVE_AUTH_REQUIRED, AUTO_SAVE_PLAYER_MISSING } from '@/lib/golf/round-missing-recovery';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import { z } from 'zod';
 import {
@@ -1840,7 +1841,10 @@ async function submitGolfRoundComprehensiveImpl(
       }, 'error');
       void flightRecorder.fail('server.player', { errorSummary: 'player_not_found' });
       endTrace('failure');
-      return { success: false, error: 'Player profile not found' };
+      // Tagged so `describeRoundWriteResult` can replace the bare server
+      // string with a sentence that tells the player where their shots are.
+      // Submit has no retry ladder, so the code changes nothing else here.
+      return { success: false, error: 'Player profile not found', code: AUTO_SAVE_PLAYER_MISSING };
     }
     void flightRecorder.complete('server.player', { observed: { player_id: player.id } });
 
@@ -6579,7 +6583,11 @@ async function savePartialRoundImpl(
       }, 'error');
       void flightRecorder.fail('server.auth', { errorSummary: 'session_expired' });
       endTrace('failure');
-      return { success: false, error: 'You must be signed in' };
+      // `code`, not just the sentence: the auto-save ladder has to know this
+      // is one of the refusals retrying can never clear, and must not branch
+      // on player-facing prose to find that out. See
+      // isUnrecoverableRoundWriteFailure (round-missing-recovery.ts).
+      return { success: false, error: 'You must be signed in', code: AUTO_SAVE_AUTH_REQUIRED };
     }
     void flightRecorder.complete('server.auth', { observed: { user_id: user.id } });
 
@@ -6641,7 +6649,13 @@ async function savePartialRoundImpl(
       }, 'error');
       void flightRecorder.fail('server.player', { errorSummary: 'player_not_found' });
       endTrace('failure');
-      return { success: false, error: 'Player profile not found' };
+      // This is the branch production actually hit. Without the code, the
+      // auto-save ladder could not tell it apart from an outage, so it
+      // retried at 5s/15s/30s and then probed every 60 seconds for the rest
+      // of the round — each attempt re-failing identically and writing
+      // another error event, for a condition no retry can change. See
+      // isUnrecoverableRoundWriteFailure (round-missing-recovery.ts).
+      return { success: false, error: 'Player profile not found', code: AUTO_SAVE_PLAYER_MISSING };
     }
     void flightRecorder.complete('server.player', { observed: { player_id: player.id } });
 

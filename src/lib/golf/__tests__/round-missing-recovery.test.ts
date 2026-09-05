@@ -29,6 +29,10 @@ import {
   isQualifierClosedError,
   writeRoundRecreatingIfMissing,
   type RoundWriteResult,
+  isUnrecoverableRoundWriteFailure,
+  isAutoSaveStoppedFailure,
+  AUTO_SAVE_AUTH_REQUIRED,
+  AUTO_SAVE_PLAYER_MISSING,
 } from '../round-missing-recovery';
 
 const DEAD_ROUND = 'a45714a0-62fa-4e9b-bfe5-a25e71ca6bc9';
@@ -263,5 +267,90 @@ describe('isQualifierClosedError', () => {
 
   it('handles non-string input', () => {
     expect(isQualifierClosedError(undefined)).toBe(false);
+  });
+});
+
+/**
+ * The auto-save ladder in `use-shot-state-machine.ts` retries EVERY rejected
+ * save: 5s, 15s, 30s, then a circuit breaker probing every 60 seconds for the
+ * rest of the round. That is right for an outage and wrong for a refusal
+ * whose cause cannot change while the player keeps playing. Production,
+ * 2026-09-02: three `savePartialRound` "player profile not found" errors from
+ * one session, plus the client's own retry logs, all one unfixable cause.
+ *
+ * This classifier is the single place that decides which is which, so the two
+ * round screens cannot drift apart on it.
+ */
+describe('isUnrecoverableRoundWriteFailure', () => {
+  it('classifies the two refusals no retry can clear', () => {
+    expect(isUnrecoverableRoundWriteFailure({ error: 'You must be signed in', code: AUTO_SAVE_AUTH_REQUIRED })).toBe(true);
+    expect(isUnrecoverableRoundWriteFailure({ error: 'Player profile not found', code: AUTO_SAVE_PLAYER_MISSING })).toBe(true);
+  });
+
+  it('still classifies hole_invalid, which travels as a bare key in `error`', () => {
+    expect(isUnrecoverableRoundWriteFailure({ error: 'hole_invalid' })).toBe(true);
+    expect(isUnrecoverableRoundWriteFailure({ error: 'hole_invalid', code: 'hole_invalid' })).toBe(true);
+  });
+
+  /**
+   * The default has to be "retryable". A transient failure wrongly classified
+   * as terminal abandons a round that would have saved on the next tick,
+   * which is a far worse trade than one extra retry.
+   */
+  it('leaves every transient/unknown failure retryable', () => {
+    for (const error of ['retry', 'busy', 'conflict', 'round_missing', 'fetch failed', '']) {
+      expect(isUnrecoverableRoundWriteFailure({ error }), error).toBe(false);
+    }
+    expect(isUnrecoverableRoundWriteFailure(null)).toBe(false);
+    expect(isUnrecoverableRoundWriteFailure(undefined)).toBe(false);
+    expect(isUnrecoverableRoundWriteFailure({})).toBe(false);
+  });
+
+  /**
+   * A sentence is not a contract. If someone rewords "Player profile not
+   * found" the code must still classify it — that is the whole reason these
+   * travel as `code`.
+   */
+  it('classifies on code alone, independent of the prose in `error`', () => {
+    expect(isUnrecoverableRoundWriteFailure({ error: 'reworded tomorrow', code: AUTO_SAVE_PLAYER_MISSING })).toBe(true);
+  });
+});
+
+describe('isAutoSaveStoppedFailure — the subset worth interrupting the player for', () => {
+  it('is true only where server saving has stopped for the rest of the round', () => {
+    expect(isAutoSaveStoppedFailure({ code: AUTO_SAVE_AUTH_REQUIRED })).toBe(true);
+    expect(isAutoSaveStoppedFailure({ code: AUTO_SAVE_PLAYER_MISSING })).toBe(true);
+  });
+
+  it('is false for hole_invalid — fixable in place, and the inline error already says where', () => {
+    expect(isAutoSaveStoppedFailure({ error: 'hole_invalid', code: 'hole_invalid' })).toBe(false);
+  });
+
+  it('is false for anything retryable', () => {
+    expect(isAutoSaveStoppedFailure({ error: 'retry' })).toBe(false);
+    expect(isAutoSaveStoppedFailure(null)).toBe(false);
+  });
+});
+
+describe('describeRoundWriteResult — copy for the stopped-saving pair', () => {
+  /**
+   * "Player profile not found" is accurate and useless to someone standing on
+   * a fairway: it does not say what happened to the two hours already played.
+   * Both sentences must lead with the shots being safe on the device.
+   */
+  it('replaces the bare server strings with sentences that account for the shots', () => {
+    const player = describeRoundWriteResult({ error: 'Player profile not found', code: AUTO_SAVE_PLAYER_MISSING });
+    expect(player).toContain('still on this device');
+    expect(player).not.toBe('Player profile not found');
+
+    const auth = describeRoundWriteResult({ error: 'You must be signed in', code: AUTO_SAVE_AUTH_REQUIRED });
+    expect(auth).toContain('still on this device');
+    expect(auth).not.toBe('You must be signed in');
+  });
+
+  it('does not disturb the hole_invalid sentence, which stays the most specific one', () => {
+    expect(
+      describeRoundWriteResult({ error: 'hole_invalid', code: 'hole_invalid', message: 'Hole 7 needs a putt count.' }),
+    ).toBe('Hole 7 needs a putt count.');
   });
 });

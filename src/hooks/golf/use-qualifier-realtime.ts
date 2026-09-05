@@ -202,6 +202,19 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
 
     if (!qualifierId) return;
 
+    // A dropped socket loses every change that happened while it was down,
+    // and Supabase's postgres_changes does NOT replay them on reconnect — it
+    // resumes from "now". Without the resubscribe refetch below, a qualifier
+    // leaderboard that reconnected after a tunnel, a sleeping laptop or a
+    // Realtime blip sat frozen on pre-drop scores for the rest of the session
+    // and looked exactly like a qualifying round where nobody had posted.
+    // This is the same defect #1822 locked down for the calendar
+    // (`use-calendar-range-events.ts`, "no refetch on (re)subscribe, silently
+    // dropping events") — the qualifier hook was never given the same
+    // treatment, and it is the surface where staleness costs the most,
+    // because a coach reads it live while the round is being played.
+    let hasSubscribedBefore = false;
+
     // Set up real-time subscription for qualifier entries (scores/positions)
     const channel = observeRealtimeChannel(
       supabase
@@ -262,7 +275,20 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
           setQualifier((prev) => prev ? { ...prev, ...update } : null);
         }
       ),
-      { feature: 'golf.qualifiers', channelClass: 'golf_qualifiers', subscriptionType: 'postgres_changes' },
+      {
+        feature: 'golf.qualifiers',
+        channelClass: 'golf_qualifiers',
+        subscriptionType: 'postgres_changes',
+        onStatus: (status) => {
+          if (status !== 'SUBSCRIBED') return;
+          // The FIRST SUBSCRIBED is the initial connect, whose data the
+          // fetchQualifierData() at the top of this effect already loaded —
+          // refetching there would just duplicate that request. Every
+          // subsequent one is a reconnect after a gap.
+          if (hasSubscribedBefore) fetchQualifierData();
+          hasSubscribedBefore = true;
+        },
+      },
     );
 
     return () => {

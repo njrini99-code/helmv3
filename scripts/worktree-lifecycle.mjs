@@ -108,7 +108,33 @@ function git(a, opts = {}) {
  * Returns { lookup: 'OK'|'FAILED', number, state, headSha }. A failed lookup is
  * FAILED, never NONE: #1668 exists because those were conflated.
  */
+/**
+ * Attempted/failed lookup tallies, incremented HERE rather than derived from
+ * the row array afterwards.
+ *
+ * The blackout guard at the bottom of this file used to reconstruct "did we
+ * try?" from `row.prLookup`, and a row whose lookup was never attempted
+ * carries a SYNTHETIC `lookup: 'OK'` (see the branchless case below). Two
+ * detached-HEAD worktrees were therefore enough to make
+ * `failed === attempted` false and suppress INFRASTRUCTURE_FAILURE entirely:
+ * measured 2026-09-04 in the canonical checkout with every `gh` call failing,
+ * the tool exited 0 and printed `0 branches deletable` — the precise outcome
+ * the guard exists to make impossible.
+ *
+ * The synthetic 'OK' cannot simply be renamed: both classifiers in
+ * `scripts/lib/worktree-lifecycle.mjs` branch on `prLookup !== 'OK'`, so any
+ * other value silently converts those rows to UNKNOWN. Counting at the call
+ * site keeps verdicts untouched and cannot drift from the row shape.
+ */
+let lookupsAttempted = 0;
+let lookupsFailed = 0;
+
+export function lookupTally() {
+  return { attempted: lookupsAttempted, failed: lookupsFailed };
+}
+
 function prFor(branch) {
+  lookupsAttempted += 1;
   const stub = process.env.HELM_PR_LOOKUP;
   if (stub) {
     try {
@@ -117,6 +143,7 @@ function prFor(branch) {
       const [num, state, sha] = out.split(/\s+/);
       return { lookup: 'OK', number: Number(num), state, headSha: sha ?? null };
     } catch {
+      lookupsFailed += 1;
       return { lookup: 'FAILED' };
     }
   }
@@ -131,6 +158,7 @@ function prFor(branch) {
     const [num, state, sha] = out.split(/\s+/);
     return { lookup: 'OK', number: Number(num), state, headSha: sha ?? null };
   } catch {
+    lookupsFailed += 1;
     return { lookup: 'FAILED' };
   }
 }
@@ -469,9 +497,19 @@ for (const b of remoteBranches) {
   });
 }
 
+// Computed BEFORE the --json exit below, deliberately. This guard used to live
+// only at the end of the human report, which `--json` never reaches: it printed
+// and exited 0 first. `scripts/control-plane-verify.mjs` is a --json consumer,
+// so a total `gh` blackout surfaced there as
+// `PASS unclassified-branches ... 0 NO_UPSTREAM_UNIQUE_WORK` — a green control
+// -plane check standing on evidence that did not exist.
+const blackout = lookupsAttempted > 0 && lookupsFailed === lookupsAttempted;
+
 if (JSON_OUT) {
+  // The array shape is unchanged so existing consumers keep parsing; the
+  // BLACKOUT is carried by the exit code, which a consumer must check.
   console.log(JSON.stringify(rows, null, 2));
-  process.exit(0);
+  process.exit(blackout ? 2 : 0);
 }
 
 const H = ['BRANCH', 'WORKTREE', 'SIZE', 'DIRTY', 'CWD', 'PR', 'PR_STATE', 'TIP=PR', 'WT_VERDICT', 'BR_VERDICT', 'ACTION'];
@@ -560,12 +598,13 @@ if (unknowns.length) {
 // Mirrors the repo's own guard convention: PASS / POLICY_FAILURE /
 // INFRASTRUCTURE_FAILURE, where the third exits non-zero and never presents as
 // the first.
-const lookupRows = rows.filter((r) => r.prLookup);
-const failedLookups = lookupRows.filter((r) => r.prLookup !== 'OK');
-if (lookupRows.length > 0 && failedLookups.length === lookupRows.length) {
+// Counted at the call site (see lookupTally) rather than reconstructed from
+// `row.prLookup`, because a row whose lookup was never attempted carries a
+// synthetic 'OK' and used to be counted as a success in the denominator.
+if (blackout) {
   console.log('');
   console.log('  INFRASTRUCTURE_FAILURE: every PR lookup failed.');
-  console.log(`  ${failedLookups.length}/${lookupRows.length} branches could not be classified, so this report proves NOTHING`);
+  console.log(`  ${lookupsFailed}/${lookupsAttempted} branches could not be classified, so this report proves NOTHING`);
   console.log('  about what is disposable. It is not evidence that the repo is clean.');
   console.log('');
   console.log('  Most likely: `gh` cannot reach GitHub from this shell. Verify with');

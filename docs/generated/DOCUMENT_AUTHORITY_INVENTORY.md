@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 3 | 0 | 2 | 0 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1206 | 0 | 419 | 535 |
-| `UNKNOWN` | 112 | 12 | 46 | 146 |
+| `UNKNOWN` | 113 | 12 | 46 | 147 |
 
 ## Files
 
@@ -58,13 +58,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 4 | 2 |
 | `.claude/rules/database.md` | current | - | - | yes | 1 | 7 | - |
-| `.claude/rules/design-system.md` | current | - | - | yes | 3 | 6 | 1 |
+| `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | 1 |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 0 | 11 | 2 |
-| `.claude/rules/quality-gates.md` | current | - | - | - | 1 | 7 | 2 |
+| `.claude/rules/quality-gates.md` | current | - | - | - | 1 | 8 | 2 |
 | `.claude/rules/shipping.md` | current | - | - | yes | 16 | 15 | 1 |
 | `AGENTS.md` | current | yes | - | yes | 0 | 18 | 2 |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
@@ -614,6 +614,7 @@ them would bury everything above.
 | `docs/baseballhelm-overnight/TEST_STATUS.md` | current | - | - | - | 0 | 1 | - |
 | `docs/baseballhelm-overnight/UI_STATUS.md` | current | - | - | - | 0 | 0 | - |
 | `docs/baseballhelm-overnight/WORKFLOW_STATUS.md` | current | - | - | - | 0 | 0 | - |
+| `docs/design/mobile-calendar-rebuild-brief.md` | current | - | - | - | 0 | 4 | 1 |
 | `docs/design/putt-slope-gap-generator.md` | current | - | - | yes | 0 | 4 | 1 |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | 0 | 0 | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
