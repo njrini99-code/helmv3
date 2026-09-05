@@ -68,8 +68,7 @@ Thumbs.db
 
 # Supabase
 supabase/.branches
-supabase/.temp/*
-!supabase/.temp/project-ref
+supabase/.temp/
 
 # Temporary/bundled docs (keep docs/ but not bundles)
 helm-docs-bundle/

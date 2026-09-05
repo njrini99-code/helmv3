@@ -1,13 +1,68 @@
 {
-  "1738": {
+  "1837": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Opened 2026-09-02 from /private/tmp/helmv3-worktrees/fix-repo-config (branch agent/fix-repo-config, base 6a7577c71). Repo-configuration only: deny rules for the Supabase CLI spellings the repo prescribes and for the UUID-keyed MCP connector names, .vercelignore coverage plus its check, the release marker written to the canonical checkout, claude-code.yml author gate, and stale rule text. No src/**, no migration, no production state. Clears #1698 (merged at 57b292203). KEEP until the owner releases it; the checkout is clean and pushed, so PARK_IF_REPRODUCIBLE is safe whenever that is decided."
+    "note": "The canonical checkout's own docs/rules/worktree-retirement/golf-messages-header PR, opened from the fix/cron-checkin-flush-realtime-recovery branch. Landing this is what clears the canonical checkout's accumulated commits."
   },
-  "1725": {
+  "1836": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "feat(golf/messages): the approved design — unread lifts, tail marks the end, the dead token removed. In-flight feature work on the Messages redesign track."
+  },
+  "1835": {
+    "disposition": "HUMAN_TEST_PENDING",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "fix(golf/messages): the follow-through #1830 owed — long-press survives a thumb move, the menu closes, a message can be copied. Needs a human on a real device to confirm the touch/press behavior before merge; the checkout is safe to park once clean and pushed."
+  },
+  "1834": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Opened 2026-09-01. Integrity: a sixth run_integrity_checks() check alerting on a completed round with no scored hole, plus the reviewed QA-fixture removal plan (a script, not run by merge). Adopted 2026-09-02 by the Go session (helmv3-ce) for the PR-queue sweep; main merged in and the new migration reflowed to lint clean so the sqlfluff ratchet stays at baseline. Carries a migration: merging lands the FILE only; applying is a separate owner step. Handled from the bridge-selfheal-flow worktree by switching branches, so parking is moot."
+    "note": "chore(types): scheduled regen of database.ts from the production schema. Automation-produced, low risk, no local agent checkout needs to persist."
+  },
+  "1833": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "feat(golf/messages): premium mobile rebuild — the thread was sunken, not flat. In-flight feature work on the Messages redesign track."
+  },
+  "1832": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "fix(worktrees/docs): the subtractions that could never happen — worktree-lifecycle/docs correctness fix."
+  },
+  "1831": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "fix(auth/observability): a discarded refresh is not a sign-out, and a span must measure its own workflow."
+  },
+  "1759": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "chore(scripts): make the QA-fixture removal safe to run — owner-only trigger disable, scoped post-check, cascade capture. Script-only change, no production state."
+  },
+  "1758": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: bump framer-motion 12.42.2 -> 13.1.1. No local agent checkout to park."
+  },
+  "1757": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: production-dependencies group, 9 updates. No local agent checkout to park."
+  },
+  "1756": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: dev-dependencies group, 7 updates across 1 directory. No local agent checkout to park."
+  },
+  "1755": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: github-actions group, 2 updates. No local agent checkout to park."
+  },
+  "1753": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: bump js-yaml 4.3.2 -> 5.2.2. No local agent checkout to park."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
