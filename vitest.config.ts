@@ -156,6 +156,12 @@ export default defineConfig({
             // accepted as a loopback suffix) both passed a grep happily.
             'scripts/lib/__tests__/seed-target-guard.test.ts',
             'scripts/repo-doctor/__tests__/repo-doctor.test.ts',
+            // Worktree/disk hygiene (A6): unmarked worktrees, canonical off
+            // main with no open PR, oversized .next caches, untracked bloat,
+            // and a stray harness auto-memory store. Failure-injection suites
+            // for repo:doctor's worktree.* and disk.* checks.
+            'scripts/repo-doctor/__tests__/worktree-hygiene.test.ts',
+            'scripts/repo-doctor/__tests__/disk-hygiene.test.ts',
             // Phase 3 Track E (Supabase observability certification). Named
             // here for the same reason as every neighbour: a file under
             // scripts/ that is NOT listed runs under nothing, and a guard that

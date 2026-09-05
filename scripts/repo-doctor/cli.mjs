@@ -31,6 +31,8 @@ import * as config from './checks/config.mjs';
 import * as dbObservability from './checks/db-observability.mjs';
 import * as nodeVersion from './checks/node-version.mjs';
 import * as settingsOwnership from '../check-settings-ownership.mjs';
+import * as worktreeHygiene from './checks/worktree-hygiene.mjs';
+import * as diskHygiene from './checks/disk-hygiene.mjs';
 import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 
 // Local-only modules would be gated on `--local`; all MVP checks are shared/CI-safe.
@@ -40,9 +42,12 @@ import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 // settings-ownership reads $HOME (ctx.homeDir) — a real machine-global path,
 // not repo state, but it degrades to WARN/UNKNOWN (never a manufactured FAIL)
 // when that state can't be read, so it needs no `--local` gate either.
+// worktree-hygiene's canonical-off-main sub-check shells out to `gh`, which
+// degrades to LOCAL_ONLY (never UNKNOWN/FAIL) when gh cannot reach GitHub —
+// the same reasoning, so it stays in the shared list too.
 const MODULES = [
   identity, workspace, scratch, ai, registry, ci, config, dbObservability,
-  nodeVersion, settingsOwnership,
+  nodeVersion, settingsOwnership, worktreeHygiene, diskHygiene,
 ];
 
 function parseArgs(argv) {
