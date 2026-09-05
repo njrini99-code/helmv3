@@ -11,7 +11,7 @@
  * `teamTimezone` prop is actually consumed (not defaulted away).
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayDayStrip } from '../FairwayDayStrip';
 
@@ -99,5 +99,142 @@ describe('FairwayDayStrip — timezone-aware density bucketing', () => {
     expect(
       screen.getByRole('button', { name: 'Tuesday, July 21 — 1 event' }),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * S1 — the strip IS the week navigation, and the swipe surface sits on top of
+ * seven clickable day cells. That overlap is the whole hazard: a browser
+ * synthesises a `click` on touchend, so without a movement guard a drag from
+ * one cell to another would page the week AND select the cell it landed on,
+ * leaving `selectedDate` and `focusDate` disagreeing after a single gesture.
+ *
+ * jsdom does not synthesise the click itself, so these tests fire it explicitly
+ * — that IS the browser behaviour being pinned.
+ */
+describe('FairwayDayStrip — swipe pages the week without also picking a day', () => {
+  function renderStrip() {
+    const onSelectDate = vi.fn();
+    const onNavigateWeek = vi.fn();
+    render(
+      <FairwayDayStrip
+        focusDate={FOCUS_DATE}
+        selectedDate={SELECTED_DATE}
+        events={[]}
+        nowRef={NOW_REF}
+        teamTimezone="America/New_York"
+        onSelectDate={onSelectDate}
+        onNavigateWeek={onNavigateWeek}
+      />,
+    );
+    return {
+      onSelectDate,
+      onNavigateWeek,
+      track: screen.getByRole('group', { name: 'Week navigator' }),
+      wednesday: screen.getByRole('button', { name: 'Wednesday, July 22 — no events' }),
+      saturday: screen.getByRole('button', { name: 'Saturday, July 25 — no events' }),
+    };
+  }
+
+  it('a leftward drag across cells pages to the next week and selects nothing', () => {
+    const { track, wednesday, saturday, onNavigateWeek, onSelectDate } = renderStrip();
+
+    fireEvent.touchStart(wednesday, { touches: [{ clientX: 200, clientY: 40 }] });
+    fireEvent.touchMove(track, { touches: [{ clientX: 160, clientY: 42 }] });
+    fireEvent.touchEnd(saturday, {
+      touches: [],
+      changedTouches: [{ clientX: 120, clientY: 44 }],
+    });
+    // The browser's synthesised tap, which the guard must swallow.
+    fireEvent.click(saturday);
+
+    expect(onNavigateWeek).toHaveBeenCalledWith('next');
+    expect(onSelectDate).not.toHaveBeenCalled();
+  });
+
+  it('a rightward drag pages to the previous week', () => {
+    const { track, wednesday, onNavigateWeek, onSelectDate } = renderStrip();
+
+    fireEvent.touchStart(wednesday, { touches: [{ clientX: 120, clientY: 40 }] });
+    fireEvent.touchMove(track, { touches: [{ clientX: 180, clientY: 41 }] });
+    fireEvent.touchEnd(wednesday, {
+      touches: [],
+      changedTouches: [{ clientX: 200, clientY: 42 }],
+    });
+    fireEvent.click(wednesday);
+
+    expect(onNavigateWeek).toHaveBeenCalledWith('prev');
+    expect(onSelectDate).not.toHaveBeenCalled();
+  });
+
+  it('a mostly-vertical drag is a page scroll — it neither pages nor selects', () => {
+    const { track, wednesday, onNavigateWeek, onSelectDate } = renderStrip();
+
+    fireEvent.touchStart(wednesday, { touches: [{ clientX: 200, clientY: 40 }] });
+    fireEvent.touchMove(track, { touches: [{ clientX: 190, clientY: 140 }] });
+    fireEvent.touchEnd(wednesday, {
+      touches: [],
+      changedTouches: [{ clientX: 140, clientY: 240 }],
+    });
+    fireEvent.click(wednesday);
+
+    expect(onNavigateWeek).not.toHaveBeenCalled();
+    // The finger travelled, so it was never a tap either.
+    expect(onSelectDate).not.toHaveBeenCalled();
+  });
+
+  it('a stationary tap still selects the day', () => {
+    const { wednesday, onNavigateWeek, onSelectDate } = renderStrip();
+
+    fireEvent.touchStart(wednesday, { touches: [{ clientX: 200, clientY: 40 }] });
+    fireEvent.touchEnd(wednesday, {
+      touches: [],
+      changedTouches: [{ clientX: 202, clientY: 41 }],
+    });
+    fireEvent.click(wednesday);
+
+    expect(onNavigateWeek).not.toHaveBeenCalled();
+    expect(onSelectDate).toHaveBeenCalledTimes(1);
+    expect(onSelectDate.mock.calls[0]?.[0]).toBeInstanceOf(Date);
+  });
+
+  it('a two-finger gesture never pages the week', () => {
+    const { track, wednesday, onNavigateWeek } = renderStrip();
+
+    fireEvent.touchStart(wednesday, {
+      touches: [
+        { clientX: 200, clientY: 40 },
+        { clientX: 260, clientY: 44 },
+      ],
+    });
+    fireEvent.touchMove(track, {
+      touches: [
+        { clientX: 120, clientY: 40 },
+        { clientX: 300, clientY: 44 },
+      ],
+    });
+    fireEvent.touchEnd(track, {
+      touches: [{ clientX: 300, clientY: 44 }],
+      changedTouches: [{ clientX: 120, clientY: 40 }],
+    });
+
+    expect(onNavigateWeek).not.toHaveBeenCalled();
+  });
+
+  it('renders as a plain picker (no paging) when no onNavigateWeek is given', () => {
+    const onSelectDate = vi.fn();
+    render(
+      <FairwayDayStrip
+        focusDate={FOCUS_DATE}
+        selectedDate={SELECTED_DATE}
+        events={[]}
+        nowRef={NOW_REF}
+        teamTimezone="America/New_York"
+        onSelectDate={onSelectDate}
+      />,
+    );
+    const wednesday = screen.getByRole('button', { name: 'Wednesday, July 22 — no events' });
+    fireEvent.click(wednesday);
+    expect(onSelectDate).toHaveBeenCalledTimes(1);
   });
 });

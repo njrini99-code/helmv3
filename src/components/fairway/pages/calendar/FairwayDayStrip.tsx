@@ -25,9 +25,12 @@
  * band that owns this strip is `bg-elevated` for exactly that reason.
  *
  * ── NAVIGATION ───────────────────────────────────────────────────────────────
- * Swipe left/right pages the week (`onNavigateWeek`). The gesture is measured
- * on `touchend` only — no `preventDefault` during the move, so this never
- * fights the page's own vertical scroll and needs no non-passive listener.
+ * Swipe left/right pages the week (`onNavigateWeek`). The gesture is decided on
+ * `touchend` — no `preventDefault` during the move, so this never fights the
+ * page's own vertical scroll and needs no non-passive listener. A `touchmove`
+ * handler exists only to notice that the finger has travelled, so a drag that
+ * ends on a different day cell than it started cannot ALSO register as a tap on
+ * that cell (see `swipeMovedRef`).
  *
  * Swipe is NOT the only way through, and it must not be: a gesture is invisible
  * to a keyboard and to assistive tech, so removing the prev/Today/next row
@@ -83,6 +86,9 @@ const WEEK_STARTS_ON = 0 as const;
  * product feel the same in the hand.
  */
 const SWIPE_THRESHOLD_PX = 50;
+
+/** Travel (px) past which a gesture is a drag, not a tap. */
+const DRAG_SLOP_PX = 10;
 
 /**
  * The selected day's raised thumb. Same "lit from above" grammar as
@@ -177,10 +183,46 @@ export function FairwayDayStrip({
   // a console warning and a no-op, and intercepting the move is what makes a
   // horizontal-ish gesture fight the page's vertical scroll.
   const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  // A swipe across this track BEGINS on a day cell — the cells fill the track,
+  // so almost every gesture starts on a <button>. `touchstart`/`touchend`
+  // bubble, so the swipe is detected correctly, but the browser ALSO
+  // synthesises a click on touchend, and a drag from Wednesday to Saturday
+  // would page the week AND select Saturday in one gesture, leaving the
+  // selected day and the focus date disagreeing.
+  //
+  // So: once a gesture has travelled far enough to be a drag, the cells stop
+  // accepting it as a tap. The flag survives until the NEXT touchstart
+  // precisely because the click arrives after touchend. Same shape as the
+  // messages long-press fix ("the timer cancels on movement") and the reason
+  // `CalendarDayViewSwipeable` never needed it — nothing is clickable under
+  // its swipe surface.
+  const swipeMovedRef = React.useRef(false);
 
   const handleTouchStart = React.useCallback((e: React.TouchEvent) => {
+    swipeMovedRef.current = false;
+    // Multi-touch is a pinch or a two-finger scroll, never a week swipe: two
+    // fingers converging can produce 50px of horizontal travel on the primary
+    // touch and would page the week under a zoom.
+    if (e.touches.length > 1) {
+      touchStartRef.current = null;
+      return;
+    }
     const t = e.touches[0];
     touchStartRef.current = t ? { x: t.clientX, y: t.clientY } : null;
+  }, []);
+
+  const handleTouchMove = React.useCallback((e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    if (!start) return;
+    if (e.touches.length > 1) {
+      touchStartRef.current = null;
+      return;
+    }
+    const t = e.touches[0];
+    if (!t) return;
+    if (Math.hypot(t.clientX - start.x, t.clientY - start.y) > DRAG_SLOP_PX) {
+      swipeMovedRef.current = true;
+    }
   }, []);
 
   const handleTouchEnd = React.useCallback(
@@ -188,6 +230,9 @@ export function FairwayDayStrip({
       const start = touchStartRef.current;
       touchStartRef.current = null;
       if (!start || !onNavigateWeek) return;
+      // Another finger is still down — this is one end of a multi-touch
+      // gesture, not the end of a swipe.
+      if (e.touches.length > 0) return;
       const t = e.changedTouches[0];
       if (!t) return;
       const dx = t.clientX - start.x;
@@ -213,6 +258,7 @@ export function FairwayDayStrip({
       role="group"
       aria-label="Week navigator"
       onTouchStart={onNavigateWeek ? handleTouchStart : undefined}
+      onTouchMove={onNavigateWeek ? handleTouchMove : undefined}
       onTouchEnd={onNavigateWeek ? handleTouchEnd : undefined}
       className={cn(
         // ONE sunken track holding all seven cells. `rounded-full` so the track
@@ -248,6 +294,11 @@ export function FairwayDayStrip({
             type="button"
             variant="ghost"
             onClick={() => {
+              // A drag that happened to end on this cell is a week swipe, not
+              // a day pick — see swipeMovedRef above. Removing this line fails
+              // three tests in __tests__/FairwayDayStrip.test.tsx; that is the
+              // point of them.
+              if (swipeMovedRef.current) return;
               if (dayIsSelected) return;
               onSelectDate(day);
             }}
