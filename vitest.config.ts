@@ -53,6 +53,13 @@ export default defineConfig({
   },
   test: {
     ...sharedTestConfig,
+    // Worker cap for a shared machine. Five agent shells each forking ten
+    // vitest workers was most of the RAM (measured 2026-09-05); three per run,
+    // with scripts/serialize.mjs letting two runs through at once, is at most
+    // six forks machine-wide. docs/operations/GATES.md has the numbers.
+    pool: 'forks',
+    maxWorkers: 3,
+    minWorkers: 1,
     // NO root-level `include`. Every project below defines its own, and
     // `extends: true` MERGES array options rather than replacing them — so a
     // root-level include is unioned into every project, not overridden by it.
