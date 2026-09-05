@@ -221,8 +221,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/setup/COACHHELM_DATABASE_SETUP.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/COACHHELM_IMPLEMENTATION_GUIDE.md` | current | - | - | - | 0 | 8 | 3 |
 | `docs/setup/COACHHELM_QUICK_START.md` | current | - | - | - | 0 | 4 | 2 |
-| `docs/setup/DEPLOY.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/setup/ENVIRONMENT_VARIABLES.md` | current | - | - | - | 0 | 0 | - |
+| `docs/setup/DEPLOY.md` | current | - | - | - | 0 | 2 | 1 |
+| `docs/setup/ENVIRONMENT_VARIABLES.md` | current | - | - | - | 0 | 2 | - |
 | `docs/setup/ERROR_MONITORING_SETUP.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/GMAIL_SEND_SETUP.md` | current | - | - | - | 1 | 0 | - |
 | `docs/setup/OAUTH_SECURITY_GUIDE.md` | current | - | - | - | 0 | 0 | - |
@@ -605,7 +605,7 @@ them would bury everything above.
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
-| `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
+| `docs/REPO_MAP.md` | current | - | - | yes | 4 | 39 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 4 | 7 | - |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 3 | 16 | 9 |

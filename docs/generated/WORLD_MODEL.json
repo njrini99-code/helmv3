@@ -5691,6 +5691,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/require-super-admin.ts",
           "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/admin.ts",
+          "line": 5
         }
       ]
     },
@@ -7997,7 +8002,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 11
+          "line": 12
         }
       ]
     },
@@ -8033,17 +8038,17 @@
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 7
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/supabase/middleware.ts",
           "line": 8
         },
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 10
+          "line": 9
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/middleware.ts",
+          "line": 11
         }
       ]
     },
@@ -8055,7 +8060,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/auth/supabase-rate-limit.ts",
-          "line": 385
+          "line": 391
         }
       ]
     },
@@ -8199,7 +8204,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 6
+          "line": 7
         }
       ]
     },
