@@ -82,6 +82,146 @@ That half is defence in depth, not an exposure.
 | *(data divergence, not a schema gap — no migration)* `admin_allowlist` vs. `users.role='admin'` | **INVESTIGATE, not a migration — diagnostic + template prepared as O7** | `db-drift.yml`'s "admin_allowlist and users.role=admin stay in sync" check has failed the same 5 runs: 1 `admin_allowlist` user no longer has `users.role='admin'` in production — read live via the check's own query, not independently re-run here (no `execute_sql` access in this reconciliation's read-only Supabase MCP). Admin RPCs still work for that user via `is_super_admin()`, so nothing is broken today, but the divergence itself needs an owner decision: was the demotion intentional (in which case remove the stale `admin_allowlist` row) or accidental (in which case restore `users.role='admin'`)? Neither this reconciliation nor a migration file can make that call — it needs identifying WHICH user and why. **2026-09-05 follow-up: the id was never captured anywhere in this repo's evidence trail** (the drift check's own query returns only a count, never a row) — see "Owner actions, prepared" below, action O7, for the read-only SELECT that identifies it and the templated UPDATE the owner fills in afterward. | 2026-09-05 |
 | `20260730030000_avatars_storage_bucket_rls.sql` | **UNVERIFIED** | The file's own header says "NOT APPLIED BY THE AUTHOR. Production already has all five objects" — written to describe a state its author believed already existed, not applied and not independently confirmed at write time. This reconciliation does not relabel it local-only or applied either, for the same reason: `storage.objects` is outside every `public`-schema read this reconciliation's tools (`list_tables`, `get_advisors`) can see, so neither claim can be checked from here. **Prepared owner query** (read-only, `storage` schema): `SELECT policyname, cmd FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname ILIKE '%avatar%';`. **What "verified" looks like**: exactly four rows — one each for `cmd` = `SELECT`, `INSERT`, `UPDATE`, `DELETE` — matching the four policy names in the file (`Avatars accessible to authenticated`, `Users can upload their own avatar`, `Users can update their own avatar`, `Users can delete their own avatar`). Fewer than four, or a `cmd`/predicate that doesn't match the file, means production and this file have diverged and the file needs a follow-up, not a status flip to APPLIED. | 2026-09-05 |
 
+## Local files with no ledger row — classification
+
+The 2026-09-05 A3c reconciliation compared every `supabase/migrations/*.sql`
+version stamp against a fresh `list_migrations` read (project
+`qmnssrrolpinvwjjnufo`, 871 rows) rather than reusing an earlier session's
+numbers. **44 local files have no ledger row.** Of those, 14 are already
+discussed above — in the register, in "Applied directly, no file," or in the
+2026-09-05 HOLD rows — and are not repeated here. The other **30** had no
+discussion anywhere in this file until now. This section closes that gap.
+
+Classification and evidence are carried over from the prior audit
+(`scratchpad/exec/details-supabase-for-a3c.md` §2(a)) where that audit already
+did the fuzzy-name-matching work; **every row this session's tools could
+independently re-check is re-verified against the LIVE catalog below, not
+just re-quoted.** Six rows carried an explicit "VERIFIED LIVE" tag and were
+re-checked with `list_tables` (verbose, schema `public`) this session:
+`golf_team_settings.sg_baseline`, `golf_pga_standards.tour`,
+`baseball_player_stats.source_external_id`,
+`baseball_team_coach_staff.bio`/`.phone`, and
+`baseball_timeline_event_acks.team_id`/`.player_id` are all still present,
+exactly as claimed — **no disagreement between the prior audit and the live
+catalog was found.** A seventh, `20260801000000_crm_signal_spine` (creates two
+VIEWs), could not be re-checked the same way — `list_tables` enumerates
+tables, not views — so that one row states the limitation rather than a
+re-confirmation; see its own row below.
+
+Classification legend (same as the source audit): **APPLIED-ELSEWHERE** = the
+migration's effect is live in production under a different filename/version
+stamp; **LOCAL-ONLY** = a self-described reconciliation aligning a
+from-scratch build to production, not a pending change; **UNRESOLVED** = no
+strong signal either way from read-only tools.
+
+| Version | Name | Classification | Evidence | Closes |
+|---|---|---|---|---|
+| `20260526070000` | `widen_insight_type_check_for_v3_generators` | APPLIED-ELSEWHERE (folded into baseline) | Token-fuzzy match (0.67) to pre-baseline `20260422100002_widen_insight_type_check_for_categories`; file's own header says the table it alters doesn't exist until the baseline runs. | Nothing. |
+| `20260526180000` | `fix_v3_goals_suggestions_rls` | APPLIED-ELSEWHERE (folded into baseline, low-medium confidence) | Companion file `20260528010000` says "after the production baseline creates golf_goals"; live `golf_goals` carries exactly one `goals_coach_create`/`goals_coach_view` policy pair (performance advisor's `multiple_permissive_policies` finding), consistent with only one of the sibling pair's effect surviving. | Nothing. |
+| `20260528010000` | `reapply_v3_goals_suggestions_rls` | APPLIED-ELSEWHERE (same evidence as the row above) | A second literal `CREATE POLICY goals_coach_create` would raise `duplicate_object` if the first had already run, so at most one of the two ever ran standalone; the live single-policy state is consistent with either. | Nothing. |
+| `20260528012000` | `relock_crm_admin_rpcs` | APPLIED-ELSEWHERE (medium confidence) | Token-fuzzy match (0.60) to two ledger rows: `20260703154427_crm_rpcs_admin_gate` and `20260704110000_crm_rpcs_admin_gate`. | Nothing. |
+| `20260605040000` | `reaffirm_golf_rounds_update_grants` | APPLIED-ELSEWHERE (medium confidence) | Fuzzy match (0.43) to `20260603040000_grant_update_golf_rounds_authenticated`. | Nothing. |
+| `20260606190000` | `fix_fairway_denominator` | APPLIED-ELSEWHERE (medium confidence) | Fuzzy match (0.40) to `20260607003641_fix_fairway_denominator_recompute_round_totals`, same week, same fix. | Nothing. |
+| `20260606200000` | `converge_legacy_round_sg` | APPLIED-ELSEWHERE | Fuzzy match (0.57) to `20260607011107_converge_legacy_calc_round_sg_with_recalculate`. | Nothing. |
+| `20260607200000` | `per_team_sg_baseline` | **APPLIED-ELSEWHERE — VERIFIED LIVE** | Fuzzy match (0.80) to `20260607173102_per_team_sg_baseline_setting`; `golf_team_settings.sg_baseline` re-confirmed present via `list_tables` 2026-09-05 (alongside `sg_benchmark_level`). | Nothing. |
+| `20260609230000` | `v3_gender_scoped_sibling_cohorts` | APPLIED-ELSEWHERE | Split across two ledger rows: `20260610011939_..._round_metrics` and `20260610012012_..._shot_metrics` (0.67 each). | Nothing. |
+| `20260610150000` | `notification_type_event_updated_pattern` | APPLIED-ELSEWHERE | Fuzzy match (0.83) to `20260610143246_calendar_notification_type_event_updated_pattern`. | Nothing. |
+| `20260610170000` | `seed_lpga_standards` | **APPLIED-ELSEWHERE — VERIFIED LIVE** | Fuzzy match (0.75) to `20260613123125_seed_lpga_standards_pk_fix`; `golf_pga_standards.tour` re-confirmed present via `list_tables` 2026-09-05. | Nothing. |
+| `20260621170000` | `retire_stranded_predictions` | **UNRESOLVED** | Pure one-time `UPDATE` backfill retiring ~623 stranded `golf_predictions` rows (`due_date <= created_at::date`, `validated_at IS NULL`); no CREATE/ALTER, no fuzzy ledger match, no schema footprint `list_tables` can confirm. | Verification query 1 below. |
+| `20260623131038` | `harden_crm_view_and_recruit_doc_functions` | **UNRESOLVED** (low priority — CRM, not golf/baseball core) | Sets `security_invoker = true` on view `v_crm_coaches_by_school` and pins `search_path` on two `golf_recruit_documents_*` trigger functions, each guarded by an existence check so re-running is a safe no-op; no fuzzy match; neither independently confirmable from `list_tables`/`get_advisors` alone. | Verification query 2 below. |
+| `20260624000082` | `baseball_staff_display_and_invite_columns` | APPLIED-ELSEWHERE (medium confidence) | Fuzzy match (0.50) to `20260701002000_baseball_staff_capability_columns`. | Nothing. |
+| `20260624001200` | `baseball_import_source_external_id` | **APPLIED-ELSEWHERE — VERIFIED LIVE** | Header's "NOT APPLIED by this agent" is authoring boilerplate ("I wrote it, someone else applied it"), not a hold marker; `baseball_player_stats.source_external_id` re-confirmed present via `list_tables` 2026-09-05. | Nothing. |
+| `20260625000040` | `baseball_staff_display_scope_columns` | **APPLIED-ELSEWHERE — VERIFIED LIVE** | Same boilerplate phrase; `baseball_team_coach_staff.bio` and `.phone` re-confirmed present via `list_tables` 2026-09-05. | Nothing. |
+| `20260625000070` | `baseball_performance_indexes` | APPLIED-ELSEWHERE (superseded by v2) | Same boilerplate phrase; exact token match (1.00) to `20260625113634_baseball_performance_indexes_v2`. | Nothing. |
+| `20260625000080` | `helm_lifting_backfill_from_baseball` | **UNRESOLVED** | Idempotent (`ON CONFLICT DO NOTHING` on `legacy_baseball_id`) 22-table dependency-ordered copy from `baseball_lift_*`/`baseball_strength_*`/`baseball_readiness_*`/etc. into `helm_lifting_*`; pure data backfill, no schema footprint, weak fuzzy match only (0.38). | Verification query 3 below. |
+| `20260702100100` | `baseball_event_acks_policy_restore` | APPLIED-ELSEWHERE (medium-high confidence) | Fuzzy match (0.67) to `20260702034631_baseball_event_acks_restore_policies` (word-reordered name); corroborated by `baseball_event_acknowledgements` **not** appearing in the live `rls_enabled_no_policy` advisor list even though the file's own header says it was "LOCKED OUT in prod: RLS enabled, ZERO policies" as of 2026-07-02 — the lockout is gone today. | Nothing. |
+| `20260730020000` | `auth_user_created_trigger` | **UNRESOLVED** | The file's own header states it read `pg_get_triggerdef` live from production on 2026-07-30 and found `on_auth_user_created` already present on `auth.users`; `auth.users` is outside `list_tables(schemas=["public"])`'s scope, so this session could not independently re-confirm it. | Verification query 4 below. |
+| `20260730040000` | `baseball_team_members_select_recursion` | APPLIED-ELSEWHERE — file confirms it itself | Exact token match (1.00) to `20260625204205_fix_baseball_team_members_select_recursion`; the file's own header states "Production does not [recurse], because it was fixed out of band." | Nothing. |
+| `20260801000000` | `crm_signal_spine` | APPLIED-ELSEWHERE — VERIFIED LIVE, but **not by this session's tools** | Creates views `v_crm_coach_activity` and `v_crm_coach_signal_summary`; the prior audit confirmed both live via the `pg_graphql_authenticated_table_exposed` advisor list, which enumerates views. `list_tables` enumerates tables only, so this session could not re-run that check — recorded as a tooling limitation, not a disagreement; nothing found this session contradicts the prior finding. | Nothing (re-verify via an advisor read, not `list_tables`, if ever needed). |
+| `20260807030300` | `baseball_conversations_recursion_and_tenant_binding` | APPLIED-ELSEWHERE | Fuzzy match (0.67) to `20260807044402_baseball_conversations_fix_recursion_and_tenant_bind` (same day). | Nothing. |
+| `20260807030400` | `gate_qualifier_leaderboard` | APPLIED-ELSEWHERE | Fuzzy match (0.50) to `20260807044633_gate_qualifier_leaderboard_and_revoke_anon_effectiveness` (same day, expanded scope). | Nothing. |
+| `20260807060000` | `retype_orphaned_class_events` | APPLIED-ELSEWHERE | Fuzzy match (0.80) to `20260807113440_retype_orphaned_class_events_as_class`. | Nothing. |
+| `20260807080000` | `golf_dm_join_requires_creator` | APPLIED-ELSEWHERE | Fuzzy match (0.71) to `20260807163532_golf_dm_join_requires_creator_not_team` (same day refinement). | Nothing. |
+| `20260825153105` | `permit_completed_round_sg_recalculation` | **UNRESOLVED — likely redundant** | Self-patching `DO` block: reads the live `pg_get_functiondef` of `public.recalculate_round_strokes_gained(uuid)` and no-ops (`RETURN`) if the companion `20260823235000_allow_derived_stats_cache_updates.sql` (confirmed applied — file and ledger row both exist at that version) already granted the same `helm.golf_lifecycle_write = 'stats_cache'` capability; cannot tell from outside whether this file separately ran. | Verification query 5 below. |
+| `20260825222432` | `reconcile_baseball_timeline_ack_contract` | **LOCAL-ONLY — VERIFIED LIVE** | `reconcile_*` name; `baseball_timeline_event_acks.team_id` and `.player_id` re-confirmed present via `list_tables` 2026-09-05 (alongside `acked_by`/`acked_at`) — and `user_id`/`acknowledged_at` re-confirmed ABSENT, consistent with the `20260905091000` HOLD row above. | Nothing. |
+| `20260825223149` | `reconcile_baseball_event_telemetry_production_contract` | LOCAL-ONLY | `reconcile_*` name, same family as the row above; not independently column-verified — this session's re-verification pass was scoped to rows the audit tagged "VERIFIED LIVE" or "UNRESOLVED — possible real gap," and this one carried neither tag. | Nothing. |
+| `20260825235900` | `revoke_anon_from_secdef_admin_helpers` | LOCAL-ONLY | Not `reconcile_`-named, but content is explicit that production already satisfies the intent; targets `log_crm_stage_transition()` and `unresolve_admin_event(uuid[])`, both of which the security advisor's `authenticated_security_definer_function_executable` list still shows as `authenticated`-executable today (expected — this file closes `anon` access on a fresh LOCAL build only; `authenticated` access is intended and unaffected). | Nothing. |
+
+**No disagreement between the prior audit and the live catalog.** Every
+column this session independently re-checked against `list_tables` matched
+what the audit claimed. The one row that could not be re-checked
+(`20260801000000_crm_signal_spine`) is a tooling gap (views vs. `list_tables`
+tables-only), not a finding of drift.
+
+### Verification queries for the 5 UNRESOLVED rows
+
+**1 — `20260621170000_retire_stranded_predictions.sql`:**
+
+```sql
+SELECT count(*) AS still_stranded
+FROM public.golf_predictions
+WHERE due_date IS NOT NULL AND created_at IS NOT NULL
+  AND due_date <= (created_at::date)
+  AND validated_at IS NULL;
+```
+
+`0` means either the backfill already ran or nothing was ever stranded;
+`> 0` means it genuinely has not.
+
+**2 — `20260623131038_harden_crm_view_and_recruit_doc_functions.sql`:**
+
+```sql
+SELECT relname, reloptions FROM pg_class WHERE relname = 'v_crm_coaches_by_school';
+
+SELECT proname, proconfig FROM pg_proc
+WHERE proname IN ('golf_recruit_documents_assert_same_team', 'golf_recruit_documents_touch_updated_at')
+  AND pronamespace = 'public'::regnamespace;
+```
+
+`reloptions` containing `security_invoker=true`, and `proconfig` containing
+`search_path=public,pg_temp`, confirm this file already applied.
+
+**3 — `20260625000080_helm_lifting_backfill_from_baseball.sql`:**
+
+```sql
+SELECT count(*) AS backfilled_baseball_athletes
+FROM public.helm_lifting_athletes
+WHERE sport = 'baseball' AND legacy_baseball_id IS NOT NULL;
+
+SELECT count(DISTINCT p.id) AS eligible_baseball_players
+FROM public.baseball_players p
+JOIN public.baseball_team_members btm ON btm.player_id = p.id
+JOIN public.baseball_teams t ON t.id = btm.team_id
+WHERE t.organization_id IS NOT NULL AND btm.status = 'active';
+```
+
+Roughly equal counts mean the backfill ran; `backfilled_baseball_athletes = 0`
+against a nonzero eligible count means it did not.
+
+**4 — `20260730020000_auth_user_created_trigger.sql`:**
+
+```sql
+SELECT tgname, pg_get_triggerdef(oid) AS definition, tgenabled
+FROM pg_trigger
+WHERE tgrelid = 'auth.users'::regclass
+  AND tgname = 'on_auth_user_created';
+```
+
+One row with `tgenabled <> 'D'` confirms production already has it — this
+file stays a from-scratch-build fix, not a pending production change.
+
+**5 — `20260825153105_permit_completed_round_sg_recalculation.sql`:**
+
+```sql
+SELECT pg_get_functiondef('public.recalculate_round_strokes_gained(uuid)'::regprocedure)
+       LIKE '%helm.golf_lifecycle_write%stats_cache%' AS already_covered;
+```
+
+`true` means the capability is live in production today — whether from this
+file, its companion `20260823235000`, or both is not distinguishable from
+outside, and per the file's own comment, applying this one on top is harmless
+either way.
+
 ## Applied directly, no file (2026-09-05 reconciliation)
 
 The 2026-09-05 ledger reconciliation cross-checked all 358 migration files
@@ -152,6 +292,92 @@ three files needed no fix. The table-to-file attribution remains each file's
 own disclosed inference (the catalog only shows end state, never which
 transaction created which object), not upgraded to fact by this re-check.
 
+## Ledger rows with no file
+
+The mirror image of the section above. Measured 2026-09-05 against the same
+`list_migrations` read (871 rows) and the same 364-file tree: **551 ledger
+rows have no matching local file.** `240` of those predate
+`20260527000000_prod_public_baseline.sql` — an 859 KB consolidation that
+squashes the entire pre-baseline production history into one file, so those
+240 never need individual reconciliation — leaving **311 post-baseline**.
+
+### Policy
+
+These are the June–August dashboard-applied history: one-off hardening
+sweeps, same-day iterative fixes, and small direct-apply changes made through
+the Studio/Management API rather than this repo's later file-then-apply
+discipline. `scratchpad/exec/details-supabase-for-a3c.md` §2(b) hand-verified
+a large sample of the 311 and found the dominant, well-understood shape —
+**271 of 314 (86%, at that read) match a file under the exact same name at a
+different version stamp** (file authored, applied hours-to-days later under
+the ledger's apply-time stamp — never a materially different production
+change), a further 28 resolve via fuzzy/same-day name matching, and only 15
+have no plausible file match at all (pure one-off sweeps: grant/revoke
+hardening, a production data backfill, and the three 2026-09-04
+golf-messaging rows since given files elsewhere in this reconciliation). None
+of that per-row detail is reproduced here — the point of this section is the
+policy, not a second copy of the pairing table.
+
+**The drift ratchet holds this count, and it may only go down.**
+`.migration-drift-baseline.json`'s `production_only` field (currently `551`)
+is enforced by `scripts/db/migration-ledger-drift.mjs`, which fails CI if the
+live count rises above it. It falls only when an owner-run `--update` follows
+genuine drift paydown — retroactively authoring a file for one of the 15
+no-plausible-match rows, for instance — never by editing the baseline number
+directly.
+
+**Do not back-fill these as migration files.** For the 271+28 matched rows, a
+file already exists and describes the real change; writing a second file
+under the ledger's version stamp would create two files claiming to be the
+same migration, and risks a second `CREATE OR REPLACE` diverging from the
+first the next time either is edited. For the 15 unmatched rows, writing a
+file after the fact would assert a level of certainty about "what exactly
+ran" that this reconciliation's read-only tools cannot support — see
+`scratchpad/exec/details-supabase-for-a3c.md`'s own "What I could not verify"
+section.
+
+**Do not delete these rows from the ledger.**
+`supabase_migrations.schema_migrations` is the historical record of what
+actually executed against production, however it was invoked. Deleting a row
+asserts a migration never happened when the live catalog says otherwise — the
+same category of error `.claude/rules/shipping.md` §1 calls "a session that
+obeyed the docs produced fluent, confident, broken work," just pointed at the
+ledger instead of a doc.
+
+### The 20 newest post-baseline rows with no file
+
+Shown so a reader can see the shape without opening `list_migrations`
+directly. All 20 are dated 2026-08-25 or earlier; measured 2026-09-05, **zero**
+ledger rows from 2026-08-26 onward lack a matching local file version stamp —
+this reconciliation does not know or claim why that shift happened, only that
+it did. The first 13 below are also independently documented in the
+register's row for 13 production-only versions (search that row above for
+the same 13 filenames); the remaining 7 were not previously called out
+individually anywhere in this file.
+
+| Ledger version | Ledger name |
+|---|---|
+| `20260825233238` | `fix_round_recap_wrapper_definer` |
+| `20260825125512` | `restore_atomic_lifecycle_capability_v2` |
+| `20260825124728` | `allow_protected_atomic_round_submit` |
+| `20260825121433` | `restore_golf_round_lifecycle_contract` |
+| `20260825121310` | `permit_completed_round_recap_write` |
+| `20260825121238` | `fix_active_round_stranding_trigger_record_types` |
+| `20260824023141` | `allow_completed_round_reclassify` |
+| `20260823235118` | `allow_derived_stats_cache_updates` |
+| `20260823233509` | `harden_golf_round_lifecycle_boundaries` |
+| `20260823233504` | `preserve_started_round_identity` |
+| `20260821165627` | `feature_health_excludes_resolved_incidents` |
+| `20260821114110` | `single_flight_round_submit` |
+| `20260820172125` | `single_flight_partial_round_save` |
+| `20260819173235` | `conversation_creator_cannot_inject_third_party` |
+| `20260819033336` | `golf_staff_invite_codes` |
+| `20260819031356` | `golf_staff_invite_single_use` |
+| `20260818124738` | `fix_putt_break_direction_metric_direction` |
+| `20260818010326` | `golf_shots_select_policy_perf` |
+| `20260809201741` | `join_request_predicate_staff_strict` |
+| `20260809201731` | `golf_rounds_team_write_check` |
+
 ## Owner actions, prepared
 
 Prepared by the 2026-09-05 reconciliation. None of this was run — every
@@ -160,6 +386,43 @@ credentials and, per `repair-contract.md` and this repo's R3 convention,
 deliberate execution outside any agent's `bypassPermissions` session.
 (Section renamed from "Owner SQL, prepared" on 2026-09-05 when O8 added the
 first prepared action that is not SQL — a Vercel environment variable.)
+
+### O11 — disable the Supabase GitHub branching integration; it is the only thing keeping this register's HELD files off production
+
+`list_branches` (project `qmnssrrolpinvwjjnufo`, read 2026-09-05) shows the
+Supabase-GitHub integration's automatic branching is live: preview branches
+exist for PR #1759 (created 2026-09-02) and #1833 (2026-09-04) — the
+project's concurrent-branch limit is reached — and the DEFAULT branch record
+itself sits in status `MIGRATIONS_FAILED`.
+
+That failing status is not incidental. Every merge to `main` posts a failing
+"Supabase Preview" GitHub status reading "Remote migration versions not found
+in local migrations directory" — this integration attempting to apply
+`supabase/migrations/` straight into production on every merge, and failing
+only because of the exact ledger mismatch this file exists to document (the
+44 local-no-ledger-row files above, several of them deliberate HOLDs).
+**That failure is currently the only thing stopping every HOLD, OBSOLETE, and
+UNVERIFIED file in the register above from reaching production
+automatically.** If the ledger mismatch is ever fully resolved without also
+disabling this integration first, the next merge to `main` would attempt to
+apply every one of them — including an unreviewed draft
+(`20260708141000`), an explicitly obsolete revoke
+(`20260528011000`), and R3-gated privileged migrations nobody has cleared for
+an unattended apply (`20260903150000`).
+
+**Action**: Supabase Dashboard → Project → Integrations → GitHub → disable
+automatic branching and disable deploy-to-production-on-merge (or uninstall
+the GitHub App entirely if branching is not wanted at all), then delete the
+two existing preview branches (PR #1759, PR #1833) so the concurrent-branch
+limit clears.
+
+**Verification**: `list_branches` returns only the default branch — no
+PR-scoped preview branches — and the failing "Supabase Preview" status stops
+appearing on new PRs.
+
+This is an owner-only dashboard/integration change, not a SQL statement, and
+it changes what every future merge to `main` attempts against production —
+treat it with the same R3 deliberateness as the SQL actions below.
 
 ### O6(a) — insert the two missing ledger rows
 
@@ -368,6 +631,74 @@ has `INNGEST_EVENT_KEY` set without `INNGEST_SIGNING_KEY` (added 2026-09-05,
 alongside this row). Production already satisfies it, so no deploy is blocked
 by it today; it exists so the absent-variable case can never ship again. It
 cannot see a wrong value — only the runtime health check can.
+
+## Advisor warnings, classified
+
+`get_advisors(type=security)` returns 589 lints today: 4 ERROR, 476 WARN, 7
+INFO. The 4 ERROR-level `security_definer_view` findings have their own
+section immediately below ("Dismiss in the Supabase advisor UI") and are not
+repeated here. The remaining classes, one paragraph each:
+
+**`pg_graphql_anon_table_exposed` (126 unique tables) and
+`pg_graphql_authenticated_table_exposed` (308 unique tables), WARN.** Dead
+surface: `grep -rn "graphql" src/ --include="*.ts" --include="*.tsx" -i`
+returns exactly 4 lines, all references to the `graphql_public`/`graphql`
+schema keys Supabase's own `db:types` generator always emits, plus one test
+asserting against that generated structure — zero application code issues a
+GraphQL query, imports a GraphQL client, or calls `/graphql/v1` anywhere in
+`src/`. These ~430 findings are closed by O6(c) below (unexpose
+`graphql_public` from PostgREST via the `authenticator` role's
+`pgrst.db_schemas` GUC). **Owner action: run O6(c).**
+
+**`authenticated_security_definer_function_executable` (142 findings, 141
+unique names — the gap is legitimate overloading of
+`can_view_baseball_player`), WARN.** Per the audit's §1.6 conclusion, this is
+not an anon-exposure list — it flags every SECURITY DEFINER function callable
+by any signed-in user, which is the correct, intended shape for an RPC helper
+layer (`is_*`/`can_*`/`get_my_*` predicate functions dominate the list: 10
+golf, 10 baseball, 9 helm_lifting, 112 other). Nothing is prepared to close
+this class wholesale, and nothing should be — closing it would mean revoking
+`authenticated` EXECUTE from RPCs the application calls as a signed-in user,
+which breaks the app. Two specific names on this list
+(`log_crm_stage_transition`, `unresolve_admin_event`) are exactly what
+`20260825235900_revoke_anon_from_secdef_admin_helpers.sql` (see the
+classification table above) exists to keep `anon`-clean on a fresh local
+build, while leaving their `authenticated` access untouched by design.
+**No action.**
+
+**`extension_in_public` (`citext`, `pg_trgm`), WARN.** Both confirmed
+installed with `schema: "public"` via `list_extensions`. The advisor's fix is
+to move each extension to a dedicated schema (e.g. `extensions`, where every
+other non-`pg_graphql`/`pg_cron` extension in this project already lives).
+That is a live-catalog schema move on two extensions with unqualified
+references scattered across roughly 276 tables' worth of column types and
+`gin_trgm_ops` index definitions — exactly the class of change
+`20260903190000`'s own incident in this file (a function's `search_path`
+missing the schema `pg_stat_statements` lives in, causing every call to raise
+`42P01` until corrected) demonstrates can silently break at the call site
+rather than at migration time. No migration is prepared for this. **Owner
+decision required before attempting** — audit every dependent object's
+schema-qualification or `search_path` first; this is not a same-day fix.
+
+**`rls_enabled_no_policy` (7 tables), INFO.** `backup_ci_junk_rounds_20260821`,
+`backup_class_semester_20260813`, `backup_prevyear_classes_20260821`,
+`crm_email_templates_backup_20260720`, and `schema_migrations_pruned_20260820`
+are dated backup/pruned snapshots — RLS on with zero policies means
+unreadable by any non-service role, which is safe for retired data and a
+candidate for a future `DROP TABLE`, not a policy fix. **No action** on those
+five. `billing_customers` and `billing_invoices` are the two that matter: RLS
+on, zero policies, so no `authenticated`/`anon` role can read or write them
+today — acceptable if billing is read only through service-role server code,
+a silent gap if any client-side billing read exists, because PostgREST
+would return zero rows rather than an error and the failure would look like
+"no billing data" rather than "no permission." Checked this session:
+`grep -rn "billing_customers\|billing_invoices" src/` finds every reference
+confined to `src/app/admin/actions/billing.ts` (a `'use server'` action) and
+`src/app/api/webhooks/stripe/route.ts` (a server-side route handler) —
+both server-scoped, neither reachable from a browser client. **No client-side
+read path exists today; no action needed.** Re-run the same grep if a
+customer-facing billing UI is ever added, since that is exactly the change
+that would turn this from "safe by omission" into a real gap.
 
 ## Dismiss in the Supabase advisor UI (F097, 2026-09-05)
 
