@@ -37,9 +37,13 @@ paths:
 - **Promptfoo** (LLM evals) — config at `evals/round-review.yaml`.
   Run via `npm run evals` locally; runs weekly in CircleCI's
   `promptfoo-evals` job. Catches silent prompt drift between deploys.
-- **Lighthouse CI** — config at `lighthouserc.cjs`, runs against
-  Vercel preview URLs in CircleCI's `lighthouse-preview` job on
-  every push. a11y + CLS are hard errors; perf is a warning.
+- **Lighthouse CI** — config at `lighthouserc.cjs`, run manually via
+  `npm run lighthouse` (`lhci autorun`). No CI job runs it: `.circleci/config.yml`
+  has never defined a `lighthouse-preview` job (`.circleci/README.md` already
+  corrects the same stale claim), and there is no Vercel preview URL for it
+  to target anyway — non-main branches don't build (`vercel.json`'s
+  `deploymentEnabled: {"*": false}`). a11y + CLS are configured as hard
+  errors; perf as a warning — for whoever runs it locally.
 - **Sentry Session Replay** — already wired in
   `src/instrumentation-client.ts`. 100% sample on errors, 10% session
   sample in prod, 0% in dev. `maskAllText` on by default.

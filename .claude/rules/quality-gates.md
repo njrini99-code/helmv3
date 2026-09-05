@@ -59,12 +59,15 @@ them directly. A zero-finding semgrep run is not evidence of a clean tree —
 check the scanned-file count.
 
 ### CI shape
-GitHub Actions (`ci.yml`, `review-gate.yml`) is the per-PR fast path.
-CircleCI (`.circleci/config.yml`) runs weekly heavy jobs plus branch-gated
-iOS/Android native compiles. `npm run docs:check` runs six gates
-(inventory, schema-drift, path-drift, enforcement, tool-authority,
-rules-current) as steps of one job. `main`'s branch protection has
-`enforce_admins` on — required checks apply to everyone, no admin
-override. Get the current required-checks list from GitHub's own
-branch-protection settings and `docs/CONTROL_PLANE_ENFORCEMENT.md` — never
-hardcode it here.
+Every GitHub Actions workflow that posts on a PR, one line each:
+`ci.yml` (typecheck, lint, vitest, build, RLS, doc gates → required
+`CI aggregate`); `review-gate.yml` (static analyzers → required
+`Review Gate aggregate`); `codeql.yml` (three required `Analyze (...)`
+legs plus GitHub's own non-required `CodeQL` status); `sentry-snapshots.yml`
+(visual diff, advisory); `feature-awareness.yml` (context pack, advisory,
+code paths only); `pr-smoke.yml` (a11y smoke, advisory, frontend paths);
+`migration-lockdown.yml` (`block-historical-edits`, reports on every PR);
+`claude-code.yml` (gated agent run). CircleCI runs the weekly heavy jobs and
+the branch-gated native compiles. `main` has `enforce_admins` on; take the
+required-checks list from GitHub and `docs/CONTROL_PLANE_ENFORCEMENT.md`,
+never from prose.
