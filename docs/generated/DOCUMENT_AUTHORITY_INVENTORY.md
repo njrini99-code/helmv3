@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 3 | 0 | 2 | 0 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1206 | 0 | 419 | 535 |
-| `UNKNOWN` | 112 | 12 | 46 | 146 |
+| `UNKNOWN` | 113 | 12 | 46 | 146 |
 
 ## Files
 
@@ -645,6 +645,7 @@ them would bury everything above.
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 7 | 61 | 6 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | 1 |
 | `docs/operations/COST_CONTROLS.md` | current | - | - | - | 4 | 6 | - |
+| `docs/operations/GATES.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/GITHUB_LABELS_AND_PROJECT_SETUP.md` | current | - | - | yes | 1 | 1 | - |
 | `docs/operations/GIT_ACTIVITY_TIMELINE.md` | current | - | - | - | 3 | 0 | - |
 | `docs/operations/HELM_MISSION_CONTROL_OS.md` | current | - | - | yes | 6 | 9 | 2 |
