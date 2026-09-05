@@ -4,8 +4,8 @@
 -- baseball_signals, baseball_video_events, crm_coaches all match). The FIRST
 -- block — baseball_camp_registrations.registered_at/.attended_at — is
 -- GENUINELY MISSING from production as of the same check. That gap now has
--- its own HELD migration: see
--- supabase/migrations/20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql
+-- its own HELD migration in this directory,
+-- 20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql,
 -- and its HELD.md entry. Do not assume this whole file is a no-op against
 -- production because most of it is.
 

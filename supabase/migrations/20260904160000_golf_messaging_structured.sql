@@ -21,7 +21,8 @@
 --     guess, not a verified fact — the live catalog cannot say which of the
 --     three migrations actually created golf_message_responses.
 --
--- WHAT WAS AND WAS NOT OBSERVABLE (golf_messages.kind/.payload/.pinned_at/.pinned_by):
+-- WHAT WAS AND WAS NOT OBSERVABLE
+-- (golf_messages.kind/.payload/.pinned_at/.pinned_by):
 --   - All four columns, `kind`'s CHECK constraint and default, and the
 --     `golf_messages_pinned_by_fkey` (`pinned_by -> auth.users(id)`) are
 --     confirmed live via `list_tables`' `foreign_key_constraints` for
@@ -48,10 +49,10 @@
 -- exists there; it exists for a local `supabase db reset` and the ledger.
 
 ALTER TABLE public.golf_messages
-  ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'text'::text,
-  ADD COLUMN IF NOT EXISTS payload jsonb,
-  ADD COLUMN IF NOT EXISTS pinned_at timestamptz,
-  ADD COLUMN IF NOT EXISTS pinned_by uuid REFERENCES auth.users (id);
+ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'text'::text,
+ADD COLUMN IF NOT EXISTS payload jsonb,
+ADD COLUMN IF NOT EXISTS pinned_at timestamptz,
+ADD COLUMN IF NOT EXISTS pinned_by uuid REFERENCES auth.users (id);
 
 DO $$
 BEGIN
@@ -75,12 +76,14 @@ COMMENT ON COLUMN public.golf_messages.payload IS
 'details, etc). Reconstructed from the live production catalog 2026-09-05.';
 
 CREATE TABLE IF NOT EXISTS public.golf_message_responses (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id uuid NOT NULL REFERENCES public.golf_messages (id),
-  user_id uuid NOT NULL REFERENCES auth.users (id),
-  choice text NOT NULL CHECK (char_length(choice) >= 1 AND char_length(choice) <= 64),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id uuid NOT NULL REFERENCES public.golf_messages (id),
+    user_id uuid NOT NULL REFERENCES auth.users (id),
+    choice text NOT NULL CHECK (
+        char_length(choice) >= 1 AND char_length(choice) <= 64
+    ),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.golf_message_responses ENABLE ROW LEVEL SECURITY;

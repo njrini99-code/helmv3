@@ -21,8 +21,8 @@
 -- something has changed since 2026-09-05.
 
 ALTER TABLE public.baseball_camp_registrations
-  ADD COLUMN IF NOT EXISTS registered_at timestamptz,
-  ADD COLUMN IF NOT EXISTS attended_at timestamptz;
+ADD COLUMN IF NOT EXISTS registered_at timestamptz,
+ADD COLUMN IF NOT EXISTS attended_at timestamptz;
 
 COMMENT ON COLUMN public.baseball_camp_registrations.registered_at IS
 'When the player registered for the camp. HELD — not yet applied to '

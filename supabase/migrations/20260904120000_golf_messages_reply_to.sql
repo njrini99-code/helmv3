@@ -44,18 +44,20 @@
 -- exists there; it exists for a local `supabase db reset` and the ledger.
 
 ALTER TABLE public.golf_messages
-  ADD COLUMN IF NOT EXISTS reply_to_id uuid REFERENCES public.golf_messages (id);
+ADD COLUMN IF NOT EXISTS reply_to_id uuid REFERENCES public.golf_messages (id);
 
 COMMENT ON COLUMN public.golf_messages.reply_to_id IS
 'Message this one replies to, if any (self-referential FK). Reconstructed '
 'from the live production catalog 2026-09-05 — see this file''s header.';
 
 CREATE TABLE IF NOT EXISTS public.golf_message_mentions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id uuid NOT NULL REFERENCES public.golf_messages (id),
-  mentioned_user_id uuid REFERENCES auth.users (id),
-  mention_type text NOT NULL CHECK (mention_type = ANY (ARRAY['user'::text, 'team'::text, 'all'::text])),
-  created_at timestamptz NOT NULL DEFAULT now()
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id uuid NOT NULL REFERENCES public.golf_messages (id),
+    mentioned_user_id uuid REFERENCES auth.users (id),
+    mention_type text NOT NULL CHECK (
+        mention_type = any(ARRAY['user'::text, 'team'::text, 'all'::text])
+    ),
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.golf_message_mentions ENABLE ROW LEVEL SECURITY;

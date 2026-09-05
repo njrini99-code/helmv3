@@ -58,11 +58,13 @@
 -- and is not something this audit's read-only scope permits regardless.
 
 CREATE TABLE IF NOT EXISTS public.golf_message_reactions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id uuid NOT NULL REFERENCES public.golf_messages (id),
-  user_id uuid NOT NULL REFERENCES auth.users (id),
-  emoji text NOT NULL CHECK (char_length(emoji) >= 1 AND char_length(emoji) <= 16),
-  created_at timestamptz NOT NULL DEFAULT now()
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id uuid NOT NULL REFERENCES public.golf_messages (id),
+    user_id uuid NOT NULL REFERENCES auth.users (id),
+    emoji text NOT NULL CHECK (
+        char_length(emoji) >= 1 AND char_length(emoji) <= 16
+    ),
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.golf_message_reactions ENABLE ROW LEVEL SECURITY;

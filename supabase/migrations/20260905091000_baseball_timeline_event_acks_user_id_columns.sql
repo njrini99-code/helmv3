@@ -2,7 +2,8 @@
 -- entry first; this row is added there in the same change as this file.
 --
 -- Found by db-drift.yml's daily production-drift check (failing 5 runs
--- straight, 2026-08-31 -> 2026-09-04): `src/app/baseball/actions/timeline-acks.ts`
+-- straight, 2026-08-31 -> 2026-09-04):
+-- `src/app/baseball/actions/timeline-acks.ts`
 -- deliberately dual-writes BOTH column shapes on every acknowledgement —
 -- `team_id`/`player_id`/`acked_by`/`acked_at` (production's real, pre-existing
 -- shape, per `20260825222432_reconcile_baseball_timeline_ack_contract.sql`)
@@ -26,8 +27,8 @@
 -- keys under this project's specific config).
 
 ALTER TABLE public.baseball_timeline_event_acks
-  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users (id),
-  ADD COLUMN IF NOT EXISTS acknowledged_at timestamptz;
+ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users (id),
+ADD COLUMN IF NOT EXISTS acknowledged_at timestamptz;
 
 COMMENT ON COLUMN public.baseball_timeline_event_acks.user_id IS
 'Duplicate of acked_by under the newer naming the read path/type file uses. '
