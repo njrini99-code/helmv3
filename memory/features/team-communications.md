@@ -177,6 +177,24 @@ the thread:
   renders 1:1 conversations only, and only from three of them. A pin column
   makes this rail read that instead and the heading change with it.
 
+- **Message actions are a bottom sheet, not an inline row.** Long-pressing an
+  own message opens the Fairway `Sheet` (vaul) with labelled Copy / Edit /
+  Delete rows, Delete below a divider. It replaces an inline icon-only row that
+  rendered at the MESSAGE's position — out of thumb reach for anything near the
+  top of the screen, and unlabelled, which made Delete a guess. Scrim, focus
+  trap, Escape and drag-to-dismiss now come from the primitive rather than from
+  hand-rolled listeners. One sheet per thread, resolved from `mobileActionsId`;
+  a stale id (the row was deleted from another device) resolves to null and
+  closes it.
+- **Long-press cancels on DISTANCE, not on motion.** `LONG_PRESS_SLOP_PX` is
+  10px, the platform convention (Android touch slop ≈ 8dp, iOS
+  `allowableMovement` = 10pt). The previous handler cancelled on the first
+  `pointermove`, which is invisible in jsdom and in a screenshot but means the
+  menu never opens on a real digitizer: a resting finger emits a continuous
+  dribble of sub-pixel moves, so the stationary hold the gesture exists for was
+  the one reliably cancelled. Pinned by `MessageThreadPane.longPress.test.ts`,
+  which fails on a zero threshold.
+
 NOT in this pass, and each for a stated reason — reactions, reply/quote and
 group member avatars belong to #1833 (`agent/messages-instant-entry`), which
 also carries the migrations they need; the deleted-message tombstone needs the

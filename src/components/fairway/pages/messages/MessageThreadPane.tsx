@@ -42,6 +42,7 @@ import type {
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar } from '@/components/fairway/controls/avatar';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
@@ -75,6 +76,37 @@ const GROUP_WINDOW_MINUTES = 5;
  * the app is ignoring you.
  */
 const LONG_PRESS_MS = 450;
+
+/**
+ * How far the finger may travel during a hold before it counts as a scroll.
+ *
+ * A threshold, not a tripwire. Cancelling on the FIRST pointermove reads as
+ * correct — "movement means they meant to scroll" — but a finger resting on
+ * glass is never still: capacitive digitizers emit a steady dribble of
+ * sub-pixel moves for the whole press, so a zero-tolerance cancel throws away
+ * the deliberate stationary hold it was meant to protect, and the menu simply
+ * never opens on real hardware. 10px is the platform convention on both sides
+ * (Android `getScaledTouchSlop()` ≈ 8dp; iOS `UILongPressGestureRecognizer
+ * .allowableMovement` = 10pt), and is comfortably under the distance a real
+ * scroll covers in 450ms.
+ */
+const LONG_PRESS_SLOP_PX = 10;
+
+/**
+ * Has the finger travelled far enough during a hold to count as a scroll?
+ *
+ * Exported so the threshold is pinned by a test rather than by reading the
+ * component: the failure this guards against is invisible in jsdom and in a
+ * screenshot — it only shows up on a real digitizer, where the previous
+ * cancel-on-any-move meant the menu never opened at all.
+ */
+export function exceedsLongPressSlop(
+  origin: { x: number; y: number },
+  point: { x: number; y: number },
+  slopPx: number = LONG_PRESS_SLOP_PX,
+): boolean {
+  return Math.abs(point.x - origin.x) > slopPx || Math.abs(point.y - origin.y) > slopPx;
+}
 
 /**
  * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
@@ -445,11 +477,25 @@ export function MessageThreadPane({
    * islands instead of one utterance.
    *
    * Press-and-hold is what a phone user already expects here, and it costs no
-   * permanent pixels. The timer is cancelled by movement, so a scroll that
-   * happens to start on a bubble never opens the menu.
+   * permanent pixels. The timer is cancelled once the finger travels past
+   * LONG_PRESS_SLOP_PX, so a scroll that happens to start on a bubble never
+   * opens the menu while a stationary hold still does.
    */
+  /**
+   * The message the action sheet is for. The parent owns only the id, so the
+   * row is resolved here — a stale id (the message was deleted by the other
+   * device while the sheet was open) resolves to undefined and closes the
+   * sheet rather than acting on a row that no longer exists.
+   */
+  const mobileActionsMessage = React.useMemo(
+    () => (mobileActionsId ? (messages.find((row) => row.id === mobileActionsId) ?? null) : null),
+    [mobileActionsId, messages],
+  );
+
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressOriginRef = React.useRef<{ x: number; y: number } | null>(null);
   const cancelLongPress = React.useCallback(() => {
+    longPressOriginRef.current = null;
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -459,8 +505,9 @@ export function MessageThreadPane({
 
   const longPressHandlers = React.useCallback(
     (messageId: string) => ({
-      onPointerDown: () => {
+      onPointerDown: (e: React.PointerEvent) => {
         cancelLongPress();
+        longPressOriginRef.current = { x: e.clientX, y: e.clientY };
         longPressTimerRef.current = setTimeout(() => {
           // The detent tick, so the menu opening is felt as well as seen.
           fwHaptic('selection');
@@ -468,7 +515,15 @@ export function MessageThreadPane({
         }, LONG_PRESS_MS);
       },
       onPointerUp: cancelLongPress,
-      onPointerMove: cancelLongPress,
+      // Distance, not motion. See LONG_PRESS_SLOP_PX — a resting finger still
+      // emits pointermove, so only a real drag may cancel the hold.
+      onPointerMove: (e: React.PointerEvent) => {
+        const origin = longPressOriginRef.current;
+        if (!origin) return;
+        if (exceedsLongPressSlop(origin, { x: e.clientX, y: e.clientY })) {
+          cancelLongPress();
+        }
+      },
       onPointerCancel: cancelLongPress,
       onPointerLeave: cancelLongPress,
       // Suppress the native callout so iOS does not race our menu with its own.
@@ -1213,29 +1268,10 @@ export function MessageThreadPane({
                             <Trash2 size={14} aria-hidden="true" />
                           </IconButton>
                         </div>
-                        {/* No persistent kebab. The actions appear on long-press
-                            (see longPressHandlers) and otherwise cost nothing.
-                            Copy is included because taking over long-press takes
-                            over the gesture iOS uses to select text — without it
-                            the message would become uncopyable. */}
-                        {mobileActionsId === msg.id && (
-                          <div className="relative mt-0.5 flex items-center lg:hidden">
-                            <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
-                              <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
-                                <Copy size={18} aria-hidden="true" />
-                              </IconButton>
-                              <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
-                                <Pencil size={18} aria-hidden="true" />
-                              </IconButton>
-                              <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => { onDeleteClick(msg.id); onSetMobileActions(null); }}>
-                                <Trash2 size={18} aria-hidden="true" />
-                              </IconButton>
-                              <IconButton variant="ghost" size="sm" aria-label="Close" onClick={() => onSetMobileActions(null)}>
-                                <X size={16} aria-hidden="true" />
-                              </IconButton>
-                            </Inset>
-                          </div>
-                        )}
+                        {/* No persistent kebab, and no inline row either. The
+                            actions open as a bottom sheet (MessageActionsSheet,
+                            rendered once at the end of this component) on
+                            long-press — see longPressHandlers. */}
                       </>
                     )}
 
@@ -1500,6 +1536,123 @@ export function MessageThreadPane({
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children
           so FairwayMessages owns the send wiring to the unchanged hooks. */}
       {children}
+
+      {/* Long-press actions. One sheet for the whole thread, resolved by id —
+          not one per bubble: the previous inline row rendered at the MESSAGE's
+          position, so the actions for a message near the top of the screen
+          landed out of thumb reach, and an icon-only row made Delete a guess.
+          A bottom sheet is thumb-anchored wherever the message sits, labels
+          each action, and gets scrim + focus trap + drag-to-dismiss + Escape
+          from the primitive instead of the hand-rolled listeners this
+          replaces. */}
+      <MessageActionsSheet
+        message={mobileActionsMessage}
+        onClose={() => onSetMobileActions(null)}
+        onStartEdit={onStartEdit}
+        onDeleteClick={onDeleteClick}
+      />
     </InstrumentPanel>
+  );
+}
+
+/**
+ * The long-press action sheet for an own message.
+ *
+ * `message` null closes it — the open state IS the selection, so there is no
+ * second source of truth to keep in step.
+ *
+ * Copy is first and is not optional: taking over long-press takes over the
+ * gesture iOS uses to select text, so without it the message would become
+ * uncopyable on a phone. Delete sits below a divider because it is the one
+ * action here that cannot be undone.
+ */
+function MessageActionsSheet({
+  message,
+  onClose,
+  onStartEdit,
+  onDeleteClick,
+}: {
+  message: MessageWithReadStatus | null;
+  onClose: () => void;
+  onStartEdit: (messageId: string, currentContent: string) => void;
+  onDeleteClick: (messageId: string) => void;
+}) {
+  return (
+    <Sheet
+      open={message !== null}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      side="bottom"
+      peek={false}
+      showHandle
+      hideClose
+      title="Message actions"
+      hideTitle
+      data-slot="fw-message-actions"
+    >
+      <Sheet.Body className="flex flex-col gap-0.5 pb-2">
+        <MessageActionRow
+          icon={<Copy size={21} aria-hidden="true" />}
+          label="Copy"
+          onClick={() => {
+            if (message) void navigator.clipboard?.writeText(decodeMessageContent(message.content));
+            onClose();
+          }}
+        />
+        <MessageActionRow
+          icon={<Pencil size={21} aria-hidden="true" />}
+          label="Edit"
+          onClick={() => {
+            if (message) onStartEdit(message.id, message.content);
+            onClose();
+          }}
+        />
+        <div className="mx-3 my-1.5 h-px bg-border-subtle" />
+        <MessageActionRow
+          icon={<Trash2 size={21} aria-hidden="true" />}
+          label="Delete"
+          destructive
+          onClick={() => {
+            if (message) onDeleteClick(message.id);
+            onClose();
+          }}
+        />
+      </Sheet.Body>
+    </Sheet>
+  );
+}
+
+/** One 52px labelled row of the action sheet. */
+function MessageActionRow({
+  icon,
+  label,
+  destructive,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  destructive?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      fullWidth
+      onClick={onClick}
+      // The icon goes through the primitive's own slot, not a hand-rolled span:
+      // Button wraps its children in a single content span, so an icon passed
+      // as a child shares that span's layout and cannot be spaced or shrunk
+      // independently of the label.
+      leftIcon={icon}
+      className={cn(
+        'h-[3.25rem] justify-start gap-3.5 rounded-fw-md px-3 text-left',
+        'font-fw-sans text-body font-medium',
+        destructive ? 'text-fw-danger-ink hover:text-fw-danger-ink' : 'text-text-primary',
+      )}
+    >
+      {label}
+    </Button>
   );
 }
