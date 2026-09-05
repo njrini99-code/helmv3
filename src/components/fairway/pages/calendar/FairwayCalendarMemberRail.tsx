@@ -349,7 +349,17 @@ export function FairwayCalendarMemberRail({
         // quiet key uses the SAME tint each avatar already renders with
         // (tintFor) so identifying a chip doesn't require hovering or
         // selecting it first.
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        //
+        // PHONE ONLY (< md): hidden. On phone this key is a straight
+        // re-listing of the exact roster the avatar rail above already shows
+        // — same person, same tint color, avatar initials standing in for
+        // the name — and it was costing real height in front of the agenda
+        // (mobile-density audit). It stays on desktop, where there's room and
+        // a hover/title path already exists; on phone each avatar's
+        // `aria-label`/`title` still carries the full name, so nothing here
+        // is uniquely accessible-only information being removed, only the
+        // always-visible duplicate.
+        <div className="hidden flex-wrap items-center gap-x-3 gap-y-1.5 md:flex">
           {teamMembers.map((m) => {
             const tint = tintFor(m.id);
             return (
