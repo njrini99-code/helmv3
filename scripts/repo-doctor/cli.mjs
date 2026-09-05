@@ -33,6 +33,7 @@ import * as nodeVersion from './checks/node-version.mjs';
 import * as settingsOwnership from '../check-settings-ownership.mjs';
 import * as worktreeHygiene from './checks/worktree-hygiene.mjs';
 import * as diskHygiene from './checks/disk-hygiene.mjs';
+import * as routines from './checks/routines.mjs';
 import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 
 // Local-only modules would be gated on `--local`; all MVP checks are shared/CI-safe.
@@ -47,7 +48,7 @@ import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 // the same reasoning, so it stays in the shared list too.
 const MODULES = [
   identity, workspace, scratch, ai, registry, ci, config, dbObservability,
-  nodeVersion, settingsOwnership, worktreeHygiene, diskHygiene,
+  nodeVersion, settingsOwnership, worktreeHygiene, diskHygiene, routines,
 ];
 
 function parseArgs(argv) {

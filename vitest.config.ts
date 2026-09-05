@@ -162,6 +162,10 @@ export default defineConfig({
             // for repo:doctor's worktree.* and disk.* checks.
             'scripts/repo-doctor/__tests__/worktree-hygiene.test.ts',
             'scripts/repo-doctor/__tests__/disk-hygiene.test.ts',
+            // Routine registry (A6): config/routines.yml vs. undocumented
+            // launchd plists / Claude Code scheduled-task directories.
+            // Failure-injection suite for repo:doctor's routines.* checks.
+            'scripts/repo-doctor/__tests__/routines.test.ts',
             // Phase 3 Track E (Supabase observability certification). Named
             // here for the same reason as every neighbour: a file under
             // scripts/ that is NOT listed runs under nothing, and a guard that

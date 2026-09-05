@@ -1,0 +1,124 @@
+# Every scheduled or triggered automation this repo (or this owner's Helm
+# work on this machine) runs, in one place — the registry
+# `repo:doctor`'s routines check reads to catch an UNDOCUMENTED one:
+# a launchd plist or a ~/.claude scheduled-task directory that names a
+# routine nothing here lists.
+#
+# Why this exists: routines accumulate across three completely different
+# mechanisms (GitHub Actions `schedule:`, a CircleCI pipeline-parameter
+# trigger configured only in the CircleCI dashboard — not in any file a
+# grep can find, Vercel crons, and the Claude Code scheduled-tasks system,
+# which can ALSO leave a retired launchd plist behind after the work moves
+# elsewhere — see `bridge-rca-repair` below, found on this machine while
+# building this file). No single existing config lists all four. This does.
+#
+# `source` for a GitHub Actions or Vercel routine points at the file that is
+# the actual authority for its schedule — this file does not copy that
+# schedule's meaning, only its cron/interval string, so the two cannot drift
+# apart silently (shipping.md §1: never assert a fact you have not just
+# verified against the thing that owns it).
+
+version: 1
+
+routines:
+  - id: control-plane-weekly
+    trigger: github-actions-schedule
+    source: .github/workflows/control-plane-weekly.yml
+    schedule: "0 7 * * 1"
+    status: active
+    description: >-
+      Weekly wide-lens sweep: secret-scanning alerts, Dependabot high/
+      critical ceiling, full-history gitleaks, control-plane:verify --static,
+      and a soft no-PR-ever-branches listing. Opens/updates one GitHub issue
+      titled "Control plane weekly".
+
+  - id: selfheal-repair
+    trigger: github-actions-schedule
+    source: .github/workflows/selfheal-repair.yml
+    schedule: "40 6 * * *"
+    status: active
+    description: >-
+      Daily Bridge self-heal/repair run. Migrated from a launchd agent to
+      GitHub Actions; the schedule (06:40 UTC) was kept identical on purpose
+      so the Bridge's "next expected" reading did not move with the runtime.
+    superseded:
+      - launchd_label: com.helm.bridge-rca-repair
+        note: >-
+          Found on this machine 2026-09-05, UNLOADED (not in `launchctl
+          list`) but the plist file still exists at
+          ~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist and still
+          references a specific fnm Node install path. Dead weight, not a
+          live duplicate schedule — recorded here (rather than left
+          unlisted, which would make repo:doctor's routines check FAIL on a
+          fact everyone already knows) so the file's eventual removal is a
+          closing action against a NAMED item, not a mystery plist someone
+          has to reverse-engineer first. This repo cannot delete a file
+          under the owner's ~/Library — that is a machine-local, owner
+          action.
+
+  - id: db-drift-production
+    trigger: github-actions-schedule
+    source: .github/workflows/db-drift.yml
+    schedule: "0 7 * * *"
+    status: active
+    description: >-
+      Daily production-vs-migration-ledger schema invariant check (separate
+      question from CI's own migrations-rebuilt-locally check — see that
+      workflow's own header).
+
+  - id: codeql-analysis
+    trigger: github-actions-schedule
+    source: .github/workflows/codeql.yml
+    schedule: "35 23 * * 4"
+    status: active
+    description: Weekly CodeQL analysis (actions/javascript-typescript/python matrix).
+
+  - id: types-regen
+    trigger: github-actions-schedule
+    source: .github/workflows/types-regen.yml
+    schedule: "17 */3 * * *"
+    status: active
+    description: >-
+      Regenerates src/lib/types/database.ts from production every 3 hours
+      and opens an auto-PR when it drifted, bounding how long types_drift
+      stays red for every other PR.
+
+  - id: circleci-weekly
+    trigger: circleci-scheduled-pipeline
+    source: .circleci/config.yml
+    schedule: "Mondays 06:00 UTC"
+    status: active
+    description: >-
+      Knip, Stryker (src/lib/coachhelm/v2/), full-repo sqlfluff, npm audit,
+      Squawk, Promptfoo evals, Janitor entropy report. Gated on the
+      `run-weekly` pipeline parameter, which — unlike every other entry here
+      — is armed in the CircleCI dashboard (project settings -> Triggers),
+      NOT in any file this repo tracks. O9 in the reset's owner-item list is
+      confirming that trigger is actually configured; nothing in this repo
+      can verify it.
+
+  - id: vercel-crons
+    trigger: vercel-cron
+    source: vercel.json#crons
+    schedule: see-source
+    status: active
+    description: >-
+      Deliberately NOT enumerated here — the count and paths are
+      vercel.json's own list, and copying it is exactly the kind of second
+      copy that rots (shipping.md §1). This row exists so the routines
+      check's "everything is accounted for" claim is honest: vercel.json's
+      crons array is a known, tracked routine SOURCE, not an omission.
+
+  - id: helm-demo-readiness
+    trigger: claude-scheduled-task
+    source: ~/.claude/scheduled-tasks/helm-demo-readiness
+    schedule: "0 7 * * 2,4"
+    status: disabled
+    description: >-
+      Tue & Thu 07:00 demo-readiness check -> GREEN/RED card in Notion.
+      Registered with the scheduler but enabled: false, unrun since
+      2026-07-30 (verified via list_scheduled_tasks 2026-09-05). Machine-
+      local, not tracked by any file in this repo — recorded here only so
+      repo:doctor's routines check has it as a KNOWN entry rather than an
+      unlisted one. Re-enable-or-delete is an open owner decision (O-item),
+      not resolved by this file.
