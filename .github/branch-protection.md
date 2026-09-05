@@ -37,7 +37,8 @@ so a job split/rename does not silently break protection.
 > of one `Review Gate checks` job. The aggregate names did not change, which
 > is the whole reason branch protection depends on aggregates.
 >
-> **Updated 2026-09-05: `block-historical-edits` promoted to required — PENDING
+> **Updated 2026-09-05: `block-historical-edits` promoted to required —
+> PENDING
 > APPLICATION.** `migration-lockdown.yml`'s workflow-level `paths:
 > supabase/migrations/**` filter is gone: the workflow now runs on every
 > `pull_request` and `merge_group` event and always reports a conclusion (a
@@ -51,7 +52,8 @@ so a job split/rename does not silently break protection.
 > PATCH is applied and read back, not the live GitHub state — verify with:
 >
 > ```bash
-> gh api repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
+> gh api \
+>   repos/njrini99-code/helmv3/branches/main/protection/required_status_checks \
 >   -q '{strict, contexts}'
 > ```
 >
@@ -129,7 +131,8 @@ so a job split/rename does not silently break protection.
   `Review Gate checks` (ast-grep, gitleaks, actionlint, yamllint, shellcheck,
   markdownlint, ruff+pylint, sqlfluff, hadolint, env-secrets as named steps
   of one job since 2026-09-02) and `semgrep (custom rules)`.
-- `block-historical-edits` (`migration-lockdown.yml`) — **PROMOTED 2026-09-05**
+- `block-historical-edits` (`migration-lockdown.yml`) —
+  **PROMOTED 2026-09-05**
   from advisory (see below for why it wasn't required before this date).
 - ~~`Playwright E2E / Smoke checks`~~ — **REMOVED 2026-09-02** (context first,
   then job). It was `npm ci` + `next build`, a duplicate of `Next build`
