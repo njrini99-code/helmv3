@@ -48,8 +48,28 @@
  * produce the same id and got `[]` from the encoded one; the failure would
  * have looked exactly like "no repair exists" for every reliability-origin
  * repair, which is the answer this module exists to stop guessing at.
+ *
+ * `sentry:<issueId>` is the THIRD key kind and needs its own branch, because
+ * a Sentry issue id (`JAVASCRIPT-NEXTJS-QZ`) is not hex — widening the hex
+ * body to admit letters would let `/admin/errors/` run on into whatever prose
+ * followed it. It is also the kind that can least afford to be missed:
+ * `UnifiedIncident` (./types) picks it LAST, exactly when there is no
+ * `admin_events` fingerprint and no `rel:<signature>` available, so an
+ * incident keyed this way has no alternative id a PR body could cite instead.
+ * Repeat of the `rel%3A` failure above, found the same way — a repair PR for
+ * `sentry:JAVASCRIPT-NEXTJS-QZ` extracted `[]`, so the Bridge would have read
+ * a merged, green, correctly-linked fix as "no repair exists" and left the
+ * incident REPAIRABLE for an operator to re-triage.
  */
-const TOKEN = String.raw`((?:rel:|row:|rel%3[Aa]|row%3[Aa])?[0-9a-fA-F][0-9a-fA-F-]{5,63})`;
+/** `sentry:<issueId>` — not hex, so its body is letters/digits/dashes and is
+ *  bounded by the end of the path segment. */
+const SENTRY_TOKEN = String.raw`(?:sentry:|sentry%3[Aa])[A-Za-z0-9][A-Za-z0-9-]{0,63}`;
+/** An `admin_events` fingerprint, or a `rel:`/`row:`-prefixed one. */
+const HEX_TOKEN = String.raw`(?:rel:|row:|rel%3[Aa]|row%3[Aa])?[0-9a-fA-F][0-9a-fA-F-]{5,63}`;
+// Sentry first: its prefix is unambiguous, and trying it before the hex
+// branch stops `sentry:` being skipped in favour of a hex-looking substring
+// further along the same link.
+const TOKEN = String.raw`(${SENTRY_TOKEN}|${HEX_TOKEN})`;
 
 /** `/admin/errors/<fp>` — the link the repair contract's STEP 5 requires. */
 const BRIDGE_LINK = new RegExp(String.raw`/admin/errors/${TOKEN}`, 'g');

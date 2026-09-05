@@ -1,0 +1,33 @@
+schema_version: 1
+replay_id: admin-incidents-sentry-repair-link-2026-09-04
+incident_id: /admin/errors/sentry:JAVASCRIPT-NEXTJS-QZ
+feature_id: admin_incidents
+title: >-
+  extractRepairIncidentIds could not parse a sentry:<issueId> Bridge link, so
+  a repair PR for a Sentry-keyed incident joined to nothing and the incident
+  stayed REPAIRABLE with a merged fix against it.
+bad_version: b865306e0fdf8366d25219a041c2afbf12928467
+fixed_version: 29118786372823e8ed3a00222b99cd2b5f928b15
+fixture:
+  - source: repair-link.test.ts
+    target: src/lib/admin/incidents/__tests__/repair-link.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/lib/admin/incidents/__tests__/repair-link.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Fixture is a pure-function test over PR-body strings it writes itself.
+    The only production-derived value is the Sentry issue SHORT ID
+    (JAVASCRIPT-NEXTJS-QZ), which names a bug rather than a record.
+source_incident_status: latent defect in the loop's own joining machinery; found while verifying STEP 5, PR opened
+created_at: "2026-09-04"
+notes: >-
+  This replay pins a defect in the self-healing loop itself, not in a product
+  surface: the same shape as the rel%3A gap the suite already records, found
+  again for the third key kind. It shares an incident_id with the golf-alerts
+  replay because it was found while trying to link THAT repair to its
+  incident and discovering the link extracted nothing.

@@ -61,13 +61,19 @@ describe('extractRepairIncidentIds — recovering the join from PR text', () => 
     // failure indistinguishable from "no repair exists" at every call site
     // that reads this function's result.
     //
-    // This described a live MODULE DEFECT when it was written — TOKEN's
-    // prefix alternation matched only the literal "rel:"/"row:", so
-    // "rel%3Af321abcd" never matched at all and decodeURIComponent never got
-    // a substring to decode. The prefix alternation now carries the encoded
-    // colon and this passes; the note is kept because the SHAPE of the
-    // failure is the thing worth remembering, not the specific prefix that
-    // had it. `sentry:` below is the same defect found again, later.
+    // MODULE DEFECT, not a test bug: this currently fails. TOKEN's optional
+    // prefix (repair-link.ts:40, `(?:rel:|row:)?`) matches only the literal
+    // strings "rel:" / "row:", and the character class that follows it
+    // accepts only hex digits and dashes — neither branch matches a literal
+    // "%3A". For input containing "rel%3Af321abcd", BRIDGE_LINK never
+    // matches at all: matchAll returns no match, `raw` is never captured, and
+    // decodeURIComponent (repair-link.ts:71) never runs, because it only
+    // decodes a substring that was already captured. Verified empirically:
+    // `extractRepairIncidentIds('/admin/errors/rel%3Af321abcd')` returns
+    // `[]`, not `['rel:f321abcd']`. Fix is either to widen TOKEN's prefix
+    // alternation to also match the percent-encoded colon, or to run a
+    // percent-decode pass over the whole input text before matching, since a
+    // PR body has no other legitimate source of percent-encoding.
     const plain = extractRepairIncidentIds('/admin/errors/rel:f321abcd');
     const encoded = extractRepairIncidentIds('/admin/errors/rel%3Af321abcd');
     expect(encoded).toEqual(plain);

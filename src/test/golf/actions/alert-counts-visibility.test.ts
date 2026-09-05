@@ -117,7 +117,12 @@ function makeClient(rows: FixtureRow[]) {
   const coachBuilder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    // The identity read uses `.maybeSingle()` (JAVASCRIPT-NEXTJS-QZ: `.single()`
+    // reported an expected no-row as PGRST116 to Sentry). Both are stubbed so
+    // this fixture asserts nothing about which one the action picks — that is
+    // alerts-coach-identity-no-pgrst116.test.ts's job.
     single: vi.fn().mockResolvedValue({ data: { id: 'coach-1' }, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'coach-1' }, error: null }),
   };
   const client = {
     auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null }) },
