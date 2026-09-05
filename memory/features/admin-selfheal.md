@@ -37,12 +37,10 @@ previously also ran as a launchd agent on the owner's Mac
 (`com.helm.bridge-rca-repair`) in parallel with the GHA workflow — a live
 duplicate-effort risk (two separately-billed agent sessions per day, each
 capable of opening a PR against the same backlog, with no cross-runner
-concurrency control). The launchd agent, its outer bounded-runner script
-(`scripts/run-selfheal-repair.mjs` and `scripts/lib/selfheal-repair-runner.mjs`),
-its install/doctor tooling (`scripts/selfheal-repair-install.sh`,
-`scripts/selfheal-repair-doctor.mjs`), and `config/launchd/**` were all
-retired in the same change that closed that duplication. The plist is
-archived outside the repo, in `~/.claude/backups/reset-2026-09-05` on the
+concurrency control). The launchd agent and its supporting scripts were all
+removed in the same change that closed that duplication — `scripts/run-selfheal-repair.mjs` no longer exists, `scripts/lib/selfheal-repair-runner.mjs` no longer exists, `scripts/selfheal-repair-install.sh` no longer exists, `scripts/selfheal-repair-doctor.mjs` no longer exists, and `config/launchd/**` no longer exists.
+The plist is archived outside the repo, in
+`~/.claude/backups/reset-2026-09-05` on the
 owner's machine, for anyone who needs to see exactly what ran before.
 
 ## Primary Entry Points
