@@ -2804,12 +2804,6 @@
         ]
       },
       {
-        "id": "in",
-        "definedIn": [
-          "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
-        ]
-      },
-      {
         "id": "public",
         "definedIn": [
           "supabase/migrations/20260527000000_prod_public_baseline.sql"
@@ -7225,17 +7219,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 76
+          "line": 74
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 126
+          "line": 124
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 181
+          "line": 179
         },
         {
           "kind": "import_graph",
@@ -11026,17 +11020,6 @@
     },
     {
       "source": "baseball_core",
-      "target": "in",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
-        }
-      ]
-    },
-    {
-      "source": "baseball_core",
       "target": "invariant:src/lib/baseball/operational-rule-engine.ts:document_missing",
       "kind": "feature_invariant",
       "evidence": [
@@ -11735,17 +11718,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
-        }
-      ]
-    },
-    {
-      "source": "calendar_events",
-      "target": "in",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
         }
       ]
     },
@@ -17388,17 +17360,6 @@
     },
     {
       "source": "player_hub",
-      "target": "in",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
-        }
-      ]
-    },
-    {
-      "source": "player_hub",
       "target": "player_hub",
       "kind": "feature_signal",
       "evidence": [
@@ -20927,17 +20888,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "in",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260905092000_baseball_elite_stat_event_columns_gap.sql"
         }
       ]
     },

@@ -238,9 +238,9 @@ instructions used to live here and both are now wrong:
   test against whichever was installed last — that manufactures fake failures
   *and* fake passes.
 - **`ln -s <canonical>/.env.local`** puts production credentials inside a task
-  worktree. `.worktreeinclude` withholds that file deliberately; the STEP 0b
-  `--env-file` form already lets the process USE the key without it ever
-  becoming a file you could commit.
+  worktree. `.worktreeinclude` withholds that file deliberately; STEP 0 reads
+  the key from the process environment, so the process can USE it without it
+  ever becoming a file you could commit.
 
 **Why the script rather than your own `worktree add`:** it guarantees
 `--no-track`. Without that flag, branching from a remote-tracking ref sets the
