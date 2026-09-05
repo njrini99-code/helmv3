@@ -47,6 +47,13 @@
 --
 -- THIS FILE MUST NOT BE APPLIED TO PRODUCTION. Every object below already
 -- exists there; it exists for a local `supabase db reset` and the ledger.
+--
+-- 2026-09-05 A3b follow-up: independently re-read against the live catalog
+-- (`list_tables`/`list_migrations`, fresh session) — `kind`/`payload`/
+-- `pinned_at`/`pinned_by` and every `golf_message_responses` column
+-- (including the `choice` CHECK) still match production exactly, and the
+-- ledger row above still exists under this exact name/version. No content
+-- changed.
 
 ALTER TABLE public.golf_messages
 ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'text'::text,

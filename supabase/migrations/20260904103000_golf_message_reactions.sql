@@ -56,6 +56,11 @@
 -- migrations directory and `supabase_migrations.schema_migrations` — running
 -- it against production would be a no-op at best (IF NOT EXISTS throughout)
 -- and is not something this audit's read-only scope permits regardless.
+--
+-- 2026-09-05 A3b follow-up: independently re-read against the live catalog
+-- (`list_tables`/`list_migrations`, fresh session) — every column, default,
+-- CHECK, and FK below still matches production exactly, and the ledger row
+-- above still exists under this exact name/version. No content changed.
 
 CREATE TABLE IF NOT EXISTS public.golf_message_reactions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

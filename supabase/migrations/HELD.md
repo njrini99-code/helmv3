@@ -133,6 +133,24 @@ elsewhere (the 13-row and 271-row same-migration-different-stamp findings),
 "no committed file" for a small, self-contained, already-applied change is
 this repo's normal drift pattern, not evidence of a problem.
 
+**2026-09-05 A3b follow-up — the three golf-messaging files independently
+re-checked against the live catalog** (`list_tables`, verbose, project
+`qmnssrrolpinvwjjnufo`, and `list_migrations`, both read fresh in this
+follow-up session, not reused from A3's own read): all three live tables
+(`golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`)
+exist exactly once each across the three files, every column/nullability/
+default/CHECK/FK in each file matches the live catalog byte-for-byte (down to
+`mentioned_user_id` being nullable and `kind`'s CHECK array), and no file
+describes a table absent from the catalog. `list_migrations` confirms all
+three ledger rows (`20260904103000 golf_message_reactions`,
+`20260904120000 golf_messages_reply_to`, `20260904160000
+golf_messaging_structured`) exist under exactly those names, and confirms
+`20260903190000`/`20260903193000` (O6(a) above) genuinely have no row under
+any name or version. No content or header disagreed with the catalog — the
+three files needed no fix. The table-to-file attribution remains each file's
+own disclosed inference (the catalog only shows end state, never which
+transaction created which object), not upgraded to fact by this re-check.
+
 ## Owner SQL, prepared
 
 Prepared by the 2026-09-05 reconciliation. None of this was run — every
