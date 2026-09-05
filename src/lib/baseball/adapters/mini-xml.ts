@@ -64,7 +64,10 @@ function parseAttrs(raw: string): Record<string, string> {
  */
 export function parseXml(input: string): XmlParseResult {
   const warnings: string[] = [];
-  // Strip BOM, prolog, comments, CDATA-wrap (keep CDATA inner text), doctype.
+  // Strip BOM, CDATA-wrap (keep CDATA inner text), prolog, comments, and
+  // doctype, in that order; see the comment on the CDATA extraction below
+  // for why CDATA must come before both the prolog/PI strip and the
+  // comment cleanup.
   let xml = input.replace(/^\uFEFF/, '');
   // Extract CDATA sections FIRST — before the prolog/PI strip below and
   // before the comment-stripping pass further down — and restore them
