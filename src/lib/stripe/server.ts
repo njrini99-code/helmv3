@@ -14,7 +14,7 @@ import Stripe from 'stripe';
  *   any import of this file working in environments without Stripe configured.
  */
 
-const STRIPE_API_VERSION = '2026-06-24.dahlia' satisfies Stripe.LatestApiVersion;
+const STRIPE_API_VERSION = '2026-07-29.dahlia' satisfies Stripe.LatestApiVersion;
 
 let client: Stripe | null = null;
 

@@ -90,21 +90,22 @@ helm-vid/
 !public/email/*.png
 # QA visual audit packs (labeled screenshots + manifests).
 #
-# SCOPED to the one pack that already exists, deliberately. This read
-# `!docs/qa/**/*.png` until 2026-08-31 — a blanket re-inclusion of every future
-# QA pack, which is how 108 screenshots and 67 MB arrived without anyone
-# choosing to commit them. A visual-audit run is a snapshot of a moment; the
-# findings that outlive it are the INDEX.md / ERRORS.md / NAV_ISSUES.md files,
-# and those are markdown and stay tracked either way.
+# This read `!docs/qa/**/*.png` until 2026-08-31 — a blanket re-inclusion of
+# every future QA pack, which is how 108 screenshots and 67 MB arrived without
+# anyone choosing to commit them. It was then narrowed to one `!` line scoped
+# to the single pack that existed at the time
+# (`docs/qa/baseball-fairway-visual-audit-2026-07-04/`), on the reasoning that
+# the pack was being KEPT for its audit trail.
 #
-# The existing pack is KEPT: deleting it from HEAD would not shrink a clone
-# (every blob stays in the 219 MB pack regardless), its four INDEX.md tables
-# link to the images, and `scripts/build-baseball-qa-pack.mjs` rebuilds it from
-# `/tmp/baseball-qa-full`, which is long gone — so it is not regenerable.
-# Removing it would cost an audit trail and buy nothing measurable.
-#
-# Adding a NEW pack is now a deliberate act: add its own `!` line here.
-!docs/qa/baseball-fairway-visual-audit-2026-07-04/**/*.png
+# That pack's 108 PNGs + 2 manifest.json were `git rm`'d 2026-09-05 (still
+# recoverable from history) and its markdown moved to
+# `docs/archive/2026-07/baseball-fairway-visual-audit-2026-07-04/` — see that
+# directory's README for why. `docs/qa/` no longer contains the path the old
+# scoped exemption named, so there is nothing left here to scope: no `!` line
+# survives this rewrite. A visual-audit run is a snapshot of a moment, not
+# something to track as tracked PNGs going forward — see CONTRIBUTING.md's
+# "UI" section. Adding a NEW pack is a deliberate act: add its own scoped `!`
+# line here if one is ever needed, naming the specific pack directory.
 # Android launcher icons are build inputs — without these the adaptive icon's
 # @mipmap/ic_launcher_foreground does not resolve on a fresh clone and the
 # Gradle build FAILS. The generated vector defaults were removed in favour of
@@ -169,7 +170,15 @@ playwright/.auth/
 /capacitor.config.js
 /middleware.js
 e2e/**/*.js
-scripts/*.js
+# `scripts/*.js` (blanket) was replaced 2026-09-05 — it silently hid 13
+# untracked local scratch files (wf_p34*.js, wf_p112_p410.js,
+# baseballhelm-verification.workflow.js) from `git status`/`git log` for
+# months, the exact "blanket .gitignore hides a whole class of files" trap
+# quality-gates.md §4 warns about generically. Narrowed to the specific
+# scratch-file names below so a real, committed scripts/*.js is never hidden
+# again; a stray top-level tsc-emitted .js should be deleted, not ignored.
+scripts/wf_*.js
+scripts/baseballhelm-verification.workflow.js
 scripts/ui-intelligence/*.js
 supabase/functions/**/*.js
 landing/**/*.js

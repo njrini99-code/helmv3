@@ -373,6 +373,17 @@ self.addEventListener('notificationclick', (event) => {
 // ============================================================================
 
 self.addEventListener('message', (event) => {
+  // js/missing-origin-check (#110): a postMessage handler with no origin
+  // check accepts commands (CACHE_URLS, CLEAR_CACHE) from any context that
+  // can reach this worker, not only this app's own controlled clients. Same
+  // trust boundary the fetch handler above already enforces via
+  // `self.location.origin` (line 111) — apply it here too before acting on
+  // event.data.
+  if (event.origin !== self.location.origin) {
+    console.warn('[SW] Ignored postMessage from untrusted origin:', event.origin);
+    return;
+  }
+
   switch (event.data?.type) {
     case 'SKIP_WAITING':
       self.skipWaiting();
@@ -398,7 +409,12 @@ self.addEventListener('message', (event) => {
 async function cacheUrls(urls) {
   const cache = await caches.open(DYNAMIC_CACHE);
   await Promise.allSettled(
-    urls.map(url => cache.add(url).catch(err => console.warn(`[SW] Failed to cache ${url}:`, err)))
+    // js/tainted-format-string (#91): `url` comes from the postMessage
+    // payload — interpolating it into the log's own format-string argument
+    // let CodeQL's dataflow treat it as an externally-controlled format
+    // string. Passing it as a separate console.warn argument makes it inert
+    // data instead.
+    urls.map(url => cache.add(url).catch(err => console.warn('[SW] Failed to cache:', url, err)))
   );
 }
 

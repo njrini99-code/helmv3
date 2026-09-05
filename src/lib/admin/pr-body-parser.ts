@@ -49,23 +49,47 @@ const AREA_ALIASES: Record<string, WorkArea> = {
   auth: 'shared',
 };
 
-function stripHtmlComments(text: string): string {
+export function stripHtmlComments(text: string): string {
   let result = text;
-  let previous: string;
-  // Loop until stable rather than a single pass: removing one comment pair
-  // can expose a sequence that only becomes a matchable `<!--...-->` once
-  // the markers around it are gone (the classic incomplete-multi-character-
-  // sanitization failure mode for single-pass strips of nested/overlapping
-  // comment-like input).
+
+  // Fixed point over the paired comment regex ALONE (#514/#515, then
+  // #613/#614 when chaining the bare-marker cleanup onto the same
+  // assignment re-triggered it): CodeQL's incomplete-sanitization check only
+  // recognizes a loop as resolving a flagged regex when nothing else is
+  // chained between that replace() call and the before/after comparison
+  // that closes the loop. A single non-overlapping global replace can leave
+  // a `<!--` behind when removing one match concatenates whatever survives
+  // on either side of it into a new, unscanned match — so this reruns until
+  // the string stops changing. `--!?>` is accepted as a terminator alongside
+  // `-->` (js/bad-tag-filter, #611/#612): HTML's own "bogus comment" state
+  // ends on either.
+  let previousPaired: string;
   do {
-    previous = result;
-    result = result.replace(/<!--[\s\S]*?-->/g, '');
-  } while (result !== previous);
-  // Defense-in-depth: an UNTERMINATED opener (`<!--` with no matching `-->`
-  // anywhere after it in the input) is never matched by the pair-based regex
-  // above and would otherwise survive verbatim into the parsed output —
-  // strip any remaining bare markers outright so `<!--` can never survive.
-  return result.replace(/<!--/g, '').replace(/-->/g, '');
+    previousPaired = result;
+    result = result.replace(/<!--[\s\S]*?--!?>/g, '');
+  } while (result !== previousPaired);
+
+  // Bare, unpaired openers get their own fixed point, separately: an opener
+  // with no closer at all is dangerous on its own, and deleting one can
+  // splice adjacent fragments into a fresh opener — '<!<!----' has no
+  // matchable `<!--...-->` pair, so the loop above is a no-op on it, but
+  // removing the "<!--" at index 2..5 leaves '<!' + '--' = a NEW '<!--'
+  // that a single pass would miss.
+  let previousOpener: string;
+  do {
+    previousOpener = result;
+    result = result.replace(/<!--/g, '');
+  } while (result !== previousOpener);
+
+  // Bare, unpaired closers (`-->` or the `--!>` bogus-comment variant) get
+  // the same treatment, kept in its own loop for the same reason.
+  let previousCloser: string;
+  do {
+    previousCloser = result;
+    result = result.replace(/--!?>/g, '');
+  } while (result !== previousCloser);
+
+  return result;
 }
 
 function cleanSectionText(raw: string): string {

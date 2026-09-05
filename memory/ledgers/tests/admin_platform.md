@@ -316,7 +316,9 @@
   `tracer/DataQualityIssueRow.tsx` call-site pin — the other 6 pinned sites
   are untouched and still guarded),
   `scripts/__tests__/admin-tables-mobile.test.mjs`, and
-  `scripts/__tests__/badge-consolidation.test.mjs` (both dropped their now-
+  `archive/scripts/__tests__/badge-consolidation.test.mjs` (moved there
+  2026-09-05 as a confirmed orphan — see its own archive header; path
+  updated here so this entry keeps resolving) (both dropped their now-
   deleted TARGETS/MIGRATED_PILLS entries; neither is wired into any runner
   today per vitest.config.ts's own note on `scripts/__tests__/`, so this was
   hygiene, not a CI fix).
