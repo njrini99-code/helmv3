@@ -24,7 +24,7 @@ Two things are measured, not assumed. Both run on every PR:
 
 | Gate | Command | Finding | Baseline |
 |---|---|---|---|
-| Schema drift | `npm run docs:schema-drift` | **59 database identifiers** named here don't exist in production — confirmed absent from `pg_class`, `pg_proc`, `pg_type` | `.doc-schema-baseline.json` |
+| Schema drift | `npm run docs:schema-drift` | database identifiers named here that don't exist in production — confirmed absent from `pg_class`, `pg_proc`, `pg_type` (count: see baseline) | `.doc-schema-baseline.json` |
 | Path drift | `npm run docs:path-drift` | file paths named here don't resolve (count: see baseline) | `.doc-path-baseline.json` |
 
 Both counts **may only go DOWN**. Anything new fails CI.
@@ -38,6 +38,8 @@ gates exist to bound.
 are fully implemented — on `golf_events.recurring` / `recurrence_rule` /
 `parent_event_id` — while `golf_recurring_events`, the table the docs named,
 never existed. Check the code before concluding anything is absent.
+
+<!-- schema-drift-absent: golf_recurring_events -->
 
 ⚠️ **Do not bulk-repoint dead paths by basename search.** It was tried; the
 nearest-name matches were build artifacts under `src/.helmdev/`. That trades a
