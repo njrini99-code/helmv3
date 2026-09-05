@@ -9,10 +9,20 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 // ---------------------------------------------------------------------------
 
 vi.mock('@/components/fairway/overlays/ModalShell', () => {
-  const Root = ({ open, title, children }: { open: boolean; title?: React.ReactNode; children?: React.ReactNode }) =>
+  const Root = ({
+    open,
+    title,
+    hideTitle,
+    children,
+  }: {
+    open: boolean;
+    title?: React.ReactNode;
+    hideTitle?: boolean;
+    children?: React.ReactNode;
+  }) =>
     open ? (
       <div data-testid="modal-shell">
-        {title ? <h2>{title}</h2> : null}
+        {title && !hideTitle ? <h2>{title}</h2> : null}
         {children}
       </div>
     ) : null;
@@ -132,6 +142,13 @@ function renderEditor(overrides: Partial<React.ComponentProps<typeof FairwayEven
 
 const playerToggle = (name: RegExp) => screen.getByRole('button', { name });
 
+// Location / Who's invited / Notes-RSVP-repeat are disclosure rows now (S5),
+// so a test that drives their fields opens the row first — exactly as a coach
+// does. The collapsed row still states its value, which is what the tests
+// asserting counts read.
+const openInvited = () => fireEvent.click(screen.getByRole('button', { name: /Who's invited/i }));
+const openMore = () => fireEvent.click(screen.getByRole('button', { name: /Notes, RSVP, repeat/i }));
+
 beforeEach(() => {
   vi.clearAllMocks();
   checkScheduleConflicts.mockResolvedValue({ success: true, data: { hasConflict: false, conflicts: [], suggestions: [] } });
@@ -180,7 +197,8 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     // Hydration landed: the invitees really are selected.
     await waitFor(() => expect(screen.getByText(/2 of/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+    // The X is the only dismiss — the footer Cancel is gone.
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryAllByRole('heading', { name: /Discard this/i })).toHaveLength(0);
   });
 
@@ -190,13 +208,14 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Changed' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.getAllByRole('heading', { name: /Discard this/i }).length).toBeGreaterThan(0);
   });
 
   it('computes adds and removes from explicit toggles and surfaces the save summary', async () => {
     getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
     const { onSave } = renderEditor();
+    openInvited();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
     fireEvent.click(playerToggle(/Ben Reed/)); // deselect existing
@@ -215,6 +234,7 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     getEventRSVP.mockRejectedValue(new Error('network'));
     const { onSave } = renderEditor();
 
+    openInvited();
     await waitFor(() => expect(screen.getByText(/Couldn't load the current invitees/i)).toBeInTheDocument());
 
     fireEvent.click(playerToggle(/Cam Knox/));
@@ -259,6 +279,7 @@ describe('FairwayEventEditor — series and recurrence', () => {
     const { onSave } = renderEditor({ event: null });
 
     fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
+    openMore();
     // Recurrence is a visible pill row, not a <select> — a coach can read the
     // whole pattern without opening a menu.
     const recurrence = screen.getByRole('group', { name: 'Recurrence' });
@@ -382,6 +403,7 @@ describe('FairwayEventEditor — invite grid name display', () => {
   it('renders full names in the invite grid instead of truncated initials', async () => {
     getEventRSVP.mockResolvedValue(rsvpResult([]));
     renderEditor();
+    openInvited();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
     expect(screen.getByRole('button', { name: /Ava Stone/ })).toBeInTheDocument();
@@ -396,6 +418,7 @@ describe('FairwayEventEditor — invite grid name display', () => {
     renderEditor({
       teamPlayers: [{ id: 'coach-1', first_name: 'Coach', last_name: '(Nick Rini)' }],
     });
+    openInvited();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
     expect(screen.getByRole('button', { name: /Coach \(Nick Rini\)/ })).toBeInTheDocument();

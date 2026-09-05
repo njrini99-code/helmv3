@@ -153,6 +153,23 @@ Calendar renders views
   2026-09-02, UI-2/UI-3). The event editor scrolls its own error banner into
   view (`role="alert"`) so an end-before-start rejection is never rendered
   above the fold of a scrolled modal (UI-5 / P1-8).
+- The event editor's chrome is ONE header row — X (the only dismiss) · title ·
+  the primary action. It carries no footer button bar. The bar it replaced
+  stacked "Cancel event" + "Cancel" + "Create event" full-width on phones at a
+  measured 194px, and `ModalShell.Footer` cannot shrink (a flex item's
+  automatic minimum size is content-based) while `ModalShell.Body` can, so the
+  form absorbed every pixel a smaller viewport cost: measured in Chromium
+  against a mirror of that geometry, 390x844 with the keyboard up left the
+  scrollable form 210px, and 375x667 left 69px — less than one field. Cancelling
+  an event now sits at the foot of the form, with the same copy and the same
+  soft-cancel/scope semantics.
+- When is one 2x2 grid (start date · start time / end date · end time), always
+  two columns, plus one-tap duration chips that set the end from the start —
+  including the end DATE, so a span crossing midnight lands on the next day
+  rather than tripping the server's end-after-start rule.
+- Location, Who's invited, and Notes/RSVP/repeat are disclosure rows on one
+  card. A collapsed row states its value, and a row whose field arrives with
+  content opens itself; a schedule conflict is never inside a collapsed row.
 
 ## Known Risk Areas
 

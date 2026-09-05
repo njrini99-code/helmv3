@@ -16,13 +16,14 @@ vi.mock('@/components/fairway/overlays/ModalShell', () => {
   interface ShellProps {
     open: boolean;
     title?: string;
+    hideTitle?: boolean;
     description?: React.ReactNode;
     children?: React.ReactNode;
   }
-  function ModalShellRoot({ open, title, description, children }: ShellProps) {
+  function ModalShellRoot({ open, title, hideTitle, description, children }: ShellProps) {
     return open ? (
       <div role="dialog" aria-label={title}>
-        {title ? <h2>{title}</h2> : null}
+        {title && !hideTitle ? <h2>{title}</h2> : null}
         {description ? <p>{description}</p> : null}
         {children}
       </div>

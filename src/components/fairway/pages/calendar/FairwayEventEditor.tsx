@@ -39,16 +39,18 @@ import {
   Trash2,
   Check,
   Ban,
+  X,
+  ChevronRight,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { DiscardChangesModal } from '@/components/fairway/overlays/DiscardChangesModal';
 import { Button } from '@/components/fairway/controls/button';
 import { Button as UiButton } from '@/components/ui/button';
 import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
 import { Switch } from '@/components/fairway/forms/Switch';
-import { FormSection } from '@/components/fairway/forms/FormSection';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import {
   DateChooser,
@@ -185,6 +187,143 @@ function daysBetween(from: string, to: string): number | null {
   const a = new Date(fy, fm - 1, fd).getTime();
   const b = new Date(ty, tm - 1, td).getTime();
   return Math.round((b - a) / 86_400_000);
+}
+
+/**
+ * Quick-duration chips.
+ *
+ * A coach almost never thinks "this practice ends at 11:00" — they think "this
+ * practice is two hours". The end-time list is already duration-labelled
+ * (EventWhenFields' one idea); this is the same relationship as a one-tap
+ * control for the four lengths that cover nearly every team event.
+ */
+const DURATION_OPTIONS: ReadonlyArray<{ minutes: number; label: string }> = [
+  { minutes: 60, label: '1h' },
+  { minutes: 120, label: '2h' },
+  { minutes: 180, label: '3h' },
+  { minutes: 240, label: '4h' },
+];
+
+/**
+ * How long the event currently runs, in minutes — or null when either end is
+ * unset. Multi-day spans count the whole span, so a 2-day event never reports
+ * itself as "2h" just because the clock times happen to be two hours apart.
+ */
+export function eventSpanMinutes(form: GolfEventFormData): number | null {
+  const s = toMinutes(form.startTime);
+  const e = toMinutes(form.endTime);
+  if (s === null || e === null) return null;
+  if (!form.startDate || !form.endDate || form.endDate === form.startDate) {
+    // Forward-going, so an end past midnight is a real length rather than a
+    // negative one — same convention TimeChooser labels its options with.
+    return (e - s + 1440) % 1440;
+  }
+  const days = daysBetween(form.startDate, form.endDate);
+  return days === null ? null : days * 1440 + (e - s);
+}
+
+/**
+ * Make the event exactly `minutes` long, measured from its start.
+ *
+ * It sets the end DATE as well as the end time, because the two are one fact:
+ * a 4-hour event starting at 10 PM ends tomorrow, and leaving endDate on the
+ * start day would produce exactly the "End date must be on or after the start
+ * date" rejection golf.ts's refineEventEndAfterStart already answers for. The
+ * span the chip produces is stated immediately underneath by SpanSummary.
+ */
+export function applyDuration(form: GolfEventFormData, minutes: number): GolfEventFormData {
+  const s = toMinutes(form.startTime);
+  if (s === null) return form;
+  const total = s + minutes;
+  const endTime = fromMinutes(total);
+  const endDate = form.startDate
+    ? total >= 1440
+      ? addDays(form.startDate, Math.floor(total / 1440))
+      : form.startDate
+    : form.endDate;
+  return { ...form, endTime, endDate };
+}
+
+/** Small uppercase group label — the whole form uses ONE section treatment. */
+const eyebrowCls =
+  'font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary';
+
+/**
+ * One row of the "everything else" card.
+ *
+ * The trigger is a button and the revealed panel is its SIBLING, never its
+ * child: a disclosure that wrapped its own fields inside the trigger would
+ * nest interactive elements in a <button>, which is the hydration-crash class
+ * this repo already bans for BentoCell with onOpen.
+ *
+ * A collapsed row still states its value, so nothing a coach has already
+ * filled in becomes invisible.
+ */
+function DisclosureRow({
+  id,
+  icon,
+  label,
+  value,
+  open,
+  onToggle,
+  isLast = false,
+  children,
+}: {
+  id: string;
+  icon: React.ReactNode;
+  label: string;
+  value?: React.ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  isLast?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn(!isLast && !open && 'border-b border-border-subtle')}>
+      <UiButton
+        variant="ghost"
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        // Only while the panel exists — aria-controls pointing at an id
+        // that is not in the DOM is a dangling reference.
+        aria-controls={open ? `${id}-panel` : undefined}
+        className={cn(
+          'flex min-h-11 w-full items-center justify-between gap-3 rounded-none px-3.5 py-2 text-left',
+          'hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          {icon}
+          <span className="font-fw-sans text-body-sm font-medium text-text-primary">{label}</span>
+        </span>
+        <span className="flex min-w-0 items-center gap-2">
+          {value ? (
+            <span className="min-w-0 truncate font-fw-sans text-caption text-text-tertiary">{value}</span>
+          ) : null}
+          <ChevronRight
+            aria-hidden
+            className={cn(
+              'h-4 w-4 shrink-0 text-text-tertiary transition-transform duration-fast motion-reduce:transition-none',
+              open && 'rotate-90',
+            )}
+          />
+        </span>
+      </UiButton>
+      {open ? (
+        <Inset
+          id={`${id}-panel`}
+          padding="none"
+          className={cn(
+            'flex flex-col gap-4 rounded-none px-3.5 pb-4 pt-1',
+            !isLast && 'border-b border-border-subtle',
+          )}
+        >
+          {children}
+        </Inset>
+      ) : null}
+    </div>
+  );
 }
 
 /**
@@ -350,6 +489,13 @@ const DEFAULT_FORM: GolfEventFormData = {
   recurrenceUntil: null,
 };
 
+type DisclosureKey = 'location' | 'invited' | 'more';
+const NO_ROWS_OPEN: Record<DisclosureKey, boolean> = {
+  location: false,
+  invited: false,
+  more: false,
+};
+
 export function FairwayEventEditor({
   open,
   onClose,
@@ -381,6 +527,16 @@ export function FairwayEventEditor({
   }, [timezone]);
 
   const [formData, setFormData] = React.useState<GolfEventFormData>(DEFAULT_FORM);
+  /**
+   * Which of the three "everything else" rows are expanded. Seeded per event
+   * in the prefill effect: a row whose field already carries content opens by
+   * itself, so editing an event with a location or a repeat pattern never
+   * hides it behind a tap.
+   */
+  const [openRows, setOpenRows] = React.useState<Record<DisclosureKey, boolean>>(NO_ROWS_OPEN);
+  const toggleRow = React.useCallback((key: DisclosureKey) => {
+    setOpenRows((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
   // Roster filter. Only surfaced above 8 players (see the search box below);
   // the state is unconditional so clearing it can't strand a stale filter.
   const [attendeeQuery, setAttendeeQuery] = React.useState('');
@@ -479,6 +635,19 @@ export function FairwayEventEditor({
         recurrenceUntil: null,
       };
       setFormData(prefilled);
+      // A row with content opens itself; an empty one stays collapsed. The
+      // invitee row is deliberately NOT in this list — its content arrives
+      // asynchronously (the RSVP hydration below), and opening a section
+      // under the coach's finger a beat after the sheet paints is worse than
+      // the count the collapsed row already shows.
+      setOpenRows({
+        location: Boolean(event.location),
+        invited: false,
+        more:
+          Boolean(event.description) ||
+          Boolean(event.requires_rsvp) ||
+          Boolean(event.recurrence_rule),
+      });
       // Snapshot the SAME object the form starts from. `isDirty` compares
       // against this, so "dirty" means the coach changed something — not
       // merely that the editor opened.
@@ -486,6 +655,7 @@ export function FairwayEventEditor({
     } else {
       const blank: GolfEventFormData = { ...DEFAULT_FORM, startDate: getTodayDate() };
       setFormData(blank);
+      setOpenRows(NO_ROWS_OPEN);
       pristineRef.current = blank;
     }
     setError(null);
@@ -824,6 +994,20 @@ export function FairwayEventEditor({
    */
   const isTitleValid = formData.title.trim().length > 0;
 
+  const headerTitle = isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event';
+
+  /** What each collapsed row says about itself. */
+  const moreSummary = [
+    formData.description ? 'Notes' : null,
+    formData.requiresRsvp ? 'RSVP' : null,
+    formData.recurrence !== 'none' ? 'Repeats' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  /** The event's current length, for the duration chips' pressed state. */
+  const currentSpanMinutes = eventSpanMinutes(formData);
+
   /**
    * Has the coach actually changed anything since the editor opened?
    *
@@ -838,9 +1022,11 @@ export function FairwayEventEditor({
   }, [formData]);
 
   /**
-   * Every close attempt funnels here — Escape, scrim tap, the X (all via
-   * ModalShell's onOpenChange) and the footer Cancel button. An untouched form
-   * closes immediately; a dirty one asks first.
+   * Every close attempt funnels here — Escape and a scrim tap (both via
+   * ModalShell's onOpenChange), and the header X, which is a plain button
+   * calling this rather than a Radix Dialog.Close — a Dialog.Close would
+   * dismiss the dialog directly and walk straight past the discard guard.
+   * An untouched form closes immediately; a dirty one asks first.
    */
   function requestClose() {
     if (isSaving) return;
@@ -859,9 +1045,79 @@ export function FairwayEventEditor({
         if (!o) requestClose();
       }}
       size="xl"
-      title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
+      title={headerTitle}
+      // The header is ours: X on the left, title in the middle, the primary
+      // action on the right. ModalShell's own header block and its
+      // absolutely-positioned close button would both land on top of it, so
+      // both are suppressed — the sr-only Dialog.Title it still renders keeps
+      // the dialog named for assistive tech.
+      hideTitle
+      hideClose
       data-slot="event-editor"
     >
+      {/*
+        ONE row of chrome, and the form owns every other pixel.
+
+        What this replaces: a ModalShell.Footer carrying "Create event" +
+        "Cancel" + "Cancel event", which on a phone stacks full-width
+        (flex-col-reverse) into a 194px button bar. A flex item's automatic
+        minimum size is content-based, so that bar CANNOT shrink, while
+        ModalShell.Body (min-h-0) can — every pixel the viewport lost came out
+        of the form. Measured in Chromium against a mirror of this exact
+        geometry: iPhone 390x844 with the keyboard up left 210px of scrollable
+        form under the 194px bar; a 375x667 phone left 69px, less than one
+        field; landscape left 40px. That is the "End time is cut off behind
+        the button bar" report — not a z-index overlap but a scroll window
+        squeezed to nothing by chrome that refuses to give way.
+
+        With the bar gone the panel is header + scroll region, so the shortest
+        supported viewport can no longer starve the form: the only fixed cost
+        is this 56px row.
+      */}
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2.5 pt-3">
+        <UiButton
+          variant="ghost"
+          type="button"
+          onClick={requestClose}
+          disabled={isSaving}
+          aria-label="Close"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-sunken p-0 text-text-secondary hover:bg-surface-tint hover:text-text-primary focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
+        >
+          <X className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+        </UiButton>
+        {/* aria-hidden: ModalShell renders this exact string as the dialog's
+            sr-only accessible name, so announcing it twice is just noise. */}
+        <span
+          aria-hidden
+          className="min-w-0 truncate font-fw-sans text-body-sm font-semibold tracking-[-0.01em] text-text-primary"
+        >
+          {headerTitle}
+        </span>
+        {/* The primary action, where the thumb already is. It keeps the
+            title-validity gating the Settings pages set the precedent for
+            (a primary that stays disabled until the form is submittable) —
+            what changed is that it is no longer a grey slab in a stack of
+            three: when it IS actionable it renders the full accent-650 fill,
+            and the empty-name state is signalled at the name field itself
+            rather than only by a dead button down here. */}
+        {!isCancelled && !pendingScopeAction ? (
+          <Button
+            variant="primary"
+            size="sm"
+            type="button"
+            onClick={handleSubmit}
+            busy={isSaving}
+            disabled={isSaving || !isTitleValid}
+            className="shrink-0"
+          >
+            {isCreating ? 'Create event' : 'Save changes'}
+          </Button>
+        ) : (
+          // Keeps the title optically centred when there is no action.
+          <span aria-hidden className="h-11 w-11 shrink-0" />
+        )}
+      </div>
+
       {/* Recurring-series scope picker (edit/delete) — overrides the body */}
       {pendingScopeAction ? (
         <ModalShell.Body className="flex flex-col gap-3">
@@ -921,17 +1177,18 @@ export function FairwayEventEditor({
       ) : (
         <>
           {/*
-            ModalShell.Body's own `last:pb-6` never fires here — this Body is
-            followed by a Footer sibling, so it's never actually the DOM
-            last-child, and the fallback `py-2` (8px) left the last field
-            (Repeat) flush against the footer with no breathing room. Adding
-            an explicit pb here (twMerge lets it win over the base py-2/pb-6)
-            fixes it locally without touching the shared shell. Likewise
+            The ONLY scroll region in the editor, and now the last child of
+            the panel — the Footer that used to follow it is gone, so
+            ModalShell.Body's own `last:pb-6` does fire; the explicit `pb-8`
+            keeps a little more air under the last row than the shell's
+            default. `px-4` tightens the shell's `px-6` for phones. The panel
+            is inset from the bottom by `env(safe-area-inset-bottom)`, so this
+            edge already clears the home indicator without its own inset.
             `[scrollbar-gutter:stable]` reserves a lane for a classic (non-
             overlay) scrollbar so it can never paint over field content —
             overlay scrollbars (macOS/iOS default) are unaffected.
           */}
-          <ModalShell.Body className="flex flex-col gap-5 pb-8 pr-7 [scrollbar-gutter:stable]">
+          <ModalShell.Body className="flex flex-col gap-4 px-4 pb-8 [scrollbar-gutter:stable]">
             {error ? (
               <div ref={errorRef} role="alert" className="flex items-center gap-2 rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger-ink">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
@@ -977,11 +1234,18 @@ export function FairwayEventEditor({
               </div>
             ) : null}
 
-            {/* Title — with a green editorial spine. The wrapper carries the
-                visible focus cue (WCAG 2.4.7) since the input itself is a
-                bare editorial field with no border. */}
-            <div className="flex items-center gap-3 rounded-fw-md transition-shadow focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-2 focus-within:ring-offset-canvas">
-              <span aria-hidden className="h-7 w-1 flex-shrink-0 rounded-full bg-accent-500" />
+            {/* The name, first and large — it is the one thing that must be
+                typed, and the only field that gates the primary action. The
+                well carries a resting accent ring while it is empty on a new
+                event, so "why is Create grey" is answered where the answer
+                is, instead of by the button. */}
+            <div
+              className={cn(
+                'rounded-fw-md bg-surface-sunken px-4 py-3 transition-shadow',
+                'focus-within:ring-2 focus-within:ring-accent-500 focus-within:ring-offset-0',
+                isCreating && !isTitleValid && !locked && 'ring-1 ring-accent-500/45',
+              )}
+            >
               <UiInput
                 type="text"
                 value={formData.title}
@@ -989,13 +1253,17 @@ export function FairwayEventEditor({
                 disabled={locked}
                 placeholder="Event name…"
                 aria-label="Event title"
-                className="w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="w-full border-none bg-transparent px-0 py-0 font-fw-display text-h3 font-semibold tracking-[-0.02em] text-text-primary outline-none placeholder:text-text-tertiary focus-visible:ring-0 focus-visible:ring-offset-0"
                 required
               />
             </div>
 
-            {/* Event type */}
-            <div className="flex flex-wrap gap-2">
+            {/* Event type — same six types, same semantics, tighter row. */}
+            <section aria-labelledby="ev-type-label" className="flex flex-col gap-2">
+              <span id="ev-type-label" className={eyebrowCls}>
+                Type
+              </span>
+              <div className="flex flex-wrap gap-1.5">
               {EVENT_TYPES.map(({ type, label, icon: Icon }) => {
                 const active = formData.eventType === type;
                 return (
@@ -1026,18 +1294,30 @@ export function FairwayEventEditor({
                   </UiButton>
                 );
               })}
-            </div>
+              </div>
+            </section>
 
-            {/* Date & time well — the icon lives INSIDE the first column's
-                label (same convention as Location/Notes below) instead of as
-                a row-level flex sibling. A sibling icon pushed the grid's
-                left edge over by icon+gap, so Start/End date sat ~28px
-                further right than the RSVP/Recurrence two-column rows in the
-                same well and had a narrower column than its own End-date
-                partner — this keeps every two-column row in the modal on one
-                consistent grid. */}
-            <FormSection title="When">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* When — one 2x2 grid, unconditionally two columns.
+                It was two `sm:grid-cols-2` grids, which means FOUR stacked
+                full-width fields on every phone (the `sm` breakpoint is
+                640px) and a When section taller than the rest of the form put
+                together. Start date/start time on the first row, end
+                date/end time on the second, so each column is one edge of the
+                span. */}
+            <section aria-labelledby="ev-when-label" className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <span id="ev-when-label" className={eyebrowCls}>When</span>
+                <Switch
+                  label="All day"
+                  labelPosition="start"
+                  className="gap-2 py-0"
+                  checked={formData.allDay}
+                  onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
+                  disabled={locked}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <DateChooser
                   label="Start date"
                   labelIcon={<CalendarIcon className="h-3.5 w-3.5 text-accent-700" />}
@@ -1045,17 +1325,7 @@ export function FairwayEventEditor({
                   onChange={(iso) => setFormData(shiftStartDate(formData, iso))}
                   disabled={locked}
                 />
-                <DateChooser
-                  label="End date"
-                  value={formData.endDate}
-                  onChange={(iso) => setFormData({ ...formData, endDate: iso })}
-                  disabled={locked}
-                  placeholder="Same day"
-                />
-              </div>
-
-              {!formData.allDay && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {!formData.allDay ? (
                   <TimeChooser
                     label="Start time"
                     labelIcon={<Clock className="h-3.5 w-3.5 text-accent-700" />}
@@ -1063,9 +1333,18 @@ export function FairwayEventEditor({
                     onChange={(hhmm) => setFormData(shiftStartTime(formData, hhmm))}
                     disabled={locked}
                   />
-                  {/* Duration-aware: every end option is labelled with its length
-                      from the chosen start, so picking an end IS picking a
-                      duration. */}
+                ) : null}
+                <DateChooser
+                  label="End date"
+                  value={formData.endDate}
+                  onChange={(iso) => setFormData({ ...formData, endDate: iso })}
+                  disabled={locked}
+                  placeholder="Same day"
+                />
+                {/* Duration-aware: every end option is labelled with its length
+                    from the chosen start, so picking an end IS picking a
+                    duration. */}
+                {!formData.allDay ? (
                   <TimeChooser
                     label="End time"
                     value={formData.endTime}
@@ -1073,8 +1352,49 @@ export function FairwayEventEditor({
                     disabled={locked}
                     durationFrom={formData.startTime}
                   />
+                ) : null}
+              </div>
+
+              {/* One tap for the four lengths that cover nearly every team
+                  event. Each sets the end FROM the start (date included, so a
+                  late start that runs past midnight lands on tomorrow rather
+                  than being rejected by the server's end-after-start rule). */}
+              {!formData.allDay &&
+              formData.startTime &&
+              // Not offered for a genuinely multi-day event: no chip would be
+              // lit, so they would read as unset and inviting, and a tap would
+              // silently collapse a 3-day tournament to an afternoon.
+              (!formData.endDate || formData.endDate === formData.startDate) ? (
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Event duration">
+                  {DURATION_OPTIONS.map((d) => {
+                    const active = currentSpanMinutes === d.minutes;
+                    return (
+                      <UiButton
+                        key={d.minutes}
+                        variant="ghost"
+                        type="button"
+                        onClick={() => setFormData(applyDuration(formData, d.minutes))}
+                        disabled={locked}
+                        aria-pressed={active}
+                        className={cn(
+                          'relative inline-flex items-center rounded-full px-3 py-1 font-fw-sans text-caption font-medium transition-colors',
+                          // Invisible hit-slop takes the 24px visual chip to
+                          // the 44px WCAG 2.2 AA touch floor without growing
+                          // the row — the same technique the weekday circles
+                          // below and ModalShell's close button already use.
+                          "before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-['']",
+                          'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
+                          active
+                            ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-100'
+                            : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
+                        )}
+                      >
+                        {d.label}
+                      </UiButton>
+                    );
+                  })}
                 </div>
-              )}
+              ) : null}
 
               {/* The span itself, stated once. The editor previously showed only
                   the fields the span was assembled from, never the result. */}
@@ -1088,29 +1408,65 @@ export function FairwayEventEditor({
                   timezoneLabel={!formData.allDay ? tzAbbrev : null}
                 />
               ) : null}
+            </section>
 
-              <Switch
-                label="All day"
-                checked={formData.allDay}
-                onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
-                disabled={locked}
-              />
-            </FormSection>
+            {/* A schedule conflict is the one thing in this form a coach must
+                not have to go looking for, so it sits at the top level rather
+                than inside a collapsed row. */}
+                {/* Conflict notice */}
+                {conflicts?.hasConflict ? (
+                  <div className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
+                    <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-fw-warning-ink">
+                      <AlertTriangle className="h-3.5 w-3.5 text-fw-warning-ink" />
+                      Schedule conflict
+                    </p>
+                    <ul className="mt-1.5 flex flex-col gap-0.5">
+                      {conflicts.conflicts.slice(0, 4).map((c, i) => (
+                        <li key={`${c.userId}-${i}`} className="font-fw-sans text-caption text-fw-warning-ink">
+                          {c.userName} — {c.conflictingEvent.title}
+                          {c.conflictingEvent.type === 'class' ? (
+                            <span className="ml-1 text-fw-warning-ink/70">(class)</span>
+                          ) : c.conflictingEvent.type === 'blocked' ? (
+                            <span className="ml-1 text-fw-warning-ink/70">(blocked time)</span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                    {conflicts.suggestions.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {conflicts.suggestions.slice(0, 3).map((s, i) => (
+                          <UiButton
+                            key={i}
+                            variant="ghost"
+                            type="button"
+                            onClick={() => selectSuggestedTime(s)}
+                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
+                          >
+                            {s.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          </UiButton>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
 
-            {/* Location — one FormSection per field-group, same primitive as
-                every other section below (finding: this form used to mix four
-                different section treatments — label-above-input here, a
-                tinted no-header panel for RSVP, a header+count row for
-                invitees, and a tinted panel WITH a header for Repeat — with no
-                rule for which earned a tint. FormSection (already the modal
-                section primitive — see FocusAreaModal) replaces all four. */}
-            <FormSection
-              title={
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-accent-700" /> Location
-                </span>
-              }
-            >
+            {/* Everything else, on one card as three disclosure rows.
+                Five stacked FormSections — Location, Notes, RSVP, Invitees,
+                Repeat — each with an h2 heading and 20px of section air was
+                most of the scroll depth on a phone, and none of it is what a
+                coach fills in first. A collapsed row still states its value,
+                so nothing already entered becomes invisible, and a row whose
+                field arrives with content opens itself. The rows are Insets
+                on ONE Surface: a tint step, never a card inside a card. */}
+            <Surface padding="none" className="overflow-hidden">
+              <DisclosureRow
+                id="ev-location-row"
+                icon={<MapPin className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />}
+                label="Location"
+                value={formData.location || null}
+                open={openRows.location}
+                onToggle={() => toggleRow('location')}
+              >
               <UiInput
                 id="ev-location"
                 type="text"
@@ -1121,92 +1477,17 @@ export function FairwayEventEditor({
                 aria-label="Location"
                 className={fieldCls}
               />
-            </FormSection>
+              </DisclosureRow>
 
-            {/* Notes */}
-            <FormSection
-              title={
-                <span className="inline-flex items-center gap-1.5">
-                  <AlignLeft className="h-4 w-4 text-accent-700" /> Notes
-                </span>
-              }
-            >
-              <UiTextarea
-                id="ev-desc"
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
-                disabled={locked}
-                rows={2}
-                placeholder="Details for the team…"
-                aria-label="Notes"
-                className={cn(fieldCls, 'resize-none')}
-              />
-            </FormSection>
-
-            {/* RSVP */}
-            <FormSection title="RSVP">
-              <Switch
-                label="Require RSVP"
-                description="Players respond Going / Maybe / Decline"
-                checked={formData.requiresRsvp}
-                onCheckedChange={(checked) => setFormData({ ...formData, requiresRsvp: checked })}
-                disabled={locked}
-              />
-              {formData.requiresRsvp && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="ev-rsvp-deadline" className={labelCls}>RSVP deadline</label>
-                    <UiInput
-                      id="ev-rsvp-deadline"
-                      type="datetime-local"
-                      value={formData.rsvpDeadline || ''}
-                      onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
-                      disabled={locked}
-                      className={cn(fieldCls, 'bg-surface')}
-                    />
-                    <p className="mt-1 font-fw-sans text-caption text-text-tertiary">Your local time</p>
-                  </div>
-                  <div>
-                    <label htmlFor="ev-max" className={labelCls}>Max attendees</label>
-                    <UiInput
-                      id="ev-max"
-                      type="number"
-                      min={1}
-                      inputMode="numeric"
-                      value={formData.maxAttendees ?? ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value, 10) : null })
-                      }
-                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      disabled={locked}
-                      placeholder="No limit"
-                      className={cn(fieldCls, 'bg-surface')}
-                    />
-                  </div>
-                </div>
-              )}
-            </FormSection>
-
-            {/* Attendees — colored-avatar toggle grid */}
-            {availablePlayers.length > 0 && (
-              <FormSection
-                title={
-                  <span className="inline-flex items-center gap-1.5">
-                    <Users className="h-4 w-4 text-accent-700" /> Invite players
-                  </span>
-                }
-                // Always show the count, not only once someone is picked —
-                // "0 of 14" is the honest starting state and tells the coach
-                // how big the roster is before they start tapping. The
-                // `action` slot is FormSection's own right-aligned cluster —
-                // exactly what this count needed instead of a hand-rolled
-                // header row.
-                action={
-                  <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
-                    {formData.attendeeIds.length} of {availablePlayers.length}
-                  </span>
-                }
-              >
+              {availablePlayers.length > 0 ? (
+                <DisclosureRow
+                  id="ev-invited-row"
+                  icon={<Users className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />}
+                  label="Who's invited"
+                  value={`${formData.attendeeIds.length} of ${availablePlayers.length}`}
+                  open={openRows.invited}
+                  onToggle={() => toggleRow('invited')}
+                >
                 {/* Select-all / clear. Inviting the whole team is the single
                     most common case (practice, lift, study hall) and used to
                     cost one tap per player. */}
@@ -1337,59 +1618,87 @@ export function FairwayEventEditor({
                     Saving will update invites: {attendeeChangeSummary}.
                   </p>
                 ) : null}
+                </DisclosureRow>
+              ) : null}
 
-                {/* Conflict notice */}
-                {conflicts?.hasConflict ? (
-                  <div className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
-                    <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-fw-warning-ink">
-                      <AlertTriangle className="h-3.5 w-3.5 text-fw-warning-ink" />
-                      Schedule conflict
-                    </p>
-                    <ul className="mt-1.5 flex flex-col gap-0.5">
-                      {conflicts.conflicts.slice(0, 4).map((c, i) => (
-                        <li key={`${c.userId}-${i}`} className="font-fw-sans text-caption text-fw-warning-ink">
-                          {c.userName} — {c.conflictingEvent.title}
-                          {c.conflictingEvent.type === 'class' ? (
-                            <span className="ml-1 text-fw-warning-ink/70">(class)</span>
-                          ) : c.conflictingEvent.type === 'blocked' ? (
-                            <span className="ml-1 text-fw-warning-ink/70">(blocked time)</span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                    {conflicts.suggestions.length > 0 ? (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {conflicts.suggestions.slice(0, 3).map((s, i) => (
-                          <UiButton
-                            key={i}
-                            variant="ghost"
-                            type="button"
-                            onClick={() => selectSuggestedTime(s)}
-                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
-                          >
-                            {s.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                          </UiButton>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </FormSection>
-            )}
-
-            {/* Recurrence pattern — on create, and on series-root edit (the
-                series-extend affordance: bump the count or push the end date
-                to add occurrences, or re-shape the weekday pattern). Child
-                occurrences don't carry the pattern; their edits go through
-                the scope picker instead. */}
-            {!isCancelled && (isCreating || isSeriesRoot) && (
-              <FormSection
-                title={
-                  <span className="inline-flex items-center gap-1.5">
-                    <Repeat className="h-4 w-4 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
-                  </span>
-                }
+              <DisclosureRow
+                id="ev-more-row"
+                icon={<AlignLeft className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />}
+                label="Notes, RSVP, repeat"
+                value={moreSummary || null}
+                open={openRows.more}
+                onToggle={() => toggleRow('more')}
+                isLast
               >
+                <div className="flex flex-col gap-1.5">
+                  <span className={eyebrowCls}>Notes</span>
+              <UiTextarea
+                id="ev-desc"
+                value={formData.description || ''}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
+                disabled={locked}
+                rows={2}
+                placeholder="Details for the team…"
+                aria-label="Notes"
+                className={cn(fieldCls, 'resize-none')}
+              />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <span className={eyebrowCls}>RSVP</span>
+              <Switch
+                label="Require RSVP"
+                description="Players respond Going / Maybe / Decline"
+                checked={formData.requiresRsvp}
+                onCheckedChange={(checked) => setFormData({ ...formData, requiresRsvp: checked })}
+                disabled={locked}
+              />
+              {formData.requiresRsvp && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="ev-rsvp-deadline" className={labelCls}>RSVP deadline</label>
+                    <UiInput
+                      id="ev-rsvp-deadline"
+                      type="datetime-local"
+                      value={formData.rsvpDeadline || ''}
+                      onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
+                      disabled={locked}
+                      className={cn(fieldCls, 'bg-surface')}
+                    />
+                    <p className="mt-1 font-fw-sans text-caption text-text-tertiary">Your local time</p>
+                  </div>
+                  <div>
+                    <label htmlFor="ev-max" className={labelCls}>Max attendees</label>
+                    <UiInput
+                      id="ev-max"
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={formData.maxAttendees ?? ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value, 10) : null })
+                      }
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      disabled={locked}
+                      placeholder="No limit"
+                      className={cn(fieldCls, 'bg-surface')}
+                    />
+                  </div>
+                </div>
+              )}
+                </div>
+
+                {/* Recurrence pattern — on create, and on series-root edit (the
+                    series-extend affordance: bump the count or push the end date
+                    to add occurrences, or re-shape the weekday pattern). Child
+                    occurrences don't carry the pattern; their edits go through
+                    the scope picker instead. */}
+                {!isCancelled && (isCreating || isSeriesRoot) ? (
+                  <div className="flex flex-col gap-3">
+                    <span className={eyebrowCls}>
+                      <Repeat className="mr-1.5 inline h-3.5 w-3.5 text-accent-700" aria-hidden />
+                      {isSeriesRoot ? 'Series pattern' : 'Repeat'}
+                    </span>
                 {/* Visible chips, not a dropdown. The whole pattern is legible
                     at a glance and it matches the two pill rows this modal
                     already uses (event type above, weekdays below) — a coach
@@ -1532,43 +1841,35 @@ export function FairwayEventEditor({
                     Raising the count or pushing the end date later extends this series with new occurrences.
                   </p>
                 ) : null}
-              </FormSection>
-            )}
-          </ModalShell.Body>
+                  </div>
+                ) : null}
+              </DisclosureRow>
+            </Surface>
 
-          <ModalShell.Footer>
-            {/* deleteGolfEvent is a SOFT CANCEL for one-off events (status →
-                cancelled, RSVPs kept, attendees notified), so the copy says
-                "Cancel event"; series deletes go through the scope picker
-                where permanent removal is spelled out. Hidden on an already-
-                cancelled event — re-cancelling is a no-op. */}
+            {/* Cancelling the event is a destructive action at the FOOT of the
+                form — the iOS-native place for it — not a third button in a
+                bar that used to cost the form 194px of height. Copy and
+                behaviour are unchanged: deleteGolfEvent is a SOFT CANCEL for
+                one-off events (status -> cancelled, RSVPs kept, attendees
+                notified), so it reads "Cancel event"; series deletes go
+                through the scope picker where permanent removal is spelled
+                out. Hidden on an already-cancelled event — re-cancelling is a
+                no-op. */}
             {!isCreating && onDelete && !isCancelled ? (
-              <Button
-                variant="ghost"
-                type="button"
-                onClick={handleDelete}
-                disabled={isSaving}
-                leftIcon={<Trash2 className="h-4 w-4" />}
-                className="sm:mr-auto"
-              >
-                {isInSeries ? 'Delete' : 'Cancel event'}
-              </Button>
+              <div className="flex justify-center pt-1">
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isSaving}
+                  leftIcon={<Trash2 className="h-4 w-4" />}
+                  className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
+                >
+                  {isInSeries ? 'Delete' : 'Cancel event'}
+                </Button>
+              </div>
             ) : null}
-            <Button variant="secondary" type="button" onClick={requestClose} disabled={isSaving}>
-              {isCancelled ? 'Close' : 'Cancel'}
-            </Button>
-            {!isCancelled ? (
-              <Button
-                variant="primary"
-                type="button"
-                onClick={handleSubmit}
-                busy={isSaving}
-                disabled={isSaving || !isTitleValid}
-              >
-                {isCreating ? 'Create event' : 'Save changes'}
-              </Button>
-            ) : null}
-          </ModalShell.Footer>
+          </ModalShell.Body>
         </>
       )}
     </ModalShell>
