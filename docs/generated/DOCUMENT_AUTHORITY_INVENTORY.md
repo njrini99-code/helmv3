@@ -656,7 +656,7 @@ them would bury everything above.
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 4 | 4 | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 3 | 1 | - |
-| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 1 | 3 | - |
+| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 4 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | 1 |
 | `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 11 | 3 |
@@ -682,7 +682,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 14 | 19 | 1 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 14 | 24 | 1 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
