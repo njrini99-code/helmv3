@@ -45,6 +45,7 @@
     "flags:generate": "node scripts/flags/generate-flags.mjs",
     "flight-recorder:audit": "node scripts/flight-recorder-audit.mjs",
     "guards": "node scripts/repo-guards.mjs",
+    "hooks:install": "git config core.hooksPath scripts/git-hooks",
     "janitor": "node scripts/janitor/run.mjs",
     "knowledge:check": "node scripts/knowledge/check.mjs",
     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
