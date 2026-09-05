@@ -136,7 +136,7 @@
   "license": "ISC",
   "type": "module",
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.20",
