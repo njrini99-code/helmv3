@@ -154,8 +154,25 @@ const nextConfig = {
     '/admin': ['./supabase/migrations/HELD.md'],
   },
 
+  // Bound the webpack production build and let its persistent cache trim
+  // itself. Measured 2026-09-05: nine build workers by default and an 8 GB
+  // .next/cache/webpack that kept entries for sixty days. Seven days and one
+  // in-memory generation means nothing is deleted by hand; the cache stops
+  // hoarding. See docs/operations/GATES.md.
+  webpack(config) {
+    if (config.cache && config.cache.type === 'filesystem') {
+      config.cache.maxAge = 7 * 24 * 60 * 60 * 1000;
+      config.cache.maxMemoryGenerations = 1;
+    }
+    return config;
+  },
+
   // Experimental features
   experimental: {
+    // Build workers and memory, bounded for a shared machine (see the webpack
+    // hook above and docs/operations/GATES.md).
+    cpus: 3,
+    webpackMemoryOptimizations: true,
     // Enable server actions.
     // bodySizeLimit must cover the largest Server Action payload. Recruit
     // document uploads pass the File as an action arg (see

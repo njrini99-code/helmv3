@@ -160,6 +160,18 @@ Leaderboard reads qualifier
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
 - A date-based entry gate is a release-blocking regression: it strands an
   eligible player and contradicts the coach-controlled qualifier lifecycle.
+- **A bare (ungrouped) Base UI `Checkbox` inside a Fairway `<Form>` silently
+  blocks every submit** — no POST, no console output, no visible error —
+  because it registers as a permanently-invalid field outside any
+  `Field.Root`. This previously killed "Create qualifier" outright; the fix
+  is wrapping the control in a `CheckboxGroup`. Guarded by
+  `FairwayNewQualifier.submit.test.tsx` (present in this repo), which asserts
+  the server action actually gets called — a green Playwright/unit run alone
+  does not prove this, only an outcome-asserting test does. See
+  `memory/context/engineering-methodology.md`'s Fairway/Base UI section for
+  the full mechanism and diagnostic. (STU, source:
+  `baseui-ungrouped-checkbox-kills-form-submit.md` dated 2026-08-03; verified
+  2026-09-05 that the guard test file exists.)
 
 ## Tests To Prefer
 
