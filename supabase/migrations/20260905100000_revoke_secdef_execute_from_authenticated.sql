@@ -32,7 +32,7 @@
 --      unconditionally kept.
 --   3. Every remaining name was checked against every `CREATE TRIGGER` and
 --      every other function's body (to distinguish a callee reached only
---      from a SECURITY DEFINER caller — which needs no grant, because a
+--      from a security-definer caller — which needs no grant, because a
 --      DEFINER function executes as its OWNER, and every function touched
 --      here is owned by `postgres` per the baseline's "owner-stripped"
 --      comments, so the owner's implicit privilege on its own functions is
@@ -84,7 +84,7 @@
 --   (b) One internal composability gate, not a trigger:
 --         - __admin_rollup_b_gate()  returns void, zero arguments.
 --       Called only as `PERFORM public.__admin_rollup_b_gate();` from
---       within ~17 sibling admin-rollup SECURITY DEFINER functions
+--       within ~17 sibling admin-rollup security-definer functions
 --       (get_admin_dashboard_rollup, get_admin_rounds_rollup,
 --       get_admin_event_summary, etc. — see
 --       20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql and
@@ -106,7 +106,7 @@
 --
 --   - recompute_golf_round_totals(uuid): the *only* trigger call site found
 --     anywhere in the migration corpus is golf_holes_recompute_round_totals_fn
---     (itself SECURITY DEFINER, owned by postgres — no grant needed for that
+--     (itself security-definer, owned by postgres — no grant needed for that
 --     nested call). But the HELD, unapplied, unreviewed draft
 --     20260708141000_gate_secdef_ownership_and_redemption.sql asserts, in its
 --     own caller-audit note, that this function "is invoked BY A TRIGGER on
@@ -137,7 +137,7 @@
 --     definition for is UNRESOLVED, not dead, and revoking a grant on a
 --     signature this file cannot verify is not attempted. Left granted;
 --     recorded as a genuine knowledge gap, not a judgment call.
---   - unresolve_admin_event(uuid[]): SECURITY DEFINER, self-gates via
+--   - unresolve_admin_event(uuid[]): security-definer, self-gates via
 --     is_super_admin() (20260729120000_admin_events_unresolve_rpc.sql), and
 --     has zero confirmed src/ call site — but that migration's own header
 --     states its purpose as future Bridge-console wiring ("make Bridge's
