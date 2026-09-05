@@ -1385,6 +1385,66 @@ assumed it would:
   read model was being established. Twenty incidents opened in a row is twenty
   boards. If that starts to bite, the fix is a narrowed by-id query, not a
   shorter window.
+- **The founder's morning briefing ("Cup of Helm") is a Vercel cron, not a
+  scheduled agent task.** Route `src/app/api/cron/admin-digest/route.ts`
+  fetches read-only sources (`admin_events`, Sentry, `crm_replies`,
+  `demo_requests`, `crm_tasks`, round/game/lift activity, recent merges) and
+  renders through a pure, fully unit-testable template
+  (`src/lib/admin/digest/build-digest.ts`). It sends through
+  `OPS_DIGEST_RESEND_API_KEY` — a dedicated key, deliberately not the
+  customer-facing `RESEND_API_KEY`, so an ops-mail rotation can never touch
+  coach mail (`src/lib/admin/digest/transport.ts`). A test-guarded honesty
+  invariant renders a failed read as "couldn't check"/unknown, never a
+  measured zero — do not simplify that to `?? 0`. See `memory/context/
+  agent-operations.md` for the matching `vercel env pull` masking trap
+  (an empty pulled value is not proof `OPS_DIGEST_TO` is unset). (STU,
+  source: `cup-of-helm-briefing.md` dated 2026-07-30; verified 2026-09-05
+  against the three files above and `OPS_DIGEST_RESEND_API_KEY`/
+  `OPS_DIGEST_TO` in `transport.ts`.)
+- **Supabase's project-level control plane can report healthy while the data
+  plane is completely dead.** `GET /v1/projects/{ref}` can read
+  `ACTIVE_HEALTHY` for hours while Postgres itself is unreachable — the
+  per-service `/health` endpoint (`?services=db&services=rest&services=auth`)
+  and a gap in Postgres's own logs (checkpoints run every ~5 min; a gap IS
+  the diagnosis) are what actually tell the truth. See
+  `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`
+  for the incident this produced and the fix. (STU, source:
+  `supabase-db-wedged-control-plane-lies.md` dated 2026-07-29.)
+- **Most unresolved Sentry issues tagged `environment:production` are not
+  production defects.** Three noise classes look identical to a real error at
+  a glance: `level: info` control-flow telemetry deliberately routed through
+  `Sentry.captureMessage`; a local `next build && next start` run, which
+  reports as `production` because `instrumentation.ts` falls back to
+  `NODE_ENV` when `VERCEL_ENV` is absent and `NODE_ENV === 'production'` in
+  any optimized build; and generic Node runtime warnings. Read
+  `server_trace.trace_message` first (it usually states plainly whether the
+  condition is by design), check the request URL for `localhost`, and check
+  `users impacted` — noise consistently has 0. Do not "fix" the environment
+  tagging casually: the current check keys on `VERCEL_ENV`'s absence, and if
+  that assumption ever broke, real production errors would be relabelled and
+  any alert rule scoped to `environment:production` would go silent, which is
+  worse than the noise. Sentry's Supabase tracing instrumentation
+  (`@supabase/supabase-js/tracing` + `Sentry.instrumentSupabaseClient()`)
+  also reports a failed query to Sentry on its own, independent of whether
+  the calling code caught and handled it gracefully — a correctly-handled
+  error still shows up `handled: no`. The fix for that class is never "catch
+  it better"; it is not making the failing call in the first place (check the
+  session before an RPC, use `.maybeSingle()` where a missing row is
+  expected). See `memory/features/observability-sentry.md`. (STU, source:
+  `sentry-prod-queue-is-mostly-not-errors.md` dated 2026-08-16 and
+  `supabase-tracing-reports-handled-errors.md`, no date field.)
+- **Product-analytics instrumentation (PostHog) has recorded zero events at
+  all**, as of the source note. Supabase tables are the actual
+  source-of-truth for activation metrics (rounds via `golf_rounds.created_at`,
+  Lift Lab via `helm_lifting_readiness_checkins`/`helm_lifting_sessions`,
+  recruiting via `baseball_players`), and any weekly-activity or dormancy
+  read should key on those rather than assuming a product-analytics signal
+  exists. A "last activity" timestamp can also be a seed/backfill batch
+  rather than real usage — a `MIN(created_at)`/`MAX(created_at)` span of
+  zero seconds across dozens of rows is the tell. Unverified since
+  2026-07-30 — re-check whether PostHog instrumentation has since landed
+  before relying on this. (STU, source:
+  `product-activation-pulse-routine.md` dated 2026-07-30.)
 
 ## Tests To Prefer
 

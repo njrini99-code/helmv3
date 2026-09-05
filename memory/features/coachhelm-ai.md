@@ -107,6 +107,44 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   processing metadata but cannot modify score, shots, identity, or status.
 - Round-review feedback and player acknowledgement paths can become stale if revalidation misses player or coach routes.
 - V3 feature surface is expanding quickly; registry/docs must be updated when new generators, tables, or cron routes land.
+- **`CoachHelmSubNav.tsx`'s header comment can lag the `COACH_TABS` array it
+  describes.** A skeleton or nav consumer that hand-draws the tab strip from
+  the file's header comment rather than importing `COACH_TABS`
+  (`src/components/fairway/pages/coachhelm/CoachHelmSubNav.tsx`) can drift —
+  one skeleton was written against a stale "single Brief tab" claim while the
+  array actually carried two (`brief` + `ask`), and the strip grew a second
+  tab on hydrate. `resolveTabFromPath` branches on `tabs.length === 1`, so
+  this matters beyond cosmetics. Only `PLAYER_TABS` is genuinely one tab.
+  When a consumer needs the coach tab count, read the array, never the file
+  header. (STU, source: `coachhelm-subnav-doc-contradicts-code.md` dated
+  2026-08-15; verified 2026-09-05 that `COACH_TABS` is still the live
+  constant name in that file.)
+- **The 2026-07-19 "Spine & Stage" redesign is the current architecture for
+  CoachHelm, Stats and Round Review**, and its 8 legacy routes
+  (my-development, my-game-profile, my-standing, alerts, insights, patterns,
+  development, analytics) are now permanent-redirect shims forwarding query
+  params onto `?area=`/`?view=` — treat those params as the canonical nav for
+  these surfaces rather than resurrecting the retired tab routes. New summary
+  UI on these pages should compose from `src/components/fairway/modules/`
+  (present in this repo) rather than reintroducing a DetailGrid-style text
+  table. (STU, source: `spine-stage-redesign.md` dated 2026-07-20; verified
+  2026-09-05 that `src/components/fairway/modules/` exists.)
+- **A "Rendered more hooks than during the previous render" / React #310
+  report on this surface is not automatically the same bug twice.** On
+  `/golf/dashboard/stats` it was a Turbopack HMR/Fast-Refresh and stale-chunk
+  deploy-churn artifact (exhaustive audit found zero rules-of-hooks
+  violations) — but the identical error message on
+  `/golf/dashboard/qualifiers/new` was a real production crash, caused by
+  `FairwayCoursePicker` calling `useReducedMotion()` directly instead of
+  `useReducedMotionGuard()` (the guard defaults `null` — framer-motion's
+  SSR/pre-hydration value — to `false`, avoiding a server/client render
+  mismatch). Before dismissing a "more hooks" report as the known false
+  positive, check the route, the Sentry `environment` tag, `handled`, and
+  whether the chunk hashes are prod- or localhost-shaped. Any use of
+  `useReducedMotion()` in this codebase should go through
+  `useReducedMotionGuard()` from `@/lib/coachhelm/v3/motion`. (STU, source:
+  `coachhelm-stats-hooks-310-false-positive.md` dated 2026-07-30, updated
+  2026-08-19; verified 2026-09-05 that `src/lib/coachhelm/v3/motion` exists.)
 
 ## Tests To Prefer
 

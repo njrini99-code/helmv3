@@ -520,6 +520,27 @@
 | rsvp_deadline | timestamp with time zone | YES | - |
 | max_attendees | integer | YES | - |
 
+**Intent notes (verify against the AUTOGEN block for the current column
+list):**
+- For an all-day event, `end_time` is the INCLUSIVE last day at UTC
+  midnight, not an exclusive bound — confirmed by provenance (a zero-length
+  "span-0" event cannot exist under an exclusive convention, and production
+  carries some). Comparing it as an instant against a local day boundary can
+  reintroduce a one-day-early display bug for a non-UTC team; see
+  `memory/features/calendar-events.md` for the shared helper that gets this
+  right. (STU, source: `instant-overlap-is-not-day-overlap.md` dated
+  2026-08-17.)
+- **There is no `is_mandatory` column on this table.** A player-hub RPC
+  exposes `is_mandatory: FALSE` to API consumers as a deliberate, commented
+  stub — mandatory events are a baseball-only concept
+  (`baseball_events.is_mandatory` is real). A bug report describing golf
+  event edits "clearing" a mandatory flag is describing a stub returning its
+  hardcoded value, not a data bug; querying `is_mandatory` directly against
+  this table errors `42703`. (STU, source:
+  `golf-has-no-mandatory-event-flag.md` dated 2026-08-16; verified 2026-09-05
+  that `golf_events` has no `is_mandatory` field in
+  `src/lib/types/database.ts` and that `baseball_events` does have one.)
+
 ## golf_external_calendars
 
 | Column | Type | Nullable | Default |
@@ -1373,6 +1394,25 @@
 | reminder_at | timestamp with time zone | YES | - |
 | reminder_type | USER-DEFINED | YES | - |
 | reminder_sent | boolean | YES | false |
+
+**Intent note (verify `due_date`'s type against the AUTOGEN block, not this
+line):** `golf_tasks.due_date` is a `date`, while `baseball_tasks.due_date` is
+`timestamp with time zone` — this is deliberate, not drift, and the two
+sports' overdue comparisons correctly differ as a result: golf compares
+calendar days (`String(due_date).slice(0, 10) < todayIsoInZone(...)`),
+baseball compares instants directly, because its timestamps carry a real
+time of day. `parseDateOnly` (`@/lib/utils/date-only`) only anchors at local
+midnight for a bare `YYYY-MM-DD` string, so it correctly does nothing on a
+full baseball timestamp — "unifying" the two comparisons by reducing both to
+a calendar day is a regression on baseball (a task due 09:00 would stop
+reading overdue at 15:00). Check the live column type before touching either
+comparison. (STILL-TRUE-AND-USEFUL, source: auto-memory note
+`due-date-column-types-differ-by-sport.md` dated 2026-08-17; verified
+2026-09-05 directly against
+`supabase/migrations/20260527000000_prod_public_baseline.sql`: `golf_tasks.
+due_date` is declared `"date"` at that migration's `CREATE TABLE
+"public"."golf_tasks"`, `baseball_tasks.due_date` is declared `timestamp
+with time zone` at its own `CREATE TABLE`.)
 | category | text | YES | - |
 
 ## golf_team_coach_staff

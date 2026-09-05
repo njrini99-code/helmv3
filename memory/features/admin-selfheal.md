@@ -210,6 +210,56 @@ Collect (admin_reliability_collector, Vercel cron, 3h)
   `"<offset>=[REDACTED]"` for any secret not located at index 0 of the
   matched text.
 
+## Known Behaviour
+
+- **The loop is three stages in three different places, and each stage's
+  contract lives in the repo (`docs/ai-system/selfheal/`), not in routine
+  configuration.** Diagnose is a daily cloud routine that reads unresolved
+  fingerprints, groups by root cause, and resolves what it proves already
+  fixed or not a defect; Repair is a scheduled local agent that opens
+  verified PRs and never merges or deploys; Close is the `log-retention`
+  cron calling `autoResolveFixedIncidents()`. Each stage writes a heartbeat
+  into `background_job_logs` (`selfheal-triage`/`selfheal-repair`/
+  `log-retention`), rendered on `/admin/self-heal` via
+  `src/lib/admin/selfheal-registry.ts` — a stage that stops goes overdue
+  there. Two of the three runners are outside the Vercel deployment, so the
+  heartbeat is the only evidence they actually ran; a runner can be
+  installed-but-never-started with nothing anywhere saying so. Before
+  believing the loop ran, check the heartbeat, not the absence of errors.
+  Two agent contracts handing off through a free-text field (rather than a
+  shared function in code) is exactly the failure class this architecture
+  exists to avoid — see the vocabulary note below. (STU, source:
+  `selfheal-loop-architecture.md`, no date field; verified 2026-09-05 that
+  `docs/ai-system/selfheal/`, `src/lib/admin/selfheal-registry.ts` and
+  `src/lib/admin/rca.ts` all exist.)
+- **A category derived by matching free text a model wrote is a lookup
+  table calibrated against imagined values.** Two agent routines once handed
+  off on the prefix a `suggestedFix` string opened with (`'FIX HERE'` etc.);
+  measured against production, most analyses opened with free prose instead
+  of the expected prefixes, and a `LIKE` filter matching almost nothing
+  looked identical to a clean, fully-repaired queue — neither side errored.
+  The fix that held: the shared vocabulary is a function in code
+  (`deriveRcaCategory` in `src/lib/admin/rca.ts`) that both sides import,
+  with an explicit `uncategorized` bucket that is rendered, never dropped.
+  Whenever two systems hand off through a string one side writes freely,
+  ask what happens when the writer paraphrases — if the answer is "the
+  reader sees nothing", that is a silent-loss bug. (STU, source:
+  `agent-handoff-vocabulary-must-be-code.md`, no date field; verified
+  2026-09-05 that `deriveRcaCategory` exists in `src/lib/admin/rca.ts`.)
+- **Resolving an incident is two writes, and only the second one remembers
+  it happened.** `UPDATE admin_events SET resolved = true` is per-row and
+  only hides what exists now; the fingerprint-level memory is
+  `admin_error_resolutions` (written by `admin_resolve_error_fingerprint`/
+  `admin_auto_resolve_error_fingerprint`, both present in
+  `src/lib/types/database.ts`'s RPC list, and read back by
+  `admin_unresolve_error_fingerprint`). A bare row-level resolve with no
+  ledger write means the next occurrence of the same fingerprint arrives as
+  a brand-new unresolved row with no memory anything was ever fixed —
+  indistinguishable from a bug nobody has seen, which erases the most
+  valuable signal this system produces (a genuine regression). Never resolve
+  an incident with the bare UPDATE alone. (STU, source:
+  `resolution-ledger-is-the-regression-memory.md`, no date field.)
+
 ## UI Contract
 
 - `/admin/self-heal` renders `SELFHEAL_STAGES`' runtime AND capability
