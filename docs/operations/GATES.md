@@ -6,11 +6,14 @@ is slowing them down.
 
 ## What runs where
 
-| Gate | Command | Cost of one run | Worker cap |
-| --- | --- | --- | --- |
-| typecheck | `node scripts/serialize.mjs -- tsc --noEmit` | loads every file under `src/` plus every declaration under `node_modules`; several GB of memory on a cold cache | one process |
-| test, test:run, test:all, test:* | `node scripts/serialize.mjs -- vitest …` | one worker per fork | 3 forks (`vitest.config.ts`) |
-| build | `node scripts/serialize.mjs -- next build --webpack` | webpack workers plus its persistent cache | 3 workers (`next.config.mjs` `experimental.cpus`) |
+- **typecheck**: `node scripts/serialize.mjs -- tsc --noEmit`. One run loads
+  every file under `src/` plus every declaration under `node_modules`;
+  several GB of memory on a cold cache. One process.
+- **test, test:run, test:all, test:\***: `node scripts/serialize.mjs -- vitest …`.
+  One worker per fork; capped at 3 forks in `vitest.config.ts`.
+- **build**: `node scripts/serialize.mjs -- next build --webpack`. Webpack
+  workers plus its persistent cache; capped at 3 workers by
+  `experimental.cpus` in `next.config.mjs`.
 
 `scripts/serialize.mjs` keeps a lock directory at `~/.helm-gates/`. At most two
 wrapped commands run at once across every worktree on the machine; the rest
@@ -58,5 +61,6 @@ npx -p @typescript/native-preview tsgo --noEmit > /tmp/tsgo.txt 2>&1; echo "tsgo
 diff <(sort /tmp/tsc.txt) <(sort /tmp/tsgo.txt)
 ```
 
-Switch the `typecheck` script only once the two agree on every branch tried,
-and keep the wrapper: a faster gate still competes with the other two.
+Switch the `typecheck` script only once the two agree on every branch
+tried, and keep the wrapper: a faster gate still competes with the other
+two.

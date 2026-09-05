@@ -59,7 +59,6 @@ export default defineConfig({
     // six forks machine-wide. docs/operations/GATES.md has the numbers.
     pool: 'forks',
     maxWorkers: 3,
-    minWorkers: 1,
     // NO root-level `include`. Every project below defines its own, and
     // `extends: true` MERGES array options rather than replacing them — so a
     // root-level include is unioned into every project, not overridden by it.
