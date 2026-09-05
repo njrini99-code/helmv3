@@ -1,5 +1,7 @@
 # Observability (Sentry) test ledger
 
+> **2026-09-05:** `src/test/scripts/sentry-cron-checkin.test.ts` (removed) and `scripts/lib/sentry-cron-checkin.mjs` (removed) — both no longer exist, removed along with the launchd Repair path. See `memory/features/admin-selfheal.md`.
+
 New ledger — no prior entries. Covers Phase C (`agent/sentry-max-server`,
 branch built on `agent/sentry-max-observability`) only; the client-experience
 and telemetry-vocabulary suites from the sibling phases (D/B) are not

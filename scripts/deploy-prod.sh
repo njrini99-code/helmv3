@@ -53,6 +53,64 @@ fi
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 SHA="$(git rev-parse HEAD)"
 SHORT="$(git rev-parse --short HEAD)"
+HERE_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# --- Guard: this directory must be linked to the ONE real helmv3 project. ---
+#
+# Two accidental projects — helmv3-golf-reliability-release-20260825 and
+# helmv3-main-release-c350 — exist in the Vercel account today because a
+# `vercel deploy` was run from a directory with no .vercel/project.json. The
+# CLI's documented fallback there is not to fail: it silently CREATES a new
+# project named after the cwd and deploys into it. Neither project ever had
+# env vars, so both built and failed at "Missing required env var:
+# NEXT_PUBLIC_SUPABASE_URL" — by then the accidental project already existed.
+# This guard closes that path before it can happen a third time.
+RELEASE_POLICY="config/release-policy.yml"
+if [ ! -f "$RELEASE_POLICY" ]; then
+  echo "REFUSING: $RELEASE_POLICY not found. Cannot verify the linked Vercel project or the deploy budget." >&2
+  exit 1
+fi
+# Plain regex, not a YAML parser: this value's shape (one flat `key: value`
+# line, unique key name) doesn't need one, and a deploy script should not
+# depend on node_modules being fully installed just to read one scalar.
+EXPECTED_PROJECT_ID="$(node -e '
+  const fs = require("fs");
+  try {
+    const text = fs.readFileSync(process.argv[1], "utf8");
+    const m = /^[ \t]*vercel_project_id:[ \t]*(\S+)/m.exec(text);
+    process.stdout.write(m ? m[1] : "");
+  } catch { /* empty on purpose: treated as missing below */ }
+' "$RELEASE_POLICY")"
+if [ -z "$EXPECTED_PROJECT_ID" ]; then
+  echo "REFUSING: $RELEASE_POLICY has no production.vercel_project_id set." >&2
+  exit 1
+fi
+
+if [ ! -f ".vercel/project.json" ]; then
+  echo "REFUSING: no .vercel/project.json in $(pwd) — this directory is not linked to a Vercel project." >&2
+  echo "This is exactly how helmv3-golf-reliability-release-20260825 and helmv3-main-release-c350" >&2
+  echo "were created: a \`vercel deploy\` from an unlinked directory silently creates a NEW project" >&2
+  echo "named after the cwd instead of failing. Run \`vercel link\` first." >&2
+  exit 1
+fi
+ACTUAL_PROJECT_ID="$(node -e 'try{process.stdout.write(require("./.vercel/project.json").projectId||"")}catch{}' 2>/dev/null)"
+# SCOPE is read here, once, from the same file — both the project-identity
+# check above and the budget check and the deploy itself all need it, and
+# reading it three times invites three chances to disagree with itself.
+SCOPE="$(node -e 'try{process.stdout.write(require("./.vercel/project.json").orgId||"")}catch{}' 2>/dev/null)"
+if [ -z "$ACTUAL_PROJECT_ID" ] || [ -z "$SCOPE" ]; then
+  echo "REFUSING: could not read projectId/orgId from .vercel/project.json." >&2
+  echo "Run \`vercel link\` first — deploying without --scope fails as 'Not authorized'." >&2
+  exit 1
+fi
+if [ "$ACTUAL_PROJECT_ID" != "$EXPECTED_PROJECT_ID" ]; then
+  echo "REFUSING: .vercel/project.json points at project '$ACTUAL_PROJECT_ID', not helmv3's" >&2
+  echo "'$EXPECTED_PROJECT_ID' ($RELEASE_POLICY production.vercel_project_id)." >&2
+  echo "Deploying from the wrong linked project is how the two accidental *-release-* projects" >&2
+  echo "were created. Re-link with \`vercel link\` before deploying." >&2
+  exit 1
+fi
+echo "  linked project -> $ACTUAL_PROJECT_ID (scope $SCOPE)"
 
 # --- Guards. A production promote is not the place to discover a dirty tree. ---
 
@@ -78,6 +136,65 @@ if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
   exit 1
 fi
 
+# --- Guard: routine production-deploy budget (config/release-policy.yml). ---
+#
+# Measured 2026-09-05 (Vercel audit §2): production deploys ran at 4-16x the
+# stated 2/week budget across five of six weeks, 79% of them from automated
+# agent identities — `release-policy.yml`'s `routine_max_deploys_per_calendar_week`
+# and `require_production_budget_check: true` were pure policy TEXT, nothing
+# ever read them at deploy time. This guard is what makes that text load-bearing.
+#
+# Counting is via the CLI's human TEXT table (`vercel ls`), not --json — see
+# scripts/lib/deploy-week-count.mjs's own header for why. Capture the FULL
+# output before parsing, same discipline as the `vercel inspect` check below:
+# never pipe a live Vercel CLI process into a reader that can stop early.
+BUDGET="$(node -e '
+  const fs = require("fs");
+  try {
+    const text = fs.readFileSync(process.argv[1], "utf8");
+    const m = /^[ \t]*routine_max_deploys_per_calendar_week:[ \t]*(\d+)/m.exec(text);
+    process.stdout.write(m ? m[1] : "");
+  } catch { /* empty on purpose: treated as missing below */ }
+' "$RELEASE_POLICY")"
+if [ -z "$BUDGET" ]; then
+  echo "REFUSING: $RELEASE_POLICY has no production.routine_max_deploys_per_calendar_week set." >&2
+  exit 1
+fi
+
+LS_RC=0
+LS_OUT="$("$VERCEL_BIN" ls helmv3 --prod --scope "$SCOPE" 2>&1)" || LS_RC=$?
+if [ "$LS_RC" -ne 0 ]; then
+  WEEK_COUNT="UNKNOWN"
+else
+  WEEK_COUNT="$(printf '%s' "$LS_OUT" | node "$HERE_DIR/lib/deploy-week-count.mjs")"
+fi
+
+if [ "${DRY_RUN:-0}" = "1" ]; then
+  echo "  this week's production deploys -> $WEEK_COUNT / budget $BUDGET (America/New_York, $RELEASE_POLICY)"
+fi
+
+if [ "$WEEK_COUNT" = "UNKNOWN" ]; then
+  echo "REFUSING: could not parse \`vercel ls helmv3 --prod\` to count this week's production" >&2
+  echo "deploys. Refusing rather than guessing — see scripts/lib/deploy-week-count.mjs." >&2
+  if [ "$LS_RC" -ne 0 ]; then
+    echo "  vercel ls exited $LS_RC:" >&2
+    printf '%s\n' "$LS_OUT" | tail -n 5 | sed 's/^/    | /' >&2
+  fi
+  exit 1
+fi
+
+OVERRIDE_USED_REASON=""
+if [ "$WEEK_COUNT" -ge "$BUDGET" ]; then
+  if [ -z "${HELM_DEPLOY_OVERRIDE:-}" ]; then
+    echo "REFUSING: $WEEK_COUNT production deploy(s) already this ISO week (Mon-Sun, America/New_York)," >&2
+    echo "at or over the $RELEASE_POLICY budget of $BUDGET." >&2
+    echo "Set HELM_DEPLOY_OVERRIDE=\"<reason>\" to deploy anyway; the reason is logged into the release marker." >&2
+    exit 1
+  fi
+  OVERRIDE_USED_REASON="$(printf '%s' "$HELM_DEPLOY_OVERRIDE" | tr '\n' ' ')"
+  echo "  OVERRIDE: $WEEK_COUNT >= budget $BUDGET, deploying anyway. Reason: $OVERRIDE_USED_REASON"
+fi
+
 echo "Deploying $SHORT ($BRANCH) to production"
 echo "  release tag -> $SHA"
 
@@ -86,24 +203,9 @@ if [ "${DRY_RUN:-0}" = "1" ]; then
   exit 0
 fi
 
-# --scope is REQUIRED and its absence is not obvious. This project lives under
-# the `nick-rinis-projects` TEAM, and without --scope the CLI resolves a
-# personal context and the deploy dies with a bare:
-#
-#     {"status":"error","reason":"deploy_failed","message":"Not authorized"}
-#
-# which reads like a credentials problem and is not — `vercel whoami`,
-# `vercel project ls` and `vercel ls` all succeed at that moment. Observed on
-# this script's first real run, 2026-08-16.
-#
-# Read the team from .vercel/project.json rather than hardcoding it, so a
-# re-link cannot silently point the deploy at the wrong org.
-SCOPE="$(node -e 'try{process.stdout.write(require("./.vercel/project.json").orgId||"")}catch{}' 2>/dev/null)"
-if [ -z "$SCOPE" ]; then
-  echo "REFUSING: could not read orgId from .vercel/project.json." >&2
-  echo "Run \`vercel link\` first — deploying without --scope fails as 'Not authorized'." >&2
-  exit 1
-fi
+# SCOPE, ACTUAL_PROJECT_ID and the weekly budget were already established by
+# the guards above — reading .vercel/project.json a second time here would
+# only be a second chance for it to disagree with itself.
 echo "  scope       -> $SCOPE"
 
 # --build-env: available to `next build`, which is when Next inlines
@@ -261,6 +363,9 @@ echo "  release stamp $SHORT found in the served bundle."
 # unreleased commits" against a real figure of 1. `--git-common-dir` is the
 # shared .git from any linked worktree; its parent is the canonical root.
 STAMP="$SHA $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+if [ -n "$OVERRIDE_USED_REASON" ]; then
+  STAMP="$STAMP HELM_DEPLOY_OVERRIDE=$OVERRIDE_USED_REASON"
+fi
 CANON="$(cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd -P)" || CANON=""
 RECORDED=""
 for root in "$CANON" "$(pwd -P)"; do

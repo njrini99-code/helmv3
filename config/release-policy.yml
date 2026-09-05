@@ -4,6 +4,13 @@ production:
   routine_max_deploys_per_calendar_week: 2
   timezone: America/New_York
   # calendar week = ISO week: Monday 00:00:00 through Sunday 23:59:59 in this timezone
+  # The one linked helmv3 Vercel project (Vercel audit §1). scripts/deploy-prod.sh
+  # refuses to deploy from any directory whose .vercel/project.json names a
+  # different id — this is what stopped helmv3-golf-reliability-release-20260825
+  # and helmv3-main-release-c350 from being createable by accident again: both
+  # were `vercel deploy` runs from an unlinked directory, which silently creates
+  # a NEW project named after the cwd instead of failing.
+  vercel_project_id: prj_qPgC4eErTUsaSmv40EiQMNuTpuEV
 
 daily_reliability:
   may_observe: true
