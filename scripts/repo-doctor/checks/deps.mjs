@@ -44,10 +44,19 @@ export function diffLockfiles(declared, installed) {
   const versionMismatch = []; // present in both, resolved to different versions
 
   for (const p of allPaths) {
+    // "" is package-lock.json's entry for the project itself; the installed
+    // map has no such row, so it is never drift.
+    if (p === '') continue;
     const d = declaredPkgs[p];
     const i = installedPkgs[p];
-    if (d && !i) missing.push(p);
-    else if (!d && i) extra.push(p);
+    if (d && !i) {
+      // package-lock.json declares every optional and platform-specific
+      // package (the @esbuild/*, @next/swc-* and similar variants for every
+      // OS/CPU); npm installs only the ones for this machine, so their absence
+      // is the normal state, not drift.
+      if (d.optional || d.devOptional) continue;
+      missing.push(p);
+    } else if (!d && i) extra.push(p);
     else if (d && i && d.version !== i.version) {
       versionMismatch.push({ path: p, declared: d.version, installed: i.version });
     }

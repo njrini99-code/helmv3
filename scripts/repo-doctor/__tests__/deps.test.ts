@@ -36,6 +36,19 @@ describe('diffLockfiles', () => {
     expect(d.versionMismatch).toEqual([]);
   });
 
+  it('ignores a declared optional or platform package that npm did not install', () => {
+    const d = diffLockfiles(
+      {
+        packages: {
+          'node_modules/@esbuild/linux-x64': { version: '0.25.0', optional: true },
+          'node_modules/fsevents': { version: '2.3.3', devOptional: true },
+        },
+      },
+      { packages: {} },
+    );
+    expect(d.missing).toEqual([]);
+  });
+
   it('flags a package installed but not declared', () => {
     const d = diffLockfiles(
       { packages: {} },
