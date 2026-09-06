@@ -187,6 +187,8 @@ function buildEnvLocal({ key, source }) {
  * @param {string} opts.name     task name; slashes become dashes, empty refused
  * @param {string} [opts.base]   ref to branch from — default origin/main
  * @param {boolean} [opts.install] real isolated `npm ci` instead of a symlink
+ * @param {boolean} [opts.keep]  force parkPolicy: KEEP even on an agent/*
+ *                               branch — see the parkPolicy note below
  * @param {string} [opts.home]   worktree home dir — default HELM_WORKTREE_HOME
  *                               or ~/worktrees/helmv3
  * @param {string} opts.repo     the repo to branch from (its canonical root
@@ -198,6 +200,7 @@ export async function createWorkspace(opts = {}) {
     name,
     base = 'origin/main',
     install = false,
+    keep = false,
     home: homeArg = process.env.HELM_WORKTREE_HOME ?? '~/worktrees/helmv3',
     repo,
   } = opts;
@@ -297,9 +300,19 @@ export async function createWorkspace(opts = {}) {
     fail('WORKTREE_ADD_FAILED', `git worktree add failed: ${(add.stderr || add.stdout || '').trim()}`);
   }
 
-  // 7. Declared identity. parkPolicy is KEEP at creation, always — see
-  // scripts/lib/worktree-lifecycle.mjs for why a freshly created checkout
-  // must never be inferred as disposable.
+  // 7. Declared identity. parkPolicy defaults to PARK_IF_REPRODUCIBLE for a
+  // task worktree (every branch this door creates is agent/<task>) — the
+  // door's whole point is that cleanup should be cheap enough it always
+  // happens, and a checkout that never releases itself defeats that by
+  // default. `keep: true` (`--keep` on the CLI) opts back into the old
+  // always-KEEP behaviour for a worktree that is meant to sit around.
+  //
+  // This does NOT weaken the lifecycle tool's own safety net:
+  // scripts/lib/worktree-lifecycle.mjs still refuses to park a dirty
+  // checkout, one with unpushed commits, one a live process is using, or one
+  // whose branch has an OPEN PR without a recorded PARK_IF_REPRODUCIBLE
+  // disposition. parkPolicy only says "this checkout may be asked"; it is
+  // never itself proof that removing it is safe.
   mkdirSync(join(path, '.helm'), { recursive: true });
   const marker = {
     kind: 'task',
@@ -309,7 +322,7 @@ export async function createWorkspace(opts = {}) {
     environment: 'local',
     supabase: 'local',
     productionWrites: false,
-    parkPolicy: 'KEEP',
+    parkPolicy: keep ? 'KEEP' : 'PARK_IF_REPRODUCIBLE',
     createdBy: 'create-workspace.mjs',
     createdAt: new Date().toISOString(),
   };
@@ -375,9 +388,14 @@ export function listWorkspaces(repo) {
 // (.claude/hooks/worktree-create.mjs) calls createWorkspace() directly rather
 // than shelling out to this, since it already runs inside Node.
 //
-//   node create-workspace.mjs --name <task> [--base <ref>] [--install]
+//   node create-workspace.mjs --name <task> [--base <ref>] [--install] [--keep]
 //                             [--home <dir>] [--repo <dir>]
 //                             [--path-only | --summary]
+//
+// --keep stamps parkPolicy: KEEP instead of the default
+// PARK_IF_REPRODUCIBLE. Use it for a worktree that should sit around rather
+// than be cleaned up as soon as it is clean and pushed — the lifecycle
+// tool's dirty/unpushed/live-process/open-PR refusals still apply either way.
 //
 // Default output is a single-line JSON object. --path-only prints nothing but
 // the absolute path (for callers that want the WorktreeCreate contract's
@@ -389,7 +407,7 @@ export function listWorkspaces(repo) {
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const out = { install: false, pathOnly: false, summary: false, help: false, usageError: false };
+  const out = { install: false, keep: false, pathOnly: false, summary: false, help: false, usageError: false };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--name') out.name = argv[(i += 1)];
@@ -397,6 +415,7 @@ function parseArgs(argv) {
     else if (a === '--home') out.home = argv[(i += 1)];
     else if (a === '--repo') out.repo = argv[(i += 1)];
     else if (a === '--install') out.install = true;
+    else if (a === '--keep') out.keep = true;
     else if (a === '--path-only') out.pathOnly = true;
     else if (a === '--summary') out.summary = true;
     else if (a === '-h' || a === '--help') out.help = true;
@@ -440,7 +459,7 @@ async function main(argv) {
   const args = parseArgs(argv);
   if (args.help || args.usageError || !args.name) {
     process.stderr.write(
-      'usage: create-workspace.mjs --name <task> [--base <ref>] [--install] ' +
+      'usage: create-workspace.mjs --name <task> [--base <ref>] [--install] [--keep] ' +
         '[--home <dir>] [--repo <dir>] [--path-only | --summary]\n',
     );
     process.exit(args.help && !args.usageError ? 0 : 2);
@@ -452,6 +471,7 @@ async function main(argv) {
       name: args.name,
       base: args.base ?? 'origin/main',
       install: args.install,
+      keep: args.keep,
       home: args.home,
       repo,
     });

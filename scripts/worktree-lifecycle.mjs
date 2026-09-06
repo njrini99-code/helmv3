@@ -311,6 +311,7 @@ for (const w of wts) {
     prLookup: pr.lookup,
     prNumber: pr.number ?? null,
     prState: pr.state ?? null,
+    prHeadSha: pr.headSha ?? null,
     disposition: disp?.disposition ?? null,
     worktreePolicy: disp?.worktree_policy ?? null,
     ...(isCanonical ? { parkPolicy: null, workspaceMarker: null } : (() => {
