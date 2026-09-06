@@ -136,7 +136,7 @@ describe('createWorkspace — what it writes', () => {
     expect(result.branch).toBe('agent/shape');
   });
 
-  it('writes the marker with the right fields', async () => {
+  it('writes the marker with the right fields, defaulting parkPolicy to PARK_IF_REPRODUCIBLE', async () => {
     const result = await createWorkspace({ name: 'marked', repo: seed, home, base: 'origin/main' });
     const marker = JSON.parse(readFileSync(join(result.path, '.helm/workspace.json'), 'utf-8'));
     expect(marker).toMatchObject({
@@ -147,11 +147,17 @@ describe('createWorkspace — what it writes', () => {
       environment: 'local',
       supabase: 'local',
       productionWrites: false,
-      parkPolicy: 'KEEP',
+      parkPolicy: 'PARK_IF_REPRODUCIBLE',
       createdBy: 'create-workspace.mjs',
     });
     expect(typeof marker.createdAt).toBe('string');
     expect(Number.isNaN(new Date(marker.createdAt).getTime())).toBe(false);
+  });
+
+  it('stamps parkPolicy: KEEP when { keep: true } is passed', async () => {
+    const result = await createWorkspace({ name: 'kept', repo: seed, home, keep: true });
+    const marker = JSON.parse(readFileSync(join(result.path, '.helm/workspace.json'), 'utf-8'));
+    expect(marker.parkPolicy).toBe('KEEP');
   });
 
   it('symlinks node_modules to the source repo by default', async () => {

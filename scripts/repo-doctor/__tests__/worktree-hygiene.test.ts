@@ -96,4 +96,93 @@ describe('worktree.canonical-off-main / worktree.oversized-next — against a di
     const results = await worktreeRun({ repoRoot: base, homeDir: home });
     expect(results.find((r) => r.id === 'worktree.oversized-next')?.status).toBe(Status.PASS);
   });
+
+  it('PASSes branch-count and budget-exceeded on a fresh single-branch, single-worktree repo', async () => {
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    expect(results.find((r) => r.id === 'worktree.branch-count')?.status).toBe(Status.PASS);
+    expect(results.find((r) => r.id === 'worktree.budget-exceeded')?.status).toBe(Status.PASS);
+  });
+
+  it('FAILs branch-count once local branches exceed the 25-branch ceiling', async () => {
+    for (let i = 0; i < 26; i += 1) {
+      execFileSync('git', ['branch', `spare-${i}`], { cwd: base });
+    }
+    const results = await worktreeRun({ repoRoot: base, homeDir: home });
+    const r = results.find((x) => x.id === 'worktree.branch-count');
+    expect(r?.status).toBe(Status.FAIL);
+    expect(r?.count).toBeGreaterThan(25);
+  });
+
+  it('FAILs budget-exceeded once mutation worktrees exceed budget+1', async () => {
+    const wtHome = mkdtempSync(join(tmpdir(), 'a6-wt-mut-'));
+    const prevBudget = process.env.HELM_MAX_MUTATION_WORKTREES;
+    process.env.HELM_MAX_MUTATION_WORKTREES = '1';
+    try {
+      // budget 1 + ceiling 1 = 2; three task worktrees, each carrying a
+      // .helm/workspace.json (declared kind 'task'), exceed it.
+      for (let i = 0; i < 3; i += 1) {
+        const wtPath = join(wtHome, `task-${i}`);
+        execFileSync('git', ['worktree', 'add', '--no-track', '-b', `agent/task-${i}`, wtPath, 'main'], { cwd: base });
+        mkdirSync(join(wtPath, '.helm'), { recursive: true });
+        writeFileSync(join(wtPath, '.helm', 'workspace.json'), JSON.stringify({ kind: 'task', parkPolicy: 'PARK_IF_REPRODUCIBLE' }));
+      }
+      const results = await worktreeRun({ repoRoot: base, homeDir: home });
+      const r = results.find((x) => x.id === 'worktree.budget-exceeded');
+      expect(r?.status).toBe(Status.FAIL);
+      expect(r?.used).toBeGreaterThan(r?.ceiling as number);
+    } finally {
+      if (prevBudget === undefined) delete process.env.HELM_MAX_MUTATION_WORKTREES;
+      else process.env.HELM_MAX_MUTATION_WORKTREES = prevBudget;
+      execFileSync('git', ['worktree', 'prune'], { cwd: base });
+      rmSync(wtHome, { recursive: true, force: true });
+    }
+  });
+
+  it('FAILs stale-merged-pr for a worktree whose branch PR merged over 24h ago', async () => {
+    const wtHome = mkdtempSync(join(tmpdir(), 'a6-wt-stale-'));
+    const wtPath = join(wtHome, 'landed');
+    execFileSync('git', ['worktree', 'add', '--no-track', '-b', 'agent/landed', wtPath, 'main'], { cwd: base });
+    const binDir = mkdtempSync(join(tmpdir(), 'a6-wt-bin-'));
+    const oldMergedAt = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    makeFakeGh(
+      binDir,
+      `case "$*" in\n` +
+        `  *"--json number,state,mergedAt"*) echo '[{"number":1863,"state":"MERGED","mergedAt":"${oldMergedAt}"}]' ;;\n` +
+        `  *) echo 0 ;;\n` +
+        `esac`,
+    );
+    process.env.PATH = `${binDir}:${originalPath}`;
+    try {
+      const results = await worktreeRun({ repoRoot: base, homeDir: home });
+      const r = results.find((x) => x.id === 'worktree.stale-merged-pr');
+      expect(r?.status).toBe(Status.FAIL);
+    } finally {
+      execFileSync('git', ['worktree', 'remove', '--force', wtPath], { cwd: base });
+      rmSync(wtHome, { recursive: true, force: true });
+    }
+  });
+
+  it('PASSes stale-merged-pr for a worktree whose branch PR merged under 24h ago', async () => {
+    const wtHome = mkdtempSync(join(tmpdir(), 'a6-wt-fresh-'));
+    const wtPath = join(wtHome, 'fresh');
+    execFileSync('git', ['worktree', 'add', '--no-track', '-b', 'agent/fresh', wtPath, 'main'], { cwd: base });
+    const binDir = mkdtempSync(join(tmpdir(), 'a6-wt-bin-'));
+    const recentMergedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    makeFakeGh(
+      binDir,
+      `case "$*" in\n` +
+        `  *"--json number,state,mergedAt"*) echo '[{"number":1900,"state":"MERGED","mergedAt":"${recentMergedAt}"}]' ;;\n` +
+        `  *) echo 0 ;;\n` +
+        `esac`,
+    );
+    process.env.PATH = `${binDir}:${originalPath}`;
+    try {
+      const results = await worktreeRun({ repoRoot: base, homeDir: home });
+      const r = results.find((x) => x.id === 'worktree.stale-merged-pr');
+      expect(r?.status).toBe(Status.PASS);
+    } finally {
+      execFileSync('git', ['worktree', 'remove', '--force', wtPath], { cwd: base });
+      rmSync(wtHome, { recursive: true, force: true });
+    }
+  });
 });

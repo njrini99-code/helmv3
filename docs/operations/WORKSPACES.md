@@ -61,9 +61,10 @@ failing loudly and refusing before allocating anything:
 6. `git worktree add --no-track <path> -b agent/<name> <base>` — `--no-track`
    is load-bearing: without it the new branch inherits `base` as its
    upstream, and a bare `git push` later targets that ref instead of its own
-7. writes `.helm/workspace.json` — `kind: task`, `parkPolicy: KEEP`,
-   `createdBy: "create-workspace.mjs"`, plus `task`/`branch`/`base`/
-   `environment`/`supabase`/`productionWrites`/`createdAt`
+7. writes `.helm/workspace.json` — `kind: task`, `parkPolicy:
+   PARK_IF_REPRODUCIBLE` by default (`KEEP` only with `--keep`, since
+   2026-09-06), `createdBy: "create-workspace.mjs"`, plus `task`/`branch`/
+   `base`/`environment`/`supabase`/`productionWrites`/`createdAt`
 8. **dependencies**: symlinks `node_modules` from the canonical checkout by
    default; `install: true` runs a real, isolated `npm ci` via
    `scripts/ensure-worktree-deps.mjs` instead
@@ -161,7 +162,7 @@ around. Two fixes, pick per worktree:
 - **stamp it** — `.claude/hooks/stamp-workspace.mjs` does this automatically
   at SessionStart for whichever worktree is ACTIVE in that session (it cannot
   reach an idle one it isn't running from); or write the marker by hand:
-  `{"kind":"task","parkPolicy":"KEEP","createdBy":"manual"}` into
+  `{"kind":"task","parkPolicy":"PARK_IF_REPRODUCIBLE","createdBy":"manual"}` into
   `<worktree>/.helm/workspace.json`. For the **canonical checkout itself**
   (the WARN case, not FAIL), the equivalent is
   `{"kind":"canonical"}` written into `.helm/workspace.json` at the repo
@@ -216,7 +217,7 @@ change that if the harness contract grows an install flag).
 
 ### Known interaction: harness exit-cleanup vs. this repo's own refusals
 
-`parkPolicy: KEEP` in the marker is **this repo's own convention** — read by
+`parkPolicy` in the marker is **this repo's own convention** — read by
 `scripts/lib/worktree-lifecycle.mjs`, not by the harness. Per the harness's
 own worktree-lifecycle docs, an interactive `--worktree` session's exit
 prompt, if the caller chooses to remove, "deletes the worktree directory and

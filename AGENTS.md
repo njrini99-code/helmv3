@@ -73,8 +73,9 @@ door supplies `--no-track`, the mutation-budget check, and the
   `agent/<task>` branch, `--no-track`, OUTSIDE the repo). It does not
   install dependencies — run `node scripts/ensure-worktree-deps.mjs <dir>`
   when a command needs them. `--no-track` matters: branching from a
-  remote-tracking ref without it lets `agent/foo` auto-track
-  `origin/main`, so a bare push from it targets main.
+  remote-tracking ref without it lets `agent/foo` auto-track `origin/main`,
+  so a bare push from it targets main; `--keep` overrides the default
+  `parkPolicy` (see Lifecycle below).
 - **Lifecycle**: `scripts/worktree-lifecycle.mjs`
   (`npm run worktrees{,:park,:retire}`) is the sole lifecycle authority —
   never hand-roll removal. PARK removes a disposable checkout and keeps
@@ -83,15 +84,14 @@ door supplies `--no-track`, the mutation-budget check, and the
   reports on remote branches too, and never presents a PR-lookup outage as
   a clean `0`. An OPEN-PR worktree is parkable only if
   `config/open-pr-dispositions.json` records `PARK_IF_REPRODUCIBLE`; a
-  worktree is disposable only if its own `.helm/workspace.json` says the
-  same (`new-worktree.sh` always writes `KEEP`) — every other verdict
-  needs a human. `--remove`/`--retire` carry STANDING OWNER AUTHORIZATION
-  only for a tool-verdicted PARKABLE checkout, and for branch deletion
-  only under `DELETE_MERGED_EXACT` (PR merged, local tip === PR head OID
-  exactly, not protected, not checked out).
-  `HELM_MAX_MUTATION_WORKTREES` (default 3) caps concurrent mutation
-  workspaces. Retire a branch in the same step that merges its PR:
-  `gh pr merge <n> --squash && node scripts/worktree-lifecycle.mjs --retire`.
+  worktree is disposable only if its own `.helm/workspace.json` says so
+  (default `PARK_IF_REPRODUCIBLE`, `KEEP` only with `--keep`) — every other
+  verdict needs a human. `--remove`/`--retire` carry STANDING OWNER
+  AUTHORIZATION only for a tool-verdicted PARKABLE checkout, and for branch
+  deletion only under `DELETE_MERGED_EXACT` (PR merged, tip === PR head OID
+  exactly, even with no upstream; not protected; not checked out).
+  `HELM_MAX_MUTATION_WORKTREES` (default 3) caps concurrent mutation workspaces.
+  `npm run pr:land -- <n>` merges once required checks are green, fast-forwards canonical, then runs `--retire`.
 - **Git hygiene**: `git add <explicit paths>`, never `-A` — the tree is
   shared. Confirm the branch before editing. Check a branch's upstream
   before pushing (`git for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads`)

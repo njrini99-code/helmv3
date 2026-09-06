@@ -100,15 +100,19 @@ export const KEEP_PR_OWNER_INTENT_REQUIRED = 'KEEP_PR_OWNER_INTENT_REQUIRED';
  * invisible to `lsof` between two tool calls: every signal the old rule used
  * says "disposable", and every one of them is wrong.
  *
- * So disposability is now declared by the WORKSPACE, in the marker
- * scripts/new-worktree.sh already writes:
+ * So disposability is declared by the WORKSPACE, in the marker
+ * scripts/lib/create-workspace.mjs already writes:
  *
- *     .helm/workspace.json  ->  { "parkPolicy": "KEEP" }
+ *     .helm/workspace.json  ->  { "parkPolicy": "PARK_IF_REPRODUCIBLE" }
  *
- * KEEP at creation, always. It becomes PARK_IF_REPRODUCIBLE only when somebody
- * edits it, which is the positive act the old rule lacked. Absent file, absent
- * key, unknown value, unreadable JSON — every one of them KEEPS. Never infer
- * parkability from the shape of a missing answer.
+ * PARK_IF_REPRODUCIBLE by default as of 2026-09-06 (every branch this door
+ * creates is agent/<task>) — cleanup should be cheap enough it always
+ * happens, and defaulting to KEEP defeated that. `--keep` on the CLI stamps
+ * KEEP instead, for a worktree meant to sit around. Absent file, absent key,
+ * unknown value, unreadable JSON — every one of those still KEEPS: absence is
+ * never inferred as permission, only an explicit field is. This paragraph
+ * changes nothing about that half; it only changes what the DEFAULT field
+ * value is.
  *
  * This is a DIFFERENT fact from PR state, and both still apply:
  *
@@ -234,6 +238,9 @@ export function classifyRetention(branch, record, today) {
  *   prLookup        'OK' | 'FAILED'
  *   prNumber        number|null
  *   prState         'MERGED'|'OPEN'|'CLOSED'|'NONE'|null
+ *   prHeadSha       string|null   the PR's merged head OID — the no-upstream
+ *                                 escape hatch below needs this to match
+ *                                 f.localSha exactly, same as classifyBranch
  *   disposition     string|null   from config/open-pr-dispositions.json
  *   worktreePolicy  string|null   KEEP | PARK_IF_REPRODUCIBLE
  *
@@ -321,7 +328,27 @@ export function classifyWorktree(facts) {
   // This is the ONE place a remote tip is required, and it is required in the
   // safe direction — no upstream means we cannot prove the commits survive
   // removing the directory.
+  //
+  // EXCEPT one case, added after PR #1863: `gh pr merge --delete-branch`
+  // removes the remote branch AT THE MOMENT the checkout becomes safe to
+  // park, so "no upstream" and "just landed" look identical from here. A
+  // MERGED PR whose head OID matches the local tip EXACTLY is stronger
+  // evidence than a remote ref ever was — GitHub is attesting that this exact
+  // tree reached main, which a stale or missing `origin/<branch>` cannot
+  // contradict. This is the SAME proof standard classifyBranch's
+  // DELETE_MERGED_EXACT already uses; it was previously only consulted for
+  // branch deletion, never for checkout parkability, which is why parking
+  // still refused after a merge even though the branch was correctly
+  // deletable.
   if (!f.upstream) {
+    if (f.prState === 'MERGED' && f.prHeadSha && f.prHeadSha === f.localSha) {
+      return {
+        verdict: PARKABLE,
+        reason:
+          `no upstream, but PR #${f.prNumber} MERGED with tip === PR head ${short(f.prHeadSha)} ` +
+          '— stronger proof than a remote ref, and the remote branch is gone precisely because it merged',
+      };
+    }
     return { verdict: UNKNOWN_REMOTE, reason: 'no upstream — commits here may exist nowhere else' };
   }
   if (!f.remoteSha) {

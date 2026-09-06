@@ -88,6 +88,13 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 > Review Gate's. That smoke then failed. This is the most likely explanation for
 > a PR with failing **Unit tests** merging on 2026-07-29.
 
+**Once all six are green, land in one command**: `npm run pr:land -- <n>`
+reads this same required-contexts list live from branch protection, refuses
+if any is missing or non-`SUCCESS`, then merges (`--squash --delete-branch`),
+fast-forwards the canonical checkout, and runs
+`node scripts/worktree-lifecycle.mjs --retire`. Refuses a non-`agent/*`
+branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
+
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
 | `CI aggregate` | `ci.yml` | aggregate: `Static checks` (DB-types drift, schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles — named steps of one job since 2026-09-02), `TypeScript`, `Lint` (ESLint + ratchets), `Unit tests` ×3, `Next build`, **`Supabase lint + RLS tests`** | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
