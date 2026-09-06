@@ -1,3 +1,4 @@
+/* global process */
 // @ts-check
 /**
  * Supabase API key resolver — new-format keys first, legacy JWTs as
