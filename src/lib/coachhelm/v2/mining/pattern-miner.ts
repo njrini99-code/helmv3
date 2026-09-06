@@ -365,6 +365,17 @@ export class PatternMiner {
       .limit(100);
 
     if (error || !rounds || rounds.length < this.minRounds) {
+      if (error) {
+        await logServerError(
+          `pattern-miner.minePatterns: rounds query failed: ${describeError(error)}`,
+          { action: 'coachhelm.patternMiner.minePatterns', metadata: { playerId: this.playerId } },
+        );
+      }
+      // Deliberate, not a swallow — same shape as causal-engine.ts: this
+      // branch already covers a genuine "not enough rounds yet" case
+      // alongside the query-error case, and both must answer the same way
+      // (no fabricated pattern from insufficient/failed data). Background
+      // mining, fails closed. The error case is now logged.
       return [];
     }
 

@@ -1,8 +1,8 @@
 {
-  "1854": {
+  "1855": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Phase 2 P4: CodeQL #584, lockfile-drift doctor check, e2e env loading, doc schema drift to zero."
+    "note": "Phase 2 P1 batch 1: fail-open ratchet 51\u219248."
   },
   "1846": {
     "disposition": "ACTIVE",

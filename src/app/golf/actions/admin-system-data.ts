@@ -411,6 +411,10 @@ async function getSystemTabDataImpl(): Promise<SystemTabData> {
           `[admin-system-data] ${label} errored: ${describeError(error)}`,
           { action: 'admin_system_data.getSystemTabData' },
         );
+        // Deliberate, not a swallow — this whole function fans out via
+        // Promise.allSettled specifically so one telemetry source failing
+        // does not blank the rest of the admin System tab. Failure is
+        // logged above, same as the sibling `rejected` branch right above.
         return [];
       }
       return data ?? [];
