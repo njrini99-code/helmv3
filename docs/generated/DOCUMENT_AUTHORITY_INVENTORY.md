@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1238 | 0 | 431 | 579 |
-| `UNKNOWN` | 113 | 12 | 46 | 150 |
+| `UNKNOWN` | 114 | 12 | 46 | 150 |
 
 ## Files
 
@@ -673,6 +673,7 @@ them would bury everything above.
 | `ios/appstore/REVIEW_NOTES_2.0-9.md` | current | - | - | - | 0 | 0 | - |
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
+| `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | 0 | 1 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
 | `supabase/migrations/HELD.md` | current | - | - | - | 18 | 33 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
