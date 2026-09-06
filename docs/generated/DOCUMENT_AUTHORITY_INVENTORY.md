@@ -241,8 +241,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/brand/logos.md` | current | - | - | - | 0 | 0 | - |
 | `memory/context/agent-operations.md` | current | yes | - | - | 2 | 5 | - |
 | `memory/context/agent-traps.md` | current | yes | - | - | 1 | 8 | - |
-| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 4 | 42 | 1 |
-| `memory/context/baseballhelm-features.md` | current | yes | - | yes | 14 | 24 | 1 |
+| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 4 | 41 | 1 |
+| `memory/context/baseballhelm-features.md` | current | yes | - | yes | 14 | 23 | 1 |
 | `memory/context/baseballhelm-workflows.md` | current | - | - | yes | 2 | 5 | - |
 | `memory/context/coachhelm-ai.md` | current | yes | - | yes | 20 | 20 | 13 |
 | `memory/context/engineering-methodology.md` | current | yes | - | yes | 6 | 12 | 2 |

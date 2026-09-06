@@ -24,16 +24,18 @@ KEPT FOR HISTORY -- do not delete this file.
 
 # GolfHelm Feature Registry
 
-<!-- schema-drift-banner -->
 > **⚠️ 19 identifiers named below do not exist in the database.**
 > Verified 2026-08-19 against production. `golf_availability_polls`, `golf_calendar_sync_log`, `golf_calendar_sync_state`, `golf_event_exclusions`, `golf_event_status_log`, `golf_external_calendars`, `golf_insight_feedback`, `golf_insight_weights`, `golf_insights`, `golf_player_attendance_stats`, `golf_player_availability_blocks`, `golf_player_insight_preferences`, `golf_poll_responses`, `golf_putting_tendencies`, `golf_recurring_events`, `golf_review_insights`, `golf_task_completions`, `golf_travel_expense_splits`, `golf_validations`
 >
 > They are described here as if live. Do not query, type, or build on them —
 > check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing these is a ratchet-down — re-run
+> before trusting any table name in this file. Declared absent below so
+> `npm run docs:schema-drift` exempts them structurally instead of carrying
+> them in the numeric baseline. Removing these is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: golf_availability_polls, golf_calendar_sync_log, golf_calendar_sync_state, golf_event_exclusions, golf_event_status_log, golf_external_calendars, golf_insight_feedback, golf_insight_weights, golf_insights, golf_player_attendance_stats, golf_player_availability_blocks, golf_player_insight_preferences, golf_poll_responses, golf_putting_tendencies, golf_recurring_events, golf_review_insights, golf_task_completions, golf_travel_expense_splits, golf_validations -->
+
 
 
 > ## ⛔ SUPERSEDED — do not route feature work here
