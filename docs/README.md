@@ -105,7 +105,7 @@ These directories are actively maintained and safe to treat as current:
 | **Business** | `docs/business/` | The model cluster: business context, personas, jobs-to-be-done, product invariants, workflow maps, revenue/packaging, competitor positioning, per-product business context. |
 | **Baseball** | `docs/baseball/` | Active BaseballHelm design docs: execution/production-readiness plans, nav proposals, "Living Annual" design system, stats architecture/migration. |
 | **Operations + Context** | `docs/operations/` (incl. `docs/operations/context/`) | Runbooks, incident/investigation logs, business contract + feature-readiness matrices, and the curated Mission Control context pack (`context/SYSTEMS_AND_DATA_MAP.md`, `context/MISSION_CONTROL_CONTEXT_INDEX.md`) that points into the deeper engineering docs. |
-| **Reference** | `docs/seed/`, `docs/security/`, `docs/research/`, `docs/lifting-lab/`, `docs/ai-system/` | Five single-file, single-purpose reference docs (demo-data contract, auth config, coach-outreach legal/best-practices, Lift Lab blueprint, AI codebase-intelligence report). Kept as separate top-level dirs rather than consolidated because two of them (`docs/security/auth-config.md`, `docs/ai-system/helmv3-ai-codebase-intelligence.md`) are `memory/registry.yml`-referenced paths that must not move — the other three stay alongside them for consistency. |
+| **Reference** | `docs/seed/`, `docs/security/`, `docs/research/`, `docs/lifting-lab/`, `docs/ai-system/` | `docs/seed/`, `docs/research/` and `docs/lifting-lab/` are still single-file (demo-data contract, coach-outreach legal/best-practices, Lift Lab blueprint). `docs/security/` has grown to two files (`auth-config.md` plus `accepted-risks.md`). `docs/ai-system/` has grown well past single-file into the control-plane doc cluster (`HELM_AUTONOMY_CONTROL_PLANE.md`, the self-healing/reliability specs, `selfheal/`, `briefs/`, `FEATURE_FLAGS.md`, plus the original `helmv3-ai-codebase-intelligence.md`) — see `memory/system/golfhelm-engineering-os.md` for how those pieces relate. Kept as separate top-level dirs rather than consolidated because `docs/security/auth-config.md` and `docs/ai-system/helmv3-ai-codebase-intelligence.md` are `memory/registry.yml`-referenced paths that must not move — the rest stay alongside them for consistency. |
 
 ## Loose files at `docs/` root
 
@@ -134,6 +134,7 @@ What remains loose, and why:
 | `REPO_MAP.md`, `CODEBASE_MAP.md`, `CI_RUNBOOK.md`, `OBSERVABILITY.md`, `README.md` | Routed to from `CLAUDE.md` / `AGENTS.md` / `.claude/rules/` |
 | `v3-*.md` (9 files) | Referenced from `memory/registry.yml` — registry paths never move |
 | `SECURITY_AUDIT.md`, `BASEBALL_RLS_SECURITY_AUDIT.md`, `PRIVACY_AUDIT.md`-class | Cited from rules or audit docs as standing references |
+| `AGENT_LIFECYCLE.md` | Documented exception, added 2026-09-06: a self-auditing trace of the agent/CI machinery with its own staleness check (an anchor SHA + a `git rev-list` command at the top of the file). Nothing outside `docs/` links to it yet — the trace itself currently reports as unverified past its anchor, so re-run its own check before adding a link that implies it's current. |
 | the rest | Each is linked from a living doc or the registry |
 
 **Before adding a file here:** put it in a cluster directory instead. A loose
