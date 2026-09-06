@@ -11,15 +11,18 @@ updated.
 
 ## 1. Status classification — hard gate vs. advisory
 
-**FIVE** required contexts are enforced on `main` as of 2026-09-02 (six from
-2026-08-19 until then) — read live from the API, not from this table:
+**SIX** required contexts are enforced on `main` as of 2026-09-06 (`block-historical-edits`
+was promoted from advisory back to required — verified against commit
+`1e5d10a34`; see `.github/branch-protection.md`) — read live from the API,
+not from this table:
 
 ```bash
 gh api repos/njrini99-code/helmv3/branches/main/protection \
   -q '.required_status_checks | {strict, contexts}'
 # => {"strict": false, "contexts": [
 #      "CI aggregate", "Review Gate aggregate",
-#      "Analyze (actions)", "Analyze (javascript-typescript)", "Analyze (python)"
+#      "Analyze (actions)", "Analyze (javascript-typescript)", "Analyze (python)",
+#      "block-historical-edits"
 #    ]}
 ```
 
@@ -97,7 +100,7 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 | `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E (mandatory Baseball smoke + mobile-viewport regression + broader chromium suite) — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches. **Note:** `Playwright (chromium)`'s broader-suite step no longer masks its exit code (`|| echo ...` removed) — a red run here now means a real failure, not just "see artifact." |
 | `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; usually skips when no preview exists (non-main Vercel builds disabled) | Advisory |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |
-| `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | Advisory |
+| `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | **Hard gate** — promoted to required 2026-09-05, applied and verified live 2026-09-06 |
 | `Vercel` / `Vercel Preview Comments` | Vercel GitHub App | was posting a Vercel Toolbar comment-sync status as recently as PR #1835; absent from every PR audited from #1839 on | **No longer posts on PRs.** Git deploys are disconnected (`vercel.json`'s `deploymentEnabled: {"*": false}`, no branch auto-deploys, production is an on-demand CLI promote) — there is nothing left for the GitHub App to report against. Do not wait on this check; its absence is expected, not stuck. |
 
 ## 2. Expected wait windows

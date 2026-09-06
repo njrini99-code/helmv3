@@ -15,6 +15,11 @@ git rev-list --count 3d7d1b1ef..HEAD -- \
   '.claude/**' '.github/workflows/**' 'vitest.config.ts' 'package.json'
 ```
 
+**Unverified as of `1e5d10a34` (2026-09-06 docs consolidation pass):** the
+staleness check above returns 61, not 0 — 61 commits have touched the paths
+this document traces since its anchor. Re-run the trace before trusting any
+specific claim below; nothing in this pass re-verified the content itself.
+
 Parts 1 to 12 are how the machine works. Parts 13 to 18 are what auditing
 it turned up, including four things this document's author got wrong.
 

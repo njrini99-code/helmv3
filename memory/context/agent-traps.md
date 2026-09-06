@@ -25,10 +25,16 @@ memory (`memory/decisions/ADR-2026-09-05-control-plane-reset.md`).
   checks (`Smoke checks`, `CI aggregate`, `Review Gate aggregate`,
   `Analyze (actions)`, `Analyze (javascript-typescript)`,
   `Analyze (python)`).
-  **Current fact:** `main` requires five checks — `Smoke checks` was
-  removed 2026-09-02 as a duplicate `next build` job, alongside its
-  required-check context. See `.claude/rules/quality-gates.md`, "5 required
-  checks on `main`," for the current, maintained list.
+  **Current fact:** this belief itself went stale twice. `Smoke checks` was
+  removed 2026-09-02 (a duplicate `next build` job), leaving five required
+  contexts — but `block-historical-edits` was then promoted from advisory
+  to required on 2026-09-05 and confirmed applied by a live API read against
+  commit `1e5d10a34` on 2026-09-06, so `main` is back to six required
+  contexts today, with a different sixth member. Never hardcode this count in
+  prose — read it live: `gh api repos/njrini99-code/helmv3/branches/main/
+  protection --jq '.required_status_checks.contexts'`. `.github/
+  branch-protection.md` carries the maintained narrative;
+  `docs/CONTROL_PLANE_ENFORCEMENT.md` is the broader authority.
   (Source of the old belief: auto-memory note
   `required-check-all-is-ambiguous.md` dated 2026-08-19/20.)
 
