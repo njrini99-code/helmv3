@@ -350,28 +350,41 @@ const CHECKS = [
     },
   },
   {
-    name: 'admin_allowlist and users.role=admin stay in sync (no silent divergence)',
+    name: 'every users.role=admin account is in admin_allowlist (is_super_admin is the gate)',
     async run(sql) {
+      // Two gates, one source of truth: `admin_allowlist` (via is_super_admin())
+      // is what authorizes admin RPCs; `users.role` only drives routing and
+      // per-app UI. The dangerous divergence is an account that LOOKS like an
+      // admin (role = 'admin') but is absent from the allowlist — that is the
+      // 2026-07-29 shape, where every Bridge Resolve raised Forbidden. The
+      // reverse — an allowlisted account whose role is coach/player — is a
+      // deliberate dual-role account (the founder's test-coach login) and is
+      // reported, not failed.
       const rows = await sql`
         select
           (select count(*) from public.admin_allowlist) as allowlist_count,
           (select count(*) from public.users where role = 'admin') as role_admin_count,
           (
+            select count(*) from public.users u
+            where u.role = 'admin'
+              and not exists (select 1 from public.admin_allowlist a where a.user_id = u.id)
+          ) as role_admin_not_allowlisted,
+          (
             select count(*) from public.admin_allowlist a
-            left join public.users u on u.id = a.user_id and u.role = 'admin'
-            where u.id is null
-          ) as allowlisted_but_not_role_admin
+            join public.users u on u.id = a.user_id
+            where u.role <> 'admin'
+          ) as allowlisted_non_admin
       `;
       const row = rows[0];
-      if (Number(row.allowlisted_but_not_role_admin) > 0) {
+      if (Number(row.role_admin_not_allowlisted) > 0) {
         return {
           ok: false,
-          detail: `${row.allowlisted_but_not_role_admin} admin_allowlist user(s) no longer have users.role='admin' — likely demoted; admin RPCs still work via is_super_admin() but investigate the divergence`,
+          detail: `${row.role_admin_not_allowlisted} users.role='admin' account(s) are not in admin_allowlist — is_super_admin() is false for them, so admin RPCs and Bridge Resolve return Forbidden; add the allowlist row or clear the role`,
         };
       }
       return {
         ok: true,
-        detail: `admin_allowlist=${row.allowlist_count}, users.role='admin'=${row.role_admin_count}, no divergence`,
+        detail: `admin_allowlist=${row.allowlist_count}, users.role='admin'=${row.role_admin_count}, allowlisted non-admin (deliberate dual-role) accounts=${row.allowlisted_non_admin}`,
       };
     },
   },

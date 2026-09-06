@@ -67,9 +67,11 @@ printed report), `2` missing credentials.
   ('player', 'coach')`, which is precisely how baseball onboarding
   clobbered `admin` → `coach` in the #736 incident — that specific
   transition was never actually blocked until this fix.
-- **`admin_allowlist` / `users.role='admin'` sync** — flags if the
-  allowlist and the legacy role column diverge, so a future demotion is
-  caught even though the RPCs no longer depend on `users.role` alone.
+- **every `users.role='admin'` account is allowlisted** — fails when an
+  account carries the admin role but is missing from `admin_allowlist`, the
+  shape where `is_super_admin()` is false and every admin RPC returns
+  Forbidden. The reverse (an allowlisted coach or player) is a deliberate
+  dual-role login and is reported in the detail, not failed.
   **Source of truth**: `admin_allowlist`, read through `is_super_admin()`
   (`src/lib/admin/require-super-admin.ts`), is authoritative for admin
   access; `users.role='admin'` is a legacy column this check watches so a
