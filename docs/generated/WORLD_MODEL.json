@@ -1081,11 +1081,6 @@
         "category": "actions"
       },
       {
-        "id": "actions:src/app/golf/actions/courses.ts",
-        "pattern": "src/app/golf/actions/courses.ts",
-        "category": "actions"
-      },
-      {
         "id": "actions:src/app/golf/actions/crm-*.ts",
         "pattern": "src/app/golf/actions/crm-*.ts",
         "category": "actions"
@@ -1318,11 +1313,6 @@
       {
         "id": "actions:src/app/golf/actions/task-reminders.ts",
         "pattern": "src/app/golf/actions/task-reminders.ts",
-        "category": "actions"
-      },
-      {
-        "id": "actions:src/app/golf/actions/task-templates.ts",
-        "pattern": "src/app/golf/actions/task-templates.ts",
         "category": "actions"
       },
       {
@@ -14239,18 +14229,6 @@
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "actions:src/app/golf/actions/courses.ts",
-      "kind": "feature_action",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/actions/courses.ts"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
       "target": "actions:src/app/golf/actions/golf.ts",
       "kind": "feature_action",
       "evidence": [
@@ -14310,11 +14288,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/course-library.ts",
-          "line": 31
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/courses.ts",
           "line": 31
         },
         {
@@ -14475,11 +14448,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/course-library.ts",
           "line": 29
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/courses.ts",
-          "line": 27
         },
         {
           "kind": "import_graph",
@@ -19254,7 +19222,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/stats-data.ts",
-          "line": 1097
+          "line": 1103
         }
       ]
     },
@@ -21571,18 +21539,6 @@
     },
     {
       "source": "team_operations",
-      "target": "actions:src/app/golf/actions/task-templates.ts",
-      "kind": "feature_action",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/actions/task-templates.ts"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
       "target": "actions:src/app/golf/actions/tasks.ts",
       "kind": "feature_action",
       "evidence": [
@@ -21634,11 +21590,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
           "line": 16
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/task-templates.ts",
-          "line": 14
         }
       ]
     },
@@ -21677,16 +21628,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
-          "line": 4
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/task-templates.ts",
-          "line": 3
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/task-templates.ts",
           "line": 4
         }
       ]

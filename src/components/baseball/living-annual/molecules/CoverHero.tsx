@@ -10,7 +10,13 @@
  * No hooks / handlers — safe in a server component.
  */
 import { cn } from '@/lib/utils';
-import { Eyebrow, HairlineRule, EditorsLetter } from '..';
+// Import each primitive from its own leaf module rather than the parent
+// barrel ('..') — importing the barrel from inside molecules/ created an
+// import cycle (living-annual/index.ts -> molecules/index.ts -> this file ->
+// living-annual/index.ts), flagged by npm run check:cycles.
+import { Eyebrow } from '../Eyebrow';
+import { HairlineRule } from '../HairlineRule';
+import { EditorsLetter } from '../EditorsLetter';
 
 export interface CoverHeroProps {
   /** Next opponent, e.g. `Coastal State`. Empty → the standing-by variant. */

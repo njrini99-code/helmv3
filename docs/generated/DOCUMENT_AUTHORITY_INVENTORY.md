@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 28 | 15 | 2 | 3 |
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
-| `ARCHIVE` | 1212 | 0 | 419 | 535 |
+| `ARCHIVE` | 1212 | 0 | 419 | 538 |
 | `UNKNOWN` | 115 | 12 | 47 | 151 |
 
 ## Files
@@ -183,7 +183,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | 1 |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 2 | 11 | - |
-| `memory/features/team-operations.md` | current | yes | - | - | 2 | 18 | - |
+| `memory/features/team-operations.md` | current | yes | - | - | 2 | 17 | - |
 
 ### `REFERENCE`
 
@@ -277,7 +277,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 30 | 5 | - |
 | `memory/glossary.md` | current | yes | yes | yes | 22 | 10 | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | 5 | 261 | 1 |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | 5 | 259 | 1 |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | 0 | 0 | - |
 
 ### `PROCESS_CONTRACT`

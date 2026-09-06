@@ -39,18 +39,16 @@ import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 import { Plus, TrendingUp, Target, Activity, Trophy, Flag } from 'lucide-react';
 
-import {
-  ViewHeader,
-  Button,
-  MetricCard,
-  InsightCard,
-  Surface,
-  Inset,
-  InlineNotice,
-  EmptyState,
-  Skeleton,
-  Sparkline,
-} from '@/components/fairway';
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file is itself re-exported (via pages/dashboard/index.ts) from
+// that barrel, so importing the barrel back here created an import cycle,
+// flagged by npm run check:cycles.
+import { ViewHeader } from '@/components/fairway/view-header';
+import { Button } from '@/components/fairway/controls';
+import { MetricCard, InsightCard } from '@/components/fairway/cards-insight';
+import { Surface, Inset } from '@/components/fairway/surfaces';
+import { InlineNotice, EmptyState, Skeleton } from '@/components/fairway/feedback';
+import { Sparkline } from '@/components/fairway/charts';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
 // BOTH a KPI card's delta chip AND its Sparkline's `direction` prop from a
 // single call, so the two can never classify the same series two different
@@ -83,7 +81,7 @@ import { NotificationsLatestModule } from '@/components/fairway/notifications';
 // Fairway TrendChart, lazy + ssr:false — preserves the legacy load contract
 // (the recharts bundle stays out of the server render path / first paint).
 const TrendChart = nextDynamic(
-  () => import('@/components/fairway').then((m) => ({ default: m.TrendChart })),
+  () => import('@/components/fairway/charts').then((m) => ({ default: m.TrendChart })),
   {
     ssr: false,
     loading: () => <Skeleton className="h-[240px] w-full rounded-card" />,

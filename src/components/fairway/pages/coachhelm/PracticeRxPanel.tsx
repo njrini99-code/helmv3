@@ -32,7 +32,12 @@
  * ========================================================================== */
 
 import { useTransition } from 'react';
-import { Inset, Badge } from '@/components/fairway';
+// Leaf imports, not the top `@/components/fairway` barrel — this file sits
+// under pages/coachhelm/ (re-exported from that barrel via
+// pages/coachhelm/index.ts), so importing the barrel back here created an
+// import cycle, flagged by npm run check:cycles.
+import { Inset } from '@/components/fairway/surfaces';
+import { Badge } from '@/components/fairway/controls';
 import { Button } from '@/components/fairway/controls/button';
 import { cn } from '@/lib/utils';
 import {

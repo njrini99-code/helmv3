@@ -40,15 +40,15 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Target, Trophy } from 'lucide-react';
 
-import {
-  Surface,
-  Inset,
-  Button,
-  EmptyState,
-  InstrumentPanel,
-  Readout,
-  Sparkline,
-} from '@/components/fairway';
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
+// that barrel, so importing the barrel back here created an import cycle,
+// flagged by npm run check:cycles.
+import { Surface, Inset } from '@/components/fairway/surfaces';
+import { Button } from '@/components/fairway/controls';
+import { EmptyState } from '@/components/fairway/feedback';
+import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
+import { Sparkline } from '@/components/fairway/charts';
 import { useToast } from '@/components/ui/sonner';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';

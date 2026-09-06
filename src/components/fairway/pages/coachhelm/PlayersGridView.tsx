@@ -62,16 +62,17 @@ import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationsh
 import type { FairwayGoalCardData } from './FairwayGoalCard';
 import { type AreaAutoFillStats } from './areaTypes';
 import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
-import {
-  // The instrument cockpit kit — the warm-glass hero header (matches
-  // FairwayEffectiveness): ranked cluster, frosted bezels, honest big readouts.
-  // (InstrumentCluster/SegmentBar/SegmentBarPart moved to RosterHealthHeader.tsx
-  // with the roster-health instrument itself — InstrumentPanel/Readout stay,
-  // still used by FocusAreaBoard below.)
-  InstrumentPanel,
-  Readout,
-  TrendGlyph,
-} from '@/components/fairway';
+// The instrument cockpit kit — the warm-glass hero header (matches
+// FairwayEffectiveness): ranked cluster, frosted bezels, honest big readouts.
+// (InstrumentCluster/SegmentBar/SegmentBarPart moved to RosterHealthHeader.tsx
+// with the roster-health instrument itself — InstrumentPanel/Readout stay,
+// still used by FocusAreaBoard below.)
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
+// that barrel, so importing the barrel back here created an import cycle,
+// flagged by npm run check:cycles.
+import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
+import { TrendGlyph } from '@/components/fairway/charts';
 import {
   RosterHealthHeader,
   computeRosterHealth,

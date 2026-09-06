@@ -6,9 +6,13 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  *
  * Features: course_library, recruiting_prospect_tracking, player_hub,
  * coach_dashboard, my_game_profile, whats_new.
- * Files fully wrapped this batch: course-library.ts, courses.ts,
- * recruiting.ts, recruit-documents.ts, dashboard-data.ts,
- * command-palette.ts, player-profile-stats.ts, whats-new.ts.
+ * Files fully wrapped this batch: course-library.ts, recruiting.ts,
+ * recruit-documents.ts, dashboard-data.ts, command-palette.ts,
+ * player-profile-stats.ts, whats-new.ts. (`courses.ts` — the superseded,
+ * zero-importer v1 course-model file this array used to also list — was
+ * deleted per docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md §B3 while
+ * resolving the duplicate-exports ratchet's createCourse/updateCourse
+ * pairs; its exports never had any live caller.)
  *
  * golf.ts spans SIX batches (B0/B1/B2/B4/B5/B6 — plan
  * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
@@ -25,7 +29,6 @@ describe('coverage-contract — B6 library + recruiting + player surfaces (cours
     expect(() =>
       assertAreaFullyWrapped([
         'src/app/golf/actions/course-library.ts',
-        'src/app/golf/actions/courses.ts',
         'src/app/golf/actions/golf.ts',
         'src/app/golf/actions/recruiting.ts',
         'src/app/golf/actions/recruit-documents.ts',

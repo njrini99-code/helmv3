@@ -333,7 +333,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/tasks.ts': 'ALL',
-      'src/app/golf/actions/task-templates.ts': 'ALL',
       'src/app/golf/actions/task-reminders.ts': 'ALL',
     },
     primaryTable: 'golf_task_assignments',
@@ -484,7 +483,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/course-library.ts': 'ALL',
-      'src/app/golf/actions/courses.ts': 'ALL',
       'src/app/golf/actions/golf.ts': [
         'getPlayerSavedCourses',
         'savePlayerCourse',
