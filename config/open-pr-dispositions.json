@@ -1,8 +1,8 @@
 {
-  "1857": {
+  "1856": {
     "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Phase 2 P5: unpaginated reads, duplicate exports, import cycles, ESLint ratchets paid down."
+    "worktree_policy": "KEEP",
+    "note": "Owner's own PR (headless Mac mini hardening script and runbook), opened from another session; not part of the reset. Owner decides."
   },
   "1846": {
     "disposition": "ACTIVE",
