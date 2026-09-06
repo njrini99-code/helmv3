@@ -1,15 +1,17 @@
 # BaseballHelm Feature Registry
 
-<!-- schema-drift-banner -->
-> **⚠️ 1 identifier named below does not exist in the database.**
+> **⚠️ 1 identifier named below is not a database object.**
 > Verified 2026-08-19 against production. `baseball_scope_player_ids_isolation`
->
-> It is described here as if live. Do not query, type, or build on it —
-> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing this is a ratchet-down — re-run
+> is the filename of the pgTAP isolation test for #406
+> (`supabase/tests/rls/baseball_scope_player_ids_isolation.sql`), not a table,
+> column, or function — it only matches `docs:schema-drift`'s
+> `golf|baseball`-prefix pattern incidentally. Declared absent below so the
+> check exempts it structurally instead of carrying it in the numeric
+> baseline. Removing the reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: baseball_scope_player_ids_isolation -->
+
 
 > Route/feature inventory + data flows for the BaseballHelm product (college/JUCO/HS/showcase baseball recruiting + team/player ops + Helm Lifting Lab).
 > Traced from source on branch mirroring origin/main, 2026-06-30. Cross-checked against `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`, `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md`, and `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md`.
