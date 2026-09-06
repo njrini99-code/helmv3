@@ -4,11 +4,6 @@
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
     "note": "Phase 2 P5: unpaginated reads, duplicate exports, import cycles, ESLint ratchets paid down."
   },
-  "1853": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Phase 2 P6: new-format Supabase key precedence so the leaked legacy key can be disabled."
-  },
   "1846": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
