@@ -1,4 +1,9 @@
 {
+  "1858": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "Phase 2 P2: high Dependabot advisories closed where momentic's shrinkwrap allows."
+  },
   "1853": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
