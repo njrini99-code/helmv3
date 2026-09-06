@@ -450,6 +450,9 @@ export class ShotStateIntelligence {
         featureArea: 'coachhelm.mining',
         metadata: { playerId: this.playerId, dbError: roundsError as unknown },
       });
+      // Deliberate, not a swallow — background mining (coachhelm v2), same
+      // "fails closed to fewer insights, never fabricates" contract as the
+      // sibling engines in this directory. Failure is already logged above.
       return [];
     }
     if (!rounds || rounds.length === 0) {

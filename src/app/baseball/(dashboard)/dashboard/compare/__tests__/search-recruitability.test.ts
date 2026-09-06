@@ -105,7 +105,7 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerException: vi.fn(async () => {}),
 }));
 
-import { searchRecruitablePlayers } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
+import { searchRecruitablePlayers, getComparablePlayers } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 
 describe('searchRecruitablePlayers — recruitability gating', () => {
   beforeEach(() => {
@@ -198,5 +198,150 @@ describe('searchRecruitablePlayers — recruitability gating', () => {
   it('also excludes ids passed in excludeIds (already-added players)', async () => {
     const results = await searchRecruitablePlayers('Test', [ELIGIBLE_ID]);
     expect(results.map((p) => p.id)).not.toContain(ELIGIBLE_ID);
+  });
+
+  // -------------------------------------------------------------------------
+  // Fail-open regression coverage (helm/no-empty-collection-on-error).
+  //
+  // Both actions used to answer a FAILED `baseball_players` read the same
+  // way they answer a genuine zero-result search: `return []`. That made an
+  // outage indistinguishable from "no matches" to CompareClient, which has
+  // dedicated `loadError`/console-logged-failure handling that only ever
+  // fires if the action actually rejects. These lock in that the query
+  // error now surfaces as a rejection instead of a silent empty list.
+  // -------------------------------------------------------------------------
+
+  it('surfaces a failed player-list query as a rejection, not an empty result', async () => {
+    from.mockImplementation((table: string) => {
+      if (table === 'baseball_players') {
+        const chain: Record<string, unknown> = {};
+        chain.select = vi.fn(() => chain);
+        chain.or = vi.fn(() => chain);
+        chain.eq = vi.fn(() => chain);
+        chain.in = vi.fn(() => chain);
+        chain.neq = vi.fn(() => chain);
+        chain.limit = vi.fn(() => chain);
+        chain.not = vi.fn(() => chain);
+        Object.defineProperty(chain, 'data', { get: () => null, configurable: true });
+        Object.defineProperty(chain, 'error', {
+          get: () => ({ message: 'connection reset', code: '08006' }),
+          configurable: true,
+        });
+        return chain;
+      }
+      switch (table) {
+        case 'baseball_coaches':
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                single: vi.fn(async () => ({
+                  data: { id: 'coach-1', coach_type: 'college' },
+                  error: null,
+                })),
+              })),
+            })),
+          };
+        case 'baseball_team_coach_staff':
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(async () => ({ data: [{ team_id: 'team-own' }], error: null })),
+            })),
+          };
+        case 'organizations':
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(async () => ({ data: [{ id: 'org-disco' }], error: null })),
+            })),
+          };
+        case 'baseball_teams_public_profile':
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(async () => ({ data: [{ id: 'team-disco' }], error: null })),
+            })),
+          };
+        case 'baseball_team_members':
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(async () => ({ data: [], error: null })),
+            })),
+          };
+        case 'baseball_player_settings':
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(async () => ({ data: [], error: null })),
+            })),
+          };
+        default:
+          return {};
+      }
+    });
+
+    await expect(searchRecruitablePlayers('Test', [])).rejects.toThrow(
+      'Failed to search recruitable players',
+    );
+  });
+
+  it('getComparablePlayers surfaces a failed player-list query as a rejection, not an empty result', async () => {
+    from.mockImplementation((table: string) => {
+      if (table === 'baseball_players') {
+        return {
+          select: vi.fn(() => ({
+            in: vi.fn(async () => ({
+              data: null,
+              error: { message: 'connection reset', code: '08006' },
+            })),
+          })),
+        };
+      }
+      switch (table) {
+        case 'baseball_coaches':
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                single: vi.fn(async () => ({
+                  data: { id: 'coach-1', coach_type: 'college' },
+                  error: null,
+                })),
+              })),
+            })),
+          };
+        case 'baseball_team_coach_staff':
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(async () => ({ data: [{ team_id: 'team-own' }], error: null })),
+            })),
+          };
+        case 'organizations':
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(async () => ({ data: [{ id: 'org-disco' }], error: null })),
+            })),
+          };
+        case 'baseball_teams_public_profile':
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(async () => ({ data: [{ id: 'team-disco' }], error: null })),
+            })),
+          };
+        case 'baseball_team_members':
+          return {
+            select: vi.fn(() => ({
+              in: vi.fn(async () => ({ data: [], error: null })),
+            })),
+          };
+        case 'baseball_player_settings':
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(async () => ({ data: [], error: null })),
+            })),
+          };
+        default:
+          return {};
+      }
+    });
+
+    await expect(getComparablePlayers([ELIGIBLE_ID])).rejects.toThrow(
+      'Failed to fetch comparable players',
+    );
   });
 });

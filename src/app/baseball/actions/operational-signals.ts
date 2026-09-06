@@ -160,6 +160,10 @@ async function loadEventFacts(
       `[operationalSignals] mandatory-event facts failed to load — those signals will not fire: ${describeError(eventsError)}`,
       { action: 'baseball.operationalSignals.loadEventFacts', featureArea: 'coachhelm', teamId },
     );
+    // Deliberate, not a swallow — this function's own header comment
+    // states the policy: degrading stays (one dead fact source must not
+    // take down the whole scheduled signals run) but it no longer
+    // degrades in silence. Failure is logged above.
     return [];
   }
   const rows = (events ?? []) as Array<{
@@ -185,6 +189,10 @@ async function loadEventFacts(
       `[operationalSignals] acknowledgement facts failed to load — events will look unacknowledged: ${describeError(acksError)}`,
       { action: 'baseball.operationalSignals.loadEventFacts', featureArea: 'coachhelm', teamId },
     );
+    // Deliberate, not a swallow — this function's own header comment
+    // states the policy: degrading stays (one dead fact source must not
+    // take down the whole scheduled signals run) but it no longer
+    // degrades in silence. Failure is logged above.
     return [];
   }
   const ackByEvent = new Map<string, string[]>();
@@ -221,6 +229,10 @@ async function loadPracticeFacts(
       `[operationalSignals] practice facts failed to load — those signals will not fire: ${describeError(practicesError)}`,
       { action: 'baseball.operationalSignals.practice', featureArea: 'coachhelm', teamId },
     );
+    // Deliberate, not a swallow — this function's own header comment
+    // states the policy: degrading stays (one dead fact source must not
+    // take down the whole scheduled signals run) but it no longer
+    // degrades in silence. Failure is logged above.
     return [];
   }
   const rows = (practices ?? []) as Array<{
@@ -255,6 +267,10 @@ async function loadPracticeFacts(
       `[operationalSignals] practice-block facts failed to load — those signals will not fire: ${describeError(blocksError)}`,
       { action: 'baseball.operationalSignals.practiceBlocks', featureArea: 'coachhelm', teamId },
     );
+    // Deliberate, not a swallow — this function's own header comment
+    // states the policy: degrading stays (one dead fact source must not
+    // take down the whole scheduled signals run) but it no longer
+    // degrades in silence. Failure is logged above.
     return [];
   }
   const blocksByPractice = new Map<
@@ -430,6 +446,10 @@ async function loadGameFacts(
       `[operationalSignals] game facts failed to load — those signals will not fire: ${describeError(gamesError)}`,
       { action: 'baseball.operationalSignals.gameFacts', featureArea: 'coachhelm', teamId },
     );
+    // Deliberate, not a swallow — this function's own header comment
+    // states the policy: degrading stays (one dead fact source must not
+    // take down the whole scheduled signals run) but it no longer
+    // degrades in silence. Failure is logged above.
     return [];
   }
   const rows = (games ?? []) as Array<{

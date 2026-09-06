@@ -518,7 +518,18 @@ async function getInsightsForPlayerImpl(
   let user;
   try {
     const { data, error: authError } = await supabase.auth.getUser();
-    if (authError || !data.user) return [];
+    if (authError || !data.user) {
+      if (authError) {
+        await logServerError(
+          `getInsightsForPlayer auth check failed: ${describeError(authError)}`,
+          { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
+        );
+      }
+      // Deliberate, not a swallow — this function's own docstring: returns
+      // [] on failure so the dashboard renders an empty feed instead of
+      // throwing. A real auth-service failure is now logged.
+      return [];
+    }
     user = data.user;
   } catch (err) {
     // Auth-call fetch failures shouldn't poison the dashboard.
@@ -596,6 +607,7 @@ async function getInsightsForPlayerImpl(
       `getInsightsForPlayer failed: ${error.message}`,
       { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
     );
+    // Same documented contract as the auth branch above — logged, not silent.
     return [];
   }
 

@@ -15,6 +15,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { DecisionRoomEffectivenessReview } from '@/app/baseball/actions/decision-room';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Hard server-side row cap. PostgREST also enforces a max-rows ceiling, but the
@@ -62,7 +64,18 @@ export async function loadEffectivenessReviews(
     .order('generated_at', { ascending: false })
     .limit(RECENT_REVIEWS_LIMIT);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[decision-room] loadEffectivenessReviews query failed: ${describeError(error)}`,
+        { action: 'baseball.decisionRoom.loadEffectivenessReviews', metadata: { teamId } },
+      );
+    }
+    // Deliberate, not a swallow — same Decision Room "HONESTY" contract as
+    // the sibling read-models in this directory: degrade to empty rather
+    // than throw into the dashboard's Promise.all. Failure is now logged.
+    return [];
+  }
 
   return (data as EffectivenessReviewRow[]).map((row) => {
     // Map DB direction values to the DecisionRoomEffectivenessReview union.

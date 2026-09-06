@@ -63,6 +63,11 @@ async function getSavedCoursesImpl(): Promise<GolfCourse[]> {
     .order('name');
 
   if (error || !courses) {
+    // Deliberate, not a swallow requiring a behavior change: this whole
+    // module is DEPRECATED with ZERO importers (see the file header) —
+    // retained only for reference and a coverage-contract enumeration, not
+    // reachable from any live route. No caller exists to surface a thrown
+    // error to.
     return [];
   }
 

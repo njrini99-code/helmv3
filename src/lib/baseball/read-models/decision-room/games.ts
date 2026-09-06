@@ -24,6 +24,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { DecisionRoomGameResult } from '@/app/baseball/actions/decision-room';
 import type { Database } from '@/lib/types/database';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Supabase client typed against the generated Database schema. The Decision
@@ -117,7 +119,12 @@ export async function loadGameResults(
     .limit(MAX_ROWS);
 
   if (error) {
-    // Fail honest: surface an empty list rather than throwing into the UI.
+    await logServerError(
+      `[decision-room] loadGameResults query failed: ${describeError(error)}`,
+      { action: 'baseball.decisionRoom.loadGameResults', metadata: { teamId } },
+    );
+    // Fail honest: surface an empty list rather than throwing into the UI
+    // (the module's own documented contract, now with the failure logged).
     return [];
   }
 
