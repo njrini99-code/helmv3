@@ -217,8 +217,20 @@ async function main(argv) {
   process.stdout.write(`pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}) — merging\n`);
   const merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash', '--delete-branch'], { cwd: canonicalRoot });
   if (!merge.ok) {
-    process.stderr.write(`pr-land: gh pr merge failed:\n${merge.stderr || merge.stdout}\n`);
-    return 1;
+    // `--delete-branch` also tries to delete the LOCAL branch, which git refuses
+    // while a worktree has it checked out — the exact case this command exists
+    // for. The merge itself has already happened by then, so re-read the PR
+    // state before deciding this was a failure. Observed on the first live run
+    // (PR #1864): "cannot delete branch ... used by worktree" after a
+    // successful squash merge.
+    const after = ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot);
+    if (after?.state !== 'MERGED') {
+      process.stderr.write(`pr-land: gh pr merge failed:\n${merge.stderr || merge.stdout}\n`);
+      return 1;
+    }
+    process.stdout.write(
+      'pr-land: merged; local branch delete deferred to --retire (branch is checked out in a worktree)\n',
+    );
   }
 
   const pull = exec('git', ['pull', '--ff-only'], { cwd: canonicalRoot });
