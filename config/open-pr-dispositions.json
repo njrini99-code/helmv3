@@ -1,95 +1,90 @@
 {
-  "1859": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Phase 2 close-out: disposition rows."
-  },
-  "1856": {
+  "1753": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Owner's own PR (headless Mac mini hardening script and runbook), opened from another session; not part of the reset. Owner decides."
-  },
-  "1846": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Draft: the rounds preview harness work that lived only in the canonical checkout, stacked on #1837. Owner decides rebase or close."
-  },
-  "1837": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "The canonical checkout's own docs/rules/worktree-retirement/golf-messages-header PR, opened from the fix/cron-checkin-flush-realtime-recovery branch. Landing this is what clears the canonical checkout's accumulated commits."
-  },
-  "1836": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "feat(golf/messages): the approved design \u2014 unread lifts, tail marks the end, the dead token removed. In-flight feature work on the Messages redesign track."
-  },
-  "1835": {
-    "disposition": "HUMAN_TEST_PENDING",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "fix(golf/messages): the follow-through #1830 owed \u2014 long-press survives a thumb move, the menu closes, a message can be copied. Needs a human on a real device to confirm the touch/press behavior before merge; the checkout is safe to park once clean and pushed."
-  },
-  "1833": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "feat(golf/messages): premium mobile rebuild \u2014 the thread was sunken, not flat. In-flight feature work on the Messages redesign track."
-  },
-  "1832": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "fix(worktrees/docs): the subtractions that could never happen \u2014 worktree-lifecycle/docs correctness fix."
-  },
-  "1831": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "fix(auth/observability): a discarded refresh is not a sign-out, and a span must measure its own workflow."
-  },
-  "1759": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "chore(scripts): make the QA-fixture removal safe to run \u2014 owner-only trigger disable, scoped post-check, cascade capture. Script-only change, no production state."
-  },
-  "1758": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Dependabot: bump framer-motion 12.42.2 -> 13.1.1. No local agent checkout to park."
-  },
-  "1757": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Dependabot: production-dependencies group, 9 updates. No local agent checkout to park."
-  },
-  "1756": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "KEEP",
-    "note": "Dependabot: dev-dependencies group, 7 updates across 1 directory. No local agent checkout to park."
+    "note": "Dependabot: bump js-yaml 4.3.2 -> 5.2.2. No local agent checkout to park."
   },
   "1755": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
     "note": "Dependabot: github-actions group, 2 updates. No local agent checkout to park."
   },
-  "1753": {
+  "1756": {
     "disposition": "ACTIVE",
     "worktree_policy": "KEEP",
-    "note": "Dependabot: bump js-yaml 4.3.2 -> 5.2.2. No local agent checkout to park."
+    "note": "Dependabot: dev-dependencies group, 7 updates across 1 directory. No local agent checkout to park."
+  },
+  "1757": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: production-dependencies group, 9 updates. No local agent checkout to park."
+  },
+  "1758": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Dependabot: bump framer-motion 12.42.2 -> 13.1.1. No local agent checkout to park."
+  },
+  "1759": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "chore(scripts): make the QA-fixture removal safe to run — owner-only trigger disable, scoped post-check, cascade capture. Script-only change, no production state."
+  },
+  "1831": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "fix(auth/observability): a discarded refresh is not a sign-out, and a span must measure its own workflow."
+  },
+  "1832": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "fix(worktrees/docs): the subtractions that could never happen — worktree-lifecycle/docs correctness fix."
+  },
+  "1833": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "feat(golf/messages): premium mobile rebuild — the thread was sunken, not flat. In-flight feature work on the Messages redesign track."
+  },
+  "1835": {
+    "disposition": "HUMAN_TEST_PENDING",
+    "worktree_policy": "PARK_IF_REPRODUCIBLE",
+    "note": "fix(golf/messages): the follow-through #1830 owed — long-press survives a thumb move, the menu closes, a message can be copied. Needs a human on a real device to confirm the touch/press behavior before merge; the checkout is safe to park once clean and pushed."
+  },
+  "1836": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "feat(golf/messages): the approved design — unread lifts, tail marks the end, the dead token removed. In-flight feature work on the Messages redesign track."
+  },
+  "1837": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "The canonical checkout's own docs/rules/worktree-retirement/golf-messages-header PR, opened from the fix/cron-checkin-flush-realtime-recovery branch. Landing this is what clears the canonical checkout's accumulated commits."
+  },
+  "1846": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Draft: the rounds preview harness work that lived only in the canonical checkout, stacked on #1837. Owner decides rebase or close."
+  },
+  "1856": {
+    "disposition": "ACTIVE",
+    "worktree_policy": "KEEP",
+    "note": "Owner's own PR (headless Mac mini hardening script and runbook), opened from another session; not part of the reset. Owner decides."
   },
   "$comment": [
     "CURRENT STATE, not history. The keys here must equal the set of OPEN PRs",
-    "exactly \u2014 control-plane:verify FAILS on a missing entry AND on a stale one.",
+    "exactly — control-plane:verify FAILS on a missing entry AND on a stale one.",
     "",
     "Why both directions. An unclassified open PR is background state: #1623 sat",
     "open for weeks while main carried a stale route count, and nobody was wrong,",
-    "because nobody owned it. A leftover row is the mirror image \u2014 this file",
+    "because nobody owned it. A leftover row is the mirror image — this file",
     "carried ACTIVE rows for #1623, #1638, #1679 and #1680 after they closed or",
     "merged, so a current-state registry was asserting things that had stopped",
     "being true. Git holds the history; this holds the present.",
     "",
     "ONE EXCEPTION, and it is exact. A row whose PR has MERGED and whose",
-    "merge_commit_sha equals the verified checkout\u2019s HEAD is TRANSITIONALLY",
+    "merge_commit_sha equals the verified checkout’s HEAD is TRANSITIONALLY",
     "CLOSED rather than stale. Without it, a PR that carries its own row makes",
     "main fail this check the second it merges, and the only exits are another PR",
-    "(same problem, recursively) or a direct push \u2014 which is what actually",
+    "(same problem, recursively) or a direct push — which is what actually",
     "happened on 2026-08-30, twice, bypassing branch protection. A control whose",
     "only escape is bypassing another control is a defect in the first one.",
     "",
@@ -99,22 +94,22 @@
     "own row at the same time.",
     "",
     "AND ITS MIRROR, before the merge. A row that lives in its own PR is absent",
-    "from main for that PR\u2019s whole flight, so the missing-row rule would fail main",
+    "from main for that PR’s whole flight, so the missing-row rule would fail main",
     "from the moment such a PR opens. A row absent here but PRESENT in this file at",
-    "that PR\u2019s own head is IN FLIGHT, not unclassified. Absent at the head, or",
-    "unreadable there, still fails \u2014 #1623 sat open for weeks with no row anywhere",
+    "that PR’s own head is IN FLIGHT, not unclassified. Absent at the head, or",
+    "unreadable there, still fails — #1623 sat open for weeks with no row anywhere",
     "and must stay caught. Arriving has to be proven, never assumed.",
     "",
-    "disposition \u2014 what the PR IS:",
+    "disposition — what the PR IS:",
     "  ACTIVE, HUMAN_TEST_PENDING, STALE, SUPERSEDED, AUTOMATION_RESIDUE, UNKNOWN",
     "",
-    "worktree_policy \u2014 what may HAPPEN to its checkout:",
+    "worktree_policy — what may HAPPEN to its checkout:",
     "  KEEP                    never park it automatically",
     "  PARK_IF_REPRODUCIBLE    park it once clean and pushed; the branch stays",
     "",
     "worktree_policy IS NOW THE SECOND OF TWO GATES, and is on its way out. Since",
     "2026-08-30 a checkout is released by its own .helm/workspace.json",
-    "(parkPolicy), which covers the window before a PR exists \u2014 the window this",
+    "(parkPolicy), which covers the window before a PR exists — the window this",
     "field cannot see. Both gates must permit, so this field can only ever make the",
     "answer more conservative.",
     "",
@@ -122,7 +117,7 @@
     "reason: #1659 is PARKED. There is no checkout on disk to carry a marker, so",
     "deleting this field would delete the only recorded authorization for it.",
     "Remove the field when #1659 is resolved, or when its worktree is recreated and",
-    "its intent written into the marker \u2014 and remove the residue check\u2019s policy",
+    "its intent written into the marker — and remove the residue check’s policy",
     "validation in the same change.",
     "",
     "The second field exists because the first was being asked to imply it. On",
@@ -131,7 +126,7 @@
     "at that instant. Negative process detection is not proof of inactivity. For",
     "an OPEN PR, dispensability now has to be stated, not inferred.",
     "",
-    "ACTIVE and UNKNOWN always KEEP, whatever this field says \u2014 a mis-typed",
+    "ACTIVE and UNKNOWN always KEEP, whatever this field says — a mis-typed",
     "policy beside them fails safe."
   ]
 }
