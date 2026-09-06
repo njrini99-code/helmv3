@@ -396,7 +396,6 @@ features:
         - src/app/golf/actions/shot-analytics.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/course-library.ts
-        - src/app/golf/actions/courses.ts
       services:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
@@ -1008,7 +1007,6 @@ features:
         - src/components/fairway/pages/documents/**
       actions:
         - src/app/golf/actions/tasks.ts
-        - src/app/golf/actions/task-templates.ts
         - src/app/golf/actions/task-reminders.ts
         - src/app/golf/actions/documents.ts
         - src/app/golf/actions/event-documents.ts

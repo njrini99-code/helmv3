@@ -136,7 +136,6 @@ const NON_CRM_ACTION_FILES = [
   'command-palette.ts',
   'communication.ts',
   'course-library.ts',
-  'courses.ts',
   'dashboard-data.ts',
   'demo-access.ts',
   'demo-tracking.ts',
@@ -175,7 +174,6 @@ const NON_CRM_ACTION_FILES = [
   'stats-leak-maps.ts',
   'stats.ts',
   'task-reminders.ts',
-  'task-templates.ts',
   'tasks.ts',
   'team-category-insights.ts',
   'team-sg-baseline.ts',
@@ -327,7 +325,7 @@ describe('FEATURE_REGISTRY completeness', () => {
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 438 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 420 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -369,7 +367,17 @@ describe('FEATURE_REGISTRY completeness', () => {
     // 2026-09-02 (+1): +updateAnnouncement (announcements.ts) — in-place edit
     // of a posted announcement. announcements.ts is already 'ALL'-mapped, so
     // scanExports picks it up with no manifest edit needed.
-    expect(total).toBe(439);
+    // 2026-09-05 (-19), resolving the duplicate-exports ratchet: deleted
+    // courses.ts (-5: getSavedCourses/getCourseWithHoles/createCourse/
+    // updateCourse/deleteCourse — a self-declared "DEPRECATED — DO NOT WIRE,
+    // ZERO importers" file, also independently named in
+    // docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md §B2/§B3) and
+    // task-templates.ts (-13 — same §B2 zero-importer list; crm-templates.ts
+    // is the live template-CRUD surface), and dropped round-reviews.ts's
+    // dead `createFocusAreaFromReview(reviewId, focusAreaData)` (-1 — zero
+    // importers; development.ts's camelCase-args variant is the one every
+    // real caller uses).
+    expect(total).toBe(420);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

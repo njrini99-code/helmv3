@@ -46,7 +46,6 @@ Tasks let coaches assign work to players. Documents provide a team file library 
 ### Actions
 
 - `src/app/golf/actions/tasks.ts`
-- `src/app/golf/actions/task-templates.ts`
 - `src/app/golf/actions/task-reminders.ts`
 - `src/app/golf/actions/documents.ts`
 - `src/app/golf/actions/event-documents.ts`
