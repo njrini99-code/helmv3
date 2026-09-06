@@ -195,9 +195,10 @@ Each prompt eval should cover:
 
 ## Lighthouse (Core Web Vitals)
 
-`lighthouserc.cjs` config + CircleCI `lighthouse-preview` job runs against
-the Vercel preview URL on every push (auth + landing routes — dashboard
-routes require seeded login fixtures). Asserts:
+`lighthouserc.cjs` config defines the budget below, run manually via
+`npm run lighthouse` (`lhci autorun`). No CI job runs it: `.circleci/config.yml`
+has never defined a `lighthouse-preview` job, and there is no Vercel preview
+URL for it to target (non-main branches don't build). Asserts:
 
 - **Hard errors** (block deploy via CI): a11y < 0.95, CLS > 0.1
 - **Warnings** (surface only): perf < 0.8, best-practices < 0.9, SEO < 0.9,
