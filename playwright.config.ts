@@ -1,4 +1,22 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'node:path';
+
+/**
+ * Load .env.local into THIS process before Playwright collects/imports any
+ * spec file. `next dev`/`next start` (the webServer command below) is a
+ * SEPARATE child process — Next's own .env.local loading there never reaches
+ * the Playwright CLI's process.env, which is where module-level reads like
+ * `e2e/fixtures/golf-auth.ts`'s `hasGolfCoachAuth` actually run. Loading here
+ * instead means the credentials are already in process.env by the time
+ * Playwright imports spec files, and worker processes inherit process.env
+ * from this one, so the fix reaches them too.
+ *
+ * Never overrides an already-set variable (dotenv's default), so a CI
+ * environment that injects the secret directly is unaffected — this only
+ * fills the gap for a local run that relies on .env.local.
+ */
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 /**
  * Playwright E2E Test Configuration

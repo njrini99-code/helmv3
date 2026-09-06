@@ -30,6 +30,7 @@ import * as ci from './checks/ci.mjs';
 import * as config from './checks/config.mjs';
 import * as dbObservability from './checks/db-observability.mjs';
 import * as nodeVersion from './checks/node-version.mjs';
+import * as deps from './checks/deps.mjs';
 import * as settingsOwnership from '../check-settings-ownership.mjs';
 import * as worktreeHygiene from './checks/worktree-hygiene.mjs';
 import * as diskHygiene from './checks/disk-hygiene.mjs';
@@ -46,9 +47,13 @@ import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
 // worktree-hygiene's canonical-off-main sub-check shells out to `gh`, which
 // degrades to LOCAL_ONLY (never UNKNOWN/FAIL) when gh cannot reach GitHub —
 // the same reasoning, so it stays in the shared list too.
+// deps' lockfile-drift check reads two on-disk JSON files only (no network,
+// no git) and self-reports UNKNOWN — never a manufactured FAIL — when
+// node_modules/.package-lock.json is absent (nothing installed yet), so it
+// needs no `--local` gate either.
 const MODULES = [
   identity, workspace, scratch, ai, registry, ci, config, dbObservability,
-  nodeVersion, settingsOwnership, worktreeHygiene, diskHygiene, routines,
+  nodeVersion, deps, settingsOwnership, worktreeHygiene, diskHygiene, routines,
 ];
 
 function parseArgs(argv) {

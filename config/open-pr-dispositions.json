@@ -1,13 +1,8 @@
 {
-  "1852": {
+  "1854": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Phase 2 P3: SECURITY DEFINER EXECUTE classification and the held revoke migration."
-  },
-  "1851": {
-    "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Control-plane reset close-out A9: drops disposition rows for the merged reset PRs."
+    "note": "Phase 2 P4: CodeQL #584, lockfile-drift doctor check, e2e env loading, doc schema drift to zero."
   },
   "1846": {
     "disposition": "ACTIVE",

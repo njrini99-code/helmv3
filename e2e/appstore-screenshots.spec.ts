@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from '@playwright/test';
-import { golfPlayerTest as test, hasGolfPlayerAuth } from './fixtures/golf-auth';
+import { golfPlayerTest as test, hasGolfPlayerAuth, requireGolfAuthOrSkip } from './fixtures/golf-auth';
 
 /**
  * e2e/appstore-screenshots.spec.ts — App Store screenshot capture for the
@@ -57,7 +57,7 @@ function shotPath(filename: string): string {
 }
 
 test.describe('App Store screenshots — v2.0 (build 9)', () => {
-  test.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
+  requireGolfAuthOrSkip(test, hasGolfPlayerAuth, 'GOLFHELM_PLAYER_* or E2E_GOLF_*');
 
   test.describe.configure({ timeout: 90_000 });
 

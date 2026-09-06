@@ -30,9 +30,11 @@ violation always fails regardless of baseline.
   secret exists.
 - `check:ledger` has a test proving the guard works, but no workflow
   invokes `scripts/check-migration-ledger.mjs` itself.
-- The Golf e2e suite gates on env vars read at module load time; exporting
-  them into the shell (not just `.env.local`) is required, or every golf
-  spec silently skips and still exits 0 — check passed vs. skipped counts.
+- The Golf e2e suite's coach/player auth gates read env vars at module load
+  time. `playwright.config.ts` now loads `.env.local` via dotenv before any
+  spec is collected, so a local `.env.local` is enough on its own. Locally a
+  missing credential still skips visibly; in CI it fails the run instead of a
+  silent, always-green skip.
 - `orphans:mounts` has no CI caller.
 - `test:rls` is pgTAP (`scripts/test-pgtap.sh`), not vitest; the vitest
   `rls` project matches zero files by design.
