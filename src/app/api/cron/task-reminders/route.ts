@@ -3,8 +3,10 @@
  *
  * Dispatches due task reminders (in-app row + email + push) for reminders whose
  * `scheduled_for` has passed and that haven't been sent. Designed for an HOURLY
- * schedule (`0 * * * *` in vercel.json) — matching the task reminder offsets
- * (1h / 2h / 1d / 2d / 1w before due).
+ * schedule (`5 * * * *` in vercel.json) — matching the task reminder offsets
+ * (1h / 2h / 1d / 2d / 1w before due). Offset 5 minutes past the hour, moved
+ * off the exact top of the hour 2026-09-06 (cron consolidation) so it no
+ * longer collides with `event-reminders`, which owns `0 * * * *`.
  *
  * Why a service-role client: golf_task_reminders is readable only by the owning
  * coach or service_role (RLS). A cron has no user session, so it MUST use the

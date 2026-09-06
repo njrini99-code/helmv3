@@ -59,12 +59,15 @@ routines:
   - id: db-drift-production
     trigger: github-actions-schedule
     source: .github/workflows/db-drift.yml
-    schedule: "0 7 * * *"
+    schedule: "10 7 * * *"
     status: active
     description: >-
       Daily production-vs-migration-ledger schema invariant check (separate
       question from CI's own migrations-rebuilt-locally check — see that
-      workflow's own header).
+      workflow's own header). Moved from "0 7 * * *" to "10 7 * * *" 2026-09-06
+      (cron consolidation): it collided with the Vercel `integrity-check`
+      cron at the same "0 7 * * *" minute.
+    verified: 2026-09-06
 
   - id: codeql-analysis
     trigger: github-actions-schedule
@@ -108,6 +111,57 @@ routines:
       copy that rots (shipping.md §1). This row exists so the routines
       check's "everything is accounted for" claim is honest: vercel.json's
       crons array is a known, tracked routine SOURCE, not an omission.
+      2026-09-06 cron consolidation moved two entries to de-collide them:
+      `task-reminders` "0 * * * *" -> "5 * * * *" (was firing the same
+      minute as `event-reminders`), and `ingest-gmail-replies`
+      "*/30 * * * *" -> "20 * * * *" (was firing the same minute as
+      `coachhelm-safety-net`). Neither change altered CRON_REGISTRY's set of
+      paths, only two schedule strings, both mirrored in
+      `src/lib/admin/cron-registry.ts`. Owner decision open, unchanged by
+      this pass: `db-health-sampler` (5 min) / `db-stat-delta` (15 min)
+      cadence — 5 min vs 15 min is still undecided; and `reliability-triage`
+      (every 3h) / `selfheal-triage` (4x/day) both write a second
+      `background_job_logs` detail row per run by design — overlap noted, no
+      schedule change made.
+    verified: 2026-09-06
+
+  - id: pg-cron-admin-event-purge
+    trigger: pg-cron
+    source: supabase/migrations/20260703043000_admin_events_retention_pg_cron.sql
+    schedule: "10 4 * * *"
+    status: active
+    description: >-
+      Production-only pg_cron job `purge-admin-event-telemetry`. Was a
+      blanket 180-day DELETE on both `admin_events` and
+      `admin_analytics_events` with no severity awareness or batching.
+      Narrowed 2026-09-06 (cron consolidation,
+      supabase/migrations/20260906120000_narrow_admin_event_purge_pg_cron.sql,
+      HELD — owner applies) to a REDUNDANT FLOOR only: `admin_events` rows
+      with severity in ('info','warning') older than 180 days. It no longer
+      touches `admin_analytics_events` (owned exclusively by the
+      `log-retention` Vercel cron as of the same PR) and never touches
+      error/critical `admin_events` (log-retention's 13-month window for
+      those is intentionally longer than any floor this job should apply).
+      Verification query: `select jobname, schedule, command from cron.job;`
+      — as of 2026-09-06 the live production job still runs the OLD
+      two-table body; the narrowing migration is HOLD, not yet applied.
+    verified: 2026-09-06
+
+  - id: v3-weekly-coach-email
+    trigger: vercel-cron
+    source: src/app/api/cron/v3/weekly-coach-email/route.ts
+    schedule: "0 14 * * 0"
+    status: intentionally-unscheduled
+    description: >-
+      Owner decision 2026-09-06: all customer outbound email is off (see
+      memory/features/email_outbound.md — pending as of this row; name
+      recorded here as the pointer regardless of landing order). Not
+      registered in vercel.json or CRON_REGISTRY on purpose, the same
+      pattern `src/app/api/cron/process-sequences/route.ts` already uses for
+      a deliberately-off automation. `schedule` above is what would be used
+      if/when customer email is re-enabled — Sundays 14:00 UTC, matching the
+      route's own "designed to fire Sundays" comment — not a live cron.
+    verified: 2026-09-06
 
   - id: helm-demo-readiness
     trigger: claude-scheduled-task

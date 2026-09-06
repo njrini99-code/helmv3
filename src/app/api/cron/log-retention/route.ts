@@ -5,12 +5,24 @@
  * risk #8 rule: retention lands alongside the write path it's bounding, not
  * after the table has already grown unbounded).
  *
- * Retention policy:
- *   - admin_events / error_logs: info/warning rows older than 90d, error/
- *     critical rows older than 13mo (13mo is the forensic window — long
- *     enough to span a fiscal-year-over-year comparison).
- *   - background_job_logs: all rows older than 90d (cron outcomes are
- *     operational, not forensic).
+ * Retention policy — the WHOLE policy lives here, in one place, as of the
+ * 2026-09-06 cron consolidation (see the pg_cron migration below):
+ *   - admin_events / error_logs: info/warning rows older than 90d via THIS
+ *     route, error/critical rows older than 13mo via THIS route (13mo is the
+ *     forensic window — long enough to span a fiscal-year-over-year
+ *     comparison).
+ *   - admin_analytics_events: ALL rows older than 180d via THIS route (added
+ *     2026-09-06 — previously only pg_cron purged this table; see below).
+ *   - background_job_logs: all rows older than 90d via THIS route (cron
+ *     outcomes are operational, not forensic).
+ *   - pg_cron (`purge-admin-event-telemetry`, `10 4 * * *`, production-only,
+ *     see `supabase/migrations/20260906120000_narrow_admin_event_purge_pg_cron.sql`,
+ *     HELD as of this PR — see `supabase/migrations/HELD.md`)
+ *     is a REDUNDANT FLOOR, info/warning `admin_events` only, 180d — a
+ *     backstop for if this route stops running, not a second policy. It no
+ *     longer touches `admin_analytics_events`, which this route now owns
+ *     exclusively, and it never touches error/critical `admin_events` (this
+ *     route's 13mo window for those is intentionally longer than the floor).
  *
  * Bounded-batch delete: each purge selects up to BATCH rows (oldest first),
  * deletes them, and repeats up to MAX_BATCHES times per call — so a 90k-row
@@ -130,6 +142,28 @@ function purgeErrorLogsBefore(admin: AdminClient, before: string): Promise<numbe
   );
 }
 
+/**
+ * Purges `admin_analytics_events` older than `before`. Added 2026-09-06
+ * (cron consolidation): this table used to be purged ONLY by the pg_cron job
+ * `purge-admin-event-telemetry`, which had no batching, no counter surfaced
+ * to `background_job_logs`, and ran on a schedule outside application code's
+ * visibility. The pg_cron job is narrowed (see the sibling migration) to
+ * stop touching this table so there is exactly one owner of its retention.
+ * No severity column on this table — every row purges on age alone.
+ */
+function purgeAdminAnalyticsEventsBefore(admin: AdminClient, before: string): Promise<number> {
+  return purgeBatch(
+    () =>
+      admin
+        .from('admin_analytics_events')
+        .select('id')
+        .lt('created_at', before)
+        .order('created_at', { ascending: true })
+        .limit(BATCH),
+    (ids) => admin.from('admin_analytics_events').delete().in('id', ids),
+  );
+}
+
 function purgeJobLogsBefore(admin: AdminClient, before: string): Promise<number> {
   return purgeBatch(
     () =>
@@ -201,12 +235,19 @@ export async function GET(req: NextRequest) {
     const hygiene = await archiveKnownResolvedIncidents();
     const autoResolve = await runAutoResolve();
 
+    const ago180d = new Date(Date.now() - 180 * 86400_000).toISOString();
+
     let deleted = 0;
     deleted += await purgeAdminEvents(admin, ['info', 'warning'], ago90d);
     deleted += await purgeAdminEvents(admin, ['error', 'critical'], ago13mo);
     deleted += await purgeErrorLogsBySeverity(admin, ['info', 'warning'], ago90d);
     deleted += await purgeErrorLogsBefore(admin, ago13mo);
     deleted += await purgeJobLogsBefore(admin, ago90d);
+    // Own counter surfaced separately (not folded into `deleted`) so the
+    // 2026-09-06 policy change — this route now owns admin_analytics_events
+    // retention, not just pg_cron — is visible in the job result rather than
+    // hidden inside one combined number.
+    const deletedAnalyticsEvents = await purgeAdminAnalyticsEventsBefore(admin, ago180d);
 
     // Flatten the resolution-lifecycle outcome into TOP-LEVEL SCALARS.
     //
@@ -250,6 +291,7 @@ export async function GET(req: NextRequest) {
       ok: true,
       degraded,
       deleted,
+      deletedAnalyticsEvents,
       autoResolved: hygiene.archived,
       buckets: hygiene.buckets,
       releaseAutoResolve: autoResolve,

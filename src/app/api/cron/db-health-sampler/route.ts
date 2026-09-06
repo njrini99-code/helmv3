@@ -6,12 +6,13 @@
  * RPC `public.helm_debug_db_health_snapshot()`, computes deltas in
  * TypeScript (`computeDbHealthDelta`, `db-health-delta.ts` — pure, unit
  * tested, never SQL arithmetic), and persists one row via
- * `public.record_db_health_sample(...)`. Both RPCs are HELD
- * (20260903180100_helm_debug_db_health_samples.sql, not applied to
- * production) — this route degrades to a 200 no-op while unapplied, exactly
- * like `src/app/api/cron/helm-debug-prune/route.ts` already does for
- * `helm_debug_prune`; see that file's header for the full reasoning behind
- * `isMigrationNotAppliedError`.
+ * `public.record_db_health_sample(...)`. Both RPCs
+ * (20260903180100_helm_debug_db_health_samples.sql) were applied to
+ * production 2026-09-03 (see supabase/migrations/HELD.md) — the 200 no-op
+ * fallback remains only for a fresh local stack that has not run the
+ * migration, exactly like `src/app/api/cron/helm-debug-prune/route.ts`
+ * already does for `helm_debug_prune`; see that file's header for the full
+ * reasoning behind `isMigrationNotAppliedError`.
  *
  * LOCKS/BLOCKING (Phase 2 track A1, brief §18) IS FOLDED IN HERE, not a
  * separate schedule — brief §27 prefers one well-structured collector over
@@ -22,9 +23,10 @@
  * `deltas.deadlocks` for the deadlock signal), and persist any resulting
  * candidates via `record_db_lock_incident`. This half runs in its OWN
  * try/catch, entirely after the health write succeeds or degrades: if the
- * lock migration (20260903191000, HELD, applied independently of the
- * health-sampler migration) is not yet applied, or any lock-side call
- * throws for any other reason, the run must still report the health sample
+ * lock migration (20260903191000, applied to production 2026-09-03
+ * independently of the health-sampler migration) is missing on a fresh
+ * local stack, or any lock-side call throws for any other reason, the run
+ * must still report the health sample
  * it already wrote as a success — a missing/broken lock feature must never
  * turn a healthy 5-minute health sample into a failed cron run.
  *

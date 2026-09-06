@@ -13,10 +13,11 @@
  * src/lib/admin/database/tables.ts, so a threshold tuned later applies
  * retroactively to already-stored history instead of only to future rows.
  *
- * Both RPCs are HELD (20260903191100_helm_debug_db_table_samples.sql, not
- * applied to production) — degrades to a 200 no-op while unapplied, same
- * isMigrationNotAppliedError pattern as every other collector in this
- * series.
+ * Both RPCs (20260903191100_helm_debug_db_table_samples.sql) were applied
+ * to production 2026-09-03 (see supabase/migrations/HELD.md) — the 200
+ * no-op fallback remains only for a fresh local stack without the
+ * migration, same isMigrationNotAppliedError pattern as every other
+ * collector in this series.
  *
  * Auth: requireCronAuth. Schedule: hourly, `7 * * * *` (vercel.json) — the
  * ':07' offset keeps this off the exact top of every hour other daily/
