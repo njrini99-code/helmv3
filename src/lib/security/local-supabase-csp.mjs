@@ -1,3 +1,10 @@
+/* global process, URL -- both built into Node, browsers and the Edge runtime.
+   This file lives under src/, where eslint.config.mjs grants no Node globals
+   (only scripts/** gets `globals.node` — see credential-shape.mjs for the
+   same directive), so `no-undef` has to be told. Not
+   `import { URL } from "node:url"` / a Node `process` typing: this is
+   imported by next.config.mjs at build time, so it must stay a plain,
+   dependency-free ESM module. */
 /**
  * local-supabase-csp.mjs — extra `connect-src` origins for a LOCAL Supabase stack,
  * and nothing else.
