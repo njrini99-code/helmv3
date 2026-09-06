@@ -3,11 +3,13 @@
  * /api/cron/db-observability-prune (brief §27, §40-48)
  *
  * Calls `public.helm_debug_prune_observability(...)` — Phase 1
- * (20260903180300_helm_debug_observability_retention.sql, HELD) created it
+ * (20260903180300_helm_debug_observability_retention.sql, applied to
+ * production 2026-09-03, see supabase/migrations/HELD.md) created it
  * with a 4-arg signature pruning `db_error_events` (30d), `db_health_samples`
  * (30d), `db_stat_deltas` (14d), and `db_stat_prior_state` (14d since last
  * seen); Phase 2's A6
- * (20260903191300_helm_debug_observability_retention_v2.sql, HELD)
+ * (20260903191300_helm_debug_observability_retention_v2.sql, also applied
+ * to production 2026-09-03)
  * `CREATE OR REPLACE`s the SAME 4-arg signature (deliberately unchanged —
  * see that migration's header for why adding parameters would have created
  * a second, ambiguous overload) to ALSO prune `db_lock_incidents` (30d) and
@@ -19,7 +21,7 @@
  * being present-or-absent as the signal for which is live.
  *
  * Same degrade-cleanly pattern as this repo's other `helm_debug_*` cron
- * routes while a migration is HELD — see
+ * routes for a fresh local stack without these migrations — see
  * `src/app/api/cron/helm-debug-prune/route.ts`'s header for the full
  * reasoning.
  *

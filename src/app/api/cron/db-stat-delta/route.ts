@@ -14,8 +14,9 @@
  * the window's delta rows and the refreshed prior-state/baseline rows are
  * persisted in one call to `public.record_db_stat_snapshot(...)`.
  *
- * Both RPCs are HELD (20260903180200_helm_debug_db_stat_deltas.sql, not
- * applied to production) — degrades to a 200 no-op while unapplied, same
+ * Both RPCs (20260903180200_helm_debug_db_stat_deltas.sql) were applied to
+ * production 2026-09-03 (see supabase/migrations/HELD.md) — the 200 no-op
+ * fallback remains only for a fresh local stack without the migration, same
  * `isMigrationNotAppliedError` pattern as every other collector in this PR.
  *
  * Auth: `requireCronAuth`. Schedule: every 15 minutes (vercel.json).

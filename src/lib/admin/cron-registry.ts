@@ -24,7 +24,9 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'coachhelm-insight-lifecycle', path: '/api/cron/coachhelm-insight-lifecycle', cadenceMinutes: DAILY, schedule: '0 4 * * *' },
   { jobType: 'coachhelm-roster-sweep', path: '/api/cron/coachhelm-roster-sweep', cadenceMinutes: DAILY, schedule: '0 2 * * *' },
   { jobType: 'event-reminders', path: '/api/cron/event-reminders', cadenceMinutes: 60, schedule: '0 * * * *' },
-  { jobType: 'task-reminders', path: '/api/cron/task-reminders', cadenceMinutes: 60, schedule: '0 * * * *' },
+  // Moved off "0 * * * *" 2026-09-06 (cron consolidation) — it fired the same
+  // minute as event-reminders, which owns the top of the hour.
+  { jobType: 'task-reminders', path: '/api/cron/task-reminders', cadenceMinutes: 60, schedule: '5 * * * *' },
   { jobType: 'v3-standing-refresh', path: '/api/cron/v3/standing-refresh', cadenceMinutes: DAILY, schedule: '20 2 * * *' },
   { jobType: 'v3-genome-nightly', path: '/api/cron/v3/genome-nightly', cadenceMinutes: DAILY, schedule: '40 2 * * *' },
   { jobType: 'v3-causality-attribute', path: '/api/cron/v3/causality-attribute', cadenceMinutes: DAILY, schedule: '0 3 * * *' },
@@ -41,7 +43,10 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // (7.5 min) made the Jobs board show this job "overdue" almost
   // continuously between its real, on-schedule 4-hour runs.
   { jobType: 'refresh-engagement', path: '/api/cron/refresh-engagement', cadenceMinutes: 4 * 60, schedule: '10 */4 * * *' },
-  { jobType: 'ingest-gmail-replies', path: '/api/cron/ingest-gmail-replies', cadenceMinutes: 30, schedule: '*/30 * * * *' },
+  // Relaxed from "*/30 * * * *" to hourly 2026-09-06 (cron consolidation) —
+  // offset to :20 so it doesn't land on the same minute as event-reminders
+  // (top of hour) or task-reminders (:05).
+  { jobType: 'ingest-gmail-replies', path: '/api/cron/ingest-gmail-replies', cadenceMinutes: 60, schedule: '20 * * * *' },
   { jobType: 'helm-debug-prune', path: '/api/cron/helm-debug-prune', cadenceMinutes: DAILY, schedule: '30 4 * * *' },
   // Supabase zero-cost observability Phase 1 (#1786): schedules mirror vercel.json byte-for-byte.
   { jobType: 'db-health-sampler', path: '/api/cron/db-health-sampler', cadenceMinutes: 5, schedule: '*/5 * * * *' },

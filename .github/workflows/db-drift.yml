@@ -18,9 +18,12 @@ name: Database drift (production)
 
 on:
   schedule:
-    # 07:00 UTC daily — after the Monday 06:00 CircleCI weekly window, so a
-    # drift failure is not competing for attention with the heavy jobs.
-    - cron: '0 7 * * *'
+    # 07:10 UTC daily — after the Monday 06:00 CircleCI weekly window, so a
+    # drift failure is not competing for attention with the heavy jobs, and
+    # offset 10 minutes past the hour so it no longer lands in the same
+    # minute as the Vercel `integrity-check` cron (`0 7 * * *`) — the 2026-09-06
+    # scheduler audit found the two 07:00 production health checks colliding.
+    - cron: '10 7 * * *'
   workflow_dispatch:
 
 # Read-only guard; no write scope needed anywhere.
