@@ -23,6 +23,7 @@ import {
 } from '@/lib/observability/supabase-tracing';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { tryGetSecretKey } from '@/lib/supabase/keys.mjs';
 
 type RateLimitConfig = {
   maxAttempts: number;
@@ -130,14 +131,19 @@ type AdminClientResult =
  */
 function tryGetAdminClient(): AdminClientResult {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  // nosemgrep: helmv3-service-role-outside-admin -- module is `import 'server-only'` (top of file), so a client import is a build error, not a browser leak. It cannot use the shared createAdminClient(): that THROWS on a missing key, which is the exact fail-closed regression removed in NEW-1 below (it refused 100% of logins across all three sports), and it is deliberately untyped because auth_rate_limits collapses the row types to `never`.
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Module is `import 'server-only'` (top of file), so a client import is a
+  // build error, not a browser leak. It cannot use the shared
+  // createAdminClient(): that THROWS on a missing key, which is the exact
+  // fail-closed regression removed in NEW-1 below (it refused 100% of logins
+  // across all three sports), and it is deliberately untyped because
+  // auth_rate_limits collapses the row types to `never`. tryGetSecretKey()
+  // (new-format SUPABASE_SECRET_KEY first, legacy SUPABASE_SERVICE_ROLE_KEY
+  // fallback — src/lib/supabase/keys.mjs) is the non-throwing counterpart to
+  // that same precedence.
+  const { key: serviceRoleKey, missing: missingSecretKeyNames } = tryGetSecretKey();
 
   if (!url || !serviceRoleKey) {
-    const missing = [
-      url ? null : 'NEXT_PUBLIC_SUPABASE_URL',
-      serviceRoleKey ? null : 'SUPABASE_SERVICE_ROLE_KEY',
-    ]
+    const missing = [url ? null : 'NEXT_PUBLIC_SUPABASE_URL', missingSecretKeyNames]
       .filter((name): name is string => name !== null)
       .join(', ');
     return { client: null, reason: `missing env: ${missing}` };
@@ -145,7 +151,7 @@ function tryGetAdminClient(): AdminClientResult {
 
   try {
     return {
-      client: createRateLimitAdminClient(url.trim(), serviceRoleKey.trim()),
+      client: createRateLimitAdminClient(url.trim(), serviceRoleKey),
       reason: null,
     };
   } catch (error) {

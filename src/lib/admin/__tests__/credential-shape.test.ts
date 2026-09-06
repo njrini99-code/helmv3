@@ -12,6 +12,8 @@ import {
   isInternalLogKey,
   isSentrySlug,
   isPlaceholder,
+  isSupabasePublishableKey,
+  isSupabaseSecretKey,
 } from '../credential-shape.mjs';
 
 /**
@@ -31,6 +33,8 @@ describe('credential shapes reject the 11-character placeholder class', () => {
     'inngest_signing_key',
     'inngest_event_key',
     'internal_log_key',
+    'supabase_publishable_key',
+    'supabase_secret_key',
   ] as const)('%s: an 11-char opaque string is malformed, not usable', (kind) => {
     expect(ELEVEN).toHaveLength(11);
     expect(classifyCredential(kind, ELEVEN)).toBe('malformed');
@@ -102,6 +106,38 @@ describe('Vercel and the internal log key', () => {
     expect(isInternalLogKey('a'.repeat(16))).toBe(true);
     expect(isInternalLogKey('a'.repeat(15))).toBe(false);
     expect(isInternalLogKey(`${'a'.repeat(8)} ${'b'.repeat(8)}`)).toBe(false);
+  });
+});
+
+describe('Supabase publishable/secret keys — Phase 2 / P6', () => {
+  it('accepts the new-format sb_publishable_/sb_secret_ prefix at >= 20 chars', () => {
+    expect(isSupabasePublishableKey(`sb_publishable_${'a'.repeat(10)}`)).toBe(true);
+    expect(isSupabaseSecretKey(`sb_secret_${'a'.repeat(15)}`)).toBe(true);
+  });
+  it('rejects a too-short new-format value (still a placeholder-class string)', () => {
+    expect(isSupabasePublishableKey('sb_publishable_x')).toBe(false);
+    expect(isSupabaseSecretKey('sb_secret_x')).toBe(false);
+  });
+  it('accepts the legacy JWT shape (three dot-separated base64url segments)', () => {
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    expect(isSupabasePublishableKey(jwt)).toBe(true);
+    expect(isSupabaseSecretKey(jwt)).toBe(true);
+  });
+  it('rejects a value in neither shape', () => {
+    expect(isSupabasePublishableKey('not-a-key-at-all')).toBe(false);
+    expect(isSupabaseSecretKey('two.segments')).toBe(false);
+    expect(isSupabaseSecretKey('four.dot.separated.segments')).toBe(false);
+  });
+  it('classifyCredential/usableCredential wire the new kinds through end to end', () => {
+    expect(classifyCredential('supabase_publishable_key', `sb_publishable_${'a'.repeat(10)}`)).toBe(
+      'ok'
+    );
+    expect(classifyCredential('supabase_secret_key', 'your-service-role-key-here')).toBe(
+      'placeholder'
+    );
+    expect(usableCredential('supabase_secret_key', `  sb_secret_${'a'.repeat(15)}  `)).toBe(
+      `sb_secret_${'a'.repeat(15)}`
+    );
   });
 });
 

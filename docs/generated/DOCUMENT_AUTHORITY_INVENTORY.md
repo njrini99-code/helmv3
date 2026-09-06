@@ -221,8 +221,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/setup/COACHHELM_DATABASE_SETUP.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/COACHHELM_IMPLEMENTATION_GUIDE.md` | current | - | - | - | 0 | 8 | 3 |
 | `docs/setup/COACHHELM_QUICK_START.md` | current | - | - | - | 0 | 4 | 2 |
-| `docs/setup/DEPLOY.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/setup/ENVIRONMENT_VARIABLES.md` | current | - | - | - | 0 | 0 | - |
+| `docs/setup/DEPLOY.md` | current | - | - | - | 0 | 2 | 1 |
+| `docs/setup/ENVIRONMENT_VARIABLES.md` | current | - | - | - | 0 | 2 | - |
 | `docs/setup/ERROR_MONITORING_SETUP.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/GMAIL_SEND_SETUP.md` | current | - | - | - | 1 | 0 | - |
 | `docs/setup/OAUTH_SECURITY_GUIDE.md` | current | - | - | - | 0 | 0 | - |
@@ -241,8 +241,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/brand/logos.md` | current | - | - | - | 0 | 0 | - |
 | `memory/context/agent-operations.md` | current | yes | - | - | 2 | 5 | - |
 | `memory/context/agent-traps.md` | current | yes | - | - | 1 | 8 | - |
-| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 4 | 42 | 1 |
-| `memory/context/baseballhelm-features.md` | current | yes | - | yes | 14 | 24 | 1 |
+| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 4 | 41 | 1 |
+| `memory/context/baseballhelm-features.md` | current | yes | - | yes | 14 | 23 | 1 |
 | `memory/context/baseballhelm-workflows.md` | current | - | - | yes | 2 | 5 | - |
 | `memory/context/coachhelm-ai.md` | current | yes | - | yes | 20 | 20 | 13 |
 | `memory/context/engineering-methodology.md` | current | yes | - | yes | 6 | 12 | 2 |
@@ -605,7 +605,7 @@ them would bury everything above.
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
-| `docs/REPO_MAP.md` | current | - | - | yes | 4 | 37 | 4 |
+| `docs/REPO_MAP.md` | current | - | - | yes | 4 | 39 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 4 | 7 | - |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 3 | 16 | 9 |
@@ -702,7 +702,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 18 | 30 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 18 | 31 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |

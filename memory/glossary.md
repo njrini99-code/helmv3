@@ -38,6 +38,19 @@
 > **The counts in the AUTOGEN blocks are the number. Do not hand-copy them
 > elsewhere — that is how "75 tables" outlived the schema by six months.**
 
+> **The 20 non-existent names in the curated index below, by name:**
+> `golf_availability_polls`, `golf_calendar_sync_log`, `golf_calendar_sync_state`,
+> `golf_coach_settings`, `golf_event_exclusions`, `golf_event_status_log`,
+> `golf_external_calendars`, `golf_insight_feedback`, `golf_insight_weights`,
+> `golf_player_attendance_stats`, `golf_player_availability_blocks`,
+> `golf_player_insight_preferences`, `golf_player_settings`, `golf_poll_responses`,
+> `golf_putting_tendencies`, `golf_recurring_events`, `golf_review_insights`,
+> `golf_task_completions`, `golf_travel_expense_splits`, `golf_validations`.
+> Declared absent below so `npm run docs:schema-drift` exempts them
+> structurally instead of carrying them in the numeric baseline.
+
+<!-- schema-drift-absent: golf_availability_polls, golf_calendar_sync_log, golf_calendar_sync_state, golf_coach_settings, golf_event_exclusions, golf_event_status_log, golf_external_calendars, golf_insight_feedback, golf_insight_weights, golf_player_attendance_stats, golf_player_availability_blocks, golf_player_insight_preferences, golf_player_settings, golf_poll_responses, golf_putting_tendencies, golf_recurring_events, golf_review_insights, golf_task_completions, golf_travel_expense_splits, golf_validations -->
+
 ---
 
 ## How to Use This File

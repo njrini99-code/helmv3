@@ -42,6 +42,13 @@
  *   - Vercel: project ids are `prj_…`, team ids `team_…`, API tokens are
  *     opaque alphanumerics (24 characters when issued); floor 20.
  *   - INTERNAL_LOG_KEY: an app-chosen shared secret; floor 16, no whitespace.
+ *   - Supabase publishable/secret key: EITHER the new-format
+ *     `sb_publishable_…` / `sb_secret_…` prefix (Phase 2 / P6 — see
+ *     `src/lib/supabase/keys.mjs`), OR the legacy shape, which is a JWT
+ *     (three `.`-separated base64url segments) — `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+ *     and `SUPABASE_SERVICE_ROLE_KEY` have always been signed JWTs. A value in
+ *     neither shape is `malformed`, not silently accepted — the same failure
+ *     class as the 11-character Bridge placeholders this file exists to catch.
  *
  * Nothing here prints, logs, or returns a value it was not given.
  */
@@ -119,9 +126,44 @@ export function isInternalLogKey(value) {
 }
 
 /**
+ * The legacy Supabase key shape: a JWT — three `.`-separated base64url
+ * segments, no padding. Both `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
+ * `SUPABASE_SERVICE_ROLE_KEY` have always been signed JWTs.
+ * @param {string} value
+ */
+function isLegacySupabaseJwtShape(value) {
+  return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value.trim());
+}
+
+/**
+ * New-format publishable key (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`):
+ * `sb_publishable_…`, or the legacy anon-key JWT shape.
+ * @param {string} value
+ */
+export function isSupabasePublishableKey(value) {
+  const v = value.trim();
+  if (!noWhitespace(v)) return false;
+  if (/^sb_publishable_[A-Za-z0-9_-]+$/.test(v)) return v.length >= 20;
+  return isLegacySupabaseJwtShape(v);
+}
+
+/**
+ * New-format secret key (`SUPABASE_SECRET_KEY`): `sb_secret_…`, or the
+ * legacy service-role JWT shape.
+ * @param {string} value
+ */
+export function isSupabaseSecretKey(value) {
+  const v = value.trim();
+  if (!noWhitespace(v)) return false;
+  if (/^sb_secret_[A-Za-z0-9_-]+$/.test(v)) return v.length >= 20;
+  return isLegacySupabaseJwtShape(v);
+}
+
+/**
  * @typedef {'sentry_auth_token' | 'sentry_dsn' | 'sentry_slug' | 'vercel_api_token'
  *   | 'vercel_project_id' | 'vercel_team_id' | 'inngest_signing_key'
- *   | 'inngest_event_key' | 'internal_log_key'} CredentialKind
+ *   | 'inngest_event_key' | 'internal_log_key' | 'supabase_publishable_key'
+ *   | 'supabase_secret_key'} CredentialKind
  */
 
 /** @type {Record<CredentialKind, (value: string) => boolean>} */
@@ -135,6 +177,8 @@ const SHAPE_CHECKS = {
   inngest_signing_key: isInngestSigningKey,
   inngest_event_key: isInngestEventKey,
   internal_log_key: isInternalLogKey,
+  supabase_publishable_key: isSupabasePublishableKey,
+  supabase_secret_key: isSupabaseSecretKey,
 };
 
 /** Human wording for a failed shape check. Never includes the value. */
@@ -149,6 +193,8 @@ export const SHAPE_HINTS = {
   inngest_signing_key: 'expected signkey-<env>-<hex>',
   inngest_event_key: 'expected an opaque key of >= 20 chars',
   internal_log_key: 'expected a shared secret of >= 16 chars',
+  supabase_publishable_key: 'expected sb_publishable_<id> or a legacy anon-key JWT',
+  supabase_secret_key: 'expected sb_secret_<id> or a legacy service-role JWT',
 };
 
 /**

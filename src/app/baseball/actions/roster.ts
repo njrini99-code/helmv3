@@ -684,6 +684,16 @@ async function findAssignablePlayerByExactEmail(
         skipSentry: true,
       },
     );
+    // Deliberate, not a swallow — kept distinct from this function's own
+    // sibling queries (membersError/searchError below throw), because the
+    // comment above documents a SPECIFIC, EXPECTED failure mode (PGRST202
+    // on every email-shaped search during the window before the RPC's
+    // migration lands) that this call was written to suppress rather than
+    // surface as a search failure. Verify that window is actually closed in
+    // production before converting this to a throw like its siblings —
+    // this ratchet paydown does not touch production migration state to
+    // confirm it. Failure is logged (out of Sentry, into error_logs/Bridge)
+    // either way.
     return [];
   }
 

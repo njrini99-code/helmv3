@@ -183,6 +183,14 @@ async function fetchPlayerRowsDeduped(
       `getPlayerCausalRelationships fetch failed: ${error.message ?? String(error)}`,
       { action: 'causal-relationships.fetchPlayerRowsDeduped', playerId },
     );
+    // Deliberate, not a swallow — getPlayerCausalRelationships's own
+    // docstring commits to this: "[] on any auth failure or DB error
+    // (honest-empty; the panel renders a calm empty state)". The caller
+    // (the player CoachHelm route) already fetches this inside a Promise.all
+    // alongside independent goals/stats/suggestions queries under one
+    // shared try/catch — making this throw would take those down too on a
+    // causal-relationships-only blip, which is a strictly worse outcome
+    // than the documented honest-empty contract. Failure is logged above.
     return [];
   }
 
@@ -321,7 +329,11 @@ export async function getPlayerCausalRelationships(
  * `golf_team_members`, then fetches + dedupes the WHOLE roster via bounded,
  * concurrent per-player queries (`fetchTeamRowsDeduped`). Returns a `Record<playerId,
  * CausalRelationshipRow[]>` (players with no rows are simply absent from the
- * map). Returns `{}` on any auth failure or DB error.
+ * map). Returns `{}` on an auth failure (no team, not staff). THROWS if the
+ * roster membership read itself fails — the caller (the intelligence
+ * dashboard) already catches this action individually for exactly that
+ * reason, so a member-list outage does not read as "nobody has any
+ * relationships."
  */
 async function getTeamCausalRelationshipsImpl(
   teamId: string,
@@ -352,7 +364,13 @@ async function getTeamCausalRelationshipsImpl(
       `getTeamCausalRelationships members fetch failed: ${membersError.message ?? String(membersError)}`,
       { action: 'causal-relationships.getTeamCausalRelationships', metadata: { teamId } },
     );
-    return {};
+    // Throw rather than degrade to {}: the intelligence dashboard's own
+    // Promise.all wraps this exact call in `.catch(() => ({}))` specifically
+    // because this action can fail independently of the team's other
+    // widgets (see the comment above that Promise.all). Swallowing here too
+    // made a real member-list failure indistinguishable from "no players
+    // have any causal relationships yet" with no way for the page to know.
+    throw new Error('Failed to resolve team roster for causal relationships');
   }
 
   const playerIds = (members ?? [])

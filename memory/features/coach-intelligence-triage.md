@@ -6,10 +6,13 @@
 >
 > They are described here as if live. Do not query, type, or build on them —
 > check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing these is a ratchet-down — re-run
+> before trusting any table name in this file. Declared absent
+> below so `npm run docs:schema-drift` exempts them structurally
+> instead of carrying them in the numeric baseline. Removing this
+> reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: golf_insight_evidence, golf_insight_feedback -->
 
 
 ## Status

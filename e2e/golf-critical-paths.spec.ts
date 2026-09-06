@@ -4,6 +4,7 @@ import {
   golfPlayerTest as playerTest,
   hasGolfCoachAuth,
   hasGolfPlayerAuth,
+  requireGolfAuthOrSkip,
 } from './fixtures/golf-auth';
 
 /**
@@ -23,7 +24,7 @@ import {
  */
 
 coachTest.describe('GolfHelm — Coach critical paths', () => {
-  coachTest.skip(!hasGolfCoachAuth, 'Set GOLFHELM_COACH_EMAIL / GOLFHELM_COACH_PASSWORD (seeded golf coach) to run.');
+  requireGolfAuthOrSkip(coachTest, hasGolfCoachAuth, 'GOLFHELM_COACH_EMAIL / GOLFHELM_COACH_PASSWORD (seeded golf coach)');
 
   coachTest('dashboard renders without an error boundary', async ({ page }) => {
     await page.goto('/golf/dashboard', { waitUntil: 'domcontentloaded' });
@@ -106,7 +107,7 @@ coachTest.describe('GolfHelm — Coach critical paths', () => {
 });
 
 playerTest.describe('GolfHelm — Player critical paths', () => {
-  playerTest.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
+  requireGolfAuthOrSkip(playerTest, hasGolfPlayerAuth, 'GOLFHELM_PLAYER_* or E2E_GOLF_*');
 
   playerTest('player dashboard renders without an error boundary', async ({ page }) => {
     await page.goto('/golf/dashboard', { waitUntil: 'domcontentloaded' });
