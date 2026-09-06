@@ -383,7 +383,8 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    SessionStart hook reported *ahead-of-upstream* but never *behind-main*
    (fixed — `.claude/hooks/session-context.sh` now prints behind-main and the
    worktree count). **Before trusting anything about project state, run:**
-   `git worktree list && git rev-list --count HEAD..main && git branch --sort=-committerdate | head`.
+   `git worktree list && git rev-list --count HEAD..main && git branch
+   --sort=-committerdate | head`.
    A non-zero behind-count means the code you are reading is not the code that
    ships. Near-duplicate branch names are the tell.
 
