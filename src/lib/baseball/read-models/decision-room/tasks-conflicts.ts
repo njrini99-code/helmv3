@@ -18,6 +18,8 @@ import type {
   DecisionRoomOpenTask,
   DecisionRoomConflict,
 } from '@/app/baseball/actions/decision-room';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * The authenticated, cookie-bound server client (RLS applies). The Decision Room
@@ -88,7 +90,19 @@ export async function loadOpenTasks(
     .order('created_at', { ascending: false })
     .limit(MAX_ROWS);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[decision-room] loadOpenTasks query failed: ${describeError(error)}`,
+        { action: 'baseball.decisionRoom.loadOpenTasks', metadata: { teamId } },
+      );
+    }
+    // Deliberate, not a swallow — this module's own header ("Additive,
+    // read-only") and the Decision Room's degrade-gracefully contract mean
+    // a failed read here must not throw into the page's Promise.all.
+    // Failure is now logged above.
+    return [];
+  }
 
   return data.map((row): DecisionRoomOpenTask => ({
     id: row.id as string,
@@ -142,7 +156,17 @@ export async function loadConflicts(
     .order('created_at', { ascending: false })
     .limit(MAX_ROWS);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[decision-room] loadConflicts query failed: ${describeError(error)}`,
+        { action: 'baseball.decisionRoom.loadConflicts', metadata: { teamId } },
+      );
+    }
+    // See loadOpenTasks above — same considered "degrade to empty, never
+    // throw into the page" contract. Failure is now logged, not silent.
+    return [];
+  }
 
   // Most-severe first (critical > warning > info), preserving recency within a tier.
   const severityRank: Record<DecisionRoomConflict['severity'], number> = {

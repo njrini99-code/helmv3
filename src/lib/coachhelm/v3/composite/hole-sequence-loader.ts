@@ -13,6 +13,8 @@ import type { Database } from '@/lib/types/database';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type {
   ApproachShotWithLie,
   CompositeContext,
@@ -58,7 +60,19 @@ export async function loadHoleScores(
     .not('score', 'is', null)
     .order('id', { ascending: true })
     .range(from, to)); // paginate past PostgREST 1000-row cap
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `hole-sequence-loader.loadHoleScores query failed: ${describeError(error)}`,
+        { action: 'coachhelm.holeSequenceLoader.loadHoleScores', metadata: { playerId } },
+      );
+    }
+    // Deliberate, not a swallow — this module's own header states the
+    // policy: all three loaders return [] on failure so the composite
+    // rules they feed can no-op gracefully rather than fabricate a
+    // detection from missing data. Failure is now logged.
+    return [];
+  }
 
   return data
     .filter((r) => r.score !== null && typeof r.par === 'number')
@@ -102,7 +116,16 @@ export async function loadShortGameShots(
       data: ShortGameShot[] | null;
       error: { message: string } | null;
     };
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `hole-sequence-loader.loadShortGameShots query failed: ${describeError(error)}`,
+        { action: 'coachhelm.holeSequenceLoader.loadShortGameShots', metadata: { playerId } },
+      );
+    }
+    // See loadHoleScores above — same documented "no-op gracefully" policy.
+    return [];
+  }
 
   // P2-20: the "within 40 yards of the green" gate is in YARDS, but
   // golf_shots.distance_to_hole_before is stored in mixed units
@@ -146,7 +169,16 @@ export async function loadFlyerLieShots(
       data: ApproachShotWithLie[] | null;
       error: { message: string } | null;
     };
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `hole-sequence-loader.loadFlyerLieShots query failed: ${describeError(error)}`,
+        { action: 'coachhelm.holeSequenceLoader.loadFlyerLieShots', metadata: { playerId } },
+      );
+    }
+    // See loadHoleScores above — same documented "no-op gracefully" policy.
+    return [];
+  }
 
   return data.filter(
     (s) =>

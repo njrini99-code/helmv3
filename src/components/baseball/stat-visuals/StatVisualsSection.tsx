@@ -38,34 +38,42 @@ import {
 } from '@/components/icons';
 import { TabStrip } from './chart-primitives';
 import { EditorsLetter } from '@/components/baseball/living-annual';
+// Imported from each chart family's own leaf module, not this directory's
+// own `./index` barrel — this file is itself re-exported from that barrel
+// (`export { StatVisualsSection, ... } from './StatVisualsSection'` below),
+// so importing the barrel back here created an import cycle, flagged by
+// npm run check:cycles.
 import {
-  // hitting
   EvLaContactMatrix,
   ZoneChaseDamageHeatmap,
   SprayChart,
   ApproachCountLadder,
   GameVsPracticeGap,
-  // pitching
+} from './HittingVisuals';
+import {
   PitchShapeMap,
   CommandHeatmap,
   VelocityCommandDecay,
   PitchMixOutcomeBoard,
   ReleaseConsistencyPlot,
-  // fielding
+} from './PitchingVisuals';
+import {
   CatcherWorkloadBoard,
   BatteryMatrix,
   DefensiveEventMap,
   BaserunningBoard,
-  // performance
+} from './FieldingVisuals';
+import {
   ReadinessHeatStrip,
   LiftProgressionChart,
   PitcherWorkloadOverlay,
-  // data quality + snapshot
+} from './PerformanceVisuals';
+import {
   PracticeFocusOutcomeBoard,
   ImportDiffViewer,
   SourceCoverageBoard,
   PlayerDnaPanel,
-} from './index';
+} from './DataQualityVisuals';
 import type {
   EvLaPoint,
   ZoneCell,

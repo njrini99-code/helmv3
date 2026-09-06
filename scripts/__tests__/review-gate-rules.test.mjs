@@ -12,6 +12,11 @@
 //     admin/scripts/edge allowlist.
 //   - helmv3-no-bare-table-names DOES fire on the synthetic positive
 //     fixture in .coderabbit/semgrep/__test__/positive-bare-table.ts.
+//   - helmv3-no-service-role-key DOES fire (>= 2 findings) on the synthetic
+//     positive fixture in
+//     .coderabbit/semgrep/__test__/positive-service-role-secret-key.ts,
+//     which reads BOTH SUPABASE_SERVICE_ROLE_KEY and the new-format
+//     SUPABASE_SECRET_KEY (Phase 2 / P6).
 //
 // Requires: ast-grep (sg) on PATH. Skipped (not failed) when absent.
 //
@@ -123,7 +128,7 @@ test.skipIf(!sgAvailable)('Review Gate rule smoke test', () => {
   // 3. no-service-role-in-client — should be ZERO outside the admin/scripts/edge allowlist.
   //    Replicate the workflow's exclude regex on a synthetic file list.
   const serviceRoleAll = sgScan('.coderabbit/ast-grep/no-service-role-in-client.yml', 'src');
-  const allowlist = /^(src\/lib\/supabase\/admin|src\/lib\/supabase\/service|src\/lib\/auth\/supabase-rate-limit|src\/lib\/notifications\/push|src\/app\/api\/admin\/|src\/app\/api\/.+\/admin\/)/;
+  const allowlist = /^(src\/lib\/supabase\/admin|src\/lib\/supabase\/keys|src\/lib\/supabase\/service|src\/lib\/auth\/supabase-rate-limit|src\/lib\/notifications\/push|src\/app\/api\/admin\/|src\/app\/api\/.+\/admin\/)/;
   const serviceRoleLeaks = serviceRoleAll.filter((f) => !allowlist.test(f.file ?? ''));
   assertCount('no-service-role-key: leaks outside admin allowlist → 0', serviceRoleLeaks, 0);
 
@@ -133,6 +138,23 @@ test.skipIf(!sgAvailable)('Review Gate rule smoke test', () => {
     const pos = sgScan('.coderabbit/ast-grep/no-bare-table-names.yml', posFixture);
     if (pos.length === 0) {
       failures.push(`no-bare-table-names: positive fixture ${posFixture} expected ≥ 1 finding, got 0`);
+    }
+  }
+
+  // 5. Positive fixture — legacy SUPABASE_SERVICE_ROLE_KEY AND new-format
+  //    SUPABASE_SECRET_KEY reads MUST both fire no-service-role-key (Phase 2 /
+  //    P6: the rule was extended to catch the new key name too).
+  const posServiceRoleFixture = '.coderabbit/semgrep/__test__/positive-service-role-secret-key.ts';
+  if (existsSync(resolve(repoRoot, posServiceRoleFixture))) {
+    const posServiceRole = sgScan(
+      '.coderabbit/ast-grep/no-service-role-in-client.yml',
+      posServiceRoleFixture,
+    );
+    if (posServiceRole.length < 2) {
+      failures.push(
+        `no-service-role-key: positive fixture ${posServiceRoleFixture} expected >= 2 ` +
+          `findings (legacy + new-format), got ${posServiceRole.length}`,
+      );
     }
   }
 

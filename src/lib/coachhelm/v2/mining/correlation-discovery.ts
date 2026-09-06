@@ -14,6 +14,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -209,7 +210,7 @@ export class CorrelationDiscovery {
     const roundIds = rounds?.map(r => r.id) ?? [];
 
     if (roundIds.length > 0) {
-      const { data: shots } = await fetchAllRowsResult((from, to) => supabase
+      const { data: shots, error: shotsError } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
           round_id,
@@ -225,6 +226,13 @@ export class CorrelationDiscovery {
         .in('round_id', roundIds)
         .order('id', { ascending: true })
         .range(from, to)); // paginate past PostgREST 1000-row cap
+      if (shotsError) {
+        await logServerError('correlation-discovery.loadData shots read failed', {
+          action: 'correlationDiscovery.loadData.shots',
+          featureArea: 'coachhelm.mining',
+          metadata: { playerId: this.playerId, dbError: shotsError as unknown },
+        });
+      }
 
       if (shots) {
         this.shots = shots;
@@ -258,7 +266,7 @@ export class CorrelationDiscovery {
       }
 
       // Load hole-level data from golf_holes table
-      const { data: holes } = await fetchAllRowsResult((from, to) => supabase
+      const { data: holes, error: holesError } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select(`
           round_id,
@@ -272,6 +280,13 @@ export class CorrelationDiscovery {
         .in('round_id', roundIds)
         .order('id', { ascending: true })
         .range(from, to)); // paginate past PostgREST 1000-row cap
+      if (holesError) {
+        await logServerError('correlation-discovery.loadData holes read failed', {
+          action: 'correlationDiscovery.loadData.holes',
+          featureArea: 'coachhelm.mining',
+          metadata: { playerId: this.playerId, dbError: holesError as unknown },
+        });
+      }
 
       if (holes) {
         this.holes = holes.map(h => ({

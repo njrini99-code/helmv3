@@ -722,7 +722,7 @@ async function getStatsSummaryImpl(
   // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
   // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const roundIds = filteredRounds.map(r => r.id);
-  const { data: holesWithScrambling } = await fetchAllRowsResult((from, to) => supabase
+  const { data: holesWithScrambling, error: holesWithScramblingError } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('score, par')
     .in('round_id', roundIds)
@@ -730,6 +730,12 @@ async function getStatsSummaryImpl(
     .eq('gir', false)
     .order('id', { ascending: true })
     .range(from, to), undefined, { table: 'golf_holes', action: 'getStatsSummary', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+  if (holesWithScramblingError) {
+    await logServerError(
+      `[getStatsSummary] scrambling read failed — scramblingPercentage will read null instead of its real value: ${describeError(holesWithScramblingError)}`,
+      { action: 'statsData.scrambling', featureArea: 'stats_analytics' },
+    );
+  }
 
   let scramblingAttempts = 0;
   let scramblingMade = 0;
@@ -1929,7 +1935,7 @@ async function getTeamComparisonImpl(
   // which corrupts the team scoring average, every per-stat ranking, AND caps
   // teamRoundIds — which would in turn defeat the paginated golf_holes scrambling
   // query below. `.order('id')` gives stable page boundaries (P445).
-  const { data: roundsData } = await fetchAllRowsResult((from, to) => supabase
+  const { data: roundsData, error: roundsDataError } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_rounds')
     .select(`
       id,
@@ -1949,6 +1955,12 @@ async function getTeamComparisonImpl(
     .gte('round_date', seasonStartDate)
     .order('id', { ascending: true })
     .range(from, to), undefined, { table: 'golf_rounds', action: 'getTeamComparison', feature: 'stats_analytics', sport: 'golf' });
+  if (roundsDataError) {
+    await logServerError(
+      `[getTeamComparison] rounds read failed — team comparison will show the empty state instead of real data: ${describeError(roundsDataError)}`,
+      { action: 'statsData.teamComparison.rounds', featureArea: 'stats_analytics' },
+    );
+  }
 
   if (!roundsData || roundsData.length === 0 || !playersData) {
     return {
@@ -1962,7 +1974,7 @@ async function getTeamComparisonImpl(
   // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
   // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const teamRoundIds = roundsData.map(r => r.id);
-  const { data: teamScramblingData } = await fetchAllRowsResult((from, to) => supabase
+  const { data: teamScramblingData, error: teamScramblingError } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('round_id, score, par')
     .in('round_id', teamRoundIds)
@@ -1970,6 +1982,12 @@ async function getTeamComparisonImpl(
     .eq('gir', false)
     .order('id', { ascending: true })
     .range(from, to), undefined, { table: 'golf_holes', action: 'getTeamComparison', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+  if (teamScramblingError) {
+    await logServerError(
+      `[getTeamComparison] scrambling read failed — every player's scramblingPct will read null instead of its real value: ${describeError(teamScramblingError)}`,
+      { action: 'statsData.teamComparison.scrambling', featureArea: 'stats_analytics' },
+    );
+  }
 
   // Build a map of round_id -> player_id for scrambling aggregation
   const roundToPlayer = new Map<string, string>();

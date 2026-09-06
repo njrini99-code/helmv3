@@ -68,7 +68,7 @@ In Vercel Dashboard → Your Project → Settings → Environment Variables:
 | Variable | Value |
 |----------|-------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://qmnssrrolpinvwjjnufo.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key from Supabase |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your publishable key from Supabase (new format, `sb_publishable_...`; falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` if unset — see `src/lib/supabase/keys.mjs`) |
 | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` (update after first deploy) |
 | `NEXT_PUBLIC_APP_NAME` | `Helm Sports Labs` |
 
@@ -76,7 +76,7 @@ In Vercel Dashboard → Your Project → Settings → Environment Variables:
 1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
 2. Select your project
 3. Settings → API
-4. Copy "Project URL" and "anon public" key
+4. Copy "Project URL" and the publishable key (or the legacy "anon public" key)
 
 ---
 

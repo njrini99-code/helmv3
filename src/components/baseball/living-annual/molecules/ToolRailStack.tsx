@@ -11,7 +11,8 @@
  * No hooks / handlers — safe in a server component.
  */
 import { cn } from '@/lib/utils';
-import { ToolRail } from '..';
+// Leaf import, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { ToolRail } from '../ToolRail';
 
 export interface ToolRailStackTool {
   /** Tool name, hung left, e.g. `POWER`. */

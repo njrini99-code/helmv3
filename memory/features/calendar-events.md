@@ -23,9 +23,13 @@
 > `golf_calendar_sync_state`, `golf_external_calendars`,
 > `golf_event_exclusions`, `golf_event_status_log`,
 > `golf_player_availability_blocks`, `golf_player_attendance_stats`.
+> Declared absent below so `npm run docs:schema-drift` exempts them
+> structurally instead of carrying them in the numeric baseline.
 >
 > **A missing table does not always mean a missing feature** — check which case
 > you're in before concluding anything. See "Current State".
+
+<!-- schema-drift-absent: golf_recurring_events, golf_availability_polls, golf_poll_responses, golf_calendar_sync_log, golf_calendar_sync_state, golf_external_calendars, golf_event_exclusions, golf_event_status_log, golf_player_availability_blocks, golf_player_attendance_stats -->
 
 ## Current State
 

@@ -4,6 +4,7 @@ import {
   golfPlayerTest,
   hasGolfCoachAuth,
   hasGolfPlayerAuth,
+  requireGolfAuthOrSkip,
 } from './fixtures/golf-auth';
 
 /**
@@ -29,7 +30,7 @@ golfCoachTest.describe('Golf Qualifier - Coach Flow', () => {
   // repo's environment (no seeded-auth CI fixture exists yet), so this
   // remains skipped today — the true current blocker is the missing env
   // vars, not the test itself.
-  golfCoachTest.skip(!hasGolfCoachAuth, 'Set GOLFHELM_COACH_EMAIL and GOLFHELM_COACH_PASSWORD to run.');
+  requireGolfAuthOrSkip(golfCoachTest, hasGolfCoachAuth, 'GOLFHELM_COACH_EMAIL and GOLFHELM_COACH_PASSWORD');
 
   golfCoachTest('coach can reach the qualifier creation form', async ({ page }) => {
     await page.goto('/golf/dashboard/qualifiers');
@@ -50,7 +51,7 @@ golfCoachTest.describe('Golf Qualifier - Coach Flow', () => {
 });
 
 golfPlayerTest.describe('Golf Qualifier - Player Flow', () => {
-  golfPlayerTest.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
+  requireGolfAuthOrSkip(golfPlayerTest, hasGolfPlayerAuth, 'GOLFHELM_PLAYER_* or E2E_GOLF_*');
 
   golfPlayerTest('should view qualifiers list', async ({ page }) => {
     // Navigate to qualifiers page
@@ -114,7 +115,7 @@ golfPlayerTest.describe('Golf Qualifier - Player Flow', () => {
 });
 
 golfPlayerTest.describe('Golf Qualifier - Leaderboard', () => {
-  golfPlayerTest.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
+  requireGolfAuthOrSkip(golfPlayerTest, hasGolfPlayerAuth, 'GOLFHELM_PLAYER_* or E2E_GOLF_*');
 
   golfPlayerTest('should display leaderboard correctly', async ({ page }) => {
     await page.goto('/golf/dashboard/qualifiers');

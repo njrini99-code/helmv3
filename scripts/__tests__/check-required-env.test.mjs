@@ -131,3 +131,77 @@ test('does not throw when neither Inngest var is set (Inngest not in use)', () =
     })
   );
 });
+
+// Phase 2 / P6: new-format Supabase API keys (sb_publishable_.../sb_secret_...)
+// are accepted in place of the legacy JWT pair, so the owner can disable the
+// legacy keys (one of which is leaked in git history) without a code change.
+
+test('passes with ONLY the new-format publishable + secret keys set (no legacy vars)', () => {
+  assert.doesNotThrow(() =>
+    checkRequiredEnv({
+      VERCEL_ENV: 'production',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abc123',
+      SUPABASE_SECRET_KEY: 'sb_secret_abc123',
+    })
+  );
+});
+
+test('passes with a mix — new-format publishable key, legacy service-role key', () => {
+  assert.doesNotThrow(() =>
+    checkRequiredEnv({
+      VERCEL_ENV: 'production',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abc123',
+      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+    })
+  );
+});
+
+test('passes with a mix — legacy anon key, new-format secret key', () => {
+  assert.doesNotThrow(() =>
+    checkRequiredEnv({
+      VERCEL_ENV: 'preview',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
+      SUPABASE_SECRET_KEY: 'sb_secret_abc123',
+    })
+  );
+});
+
+test('throws naming BOTH publishable-key env vars when neither is set', () => {
+  assert.throws(
+    () =>
+      checkRequiredEnv({
+        VERCEL_ENV: 'production',
+        NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+      }),
+    /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.*NEXT_PUBLIC_SUPABASE_ANON_KEY/
+  );
+});
+
+test('throws naming BOTH secret-key env vars when neither is set', () => {
+  assert.throws(
+    () =>
+      checkRequiredEnv({
+        VERCEL_ENV: 'production',
+        NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
+      }),
+    /SUPABASE_SECRET_KEY.*SUPABASE_SERVICE_ROLE_KEY/
+  );
+});
+
+test('a blank new-format value does not satisfy the requirement — legacy fallback still checked', () => {
+  assert.doesNotThrow(() =>
+    checkRequiredEnv({
+      VERCEL_ENV: 'production',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '   ',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
+      SUPABASE_SECRET_KEY: '   ',
+      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+    })
+  );
+});

@@ -34,7 +34,11 @@
 
 import { cn } from '@/lib/utils';
 import type { Diagnosis, DiagnosisDriver } from '@/lib/coachhelm/v2/insights/types';
-import { formatValue } from './EvidencePanel';
+// Leaf import, not './EvidencePanel' — EvidencePanel.tsx itself imports
+// DiagnosisPanel (to render it), so importing formatValue back from
+// EvidencePanel.tsx created an import cycle (flagged by npm run
+// check:cycles). format-value.ts is the shared leaf module both files use.
+import { formatValue } from './format-value';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { InsightCallout } from './InsightCallout';
 

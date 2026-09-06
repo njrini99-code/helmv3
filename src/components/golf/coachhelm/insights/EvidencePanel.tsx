@@ -23,6 +23,7 @@ import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
 import { DiagnosisPanel } from './DiagnosisPanel';
+import { formatValue } from './format-value';
 
 /**
  * W15: When v2 generators have injected `evidence.standing` (W14), render
@@ -74,37 +75,11 @@ const SHORT_MONTHS = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-/**
- * Formats an evidence value given its unit. Prefers the pre-formatted
- * `your_value_display` string when present (generators render it once with
- * the right rounding/sign rules, so UI code shouldn't second-guess them).
- */
-export function formatValue(
-  value: number,
-  unit: InsightUnit,
-  display?: string,
-): string {
-  if (display && display.trim().length > 0) return display;
-  switch (unit) {
-    case 'percent': {
-      // your_value for `percent` is a 0..1 fraction; scale for display.
-      const pct = Math.abs(value) <= 1 ? value * 100 : value;
-      return `${Math.round(pct)}%`;
-    }
-    case 'strokes': {
-      const sign = value > 0 ? '+' : '';
-      return `${sign}${value.toFixed(1)}`;
-    }
-    case 'yards':
-      return `${Math.round(value)} yd`;
-    case 'feet':
-      return `${Math.round(value)} ft`;
-    case 'count':
-      return `${Math.round(value)}`;
-    default:
-      return String(value);
-  }
-}
+// formatValue moved to ./format-value.ts to break an import cycle with
+// DiagnosisPanel.tsx (see that module's docblock). Re-exported here so this
+// file's own internal use below and its existing external
+// importers/tests keep working unchanged.
+export { formatValue } from './format-value';
 
 /**
  * "30 days (Mar 23 - Apr 22)". Falls back to plain day-count if the dates

@@ -5,7 +5,7 @@
   "ERROR:@typescript-eslint/no-unused-expressions": 1,
   "ERROR:no-empty": 1,
   "ERROR:no-irregular-whitespace": 1,
-  "ERROR:no-undef": 23,
+  "ERROR:no-undef": 21,
   "ERROR:no-useless-escape": 2,
   "ERROR:prefer-const": 1
 }

@@ -450,6 +450,9 @@ export class ShotStateIntelligence {
         featureArea: 'coachhelm.mining',
         metadata: { playerId: this.playerId, dbError: roundsError as unknown },
       });
+      // Deliberate, not a swallow — background mining (coachhelm v2), same
+      // "fails closed to fewer insights, never fabricates" contract as the
+      // sibling engines in this directory. Failure is already logged above.
       return [];
     }
     if (!rounds || rounds.length === 0) {
@@ -532,7 +535,7 @@ export class ShotStateIntelligence {
 
     for (let i = 0; i < roundIds.length; i += 100) {
       const batch = roundIds.slice(i, i + 100);
-      const { data } = await fetchAllRowsResult((from, to) => supabase
+      const { data, error } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select('round_id, hole_number, shot_number, shot_type, lie_before, lie_after, result, is_penalty, miss_direction, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, putt_made')
         .in('round_id', batch)
@@ -542,6 +545,13 @@ export class ShotStateIntelligence {
         // Batching round IDs avoids .in() URL limits.
         .order('id', { ascending: true })
         .range(from, to)); // paginate past PostgREST 1000-row cap
+      if (error) {
+        await logServerError('shot-state-intelligence.fetchShots batch read failed', {
+          action: 'shot-state-intelligence.fetchShots',
+          featureArea: 'coachhelm.mining',
+          metadata: { playerId: this.playerId, batchSize: batch.length, dbError: error as unknown },
+        });
+      }
 
       shots.push(...((data ?? []) as RawShotRow[]));
     }
@@ -555,12 +565,19 @@ export class ShotStateIntelligence {
 
     for (let i = 0; i < roundIds.length; i += 100) {
       const batch = roundIds.slice(i, i + 100);
-      const { data } = await fetchAllRowsResult((from, to) => supabase
+      const { data, error } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select('round_id, hole_number, par, score')
         .in('round_id', batch)
         .order('id', { ascending: true })
         .range(from, to)); // paginate past PostgREST 1000-row cap (per-batch)
+      if (error) {
+        await logServerError('shot-state-intelligence.fetchHoles batch read failed', {
+          action: 'shot-state-intelligence.fetchHoles',
+          featureArea: 'coachhelm.mining',
+          metadata: { playerId: this.playerId, batchSize: batch.length, dbError: error as unknown },
+        });
+      }
 
       holes.push(...((data ?? []) as HoleRow[]));
     }

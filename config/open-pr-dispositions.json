@@ -1,13 +1,13 @@
 {
-  "1852": {
+  "1859": {
     "disposition": "ACTIVE",
     "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Phase 2 P3: SECURITY DEFINER EXECUTE classification and the held revoke migration."
+    "note": "Phase 2 close-out: disposition rows."
   },
-  "1851": {
+  "1856": {
     "disposition": "ACTIVE",
-    "worktree_policy": "PARK_IF_REPRODUCIBLE",
-    "note": "Control-plane reset close-out A9: drops disposition rows for the merged reset PRs."
+    "worktree_policy": "KEEP",
+    "note": "Owner's own PR (headless Mac mini hardening script and runbook), opened from another session; not part of the reset. Owner decides."
   },
   "1846": {
     "disposition": "ACTIVE",

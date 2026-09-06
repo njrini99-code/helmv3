@@ -166,6 +166,12 @@ export default defineConfig({
             // launchd plists / Claude Code scheduled-task directories.
             // Failure-injection suite for repo:doctor's routines.* checks.
             'scripts/repo-doctor/__tests__/routines.test.ts',
+            // Phase 2 P4 (O17): node_modules/.package-lock.json vs
+            // package-lock.json drift. Failure-injection suite for
+            // repo:doctor's deps.lockfile-drift check — every seeded mismatch
+            // is written into a disposable fixture directory, never into the
+            // real lockfile or the real node_modules.
+            'scripts/repo-doctor/__tests__/deps.test.ts',
             // Phase 3 Track E (Supabase observability certification). Named
             // here for the same reason as every neighbour: a file under
             // scripts/ that is NOT listed runs under nothing, and a guard that

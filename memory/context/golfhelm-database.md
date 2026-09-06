@@ -23,6 +23,22 @@
 > For table purposes and relationships: `memory/glossary.md`.
 > Sport prefixes are load-bearing — `golf_*`, `baseball_*`, `lift_*`. An
 > unprefixed table name almost certainly does not exist.
+>
+> **18 of the per-table sections below name a table that does not exist**,
+> verified 2026-08-19 against production and against `src/lib/types/database.ts`:
+> `golf_availability_polls`, `golf_calendar_sync_log`, `golf_calendar_sync_state`,
+> `golf_coach_settings`, `golf_event_exclusions`, `golf_event_status_log`,
+> `golf_external_calendars`, `golf_insight_feedback`, `golf_insight_weights`,
+> `golf_player_attendance_stats`, `golf_player_availability_blocks`,
+> `golf_player_insight_preferences`, `golf_player_settings`, `golf_poll_responses`,
+> `golf_putting_tendencies`, `golf_review_insights`, `golf_travel_expense_splits`,
+> `golf_validations`. Each is exactly the "hand-verified 2026-04-21, stale
+> since" narrative this banner already warns about — kept for the design
+> intent, not for the column list. Declared absent below so
+> `npm run docs:schema-drift` exempts them structurally instead of carrying
+> them in the numeric baseline.
+
+<!-- schema-drift-absent: golf_availability_polls, golf_calendar_sync_log, golf_calendar_sync_state, golf_coach_settings, golf_event_exclusions, golf_event_status_log, golf_external_calendars, golf_insight_feedback, golf_insight_weights, golf_player_attendance_stats, golf_player_availability_blocks, golf_player_insight_preferences, golf_player_settings, golf_poll_responses, golf_putting_tendencies, golf_review_insights, golf_travel_expense_splits, golf_validations -->
 
 ---
 

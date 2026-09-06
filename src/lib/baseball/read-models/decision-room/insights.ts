@@ -20,6 +20,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { DecisionRoomInsight } from '@/app/baseball/actions/decision-room';
 import { OPEN_SIGNAL_DISPOSITIONS } from '@/lib/types/baseball-signals';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /**
  * Hard server-side row cap. PostgREST also enforces a max-rows ceiling, but a
@@ -112,7 +114,18 @@ export async function loadInsights(
     .order('created_at', { ascending: false })
     .limit(ACTIVE_SIGNALS_LIMIT);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError(
+        `[decision-room] loadInsights query failed: ${describeError(error)}`,
+        { action: 'baseball.decisionRoom.loadInsights', metadata: { teamId } },
+      );
+    }
+    // Deliberate, not a swallow — same Decision Room "degrade to empty,
+    // never throw into the page's Promise.all" contract as the sibling
+    // read-models in this directory. Failure is now logged above.
+    return [];
+  }
 
   const rows = data as SignalRow[];
 

@@ -1,5 +1,5 @@
 import { test as publicTest, expect } from '@playwright/test';
-import { golfPlayerTest as test, hasGolfPlayerAuth } from './fixtures/golf-auth';
+import { golfPlayerTest as test, hasGolfPlayerAuth, requireGolfAuthOrSkip } from './fixtures/golf-auth';
 
 /**
  * Golf Dashboard E2E Test
@@ -32,7 +32,7 @@ async function closeCoursePicker(page: import('@playwright/test').Page): Promise
 }
 
 test.describe('Golf Dashboard - Player Flow', () => {
-  test.skip(!hasGolfPlayerAuth, 'Set GOLFHELM_PLAYER_* or E2E_GOLF_* credentials to run.');
+  requireGolfAuthOrSkip(test, hasGolfPlayerAuth, 'GOLFHELM_PLAYER_* or E2E_GOLF_*');
 
   test('should load dashboard successfully', async ({ page }) => {
     await page.goto('/golf/dashboard');
