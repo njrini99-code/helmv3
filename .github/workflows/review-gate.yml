@@ -401,12 +401,14 @@ jobs:
           semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions "${files[@]}"
       # The "Scan with default p/ci ruleset" step that used to run here was
       # removed 2026-09-05: it was a bare community ruleset with no
-      # repo-specific tuning, redundant with either the custom-rules step
-      # above (the actual hard-rule enforcement AGENTS.md names) or with
-      # Semgrep Cloud Platform's own hosted scan if that App is kept — see
-      # the pr-checks-review audit §2(f)/§5. The `all` aggregate below reads
-      # `needs.*.result` for the whole `semgrep` JOB, not per-step outcomes,
-      # so removing a step here needed no change to that logic.
+      # repo-specific tuning, redundant with the custom-rules step above (the
+      # actual hard-rule enforcement AGENTS.md names) — see the
+      # pr-checks-review audit §2(f)/§5. The Semgrep Cloud Platform App is
+      # being removed (owner decision 2026-09-06); the custom-rules step
+      # above is the only semgrep enforcement in this workflow. The `all`
+      # aggregate below reads `needs.*.result` for the whole `semgrep` JOB,
+      # not per-step outcomes, so removing a step here needed no change to
+      # that logic.
 
   all:
     # Renamed from the bare `all` (2026-08-19): ci.yml's aggregate job was
