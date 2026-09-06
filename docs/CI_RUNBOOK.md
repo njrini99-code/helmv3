@@ -98,8 +98,8 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 | `CodeQL` | GitHub's code-scanning app, posted for `codeql.yml`'s scans | summarizes alert-count deltas for the commit (distinct from the three `Analyze (...)` runs the callout above documents, which only assert the scan completed) | **Not required** — the callout above already says so; this row used to say "Hard gate" directly under it, contradicting it. It can show `failure` (new alerts introduced) while all three `Analyze (...)` show `success` simultaneously, so it is real signal that nothing currently blocks on. |
 | `the external review bot` | the external review bot GitHub App | ~~whole-codebase review~~ | **DROPPED 2026-07-20** — the retired rules directory is deleted. Neither external AI reviewer is a gate any more; the deterministic Review Gate + CodeQL cover the same hard rules. |
 | `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E (mandatory Baseball smoke + mobile-viewport regression + broader chromium suite) — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches. **Note:** `Playwright (chromium)`'s broader-suite step no longer masks its exit code (`|| echo ...` removed) — a red run here now means a real failure, not just "see artifact." |
-| `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; usually skips when no preview exists (non-main Vercel builds disabled) | Advisory |
-| `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |
+| `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, branch-gated: `main` / `release/*` / `ios/*` / `capacitor/*` / `agent/fix-circleci-ios-*` | Advisory unless the PR touches iOS |
+| `ci/circleci: android-compile` | CircleCI | Android `assembleDebug` (no signing), branch-gated: `main` / `release/*` / `android/*` / `capacitor/*` / `ci/android-*` | Advisory unless the PR touches Android |
 | `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | **Hard gate** — promoted to required 2026-09-05, applied and verified live 2026-09-06 |
 | `Vercel` / `Vercel Preview Comments` | Vercel GitHub App | was posting a Vercel Toolbar comment-sync status as recently as PR #1835; absent from every PR audited from #1839 on | **No longer posts on PRs.** Git deploys are disconnected (`vercel.json`'s `deploymentEnabled: {"*": false}`, no branch auto-deploys, production is an on-demand CLI promote) — there is nothing left for the GitHub App to report against. Do not wait on this check; its absence is expected, not stuck. |
 
@@ -169,9 +169,12 @@ pending check has hung — then rerun (see below) rather than waiting longer.
   page.
 - Local dry-run before pushing: `circleci config validate` and
   `circleci local execute --job <job>` (see `.circleci/README.md`).
-- `lighthouse-preview` polls for a Vercel preview URL — with non-main
-  previews disabled it usually skips gracefully. Rerun only when a manual
-  preview deploy exists and you need Lighthouse against it.
+- There is no `lighthouse-preview` job — `.circleci/config.yml` has never
+  defined one, and `.claude/rules/integrations.md` documents the same
+  correction. `ios-compile` and `android-compile` are the only per-PR
+  CircleCI checks; both are branch-name gated (see the table above), so a
+  PR from a differently-named branch touching `ios/**`/`android/**` will not
+  trigger them.
 
 ### Vercel
 
@@ -284,6 +287,26 @@ change's scope):** extend the "Refuse unsafe labels" step to also check
 `context.payload.pull_request?.labels` when `context.payload.issue` is
 undefined, so the blocked-labels gate applies uniformly across all three
 trigger types instead of silently no-opping on one of them.
+
+---
+
+## Repo settings (dry-run script, owner-run)
+
+`scripts/github/apply-repo-settings.sh` prints (dry-run, the default) or
+applies (`--apply`) three repo-level settings changes: merge button config
+(squash-only, PR title/body as the commit message), secret scanning
+(`secret_scanning_non_provider_patterns` + `secret_scanning_validity_checks`),
+and — only with both `--apply` and `--i-understand-protection-moves` — a
+`merge-queue-main` repository ruleset built from
+`scripts/github/merge-queue-ruleset.json`, whose required-status-checks list
+is read live from branch protection at run time rather than hardcoded. No
+agent runs this with `--apply`; it is not a repo setting, branch protection,
+ruleset, or GitHub App change per this repo's rules — it is a script an
+agent may write and the owner may run. Every step is idempotent and prints
+"already set" when nothing needs to change. See the script's header comment
+for why moving required checks into a ruleset needs the extra confirmation
+flag (classic branch protection and a ruleset's own `required_status_checks`
+rule can silently disagree if only one of them is updated).
 
 ---
 

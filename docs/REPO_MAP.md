@@ -334,8 +334,9 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    `VERCEL_GIT_COMMIT_REF`. Vercel preview builds being off is **by
    design** (cost control) — a red/skipped Vercel preview check on a PR is
    expected, not a CI failure to chase. `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md:96`
-   notes CircleCI's `lighthouse-preview` job is red only because of this,
-   an easy misdiagnosis. Flipping the Ignored Build Step back on is a
+   (archived) attributed a red `lighthouse-preview` check to this — that job
+   was never defined in `.circleci/config.yml`; see `.circleci/README.md` and
+   `.claude/rules/integrations.md` for the correction. Flipping the Ignored Build Step back on is a
    manual, owner-gated step (line 127) — easy to forget, don't do it
    unprompted.
 

@@ -43,8 +43,67 @@ permissions:
   contents: read
 
 jobs:
+  # Path-gates the three required `Analyze (...)` legs below WITHOUT touching
+  # their job/check-run names (branch protection matches by name — see
+  # .github/branch-protection.md) and without a workflow-level `paths:`
+  # filter (that would make the workflow not start at all for a docs-only
+  # PR, leaving the three required contexts "Expected" forever — the exact
+  # failure branch-protection.md already documents for `block-historical-edits`
+  # and Smoke checks). Instead the workflow always triggers, this job always
+  # runs, and each Analyze leg below skips its actual scan (still reporting
+  # `success`) when nothing in its language's path set changed.
+  #
+  # Only gates `pull_request` — push/merge_group/schedule always get a full
+  # scan (schedule in particular exists specifically to catch drift a
+  # per-PR path filter would miss). If this job itself fails or is skipped
+  # for any reason on a PR, each Analyze leg below fails OPEN to a real scan
+  # rather than silently skipping.
+  changes:
+    name: Detect changed paths
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      actions: ${{ steps.filter.outputs.actions }}
+      javascript-typescript: ${{ steps.filter.outputs.javascript-typescript }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: |
+            actions:
+              - '.github/**'
+            javascript-typescript:
+              - 'src/**'
+              - 'scripts/**'
+              - 'e2e/**'
+              - '*.ts'
+              - '*.tsx'
+              - '*.mjs'
+              - '*.js'
+              - 'package*.json'
+              - 'tsconfig*.json'
+            python:
+              - '**/*.py'
+              - 'requirements*.txt'
+              - 'pyproject.toml'
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: changes
+    # Runs even when `changes` was skipped (non-PR events) or failed (fail
+    # open to a real scan on a PR rather than silently skipping) — only a
+    # cancelled workflow run should also cancel this job.
+    if: ${{ !cancelled() }}
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
@@ -91,7 +150,37 @@ jobs:
       # - name: Setup runtime (example)
       #   uses: actions/setup-example@v1
 
+      - name: Decide whether this leg needs a real scan
+        id: should-scan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          LANGUAGE_CHANGED: ${{ needs.changes.outputs[matrix.language] }}
+        run: |
+          set -eu
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "reason=non-PR event ($EVENT_NAME) always gets a full scan" >> "$GITHUB_OUTPUT"
+          elif [ "$CHANGES_RESULT" != "success" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "reason=path filter did not succeed (result: $CHANGES_RESULT) — failing open to a real scan" >> "$GITHUB_OUTPUT"
+          elif [ "$LANGUAGE_CHANGED" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "reason=${{ matrix.language }} paths changed" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "reason=no ${{ matrix.language }} paths changed in this PR" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip notice
+        if: steps.should-scan.outputs.run != 'true'
+        env:
+          REASON: ${{ steps.should-scan.outputs.reason }}
+        run: |
+          echo "Skipping CodeQL scan for ${{ matrix.language }} - $REASON."
+
       - name: Initialize CodeQL
+        if: steps.should-scan.outputs.run == 'true'
         uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81  # v4.37.3
         with:
           languages: ${{ matrix.language }}
@@ -112,6 +201,7 @@ jobs:
           queries: security-extended
 
       - name: Perform CodeQL Analysis
+        if: steps.should-scan.outputs.run == 'true'
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81  # v4.37.3
         with:
           category: "/language:${{matrix.language}}"
