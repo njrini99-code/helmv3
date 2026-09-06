@@ -35,14 +35,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
-| `PLAN` | 63 | 5 | 32 | 174 |
-| `AUDIT_SNAPSHOT` | 66 | 6 | 32 | 121 |
+| `PLAN` | 59 | 5 | 29 | 159 |
+| `AUDIT_SNAPSHOT` | 63 | 6 | 31 | 119 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 7 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 85 |
 | `INCIDENT` | 28 | 15 | 2 | 3 |
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
-| `ARCHIVE` | 1231 | 0 | 427 | 562 |
+| `ARCHIVE` | 1238 | 0 | 431 | 579 |
 | `UNKNOWN` | 113 | 12 | 46 | 150 |
 
 ## Files
@@ -347,11 +347,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/2026-05-27-helm-database-vercel-alignment.md` | superseded | - | - | yes | 1 | 19 | 7 |
 | `docs/superpowers/plans/2026-05-28-ai-codebase-intelligence.md` | superseded | - | - | yes | 1 | 15 | 1 |
 | `docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md` | current | - | - | - | 1 | 8 | - |
-| `docs/superpowers/plans/2026-07-19-spine-stage-redesign.md` | current | - | - | yes | 0 | 15 | 5 |
-| `docs/superpowers/plans/2026-07-24-coachhelm-remediation.md` | current | - | - | yes | 0 | 26 | 8 |
 | `docs/superpowers/plans/2026-08-17-coachhelm-instrumentation.md` | current | - | - | - | 1 | 15 | 9 |
 | `docs/superpowers/plans/2026-08-18-coachhelm-cron-insights-wiring.md` | current | - | - | yes | 0 | 1 | - |
-| `docs/superpowers/plans/2026-08-18-golf-team-operations.md` | current | - | - | yes | 0 | 23 | 2 |
 | `docs/superpowers/plans/2026-08-25-golf-flight-recorder.md` | current | - | - | yes | 0 | 11 | - |
 | `docs/superpowers/plans/README.md` | current | - | - | - | 0 | 7 | 1 |
 | `docs/superpowers/plans/helm-bridge/EXECUTION_LOG.md` | current | - | - | - | 1 | 26 | 3 |
@@ -372,7 +369,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/helm-bridge/waves/w14-retirement-hardening.md` | current | - | - | - | 0 | 16 | 7 |
 | `docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md` | current | - | - | yes | 1 | 28 | - |
 | `docs/superpowers/plans/helm-bridge/waves/w16-feature-health-board.md` | current | - | - | yes | 1 | 16 | - |
-| `docs/ui-audits/DESIGN_PLAN_2026-08-15.md` | current | - | - | - | 0 | 0 | - |
 | `docs/v3-master-plan.md` | superseded | - | - | yes | 14 | 20 | 7 |
 
 ### `AUDIT_SNAPSHOT`
@@ -430,9 +426,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | 1 |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 0 | 3 | 1 |
-| `docs/ui-audits/UI_AUDIT_2026-08-14.md` | current | - | - | yes | 0 | 2 | - |
-| `docs/ui-audits/UI_AUDIT_2026-08-15-PRE-DEPLOY-BASELINE.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/ui-audits/UI_AUDIT_2026-08-15.md` | current | - | - | - | 0 | 1 | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-16.md` | current | - | - | - | 0 | 1 | 1 |
 | `docs/v3-feature-audit.md` | current | yes | - | yes | 2 | 8 | 2 |
 | `docs/v3-page-audit.md` | current | yes | - | yes | 1 | 1 | - |
@@ -566,7 +559,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 ### `ARCHIVE`
 
-1231 file(s) under `docs/archive/` — historical evidence only, listed
+1238 file(s) under `docs/archive/` — historical evidence only, listed
 by count rather than by name because none of them is a reference and enumerating
 them would bury everything above.
 
