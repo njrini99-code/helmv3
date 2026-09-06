@@ -10,8 +10,9 @@
  * No hooks / handlers — safe in a server component.
  */
 import { cn } from '@/lib/utils';
-import { RuledStatLine } from '..';
-import type { RuledStatLineProps } from '..';
+// Leaf imports, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { RuledStatLine } from '../RuledStatLine';
+import type { RuledStatLineProps } from '../RuledStatLine';
 
 const GAP: Record<'tight' | 'normal', string> = {
   tight: 'gap-3',

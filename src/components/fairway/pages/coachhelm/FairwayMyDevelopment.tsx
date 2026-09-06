@@ -46,19 +46,17 @@ import { Clock, CheckCircle2, Target } from 'lucide-react';
 
 import { fairwayScope } from '@/lib/redesign/flag';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import {
-  Button,
-  Surface,
-  EmptyState,
-  InlineNotice,
-  InstrumentPanel,
-  Readout,
-  formatPercent,
-  FormField,
-  Input,
-  TextArea,
-  Eyebrow,
-} from '@/components/fairway';
+// Imported from each module's own leaf path, not the top `@/components/fairway`
+// barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
+// that barrel, so importing the barrel back here created an import cycle,
+// flagged by npm run check:cycles.
+import { Button } from '@/components/fairway/controls';
+import { Surface } from '@/components/fairway/surfaces';
+import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
+import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
+import { formatPercent } from '@/components/fairway/charts';
+import { FormField, Input, TextArea } from '@/components/fairway/forms';
+import { Eyebrow } from '@/components/fairway/controls/eyebrow';
 import { CoachHelmShell } from './CoachHelmShell';
 import {
   FocusAreaCard,

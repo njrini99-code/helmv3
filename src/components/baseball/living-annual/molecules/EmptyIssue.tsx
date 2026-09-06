@@ -11,7 +11,8 @@
  * No hooks / handlers — safe in a server component.
  */
 import type { ReactNode } from 'react';
-import { EditorsLetter } from '..';
+// Leaf import, not the parent barrel ('..') — see CoverHero.tsx for why.
+import { EditorsLetter } from '../EditorsLetter';
 
 export type EmptyIssueVariant =
   | 'stats'
