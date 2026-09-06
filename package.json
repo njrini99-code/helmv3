@@ -280,6 +280,7 @@
     "@vercel/fun": {
       "tar": "^7.5.11"
     },
-    "fast-uri": "^3.1.7"
+    "fast-uri": "^3.1.7",
+    "ip-address": "^10.4.0"
   }
 }
