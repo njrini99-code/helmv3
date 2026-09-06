@@ -353,6 +353,17 @@ describe('global tripwire', () => {
     //   instead of delete-and-recreate (GAPS_AUDIT_INTERACTION_CRUD). Wrapped
     //   like deleteAnnouncement; announcements.ts is 'ALL'-mapped, so this
     //   scan picks it up with no manifest edit.
-    expect(total).toBe(447);
+    // 2026-09-05 (-19), resolving the duplicate-exports ratchet: deleted
+    // courses.ts (-5: getSavedCourses/getCourseWithHoles/createCourse/
+    // updateCourse/deleteCourse — a self-declared "DEPRECATED — DO NOT WIRE,
+    // ZERO importers" file, also independently named in
+    // docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md §B2/§B3) and
+    // task-templates.ts (-13 — same §B2 zero-importer list; crm-templates.ts
+    // is the live template-CRUD surface), and dropped round-reviews.ts's
+    // dead `createFocusAreaFromReview(reviewId, focusAreaData)` (-1 — zero
+    // importers; development.ts's camelCase-args variant is the one every
+    // real caller uses). See src/lib/admin/__tests__/feature-registry.test.ts
+    // for the matching 439 -> 420 manifest-size update.
+    expect(total).toBe(428);
   });
 });
