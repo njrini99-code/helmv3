@@ -268,6 +268,10 @@ async function listCoursesImpl(opts: ListCoursesOptions = {}): Promise<GolfCours
       `[listCourses] course listing read failed — the library will look empty: ${describeError(error)}`,
       { action: 'courseLibrary.listCourses', featureArea: 'course_library' },
     );
+    // Deliberate, not a swallow — see the comment above: lenient rather
+    // than throwing because this feeds a picker inside a larger round-entry
+    // form, and the failure is now recorded (it wasn't before this file's
+    // own prior fix pass).
     return [];
   }
 
@@ -373,6 +377,9 @@ async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
       `[getRecentlyPlayedCourses] rounds read failed — the player's recent courses will look empty: ${describeError(roundsError)}`,
       { action: 'courseLibrary.recentlyPlayed', featureArea: 'course_library', playerId: player.id },
     );
+    // Deliberate, not a swallow — see the comment above: this function has
+    // no failure channel without a signature change, the consequence is
+    // mild, and the failure is now logged instead of invisible.
     return [];
   }
   if (!rounds || rounds.length === 0) return [];
@@ -420,6 +427,8 @@ async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
       `[getRecentlyPlayedCourses] course resolve failed — recent courses will look empty: ${describeError(courseRowsError)}`,
       { action: 'courseLibrary.recentlyPlayed', featureArea: 'course_library' },
     );
+    // Same leniency, same duty to say so — see the roundsError branch above
+    // in this function. Failure is now logged.
     return [];
   }
   if (!courseRows) return [];
@@ -840,6 +849,9 @@ async function loadTeamSaved(
       `[getTeamSavedCourses] saved-courses read failed — the Saved tab will look empty: ${describeError(savedError)}`,
       { action: 'courseLibrary.getTeamSavedCourses', featureArea: 'course_library', teamId },
     );
+    // Deliberate, not a swallow — see this function's own header comment:
+    // a degraded Saved tab beats a broken picker, and the failure is now
+    // logged instead of reading identically to "nothing saved yet".
     return [];
   }
   if (!savedRows || savedRows.length === 0) return [];

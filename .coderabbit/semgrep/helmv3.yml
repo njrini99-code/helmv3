@@ -15,18 +15,21 @@ rules:
     languages: [typescript, javascript]
     severity: ERROR
     message: >
-      SUPABASE_SERVICE_ROLE_KEY found outside an admin-only path. The
-      service role bypasses RLS — if this file ships to the browser,
+      SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY found outside an
+      admin-only path. Both bypass RLS — if this file ships to the browser,
       every row in every table is exposed.
     pattern-either:
       - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
       - pattern: process.env["SUPABASE_SERVICE_ROLE_KEY"]
       - pattern: process.env['SUPABASE_SERVICE_ROLE_KEY']
+      - pattern: process.env.SUPABASE_SECRET_KEY
+      - pattern: process.env["SUPABASE_SECRET_KEY"]
+      - pattern: process.env['SUPABASE_SECRET_KEY']
       - patterns:
           - pattern: createClient($URL, $KEY, ...)
           - metavariable-regex:
               metavariable: $KEY
-              regex: "(?i).*service.role.*"
+              regex: "(?i).*(service.?role|secret.?key).*"
     # Unanchored globs (no leading `/`) for Semgrepignore v2 compatibility.
     paths:
       include:
@@ -34,7 +37,10 @@ rules:
         - "app/**"
       exclude:
         - "src/lib/supabase/admin*"
+        - "src/lib/supabase/keys*"
         - "src/lib/supabase/service*"
+        - "src/lib/auth/supabase-rate-limit*"
+        - "src/lib/notifications/push*"
         - "src/app/api/**/admin/**"
         - "src/app/api/admin/**"
         - "scripts/**"

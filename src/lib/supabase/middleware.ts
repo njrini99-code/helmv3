@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getPublishableKey } from '@/lib/supabase/keys.mjs';
 import {
   SUPABASE_TRACE_PROPAGATION,
   withSupabaseTracing,
@@ -566,13 +567,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || /placeholder\.supabase\.co/i.test(url)) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing or a placeholder. Check Vercel env.');
   }
-  if (!anonKey) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Check Vercel env.');
-  }
+  // New-format publishable key first, legacy anon-key JWT as fallback — see
+  // src/lib/supabase/keys.mjs. Both are literal `process.env.X` reads inside
+  // that module (required for this Edge Runtime to bundle them at all).
+  const anonKey = getPublishableKey();
 
   let supabaseResponse = NextResponse.next({
     request,

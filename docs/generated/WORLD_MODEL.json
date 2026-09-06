@@ -5681,6 +5681,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/require-super-admin.ts",
           "line": 3
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/admin.ts",
+          "line": 5
         }
       ]
     },
@@ -7987,7 +7992,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 11
+          "line": 12
         }
       ]
     },
@@ -8023,17 +8028,17 @@
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 7
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/supabase/middleware.ts",
           "line": 8
         },
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 10
+          "line": 9
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/middleware.ts",
+          "line": 11
         }
       ]
     },
@@ -8045,7 +8050,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/auth/supabase-rate-limit.ts",
-          "line": 385
+          "line": 391
         }
       ]
     },
@@ -8189,7 +8194,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
-          "line": 6
+          "line": 7
         }
       ]
     },
@@ -8658,7 +8663,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/baseball/actions/decision-room.ts",
-          "line": 23
+          "line": 25
         },
         {
           "kind": "import_graph",
@@ -10784,7 +10789,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/baseball/actions/decision-room.ts",
-          "line": 41
+          "line": 43
         },
         {
           "kind": "import_graph",
@@ -12901,7 +12906,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-fingerprint.ts",
-          "line": 47
+          "line": 48
         },
         {
           "kind": "import_graph",
@@ -13117,7 +13122,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-fingerprint.ts",
-          "line": 42
+          "line": 43
         },
         {
           "kind": "import_graph",
@@ -14859,7 +14864,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7194
+          "line": 7197
         }
       ]
     },

@@ -1,15 +1,17 @@
 # BaseballHelm Feature Registry
 
-<!-- schema-drift-banner -->
-> **⚠️ 1 identifier named below does not exist in the database.**
+> **⚠️ 1 identifier named below is not a database object.**
 > Verified 2026-08-19 against production. `baseball_scope_player_ids_isolation`
->
-> It is described here as if live. Do not query, type, or build on it —
-> check `src/lib/types/database.ts` (or `memory/glossary.md`'s AUTOGEN blocks)
-> before trusting any table name in this file. Tracked in
-> `.doc-schema-baseline.json`; `npm run docs:schema-drift` fails on new ones.
-> Removing this is a ratchet-down — re-run
+> is the filename of the pgTAP isolation test for #406
+> (`supabase/tests/rls/baseball_scope_player_ids_isolation.sql`), not a table,
+> column, or function — it only matches `docs:schema-drift`'s
+> `golf|baseball`-prefix pattern incidentally. Declared absent below so the
+> check exempts it structurally instead of carrying it in the numeric
+> baseline. Removing the reference entirely is a ratchet-down — re-run
 > `node scripts/check-doc-schema-drift.mjs --update` after.
+
+<!-- schema-drift-absent: baseball_scope_player_ids_isolation -->
+
 
 > Route/feature inventory + data flows for the BaseballHelm product (college/JUCO/HS/showcase baseball recruiting + team/player ops + Helm Lifting Lab).
 > Traced from source on branch mirroring origin/main, 2026-06-30. Cross-checked against `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`, `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md`, and `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md`.
@@ -148,6 +150,7 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 
 ### 3. Watchlist / Compare ⚠️
 - `actions/watchlist.ts` (`withBaseballAction` `can_manage_stats`): `addToWatchlist` (**calls `assertCoachCanRecruitPlayer`**, INSERT `baseball_watchlists {pipeline_stage:'watchlist',priority:0}` + engagement event + email), `removeFromWatchlist`, `updateWatchlistStatus/Priority`, `addWatchlistNote`, `toggleWatchlistPlayer`, `checkWatchlistStatus`. Compare fetches client-side (max 4); persistence → `baseball_player_comparisons`.
+- `dashboard/compare/actions.ts` `searchRecruitablePlayersImpl`/`getComparablePlayersImpl`: as of the Phase 2 P1 fail-open paydown, a failed `baseball_players` read now **throws** instead of returning `[]`. `CompareClient.tsx` already had a `loadError` state (for `getComparablePlayers`) and a catch+toast path (for `searchRecruitablePlayers`) built for exactly this and previously unreachable for a query-error specifically. Regression-tested in `compare/__tests__/search-recruitability.test.ts`.
 
 ### 4. Player recruiting opt-in / College Interest ⚠️
 - Activate (`/activate`): blocks `player_type==='college'`; `handleActivate()` = **direct client** `UPDATE baseball_players SET recruiting_activated=true`. This boolean is the master gate consumed by `recruitability.ts`, `discover.ts`, `public-profile-access.ts`.

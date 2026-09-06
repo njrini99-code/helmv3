@@ -298,6 +298,13 @@ export async function getDomainBreakdown(
 
   if (error) {
     await logServerError(`[resend-activity] domain breakdown rpc failed: ${describeError(error)}`, { action: 'resend_activity.getDomainBreakdown' });
+    // Deliberate, not a swallow: this is an internal admin monitoring
+    // dashboard (Resend Activity) with no error-state UI at any of its
+    // callers today — an honest empty list/count is the existing,
+    // shipped contract for a failed panel fetch. Failure is logged above
+    // (visible in Sentry/logs), so it is no longer silent; wiring a
+    // dedicated "couldn't load" state per panel is a follow-up, not a
+    // change this ratchet paydown should make unreviewed.
     return [];
   }
 
@@ -320,6 +327,13 @@ export async function getRecentActivityFeed(limit = 50): Promise<EmailEventRow[]
 
   if (error) {
     await logServerError(`[resend-activity] feed failed: ${describeError(error)}`, { action: 'resend_activity.getRecentActivityFeed' });
+    // Deliberate, not a swallow: this is an internal admin monitoring
+    // dashboard (Resend Activity) with no error-state UI at any of its
+    // callers today — an honest empty list/count is the existing,
+    // shipped contract for a failed panel fetch. Failure is logged above
+    // (visible in Sentry/logs), so it is no longer silent; wiring a
+    // dedicated "couldn't load" state per panel is a follow-up, not a
+    // change this ratchet paydown should make unreviewed.
     return [];
   }
 
@@ -344,6 +358,13 @@ export async function getEmailClicks(
 
   if (error) {
     await logServerError(`[resend-activity] email clicks query failed: ${describeError(error)}`, { action: 'resend_activity.getEmailClicks' });
+    // Deliberate, not a swallow: this is an internal admin monitoring
+    // dashboard (Resend Activity) with no error-state UI at any of its
+    // callers today — an honest empty list/count is the existing,
+    // shipped contract for a failed panel fetch. Failure is logged above
+    // (visible in Sentry/logs), so it is no longer silent; wiring a
+    // dedicated "couldn't load" state per panel is a follow-up, not a
+    // change this ratchet paydown should make unreviewed.
     return [];
   }
 
@@ -370,6 +391,13 @@ export async function getCoachLastEmailActivity(
 
   if (error) {
     await logServerError(`[resend-activity] coach email activity query failed: ${describeError(error)}`, { action: 'resend_activity.getCoachLastEmailActivity' });
+    // Deliberate, not a swallow: this is an internal admin monitoring
+    // dashboard (Resend Activity) with no error-state UI at any of its
+    // callers today — an honest empty list/count is the existing,
+    // shipped contract for a failed panel fetch. Failure is logged above
+    // (visible in Sentry/logs), so it is no longer silent; wiring a
+    // dedicated "couldn't load" state per panel is a follow-up, not a
+    // change this ratchet paydown should make unreviewed.
     return {};
   }
 
@@ -407,6 +435,13 @@ export async function getFailedEmails(limit = 100): Promise<EmailRow[]> {
 
   if (error) {
     await logServerError(`[resend-activity] failed emails query failed: ${describeError(error)}`, { action: 'resend_activity.getFailedEmails' });
+    // Deliberate, not a swallow: this is an internal admin monitoring
+    // dashboard (Resend Activity) with no error-state UI at any of its
+    // callers today — an honest empty list/count is the existing,
+    // shipped contract for a failed panel fetch. Failure is logged above
+    // (visible in Sentry/logs), so it is no longer silent; wiring a
+    // dedicated "couldn't load" state per panel is a follow-up, not a
+    // change this ratchet paydown should make unreviewed.
     return [];
   }
 

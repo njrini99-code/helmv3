@@ -81,6 +81,7 @@ That half is defence in depth, not an exposure.
 | `20260905092000_baseball_elite_stat_event_columns_gap.sql` | **HOLD** | Found by the same `db-drift.yml` failures: `baseball_pitch_events.batter_id`/`.pitch_type_classified`/`.is_called_strike`/`.count_state` and `baseball_workload_events.count`/`.high_intent_count` are all missing live, even though `20260624000080_baseball_elite_stat_event_model.sql` — the migration that defines them — **does have a ledger row** (`list_migrations` confirms it "applied"). Root cause: that migration's `CREATE TABLE IF NOT EXISTS` silently no-op'd against these two tables because they already existed under an older, incompatible column shape (live `baseball_pitch_events` still carries `pitch_type`/`called_strike`/`pitcher_id`, not the elite-model names) — the ledger records the statement ran, not that it did anything to these two tables. This file adds only the missing columns, additively, and does not attempt to reconcile the old and new column pairs — that split (coexist permanently vs. merge vs. retire the old ones) is a schema-design decision for whoever owns the elite stat event model. | 2026-09-05 |
 | *(data divergence, not a schema gap — no migration)* `admin_allowlist` vs. `users.role='admin'` | **INVESTIGATE, not a migration — diagnostic + template prepared as O7** | `db-drift.yml`'s "admin_allowlist and users.role=admin stay in sync" check has failed the same 5 runs: 1 `admin_allowlist` user no longer has `users.role='admin'` in production — read live via the check's own query, not independently re-run here (no `execute_sql` access in this reconciliation's read-only Supabase MCP). Admin RPCs still work for that user via `is_super_admin()`, so nothing is broken today, but the divergence itself needs an owner decision: was the demotion intentional (in which case remove the stale `admin_allowlist` row) or accidental (in which case restore `users.role='admin'`)? Neither this reconciliation nor a migration file can make that call — it needs identifying WHICH user and why. **2026-09-05 follow-up: the id was never captured anywhere in this repo's evidence trail** (the drift check's own query returns only a count, never a row) — see "Owner actions, prepared" below, action O7, for the read-only SELECT that identifies it and the templated UPDATE the owner fills in afterward. | 2026-09-05 |
 | `20260730030000_avatars_storage_bucket_rls.sql` | **UNVERIFIED** | The file's own header says "NOT APPLIED BY THE AUTHOR. Production already has all five objects" — written to describe a state its author believed already existed, not applied and not independently confirmed at write time. This reconciliation does not relabel it local-only or applied either, for the same reason: `storage.objects` is outside every `public`-schema read this reconciliation's tools (`list_tables`, `get_advisors`) can see, so neither claim can be checked from here. **Prepared owner query** (read-only, `storage` schema): `SELECT policyname, cmd FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname ILIKE '%avatar%';`. **What "verified" looks like**: exactly four rows — one each for `cmd` = `SELECT`, `INSERT`, `UPDATE`, `DELETE` — matching the four policy names in the file (`Avatars accessible to authenticated`, `Users can upload their own avatar`, `Users can update their own avatar`, `Users can delete their own avatar`). Fewer than four, or a `cmd`/predicate that doesn't match the file, means production and this file have diverged and the file needs a follow-up, not a status flip to APPLIED. | 2026-09-05 |
+| `20260905100000_revoke_secdef_execute_from_authenticated.sql` | **PENDING OWNER REVIEW** | Phase 2 / P3 debt paydown: narrows the `authenticated_security_definer_function_executable` advisor class from 142 findings to 133 by revoking `PUBLIC`/`anon`/`authenticated` EXECUTE from exactly nine functions — eight pure trigger functions plus the internal `__admin_rollup_b_gate()` composability helper — none of which the app, an RLS policy/check, or a non-DEFINER caller reaches directly. Full per-function classification and the reasoning for the five names deliberately left alone (`recompute_golf_round_totals`, `is_in_team`, `user_is_golf_team_member`, `golf_conversation_has_me`, `unresolve_admin_event`) is in the "Advisor warnings, classified" section below, not duplicated here. `db-migration-reviewer` review has **not** been requested. **Verify before applying**: `SELECT p.proname, has_function_privilege('authenticated', p.oid, 'EXECUTE'), has_function_privilege('anon', p.oid, 'EXECUTE'), has_function_privilege('service_role', p.oid, 'EXECUTE') FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname IN ('extract_email_click_from_event','sync_coach_last_email_event','sync_email_snapshot_from_event','golf_event_documents_assert_same_team','golf_holes_recompute_round_totals_fn','set_calendar_feed_token','update_round_stats_cache','log_crm_stage_transition','__admin_rollup_b_gate');` — expect all nine `authenticated`/`anon` columns `false` pre-apply becoming the post-apply confirmation, `service_role` `true` throughout. **Rollback**: `GRANT EXECUTE ON FUNCTION <name> TO PUBLIC, anon, authenticated;` per function restores the exact pre-migration baseline grant; nothing legitimate exercises this surface today, so a rollback undoes the fix rather than restoring lost function. pgTAP coverage: `supabase/tests/rls/revoke_secdef_execute_from_authenticated.sql` (27 assertions: 21 on the nine revoked functions' anon/authenticated/service_role state, 6 regression guards on functions this migration deliberately did NOT touch, so a future over-broad revoke gets caught). **Not run locally** — this worktree has no Docker/local Supabase stack (`supabase status` fails: `dial unix .../docker.sock: connect: no such file or directory`), so the suite has not been executed against a rebuilt local database; it is wired for CI's "Supabase lint + RLS tests" job to pick up on the next PR. | 2026-09-05 |
 
 ## Local files with no ledger row — classification
 
@@ -145,7 +146,7 @@ strong signal either way from read-only tools.
 | `20260825153105` | `permit_completed_round_sg_recalculation` | **UNRESOLVED — likely redundant** | Self-patching `DO` block: reads the live `pg_get_functiondef` of `public.recalculate_round_strokes_gained(uuid)` and no-ops (`RETURN`) if the companion `20260823235000_allow_derived_stats_cache_updates.sql` (confirmed applied — file and ledger row both exist at that version) already granted the same `helm.golf_lifecycle_write = 'stats_cache'` capability; cannot tell from outside whether this file separately ran. | Verification query 5 below. |
 | `20260825222432` | `reconcile_baseball_timeline_ack_contract` | **LOCAL-ONLY — VERIFIED LIVE** | `reconcile_*` name; `baseball_timeline_event_acks.team_id` and `.player_id` re-confirmed present via `list_tables` 2026-09-05 (alongside `acked_by`/`acked_at`) — and `user_id`/`acknowledged_at` re-confirmed ABSENT, consistent with the `20260905091000` HOLD row above. | Nothing. |
 | `20260825223149` | `reconcile_baseball_event_telemetry_production_contract` | LOCAL-ONLY | `reconcile_*` name, same family as the row above; not independently column-verified — this session's re-verification pass was scoped to rows the audit tagged "VERIFIED LIVE" or "UNRESOLVED — possible real gap," and this one carried neither tag. | Nothing. |
-| `20260825235900` | `revoke_anon_from_secdef_admin_helpers` | LOCAL-ONLY | Not `reconcile_`-named, but content is explicit that production already satisfies the intent; targets `log_crm_stage_transition()` and `unresolve_admin_event(uuid[])`, both of which the security advisor's `authenticated_security_definer_function_executable` list still shows as `authenticated`-executable today (expected — this file closes `anon` access on a fresh LOCAL build only; `authenticated` access is intended and unaffected). | Nothing. |
+| `20260825235900` | `revoke_anon_from_secdef_admin_helpers` | LOCAL-ONLY | Not `reconcile_`-named, but content is explicit that production already satisfies the intent; targets `log_crm_stage_transition()` and `unresolve_admin_event(uuid[])`, both of which the security advisor's `authenticated_security_definer_function_executable` list showed as `authenticated`-executable (this file closes `anon` access on a fresh LOCAL build only). **Corrected 2026-09-05:** this row previously said `authenticated` access was "intended and unaffected" for both names — that overstated a scope decision (this migration never attempted to touch `authenticated`) as a reviewed finding (that `authenticated` is needed). Per-function re-check in "Advisor warnings, classified" below: `log_crm_stage_transition` is a pure trigger function and IS now revoked by `20260905100000_revoke_secdef_execute_from_authenticated.sql`; `unresolve_admin_event` is left granted, but for documented future admin-console wiring, not because it was "intended by design" here. | See `20260905100000` row below. |
 
 **No disagreement between the prior audit and the live catalog.** Every
 column this session independently re-checked against `list_tables` matched
@@ -656,15 +657,108 @@ unique names — the gap is legitimate overloading of
 not an anon-exposure list — it flags every SECURITY DEFINER function callable
 by any signed-in user, which is the correct, intended shape for an RPC helper
 layer (`is_*`/`can_*`/`get_my_*` predicate functions dominate the list: 10
-golf, 10 baseball, 9 helm_lifting, 112 other). Nothing is prepared to close
-this class wholesale, and nothing should be — closing it would mean revoking
-`authenticated` EXECUTE from RPCs the application calls as a signed-in user,
-which breaks the app. Two specific names on this list
-(`log_crm_stage_transition`, `unresolve_admin_event`) are exactly what
+golf, 10 baseball, 9 helm_lifting, 112 other). **Revised 2026-09-05 (Phase 2
+P3): this paragraph previously said "nothing is prepared to close this class
+wholesale, and nothing should be" and stopped there, on the strength of that
+same true premise — but "wholesale" and "zero" are different claims, and the
+per-function classification that would tell them apart had never been done.
+It has now.** Every one of the 141 names was checked against: every
+`.rpc(`-shaped call in `src/` (including the `const rpc =
+supabase.rpc.bind(supabase)` / `rpcCall(...)` / `fingerprintRpc(...)` /
+`(supabase.rpc as any)(...)` detachment idioms this codebase repeats, not
+only the literal `.rpc('name'` form); every `CREATE POLICY` USING/WITH CHECK
+and `CHECK` constraint body across all 364 migrations (RLS predicate helpers
+run IN THE QUERYING SESSION, so `authenticated` needs EXECUTE on them even
+though the app never names them — this is the dominant shape, ~70 of the 96
+names with no direct `.rpc()` site); every `CREATE TRIGGER`; and every other
+function's body, to separate a callee reached only from a SECURITY DEFINER
+caller (needs no grant — a DEFINER function executes as its owner, and every
+function here is owned by `postgres` per the baseline's "owner-stripped"
+comments, so the owner's own implicit privilege on functions it owns survives
+any REVOKE against `authenticated`/`anon`/`PUBLIC`) from one actually reached
+by app code or RLS. Full working detail: `scratchpad/exec/phase2-P3.md`
+(this session) — not committed, reproduce via the same method if it is gone.
+
+The result is nine names, not zero and not 141:
+`20260905100000_revoke_secdef_execute_from_authenticated.sql` (register row
+below, PENDING OWNER REVIEW) revokes `authenticated`/`anon`/`PUBLIC` EXECUTE
+from eight pure trigger functions
+(`extract_email_click_from_event`, `sync_coach_last_email_event`,
+`sync_email_snapshot_from_event`, `golf_event_documents_assert_same_team`,
+`golf_holes_recompute_round_totals_fn`, `set_calendar_feed_token`,
+`update_round_stats_cache`, `log_crm_stage_transition` — Postgres never
+checks the triggering session's EXECUTE privilege on a trigger function,
+regardless of SECURITY mode, so this is a categorical guarantee, not an
+inference from absent evidence) plus one internal composability gate,
+`__admin_rollup_b_gate()` (called only via `PERFORM
+public.__admin_rollup_b_gate();` from within its ~17 sibling admin-rollup
+SECURITY DEFINER functions, themselves deliberately kept — see those
+siblings' own history in `20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql`
+and `20260709010100_gate_admin_event_summary.sql` — and owned by the same
+`postgres` role as its callers, so the nested call needs no grant).
+
+**Two specific names on this list (`log_crm_stage_transition`,
+`unresolve_admin_event`) are exactly what
 `20260825235900_revoke_anon_from_secdef_admin_helpers.sql` (see the
 classification table above) exists to keep `anon`-clean on a fresh local
-build, while leaving their `authenticated` access untouched by design.
-**No action.**
+build** — that much of the old paragraph, and the classification-table row
+it points at, both stand. What does not stand: that migration's silence on
+`authenticated` was scope (a LOCAL-drift-to-PRODUCTION fix, deliberately
+narrow), not a reviewed finding that `authenticated` is needed — its own WHY
+section says so. Re-checked per-function, the two names split:
+`log_crm_stage_transition` is one of the eight trigger functions above and is
+now revoked. `unresolve_admin_event` is NOT revoked, on different grounds
+entirely — see below.
+
+**Five names this migration deliberately leaves alone, each for a distinct,
+stated reason, not by default:**
+
+- `recompute_golf_round_totals(uuid)` — the only trigger caller found
+  anywhere in the migration corpus is `golf_holes_recompute_round_totals_fn`
+  (itself DEFINER-owned, needs no grant for that nested call). But the HELD,
+  unapplied, unreviewed draft
+  `20260708141000_gate_secdef_ownership_and_redemption.sql` asserts, in its
+  own caller-audit, that this function "is invoked BY A TRIGGER on
+  golf_shots" and must keep "owner/coach for direct authenticated/anon
+  .rpc()". Neither claim is corroborated here — the only trigger on
+  `golf_shots` in the whole corpus is `update_golf_shots_updated_at`, calling
+  the unrelated `update_updated_at_column()` — but a second, independently
+  written, already-committed audit disagreeing with this one is reason
+  enough not to resolve the conflict by inference. Left granted.
+- `is_in_team(uuid)`, `user_is_golf_team_member(uuid)` — zero callers found
+  by the same exhaustive search as the eight trigger functions, but neither
+  carries a trigger's categorical exemption; absence of evidence here is
+  genuinely just absence of evidence. `is_in_team`'s own `COMMENT ON
+  FUNCTION` calls it a "v3 RLS helper... Use for team-scoped shared-read
+  policies (Pattern 3 in docs/v3-rls-template.md)" — documented for future
+  adoption, not confirmed dead. Left granted.
+- `golf_conversation_has_me(uuid)` — flagged by the advisor but has NO
+  `CREATE FUNCTION` anywhere in `supabase/migrations/`, not even in the
+  2026-05-27 production baseline dump that otherwise contains every
+  production function as of that date. It exists in production out of band.
+  Unresolved, not dead — left granted, recorded as a knowledge gap rather
+  than judged.
+- `unresolve_admin_event(uuid[])` — self-gates via `is_super_admin()`
+  (`20260729120000_admin_events_unresolve_rpc.sql`), zero confirmed `src/`
+  call site today, but that migration's own header states its purpose as
+  future Bridge-console wiring ("make Bridge's only mutation reversible"),
+  mirroring its already-wired sibling `resolve_admin_event(uuid[])` exactly.
+  Revoking now would silently break that wiring the day it ships. Left
+  granted — this is the corrected version of the old paragraph's "by design"
+  claim for this name; "by design" overstated a scope decision as a reviewed
+  one, but the corrected reason (documented future wiring) reaches the same
+  answer.
+
+Every remaining name — every `get_admin_*_rollup`, `get_users_with_auth`,
+`get_audit_log_recent`, `get_shot_data_quality`, `get_qualifier_leaderboard`,
+`get_golf_message_attachments`, `get_baseball_conversations_with_details`,
+`get_golf_conversations_with_details`, `admin_resolve_error_fingerprint`, and
+every remaining `is_*`/`can_*`/`get_my_*`/`current_*` RLS predicate — is
+confirmed either as a direct (if indirectly dispatched) app RPC target, or as
+self-gated with an explicit prior security migration that chose to keep
+`authenticated` deliberately. Unchanged. **Owner action: review and apply
+`20260905100000_revoke_secdef_execute_from_authenticated.sql`** (register row
+below); until then this remains 9 open findings out of 142, not 0.
 
 **`extension_in_public` (`citext`, `pg_trgm`), WARN.** Both confirmed
 installed with `schema: "public"` via `list_extensions`. The advisor's fix is

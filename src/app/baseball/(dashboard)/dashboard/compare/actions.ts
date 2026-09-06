@@ -332,8 +332,13 @@ async function searchRecruitablePlayersImpl(
 
   const { data, error } = await queryBuilder;
   if (error) {
+    // A failed query must not render as "no matches" — the caller
+    // (CompareClient's search effect) already catches and logs this,
+    // showing an empty result set deliberately rather than a broken UI,
+    // but the failure itself must be visible, not silently indistinguishable
+    // from a genuine zero-result search.
     console.error('Error searching recruitable players:', describeError(error));
-    return [];
+    throw new Error('Failed to search recruitable players');
   }
 
   // Privacy could not be established — return nothing rather than a list that
@@ -380,8 +385,12 @@ async function getComparablePlayersImpl(ids: string[]): Promise<Player[]> {
     .in('id', ids);
 
   if (error) {
+    // Same reasoning as the search path above: a failed read of the
+    // players list must not present as "the comparison is empty" — the
+    // caller (CompareClient) already has a `loadError` state built for
+    // exactly this and only reaches it if this throws.
     console.error('Error fetching comparable players:', describeError(error));
-    return [];
+    throw new Error('Failed to fetch comparable players');
   }
 
   // Same refusal as the search path: no privacy set, no results.

@@ -2,6 +2,7 @@ import '@supabase/supabase-js/tracing';
 import { createBrowserClient } from '@supabase/ssr';
 import * as Sentry from '@sentry/nextjs';
 import { Database } from '@/lib/types/database';
+import { getPublishableKey } from '@/lib/supabase/keys.mjs';
 
 /**
  * Per-request HTTP abort budget.
@@ -44,13 +45,12 @@ export function timeoutForRequest(target: RequestInfo | URL): number {
  */
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || /placeholder\.supabase\.co/i.test(url)) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing or a placeholder. Check Vercel env.');
   }
-  if (!anonKey) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Check Vercel env.');
-  }
+  // New-format publishable key first, legacy anon-key JWT as fallback — see
+  // src/lib/supabase/keys.mjs.
+  const anonKey = getPublishableKey();
   const client = createBrowserClient<Database>(
     url,
     anonKey,

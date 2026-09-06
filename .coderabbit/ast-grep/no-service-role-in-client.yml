@@ -1,23 +1,31 @@
-# ast-grep rule: forbid SUPABASE_SERVICE_ROLE_KEY in any path that could
-# ship to a browser bundle. The service role bypasses RLS; if it leaks
-# client-side, every user can read every row in every table.
+# ast-grep rule: forbid SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY in
+# any path that could ship to a browser bundle. Both bypass RLS; if either
+# leaks client-side, every user can read every row in every table.
 #
-# Allowed paths (handled via .coderabbit.yaml path_instructions): only
-# src/lib/supabase/admin* and src/app/api/**/admin/**.
+# Allowed paths (path-scoped in .github/workflows/review-gate.yml's
+# ast-grep job, mirrored in scripts/__tests__/review-gate-rules.test.mjs):
+# src/lib/supabase/admin*, src/lib/supabase/keys* (the resolver that reads
+# BOTH the new and legacy secret-key names together, on purpose — see that
+# file's docblock), src/lib/supabase/service*, src/lib/auth/supabase-rate-limit*,
+# src/lib/notifications/push*, src/app/api/**/admin/**, scripts/**, and
+# supabase/functions/**.
 id: helmv3-no-service-role-key
 language: typescript
 severity: error
 message: >
-  SUPABASE_SERVICE_ROLE_KEY bypasses RLS and must never be referenced
-  outside an admin-only server file. Use the server cookie client
-  (await createClient() from @/lib/supabase/server) for normal
-  user-scoped queries.
+  SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY bypasses RLS and must
+  never be referenced outside an admin-only server file. Use the server
+  cookie client (await createClient() from @/lib/supabase/server) for
+  normal user-scoped queries.
 note: >
   If you need elevated privileges (e.g. for an admin endpoint), put the
-  code under src/lib/supabase/admin* or src/app/api/**/admin/** and
-  document the auth gate that wraps it.
+  code under src/lib/supabase/admin*, src/lib/supabase/keys*, or
+  src/app/api/**/admin/** and document the auth gate that wraps it.
 rule:
   any:
     - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
     - pattern: process.env["SUPABASE_SERVICE_ROLE_KEY"]
     - pattern: process.env['SUPABASE_SERVICE_ROLE_KEY']
+    - pattern: process.env.SUPABASE_SECRET_KEY
+    - pattern: process.env["SUPABASE_SECRET_KEY"]
+    - pattern: process.env['SUPABASE_SECRET_KEY']
