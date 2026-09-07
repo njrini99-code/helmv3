@@ -1620,9 +1620,23 @@ export function MessageThreadPane({
                           // callout on exactly the messages the finding was
                           // about, which is worse than the gap it closed.
                           'select-none [-webkit-touch-callout:none]',
+                          // Incoming is `bg-elevated`, not `bg-surface-sunken`.
+                          // The sunken token is the WELL role — input tracks and
+                          // insets, the things that sit DOWN into the page — and
+                          // at 0.963 it is barely a step off the 0.953 canvas.
+                          // `Bubbles.dc.html:20` paints the incoming bubble
+                          // `linear-gradient(180deg, oklch(0.989 …), oklch(0.980 …))`:
+                          // the brightest cream in the system, a lifted surface.
+                          // `--fw-color-elevated` (0.993) is the token for that
+                          // role and the nearest step to the artboard's top stop.
+                          // Shipping a well tone where the design specifies a
+                          // lifted one is why the thread read flat no matter what
+                          // shadow sat under it — the fill was fighting the
+                          // shadow. (The exact two-stop gradient stays A03 #1;
+                          // this is the role fix, which is separate.)
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-surface-sunken text-text-primary',
+                            : 'bg-elevated text-text-primary',
                           // G-49 (F14) — every bubble in the artboard casts a
                           // shadow; the repo drew them flat. Same systemic gap
                           // G-32 already closed on the rail's unread rows, which
@@ -1648,7 +1662,27 @@ export function MessageThreadPane({
                           // `--fw-shadow-card`'s 0.55 white inset on a dark green
                           // bubble would paint a bright specular rim the artboard
                           // explicitly dims to 0.14.
-                          isOwn ? 'shadow-soft' : '[box-shadow:var(--fw-shadow-card)]',
+                          //
+                          // Own steps up to `--fw-shadow-raise`. A03 #8 stays
+                          // OPEN — the artboard's `.lit-accent` is a hued ambient
+                          // and no shadow token is hued, so the honest options
+                          // were a neutral token or a hand-typed colour, and this
+                          // suite rightly forbids the second: a literal drifts
+                          // silently the moment the palette moves. `shadow-soft`
+                          // (0 10px 28px / 0.13) read as no lift at all under a
+                          // dark green bubble; `raise` (0 18px 44px / 0.15) is the
+                          // next token up and does carry.
+                          //
+                          // One fact for whoever grants A03 #8, found here and
+                          // worth not re-deriving: the request records that no
+                          // token expresses this shadow, which is true of the
+                          // SHADOW ramp but not of the COLOUR ramp — the
+                          // artboard's ambient `oklch(0.488 0.124 150)` is
+                          // `--fw-color-accent-700` exactly (`design-tokens.css:99`,
+                          // and `:96`'s accent-750 is the same value). So the
+                          // variant can be minted from an existing colour rather
+                          // than a new one.
+                          isOwn ? '[box-shadow:var(--fw-shadow-raise)]' : '[box-shadow:var(--fw-shadow-card)]',
                           // G-19: a failed send stays legible but visibly not
                           // delivered — muted, never removed.
                           (msg as MessageWithReadStatus).sendFailed && 'opacity-60',

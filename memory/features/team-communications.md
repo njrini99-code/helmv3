@@ -234,6 +234,20 @@ alternative ("never a card-in-card").
 Anything that reintroduces a per-row box — a radius, a shadow, a gap, a
 taller unread row — brings the uneven cadence back.
 
+**Depth belongs to the list, not the row.** Each triage section is a raised
+card (`rounded-fw-lg bg-surface`, `--fw-shadow-card` composed over
+`--fw-shadow-soft`); the rows inside it are flat and identical. That is what
+lets the surface read as lifted without the rhythm depending on which rows are
+unread. The unread fill is `bg-elevated` — one step above the card it sits in.
+
+**Bubble fills are roles, and the roles are not interchangeable.** The incoming
+bubble is `bg-elevated`, not `bg-surface-sunken`. Sunken is the WELL role (input
+tracks, insets — surfaces that sit down into the page) and shipping it here made
+the thread read flat no matter what shadow sat underneath, because the fill was
+fighting the shadow. The artboard paints incoming as the brightest cream in the
+system. The own bubble is `--fw-shadow-raise`, a neutral interim: the artboard's
+own-bubble ambient is HUED and no shadow token is, which is open as A03 #8.
+
 ## The conversation rail's last message is a preview, not a message
 
 `last_message` on `GolfConversationWithMeta` is typed

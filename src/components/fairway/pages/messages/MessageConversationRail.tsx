@@ -195,17 +195,23 @@ function ConversationRow({
         // The rail's own docstring independently forbids the alternative:
         // rows stay a dense, scannable list, never a card-in-card.
         //
-        // The tint is `bg-surface`, NOT the leaderboard's accent. Its
+        // The tint is a NEUTRAL step, not the leaderboard's accent. Its
         // structure is borrowed, not its colour, because this row already
         // spends accent three times — the unread Badge and the group glyph
         // are both `bg-accent-50` and the timestamp is `text-accent-700`.
         // Tinting the row accent too made the badge and the glyph vanish
         // into their own background (measured: badge fill and row fill both
         // resolved to the accent-50 family), which reads as a bare floating
-        // number. `surface` (0.984) against the canvas (0.953) is the same
-        // lightness step the search well uses inverted, and it leaves accent
-        // meaning exactly one thing on this row: unread.
-        !isSelected && hasUnread && 'bg-surface',
+        // number. Neutral leaves accent meaning exactly one thing here:
+        // unread.
+        //
+        // `elevated` (0.993), one step ABOVE the card's `surface` (0.984).
+        // The list is a raised card now, so the unread row can no longer be
+        // the brighter of two tones on the canvas — it has to be brighter
+        // than the card it sits in, which is the same relationship the
+        // artboard draws (its unread face is the brightest cream on the
+        // page) without giving the row back a box of its own.
+        !isSelected && hasUnread && 'bg-elevated',
         // Selection is desktop-only (see `activeId`). An inset ring needs a
         // radius to read, and these rows no longer have one, so the marker is
         // a 3px accent rule down the leading edge over the sunken fill —
@@ -289,12 +295,17 @@ function ConversationRow({
             {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
                 dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
             {hasUnread ? (
-              // `leading-none`: `text-[11px]` sets only a font-size, so the
-              // badge inherited the row's 24px line-height and rendered 28px
-              // tall against its own `min-h-5` (20px) — 8px that went
-              // straight into the row height. Local to this instance; the
-              // shared Badge is used at 28px elsewhere and is not this PR's
-              // to retune.
+              // `leading-none`: the Badge's own size recipe sets an 11px
+              // arbitrary font-size and NO line-height, so the badge inherited
+              // this row's 24px leading and rendered 28px tall against its own
+              // `min-h-5` (20px) — 8px that went straight into the row height.
+              // Local to this instance; the shared Badge is used at 28px
+              // elsewhere and is not this PR's to retune.
+              //
+              // The px value is deliberately spelled out in prose rather than
+              // as the utility: `no-arbitrary-text-px-fairway-pages` scans raw
+              // lines, so quoting the class in a comment fails the guard from
+              // inside the note explaining it. It did, on this file, in CI.
               <Badge tone="accent" size="sm" numeric className="flex-shrink-0 leading-none">
                 {conv.unread_count > 9 ? '9+' : conv.unread_count}
               </Badge>
@@ -616,7 +627,7 @@ export function MessageConversationRail({
             <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
               Unread
             </p>
-            <ul className="divide-y divide-border-subtle">
+            <ul className="divide-y divide-border-subtle overflow-hidden rounded-fw-lg bg-surface [box-shadow:var(--fw-shadow-card),var(--fw-shadow-soft)]">
               {unread.map((conv, i) => (
                 <li
                   key={conv.id}
@@ -642,7 +653,7 @@ export function MessageConversationRail({
               <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
                 {label}
               </p>
-              <ul className="divide-y divide-border-subtle">
+              <ul className="divide-y divide-border-subtle overflow-hidden rounded-fw-lg bg-surface [box-shadow:var(--fw-shadow-card),var(--fw-shadow-soft)]">
                 {group.map((conv, i) => (
                   <li
                     key={conv.id}

@@ -120,9 +120,18 @@ describe('G-49 — the own bubble needs a variant no token expresses', () => {
     expect(accentInset).toBeLessThan(litInset / 2);
   });
 
-  it('ships shadow-soft as the interim, which carries no inset at all', () => {
-    expect(code).toMatch(/\bshadow-soft\b/);
-    expect(shadowToken('soft')).not.toContain('inset');
+  it('ships the deepest NEUTRAL token as the interim, and it carries no inset', () => {
+    // Was `shadow-soft`. The owner asked for more depth on the thread and
+    // measured it as "super flat"; soft (0 10px 28px / 0.13) reads as no lift
+    // at all beneath a dark green bubble, where the artboard asks for a green
+    // at 0.22. `raise` is the next token up and does carry.
+    //
+    // Still an INTERIM, and still neutral — the point of the request is the
+    // hue, which no shadow token has. What matters for the stand-in is that it
+    // brings no inset: --fw-shadow-card's 0.55 white rim on dark green is the
+    // exact defect the artboard dims to 0.14.
+    expect(code).toMatch(/box-shadow:var\(--fw-shadow-raise\)/);
+    expect(shadowToken('raise')).not.toContain('inset');
   });
 
   it('records the gap as an A03 request rather than hardcoding it', () => {
@@ -131,11 +140,26 @@ describe('G-49 — the own bubble needs a variant no token expresses', () => {
     // The hued ambient must not appear as a literal anywhere in the component.
     expect(code).not.toContain('0.488 0.124 150');
   });
+
+  it('the hue the request needs is already a COLOUR token, even though no shadow token has it', () => {
+    // Recorded because it is the fact that decides how #8 gets granted, and it
+    // is cheap to lose: the request reads "no token expresses a hued shadow",
+    // which is true of the shadow ramp and misleading about the palette. The
+    // artboard's ambient green IS an existing colour token, so the variant can
+    // be minted from the ramp rather than introducing a new colour.
+    const ambient = artboardShadow('lit-accent').match(/oklch\(([\d.]+ [\d.]+ [\d.]+) \/ 0\.22\)/)?.[1];
+    expect(ambient, 'expected the hued ambient layer in .lit-accent').toBeTypeOf('string');
+    const accent700 = tokens.match(/--fw-color-accent-700:\s*oklch\(([^)]+)\)/)?.[1];
+    expect(accent700, 'expected --fw-color-accent-700 in design-tokens.css').toBeTypeOf('string');
+    expect(norm(String(accent700))).toBe(norm(String(ambient)));
+  });
 });
 
 describe('G-49 — both bubble sides are lit, and only via tokens', () => {
   it('applies a shadow on each branch of the same conditional', () => {
-    expect(code).toContain("isOwn ? 'shadow-soft' : '[box-shadow:var(--fw-shadow-card)]'");
+    expect(code).toContain(
+      "isOwn ? '[box-shadow:var(--fw-shadow-raise)]' : '[box-shadow:var(--fw-shadow-card)]'",
+    );
   });
 
   it('writes no raw shadow literal into the thread', () => {

@@ -13,6 +13,49 @@
   `supabase/tests/rls/golf_group_membership_management.sql`.
 -->
 
+## 2026-09-07 — depth, put where it does not cost the cadence (owner request)
+
+- SHA: pending (this commit).
+- Owner, after the flattening: "make the sides have more depth. Same with the
+  messages, I want them to look like they're jumping off the page a little bit.
+  It's super flat right now."
+- THE THREAD WAS A ROLE INVERSION, not a missing shadow, and that is the part
+  worth carrying. The incoming bubble was `bg-surface-sunken` — the WELL role,
+  the token for input tracks and insets, the things that sit DOWN into the
+  page — at 0.963, barely a step off the 0.953 canvas. `Bubbles.dc.html:20`
+  paints it `linear-gradient(180deg, oklch(0.989 …), oklch(0.980 …))`: the
+  brightest cream in the system, a lifted surface. So the fill was fighting
+  every shadow underneath it, and no amount of shadow tuning would have fixed
+  it. Now `bg-elevated` (0.993), the token for that role and the nearest step
+  to the artboard's top stop. The exact two-stop gradient remains A03 #1.
+- The own bubble went `shadow-soft` → `[box-shadow:var(--fw-shadow-raise)]`.
+  Soft (0 10px 28px / 0.13) read as no lift at all under a dark green bubble
+  where the artboard asks for a green at 0.22. Still neutral, still an interim:
+  A03 #8 stays OPEN, because the point of that request is the HUE and no shadow
+  token has one. A hand-typed colour was the alternative and
+  `MessageThreadPane.bubbleDepth.test.ts` rightly forbids it — a literal drifts
+  silently the moment the palette moves. That test caught this exact attempt on
+  the first run and the code changed, not the test.
+- One fact recorded for whoever grants A03 #8, because it decides how: the
+  request says no token expresses the hued shadow, which is true of the SHADOW
+  ramp and misleading about the palette. The artboard's ambient
+  `oklch(0.488 0.124 150)` IS `--fw-color-accent-700` exactly
+  (`design-tokens.css:99`; `:96`'s accent-750 is the same value), so the variant
+  can be minted from the existing ramp rather than a new colour. The bubbleDepth
+  suite now proves that equality by parsing both sides rather than asserting it.
+- THE RAIL'S DEPTH IS ON THE LIST, NEVER BACK ON THE ROW. Each triage section is
+  a raised card — `rounded-fw-lg bg-surface` with `--fw-shadow-card` composed
+  over `--fw-shadow-soft` (the lit top edge that makes cream read as lit from
+  above, plus the ambient that actually lifts it; `card` alone was still too
+  flat) — and the rows inside stay identical boxes with a hairline between them.
+  This is the whole point: the cadence the flattening bought survives, because
+  nothing about a row changes when it is unread. A shadow or radius on the ROW
+  would undo it, and the suite now asserts the row's own class list carries
+  neither while allowing the list to carry both.
+- The unread fill moves `bg-surface` → `bg-elevated` to stay one step above the
+  card it now sits in, rather than one step above the canvas.
+- Gates: typecheck=0 lint=0 test=0 build=0 test:rls=0 docs:check=0.
+
 ## 2026-09-07 — the conversations list runs on one cadence; G-32 partly reversed
 
 - SHA: pending (this commit).

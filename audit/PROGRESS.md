@@ -352,6 +352,33 @@ it is the owner's, through `db-apply`.
     (the G-49a precedent): it now asserts the absence of the lift, the
     presence of the divided-list treatment, and that the leaderboard idiom it
     cites still exists.
+- [x] Give the list edges and the bubbles depth (the "it's super flat" complaint)
+  - The complaint had two halves and they had different causes.
+  - **The sides.** Once the rows went flat, nothing carried an edge: the list
+    ran to the page padding with only a hairline between rows, so a grouped
+    set of conversations had no boundary at all. Each triage section's `<ul>`
+    is now a grouped card -- `rounded-fw-lg bg-surface` carrying
+    `var(--fw-shadow-card), var(--fw-shadow-soft)`, two ramp tokens composed,
+    no literal. The depth moved UP one level: it belongs to the list, never
+    back onto the row, so the one-cadence fix above is preserved -- every row
+    is still `rounded-none border-0 p-3` with no shadow of its own, and the
+    inner container is pinned to the avatar's height (`flex h-12 items-center
+    gap-3`) so a badge's line-height cannot re-introduce the 80-vs-72 split.
+  - **The bubbles.** The incoming bubble was `bg-surface-sunken` (0.963) --
+    that is the WELL role, used for input tracks and insets. A recessed fill
+    fights every shadow you put under it, which is why the artboard's own
+    `--fw-shadow-card` read as nothing. `Bubbles.dc.html:82` draws the
+    brightest cream, so the fill is now `bg-elevated` (0.993) and the shadow
+    reads. Outgoing lifts further on `--fw-shadow-raise` over `bg-accent-650`.
+  - **A03 request #8 is recorded, not silently satisfied.** The artboard's
+    `.lit-accent` ambient is HUED -- `oklch(0.488 0.124 150 / 0.22)` -- and no
+    Fairway *shadow* token is. But the *colour* ramp already holds that exact
+    green as `--fw-color-accent-700`, so the variant can be minted from the
+    ramp rather than invented; that is now written at the source in
+    `audit/A03-VARIANT-REQUESTS.md`. The interim ships the deepest NEUTRAL
+    token, and `MessageThreadPane.bubbleDepth.test.ts` still forbids a raw
+    `oklch(` inside a `box-shadow:` -- a first attempt at the hued value was
+    rejected by that test and the CODE was changed, not the test.
 
 ---
 

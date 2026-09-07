@@ -160,3 +160,12 @@
 {"ts":1788814850006,"gate":"build","waitMs":0,"runMs":93626,"slots":2}
 {"ts":1788815065150,"gate":"typecheck","waitMs":0,"runMs":60874,"slots":2}
 {"ts":1788815147676,"gate":"test","waitMs":0,"runMs":350012,"slots":2}
+{"ts":1788815639099,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":6608,"slots":2}
+{"ts":1788815733509,"gate":"typecheck","waitMs":1,"runMs":57220,"slots":2}
+{"ts":1788815810871,"gate":"test","waitMs":1,"runMs":345944,"slots":2}
+{"ts":1788816156997,"gate":"build","waitMs":1,"runMs":101015,"slots":2}
+{"ts":1788816465230,"gate":"build","waitMs":0,"runMs":99415,"slots":2}
+{"ts":1788816653670,"gate":"build","waitMs":0,"runMs":91336,"slots":2}
+{"ts":1788817003561,"gate":"typecheck","waitMs":1,"runMs":6107,"slots":2}
+{"ts":1788817030480,"gate":"test","waitMs":1,"runMs":353770,"slots":2}
+{"ts":1788817440916,"gate":"build","waitMs":0,"runMs":97640,"slots":2}

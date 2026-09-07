@@ -192,7 +192,11 @@
 -- the owner's deliberate review and application, and the group-details UI it
 -- backs fails visibly (42501, surfaced and recorded) until it is applied.
 
-begin;
+-- NO EXPLICIT `begin;`/`commit;`. The Supabase migration runner already wraps
+-- each file in its own transaction, so an explicit pair here NESTS inside it —
+-- squawk's `transaction-nesting` rule fails the Supabase job on exactly this
+-- (CI run 34162432011). The file is still all-or-nothing; the transaction is
+-- the runner's to manage, not this file's.
 
 -- --- IS THIS OTHER USER ON THE CONVERSATION'S TEAM? -------------------------
 --
@@ -369,8 +373,6 @@ using (
         )
     )
 );
-
-commit;
 
 -- --- VERIFICATION (run after applying) --------------------------------------
 --

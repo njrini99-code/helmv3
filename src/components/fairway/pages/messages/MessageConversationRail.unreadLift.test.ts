@@ -86,16 +86,26 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
     expect(flat(String(shadow))).toBe(shadowToken('card'));
   });
 
+  /** The ConversationRow className list — the row's own styling, nothing else. */
+  function rowClassList(): string {
+    const start = railCode.indexOf("'group block h-auto");
+    expect(start, "expected the row's class list").toBeGreaterThan(-1);
+    const end = railCode.indexOf(')}', start);
+    return railCode.slice(start, end);
+  }
+
   it('the rail no longer lifts the unread row off the list', () => {
-    // The reversal, pinned. A per-row shadow or radius reintroduces the two
-    // box sizes and the 6px-vs-30px perceived cadence this surface was
-    // rebuilt to remove.
-    expect(railCode).not.toContain('var(--fw-shadow-card)');
-    expect(railCode).not.toMatch(/rounded-fw-md border-0 p-3/);
+    // The reversal, pinned, and scoped to the ROW. A per-row shadow or radius
+    // reintroduces the two box sizes and the 6px-vs-30px perceived cadence
+    // this surface was rebuilt to remove. The LIST is allowed a shadow — that
+    // is where the owner's depth request landed; see the depth test below.
+    const row = rowClassList();
+    expect(row).not.toContain('var(--fw-shadow-card)');
+    expect(row).not.toMatch(/rounded-fw-md/);
   });
 
   it('expresses unread as a fill inside a divided list instead', () => {
-    expect(railCode).toContain("!isSelected && hasUnread && 'bg-surface'");
+    expect(railCode).toContain("!isSelected && hasUnread && 'bg-elevated'");
     // Deliberately NOT the leaderboard's accent tint. This row already spends
     // accent three times (unread Badge, group glyph, timestamp), and tinting
     // it accent as well made the badge and glyph disappear into their own
@@ -105,8 +115,29 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
     // hairline is what separates rows now, and it costs no vertical space, so
     // one cadence survives regardless of which rows are unread.
     expect(railCode).not.toContain('flex flex-col gap-1.5');
-    const lists = railCode.match(/<ul className="divide-y divide-border-subtle">/g) ?? [];
+    const lists = railCode.match(/divide-y divide-border-subtle/g) ?? [];
     expect(lists.length).toBe(3);
+  });
+
+  it('puts the depth on the list, never back on the row', () => {
+    // The owner asked for depth after the flattening, and this is where it
+    // is allowed to live. The two triage lists are raised cards; the rows
+    // inside them stay identical boxes, so the cadence the flattening bought
+    // survives. A shadow on the ROW is what this whole suite forbids.
+    const cards = railCode.match(
+      /divide-y divide-border-subtle overflow-hidden rounded-fw-lg bg-surface \[box-shadow:var\(--fw-shadow-card\),var\(--fw-shadow-soft\)\]/g,
+    ) ?? [];
+    expect(cards.length).toBe(2);
+    // Two tokens composed, not a hand-typed shadow: `card` carries the lit top
+    // edge that makes a cream surface read as lit-from-above, `soft` carries
+    // the ambient that actually lifts it off the champagne. `card` alone is
+    // the resting whisper and the owner measured it as still too flat.
+    expect(railCode).not.toMatch(/box-shadow:[^'"`\]]*(oklch|rgba?)\(/);
+    // …and the unread row is a step ABOVE that card, not a box on the canvas.
+    const rowStart = railCode.indexOf("!isSelected && hasUnread &&");
+    const rowDecl = railCode.slice(rowStart, railCode.indexOf(',', rowStart));
+    expect(rowDecl).not.toContain('shadow');
+    expect(rowDecl).not.toContain('rounded');
   });
 
   it('gives every row the same box, whatever its state', () => {
