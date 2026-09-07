@@ -373,3 +373,36 @@
   explicitly, and the file header's own ban — no `bg-white`/`backdrop-blur` on
   BUBBLES — still stands. Both hold at once, and a test pins that the file has
   exactly one `backdrop-filter` site (plus its `-webkit-` pair).
+
+## 2026-09-07 — the bubble width is the rule, not a specimen (G-50b)
+
+- The base cap was `max-w-[78%] sm:max-w-[70%]` — a guess at the artboard
+  rather than the artboard. Three widths appear across the reference set (288,
+  296, 268/292) and they are not three opinions: `Bubbles.dc.html:17` states
+  288px as a CLASS RULE, in the artboard whose entire purpose is bubble
+  grammar, while the others are inline styles on individual specimens inside
+  scene compositions. DECISIONS.md takes the rule. The base is now
+  `max-w-[288px]`.
+- Group-incoming needed no number of its own. The 32px avatar column and the
+  row's `gap-2` sit OUTSIDE the capped element, so an incoming row's available
+  width is already 40px less than an outgoing row's. 268 is written nowhere.
+- SIXTH CORRECTION FROM MEASUREMENT, and this one is against a frozen decision
+  rather than the manifest. DECISIONS.md says group-incoming's 268px "falls out
+  of the same rule minus the avatar gutter". That arithmetic does not
+  reproduce: the gutter is 40px — a 32px avatar at an 8px gap, identical in
+  `Group.dc.html:49-50` and in the component — and 288 − 40 = 248, not 268.
+  The group specimens are also uniformly 1px tighter on padding than the `.bub`
+  rule (`11px 15px` vs `12px 16px`), so 268 is a hand-tuned scene value of
+  exactly the same class as the 292-vs-296 spread the decision itself already
+  dismisses as render noise. **The rule and the derivation direction are
+  implemented; the specimen number is not reproduced, and chasing it would have
+  meant inventing a magic number the decision explicitly forbids.**
+- The `sm:` cap deliberately stays a percentage. Every artboard is a 390px
+  phone scene, so 288px is what the design actually specifies; the pane is
+  `max-w-[720px]` on desktop (`FairwayMessages.tsx:649`), where a flat 288px
+  would narrow bubbles by 216px on no authority at all. The rule is applied
+  where it was stated and nowhere else.
+- Consequence worth stating plainly: on a 390px phone the 288px cap binds for
+  incoming and outgoing alike (358px of content, minus the 40px gutter, still
+  leaves 318px), so the derivation only becomes visible below roughly a 360px
+  viewport. That is what the rule produces. It is not the artboard's 268.

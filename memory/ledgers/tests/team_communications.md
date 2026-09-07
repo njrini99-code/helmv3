@@ -175,3 +175,39 @@ pins that the glass licence stays bounded to this one element by counting
 `backdrop-filter` sites in the file, and that the banned legacy `glass-*`
 utilities are not what is being referenced. Source assertions read a
 comment-stripped copy, so the fix's own docstring cannot satisfy a check.
+
+## 2026-09-07 — bubble max-width (G-50b)
+
+`MessageThreadPane.bubbleWidth.test.ts` — 7 tests, **3 failing against the
+pre-fix component**, verified by checking out HEAD's version and re-running.
+
+Measured on both sides. The 288 is not written into the test as a literal: it
+is parsed out of `Bubbles.dc.html`'s `.bub` rule and compared with the
+component's class, and the 40px gutter the derivation rests on is compared
+against the artboard's own `width: 32px` avatar column and `gap: 8px` row. One
+test guards the basis rather than the value — if `.bub`'s max-width ever stops
+being a class rule, the decision's whole justification is gone and it fails
+loudly instead of silently drifting.
+
+It also pins the mechanism, not just the number: the avatar gutter must remain
+a SIBLING of the capped column, since that adjacency is the entire reason
+group-incoming derives without a second number. And it asserts that no specimen
+width (296/268/292) is written anywhere in the file.
+
+Its own comment stripper removes block comments WHOLE rather than by line
+prefix — a JSX `{/* … */}` spans many lines whose interiors read as ordinary
+prose. The suite caught that on its first run: the comment explaining why 268
+is written nowhere contains "268".
+
+### Collateral: the G-26 metadata test held a value it did not own
+
+`MessageThreadPane.metadataNesting.test.ts`'s `findOwningColumn` walked the
+ancestor chain looking for `max-w-[78%]`, so changing the cap to the artboard's
+288px rule broke two tests about metadata NESTING — a structural property with
+nothing to do with width. The walk now identifies the column by what makes it a
+column (`min-w-0` + `flex-col`), which is the property under test.
+
+Loosening a matcher is exactly how a test quietly stops being a gate, so this
+was proved rather than assumed: checked out `21e33781b~1` (the commit before
+the G-26 fix) and re-ran — both tests still fail against the original
+sibling-metadata layout. The test still catches the defect it was written for.

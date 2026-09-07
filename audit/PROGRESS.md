@@ -119,7 +119,7 @@ it is the owner's, through `db-apply`.
       (`MessageThreadPane.tsx:1046-1270`), so any message with a timestamp sits left of its
       group-mates. jsdom cannot see this — verify in W8
 - [x] **G-50a** day chip → floating glass chip (`DECISIONS.md`) — static, not sticky; four unused `--fw-glass-*`/`--fw-shadow-pop` tokens matched the artboard exactly; 11 tests, 6 failing pre-fix
-- [ ] **G-50b** bubble max-width → 288px base, group-incoming derived from the avatar gutter
+- [x] **G-50b** bubble max-width → 288px base, group-incoming derived from the avatar gutter — the rule, not the specimens; 268 written nowhere; the decision’s stated 288−gutter=268 arithmetic does not reproduce from the measured 40px gutter (see the ledger); 7 tests, 3 failing pre-fix
 - [ ] **G-29** thread typography, photo layout, day separators
 - [ ] **G-49** absolute measure cap and the depth system
 

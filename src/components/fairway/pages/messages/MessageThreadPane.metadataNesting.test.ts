@@ -108,7 +108,12 @@ function findTimestamp(container: HTMLElement): HTMLElement {
  */
 function findOwningColumn(timestamp: HTMLElement): { row: HTMLElement; column: HTMLElement } {
   let node: HTMLElement | null = timestamp;
-  while (node && !/max-w-\[78%\]/.test(node.className ?? '')) {
+  // Identified by what MAKES it the column — a min-width-0 flex column — and
+  // deliberately NOT by its max-width class. This walk used to look for
+  // `max-w-[78%]`, so G-50b's change of the cap to the artboard's 288px rule
+  // broke a test about metadata NESTING, which has nothing to do with width.
+  // A structural test should not hold a value another finding owns.
+  while (node && !(/\bmin-w-0\b/.test(node.className ?? '') && /\bflex-col\b/.test(node.className ?? ''))) {
     node = node.parentElement;
   }
   expect(node, 'expected the timestamp to sit within a message column').not.toBeNull();

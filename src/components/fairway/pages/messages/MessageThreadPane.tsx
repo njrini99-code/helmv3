@@ -1127,7 +1127,27 @@ export function MessageThreadPane({
                     </div>
                   )}
 
-                  <div className={cn('group relative flex min-w-0 max-w-[78%] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                  {/* G-50b — bubble max-width is 288px, and it is a RULE, not a
+                      specimen. `Bubbles.dc.html:17` states it as a class rule —
+                      `.bub { font-size: 15px; line-height: 22px; padding: 12px
+                      16px; max-width: 288px; }` — in the artboard whose entire
+                      purpose is bubble grammar. `Thread.dc.html`'s 296px and
+                      `Group.dc.html`'s 268/292px are inline styles on individual
+                      specimens in scene compositions. DECISIONS.md takes the
+                      rule, not the specimens.
+
+                      Group-incoming needs no number of its own: the 32px avatar
+                      column and the row's `gap-2` sit OUTSIDE this element, so
+                      an incoming row's available width is already 40px less than
+                      an outgoing row's. One rule, one derivation, zero magic
+                      numbers — 268 is written nowhere.
+
+                      The `sm:` cap stays a percentage on purpose. Every artboard
+                      is a 390px phone scene, so 288px is what the design
+                      actually specifies; the pane is `max-w-[720px]` on desktop,
+                      where a flat 288px would be a 216px narrowing the artboards
+                      never asked for. The rule is applied where it was stated. */}
+                  <div className={cn('group relative flex min-w-0 max-w-[288px] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name — GROUPS ONLY, once per group.
                         Redundant in a 1:1 (the header already names them) and
                         it was `text-eyebrow` in tertiary ink, which is the
