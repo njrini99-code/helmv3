@@ -1112,6 +1112,7 @@ export function FairwayCalendar({
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
+          isLoadingRange={isLoadingRange}
         />
       ) : isDay ? (
         <FairwayAgendaView
@@ -1124,6 +1125,7 @@ export function FairwayCalendar({
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
+          isLoadingRange={isLoadingRange}
         />
       ) : view === 'month' ? (
         // ── Week / Month → fully-native Fairway for BOTH roles (audit P232).
@@ -1165,6 +1167,7 @@ export function FairwayCalendar({
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
+          isLoadingRange={isLoadingRange}
         />
       )}
 

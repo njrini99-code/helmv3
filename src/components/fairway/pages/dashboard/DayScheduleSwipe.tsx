@@ -70,7 +70,15 @@ export function DayScheduleSwipe({
   // Hydration-safe clock/timezone resolution — same pattern as DaySchedule.
   const [tz, setTz] = useState<string | null>(null);
   const [todayKey, setTodayKey] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
+  /**
+   * The day the USER has paged to, or null while they haven't paged at all.
+   *
+   * Deliberately not `useState(0)` seeded and then corrected by an effect: the
+   * landing day is DERIVED (see `landingOffset`), and "user hasn't chosen yet"
+   * has to be distinguishable from "user chose today" or the derivation would
+   * fight a real selection.
+   */
+  const [userOffset, setUserOffset] = useState<number | null>(null);
   /** +1 → arrived by going forward, -1 backward — drives the slide direction. */
   const [direction, setDirection] = useState(1);
   const dragStartX = useRef<number | null>(null);
@@ -131,15 +139,26 @@ export function DayScheduleSwipe({
   // range, so opening on today showed "Nothing scheduled" and the next real
   // event was six taps away (audit 2026-07-24, P-01). One-day-at-a-time paging
   // only works if it starts where the content is.
-  const [landed, setLanded] = useState(false);
-  useEffect(() => {
-    if (!isReady || landed) return;
-    setLanded(true);
+  //
+  // DERIVED, not an effect. This used to be a second useEffect gated on a
+  // `landed` flag, whose own dependencies (isReady, byDay, todayKey,
+  // eventOffsets) are all computed from state the FIRST effect writes. React
+  // cannot run it until the render caused by that first setState has already
+  // committed — so a frame where isReady=true and offset=0 was guaranteed to
+  // paint first, and the card visibly read "Today — Nothing scheduled" before
+  // jumping to the real day. As a useMemo it resolves in the same render pass
+  // that flips isReady, so the first non-skeleton frame is already correct.
+  // (It also stops the aria-live day panel announcing the wrong day and then
+  // correcting itself.)
+  const landingOffset = useMemo(() => {
+    if (!isReady) return 0;
     if ((byDay.get(todayKey as string) ?? []).length === 0 && eventOffsets.length > 0) {
-      setOffset(eventOffsets[0]!);
+      return eventOffsets[0]!;
     }
-  }, [isReady, landed, byDay, todayKey, eventOffsets]);
+    return 0;
+  }, [isReady, byDay, todayKey, eventOffsets]);
 
+  const offset = userOffset ?? landingOffset;
   const clampedOffset = Math.min(offset, maxOffset);
   const dayKey = isReady ? addDaysToKey(todayKey as string, clampedOffset) : '';
   const dayEvents = byDay.get(dayKey) ?? [];
@@ -149,7 +168,7 @@ export function DayScheduleSwipe({
     const clamped = Math.max(0, Math.min(maxOffset, next));
     if (clamped === clampedOffset) return;
     setDirection(clamped > clampedOffset ? 1 : -1);
-    setOffset(clamped);
+    setUserOffset(clamped);
   };
 
   const headerAction = viewAllHref ? (

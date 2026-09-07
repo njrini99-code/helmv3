@@ -72,3 +72,37 @@ implements A09-006 only. A09-005 remains open, with the owner's decided
 policy — in-app toast only, suppressed during round entry — unimplemented;
 its only verification path is the branch-gated iOS compile, so it is parked
 with A01-001 rather than shipped blind from this branch.
+
+## A02-005 — return-navigation replays the full skeleton · OWNER DECISION
+
+Confirmed as filed. `/golf/dashboard`, `/dashboard/stats` and
+`/dashboard/rounds` each declare `export const dynamic = 'force-dynamic'`,
+and Next's client Router Cache gives dynamic segments a 0-second stale time
+unless `experimental.staleTimes` overrides it. `next.config.mjs` sets no
+`staleTimes`. Every one of those routes ships its own `loading.tsx`, so a
+return-navigation is architecturally guaranteed to repaint the full-page
+skeleton over content that was still valid.
+
+Verified that the key is still accepted where the finding says it is:
+`staleTimes: { dynamic, static }` is present under `experimental` in
+`node_modules/next/dist/server/config-schema.js` for Next 16.3.4, so the
+one-line fix would not be silently ignored.
+
+Not landed, because the finding's own fix note reserves it: *"A global
+`staleTimes` change affects every dynamic route in the app (not just golf)
+and needs A00 sign-off; a per-route client cache is the narrower, safer
+first step."* The two options, costed:
+
+- **Global** — one line in `next.config.mjs` (`experimental.staleTimes.dynamic`,
+  e.g. 30). Fixes golf, baseball, lifting and admin at once. The risk is the
+  same breadth: every dynamic route in every sport may serve up to that many
+  seconds of stale content on a back-navigation, including surfaces where
+  freshness matters more than it does on a dashboard. `next.config.mjs` is
+  also a config surface, so it is the owner's call, not an agent's.
+- **Per-route** — a client-side cache keyed by scope (team/date/filter) on
+  Home, Stats and Rounds only. Narrower blast radius and it can show the last
+  good render instantly with a quiet background revalidate, which is what the
+  C02 contract actually asks for. Materially more code, in three files that
+  are already large.
+
+Neither is blocked by anything technical; both need the owner to pick.
