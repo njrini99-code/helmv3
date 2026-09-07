@@ -34,8 +34,8 @@ it is the owner's, through `db-apply`.
 - [x] **G-08** failed attachment insert reports SUCCESS to the sender
       (`message-attachments.ts:157`). Open issue #1825 is this symptom.
 - [x] **G-19** failed sends erase the message instead of retaining it [cross-lane confirmed]
-- [ ] **G-21** attachment send fails OPEN
-- [ ] **G-13** a slow fetch for an abandoned conversation overwrites the open one
+- [x] **G-21** attachment send fails OPEN
+- [x] **G-13** a slow fetch for an abandoned conversation overwrites the open one
 - [ ] **G-15** fabricated `id: ''` rows in the inbox view model
 - [ ] **G-18** duplicate-key short-circuit does not verify equivalence
 - [ ] **G-23** no IME composition guard on Enter-to-send
