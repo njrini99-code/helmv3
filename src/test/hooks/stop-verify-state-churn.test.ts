@@ -30,7 +30,7 @@
 // fixing the loop by making the gate unable to fire.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { appendFileSync, mkdirSync, readdirSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readdirSync, utimesSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createFixtureRepo, runStopVerify, type FixtureRepo } from './helpers/fixture-repo';
 
@@ -140,7 +140,6 @@ describe('Stop suppression — churn that must NOT re-arm the gate', () => {
     // block message promises will not happen.
     expect(marks()).toHaveLength(2);
     expect(marks()).toContain(firstMark[0]);
-    expect(statSync(join(fixture.dir, '.git', firstMark[0]))).toBeTruthy();
   });
 });
 

@@ -64,7 +64,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
-| `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 6 | - |
+| `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 7 | - |
 | `AGENTS.md` | current | yes | - | yes | 0 | 17 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 8 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
