@@ -68,3 +68,6 @@
 {"ts":1788780286497,"gate":"build","waitMs":0,"runMs":110381,"slots":2}
 {"ts":1788780488208,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":6309,"slots":2}
 {"ts":1788780610086,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":763,"slots":2}
+{"ts":1788792974738,"gate":"typecheck","waitMs":0,"runMs":59960,"slots":2}
+{"ts":1788793055430,"gate":"test","waitMs":0,"runMs":338103,"slots":2}
+{"ts":1788793393695,"gate":"build","waitMs":0,"runMs":87045,"slots":2}
