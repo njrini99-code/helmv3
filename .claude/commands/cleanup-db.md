@@ -8,7 +8,18 @@ Find tables and columns in Supabase that are genuinely dead — not referenced a
 
 ## Phase 1: Full Schema Extraction via Supabase MCP
 
-Run ALL of these queries using `execute_sql`. Do not skip any.
+All of these are read-only `information_schema`/`pg_catalog` queries. Do not
+run them through the account-wide connector's `execute_sql` — that tool is
+an unenforced production write path per `.claude/rules/database.md` and
+stays off the permission allow list regardless of which door is used. Use
+this repo's project-scoped `mcp__supabase__*` server instead: `list_tables`,
+`list_extensions`, and `list_migrations` cover 1a/1b/1i/1j directly, and
+`search_docs` or `get_advisors` can surface policy/function/trigger
+metadata. For anything those tools don't expose directly (1c–1h), run
+`./node_modules/.bin/supabase db dump --schema public --data-only=false` (or
+the equivalent local `supabase db diff`) against a local/read replica and
+inspect the output — never `execute_sql` against production. Do not skip
+any of the following checks.
 
 ### 1a. All public tables
 ```sql
@@ -263,12 +274,16 @@ For each: table.column, reason you're confident it's unused.
 For each: table.column, reason it's ambiguous.
 
 ### Recommended Removal Steps
-For confirmed-unreferenced items only:
+For confirmed-unreferenced items only. This command only reports — any
+actual write goes through `npm run db:apply` after the migration is reviewed
+and, if it needs to wait, recorded in `supabase/migrations/HELD.md`; never
+`execute_sql` or `apply_migration` directly.
 1. Create a new migration with `ALTER TABLE x RENAME TO _deprecated_x`
 2. Deploy to preview/staging
 3. Run full test suite
 4. Manual smoke test for 1 week
-5. If nothing breaks, create a DROP migration6. Warn about any storage, webhooks, or external integrations that might reference the table outside the codebase
+5. If nothing breaks, create a DROP migration
+6. Warn about any storage, webhooks, or external integrations that might reference the table outside the codebase
 
 ---
 

@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 1 | 3 | - |
-| `.claude/rules/database.md` | current | - | - | - | 1 | 5 | - |
+| `.claude/rules/database.md` | current | - | - | - | 2 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | 1 |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
@@ -80,7 +80,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/helm-reader.md` | current | - | - | - | 1 | 2 | - |
 | `.claude/agents/helm-worker.md` | current | - | - | yes | 1 | 1 | - |
 | `.claude/agents/verifier.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 2 | 2 |
+| `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 4 | 2 |
 | `.claude/commands/context.md` | current | - | - | - | 0 | 2 | - |
 | `.claude/commands/gates.md` | current | - | - | - | 0 | 2 | - |
 | `.claude/commands/held.md` | current | - | - | - | 0 | 1 | - |
@@ -98,7 +98,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/golfhelm-creative-engine/references/creative-rules.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/golfhelm-creative-engine/references/design-tokens.md` | current | - | - | yes | 0 | 1 | - |
 | `.claude/skills/golfhelm-creative-engine/references/product-features.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/skills/helm-process/SKILL.md` | current | - | - | - | 1 | 8 | - |
+| `.claude/skills/helm-process/SKILL.md` | current | - | - | - | 1 | 9 | - |
 | `.claude/skills/helm-sentry/SKILL.md` | current | - | - | - | 0 | 7 | - |
 | `.claude/skills/modern-saas-ui/SKILL.md` | current | - | - | yes | 0 | 3 | - |
 | `.claude/skills/modern-saas-ui/references/avoiding-vibe-coded.md` | current | - | - | - | 0 | 0 | - |
@@ -686,7 +686,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 19 | 34 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 20 | 34 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
