@@ -20,3 +20,24 @@
 - Not covered: the two-statement commit race itself (needs two live clients),
   and the rendered bubble state (jsdom computes no layout — see the audit's
   W8 rendered-fidelity item).
+
+## 2026-09-07 — G-26 nesting and G-19 failed-send guarantees
+
+- SHAs: 21e33781b (G-26), fef04dbb9 (G-19).
+- `MessageThreadPane.metadataNesting.test.ts` (3) — the timestamp must be a
+  DESCENDANT of the message column, and the column must be the row child that
+  carries it. Verified to fail (2 of 3) against the pre-fix structure. It
+  asserts nesting, not geometry, because jsdom computes no flex layout; the
+  geometry check is W8's, in a real browser.
+- `MessageThreadPane.failedSend.test.ts` (7) — a failed send still renders the
+  text, is labelled "Not sent", is muted rather than removed, wires Retry and
+  Discard to the message id, degrades to a labelled bubble with no handlers,
+  and leaves a delivered message completely untouched.
+- `MessageComposer.midFlightTyping.test.tsx` (4) — text typed during an
+  in-flight send survives; only the sent portion is consumed; the payload is
+  what was in the box at submit time; a failed send retains the whole draft.
+  Verified to fail against the old blanket clear.
+- `use-golf-messages.failed-send.test.ts` (6) — source-level, matching the
+  sibling send-integrity suite's idiom and stated reason. Note: its first
+  version searched the whole file and matched the fix's OWN docstring quoting
+  the old expression; assertions now read a comment-stripped copy.

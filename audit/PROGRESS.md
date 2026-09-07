@@ -33,7 +33,7 @@ it is the owner's, through `db-apply`.
 ## W1 — Data and correctness. No schema change, highest user impact
 - [x] **G-08** failed attachment insert reports SUCCESS to the sender
       (`message-attachments.ts:157`). Open issue #1825 is this symptom.
-- [ ] **G-19** failed sends erase the message instead of retaining it [cross-lane confirmed]
+- [x] **G-19** failed sends erase the message instead of retaining it [cross-lane confirmed]
 - [ ] **G-21** attachment send fails OPEN
 - [ ] **G-13** a slow fetch for an abandoned conversation overwrites the open one
 - [ ] **G-15** fabricated `id: ''` rows in the inbox view model
@@ -55,7 +55,7 @@ it is the owner's, through `db-apply`.
       A03 as variant requests, never hardcoded
 
 ## W4 — Thread
-- [ ] **G-26** the headline defect: metadata is a sibling flex item of the message column
+- [x] **G-26** the headline defect: metadata is a sibling flex item of the message column
       (`MessageThreadPane.tsx:1046-1270`), so any message with a timestamp sits left of its
       group-mates. jsdom cannot see this — verify in W8
 - [ ] **G-50a** day chip → floating glass chip (`DECISIONS.md`)
