@@ -41,7 +41,14 @@ server needs an OAuth flow only you can complete. The Management API path
 the auto-mode classifier. `npm run db:rls-coverage` exists and is purpose-built and
 read-only, but exits 2 — no connection credentials.
 
-### A2. Confirm CI actually runs the DB scripts
+### A2. Confirm CI actually runs the DB scripts — **RESOLVED, see `A2-RESOLUTION.md`**
+> Answered 2026-09-07 once the `9b03fb923` guard fix unblocked the read. Short version:
+> the grep below is a **false negative** — `check-supabase-drift` is wired twice (via the
+> npm alias `db:drift:check`) but covers nothing about G-38; `rls-coverage` genuinely has
+> no caller; and a third script, `check-ledger-vs-catalog`, is wired, *could* answer G-38,
+> and has never executed. **§A1 stays blocked either way.** Read `A2-RESOLUTION.md` before
+> acting on anything below.
+
 ```bash
 grep -rln "rls-coverage\|check-supabase-drift" .github/workflows/
 ```
