@@ -10,7 +10,20 @@ import './globals.css';
 // the `.fairway-ds` scope consume these tokens.
 import '@/styles/design-tokens.css';
 // Client instrumentation is auto-loaded via instrumentation-client.ts
-import { Toaster } from '@/components/ui/sonner';
+// The app-wide toast surface. sonner keeps ONE process-wide store, so
+// whichever <Toaster> is mounted renders every toast regardless of which
+// facade issued it — the legacy `toast.*` from ui/sonner and `fairwayToast`
+// both land here. Mounting the Fairway ToastStack is therefore what actually
+// gives the whole app the warm-glass panel with per-type tone icons instead
+// of the old matte style; the facades and their haptics are unchanged.
+//
+// It also carries the mobileOffset fix: sonner reads `offset` only on wide
+// viewports and `mobileOffset` under 600px, so ui/sonner's phone clearance
+// was never applied and toasts sat on the bottom nav.
+//
+// Safe at the root: the --fw-* tokens it consumes are declared on bare :root
+// in styles/design-tokens.css, not gated behind the .fairway-ds scope class.
+import { ToastStack } from '@/components/fairway/feedback/ToastStack';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
 import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
 import { ChunkLoadErrorHandler } from '@/components/providers/ChunkLoadErrorHandler';
@@ -141,7 +154,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </TooltipProvider>
         </DatadogProvider>
-        <Toaster />
+        <ToastStack />
         <VercelAnalyticsProvider />
         <PostHogProvider />
         <AdminErrorHandler />
