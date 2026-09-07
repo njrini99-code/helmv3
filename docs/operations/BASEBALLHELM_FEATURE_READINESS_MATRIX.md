@@ -36,6 +36,7 @@ against `njrini99-code/helmv3`, not assumed from prior matrix text.
 
 ## Status legend
 
+<!-- markdownlint-disable MD013 -->
 | Status | Meaning |
 |---|---|
 | **ready** | Route renders, reads/writes a canonical server read model, has meaningful test coverage, and has no known open security/data-integrity finding. |
@@ -43,6 +44,7 @@ against `njrini99-code/helmv3`, not assumed from prior matrix text.
 | **route-only** | Route renders and the action/read-model layer exists, but there is no feature-specific unit or E2E test coverage proving the surface works end to end. |
 | **hidden** | Not a user-facing destination — an intentional redirect/alias to another surface. Not a gap; listed for completeness so the route-resolution check has a real target. |
 | **needs decision** | Blocked on a product or schema decision (e.g. an unapplied migration, a typed-vs-untyped data contract) before "ready" is even achievable. |
+<!-- markdownlint-enable MD013 -->
 
 ## Conventions (read before editing this table)
 
@@ -54,6 +56,7 @@ against `njrini99-code/helmv3`, not assumed from prior matrix text.
 
 ## Matrix
 
+<!-- markdownlint-disable MD013 -->
 | Feature | Route(s) | Source of Truth / Spec | Current Status | Highest-Risk Gap | Test Coverage | Owner Issue | Production Readiness |
 |---|---|---|---|---|---|---|---|
 | Auth / Onboarding | `/baseball/login`, `/baseball/signup`, `/baseball/coach`, `/baseball/coach-onboarding`, `/baseball/player`, `/baseball/complete-signup` | `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` §1–2; `src/lib/baseball/nav-registry.ts` | ready | Fixed 2026-07-09, verified in code — all three originally-flagged findings: (1) the persisted-shell fast path (`src/hooks/use-baseball-auth.ts`) always revalidates against the server via `verifyServerSession()` (`supabase.auth.getUser()` on every call); a 5s resolved-result cache only collapses duplicate same-navigation mounts, it never skips the server round trip (#416). (2) The public demo gate (`src/app/baseball/actions/demo-access.ts`) still signs every visitor into one shared demo coach account by design, but every server action not explicitly marked `demoSafe: true` now throws when called from that session (`src/lib/baseball/with-baseball-action.ts`) — the shared account is now structurally read-only rather than isolated (#392). (3) `changePasswordAction` (`src/app/baseball/actions/auth.ts:467-520`) re-authenticates via `signInWithPassword` before calling `updateUser`, confirmed by 7 passing test cases (#371). W0 (commit `d2aa1a5c`, 2026-07-09) additionally closed a related edge case: sign-out now calls `invalidateAuthCache()` so there is no post-logout stale-session window. | `src/lib/baseball/__tests__/server-route-guards.test.ts`, `coach-onboarding-staff-row.integration.test.ts`, `active-context-staff-status.test.ts`, `src/app/baseball/actions/__tests__/change-password.test.ts` (7 cases, passing), `demo-access.test.ts`; `e2e/auth.spec.ts`; `e2e/baseball-smoke.spec.ts` (#372, mandatory, unconditional). | Resolved 2026-07-09 — #416, #392, #371 all closed and independently re-verified against current code; no open issue remains for this row. | Ready — entry path renders, all three previously-open auth/security findings are fixed and regression-tested, and the mandatory smoke suite additionally proves the gated shell renders for both roles. |
@@ -78,6 +81,7 @@ against `njrini99-code/helmv3`, not assumed from prior matrix text.
 | Settings | `/baseball/dashboard/settings` (+ `ai`, `appearance`, `audit`, `data-retention`, `demo-mode`, `guardian-access`, `imports`, `integrations`, `permissions`, `philosophy`, `player-access`, `privacy`, `program`, `recruiting-preferences`, `roles`, `season`, `showcase-profile`, `staff`, `teams` subpages) | `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` §"Settings Architecture" | ready | Fixed 2026-07-09, verified in code (#371, closed) — `changePasswordAction` (`src/app/baseball/actions/auth.ts:467-520`) re-authenticates via `signInWithPassword` with the submitted `currentPassword` before calling `updateUser`, and rejects with "Current password is incorrect." on a bad reauth attempt without ever calling `updateUser` — confirmed by 7 passing test cases covering success, wrong password, expired session, weak new password, and rate limiting. | `src/app/baseball/actions/__tests__/change-password.test.ts` (7 cases, passing); subpage-specific tests vary (see Staff/Roles row). | Resolved 2026-07-09 — #371 closed and verified fixed in code, with direct test coverage on the exact security-sensitive path. | Ready — the one open security finding (unverified reauthentication) is fixed and has real regression coverage; most subpages remain reachable and functional. |
 | Staff / Roles | `/baseball/dashboard/settings/staff`, `/baseball/dashboard/settings/roles`, `/baseball/staff/join/[code]` | `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` §"Staff Collaboration Layer" | ready | **Upgraded 2026-07-15 (PR #822).** Both access-control findings remain fixed at the code and DB level: (1) `active-context.ts`'s `loadMemberships()` excludes suspended/removed/invited staff rows, and migration `20260630230000_baseball_is_team_staff_active_status` (applied to prod) hardens the same guard into `public.is_baseball_team_staff()`, gating ~20 RLS policies (#405, closed). (2) Migration `20260630180000_baseball_scope_player_ids_rls` (applied to prod) canonicalizes `can_view_baseball_player()` on `scope_player_ids` (#406, closed). **The one residual gap this row cited — #406's own acceptance criteria calling for a pgTAP isolation test — is now delivered:** `supabase/tests/rls/baseball_scope_player_ids_isolation.sql` is a real behavioral pgTAP suite that seeds a team + a scoped staff coach, impersonates that coach via `request.jwt.claims`, and asserts `can_view_baseball_player()` across empty → one → multiple → revoked-status `scope_player_ids` states, plus a second-staff-row cross-isolation case proving one coach's results are unaffected by another coach's wider scope on the same team. | `src/lib/baseball/__tests__/active-context-staff-status.test.ts` (#405), `coach-onboarding-staff-row.integration.test.ts`; `supabase/tests/rls/baseball_scope_player_ids_isolation.sql` (new, behavioral pgTAP — closes #406's acceptance criteria). | Resolved 2026-07-09 — #405, #406 both closed; #406's previously-missing acceptance-criteria pgTAP test is now delivered too (2026-07-15). | Ready — both findings are fixed at the code and database (RLS) layer, applied to prod, and #406's own acceptance-criteria pgTAP isolation test now exists and passes. |
 | Notifications | `/baseball/dashboard/settings/notifications` → `permanentRedirect` alias into `/baseball/dashboard/settings/program#notifications` | `src/app/baseball/(dashboard)/dashboard/settings/notifications/page.tsx` (header comment cites "v4 §Settings Architecture") | hidden | None — this is an accepted, documented consolidation: notification controls live as a section of the single Program Settings page (one save surface, one capability gate) per the route's own header comment, and the dedicated spec route resolves via `permanentRedirect` so the URL stays deep-linkable. | N/A — intentional redirect, nothing to test beyond the redirect itself resolving (which the route-resolution check below already covers). | N/A (intentional) | Working as designed; not a gap. |
+<!-- markdownlint-enable MD013 -->
 
 ---
 
@@ -119,6 +123,7 @@ stays removed per the Maintenance rule below.
 
 ## Production readiness rollup
 
+<!-- markdownlint-disable MD013 -->
 | Status | Count |
 |---|---|
 | ready | 14 |
@@ -126,6 +131,7 @@ stays removed per the Maintenance rule below.
 | route-only | 0 |
 | hidden | 1 |
 | needs decision | 0 |
+<!-- markdownlint-enable MD013 -->
 
 **Fourteen of 22 features are now `ready`** as of the 2026-07-15 sync (up
 from 10 on 2026-07-09), on concrete, file-cited evidence. Four rows moved to
