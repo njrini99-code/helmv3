@@ -8,7 +8,8 @@ survive `bypassPermissions`. Nothing else here is mechanically enforced.
 
 **The canonical checkout boundary is a table, not an absolute**: the three
 editing tools are blocked; a Bash redirect, `cp`, `mv` or formatter writing
-the same bytes is not — don't close this with a Bash parser (deleted for cause); the fix is `sandbox.filesystem`, disabled, owner's call.
+the same bytes is not. Do not close this with a Bash command parser (deleted
+for cause); the structural fix is `sandbox.filesystem`, owner's call.
 
 ### Docs
 
