@@ -106,3 +106,86 @@ first step."* The two options, costed:
   are already large.
 
 Neither is blocked by anything technical; both need the owner to pick.
+
+## A03-002 — radius drift · PARTIAL, by pixel-equality
+
+The finding asks for all raw-Tailwind radii inside `src/components/fairway/**`
+to move to the Fairway ramp. Done for the substitutions that are
+pixel-identical, left for the ones that are not.
+
+Two canonical utilities render exactly what a ramp step renders:
+`rounded-md` === `rounded-fw-sm` (10px) and `rounded-2xl` === `rounded-card`
+(20px). Those are the dangerous ones the finding actually describes — same
+pixels, different token, silent divergence on any retune — and they carry zero
+visual risk to change. 13 call sites converted, including both sites inside the
+reference `Segmented` control.
+
+The remaining 16 are `rounded-sm` (6px), `rounded-lg` (12px) and `rounded-xl`
+(16px), and none has a Fairway equivalent: the ramp's smallest step is 10px.
+Mapping them to "nearest" is a visual decision, not a token cleanup, and in
+several cases a bad one — `AdoptionHeatGrid`'s 16px swatches, `SegmentBar` and
+`FairwayRoundDetail`'s 10px legend dots, and the 18px data-table checkboxes
+would all become circles or near-circles at a 10px radius. That wants a look on
+a device before it lands.
+
+`helm/no-duplicate-radius-in-fairway` (`eslint-rules/`) now blocks
+re-introducing the two pixel-equal ones inside `src/components/fairway/**`,
+verified to fire. It is deliberately NOT extended to `sm`/`lg`/`xl`, which
+would red-light lint on 16 legitimate sites.
+
+## A03-005 — two z-index ladders · PARTIAL, the safe half
+
+Named the escape tier and left the sweep. `.z-dropdown` (globals.css) was a
+hard-coded 1000 doing real work — a popover opened from inside a modal must
+paint above it, and no tier in either ladder can express that, since
+`--fw-z-dropdown` (30) sits below `--fw-z-modal` (50) by design. It is now
+`--fw-z-popover-escape` in `design-tokens.css`, and globals.css reads the
+token. Same number, so nothing moves; it is simply written down.
+
+Not done: deleting the second ladder in `src/styles/tokens.css` and sweeping
+~20 files onto the survivor. A stacking-order regression is invisible to lint,
+typecheck and tests — the entire verification surface available here — and the
+consequence is a menu behind a modal or a toast behind the nav bar, on any
+sport. That sweep wants a device.
+
+## A03-004 — asChild silently drops props · PARTIAL + a bigger finding
+
+`busy` and `disabled` are now compile errors under `asChild` (a discriminated
+union on `ButtonProps`), which is exactly what the finding proposed, and no
+call site needed to move.
+
+Restricting `leftIcon`/`rightIcon` the same way was attempted and reverted,
+because the compile revealed the problem is much larger than filed: **37 call
+sites across golf and baseball pass an icon to an `asChild` Button, and none of
+those icons render.** A Slot takes one child, so the injected icon span has
+nowhere to go. Affected files include `FairwayPlayerInsight` (6),
+`FairwayPlayerProfile` (4), `GenomeDetailView` (4), `PerformanceCommandCenter`
+(4), `CommandCenterFairway` (4), `FairwayPlayerDashboard` (3) and
+`FairwayEffectiveness` (3).
+
+The fix at each site is mechanical — move the icon inside the child element,
+where it inherits the Button's flex/gap styling through the Slot. But it means
+37 buttons across two sports start showing an icon they do not show today. That
+is a real visual change and the owner should see it before it lands, so the
+props stay permissive and documented in `button.tsx` rather than restricted.
+
+Also landed from this finding: `--fw-dur-press` (60ms), applied on `:active`
+only. Press states used to settle on the shared 180ms base, long enough to read
+as lag rather than as touch; the release still eases back on the base duration.
+
+## A12-004 — par-chip touch target · DONE, at 42x44 not 44x44
+
+The chips paint at 36x36 and cannot simply grow: the row is
+`grid-cols-[52px_1fr_104px]`, and three 44px chips plus two 6px gaps (144px)
+plus the column's own `px-2` (16px) needs 316px of row width, which a 375px
+phone does not have after page and surface padding. The target is expanded with
+a pseudo-element instead, changing no layout: `-inset-y-1` gives 44px of height
+(the row's `py-2` leaves 8px clearance, so it never reaches the row above or
+below) and `-inset-x-[3px]` gives 42px of width, exactly consuming the 6px gap
+with zero overlap between adjacent chips. 4px would have overlapped by 2px and
+caused mis-taps, which is worse than 42px.
+
+## A03-008 — three icon sets · RULE ONLY, as proposed
+
+The finding's own fix is "require only NEW usage to prefer lucide-react, no
+blanket migration". Recorded in `.claude/rules/design-system.md`. No code moved.

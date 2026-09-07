@@ -91,7 +91,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           {/* Avatar + online dot */}
           <div className="relative flex-shrink-0">
             <span
-              className="grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-2xl font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-[76px] md:w-[76px]"
+              className="grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-card font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-[76px] md:w-[76px]"
               style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
               {player.avatar_url ? (

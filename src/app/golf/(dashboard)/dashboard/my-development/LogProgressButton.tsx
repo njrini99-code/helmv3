@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/drawer';
 import { Input, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   updateFocusAreaProgress,
   completeFocusArea,
@@ -41,7 +41,6 @@ export function LogProgressButton({
   targetValue,
 }: LogProgressButtonProps) {
   const router = useRouter();
-  const { addToast } = useToast();
   const formId = useId();
   const [open, setOpen] = useState(false);
   const [newValue, setNewValue] = useState<string>(
@@ -71,12 +70,12 @@ export function LogProgressButton({
 
     const trimmed = newValue.trim();
     if (trimmed === '') {
-      addToast({ type: 'error', title: 'Please enter a new value' });
+      fairwayToast.danger('Please enter a new value');
       return;
     }
     const parsed = Number(trimmed);
     if (!Number.isFinite(parsed)) {
-      addToast({ type: 'error', title: 'New value must be a number' });
+      fairwayToast.danger('New value must be a number');
       return;
     }
 
@@ -87,11 +86,11 @@ export function LogProgressButton({
         note: trimmedNote || undefined,
       });
       if (!result.success) {
-        addToast({ type: 'error', title: result.error || 'Failed to log progress' });
+        fairwayToast.danger(result.error || 'Failed to log progress');
         setSubmitting(false);
         return;
       }
-      addToast({ type: 'success', title: 'Progress updated' });
+      fairwayToast.success('Progress updated');
       // Clear the note textarea so the next open starts blank.
       setNote('');
       setOpen(false);
@@ -99,7 +98,7 @@ export function LogProgressButton({
       router.refresh();
       setTimeout(reset, 200);
     } catch {
-      addToast({ type: 'error', title: 'Failed to log progress' });
+      fairwayToast.danger('Failed to log progress');
       setSubmitting(false);
     }
   }
@@ -214,7 +213,6 @@ export function MarkCompleteButton({
   focusAreaTitle,
 }: MarkCompleteButtonProps) {
   const router = useRouter();
-  const { addToast } = useToast();
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -228,22 +226,15 @@ export function MarkCompleteButton({
       try {
         const result = await completeFocusArea(focusAreaId);
         if (!result.success) {
-          addToast({
-            type: 'error',
-            title: result.error || 'Failed to mark complete',
-          });
+          fairwayToast.danger(result.error || 'Failed to mark complete');
           setConfirming(false);
           return;
         }
-        addToast({
-          type: 'success',
-          title: 'Marked complete',
-          description: focusAreaTitle,
-        });
+        fairwayToast.success('Marked complete', { description: focusAreaTitle });
         setConfirming(false);
         router.refresh();
       } catch {
-        addToast({ type: 'error', title: 'Failed to mark complete' });
+        fairwayToast.danger('Failed to mark complete');
         setConfirming(false);
       }
     });

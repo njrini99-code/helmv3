@@ -69,11 +69,36 @@ describe('StageRouter', () => {
     expect(screen.queryByText('Putting view content')).not.toBeInTheDocument();
   });
 
-  it('wraps the stage in an aria-live="polite" region so AT announces swaps', () => {
+  // A12-001: the stage wrapper must NOT be a live region. It used to carry
+  // aria-live="polite" around the whole swappable panel, so every stage change
+  // read the entire panel's contents — and any later re-render inside it that
+  // changed visible text could re-announce them. The announcement is now a
+  // short status string, and the focus move below is the real navigation cue.
+  it('does not make the whole stage panel a live region', () => {
     const { container } = render(<StageRouter param="area" homeKey="home" views={VIEWS} />);
     const stage = container.querySelector('[data-slot="stage"]');
     expect(stage).not.toBeNull();
-    expect(stage).toHaveAttribute('aria-live', 'polite');
+    expect(stage).not.toHaveAttribute('aria-live');
+  });
+
+  it('announces which stage is showing via a short status string', () => {
+    mockSearchParams = new URLSearchParams('area=putting');
+    render(<StageRouter param="area" homeKey="home" views={VIEWS} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Now viewing Putting');
+  });
+
+  it('prefers an explicit stage label over the humanised key', () => {
+    mockSearchParams = new URLSearchParams('area=putting');
+    render(
+      <StageRouter
+        param="area"
+        homeKey="home"
+        views={VIEWS.map((v) =>
+          v.key === 'putting' ? { ...v, label: 'Putting & lag' } : v,
+        )}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Now viewing Putting & lag');
   });
 
   it('gives the active view container a focusable (tabIndex -1) target', () => {

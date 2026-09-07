@@ -117,6 +117,18 @@ export function FairwayHoleConfig({
 
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
   const [validationError, setValidationError] = useState<string | null>(null);
+  /**
+   * holeNumber -> the reason THAT hole is invalid.
+   *
+   * A12-003: before this, the only error surface in the whole round-creation
+   * flow was one page-level banner reading "Unable to start round". Nothing
+   * pointed at a field. That is not a sighted-only shortcut being missed — a
+   * screen-reader user and a sighted user were equally unable to tell WHICH
+   * hole was wrong, because no per-field error existed for anyone. Each entry
+   * below drives a visible, hole-numbered message plus `aria-invalid` and an
+   * `aria-describedby` on that hole's own controls.
+   */
+  const [holeErrors, setHoleErrors] = useState<Map<number, string>>(() => new Map());
 
   // Re-seed when the BASELINE changes under a mounted editor. On the
   // confirmed-course screen this editor mounts the moment a course is picked —
@@ -152,30 +164,50 @@ export function FairwayHoleConfig({
   function updateHole(holeNumber: number, field: 'par' | 'yardage', value: number) {
     setHoles((prev) => prev.map((h) => (h.holeNumber === holeNumber ? { ...h, [field]: value } : h)));
     if (validationError) setValidationError(null);
+    setHoleErrors((prev) => {
+      if (!prev.has(holeNumber)) return prev;
+      const next = new Map(prev);
+      next.delete(holeNumber);
+      return next;
+    });
   }
 
   function handleSubmit() {
-    // Par is validated against the STORED bound. This step is pre-filled from
-    // saved courses, and a course that recorded a par 6 before the 3-5 clamp
-    // must still be playable — refusing to submit would strand the round. New
-    // pars are held to 3-5 by the chips below, which is where entry is
-    // actually constrained.
-    const isValid = holes.every(
-      (h) =>
-        h.par >= MIN_PAR &&
-        h.par <= MAX_PAR &&
-        h.yardage > 0 &&
-        h.yardage <= MAX_HOLE_YARDAGE,
-    );
-    if (!isValid) {
-      // B5: the server's own comprehensiveHoleSchema puts no upper bound on
-      // yardage at all — this ceiling is the only thing standing between a
-      // typo and a hole nobody can meaningfully play.
-      setValidationError(
-        `Please ensure all holes have valid par (${MIN_PAR}-${MAX_PAR}) and yardage between 1 and ${MAX_HOLE_YARDAGE}`,
-      );
+    // Par is held to the ENTRY bound here, matching the chips below: the chips
+    // are the only way to set a par in this screen and they offer 3-5, so a
+    // value outside that range can only arrive from seeded course data. There
+    // is none in production (verified: zero par-6 rows in any table with a par
+    // column), which is what makes enforcing the tighter bound here safe.
+    //
+    // B5: the server's own comprehensiveHoleSchema puts no upper bound on
+    // yardage at all — this ceiling is the only thing standing between a typo
+    // and a hole nobody can meaningfully play.
+    const errors = new Map<number, string>();
+    for (const h of holes) {
+      if (h.par < MIN_PAR || h.par > MAX_PAR) {
+        errors.set(h.holeNumber, `Par must be between ${MIN_PAR} and ${MAX_PAR}.`);
+      } else if (!(h.yardage > 0)) {
+        errors.set(h.holeNumber, 'Enter a yardage for this hole.');
+      } else if (h.yardage > MAX_HOLE_YARDAGE) {
+        errors.set(h.holeNumber, `Yardage must be ${MAX_HOLE_YARDAGE} or less.`);
+      }
+    }
+
+    if (errors.size > 0) {
+      setHoleErrors(errors);
+      // The summary names the holes, so the banner is actionable on its own
+      // for anyone who lands on it before reaching the rows — and, on an
+      // 18-hole course, tells a player the bad hole is on the OTHER tab.
+      const numbers = [...errors.keys()].sort((a, b) => a - b);
+      const list =
+        numbers.length === 1
+          ? `hole ${numbers[0]}`
+          : `holes ${numbers.slice(0, -1).join(', ')} and ${numbers[numbers.length - 1]}`;
+      setValidationError(`Check ${list} — see the message on each row.`);
       return;
     }
+
+    setHoleErrors(new Map());
     setValidationError(null);
     onSave(holes);
   }
@@ -264,12 +296,16 @@ export function FairwayHoleConfig({
             </div>
 
             {/* Hole rows */}
-            {displayHoles.map((hole, idx) => (
+            {displayHoles.map((hole, idx) => {
+              const holeError = holeErrors.get(hole.holeNumber);
+              const errorId = holeError ? `hole-${hole.holeNumber}-error` : undefined;
+              return (
               <div
                 key={hole.holeNumber}
                 className={cn(
                   'grid grid-cols-[52px_1fr_104px] items-center border-t border-border-subtle',
                   idx % 2 === 1 && 'bg-surface-sunken/40',
+                  holeError && 'bg-fw-danger-bg',
                 )}
               >
                 <div className="px-3 py-2.5">
@@ -277,7 +313,18 @@ export function FairwayHoleConfig({
                     {hole.holeNumber}
                   </span>
                 </div>
-                <div className="flex items-center justify-center gap-1.5 px-2 py-2">
+                <div
+                  role="group"
+                  aria-label={`Hole ${hole.holeNumber} par`}
+                  // No aria-invalid here: it is not a supported state on
+                  // role=group. The par chips only ever offer 3-5, so a par
+                  // error is unreachable from this UI and can only come from
+                  // seeded data; aria-describedby still points a screen reader
+                  // at the row's message, and the yardage input — the field a
+                  // user can actually get wrong — carries aria-invalid itself.
+                  aria-describedby={errorId}
+                  className="flex items-center justify-center gap-1.5 px-2 py-2"
+                >
                   {parChoicesFor(hole.par).map((par) => {
                     const selected = hole.par === par;
                     return (
@@ -294,8 +341,29 @@ export function FairwayHoleConfig({
                           fwHaptic('selection');
                           updateHole(hole.holeNumber, 'par', par);
                         }}
+                        // A12-004: the chip PAINTS at 36x36 but must be HIT at
+                        // a touch-sized target. It cannot simply grow: this is
+                        // a `grid-cols-[52px_1fr_104px]` row, and three 44px
+                        // chips plus two 6px gaps (144px) plus the column's own
+                        // px-2 (16px) is 160px, which with the 52px and 104px
+                        // fixed columns needs 316px of row — wider than a
+                        // 375px phone has after page and surface padding. So
+                        // the target is expanded with a pseudo-element instead,
+                        // changing nothing about layout:
+                        //   vertical   -inset-y-1 = 4px each side -> 44px, and
+                        //     the row's py-2 leaves 8px above/below the chip,
+                        //     so it never reaches the row above or below.
+                        //   horizontal -inset-x-[3px] = 3px each side -> 42px,
+                        //     exactly consuming the 6px gap with zero overlap
+                        //     between adjacent chips (4px would overlap by 2px
+                        //     and cause mis-taps, which is worse than 42px).
+                        // 42x44 clears WCAG 2.5.8 AA (24px) with room and meets
+                        // the 44px product goal on the axis where rows are
+                        // adjacent. Matching IconButton's coarse-pointer bump
+                        // exactly would require re-measuring the whole grid.
                         className={cn(
-                          'h-9 w-9 rounded-fw-md font-fw-mono text-body-sm font-semibold tabular-nums transition-colors',
+                          'relative h-9 w-9 rounded-fw-md font-fw-mono text-body-sm font-semibold tabular-nums transition-colors',
+                          'after:absolute after:-inset-y-1 after:-inset-x-[3px] after:content-[""]',
                           selected
                             ? 'bg-accent-650 text-text-on-accent shadow-flat'
                             : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
@@ -317,10 +385,21 @@ export function FairwayHoleConfig({
                     min={1}
                     max={MAX_HOLE_YARDAGE}
                     aria-label={`Hole ${hole.holeNumber} yardage`}
+                    aria-invalid={holeError ? true : undefined}
+                    aria-describedby={errorId}
                   />
                 </div>
+                {holeError ? (
+                  <p
+                    id={errorId}
+                    className="col-span-3 px-3 pb-2.5 font-fw-sans text-caption text-fw-danger-ink"
+                  >
+                    Hole {hole.holeNumber}: {holeError}
+                  </p>
+                ) : null}
               </div>
-            ))}
+              );
+            })}
 
             {/* Total footer */}
             <div className="grid grid-cols-[52px_1fr_104px] items-center border-t border-border-strong bg-accent-50">

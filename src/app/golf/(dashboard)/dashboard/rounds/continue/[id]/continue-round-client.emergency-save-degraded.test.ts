@@ -22,7 +22,7 @@ describe('Continue Round — surfaces the emergency-save degraded notice (C5)', 
     const listenIndex = source.indexOf("addEventListener(EMERGENCY_SAVE_DEGRADED_EVENT");
     expect(listenIndex, 'addEventListener(EMERGENCY_SAVE_DEGRADED_EVENT not found').toBeGreaterThanOrEqual(0);
     const nearby = source.slice(listenIndex - 400, listenIndex + 400);
-    expect(nearby).toContain('showToast(');
+    expect(nearby).toContain('fairwayToast.warning(');
     expect(nearby).toContain('removeEventListener(EMERGENCY_SAVE_DEGRADED_EVENT');
   });
 });

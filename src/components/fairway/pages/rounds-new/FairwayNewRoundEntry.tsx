@@ -764,7 +764,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                     >
                       <span
                         className={cn(
-                          'grid h-5 w-5 flex-shrink-0 place-items-center rounded-md border-2 transition-colors',
+                          'grid h-5 w-5 flex-shrink-0 place-items-center rounded-fw-sm border-2 transition-colors',
                           props.saveCourseChecked ? 'border-accent-500 bg-accent-500' : 'border-border-strong',
                         )}
                       >

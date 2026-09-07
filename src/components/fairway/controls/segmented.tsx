@@ -139,7 +139,7 @@ export function segmentedItemClassName(
   fullWidth = false,
 ): string {
   return cn(
-    'relative isolate inline-flex items-center justify-center rounded-md',
+    'relative isolate inline-flex items-center justify-center rounded-fw-sm',
     'font-fw-sans',
     fwTransition,
     fwFocusRing,
@@ -214,7 +214,7 @@ export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
       // stark white light-mode artifact on the dark track, and the 5px dot
       // alone was too subtle to carry "selected = green". White-on-accent-600
       // is the app's shipped button contrast pairing. Light mode unchanged.
-      className="absolute inset-0 -z-10 rounded-md border border-border-subtle bg-surface dark:border-accent-500 dark:bg-accent-600"
+      className="absolute inset-0 -z-10 rounded-fw-sm border border-border-subtle bg-surface dark:border-accent-500 dark:bg-accent-600"
       style={{ boxShadow: PILL_SHADOW }}
       transition={
         reduceMotion
@@ -234,10 +234,7 @@ export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
        * it clears the WCAG 1.4.11 non-text 3:1 minimum against
        * canvas/surface/sunken/elevated in BOTH themes — a decorative dot is
        * exempt from TEXT contrast rules but still must clear that non-text
-       * bar. `ring-1 ring-surface` is a solid (not alpha) ring — never
-       * `bg-fw-accent/30` or similar `/NN` alpha shorthand on a CSS-
-       * variable-backed color, which silently compiles to nothing in this
-       * repo's Tailwind config. Nested INSIDE this decorative pill (not the
+       * bar. Nested INSIDE this decorative pill (not the
        * item's flex flow), it's mounted/unmounted with the pill and is
        * carried along by the SAME `layoutId` glide — it can never lag
        * behind the pill or animate on its own timeline, and it can never

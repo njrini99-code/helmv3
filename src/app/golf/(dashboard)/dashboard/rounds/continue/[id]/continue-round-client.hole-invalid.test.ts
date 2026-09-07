@@ -4,7 +4,7 @@
  * `handleSaveForLater`'s generic failure branch was, and without this fix
  * still is:
  *
- *   showToast(result.error || 'Failed to save round. Please try again.', 'error');
+ *   fairwayToast.danger(result.error || 'Failed to save round. Please try again.');
  *
  * `result.error` for this code is the bare key `'hole_invalid'`, not a
  * sentence, so a player who taps "Save & Exit" on a round with one invalid
@@ -48,7 +48,7 @@ describe('Continue Round — handleSaveForLater hole_invalid surfacing', () => {
 
     expect(handler).toContain('describeRoundWriteResult(result)');
     // Never shown the bare key or the raw error string unconditionally.
-    expect(handler).not.toMatch(/showToast\(result\.error,/);
-    expect(handler).not.toMatch(/showToast\(result\.error \|\|/);
+    expect(handler).not.toMatch(/fairwayToast\.\w+\(result\.error,/);
+    expect(handler).not.toMatch(/fairwayToast\.\w+\(result\.error \|\|/);
   });
 });

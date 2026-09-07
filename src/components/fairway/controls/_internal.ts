@@ -60,6 +60,13 @@ export const fwTransition =
  */
 export const fwPress =
   'active:translate-y-[0.5px] active:scale-[0.98] active:[transition-timing-function:var(--fw-ease-spring)] ' +
+  // The press must SNAP. Everything else about a control settles on the shared
+  // 180ms base, and inheriting that for :active meant the pressed state took
+  // nearly a fifth of a second to arrive — long enough to read as lag rather
+  // than as touch. --fw-dur-press (60ms) overrides the duration on :active
+  // only, so the press lands immediately and the release still eases back on
+  // the base duration.
+  'active:[transition-duration:var(--fw-dur-press)] ' +
   'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100';
 
 /** Status families shared by StatusPill / Badge / FilterPill semantics. */

@@ -31,7 +31,7 @@ import { saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { OfflineWarningBanner } from '@/components/golf';
 import { IconWarning } from '@/components/icons';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
@@ -138,7 +138,6 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const SubmitOverlay = FairwayRoundSubmitOverlay;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { showToast } = useToast();
   // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
   // not as a gate here — starting a New Round lands straight on the course
   // carousel. There is no in-flow resume prompt (the old prompt state was never
@@ -375,8 +374,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     const now = Date.now();
     if (now - lastAutoSaveWarningRef.current < 60_000) return;
     lastAutoSaveWarningRef.current = now;
-    showToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning');
-  }, [showToast]);
+    fairwayToast.warning('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.');
+  }, []);
 
   // C5: `emergencySave` fires this at most once per session when the
   // synchronous localStorage backup has failed (full or unavailable) even
@@ -386,14 +385,11 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // about the FAST path being down.
   useEffect(() => {
     const handleEmergencySaveDegraded = () => {
-      showToast(
-        'This device could not save a quick local backup of your shots. They are still being saved to a slower backup and to the server.',
-        'warning',
-      );
+      fairwayToast.warning('This device could not save a quick local backup of your shots. They are still being saved to a slower backup and to the server.');
     };
     window.addEventListener(EMERGENCY_SAVE_DEGRADED_EVENT, handleEmergencySaveDegraded);
     return () => window.removeEventListener(EMERGENCY_SAVE_DEGRADED_EVENT, handleEmergencySaveDegraded);
-  }, [showToast]);
+  }, []);
 
   const redirectToCompletedRound = useCallback(() => {
     const targetRoundId = savedRoundIdRef.current;
@@ -440,9 +436,9 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     setRoundConflictBlocked(true);
     setError(message);
     if (!alreadyBlocked) {
-      showToast(message, 'error');
+      fairwayToast.danger(message);
     }
-  }, [showToast]);
+  }, []);
 
   const handleRoundSyncConflict = useCallback(async (
     fallbackMessage: string,
@@ -453,7 +449,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       // No server round exists yet at all — nothing to reconcile against,
       // and nothing to block (the next persistRoundStart is the only write).
       setError(fallbackMessage);
-      showToast(fallbackMessage, 'error');
+      fairwayToast.danger(fallbackMessage);
       return;
     }
 
@@ -504,7 +500,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     }
 
     blockRoundForConflict(fallbackMessage);
-  }, [blockRoundForConflict, redirectToCompletedRound, showToast]);
+  }, [blockRoundForConflict, redirectToCompletedRound]);
 
   // Check for the freshest emergency save on mount. Restore always persists
   // through savePartialRound before reopening Continue Round. A recovery
@@ -2218,7 +2214,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         isSubmittingRef.current = false;
         setStep('tracking');
         setError('');
-        showToast('Round saved on this device. Opening recovery flow.', 'warning');
+        fairwayToast.warning('Round saved on this device. Opening recovery flow.');
         startTransition(() => {
           router.push('/golf/dashboard/rounds/recover?from=submit');
         });
@@ -2267,7 +2263,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       setError('');
       isSubmittingRef.current = false;
       setStep('tracking');
-      showToast('Saved as a practice round.', 'success');
+      fairwayToast.success('Saved as a practice round.');
       // Re-show the finish confirm so the player can submit right away —
       // reading the setupData/selectedQualifierId this update just set.
       if (pendingFinalStats) {
@@ -2284,7 +2280,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     // B2: a user-initiated "Save & Exit" must not be the write that
     // overwrites another device's newer holes, either.
     if (roundConflictBlockedRef.current) {
-      showToast('This round was updated on another device. Please reload.', 'error');
+      fairwayToast.danger('This round was updated on another device. Please reload.');
       return;
     }
     let result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);

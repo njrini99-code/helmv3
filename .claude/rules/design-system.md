@@ -59,6 +59,17 @@ don't import it for new golf `loading.tsx` files.
   `design-tokens.css` (current) vs. a second ladder in
   `src/styles/tokens.css` — a `z-modal` class doesn't reliably mean the
   Fairway ladder's `--fw-z-modal`; check which token file backs it.
+  `--fw-z-popover-escape` is the tier above `--fw-z-modal` that a popover
+  opened from inside a modal needs; `.z-dropdown` reads it.
+- Three icon sets are live (`lucide-react`, `@/components/icons`,
+  `command/icons.tsx`). New usage takes `lucide-react` unless the glyph is
+  brand/sport-specific; existing call sites stay — no blanket migration.
+- Radius in `src/components/fairway/**` comes from the Fairway ramp (`fw-sm`
+  10 / `fw-md` 14 / `card` 20 / `fw-lg` 28); `rounded-md`/`rounded-2xl` are
+  the same pixels under a different token and are linted
+  (`helm/no-duplicate-radius-in-fairway`).
+- `asChild` on `Button` renders a Slot: `busy`/`disabled` are compile errors
+  there, `leftIcon`/`rightIcon` render nothing — put icons in the child.
 
 ### Quality Bar
 Apple-grade premium polish: dense, even, honest empty states (no

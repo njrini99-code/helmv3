@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import { Surface, Eyebrow, Button, TextArea } from '@/components/fairway';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { annotateReview } from '@/app/golf/actions/round-reviews';
 
 export interface CoachNotesSectionProps {
@@ -25,7 +25,6 @@ export interface CoachNotesSectionProps {
 }
 
 export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNotesSectionProps) {
-  const { addToast } = useToast();
   const [notes, setNotes] = useState(initialNotes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(initialNotes ?? '');
@@ -46,7 +45,7 @@ export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNote
   async function handleSave() {
     const trimmed = draft.trim();
     if (!trimmed) {
-      addToast({ type: 'error', title: 'Note cannot be empty' });
+      fairwayToast.danger('Note cannot be empty');
       return;
     }
 
@@ -56,16 +55,12 @@ export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNote
       if (result.success) {
         setNotes(trimmed);
         setEditing(false);
-        addToast({ type: 'success', title: 'Note saved' });
+        fairwayToast.success('Note saved');
       } else {
-        addToast({ type: 'error', title: 'Failed to save note', description: result.error });
+        fairwayToast.danger('Failed to save note', { description: result.error });
       }
     } catch (err) {
-      addToast({
-        type: 'error',
-        title: 'Failed to save note',
-        description: err instanceof Error ? err.message : undefined,
-      });
+      fairwayToast.danger('Failed to save note', { description: err instanceof Error ? err.message : undefined });
     } finally {
       setSaving(false);
     }

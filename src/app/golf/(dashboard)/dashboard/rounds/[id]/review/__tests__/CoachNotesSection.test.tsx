@@ -17,9 +17,14 @@ vi.mock('@/app/golf/actions/round-reviews', () => ({
   annotateReview: (...args: unknown[]) => annotateReview(...args),
 }));
 
-const addToast = vi.fn();
-vi.mock('@/components/ui/sonner', () => ({
-  useToast: () => ({ addToast }),
+// `vi.mock` is hoisted above every top-level const, so the spies have to be
+// created inside `vi.hoisted` or the factory closes over a TDZ binding.
+const { toastDanger, toastSuccess } = vi.hoisted(() => ({
+  toastDanger: vi.fn(),
+  toastSuccess: vi.fn(),
+}));
+vi.mock('@/components/fairway/feedback/ToastStack', () => ({
+  fairwayToast: { danger: toastDanger, success: toastSuccess, warning: vi.fn(), info: vi.fn() },
 }));
 
 import { CoachNotesSection } from '../CoachNotesSection';
@@ -27,7 +32,8 @@ import { CoachNotesSection } from '../CoachNotesSection';
 describe('CoachNotesSection', () => {
   beforeEach(() => {
     annotateReview.mockReset();
-    addToast.mockReset();
+    toastDanger.mockReset();
+    toastSuccess.mockReset();
   });
 
   it('renders nothing for a player with no coach note yet', () => {
@@ -84,8 +90,9 @@ describe('CoachNotesSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'error', description: 'Not authorized' }),
+      expect(toastDanger).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ description: 'Not authorized' }),
       );
     });
     // Draft is still open for the user to retry.

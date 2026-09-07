@@ -322,7 +322,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
         >
           <div className="flex items-center justify-between">
             <Skeleton className="h-3 w-24 rounded-full" />
-            {icon ? <Skeleton className="h-5 w-5 rounded-md" /> : null}
+            {icon ? <Skeleton className="h-5 w-5 rounded-fw-sm" /> : null}
           </div>
           <Skeleton
             className={cn(

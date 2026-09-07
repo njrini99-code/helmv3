@@ -694,7 +694,7 @@ export function FairwayPlayerInsight({
         <Surface elevation="shadow" padding="lg">
           <div className="flex items-start gap-5">
             <span
-              className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-2xl font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-20 md:w-20"
+              className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-card font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-20 md:w-20"
               style={showAvatarImage ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
               {showAvatarImage ? (

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useToast } from '@/components/ui/sonner';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { AddClassModal, type ClassFormData } from '@/components/golf/classes/AddClassModal';
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
@@ -45,7 +44,6 @@ interface PlayerClass {
 
 export default function GolfClassesPage() {
   const golfUser = useGolfUser();
-  const { showToast } = useToast();
   const [classes, setClasses] = useState<PlayerClass[]>([]);
   // Class ids whose LAST sync attempt failed. The toast reporting this is
   // transient (a player who doesn't catch it, or who closes the app, had no
@@ -118,7 +116,7 @@ export default function GolfClassesPage() {
 
       setClasses(processedClasses);
     } catch (_err) {
-      showToast('Failed to load classes. Please refresh.', 'error');
+      fairwayToast.danger('Failed to load classes. Please refresh.');
     } finally {
       setLoading(false);
     }
@@ -171,7 +169,7 @@ export default function GolfClassesPage() {
 
     if (error) {
       // Surface the failure (the modal swallows the throw to keep its state).
-      showToast('Failed to add class. Please try again.', 'error');
+      fairwayToast.danger('Failed to add class. Please try again.');
       throw error;
     }
 
@@ -244,7 +242,7 @@ export default function GolfClassesPage() {
 
     if (error) {
       // Surface the failure (the modal swallows the throw to keep its state).
-      showToast('Failed to update class. Please try again.', 'error');
+      fairwayToast.danger('Failed to update class. Please try again.');
       throw error;
     }
 
@@ -293,10 +291,7 @@ export default function GolfClassesPage() {
     const removal = await removeClassFromCalendar(selectedClass.id);
 
     if (!removal?.success) {
-      showToast(
-        `Couldn't remove this class from your calendar: ${removal?.error ?? 'Unknown error'}. The class was kept so you can try again.`,
-        'error',
-      );
+      fairwayToast.danger(`Couldn't remove this class from your calendar: ${removal?.error ?? 'Unknown error'}. The class was kept so you can try again.`);
       return;
     }
 
@@ -309,7 +304,7 @@ export default function GolfClassesPage() {
 
     if (error) {
       // Surface the failure (the detail modal swallows the throw to stay open).
-      showToast('Failed to delete class. Please try again.', 'error');
+      fairwayToast.danger('Failed to delete class. Please try again.');
       throw error;
     }
 
@@ -328,7 +323,7 @@ export default function GolfClassesPage() {
 
   const handleConfirmClasses = async (confirmed: ParsedClass[]) => {
     if (!playerId) {
-      showToast('Error: No player ID found. Please refresh the page.', 'error');
+      fairwayToast.danger('Error: No player ID found. Please refresh the page.');
       return;
     }
     
@@ -388,7 +383,7 @@ export default function GolfClassesPage() {
         // Do NOT fall through to an unguarded insert: a failed read here is not
         // evidence that no duplicates exist, and guessing wrong doubles a
         // player's calendar.
-        showToast(`Could not check for existing classes: ${existingError.message}`, 'error');
+        fairwayToast.danger(`Could not check for existing classes: ${existingError.message}`);
         return;
       }
 
@@ -425,7 +420,7 @@ export default function GolfClassesPage() {
         .select();
 
       if (error) {
-        showToast(`Error saving classes: ${error.message}`, 'error');
+        fairwayToast.danger(`Error saving classes: ${error.message}`);
         throw error;
       }
 
@@ -605,15 +600,12 @@ export default function GolfClassesPage() {
       setShowDeleteAllConfirm(false);
 
       if (failed.length > 0) {
-        showToast(
-          `${removed.length} deleted. ${failed.length} could not be removed from your calendar and ${failed.length === 1 ? 'was' : 'were'} kept so you can try again: ${failed.slice(0, 3).join(', ')}`,
-          'error',
-        );
+        fairwayToast.danger(`${removed.length} deleted. ${failed.length} could not be removed from your calendar and ${failed.length === 1 ? 'was' : 'were'} kept so you can try again: ${failed.slice(0, 3).join(', ')}`);
       } else {
         fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });
       }
     } catch (_err) {
-      showToast('Error deleting classes. Please try again.', 'error');
+      fairwayToast.danger('Error deleting classes. Please try again.');
     } finally {
       setDeletingAll(false);
     }

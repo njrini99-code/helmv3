@@ -11,7 +11,7 @@
  *   • Escape to close, scrim-click to close    (Radix Dialog, free)
  *   • Body scroll-lock while open              (Radix Dialog, free)
  *   • Cheap dim warm scrim (NOT blurred — §4.3 perf rule)
- *   • `.glass-strong` Elevated body, rounded-lg (28px), shadow-modal
+ *   • `.glass-strong` Elevated body, rounded-fw-lg (28px), shadow-modal
  *   • Slow cinematic materialize (opacity + scale 0.97→1), prefers-reduced-motion honored
  *   • Green focus-visible ring that survives black + cream (§7.2)
  *   • Header / Body / Footer / Title / Description compound parts

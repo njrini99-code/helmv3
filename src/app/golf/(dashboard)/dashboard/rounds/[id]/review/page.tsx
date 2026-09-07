@@ -19,7 +19,7 @@ import { containerVariants, itemVariants } from '@/components/golf/dashboard/pre
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   getRoundReview,
   generateAndStoreRoundReview,
@@ -161,7 +161,6 @@ function derivePromoteSuggestion(
 export default function RoundReviewPage() {
   const prefersReducedMotion = useReducedMotionGuard();
   const params = useParams();
-  const { addToast } = useToast();
   const roundId = params.id as string;
 
   // The whole review surface (chrome, loading, error, the round-body wrapper +
@@ -468,11 +467,7 @@ export default function RoundReviewPage() {
 
       if (result.success && result.review) {
         setStoredReview(result.review);
-        addToast({
-          type: 'success',
-          title: 'Review Generated',
-          description: 'AI analysis complete for your round.',
-        });
+        fairwayToast.success('Review Generated', { description: 'AI analysis complete for your round.' });
       } else {
         setError(result.error ?? 'Failed to generate review');
       }
@@ -481,7 +476,7 @@ export default function RoundReviewPage() {
     } finally {
       setGeneratingReview(false);
     }
-  }, [round, roundId, addToast]);
+  }, [round, roundId]);
 
   // Auto-generate if no review exists (only once)
   const [autoGenerateAttempted, setAutoGenerateAttempted] = useState(false);
@@ -517,24 +512,12 @@ export default function RoundReviewPage() {
 
       if (result.success) {
         setStoredReview(prev => prev ? { ...prev, shared_with_coach: true, shared_at: new Date().toISOString() } : null);
-        addToast({
-          type: 'success',
-          title: 'Shared with Coach',
-          description: 'Your coach can now view this round review.',
-        });
+        fairwayToast.success('Shared with Coach', { description: 'Your coach can now view this round review.' });
       } else {
-        addToast({
-          type: 'error',
-          title: 'Share Failed',
-          description: result.error ?? 'Could not share review.',
-        });
+        fairwayToast.danger('Share Failed', { description: result.error ?? 'Could not share review.' });
       }
     } catch {
-      addToast({
-        type: 'error',
-        title: 'Share Failed',
-        description: 'An unexpected error occurred.',
-      });
+      fairwayToast.danger('Share Failed', { description: 'An unexpected error occurred.' });
     }
   };
 
