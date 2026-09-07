@@ -1,180 +1,24 @@
 import Script from 'next/script';
 
-const staleDeploymentRecoveryScript = `
+import { BOOT_RECOVERY_SOURCE } from '@/lib/recovery/boot-recovery-source';
+
+/**
+ * Installs the recovery coordinator before interactive, then polls for a
+ * newer deployment.
+ *
+ * The coordinator's own source lives in `@/lib/recovery/boot-recovery-source`
+ * so the tests can execute it rather than pattern-match it, and so the
+ * hydrated callers (`ChunkLoadErrorHandler`, `error-logging`,
+ * `RouteErrorBoundary`) share one implementation instead of each carrying a
+ * classifier and a budget of its own.
+ *
+ * The poll below only ever offers the user a button. It never navigates on
+ * its own, so it is not a recovery path and does not consume the budget.
+ */
+const deploymentPollScript = `
 (() => {
-  if (window.__helmv3StaleDeploymentRecoveryInstalled) return;
-  window.__helmv3StaleDeploymentRecoveryInstalled = true;
-
-  const RELOAD_KEY = 'chunk-error-reload';
-  const RELOAD_PARAM = '__deployment_refresh';
-  // A deploy that lands during a traffic spike leaves the CDN edge briefly cold,
-  // so the FIRST reload can hit the same cold window and fail again — leaving the
-  // user stuck on a half-loaded page. Allow a few COOLDOWN-spaced retries instead
-  // of one-and-stuck, but keep a HARD cap so a genuinely broken bundle can never
-  // trigger an infinite reload loop. The cap is encoded in the URL param so it
-  // survives the reload even when sessionStorage is unavailable (Safari private
-  // mode), which the original one-shot guard did NOT protect against.
-  const MAX_RELOADS = 3;
-  const RELOAD_COOLDOWN_MS = 12000;
-  let reloadScheduled = false;
-
-  function currentReloadCount() {
-    try {
-      const v = parseInt(new URL(window.location.href).searchParams.get(RELOAD_PARAM) || '0', 10);
-      return Number.isFinite(v) && v > 0 ? v : 0;
-    } catch {
-      return 0;
-    }
-  }
-
-  function isStaleDeploymentError(message) {
-    const lower = String(message || '').toLowerCase();
-    return (
-      lower.includes('loading chunk') ||
-      lower.includes('loading css chunk') ||
-      lower.includes('chunkloaderror') ||
-      (lower.includes('cannot read properties of undefined') && lower.includes("'call'")) ||
-      (lower.includes('undefined is not an object') && lower.includes('.call')) ||
-      (lower.includes('server action') &&
-        (lower.includes('not found on the server') || lower.includes('was not found'))) ||
-      lower === 'load failed' ||
-      lower.includes('an unexpected response was received from the server') ||
-      // ESM dynamic-import wording for the same stale-asset failure — see the
-      // matching note in error-logging.ts's isChunkLoadErrorMessage.
-      lower.includes('failed to fetch dynamically imported module')
-    );
-  }
-
-  function extractMessage(value) {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value.message === 'string') return value.message;
-    if (typeof value.reason === 'string') return value.reason;
-    if (value.reason && typeof value.reason.message === 'string') {
-      return value.reason.message;
-    }
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-
-  async function clearStaleState() {
-    const tasks = [];
-
-    if ('caches' in window) {
-      tasks.push(
-        caches.keys().then((keys) =>
-          Promise.allSettled(
-            keys
-              .filter((key) => key.startsWith('golfhelm-'))
-              .map((key) => caches.delete(key))
-          )
-        )
-      );
-    }
-
-    if ('serviceWorker' in navigator) {
-      tasks.push(
-        navigator.serviceWorker.getRegistrations().then((registrations) =>
-          Promise.allSettled(
-            registrations
-              .filter((registration) => {
-                const scriptUrl =
-                  registration.active?.scriptURL ||
-                  registration.waiting?.scriptURL ||
-                  registration.installing?.scriptURL ||
-                  '';
-
-                return scriptUrl.endsWith('/sw.js');
-              })
-              .map(async (registration) => {
-              try {
-                await registration.update();
-              } catch {}
-
-              try {
-                if (registration.waiting) {
-                  registration.waiting.postMessage({ type: 'CLEAR_CACHE' });
-                }
-              } catch {}
-
-              try {
-                await registration.unregister();
-              } catch {}
-              })
-          )
-        )
-      );
-    }
-
-    await Promise.allSettled(tasks);
-  }
-
-  async function reloadFresh() {
-    // One reload per page load — a cold load throws several chunk errors at once.
-    if (reloadScheduled) return;
-
-    const count = currentReloadCount();
-    // Hard cap (lives in the URL → survives reload with or without storage): a
-    // broken bundle can do at most MAX_RELOADS reloads, then we stop and let the
-    // page show whatever it can rather than loop forever.
-    if (count >= MAX_RELOADS) return;
-    reloadScheduled = true;
-
-    // Space successive retries by a cooldown so the cold edge has time to warm;
-    // the first attempt fires immediately. The timestamp is best-effort via
-    // sessionStorage — if it's unavailable the retry is simply immediate (still
-    // bounded by the URL cap).
-    let lastAt = 0;
-    try {
-      lastAt = parseInt(window.sessionStorage.getItem(RELOAD_KEY) || '0', 10) || 0;
-    } catch {}
-    const wait = count === 0 ? 0 : Math.max(0, RELOAD_COOLDOWN_MS - (Date.now() - lastAt));
-    try {
-      window.sessionStorage.setItem(RELOAD_KEY, String(Date.now() + wait));
-    } catch {}
-
-    await clearStaleState();
-
-    setTimeout(() => {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set(RELOAD_PARAM, String(count + 1));
-        window.location.replace(url.toString());
-      } catch {
-        window.location.reload();
-      }
-    }, wait);
-  }
-
-  window.addEventListener(
-    'error',
-    (event) => {
-      const message = [
-        event.message,
-        event.error && event.error.message,
-        event.filename,
-      ]
-        .filter(Boolean)
-        .join(' ');
-
-      if (!isStaleDeploymentError(message)) return;
-
-      event.preventDefault();
-      void reloadFresh();
-    },
-    true
-  );
-
-  window.addEventListener('unhandledrejection', (event) => {
-    const message = extractMessage(event.reason);
-    if (!isStaleDeploymentError(message)) return;
-
-    event.preventDefault();
-    void reloadFresh();
-  });
+  if (window.__helmDeploymentPollInstalled) return;
+  window.__helmDeploymentPollInstalled = true;
 
   // Proactive deployment staleness check.
   // Polls /api/health every 5 minutes while the page is visible.
@@ -223,7 +67,7 @@ const staleDeploymentRecoveryScript = `
 export function StaleDeploymentRecoveryScript() {
   return (
     <Script id="stale-deployment-recovery" strategy="beforeInteractive">
-      {staleDeploymentRecoveryScript}
+      {BOOT_RECOVERY_SOURCE + deploymentPollScript}
     </Script>
   );
 }

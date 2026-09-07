@@ -8,6 +8,7 @@ import {
   softReloadForStaleServerAction,
   STALE_ACTION_RELOAD_KEY,
 } from '@/lib/error-logging';
+import { getRecovery, requestRecovery } from '@/lib/recovery/client';
 
 interface RouteErrorBoundaryProps {
   error: Error & { digest?: string };
@@ -138,27 +139,21 @@ export function RouteErrorBoundary({
   const isGenericLoad = isGenericLoadFailure(error);
   const isServer5xx = isServerStatusError(error);
 
-  // For chunk load or stale server action errors, a full page reload is the only real fix.
-  // Stale-action reloads delegate to softReloadForStaleServerAction so this boundary and the
-  // global unhandledrejection/error handlers share state — they cannot each "first-reload"
-  // the same session.
+  // A stale asset is only fixed by fetching the new one, but this boundary no
+  // longer decides that alone: it used to keep a private one-shot flag and call
+  // window.location.reload(), so it could replace the document while the boot
+  // script was replacing it for the same error, and it never asked whether the
+  // user had unsaved work. Both paths now ask the one coordinator, which owns
+  // the attempt budget, the in-flight latch and the work-state gate.
   useEffect(() => {
     if (isStaleAction) {
-      softReloadForStaleServerAction();
+      softReloadForStaleServerAction(error.message);
       return;
     }
     if (isChunk) {
-      try {
-        const hasReloaded = sessionStorage.getItem('chunk-error-reload');
-        if (!hasReloaded) {
-          sessionStorage.setItem('chunk-error-reload', Date.now().toString());
-          window.location.reload();
-        }
-      } catch {
-        // sessionStorage unavailable — skip reload to avoid a loop.
-      }
+      requestRecovery(error.message);
     }
-  }, [isChunk, isStaleAction]);
+  }, [isChunk, isStaleAction, error]);
 
   const handleRetry = useCallback(async () => {
     setIsRetrying(true);
@@ -197,7 +192,7 @@ export function RouteErrorBoundary({
         if (typeof window === 'undefined') return { chunkErrorReloaded: null, staleActionReloaded: null };
         try {
           return {
-            chunkErrorReloaded: sessionStorage.getItem('chunk-error-reload'),
+            chunkErrorReloaded: String(getRecovery()?.attempts() ?? 'unavailable'),
             staleActionReloaded: sessionStorage.getItem(STALE_ACTION_RELOAD_KEY),
           };
         } catch {
