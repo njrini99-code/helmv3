@@ -549,6 +549,28 @@ M03A F07, minus the mute half corrected in G-02.
 
 ---
 
+## Standing constraint for the write phase (owner, 2026-09-07)
+
+**Build with Fairway components and the Fairway token style — do not fork primitives.**
+Authority order per `.claude/rules/design-system.md` and AGENTS.md: `src/styles/design-tokens.css`
+(`--fw-*`) → `src/components/fairway/**` (shipped components) → the rules prose. Tokens beat
+prose; `modern-saas-ui` is craft guidance only and encodes none of this repo's tokens.
+
+Consequences for findings already in this manifest:
+- G-32/G-48 make this cheap rather than costly: across three lanes, nearly every artboard
+  value already resolves to an existing `--fw-*` token. G-48 is the model case — the bubble
+  radius is a `rounded-fw-lg` → `rounded-fw-card` swap, not a new scale.
+- The genuinely unmapped values (M03A's cream gradient + green stop; M03C's send-on gradient
+  stop + failure red; G-48's 6px and 12px radii) go to **A03 as variant requests**, per §19.3
+  "Messaging proposes changes and tests consumers; it does not fork shared primitives."
+  Nobody hardcodes an `oklch()` literal from an artboard into a messaging component.
+- G-46 becomes a prerequisite, not a nice-to-have: `AttachmentPreview.tsx` is still legacy
+  `warm-*`/`red-*`/`primary-*` classes and renders inside every composer attachment state, so
+  the composer cannot meet this constraint until that file is migrated — and it currently sits
+  in no §19.3 lease.
+- G-45 (focus ring) must resolve to a **token**, per theme, not a literal copied from the
+  artboard — the light/dark split is exactly why.
+
 ## Decisions RESOLVED by the owner (2026-09-07)
 
 - **D-02/D-04 Branch reconciliation — DECIDED: reconcile into the write phase.** The
