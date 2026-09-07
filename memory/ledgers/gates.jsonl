@@ -16,3 +16,10 @@
 {"ts":1788769351459,"gate":"typecheck","waitMs":0,"runMs":62552,"slots":2}
 {"ts":1788769439988,"gate":"test","waitMs":1,"runMs":328725,"slots":2}
 {"ts":1788769773777,"gate":"build","waitMs":0,"runMs":116733,"slots":2}
+{"ts":1788770149871,"gate":"typecheck:fast","waitMs":1,"runMs":6193,"slots":2}
+{"ts":1788770286008,"gate":"typecheck:fast","waitMs":1,"runMs":848,"slots":2}
+{"ts":1788770425984,"gate":"typecheck:fast","waitMs":0,"runMs":1176,"slots":2}
+{"ts":1788770446316,"gate":"typecheck:fast","waitMs":1,"runMs":971,"slots":2}
+{"ts":1788770576487,"gate":"typecheck:fast","waitMs":0,"runMs":837,"slots":2}
+{"ts":1788770596292,"gate":"test","waitMs":0,"runMs":326890,"slots":2}
+{"ts":1788770966009,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":767,"slots":2}
