@@ -49,7 +49,7 @@ import {
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
@@ -524,7 +524,6 @@ export function AnnouncementsList({
   loadError?: boolean;
 }) {
   const router = useRouter();
-  const { showToast } = useToast();
   const badges = useNotificationBadges();
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
@@ -540,14 +539,14 @@ export function AnnouncementsList({
       const result = await acknowledgeAnnouncement(announcementId);
       if (result.success) {
         setAcknowledged((prev) => new Set(prev).add(announcementId));
-        showToast('Acknowledged', 'success');
+        fairwayToast.success('Acknowledged');
         badges.refetch();
       } else {
-        showToast(result.error || 'Failed to acknowledge', 'error');
+        fairwayToast.danger(result.error || 'Failed to acknowledge');
       }
       setAcknowledging(null);
     },
-    [showToast, badges],
+    [badges],
   );
 
   // B3/B4: a failed fetch must never look like "no announcements". When the load

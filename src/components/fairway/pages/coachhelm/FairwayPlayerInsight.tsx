@@ -69,7 +69,7 @@ import { isThemesEnabled } from '@/lib/redesign/flag';
 import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import type { PlayerTrajectorySummary } from '@/lib/coachhelm/v2/types';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 
 // Server actions — REUSED VERBATIM.
 import {
@@ -439,7 +439,6 @@ export function FairwayPlayerInsight({
 }: FairwayPlayerInsightProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
-  const { addToast } = useToast();
   const coachId = golfUser.coachId ?? null;
   const playerName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
   const tint = tintFor(player.id);
@@ -457,7 +456,7 @@ export function FairwayPlayerInsight({
   const [refreshNotice, setRefreshNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
   // THEME "make it a plan" (coach path) — mirrors the FairwayGoalCard
-  // runTransition pattern (useTransition + useToast + router). The pending id is
+  // runTransition pattern (useTransition + fairwayToast + router). The pending id is
   // the cause's insight_id so the originating CauseRow shows the busy CTA.
   const [, startMakePlanTransition] = useTransition();
   const [makePlanPendingId, setMakePlanPendingId] = useState<string | null>(null);
@@ -556,14 +555,14 @@ export function FairwayPlayerInsight({
   );
 
   // ── THEME → "Make it a plan" (coach): mirror the FairwayGoalCard runTransition
-  // pattern (useTransition + useToast + router). Builds a focus area from the
+  // pattern (useTransition + fairwayToast + router). Builds a focus area from the
   // cause + page scope, mapping ONLY to fields that exist on
   // CreateFocusAreaFromInsightData. `computeTargetValue` needs two real numbers,
   // so we only pass a derived target when BOTH standing values are present.
   const handleMakePlan = useCallback(
     (cause: CauseNode, theme: ThemeNode) => {
       if (!coachId) {
-        addToast({ type: 'error', title: 'Sign in as a coach to create a plan' });
+        fairwayToast.danger('Sign in as a coach to create a plan');
         return;
       }
       setMakePlanPendingId(cause.insight_id);
@@ -589,24 +588,21 @@ export function FairwayPlayerInsight({
           });
 
           if (res.success) {
-            addToast({ type: 'success', title: 'Focus area created' });
+            fairwayToast.success('Focus area created');
             // Canonical destination directly, not the /development redirect
             // shim (React #310 legacy-link audit, 2026-07-22).
             router.push(`/golf/dashboard/intelligence?view=players&player=${player.id}`);
           } else {
-            addToast({ type: 'error', title: res.error ?? 'Could not create focus area' });
+            fairwayToast.danger(res.error ?? 'Could not create focus area');
           }
         } catch (err) {
-          addToast({
-            type: 'error',
-            title: err instanceof Error ? err.message : 'Could not create focus area',
-          });
+          fairwayToast.danger(err instanceof Error ? err.message : 'Could not create focus area');
         } finally {
           setMakePlanPendingId(null);
         }
       });
     },
-    [coachId, player.id, router, addToast],
+    [coachId, player.id, router],
   );
 
   // ── Dedupe for display: the fetcher already ranks best-first, so keep the
