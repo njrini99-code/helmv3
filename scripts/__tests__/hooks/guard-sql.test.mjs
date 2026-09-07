@@ -2,7 +2,12 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { evaluateStatement, splitStatements } from '../../../.claude/hooks/guard-sql.mjs';
+import {
+  evaluateStatement,
+  splitStatements,
+  targetsLocalStack,
+  outsideHeredocBodies,
+} from '../../../.claude/hooks/guard-sql.mjs';
 
 const HOOK = resolve(process.cwd(), '.claude/hooks/guard-sql.mjs');
 
@@ -116,5 +121,44 @@ describe('guard-sql subprocess contract', () => {
     expect(() =>
       execFileSync('node', [HOOK], { input: 'not json', encoding: 'utf-8' }),
     ).not.toThrow();
+  });
+});
+
+describe('guard-sql local stack', () => {
+  it('allows a destructive statement against an explicitly local target', () => {
+    expect(targetsLocalStack('psql postgresql://p@127.0.0.1:54322/postgres -c "x"')).toBe(true);
+    expect(targetsLocalStack('supabase db reset --local')).toBe(true);
+    expect(targetsLocalStack('psql "postgresql://p@localhost:54322/postgres" -c "x"')).toBe(true);
+    expect(
+      run({
+        tool_name: 'Bash',
+        tool_input: { command: 'psql postgresql://p@127.0.0.1:54322/postgres -c "DROP TABLE tmp"' },
+      }).verdict,
+    ).toBe('ALLOW');
+  });
+
+  it('does not exempt a target it cannot see', () => {
+    expect(targetsLocalStack('psql "$DB" -c "DROP TABLE golf_rounds"')).toBe(false);
+    expect(run({ tool_name: 'Bash', tool_input: { command: 'psql "$DB" -c "DROP TABLE golf_rounds"' } }).verdict).toBe('BLOCK');
+  });
+
+  it('re-arms when any remote marker is present, even beside a local one', () => {
+    expect(targetsLocalStack('psql --local --linked -c "DROP TABLE t"')).toBe(false);
+    expect(targetsLocalStack('psql "postgresql://x@db.aaaaaaaaaaaaaaaaaaaa.supabase.co:5432/p"')).toBe(false);
+    expect(targetsLocalStack('supabase db push --project-ref abc --local')).toBe(false);
+  });
+});
+
+describe('guard-sql heredoc scoping', () => {
+  it('does not treat a heredoc body as an invocation', () => {
+    const cmd = 'cat > /tmp/notes.md <<EOF\nrun psql then DROP TABLE golf_rounds\nEOF';
+    expect(outsideHeredocBodies(cmd)).not.toMatch(/psql/);
+    expect(run({ tool_name: 'Bash', tool_input: { command: cmd } }).verdict).toBe('ALLOW');
+  });
+
+  it('still refuses a heredoc that IS the statement fed to psql', () => {
+    const cmd = 'psql "$DB" <<EOF\nDROP TABLE golf_rounds;\nEOF';
+    expect(outsideHeredocBodies(cmd)).toMatch(/psql/);
+    expect(run({ tool_name: 'Bash', tool_input: { command: cmd } }).verdict).toBe('BLOCK');
   });
 });

@@ -17,6 +17,14 @@
 #
 # Usage:
 #   scripts/new-worktree.sh <task-name> [--base <ref>] [--install] [--keep]
+#   scripts/new-worktree.sh <task-name> --reattach [--install] [--keep]
+#
+# --reattach checks out an EXISTING agent/<task-name> branch instead of
+# creating one. It is the inverse of `npm run worktrees:park`, which removes a
+# checkout and keeps the branch: without it a parked branch could only be
+# recovered with a raw `git worktree add`, which guard-git refuses, so "the
+# branch is kept" was true and useless. --base is ignored when reattaching —
+# the branch already has its history.
 #
 # --keep stamps .helm/workspace.json's parkPolicy as KEEP instead of the
 # default PARK_IF_REPRODUCIBLE. Every worktree this door makes lives on an
@@ -36,6 +44,7 @@ set -euo pipefail
 BASE="origin/main"
 INSTALL=0
 KEEP=0
+REATTACH=0
 TASK=""
 
 while [ $# -gt 0 ]; do
@@ -44,7 +53,8 @@ while [ $# -gt 0 ]; do
     --install) INSTALL=1; shift ;;
     --no-install) INSTALL=0; shift ;;   # accepted, and still the default
     --keep) KEEP=1; shift ;;
-    -h|--help) sed -n '18,29p' "$0"; exit 0 ;;
+    --reattach) REATTACH=1; shift ;;
+    -h|--help) sed -n '18,38p' "$0"; exit 0 ;;
     -*) echo "unknown flag: $1" >&2; exit 2 ;;
     *) TASK="$1"; shift ;;
   esac
@@ -64,6 +74,9 @@ if [ "$INSTALL" -eq 1 ]; then
 fi
 if [ "$KEEP" -eq 1 ]; then
   ARGS+=(--keep)
+fi
+if [ "$REATTACH" -eq 1 ]; then
+  ARGS+=(--reattach)
 fi
 
 # HELM_WORKTREE_HOME, HELM_MAX_MUTATION_WORKTREES, HELM_DISK_RESERVE_GIB (or

@@ -21,8 +21,8 @@ import { join, resolve } from 'node:path';
 const REPO = resolve(__dirname, '../../..');
 const SCRIPT = resolve(REPO, 'scripts/new-worktree.sh');
 
-function run(task: string, env: Record<string, string>) {
-  return spawnSync('bash', [SCRIPT, task], {
+function run(task: string, env: Record<string, string>, extraArgs: string[] = []) {
+  return spawnSync('bash', [SCRIPT, task, ...extraArgs], {
     cwd: REPO,
     encoding: 'utf-8',
     // The mutation budget is checked BEFORE the disk reserve, so it would
@@ -83,6 +83,53 @@ describe('new-worktree.sh refuses rather than half-creating', () => {
     expect(deps).toMatch(/RESERVE_GIB/);
     expect(deps).toMatch(/rm.*node_modules|'-rf'/s);
     expect(deps).toContain('The worktree is intact');
+  });
+});
+
+describe('--reattach is the inverse of --park', () => {
+  // PARK removes a checkout and keeps the branch. Before --reattach there was
+  // no supported way back: the door only ever ran `git worktree add -b`, and
+  // the raw command that checks out an existing branch is refused by
+  // guard-git. "The branch is kept" was true and unusable.
+
+  it('refuses to reattach a branch that does not exist', () => {
+    const home = mkdtempSync(join(tmpdir(), 'helm-wt-reattach-'));
+    try {
+      const r = run('reattach-no-such-branch', { HELM_WORKTREE_HOME: home }, ['--reattach']);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toMatch(/--reattach needs branch .* to exist/);
+      expect(existsSync(join(home, 'reattach-no-such-branch'))).toBe(false);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to CREATE over an existing branch, and names the way through', () => {
+    // The old message said only that the branch existed, which left the
+    // reader to guess whether their work was reachable at all.
+    const src = readFileSync(resolve(REPO, 'scripts/lib/create-workspace.mjs'), 'utf-8');
+    expect(src).toContain('pass --reattach to check it out here');
+    expect(src).toContain('BRANCH_MISSING');
+    expect(src).toContain('BRANCH_CHECKED_OUT');
+  });
+
+  it('reattaches by name only — never with a base that would move the branch', () => {
+    const src = readFileSync(resolve(REPO, 'scripts/lib/create-workspace.mjs'), 'utf-8');
+    // Creation passes --no-track and a base; reattachment passes neither.
+    expect(src).toMatch(/reattach\s*\n?\s*\?\s*\[[^\]]*'worktree',\s*'add',\s*path,\s*branch\]/s);
+    expect(src).toMatch(/'worktree',\s*'add',\s*'--no-track',\s*path,\s*'-b',\s*branch,\s*base/);
+  });
+
+  it('does not repeat the no-upstream warning for a branch that has one', () => {
+    const src = readFileSync(resolve(REPO, 'scripts/lib/create-workspace.mjs'), 'utf-8');
+    expect(src).toContain('(reattached, not created)');
+    expect(src).toMatch(/upstream:/);
+  });
+
+  it('the shell door forwards the flag', () => {
+    const sh = readFileSync(resolve(REPO, 'scripts/new-worktree.sh'), 'utf-8');
+    expect(sh).toMatch(/--reattach\) REATTACH=1/);
+    expect(sh).toMatch(/ARGS\+=\(--reattach\)/);
   });
 });
 

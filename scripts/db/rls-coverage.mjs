@@ -33,7 +33,18 @@ const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolvePath(__dirname, '..', '..');
 
+// Load .env.local first, then .env as a FALLBACK. dotenv does not override an
+// already-set variable, so .env.local keeps precedence; .env only fills gaps.
+// This exists because SUPABASE_ACCESS_TOKEN has historically lived in .env
+// while the connection vars live in .env.local — a script loading only one of
+// them saw the token or not depending on which file it happened to read, and
+// the same credential produced different results per script.
+//
+// Both paths resolve from the REPO ROOT, never cwd: these are run from npm
+// scripts, worktrees and CI, and a relative '.env.local' silently loaded
+// nothing whenever cwd was not the repo root.
 loadEnv({ path: resolvePath(REPO_ROOT, '.env.local'), quiet: true });
+loadEnv({ path: resolvePath(REPO_ROOT, '.env'), quiet: true });
 
 function buildConnectionString() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
