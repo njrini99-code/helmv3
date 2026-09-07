@@ -11,13 +11,15 @@ do myself, in one place.
 
 ## A. Needs access I don't have
 
-### A1. Production DB read — **MOSTLY RESOLVED, see `A1-RESOLUTION.md`**
-> Answered 2026-09-07 via #1890's `db-apply` dry-run (production ledger: **zero pending
-> migrations**, so `20260819070000` IS applied — G-38 downgraded) and a local
-> migrations-rebuilt stack (**G-51 confirmed as predicted**; G-40 needs no new column).
-> A production *catalog* read is still unavailable, which matters because the same work
-> found **G-58**: `muted_until` and `notification_level` exist in production but **no
-> migration creates them**. Read `A1-RESOLUTION.md` before acting on anything below.
+### A1. Production DB read — **CLOSED, see `A1-RESOLUTION.md`**
+> Settled 2026-09-07 against production itself, once the owner loaded the Supabase MCP.
+> **G-38 CLOSED** — `golf_participants_insert_v2` + `golf_conversation_has_other_participant`
+> are both live; the cross-tenant guard is in place and this is not the audit's most urgent
+> item. **G-44 CLOSED** — attachment objects are participant-scoped and fail closed.
+> **G-51 CONFIRMED** exactly as predicted — the roster presence dot is dead UI.
+> **G-40** needs no new column. And the same work found **G-58 [high]**: `muted_until` +
+> `notification_level` exist in production but **no migration creates them**.
+> Read `A1-RESOLUTION.md`; the SQL below no longer needs running.
 
 Supabase SQL editor, project ref `qmnssrrolpinvwjjnufo`. Read-only.
 
