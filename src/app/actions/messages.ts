@@ -166,7 +166,53 @@ export async function sendMessage({
       // way either: INSERT cannot overwrite an existing row, so a client that
       // deliberately reused a foreign id would just fail its own write.)
       if (validatedData.client_message_id && messageError.code === '23505') {
-        return { success: true };
+        // …but "the pkey is already taken" is not by itself proof that WE took
+        // it (G-18, §17.3). The reasoning above is about what the client is
+        // known to do, not about what the code enforces, and reporting success
+        // for a row this caller did not write would tell the sender their
+        // message was delivered when it never existed. So verify equivalence
+        // before claiming the send succeeded.
+        //
+        // RLS makes the negative case safe: a row in a conversation this user
+        // is not a participant of is simply invisible here, so `existing` is
+        // null and we fail rather than guess. Unverifiable is treated exactly
+        // like not-ours — the only claim we are willing to make is one the
+        // database just confirmed.
+        //
+        // Content is compared against `sanitizedContent`, i.e. the raw text
+        // this call would have stored. A retry of a row written by an older
+        // sanitizer would therefore fail rather than short-circuit; failing
+        // closed is the right direction, and the caller retains the message.
+        const { data: existing, error: existingError } = await (supabase
+          .from(messagesTable as any) as any)
+          .select('id, conversation_id, sender_id, content')
+          .eq('id', validatedData.client_message_id)
+          .maybeSingle();
+
+        const alreadySentByThisUser =
+          !existingError &&
+          !!existing &&
+          existing.conversation_id === validatedData.conversation_id &&
+          existing.sender_id === user.id &&
+          existing.content === sanitizedContent;
+
+        if (alreadySentByThisUser) {
+          return { success: true };
+        }
+
+        await logServerError('[Security] Duplicate message id is not this sender\'s message', {
+          action: 'messages.sendMessage',
+          metadata: {
+            userId: user.id,
+            conversationId: validatedData.conversation_id,
+            clientMessageId: validatedData.client_message_id,
+            existingFound: !!existing,
+            lookupFailed: !!existingError,
+          },
+        });
+        // Falls through to the normal failure path below: the send is reported
+        // as failed, and the optimistic bubble is RETAINED with a retry (G-19)
+        // rather than being silently accepted.
       }
       await logServerError(`[Security] Message insert failed: ${messageError.message}`, {
         action: 'messages.sendMessage',

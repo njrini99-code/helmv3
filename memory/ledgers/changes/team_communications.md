@@ -91,3 +91,32 @@
 - Why the ref is assigned during render, not in an effect: an effect leaves it
   one render behind exactly while a conversation switch is in progress, which is
   the only moment it matters.
+
+## 2026-09-07 — honest last-message preview; duplicate-key equivalence (G-15, G-18)
+
+- G-15: `useGolfConversations` built every conversation's `last_message` as a
+  full `GolfMessageRow`, which forced it to invent the columns
+  `get_golf_conversations_with_details` does not return — a literal `id: ''` on
+  every row in the inbox and a constant `read: false` (§16.1). Narrowed to a new
+  `GolfConversationLastMessage` (`content`, `created_at`, `sender_id`), which
+  makes the compiler, not a grep, the proof that nothing consumed the
+  fabrication. `sender_id` also stops being coerced to `''`.
+- G-15, second half: `ConversationRow` declared 13 of the RPC's 14 columns, so
+  `is_team_channel` never reached the client, and the supplemental team-chat
+  query did not select it either. Both fixed.
+- The M01 authority question is answered in `audit/M01-TEAM-FLAGS.md`:
+  `is_team_chat` is the grouping flag (the RPC's `is_group` output is literally
+  `COALESCE(c.is_team_chat, FALSE)`); `is_team_channel` is a separate flag used
+  only by the function's own `ORDER BY`. The manifest's "dropped in favour of"
+  framing is wrong — they are two flags, not two spellings.
+- Deliberately NOT changed: the client's sort. Ordering the inbox is the
+  client's contract (it uses `last_message.created_at`, a better key than the
+  RPC's `updated_at`), the rail buckets by time before rendering, and inbox
+  sectioning is G-01's.
+- G-18: `sendMessage`'s 23505 short-circuit returned `{ success: true }` on the
+  strength of the constraint alone. It now verifies the existing row is this
+  sender's, in this conversation, with this content, and fails closed when the
+  row is invisible or the lookup errors (§17.3). The idempotency
+  `withOneTransportRetry` and `retryMessage` depend on is preserved exactly.
+- Why failing closed here is not a regression: G-19 landed first, so the caller
+  retains the optimistic bubble and offers Retry instead of deleting it.

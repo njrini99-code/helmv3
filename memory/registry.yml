@@ -1041,6 +1041,7 @@ features:
         # Named explicitly rather than by a __tests__/** glob: that directory
         # holds several other features' action tests, so a glob would claim them.
         - src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts
+        - src/test/actions/send-message-duplicate-key-equivalence.test.ts
     integrations:
       - supabase
       - notifications

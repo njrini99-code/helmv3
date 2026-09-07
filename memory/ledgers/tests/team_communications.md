@@ -55,3 +55,20 @@
   messages setter and error branch checked specifically), plus 4 exercising the
   staleness comparison directly, including the shared-prefix case that a
   `startsWith` implementation would get wrong.
+
+## 2026-09-07 — G-15 preview shape and G-18 equivalence
+
+- `MessageConversationRail.lastMessagePreview.test.tsx` (4) — the rail renders
+  text and time from a preview object with no `id` and no `read`, survives the
+  nullable `created_at`/`sender_id` the RPC actually declares, keeps the honest
+  "No messages yet" placeholder, and renders two conversations that no longer
+  share one fabricated id. The discriminator for G-15 is `npm run typecheck`,
+  not a source grep: narrowing the type is what proves no consumer read `.id` or
+  `.read`, and a grep for the literal could not.
+- `send-message-duplicate-key-equivalence.test.ts` (7) — the transport-retry
+  case still reports success and is shown to have asked the database; a
+  colliding row with another sender, another conversation, or different content
+  does not; an invisible row and a failed lookup both fail closed; an ordinary
+  successful send does no extra round trip. Verified to fail 6-of-7 against the
+  unconditional short-circuit. The harness sequences INSERT and the later SELECT
+  on the SAME table, which a table-keyed mock cannot.

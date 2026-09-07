@@ -36,8 +36,17 @@ it is the owner's, through `db-apply`.
 - [x] **G-19** failed sends erase the message instead of retaining it [cross-lane confirmed]
 - [x] **G-21** attachment send fails OPEN
 - [x] **G-13** a slow fetch for an abandoned conversation overwrites the open one
-- [ ] **G-15** fabricated `id: ''` rows in the inbox view model
-- [ ] **G-18** duplicate-key short-circuit does not verify equivalence
+- [x] **G-15** fabricated `id: ''` rows in the inbox view model. Fixed by NARROWING the
+      type (`GolfConversationLastMessage`) so the compiler proves no consumer read the
+      fabrication. Its second half — the RPC's 14th column — is answered in
+      `M01-TEAM-FLAGS.md`: `is_team_chat` and `is_team_channel` are two flags, not two
+      spellings, so the manifest's "dropped in favour of" is wrong. No sort change
+      (inbox ordering is the client's; sectioning is G-01's). New finding **G-59** [low]
+      recorded there: the admin activity feed reads the other flag.
+- [x] **G-18** duplicate-key short-circuit does not verify equivalence. Verifies id +
+      conversation + sender + content before claiming success; invisible row or failed
+      lookup fails closed. Safe only because G-19 landed first — the caller now retains
+      the message and offers Retry.
 - [ ] **G-23** no IME composition guard on Enter-to-send
 - [ ] **G-40** group unread is shared, not per-viewer. Uses the existing
       `participants.last_read_at` — no new column (see `A1-RESOLUTION.md` §3)

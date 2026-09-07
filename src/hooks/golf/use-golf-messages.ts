@@ -28,11 +28,37 @@ export interface GolfConversationParticipant {
   type: 'coach' | 'player';
 }
 
+/**
+ * The last-message PREVIEW carried on a conversation row — not a message.
+ *
+ * `get_golf_conversations_with_details` returns exactly three scalars about the
+ * newest message (`last_message_content`, `last_message_at`,
+ * `last_message_sender_id`); it does not return that message's id, and it does
+ * not return its read state. This type therefore has three fields and no more.
+ *
+ * It used to be typed `GolfMessageRow`, which forced the transform to invent
+ * the missing columns: every conversation's preview was built with a literal
+ * `id: ''` and `read: false` (G-15, §16.1). A consumer keyed on
+ * `last_message.id` would have found every conversation in the inbox sharing
+ * one empty id, and `read` was a constant lie about a real column.
+ *
+ * Narrowing the type rather than grepping for the literal is what actually
+ * proves nothing consumed the fabrication: the compiler now rejects any read
+ * of `.id` or `.read` here. This mirrors what baseball already does honestly
+ * in `src/hooks/use-messages.ts` (content / sent_at / sender_id, no id).
+ */
+export interface GolfConversationLastMessage {
+  content: string;
+  /** `last_message_at` is nullable in the function's own signature. */
+  created_at: string | null;
+  sender_id: string | null;
+}
+
 export interface GolfConversationWithMeta {
   id: string;
   created_at: string;
   updated_at: string;
-  last_message?: GolfMessageRow | null;
+  last_message?: GolfConversationLastMessage | null;
   unread_count: number;
   other_participant?: GolfConversationParticipant;
   // Group conversation fields
@@ -855,6 +881,22 @@ export function useGolfConversations() {
       is_group?: boolean;
       title?: string | null;
       participant_count?: number;
+      /**
+       * The RPC's 14th and final column. It was omitted here, so this
+       * interface described 13 of the 14 columns the function actually
+       * returns and the value never reached the client (G-15).
+       *
+       * `is_team_channel` and `is_team_chat` are two DIFFERENT flags, not two
+       * spellings of one — both exist on `golf_conversations`. The function's
+       * `is_group` output is literally `COALESCE(c.is_team_chat, FALSE)`, so
+       * is_team_chat is the GROUPING flag; is_team_channel is separate and is
+       * used inside the function only by its own `ORDER BY`. See
+       * `audit/M01-TEAM-FLAGS.md`.
+       *
+       * Nothing branches on it yet — the inbox's ordering and sectioning are
+       * the client's own (G-01), and this only stops the type from lying.
+       */
+      is_team_channel?: boolean;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -893,6 +935,7 @@ export function useGolfConversations() {
           created_at,
           updated_at,
           is_team_chat,
+          is_team_channel,
           title,
           created_by
         )
@@ -923,6 +966,7 @@ export function useGolfConversations() {
         id: string;
         created_at: string;
         updated_at: string;
+        is_team_channel: boolean | null;
         title: string | null;
         created_by: string | null;
       }> = [];
@@ -933,6 +977,7 @@ export function useGolfConversations() {
           created_at: string;
           updated_at: string;
           is_team_chat: boolean | null;
+          is_team_channel: boolean | null;
           title: string | null;
           created_by: string | null;
         } | null;
@@ -1047,6 +1092,10 @@ export function useGolfConversations() {
             is_group: true,
             title: conv.title,
             participant_count: countByConv.get(conv.id) || 0,
+            // Carried so a merged row has the same shape as an RPC row. These
+            // rows only reach here when `is_team_chat` is true; whether they
+            // are ALSO the team channel is a separate fact (G-15).
+            is_team_channel: conv.is_team_channel ?? false,
           });
         }
       }
@@ -1156,12 +1205,9 @@ export function useGolfConversations() {
           created_at: conv.created_at,
           updated_at: conv.updated_at,
           last_message: conv.last_message_content ? {
-            id: '',
-            conversation_id: conv.id,
-            sender_id: conv.last_message_sender_id || '',
             content: conv.last_message_content,
             created_at: conv.last_message_at,
-            read: false,
+            sender_id: conv.last_message_sender_id,
           } : null,
           unread_count: conv.unread_count || 0,
           is_group: true,
@@ -1203,12 +1249,9 @@ export function useGolfConversations() {
         created_at: conv.created_at,
         updated_at: conv.updated_at,
         last_message: conv.last_message_content ? {
-          id: '', // Not returned by function, but not typically needed
-          conversation_id: conv.id,
-          sender_id: conv.last_message_sender_id || '',
           content: conv.last_message_content,
           created_at: conv.last_message_at,
-          read: false,
+          sender_id: conv.last_message_sender_id,
         } : null,
         unread_count: conv.unread_count || 0,
         other_participant: otherParticipant,

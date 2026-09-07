@@ -1972,6 +1972,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/test/actions/send-message-duplicate-key-equivalence.test.ts",
+        "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/test/api/calendar/**",
         "pattern": "src/test/api/calendar/**",
         "category": "tests"
@@ -20949,6 +20954,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/unified-notifications-model.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/test/actions/send-message-duplicate-key-equivalence.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts"
         }
       ]
     },

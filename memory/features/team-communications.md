@@ -183,6 +183,42 @@ Consequence for future work: **do not "simplify" the compensation into an early
 return.** A message whose text survived really was delivered, so it must still
 reach the fan-out; a test pins this.
 
+## Two team flags on `golf_conversations`, and which one the UI means
+
+`is_team_chat` and `is_team_channel` are DIFFERENT flags, not two spellings of
+one. `get_golf_conversations_with_details` returns its `is_group` column as
+literally `COALESCE(c.is_team_chat, FALSE)` — so `is_team_chat` is the grouping
+flag the messages UI consumes, under another name. `is_team_channel` is
+separate and is used inside that function only by its own `ORDER BY`; nothing
+in the messages UI branches on it. `golf_conversations_select_v2` grants on the
+union of the two, and `idx_golf_conversations_team_channel` indexes only
+`is_team_channel = true`. Full evidence and the production distribution:
+`audit/M01-TEAM-FLAGS.md`.
+
+Two consequences worth carrying:
+
+- **Inbox ordering is the client's, not the RPC's.** The function orders
+  channel-first then `updated_at`; the hook re-sorts by
+  `last_message.created_at`, and the rail buckets by time before rendering.
+  That is deliberate — do not "restore" the RPC's pin at the hook level.
+- **`is_group` still cannot answer "is this a group?"** A broadcast to one
+  player carries `is_team_chat`, so `conversation-kind.ts` derives from
+  `participant_count` instead. `is_team_channel` would be worse there, not
+  better: it is true for a small minority of real team chats.
+
+## The conversation rail's last message is a preview, not a message
+
+`last_message` on `GolfConversationWithMeta` is typed
+`GolfConversationLastMessage` — `content`, `created_at`, `sender_id`, and
+nothing else, because those are the only three scalars the RPC returns about
+the newest message. It deliberately has no `id` and no `read`: it used to be
+typed as a full `GolfMessageRow`, which forced the transform to invent them
+(`id: ''` on every row in the inbox, `read: false` always — G-15).
+
+Keep it narrow. The type IS the enforcement: widening it back to a row type is
+what would let a consumer key on a fabricated id again, and `npm run typecheck`
+is the check that catches it.
+
 ## Known Risk Areas
 
 - Announcement inline tasks can drift from task completion state if tasks and assignment tables are not read consistently.
