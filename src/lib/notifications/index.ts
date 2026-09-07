@@ -11,6 +11,7 @@ export * from './push';
 // Convenience functions for common notifications
 
 import { sendEmailNotification } from './email';
+import { recordInAppNotification } from './in-app';
 
 /**
  * Notify player when a coach adds them to watchlist
@@ -127,6 +128,18 @@ export async function notifyQualifierCreated(
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
+  // Bell row first, and unconditionally. The email below is behind the
+  // customer-email kill switch; the in-app signal must not be.
+  await recordInAppNotification({
+    userIds: [recipientId],
+    type: 'event_reminder',
+    title: 'New qualifier',
+    body: `${qualifierName} starts ${startDate}`,
+    actionUrl: `/golf/dashboard/qualifiers/${qualifierId}`,
+    data: { qualifier_id: qualifierId },
+    context: 'notifications.notifyQualifierCreated',
+  });
+
   return sendEmailNotification('qualifier_created', recipientId, recipientEmail, {
     qualifierName,
     startDate,
@@ -149,6 +162,18 @@ export async function notifyTaskAssigned(
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
+  await recordInAppNotification({
+    userIds: [recipientId],
+    type: 'event_reminder',
+    title: 'New task',
+    body: dueDate ? `${taskTitle} — due ${dueDate}` : taskTitle,
+    actionUrl: `/golf/dashboard/tasks?task=${taskId}`,
+    // Same discriminator task-reminders.ts uses, so the row files under
+    // Tasks rather than Events.
+    data: { task_type: 'task_reminder', task_id: taskId },
+    context: 'notifications.notifyTaskAssigned',
+  });
+
   return sendEmailNotification('task_assigned', recipientId, recipientEmail, {
     taskTitle,
     taskDescription: taskDescription || '',
@@ -169,6 +194,15 @@ export async function notifyDevPlanAssigned(
   coachName: string
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+  await recordInAppNotification({
+    userIds: [recipientId],
+    type: 'dev_plan_assigned',
+    title: 'New focus area',
+    body: `${coachName} assigned "${planTitle}"`,
+    actionUrl: '/golf/dashboard/my-development',
+    context: 'notifications.notifyDevPlanAssigned',
+  });
 
   return sendEmailNotification('dev_plan_assigned', recipientId, recipientEmail, {
     planTitle,
