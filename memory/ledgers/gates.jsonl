@@ -35,3 +35,5 @@
 {"ts":1788773525853,"gate":"typecheck","waitMs":1,"runMs":53817,"slots":2}
 {"ts":1788773766307,"gate":"build","waitMs":1,"runMs":154277,"slots":2}
 {"ts":1788773660104,"gate":"test","waitMs":0,"runMs":364542,"slots":2}
+{"ts":1788774125219,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":5921,"slots":2}
+{"ts":1788774208086,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":706,"slots":2}

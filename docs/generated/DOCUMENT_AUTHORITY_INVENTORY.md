@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 53 | 6 | 28 | 22 |
+| `AUDIT_SNAPSHOT` | 54 | 6 | 29 | 22 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -367,6 +367,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/DECISIONS.md` | current | - | - | yes | 0 | 3 | - |
 | `audit/HANDOFF.md` | current | - | - | yes | 0 | 4 | - |
 | `audit/M00-MANIFEST.md` | current | - | - | yes | 0 | 12 | - |
+| `audit/M01-TEAM-FLAGS.md` | current | - | - | yes | 0 | 0 | - |
 | `audit/M01-identity.md` | current | - | - | yes | 0 | 19 | - |
 | `audit/M02-state.md` | current | - | - | yes | 0 | 19 | - |
 | `audit/M03A-inbox.md` | current | - | - | yes | 0 | 15 | - |
