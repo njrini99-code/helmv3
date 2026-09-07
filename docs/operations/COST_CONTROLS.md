@@ -99,11 +99,12 @@ If the org uses GitHub Actions metered billing, set budget alerts in **Organizat
 
 ---
 
-## CircleCI (Lighthouse on Vercel preview)
+## CircleCI (no Lighthouse job)
 
-`.circleci/config.yml` includes an advisory **`lighthouse-preview`** job that polls Vercel for a PR preview URL.
-
-With non-main Vercel builds skipped, preview lookup usually **finds no deployment** and Lighthouse **skips gracefully** (see `.circleci/scripts/wait-for-vercel-preview.sh`). No change required for cost safety; do not re-enable Vercel previews for Lighthouse without revisiting this doc.
+`.circleci/config.yml` has never defined a `lighthouse-preview` job — see
+`.circleci/README.md` and `.claude/rules/integrations.md` for the same
+correction. Lighthouse only runs manually (`npm run lighthouse`); there is
+no CI cost from it to control.
 
 ---
 

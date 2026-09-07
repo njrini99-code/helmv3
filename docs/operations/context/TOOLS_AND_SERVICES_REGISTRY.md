@@ -48,7 +48,7 @@ These feed the Mission Control **Telemetry / App Health** space in Huly.
 | **PostHog** | Product analytics / event capture | Free / paid | `posthog-js ^1.257`, `posthog-node ^4.18` | Summaries only | — |
 | **Datadog** | Browser logs + Real User Monitoring (RUM) | Paid | `@datadog/browser-logs`, `@datadog/browser-rum ^6.25`; `datadog/` (README only) | No | — |
 | **Vercel Analytics + Speed Insights** | Traffic + Core Web Vitals | Included w/ Vercel | `@vercel/analytics ^2.0`, `@vercel/speed-insights ^2.0` | No | — |
-| **Lighthouse CI** | Performance / a11y / CLS budgets on preview URLs | Open-source | `@lhci/cli ^0.15`; `lighthouserc.cjs`; `npm run lighthouse` | No | a11y + CLS are hard errors, perf is a warning; runs in CircleCI `lighthouse-preview` |
+| **Lighthouse CI** | Performance / a11y / CLS budgets | Open-source | `@lhci/cli ^0.15`; `lighthouserc.cjs`; `npm run lighthouse` | No | a11y + CLS are hard errors, perf is a warning; manual only — no CI job runs it, `lighthouse-preview` never existed in `.circleci/config.yml` |
 
 ---
 
