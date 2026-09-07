@@ -292,3 +292,50 @@
   where it therefore emits no rule at all and the card renders with square
   corners. One site, outside the messages tree and another feature's lease —
   recorded, not fixed.
+
+## 2026-09-07 — artboard values bound to tokens that already existed (G-32)
+
+- G-32's claim is that the token file already holds nearly everything the
+  design needs and the gap is application, not vocabulary. Measuring both sides
+  confirms it. `audit/A03-VARIANT-REQUESTS.md` is the deliverable: every value
+  taken out of `audit/reference/*.dc.html` and compared against
+  `src/styles/design-tokens.css`, rather than read off a lane summary.
+- Applied here: the unread conversation row's lift, and the page wash.
+  `Main.dc.html` labels the row in its own markup — "unread row: cream card
+  lifting off the champagne" — and its box-shadow is byte-identical to
+  `--fw-shadow-card`. The rail drew it flat. The wash is
+  `bg-canvas-gradient` LAYERED OVER `bg-canvas` at four page-shell sites, not
+  replacing it: the token's own comment says to keep the colour underneath so
+  overscroll stays warm, and the gradient's radial layer ends at
+  `transparent 78%`, so a replacement would leave bare ground.
+- Verified already-correct and deliberately not touched: the conversation-row
+  radius (`0.875rem` = `rounded-fw-md`) and the search well (`0.625rem` =
+  `rounded-fw-sm`). "Already right" is a result, not a no-op.
+- A TRAP worth knowing: **`shadow-card` is not `--fw-shadow-card`.** That
+  utility name resolves to a legacy cool-grey value in `tailwind.config.ts`
+  (`0 1px 3px rgba(0,0,0,0.04), …`), and NO utility bridges the Fairway token,
+  so the repo's idiom is the arbitrary-property escape
+  `[box-shadow:var(--fw-shadow-card)]` (~8 sites). A later "cleanup" shortening
+  it to the class would silently change the colour; a test pins that.
+- The unread face is `bg-surface` rather than the artboard's two-stop cream
+  gradient, which has no token and goes to A03. `--fw-color-surface` sits
+  between the gradient's two stops, so it is the honest approximation — and a
+  shadow with no face would only have been a floating halo.
+- TWO CORRECTIONS to the manifest, both from measurement. The unmapped set is
+  **five values, not six**: `.send-on` in `Composer.dc.html:26` and the
+  pinned-rail pill in `Main.dc.html:49` carry the identical 165deg
+  declaration, so M03A's "solid green gradient's second stop" and M03C's
+  "send-on gradient's second stop" are one request. And the composer's upload
+  progress bar, listed as unmapped, is `accent-600 → accent-500` exactly — it
+  needs no request at all. Separately, the recurring cream gradient appears in
+  seven places, not four.
+- Two values belong to A03 rather than to messaging even though both tokens
+  exist: the avatar fallback (`accent-100` / `accent-700` exactly) lives on the
+  shared `controls/avatar.tsx` primitive and changing it repaints every avatar
+  in the app; and the pinned-rail colours have nothing to apply to, since G-01
+  is deferred pending a migration and the D-03 product call. Measured and
+  recorded so G-01 does not have to re-measure them.
+- NOT requested, deliberately: the artboard's presence dot, though both its
+  colours are exact token matches. D-03a says member rows carry no presence
+  dot and G-51 is a standing referral to remove the dead roster one. Mapping a
+  value the design has decided against would be tidy and wrong.

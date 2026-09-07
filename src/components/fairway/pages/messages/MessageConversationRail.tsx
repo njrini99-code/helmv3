@@ -157,6 +157,20 @@ function ConversationRow({
         'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        // G-32: the artboard's unread row is "a cream card lifting off the
+        // champagne" — its box-shadow is byte-identical to `--fw-shadow-card`.
+        // Written as the arbitrary-property escape, which is this repo's
+        // idiom for that token (~8 sites), because `shadow-card` is a TRAP:
+        // that utility name resolves to a legacy cool-grey value in
+        // tailwind.config.ts, not to the Fairway token.
+        //
+        // `bg-surface` is the face. The artboard paints a two-stop cream
+        // gradient there; that gradient is one of the six values with no
+        // token, and it goes to A03 as a variant request rather than being
+        // hardcoded here (§14.2). `--fw-color-surface` sits between its two
+        // stops, so the flat card cream is the honest approximation until the
+        // token exists — a shadow with no face would just be a floating halo.
+        !isSelected && hasUnread && 'bg-surface [box-shadow:var(--fw-shadow-card)]',
         isSelected
           ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
           : 'hover:bg-surface-sunken/60',

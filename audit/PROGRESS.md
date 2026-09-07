@@ -100,8 +100,19 @@ it is the owner's, through `db-apply`.
       primitive. Correction to the manifest: the class is `rounded-card`, not `rounded-fw-card`
       — the latter is defined nowhere in `tailwind.config.ts`. 6 tests, 3 failing pre-fix; the
       other 3 measure the artboard against the token file, so they fail if either side moves.
-- [ ] **G-32** bind artboard values to the existing unused tokens; six unmapped values go to
-      A03 as variant requests, never hardcoded
+- [x] **G-32** bind artboard values to the existing unused tokens; six unmapped values go to
+      A03 as variant requests, never hardcoded. `audit/A03-VARIANT-REQUESTS.md` is the
+      deliverable, every value measured from `reference/*.dc.html` against `design-tokens.css`
+      rather than read off a lane summary. Applied: the unread row's lift
+      (`[box-shadow:var(--fw-shadow-card)]`, byte-identical to the artboard's own
+      "cream card lifting off the champagne" row) and `bg-canvas-gradient` layered over
+      `bg-canvas` at 4 page-shell sites (M03A F11). Verified already-correct and left alone:
+      the row and search-well radii. **Two corrections.** The unmapped set is FIVE, not six —
+      `.send-on` and the pinned-rail pill carry the identical 165deg declaration, so two lanes
+      reported one value twice; and the composer's progress bar, thought unmapped, is
+      accent-600 → accent-500 exactly. **One trap recorded:** `shadow-card` is NOT
+      `--fw-shadow-card` — it resolves to a legacy cool-grey value, and no utility bridges the
+      Fairway token at all. 5 tests, 3 failing pre-fix.
 
 ## W4 — Thread
 - [x] **G-26** the headline defect: metadata is a sibling flex item of the message column

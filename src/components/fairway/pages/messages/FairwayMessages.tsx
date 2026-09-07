@@ -447,7 +447,7 @@ export function FairwayMessages() {
     return (
       // Mobile subtracts FairwayBottomNav's 56px (md:hidden) too, so this empty
       // state never renders taller than the visible viewport above the tab bar.
-      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
+      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas bg-canvas-gradient p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
         <EmptyState
           icon={Users}
           title="No team found"
@@ -509,8 +509,8 @@ export function FairwayMessages() {
           // and `pt-[safe-area-top]` because nothing above it is reserving
           // the notch any more. This is what makes the thread header the
           // ONE header instead of the second one.
-          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
-          : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
+          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
+          : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
       )}
     >
       {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below

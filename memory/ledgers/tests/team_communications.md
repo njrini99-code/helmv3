@@ -134,3 +134,24 @@ they assert a fact about the design, not about the code.
 The remaining three pin the code, including the two deliberate non-changes (the
 6px and 12px corners that belong to A03), so a later reader does not "finish"
 the swap by inventing radius steps.
+
+## 2026-09-07 — unread-row lift and page wash (G-32)
+
+`src/components/fairway/pages/messages/MessageConversationRail.unreadLift.test.ts`
+— 5 tests, 3 failing against the pre-fix files.
+
+Measured on both sides, like the bubble-radius suite: the shadow is read out of
+`design-tokens.css` and out of `Main.dc.html` and compared here, so a retuned
+token or a new artboard fails the suite where a hardcoded shadow string would
+not.
+
+It also pins three things that are easy to undo by accident: that selection
+still beats the unread face (both paint a background, and an unconditional
+unread branch would make an open unread thread indistinguishable from a
+selected one); that the gradient is layered OVER `bg-canvas` rather than
+replacing it; and that `shadow-card` — a different, legacy value — is not used.
+
+Both negative assertions needed comment-stripped sources: the rail's own
+comment warns that `shadow-card` is a trap and the shell's docstring still
+describes a `bg-canvas` page, so a whole-file search found each defect inside
+the comment warning against it. It did, on the first run.
