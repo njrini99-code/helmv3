@@ -27,8 +27,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 20 | 2 | 9 | 10 |
-| `AGENT_SKILL` | 77 | 0 | 3 | 2 |
+| `POLICY` | 20 | 2 | 9 | 9 |
+| `AGENT_SKILL` | 86 | 0 | 4 | 2 |
 | `CURRENT_FEATURE` | 26 | 26 | 11 | 31 |
 | `REFERENCE` | 56 | 15 | 18 | 100 |
 | `GENERATED_TRUTH` | 22 | 3 | 7 | 37 |
@@ -67,7 +67,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/integrations.md` | current | - | - | - | 1 | 11 | 2 |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 6 | 1 |
 | `AGENTS.md` | current | yes | - | yes | 0 | 14 | - |
-| `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
+| `CLAUDE.md` | current | yes | - | yes | 0 | 8 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 3 | 3 |
 | `README.md` | current | - | - | yes | 0 | 4 | 1 |
 | `SECURITY.md` | current | - | - | - | 0 | 1 | 1 |
@@ -77,9 +77,16 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.claude/agents/debugger.md` | current | - | - | - | 0 | 0 | - |
+| `.claude/agents/helm-reader.md` | current | - | - | - | 1 | 2 | - |
+| `.claude/agents/helm-worker.md` | current | - | - | yes | 1 | 1 | - |
 | `.claude/agents/verifier.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 2 | 2 |
+| `.claude/commands/context.md` | current | - | - | - | 0 | 2 | - |
 | `.claude/commands/gates.md` | current | - | - | - | 0 | 2 | - |
+| `.claude/commands/held.md` | current | - | - | - | 0 | 1 | - |
+| `.claude/commands/land.md` | current | - | - | - | 0 | 1 | - |
+| `.claude/commands/status.md` | current | - | - | - | 0 | 0 | - |
+| `.claude/commands/worktree.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/app-store-screenshots/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/capacitor-best-practices/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/debugging-capacitor/SKILL.md` | current | - | - | - | 0 | 0 | - |
@@ -91,6 +98,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/golfhelm-creative-engine/references/creative-rules.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/golfhelm-creative-engine/references/design-tokens.md` | current | - | - | yes | 0 | 1 | - |
 | `.claude/skills/golfhelm-creative-engine/references/product-features.md` | current | - | - | - | 0 | 0 | - |
+| `.claude/skills/helm-process/SKILL.md` | current | - | - | - | 1 | 8 | - |
+| `.claude/skills/helm-sentry/SKILL.md` | current | - | - | - | 0 | 7 | - |
 | `.claude/skills/modern-saas-ui/SKILL.md` | current | - | - | yes | 0 | 3 | - |
 | `.claude/skills/modern-saas-ui/references/avoiding-vibe-coded.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/modern-saas-ui/references/dashboard-design.md` | current | - | - | - | 0 | 0 | - |
@@ -256,8 +265,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/shipping.md` | current | - | - | yes | 22 | 6 | 1 |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 14 | 10 | - |
-| `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 5 | 3 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 15 | 10 | - |
+| `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 6 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 201 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
@@ -574,7 +583,7 @@ them would bury everything above.
 | `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 27 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 8 | 8 | 1 |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 8 | 9 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
@@ -610,7 +619,7 @@ them would bury everything above.
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
-| `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 26 | 7 |
+| `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 29 | 7 |
 | `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 13 | 4 |
 | `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 2 | 6 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
@@ -645,8 +654,8 @@ them would bury everything above.
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | 2 | 0 | - |
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | 1 | 0 | - |
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 4 | 4 | - |
-| `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 0 | 1 | - |
-| `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 2 | 1 | - |
+| `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 1 | 1 | - |
+| `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 4 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 5 | - |
 | `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 11 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
@@ -674,7 +683,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 18 | 34 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 19 | 34 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
