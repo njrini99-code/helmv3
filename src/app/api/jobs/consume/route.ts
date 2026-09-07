@@ -159,12 +159,20 @@ async function consumeQueue(
     } catch (err) {
       const errorText = describeError(err).slice(0, 2000);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: failResult } = await (admin as any).rpc('helm_jobs_fail', {
+      const { data: failResult, error: failError } = await (admin as any).rpc('helm_jobs_fail', {
         p_queue: queue,
         p_msg_id: row.msg_id,
         p_error: errorText,
       });
       counts.failed += 1;
+      if (failError) {
+        // The message stays invisible until its visibility timeout, then re-reads; log so the retry is not silent.
+        await logServerError(
+          `helm_jobs: helm_jobs_fail rejected on queue ${queue}: ${describeError(failError)}`,
+          { action: 'jobs.consume.failRpc', featureArea: 'jobs', extra: { queue, msgId: row.msg_id } },
+          'warning',
+        );
+      }
       if ((failResult as { outcome?: string } | null)?.outcome === 'dead_lettered') {
         counts.deadLettered += 1;
         await logServerError(

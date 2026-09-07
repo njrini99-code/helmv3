@@ -37,6 +37,8 @@ create table if not exists helm_debug.db_statement_samples (
     id bigint generated always as identity primary key,
     sampled_at timestamptz not null default clock_timestamp(),
     rank_kind text not null check (rank_kind in ('total', 'mean')),
+    -- Bounded by the check constraint; never near 32 bits.
+    -- squawk-ignore prefer-bigint-over-int
     rank_position integer not null check (rank_position between 1 and 25),
     queryid text not null,
     safe_query_class text not null,
@@ -49,10 +51,19 @@ create table if not exists helm_debug.db_statement_samples (
     min_exec_ms numeric
 );
 
+-- Table is created empty in this migration; CONCURRENTLY cannot run
+-- inside the migration transaction.
+-- squawk-ignore require-concurrent-index-creation
 create index if not exists db_statement_samples_sampled_at_idx
 on helm_debug.db_statement_samples (sampled_at desc);
+-- Table is created empty in this migration; CONCURRENTLY cannot run
+-- inside the migration transaction.
+-- squawk-ignore require-concurrent-index-creation
 create index if not exists db_statement_samples_queryid_idx
 on helm_debug.db_statement_samples (queryid, sampled_at desc);
+-- Table is created empty in this migration; CONCURRENTLY cannot run
+-- inside the migration transaction.
+-- squawk-ignore require-concurrent-index-creation
 create index if not exists db_statement_samples_rank_idx
 on helm_debug.db_statement_samples (rank_kind, sampled_at desc, rank_position);
 

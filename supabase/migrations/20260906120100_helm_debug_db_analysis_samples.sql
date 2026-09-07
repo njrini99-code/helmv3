@@ -46,8 +46,14 @@ create table if not exists helm_debug.db_analysis_samples (
     payload jsonb not null default '{}'::jsonb
 );
 
+-- Table is created empty in this migration; CONCURRENTLY cannot run
+-- inside the migration transaction.
+-- squawk-ignore require-concurrent-index-creation
 create index if not exists db_analysis_samples_sampled_at_idx
 on helm_debug.db_analysis_samples (sampled_at desc);
+-- Table is created empty in this migration; CONCURRENTLY cannot run
+-- inside the migration transaction.
+-- squawk-ignore require-concurrent-index-creation
 create index if not exists db_analysis_samples_category_idx
 on helm_debug.db_analysis_samples (category, sampled_at desc);
 

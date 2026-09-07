@@ -923,11 +923,15 @@ jobs:
           # migrations this PR adds, and blocking (no `|| true`) — the
           # weekly job stays in place as the full-history advisory sweep
           # (see .circleci/README.md).
-          npm install --no-save squawk-cli@1.5.1
-          # Default rule set includes disallowed-lock (exclusive locks),
-          # require-concurrent-index-creation, and changing-column-type —
-          # the three families task 4 calls out. No --exclude on purpose.
-          echo "$new_migrations" | xargs npx squawk-cli
+          npm install --no-save squawk-cli@2.64.0
+          # Rule set: squawk's default minus the two timeout rules (Supabase
+          # wraps each file in one transaction, so a per-statement timeout
+          # cannot be set). disallowed-lock, require-concurrent-index-creation
+          # and changing-column-type stay on; a per-statement exception is one
+          # `-- squawk-ignore <rule>` line directly above the statement, with
+          # the reason on the line above it.
+          echo "$new_migrations" | xargs npx squawk-cli --assume-in-transaction \
+            --exclude=require-lock-timeout,require-statement-timeout
 
       - name: "Declarative schema: new migrations reflected in supabase/schemas"
         run: bash scripts/db/check-new-migrations-in-schema.sh "${{ github.event.pull_request.base.sha }}"

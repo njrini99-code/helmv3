@@ -59,14 +59,15 @@ for cause); the structural fix is `sandbox.filesystem`, disabled, owner's call.
   `REVOKE EXECUTE ... FROM PUBLIC, anon`, re-revoked after recreating a
   view. "Recorded" ≠ "applied" — verify against `information_schema`.
 - `.mcp.json` declares exactly one server *in this repo* (Supabase,
-  production project, `read_only=true`; never edit that flag out) — not the
-  full tool list, since account-level connectors add more and appear in no
-  file here. The account-wide connector's mutators are denied by UUID in
+  production project, `read_only=true`; never edit that flag out). It
+  is not the list of MCP tools you have: account-level connectors add
+  more and appear in no file here. The account-wide connector's mutators are denied by UUID in
   `permissions.deny` (spellings in `docs/CONTROL_PLANE_ENFORCEMENT.md`); its
   `execute_sql` is unenforced; the sanctioned namespace per service is the
   generated `docs/TOOL_AUTHORITY_MATRIX.md`.
 - The Sentry MCP (`helm-sentry` skill) is the working read path (org
-  `helm-xs`). A `401 Invalid token` means rotate it, not gone.
+  `helm-xs`). A `401 Invalid token` from the `.env.local` token means
+  rotate it, not gone — `usableSecret()` checks shape only.
 
 ### Vercel
 

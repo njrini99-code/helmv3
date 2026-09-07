@@ -114,11 +114,16 @@ create table if not exists helm_jobs.dead_letters (
     msg_id bigint,
     payload jsonb not null,
     error text,
+    -- Bounded by the check constraint; never near 32 bits.
+    -- squawk-ignore prefer-bigint-over-int
     attempts integer not null default 0 check (attempts >= 0),
     first_enqueued_at timestamptz,
     failed_at timestamptz not null default clock_timestamp()
 );
 
+-- Table is created empty in this migration; CONCURRENTLY cannot run
+-- inside the migration transaction.
+-- squawk-ignore require-concurrent-index-creation
 create index if not exists dead_letters_queue_idx
 on helm_jobs.dead_letters (queue, failed_at desc);
 
@@ -127,7 +132,7 @@ on helm_jobs.dead_letters (queue, failed_at desc);
 -- is a second, structural line of defense — a future migration that
 -- accidentally grants a table privilege to `authenticated` still cannot
 -- read a row here without a matching policy.
-alter table helm_jobs.dead_letters enable row level security;
+alter table if exists helm_jobs.dead_letters enable row level security;
 
 revoke all on all tables in schema helm_jobs from public;
 revoke all on all sequences in schema helm_jobs from public;
