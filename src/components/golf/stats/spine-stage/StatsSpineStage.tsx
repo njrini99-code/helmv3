@@ -20,7 +20,7 @@
  * migrated to this component.
  * ========================================================================== */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { RotateCw } from 'lucide-react';
@@ -40,6 +40,7 @@ import type { StageView } from '@/components/fairway/modules';
 
 import { getPlayerStatsDashboardBundle } from '@/app/golf/actions/stats-dashboard';
 import { getPlayerRoundOptions } from '@/app/golf/actions/stats-data';
+import { getPlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps';
 import type { TrendAnalysisResponse, SprayChartResponse, WorstHoleResponse, RoundOption } from '@/app/golf/actions/stats-data-types';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { PlayerLeakMaps, PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
@@ -108,6 +109,17 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const [worstHoles, setWorstHoles] = useState<WorstHoleResponse | null>(null);
   const [patterns, setPatterns] = useState<CoachHelmPattern[]>([]);
   const [loading, setLoading] = useState(true);
+  // A02/A06: `loading` blanks the WHOLE spine+stage region. It may therefore
+  // only be set when there is nothing on screen worth preserving — the first
+  // load for a player. Two narrower flags cover the cases where usable content
+  // is already rendered and must survive:
+  //   scopeLoading — the round-scope picker changed. Only detailedStats and
+  //     sprayData actually depend on roundId; standing, trends and patterns are
+  //     cross-round and stay valid, so replacing the page with a skeleton
+  //     discards seven still-good reads to refresh two.
+  //   leakLoading  — the Approach/Putting leak maps are being retried ALONE.
+  const [scopeLoading, setScopeLoading] = useState(false);
+  const [leakLoading, setLeakLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Round scope. 'overall' is the career aggregate this page has always shown;
   // a round id narrows the detailed-stat block and the spray chart to that one
@@ -119,8 +131,11 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const [roundOptionsError, setRoundOptionsError] = useState(false);
   const [scopeRoundId, setScopeRoundId] = useState<string>('overall');
 
-  const loadAll = useCallback(async (id: string, roundId: string) => {
-    setLoading(true);
+  const loadAll = useCallback(async (id: string, roundId: string, opts?: { quiet?: boolean }) => {
+    // `quiet` keeps the currently-rendered page mounted and marks only the
+    // scope-dependent regions as refreshing. See the scopeLoading comment.
+    if (opts?.quiet) setScopeLoading(true);
+    else setLoading(true);
     setLoadError(null);
     setLeakError(false);
     try {
@@ -174,11 +189,47 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
       setLoadError('Failed to load stats. Please try again.');
     } finally {
       setLoading(false);
+      setScopeLoading(false);
     }
   }, []);
 
+  /**
+   * Retry ONLY the leak maps.
+   *
+   * This used to be `() => void loadAll(...)` — the same all-eight-reads
+   * loader used on mount — so retrying one failed optional section threw away
+   * the entire visible page (spine, bento, every drill) and refetched seven
+   * healthy reads behind a full-page skeleton, a worst case of roughly 15s of
+   * server timeout budget to recover one 10s read. It now calls the one action
+   * that failed and patches only `leakMaps`/`leakError`.
+   */
+  const retryLeakMaps = useCallback(async (id: string) => {
+    setLeakLoading(true);
+    try {
+      const res = await getPlayerLeakMaps(id);
+      if (res.success) {
+        setLeakMaps(res.data ?? null);
+        setLeakError(false);
+      } else {
+        setLeakError(true);
+      }
+    } catch {
+      setLeakError(true);
+    } finally {
+      setLeakLoading(false);
+    }
+  }, []);
+
+  // Which player the mounted content belongs to. A scope change re-reads for
+  // the SAME player, so there is usable content to preserve and the reload is
+  // quiet; a first mount (or a different player) has nothing on screen, so it
+  // takes the full skeleton.
+  const loadedForPlayerRef = useRef<string | null>(null);
+
   useEffect(() => {
-    void loadAll(playerId, scopeRoundId);
+    const quiet = loadedForPlayerRef.current === playerId;
+    loadedForPlayerRef.current = playerId;
+    void loadAll(playerId, scopeRoundId, { quiet });
   }, [playerId, scopeRoundId, loadAll]);
 
   // Round list for the scope picker. Loaded once per player and independent of
@@ -332,10 +383,19 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           size="sm"
           className="min-w-[16rem]"
           value={scopeRoundId}
-          disabled={loading}
+          disabled={loading || scopeLoading}
           onValueChange={(v) => setScopeRoundId(v ?? 'overall')}
           options={roundSelectOptions}
         />
+        {/* Quiet local progress for a same-scope refresh: the page below stays
+            rendered and usable, so the only signal owed is that a refresh is
+            running. role=status keeps it announced once, not as a live region
+            wrapping content. */}
+        {scopeLoading ? (
+          <span role="status" className="text-fw-sm text-text-tertiary">
+            Updating…
+          </span>
+        ) : null}
       </div>
     ) : null;
 
@@ -500,8 +560,8 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           standingByMetric={standingByMetric}
           weaknesses={weaknesses}
           leakError={leakError}
-          onRetryLeak={() => void loadAll(playerId, scopeRoundId)}
-          retryingLeak={loading}
+          onRetryLeak={() => void retryLeakMaps(playerId)}
+          retryingLeak={leakLoading}
           patterns={patterns}
           trends={trendData?.trends}
         />
@@ -526,8 +586,8 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           leakMaps={leakMaps}
           sprayData={sprayData}
           leakError={leakError}
-          onRetryLeak={() => void loadAll(playerId, scopeRoundId)}
-          retryingLeak={loading}
+          onRetryLeak={() => void retryLeakMaps(playerId)}
+          retryingLeak={leakLoading}
           patterns={patterns}
           trends={trendData?.trends}
         />
@@ -573,7 +633,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   ];
 
   return (
-    <div className={cn('flex flex-col gap-4', className)}>
+    <div className={cn('flex flex-col gap-4', className)} aria-busy={scopeLoading || undefined}>
       {roundPicker}
       <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start">
         <StatsSpine

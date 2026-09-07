@@ -50,6 +50,17 @@ export interface FairwayAgendaViewProps {
   onCreateEvent?: () => void;
   /** Parent-owned reference "now" for Today/Tomorrow labels. */
   nowRef?: Date;
+  /**
+   * True while the fetch covering the CURRENTLY VISIBLE range is still in
+   * flight. Without it, "zero events" and "haven't asked yet" are the same
+   * observation here: an uncovered range genuinely holds no matching rows
+   * until its fetch resolves, so the honest-empty branch fires immediately and
+   * the user reads "Check back when your coach adds events" while a "Loading
+   * events for this date range…" banner sits directly above it. Suppress the
+   * confirmed-empty COPY while this is true; the parent's banner already says
+   * what is happening.
+   */
+  isLoadingRange?: boolean;
   className?: string;
 }
 
@@ -164,6 +175,7 @@ export function FairwayAgendaView({
   onEventClick,
   onCreateEvent,
   nowRef,
+  isLoadingRange = false,
   className,
 }: FairwayAgendaViewProps) {
   const buckets = React.useMemo(
@@ -231,6 +243,30 @@ export function FairwayAgendaView({
       node.scrollIntoView({ block: 'start' });
     }
   }, [mode, focusDate, rangeStart, rangeEnd, nowRef, buckets, visibleBuckets]);
+
+  // ── STILL ASKING: the visible range's fetch has not resolved ───────────────
+  // Zero events here does not mean empty, it means unqueried. Render neutral
+  // placeholder rows rather than the confirmed-empty copy below.
+  if (totalEvents === 0 && isLoadingRange) {
+    return (
+      <Surface elevation="border" padding="lg" className={className}>
+        <div aria-hidden="true" className="flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 rounded-fw-md bg-surface-sunken px-4 py-3">
+              <div className="mt-0.5 h-4 w-4 shrink-0 animate-pulse rounded-full bg-border-subtle" />
+              <div className="flex flex-1 flex-col gap-2">
+                <div
+                  className="h-3.5 animate-pulse rounded bg-border-subtle"
+                  style={{ maxWidth: `${68 - i * 14}%` }}
+                />
+                <div className="h-3 w-24 animate-pulse rounded bg-border-subtle" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Surface>
+    );
+  }
 
   // ── HONEST-EMPTY: range mode, zero events ──────────────────────────────────
   if (mode === 'range' && totalEvents === 0) {
