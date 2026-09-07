@@ -2616,6 +2616,14 @@ body {
   overflow: hidden;
 }
 
+/* The sweep needs something to sweep across. This class carried no fill of its
+   own, so every bare `skeleton-shimmer` block was a transparent box with a
+   white highlight travelling over the page behind it. `:where()` keeps the
+   specificity at zero, so any `bg-*` utility on the same element still wins. */
+:where(.skeleton-shimmer) {
+  background-color: var(--fw-color-skeleton);
+}
+
 .skeleton-shimmer::after {
   content: '';
   position: absolute;
