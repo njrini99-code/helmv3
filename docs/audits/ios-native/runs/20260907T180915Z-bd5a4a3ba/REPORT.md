@@ -57,6 +57,26 @@ coordinates**, because every tap command in the iOS automation toolchain needs
 an element reference and this app exposes none. That is F-A11Y-NATIVE-01 costing
 something concrete rather than hypothetically.
 
+## Native feel, motion and depth
+
+The passes above found defects. They did not answer whether it *feels* like an
+iOS app. A separate pass tested that directly — gestures, transitions, scroll
+physics, materials, loading states and dark mode — by firing each gesture and
+capturing frames every 70–100ms so the motion is visible rather than the
+endpoint. Full account: **`NATIVE-FEEL.md`**.
+
+The short version. **There is no swipe-back gesture and no back button in any
+sub-screen header**, so sub-screens are dead ends. **Scrolling is locked at both
+edges** — no rubber-band, no pull-to-refresh. **Tab switches discard scroll
+position** and show a blank body for about half a second before content pops in,
+with a layout shift after it lands. **There are no translucent materials at
+phone width**, so nothing in the interface has depth. Cold launch shows a black
+frame at 0.8s and takes ~4s to become usable.
+
+Done well and worth protecting: sheet drag-to-dismiss tracks the finger properly
+with a progressively lightening backdrop, haptics are correctly wired, and dark
+mode is complete — its palette needs four token changes, not a rebuild.
+
 ## Highest-impact findings
 
 **1. F-SIGNOUT-01 (P1) — sign-out silently failed and left the session live.**

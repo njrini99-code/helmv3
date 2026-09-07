@@ -809,5 +809,321 @@
     "proposedSmallestFix": "Reserve the footer height in the sheet's scroll padding; give the disabled state a real disabled treatment.",
     "effortClass": "small",
     "rollbackApproach": "Revert the sheet."
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, frame-by-frame gesture capture (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "yes for the gesture; no for the header back button",
+    "id": "F-SWIPEBACK-01",
+    "shortTitle": "No swipe-back gesture, and no back button in any sub-screen header",
+    "category": "navigation",
+    "priority": "P1",
+    "status": "CONFIRMED",
+    "confidence": "high - eight identical frames across a full edge-drag, corroborated by the absence of allowsBackForwardNavigationGestures in ios/.",
+    "userImpact": "Edge-swipe-to-go-back is the most automatic gesture on iOS and it does nothing here - no drag, no peek, no navigation. It compounds: no sub-screen has a back button either. Rounds & Stats, Operations, Courses, Team Info and Settings all render title + notification bell and nothing else. A sub-screen can be entered but only left through the bottom tabs, which discards where the user was. This is the largest single native-feel gap in the app.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "ios/App/** (allowsBackForwardNavigationGestures never set)",
+      "the shared Fairway header - the nav slot is unused"
+    ],
+    "reproductionSteps": [
+      "Open any sub-screen (More -> Settings).",
+      "Drag from the extreme left edge rightwards.",
+      "Observe: nothing moves.",
+      "Look at the header: no back affordance."
+    ],
+    "expectedBehavior": "Edge-swipe pops the view with an interactive, cancellable transition, and the header carries a back control.",
+    "observedBehavior": "Neither exists.",
+    "evidencePaths": [
+      "native/feel/sheet-swipeback.png",
+      "native/walkthrough/07-rounds.png",
+      "native/walkthrough/09-operations.png"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Two independent gaps. The WKWebView gesture is off because it is never enabled in the Swift shell. The header nav slot is empty in the web layer. AGENTS.md already specifies headers as 'Standard (nav, title, at most one trailing action)', so the contract exists and is unmet.",
+    "existingContract": "AGENTS.md Mobile UI rules: headers are Standard (nav, title, at most one trailing action).",
+    "proposedSmallestFix": "Two changes. (1) Enable allowsBackForwardNavigationGestures on the WKWebView and confirm the router's history behaves. (2) Populate the header's existing nav slot with a back control on every sub-screen. The second is worth doing even if the first proves awkward, because it fixes the dead end without any native change.",
+    "filesLikelyToChange": [
+      "ios/App/App/*.swift",
+      "the shared Fairway header component"
+    ],
+    "regressionTest": "Assert a back control is present on a sample of sub-screen routes.",
+    "effortClass": "small each",
+    "rollbackApproach": "independent per half"
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, frame-by-frame gesture capture (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no unless noted",
+    "id": "F-TABSTATE-01",
+    "shortTitle": "Tab switches discard scroll position, and the active tab does not scroll to top",
+    "category": "navigation",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - direct before/after capture; no scrollTo anywhere in FairwayBottomNav.tsx.",
+    "userImpact": "Scroll the dashboard down, visit Stats, come back: the dashboard is reset to the top. A native tab bar preserves each tab's scroll position and navigation stack, which is what makes it feel like five places rather than one page that keeps reloading. Tapping the already-active tab also does nothing, where iOS users expect scroll-to-top.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "src/components/fairway/app-shell/FairwayBottomNav.tsx"
+    ],
+    "reproductionSteps": [
+      "Home tab, scroll to 'Scoring trend'.",
+      "Stats tab.",
+      "Home tab again. Observe it is back at the top.",
+      "Tap Home again while on Home. Observe nothing happens."
+    ],
+    "expectedBehavior": "Per-tab scroll restoration, and scroll-to-top on tapping the active tab.",
+    "observedBehavior": "Neither.",
+    "evidencePaths": [
+      "native/feel/sheet-scrollstate.png"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Consistent with each tab being a route navigation that remounts rather than a preserved view. Not traced to the router config.",
+    "proposedSmallestFix": "Restore scroll offset per tab key on navigation, and wire the active-tab tap to scroll the current scroller to top.",
+    "effortClass": "small-to-medium",
+    "rollbackApproach": "per half"
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, frame-by-frame gesture capture (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no unless noted",
+    "id": "F-LOADSTATE-01",
+    "shortTitle": "Navigation shows a blank screen, then content pops in and shifts the layout",
+    "category": "motion",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - frame bursts at 70-90ms across two separate transitions.",
+    "userImpact": "A tab switch cuts instantly (correct), but what it cuts to is blank. The header arrives, the body stays empty cream for roughly half a second, then content appears fully formed with no fade or stagger. On Stats a 'Showing / All rounds' control then appears ABOVE the already-rendered card and pushes it down, so the thing the user was about to tap moves after they have seen it. Where a skeleton does exist (Helm tab) it is cream-on-cream and reads as a blank screen; elsewhere the loading state is an empty rounded box, which is indistinguishable from a screen that loaded and has nothing in it.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "reproductionSteps": [
+      "Burst-capture screenshots every ~90ms while tapping a bottom-nav tab.",
+      "Watch frames 2-8: header present, body empty.",
+      "On Stats, watch the 'Showing' control appear after the card and displace it."
+    ],
+    "expectedBehavior": "The next view is laid out before it is shown; loading states are visible; nothing moves after first paint.",
+    "observedBehavior": "Blank body for ~0.5s, hard pop-in, then a post-render layout shift.",
+    "evidencePaths": [
+      "native/feel/sheet-tabswitch.png",
+      "native/feel/sheet-overscroll.png",
+      "native/walkthrough/03-helm.png"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Consistent with client-side data fetching starting after the route renders. Not traced.",
+    "proposedSmallestFix": "Hold the previous view until the next has data, or render a skeleton with real contrast. Reserve space for the filter control so it cannot displace the card. Raise the Helm skeleton's contrast.",
+    "effortClass": "medium",
+    "rollbackApproach": "per screen"
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, frame-by-frame gesture capture (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no unless noted",
+    "id": "F-MATERIAL-01",
+    "shortTitle": "No iOS translucent materials on phone, so the interface has no depth",
+    "category": "visual-depth",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - the md: gating is explicit in source and the flat result is visible in both light and dark captures.",
+    "userImpact": "iOS builds depth almost entirely from translucent materials: content passing under a blurred bar tells you the bar is a layer floating above a continuous surface. Here both bars are flat opaque fills on a phone. The top bar's blur is gated to md: (tablet and up), and the bottom nav's blur was deliberately removed as 'cheap chrome'. The result is bars that content simply disappears behind - which is also why F-NAVCLIP-01 reads as broken rather than as content scrolling under glass. Dark mode makes it plainest: flat grey cards on near-black with no shadow, blur or vibrancy anywhere.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "src/components/fairway/app-shell/FairwayTopBar.tsx:79-80 (md:supports-[backdrop-filter])",
+      "src/components/fairway/app-shell/FairwayBottomNav.tsx:122 (blur removed by comment)"
+    ],
+    "reproductionSteps": [
+      "Scroll any screen on a phone-width device and watch content meet the top and bottom bars.",
+      "Switch the simulator to dark appearance and look for any layering cue."
+    ],
+    "expectedBehavior": "Bars use a translucent material so content is visibly blurred beneath them.",
+    "observedBehavior": "Opaque fills at phone width; blur only from md: up.",
+    "evidencePaths": [
+      "native/feel/darkmode.png",
+      "native/walkthrough/02-dashboard-scrolled.png"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Both are explicit source decisions, not accidents. The bottom-nav comment gives performance as the reason, which is worth re-testing on current hardware.",
+    "proposedSmallestFix": "Re-enable backdrop blur at phone widths on both bars, behind a supports- query and the existing prefers-reduced-transparency guard. Measure the frame cost on a real device before accepting the original performance objection - it predates this hardware.",
+    "filesLikelyToChange": [
+      "src/components/fairway/app-shell/FairwayTopBar.tsx",
+      "src/components/fairway/app-shell/FairwayBottomNav.tsx"
+    ],
+    "effortClass": "small, but needs a device performance check",
+    "rollbackApproach": "Revert the classes."
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, frame-by-frame gesture capture (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no unless noted",
+    "id": "F-SCROLLPHYS-01",
+    "shortTitle": "No rubber-band overscroll and no pull-to-refresh",
+    "category": "motion",
+    "priority": "P3",
+    "status": "CONFIRMED",
+    "confidence": "high - seven identical frames through a full downward drag, and the CSS says so.",
+    "userImpact": "Dragging down at the top of the dashboard moves nothing at all - no bounce, no resistance, no spinner. Rubber-band overscroll is the most characteristic physical behaviour of iOS scrolling, and reaching for pull-to-refresh on a dashboard is reflex. A PullToRefresh component exists in the tree but is not reachable from the dashboard.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "src/app/globals.css:383 overscroll-behavior-y: none",
+      "src/app/globals.css:389 overscroll-behavior-y: contain",
+      "src/components/golf/PullToRefresh.tsx (exists, not wired here)"
+    ],
+    "reproductionSteps": [
+      "At the top of the dashboard, drag downwards and burst-capture. Nothing moves."
+    ],
+    "expectedBehavior": "The scroller bounces at its limits; a dashboard offers pull-to-refresh.",
+    "observedBehavior": "Locked at both edges.",
+    "evidencePaths": [
+      "native/feel/sheet-ptr.png"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Deliberate. globals.css's own comments explain it: overscroll in a WebView exposed the page ground behind the app and leaked cream during route changes. The lock is a real fix for a real bug - the cost is the platform's signature feel.",
+    "proposedSmallestFix": "Do not simply delete the lock, or the original leak returns. Paint the correct ground behind the scroller so bounce reveals the app's own canvas, then relax to `contain` on inner scrollers only. Wire the existing PullToRefresh to the dashboard once bounce is available.",
+    "filesLikelyToChange": [
+      "src/app/globals.css"
+    ],
+    "effortClass": "medium - the original bug has to stay fixed",
+    "rollbackApproach": "Restore the lock."
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, frame-by-frame gesture capture (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "yes for the background fix",
+    "id": "F-LAUNCH-01",
+    "shortTitle": "Cold launch shows a black frame, then ~4 seconds to usable",
+    "category": "performance",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - timed frames at fixed offsets from launch, in one process so the offsets are real.",
+    "userImpact": "At 0.8s the screen is fully BLACK, then a static cream splash holds until ~2.8s, content fades in at 3.4s and the app is usable at 4.0s. The black frame is the window background showing through before the web layer paints - a native launch storyboard exists precisely to prevent that. Four seconds to usable is slow next to a native app that restores its previous state near instantly, and cold launch is where the 'this is a website' impression is formed before the user has touched anything.",
+    "journeyIds": [
+      "J01"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "reproductionSteps": [
+      "terminate the app, relaunch, and capture frames at 0.3/0.8/1.3/1.8/2.3/2.8/3.4/4.0s from one process."
+    ],
+    "expectedBehavior": "No black frame; a launch image matching the first screen; usable well under 2s.",
+    "observedBehavior": "Black at 0.8s; usable at 4.0s.",
+    "evidencePaths": [
+      "native/feel/sheet-cold.png",
+      "native/feel/cold-01.png"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "The black frame is consistent with an unset window/WebView background during the storyboard-to-web handoff. The 4s is unattributed between native start, network and hydration - it needs a trace before anyone optimises.",
+    "proposedSmallestFix": "Set the window and WebView background to the app's cream so no black can show. Separately, trace the 4s to decide whether it is native start, network or hydration - do not guess.",
+    "filesLikelyToChange": [
+      "ios/App/App/*.swift"
+    ],
+    "effortClass": "small for the black frame; investigation for the 4s",
+    "rollbackApproach": "Revert the background."
+  },
+  {
+    "id": "F-DARKDEPTH-01",
+    "shortTitle": "Dark mode is correct but flat: no card borders, an invisible elevation ladder, unlifted green fills",
+    "category": "visual-depth",
+    "priority": "P3",
+    "status": "CONFIRMED",
+    "confidence": "high - every value sampled from the rendered screenshot, including a pixel scan across a card edge to prove no border exists.",
+    "userImpact": "Dark mode is complete and consistent, and gets the hardest detail right: text is #f1f3f2 rather than pure white, which avoids halation, and the ground is #101110 rather than true black, which avoids OLED smear. What it lacks is depth. Cards have NO border - a pixel scan steps straight from #101110 to #2e302e with no intermediate value - and shadows do not work on dark, so nothing separates a card from the page. The two card tiers measure 1.10:1 apart (luminance delta 0.007), which is imperceptible, so a three-tier ladder renders as one surface. The bottom nav is #272927, byte-identical to the schedule card, so chrome reads as content. And filled greens were never lifted for dark: text green is lifted to #86d396 but the New round button and selected day chip both use #248342, the unmodified light-mode green, which looks muddy on near-black.",
+    "journeyIds": [
+      "J03",
+      "J11"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "src/styles/design-tokens.css - dark surface, border and brand-fill tokens"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "reproductionSteps": [
+      "xcrun simctl ui <udid> appearance dark, then open the dashboard.",
+      "Sample the page, card and nav fills. Scan a horizontal line across a card edge and observe the single-step transition."
+    ],
+    "expectedBehavior": "On dark, a hairline border replaces the shadow that separates surfaces on light; elevation tiers are separated enough to perceive; chrome is a distinct surface from content; brand fills have a dark-mode variant.",
+    "observedBehavior": "No border at all; 1.10:1 between card tiers; nav identical to a card; light-mode green used unchanged for fills.",
+    "evidencePaths": [
+      "native/feel/darkmode.png"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Token values, all four. The dark implementation is structurally complete; only the values need work.",
+    "existingContract": "AGENTS.md: src/styles/design-tokens.css is the authority for --fw-* colours; tokens beat prose.",
+    "proposedSmallestFix": "Four token changes, no components touched: (1) add a card border token of about rgba(255,255,255,0.08), brighter on the top edge; (2) widen the surface ladder so each tier is ~1.25-1.4:1 from the one below, e.g. #0E0F0E / #1A1C1A / #242724; (3) give chrome its own surface value, or better, restore the translucent material per F-MATERIAL-01; (4) add a lifted dark-mode variant of the brand green for FILLS, matching the treatment the text green already has. Item 4 also helps F-CONTRAST-PLAYER-01, several of whose failing pairs are green-on-dark.",
+    "filesLikelyToChange": [
+      "src/styles/design-tokens.css"
+    ],
+    "regressionTest": "Assert a minimum contrast step between adjacent surface tokens, and a non-transparent card border token, in dark.",
+    "verificationLayers": [
+      "native simulator (done)",
+      "physical OLED device (recommended - halation and smear only show on real hardware)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "effortClass": "small - four token values",
+    "rollbackApproach": "Revert the tokens."
   }
 ]

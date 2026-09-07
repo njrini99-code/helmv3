@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 35 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 44 | 6 | 17 | 20 |
+| `AUDIT_SNAPSHOT` | 45 | 6 | 17 | 20 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -388,6 +388,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/EVIDENCE-INDEX.md` | current | - | - | - | 0 | 2 | - |
 | `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/INVENTORY.md` | current | - | - | - | 0 | 4 | - |
 | `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/REPORT.md` | current | - | - | - | 0 | 2 | - |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/VISUAL-WALKTHROUGH.md` | current | - | - | - | 0 | 1 | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 1 | 35 | 2 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
