@@ -500,7 +500,22 @@ M03A F07, minus the mute half corrected in G-02.
 
 ---
 
-## Decisions needed from the owner
+## Decisions RESOLVED by the owner (2026-09-07)
+
+- **D-02/D-04 Branch reconciliation — DECIDED: reconcile into the write phase.** The
+  details sheet and reactions on `agent/messages-instant-entry` are the starting point for
+  D04/D06 rather than a rebuild. Two conditions carry forward, both from M03D: the branch
+  renders reactions/actions as an inline flex row, NOT the scrim/portal focus owner §12.1
+  requires, so the branch is a floor and not the target; and the local tip (`e3aec23153edf`)
+  carries a commit its remote (`c65dd47b5b3ef`, == `ci-fix-1833`) does not, so the write
+  phase must pick a tip explicitly before any merge.
+- **D-01 Presence dots and masthead bell badge — DECIDED: defer both.** Build the rest of
+  the inbox without them. No presence infrastructure is to be added, and the bell badge's
+  counting semantics stay undefined. G-31's masthead-shape finding still stands on its own
+  (title + one trailing action vs. the shipped two text buttons) — deferring the badge does
+  not defer the masthead.
+
+## Decisions still needed from the owner
 - **D-01 Presence and unread counts.** Now evidenced from three lanes. M03A: no presence
   data source exists in `use-golf-messages.ts` — no Realtime Presence channel, no
   online-status column read. M04: the existing typing-broadcast channel is not even a private

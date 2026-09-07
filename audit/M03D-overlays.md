@@ -1,5 +1,10 @@
 # M03D — overlays, groups and recipients specialist
 
+**Revision 2** — incorporates ADDENDUM 1 (approved-design artboards located as source markup).
+Revision 1's main/branch source findings are retained below and re-scored where the
+addendum changes what counts as approved-vs-proposal; new artboard-grounded findings
+are appended (F15-F20).
+
 ## Files inspected
 
 Canonical tree (`/Users/ricknini/Downloads/helmv3`, HEAD `3c90f9f17`, branch `main`):
@@ -9,10 +14,18 @@ Canonical tree (`/Users/ricknini/Downloads/helmv3`, HEAD `3c90f9f17`, branch `ma
 - `src/components/fairway/pages/messages/FairwayTeamBroadcastSheet.tsx` (453 lines, full read)
 - `src/components/fairway/pages/messages/MessageThreadPane.tsx` (1318 lines; read in full for header/details/actions/reactions regions: 1–460, 800–950, 1090–1260; grepped elsewhere)
 - `src/components/fairway/pages/messages/FairwayMessages.tsx` (728 lines; read 120–340 in full — group-participant fetch, new-conversation/broadcast wiring; grepped elsewhere)
+- `src/components/fairway/overlays/Sheet.tsx` (read panel/grip/header class composition, ~1-350)
 - `src/hooks/golf/use-golf-messages.ts` (1183 lines; read 555–585, grepped for `reaction`)
-- `src/lib/types/database.ts` (grepped/read at specific line ranges: `golf_message_reactions` 14135–14164, `golf_messages` 14198–14232, `golf_conversation_participants` 12307–12335, `users.notification_preferences` 20435–20453)
+- `src/lib/types/database.ts` (grepped/read: `golf_message_reactions` 14135–14164, `golf_messages` 14198–14232, `golf_conversation_participants` 12307–12335, `golf_conversations` 12353–12385 incl. `created_by`/`is_team_channel`, `users.notification_preferences` 20435–20453)
 - `supabase/migrations/20260904160000_golf_messaging_structured.sql` (grepped, not fully read)
-- `.claude`/plan files: `GolfHelm_Messaging_Parallel_Audit_Plan_v2.md` §10–12, §19.3, §21, §22, §24.5; `00-SHARED-BRIEF.md`; `memory/features/team-communications.md`
+- Plan: `GolfHelm_Messaging_Parallel_Audit_Plan_v2.md` §10–12, §19.3, §21, §22, §24.5; `00-SHARED-BRIEF.md` incl. ADDENDUM 1; `memory/features/team-communications.md`
+
+Approved-design artboards (`/Users/ricknini/worktrees/helmv3/mobile-messages-audit/audit/reference/`, full read, all 390×844 source HTML with literal `oklch()`/px values):
+- `GroupDetails.dc.html` (149 lines) — D04
+- `NewMessage.dc.html` (140 lines) — D10, confirmed complete (not a partial crop)
+- `Actions.dc.html` (62 lines) — D07, base long-press action sheet
+- `Reactions.dc.html` (98 lines) — D06, reaction tray + settled chips + action sheet
+- `Group.dc.html` (60 of 105 lines read — header region) — unmapped in the addendum's D-ref column, but its header is squarely §10.1 ("Group thread"), which is this lane's section
 
 Unmerged branches, read via `git show <ref>:<path>` (read-only, no checkout, nothing written to canonical):
 - `agent/messages-instant-entry` (tip `e3aec2315`) and `ci-fix-1833` — byte-identical for the files below (`git diff` empty)
@@ -24,109 +37,163 @@ Unmerged branches, read via `git show <ref>:<path>` (read-only, no checkout, not
 
 Git history: `git log --all -- '**/ConversationDetailsSheet*'`, `git log --all --diff-filter=A/D`, `git merge-base --is-ancestor`, `git branch --all --contains` to establish which commits are/aren't reachable from `main`.
 
-## Priority task — where the group-details surface actually lives
+## Priority task — where the group-details surface actually lives (unchanged by the addendum)
 
-**It does not exist on `main` at all.** `MessageThreadPane.tsx:855-898` is the entire thread header: a Back button, a static glyph/avatar, a truncated title, and an optional subtitle line. There is no `onClick`, no button role, no state variable anywhere in the file that opens any details/member/mute/search/leave surface — verified by reading the full header block and by grepping the file for `detail`, `mute`, `leave`, `member`, `Sheet` (only one incidental match, unrelated). Tapping the identity does nothing on `main`. §10.3's "not a small spacing discrepancy" framing undersells this: on the audited tree there is zero implementation, not a stripped-down one.
+**It does not exist on `main` at all.** `MessageThreadPane.tsx:855-898` is the entire thread header: a Back button, a static glyph/avatar, a truncated title, and an optional subtitle line. No `onClick`, no button role, no state variable in the file opens any details/member/mute/search/leave surface — verified by reading the full header block and by grepping the file for `detail`, `mute`, `leave`, `member`, `Sheet`. Tapping the identity does nothing on `main`.
 
-**The surface exists only on two unmerged branches**, `agent/messages-instant-entry` (tip `e3aec2315`) and `ci-fix-1833` (tip `c65dd47b5`), with byte-identical content for every file this lane touches:
-- `src/components/fairway/pages/messages/ConversationDetailsSheet.tsx` — 147 lines, new file, spec-labeled `spec §37` in its own header comment.
-- Wired in `MessageThreadPane.tsx:1208-1214` (the `<ConversationDetailsSheet .../>` mount), opened from two triggers: the identity button (`:1130-1138`, `onClick={() => setDetailsOpen(true)}`) and a `MoreHorizontal` kebab (`:1196-1204`, same handler).
-- `git merge-base --is-ancestor e3aec2315 HEAD` returns false — neither branch is an ancestor of current `main`. `c65dd47b5` on `ci-fix-1833` is titled "merge: main into the messaging rebuild," so the two branches have already diverged from each other in ways beyond this file (unverified — no `gh`/network access this phase; `dangerouslyDisableSandbox` was not requested for this read-only audit).
+**The surface exists only on two unmerged branches**, `agent/messages-instant-entry` (tip `e3aec2315`) and `ci-fix-1833` (tip `c65dd47b5`), byte-identical for every file this lane touches:
+- `src/components/fairway/pages/messages/ConversationDetailsSheet.tsx` — 147 lines, new file, self-labeled `spec §37` in its own header comment.
+- Wired in `MessageThreadPane.tsx:1208-1214` (mount), opened from the identity button (`:1130-1138`) and a `MoreHorizontal` kebab (`:1196-1204`).
+- `git merge-base --is-ancestor e3aec2315 HEAD` is false — neither branch is an ancestor of current `main`. `c65dd47b5` on `ci-fix-1833` is titled "merge: main into the messaging rebuild," so the branches may have diverged further than the identical files checked here (unverified — no `gh`/network access this phase).
 
-**Conclusion for the write phase:** the real lease target is not "the existing partial names list" inline in `MessageThreadPane.tsx`/`FairwayMessages.tsx` on `main` — it is `ConversationDetailsSheet.tsx` plus its ~140-line `MessageThreadPane.tsx` wiring on one of those two unmerged branches. Which branch becomes the write-phase base (or whether it's rebuilt fresh on top of current `main`) is the lead's call, not mine — I did not have PR/CI state to see if either is otherwise farther along or closer to landing.
+**Conclusion for the write phase, now sharper with the artboard in hand:** the real lease target is `ConversationDetailsSheet.tsx` + its `MessageThreadPane.tsx` wiring on one of those two unmerged branches — but per F15 below, that 147-line file is a small fraction of what `GroupDetails.dc.html` actually specifies. It is the closest existing thing, not a near-complete one.
 
-## Findings
+## Findings — main/branch source comparison (Revision 1, retained)
 
 ### F1 plan-drift: §10.3's baseline is the unmerged branch, not the audited tree [plan-drift] [severity: high]
-- Evidence: `main` has no details surface at all (`MessageThreadPane.tsx:855-898`); the branch's `ConversationDetailsSheet.tsx` (full file, `agent/messages-instant-entry`) has exactly what §10.3 describes.
+- Evidence: `main` has no details surface at all (`MessageThreadPane.tsx:855-898`); the branch's `ConversationDetailsSheet.tsx` has exactly what §10.3 describes.
 - Spec: plan §10.3 — "The reread feature-branch details sheet contains name/count, one search row, and member names."
-- Gap: §10.3 is accurate against the *branch*, not against `main`, which is the tree the brief instructed this audit to inspect (`00-SHARED-BRIEF.md:5`). Anyone reading §10.3 as a description of current `main` will understate the gap from "stripped-down" to "absent."
+- Gap: §10.3 is accurate against the *branch*, not `main`, which is the tree the brief instructed this audit to inspect (`00-SHARED-BRIEF.md:5`).
 
-### F2 observed: branch's D04 implementation — what exists and what's missing [observed] [severity: high]
-- Evidence: `ConversationDetailsSheet.tsx` (branch, full read) renders: centered name + optional DM avatar; a member count line (`isGroup && members.length > 0`); one "Search messages" row; a flat `<ul>` of member rows (avatar-or-nothing + name, alphabetically sorted).
-- Spec: plan §10.2's nine-part composition — scrim+grip sheet, avatar stack, creation metadata, three action tiles (Mute/Search/Files), Members heading + capability-gated Add, Show all, shared-files preview, Leave group.
-- Gap: no avatar stack (only a plain `Users` icon for a group; the trigger *button* in `MessageThreadPane.tsx` has an `AvatarGroup` for ≥2-photo groups, but that stack is in the header pill, not inside the sheet itself, at `agent/messages-instant-entry:MessageThreadPane.tsx:1148-1163`), no creation metadata line, no three-tile row, no Add, no Show all, no shared-files preview, no Leave group action. Confirms §10.3's claim item-for-item.
+### F2 observed: branch's D04 implementation — what exists and what's missing (superseded in degree, not kind, by F15) [observed] [severity: high]
+- Evidence: `ConversationDetailsSheet.tsx` (branch, full read) renders: centered name + optional DM avatar; a member count line; one "Search messages" row; a flat `<ul>` of member rows (avatar-or-nothing + name only, alphabetically sorted).
+- Spec: plan §10.2's nine-part composition.
+- Gap: no avatar stack inside the sheet, no creation metadata, no three-tile row, no Add, no Show all, no shared-files preview, no Leave group. F15 below replaces the qualitative list with the artboard's exact numbers.
 
 ### F3 observed: the branch's "Search" row is unreachable dead code [observed] [severity: med]
-- Evidence: `ConversationDetailsSheet.tsx:38,48,98-113` (branch) — `onSearch?: () => void` prop, row gated `{onSearch ? ... : null}`. `MessageThreadPane.tsx:1208-1214` (branch) instantiates the sheet with `name`, `isGroup`, `avatar`, `participants` only — no `onSearch`. `git grep -n onSearch` across the *entire* `agent/messages-instant-entry` tree turns up zero call sites that pass it into this component (only the prop's own declaration/usage and unrelated `onSearch` props on other, non-messages components).
-- Spec: plan §10.4's Action-contracts table — "Search: opens an identified conversation scope... returns to the same place after result exploration."
-- Gap: this is stronger than §10.3's own characterization ("its search focuses the inbox search instead of establishing a conversation-scoped search"). The code doesn't do the wrong thing — it doesn't render at all, because the one caller never supplies the callback. §10.4's "decorative vs. authorized operation" question resolves to "neither is reachable."
+- Evidence: `ConversationDetailsSheet.tsx:38,48,98-113` (branch) declares and gates on `onSearch?: () => void`. `MessageThreadPane.tsx:1208-1214` (branch) instantiates the sheet without it. Repo-wide `git grep -n onSearch` on the whole branch tree finds no call site that supplies it.
+- Spec: plan §10.4's action-contracts table.
+- Gap: stronger than §10.3's own claim ("focuses the inbox search instead"). The row never renders at all.
 
 ### F4 source-confirmed: a failed group-roster read renders a silently near-empty details sheet [source-confirmed] [severity: high]
-- Evidence: `fetchGroupParticipants` exists near-identically on `main` (`FairwayMessages.tsx:141-186`) and the branch — on a `participantsError` from `golf_conversation_participants`, it logs the error and returns `new Map()`, with no error flag surfaced to the caller. `ConversationDetailsSheet.tsx` (branch) gates both the member-count line and the entire Members section on `members.length > 0` (lines ~88-93, ~117-140) — there is no separate loading/error branch for that section.
-- Spec: plan §10.5 — "Member loading has member-shaped placeholders... a failed file query says it could not load. Do not hide the whole sheet behind a spinner." (Same principle for the member list, its explicit sibling requirement in the same paragraph.)
-- Gap: a denied or transiently-failed roster read is indistinguishable from "this group genuinely has one visible member" or "still loading" — title renders, nothing else does, no retry, no error text. `memory/features/team-communications.md`'s P257 rail rule ("a failed load must never render the cheerful 'No conversations yet'") is explicitly scoped to the rail in the shared brief's accepted-behavior list, so this is not exempted by that carve-out — it is the same masquerade shape on a different surface.
+- Evidence: `fetchGroupParticipants` (near-identical on `main`, `FairwayMessages.tsx:141-186`, and the branch) logs and returns `new Map()` on a `participantsError`, with no error flag surfaced. `ConversationDetailsSheet.tsx` gates both the count and the entire Members section on `members.length > 0`.
+- Spec: plan §10.5 — "a failed file query says it could not load... do not hide the whole sheet behind a spinner" (same principle, member list).
+- Gap: a denied/failed roster read is indistinguishable from a real 1-member group or a still-loading one. Not exempted by the shared brief's rail-only P257 carve-out — same masquerade shape, different surface.
 
 ### F5 observed: reactions are entirely absent from `main`; fully built (differently) on the branch [observed] [severity: high]
-- Evidence: `golf_message_reactions` exists in the live schema (`database.ts:14135-14164`, `emoji`/`message_id`/`user_id`), created by `supabase/migrations/20260904160000_golf_messaging_structured.sql`. Grepping every file in `src/components/fairway/pages/messages/` on `main` for `reaction` returns zero matches; `use-golf-messages.ts:570-572` only has a comment noting the column exists. On the branch, reactions are fully wired: `src/lib/golf/message-reactions.ts` defines `GOLF_QUICK_REACTIONS = ['👍','❤️','😂','👀','✅']` (exactly the spec's five), consumed by `useGolfMessageReactions` and a `ReactionChips` component inside `MessageThreadPane.tsx`.
-- Spec: plan §12.3 — "Use the app's existing five choices: thumbs-up, heart, laughing, eyes, and check... do not add a generic full emoji picker."
-- Gap: on `main`, this is a 100% gap (no reaction feature of any kind). On the branch, the emoji set is exactly right; see F6 for the presentation gap that remains even there.
+- Evidence: `golf_message_reactions` exists in the live schema (`database.ts:14135-14164`). Grepping `src/components/fairway/pages/messages/*.tsx` on `main` for `reaction` returns zero matches. On the branch: `src/lib/golf/message-reactions.ts` defines `GOLF_QUICK_REACTIONS = ['👍','❤️','😂','👀','✅']`, consumed by `useGolfMessageReactions` + `ReactionChips` in `MessageThreadPane.tsx`.
+- Spec: plan §12.3, now confirmed by `Reactions.dc.html`'s literal five (`👍❤️😂👀✅`, lines 60-64) — exact match to the branch's constant.
+- Gap: 100% absent on `main`. Presentation gap on the branch is F6/F18.
 
-### F6 observed: even on the branch, reactions/actions are an inline row, not the D06/D07 focus-owner overlay [observed] [severity: high]
-- Evidence: branch `MessageThreadPane.tsx:1497-1547` renders the quick-reaction strip and action list as a `<div className="relative mt-1 flex flex-col gap-1 lg:hidden" ...>` — a sibling flex child pushed into the message's own column, toggled by `mobileActionsId === msg.id`. `main`'s equivalent (Copy/Edit/Delete only) is the same shape at `MessageThreadPane.tsx:1114-1126`. Neither uses a scrim, a portal, a dimmed background, or a measured/anchored clone of the selected bubble.
-- Spec: plan §12.1 — "one visual composition, one focus owner... Do not replace this with a generic centered modal or a permanently visible inline row of tiny action icons... Reuse the existing overlay framework."
-- Gap: this is the anti-pattern the spec names, in a gesture-gated (not permanently-visible) form. Toggling by long-press avoids "permanently visible," but the structural requirement — one focus scene with the rest of the thread receding — is unmet in both trees.
+### F6 observed: even on the branch, reactions/actions are an inline row, not the D06/D07 focus-owner overlay [observed] [severity: high] — **now artboard-confirmed, see F18**
+- Evidence: branch `MessageThreadPane.tsx:1497-1547` renders the quick-reaction strip and action list as a flex child inside the message's own column, toggled by `mobileActionsId === msg.id`. `main`'s equivalent (Copy/Edit/Delete only) is the same shape at `:1114-1126`.
+- Spec: plan §12.1; now `Reactions.dc.html` gives the literal target (see F18).
+- Gap: confirmed structural, not merely inferred from prose.
 
 ### F7 observed: on `main`, incoming (other-authored) messages have no action surface of any kind [observed] [severity: med]
-- Evidence: `MessageThreadPane.tsx:1099` wraps the entire own-message-controls block in `isOwn && ...`; the long-press spread at `:1190` is `{...(isOwn ? longPressHandlers(msg.id) : {})}`. An incoming message gets neither the hover row nor the long-press handlers nor the mobile action menu — no Copy, no Reply (Reply doesn't exist on `main` at all; see below).
-- Spec: plan §12.4 — "Incoming messages omit Edit/Delete unless capabilities explicitly permit them" (implying Reply/Copy remain available on incoming messages).
-- Gap: `main` omits the entire menu on incoming messages, not just Edit/Delete — a player cannot copy or (once built) reply to a coach's message. The branch fixes this: `longPressHandlers(msg.id)` is applied unconditionally there (`MessageThreadPane.tsx:1626` on the branch), with only the Edit/Delete icons individually gated by `isOwn` inside the menu.
+- Evidence: `MessageThreadPane.tsx:1099` wraps the entire own-message-controls block in `isOwn && ...`; `:1190`'s long-press spread is `{...(isOwn ? longPressHandlers(msg.id) : {})}`.
+- Spec: plan §12.4 (Edit/Delete alone should be omitted on incoming, not the whole menu).
+- Gap: `main` omits Copy/Reply too on incoming messages. Branch fixes this (`longPressHandlers` unconditional at branch `:1626`).
 
-### F8 observed: `main` has no non-touch path to message actions — the §12.2 "long-press-only" violation with a citation [observed] [severity: med]
-- Evidence: the desktop hover row is `className="... opacity-0 transition-opacity group-hover:opacity-100 lg:flex"` (`MessageThreadPane.tsx:1101`) — no `group-focus-within` or `focus-visible` variant, so keyboard-focused controls are not visibly indicated even if technically tab-reachable. Separately, `longPressHandlers` unconditionally attaches `onContextMenu: (e) => e.preventDefault()` (`:451`) to any bubble it's spread onto, which happens at every viewport width for own messages, while the mobile action menu itself is `lg:hidden` (`:1114`). Right-clicking your own message on a desktop-width viewport therefore suppresses the native browser context menu and opens nothing.
-- Spec: plan §12.2 — "The menu should also be reachable by accessible explicit actions, keyboard/context-menu mechanisms... Do not make a long press the only path to reply or copy."
-- Gap: on mobile, long-press genuinely is the only path (no persistent kebab — the code comment at `:1109` says so explicitly: "No persistent kebab"). On desktop, the one native alternative (right-click) is actively disabled with nothing substituted.
+### F8 observed: `main` has no non-touch path to message actions [observed] [severity: med]
+- Evidence: desktop hover row `opacity-0 ... group-hover:opacity-100 lg:flex` (`:1101`), no `focus-within`/`focus-visible` variant. `onContextMenu: (e) => e.preventDefault()` (`:451`) is unconditional wherever `longPressHandlers` is spread, while the mobile menu is `lg:hidden` — so desktop right-click suppresses the native menu and opens nothing.
+- Spec: plan §12.2 — "Do not make a long press the only path to reply or copy."
+- Gap: mobile has no alternative to long-press ("No persistent kebab," `:1109` comment); desktop's one native alternative is disabled with nothing substituted.
 
-### F9 risk: `conversation-kind.ts`'s "one derivation" is not actually used everywhere its own file is imported into [risk] [severity: low]
-- Evidence: `MessageThreadPane.tsx:812` uses `isGroupConversation(conversation)` for `isGroup` (avatar/title); `MessageThreadPane.tsx:823` computes `headerSubtitle` from `conversation.is_group` directly, not from the `isGroup` constant three lines above it.
-- Spec: `conversation-kind.ts:20-27`'s own doc comment — "One derivation, used everywhere" — describing exactly the avatar/subtitle disagreement this file exists to prevent.
-- Gap: for a conversation where `is_group` and `participant_count` disagree (the file's own doc says this happens for a broadcast sent to one player, and could in principle happen in the other direction too), the avatar/title and the subtitle can render inconsistent identities again — the same bug class the file was written to close, reopened by one line that never got converted. I could not confirm this combination occurs in live `golf_conversations` data (no DB query run this phase) — recording as `risk`, not `observed`. Confirming it needs a query for `is_group=false AND participant_count>2` or `is_group=true AND participant_count<=2` rows.
+### F9 risk: `conversation-kind.ts`'s "one derivation" is not converted at every call site [risk] [severity: low]
+- Evidence: `MessageThreadPane.tsx:812` uses `isGroupConversation(conversation)` for `isGroup`; `:823`'s `headerSubtitle` reads `conversation.is_group` directly instead.
+- Spec: `conversation-kind.ts:20-27`'s own doc comment.
+- Gap: could reintroduce the avatar/subtitle disagreement the file exists to prevent. Not confirmed against live data this phase — needs a query for `is_group=false AND participant_count>2` or the reverse.
 
-### F10 observed: Mute is schema-ready but has zero application-layer wiring — a UI/action gap, not a migration [observed] [severity: med]
-- Evidence: `golf_conversation_participants.muted_until` (timestamptz) and `.notification_level` (string) exist in the live schema (`database.ts:12313-12314`). `grep -rl "muted_until\|notification_level" src/app src/hooks src/components` returns nothing on `main`; the same grep against the branch tree via `git grep` returns only `database.ts` itself. Separately, `users.notification_preferences` (`database.ts:20435`, keys `email_messages`/`push_messages` per commit `87d53761a`) is a global, all-conversations toggle, not per-conversation, and cannot stand in for it.
-- Spec: plan §10.4 — "Mute: Updates only this viewer's permitted notification preference and actually changes delivery policy."
-- Gap: implementing the D04 Mute tile needs a new server action reading/writing the existing `muted_until`/`notification_level` columns plus UI — no schema change required. Worth stating precisely because it changes the write-phase estimate for that one tile from "needs a migration" to "needs an action."
+### F10 observed: Mute is schema-ready but unwired [observed] [severity: med]
+- Evidence: `golf_conversation_participants.muted_until` / `.notification_level` exist (`database.ts:12313-12314`); grep for either across `src/app src/hooks src/components` (main) and via `git grep` on the branch returns nothing outside `database.ts`. `users.notification_preferences` (`database.ts:20435`) is a separate, global, all-conversations toggle (wired by commit `87d53761a`), not per-conversation.
+- Spec: plan §10.4 Mute row.
+- Gap: needs a server action + UI, not a migration.
 
-### F11 observed: no ad hoc multi-recipient private-group flow exists anywhere; two narrower flows exist instead [observed] [severity: high]
-- Evidence: `FairwayNewMessageSheet.tsx` (480 lines, full read) is single-select only — `selectedId: string | null` (not a `Set`), one "Start conversation" primary action, `onSelect(userId: string)`. `FairwayTeamBroadcastSheet.tsx` (453 lines, full read) is coach-only and always scoped to the coach's own team roster (`getGolfTeamPlayersForBroadcast`), framed as "New team message" → "Group details" (its own naming step, not a view of an *existing* conversation's details) → "Create group."
-- Spec: plan §11.2 (explicitly marked `proposal` per §11.1's evidence-limit note, and per the team lead's instruction to treat it as such) — "Multiple selected people creates the intended private group... chips include real names and removable controls."
-- Gap: neither flow lets a user pick an arbitrary multi-person subset outside a coach's fixed team-broadcast context. This is the concrete distance from the §11.2 proposal, not a defect against an approved spec.
+### F11 observed → superseded by F16 (D10 no longer a proposal) [observed] [severity: high]
+- Evidence: `FairwayNewMessageSheet.tsx` is single-select only (`selectedId: string | null`); `FairwayTeamBroadcastSheet.tsx` is coach-only, fixed to the team roster.
+- Spec: was plan §11.2 (`proposal`); **ADDENDUM 1 makes `NewMessage.dc.html` an approved, complete artboard — see F16 for the re-scored, no-longer-proposal comparison.**
 
-### F12 observed: what `FairwayNewMessageSheet.tsx` gets right, for the write phase to preserve [observed] [severity: n/a — positive]
-- Evidence: dedup and selection are keyed on `userId` (auth user id), not display name or player-row id — `isSelected = selectedId === result.userId` (`:393`), and the player/teammate dedup pass keys on `r.userId` (`:262-267`). Tapping a directory row only calls `setSelectedId`, never auto-creates (`:401-412`); creation is a separate submit gated by a `creating` boolean that also blocks repeat-tap double-submit (`:300-311`). Loading/no-team/search-failed/no-match(query)/no-match(empty-roster) render four distinct `EmptyState` copy variants (`:436-459`).
-- Spec: plan §11.2 ("no auto-create on directory tap"), §11.3 ("deduplicated by auth user ID," "no-match, directory-error, loading, no-team... are different").
-- This satisfies those specific requirements now and should not be regressed when the sheet is extended to multi-select.
+### F12 observed: what `FairwayNewMessageSheet.tsx` gets right, to preserve [observed] [severity: n/a — positive]
+- Evidence: dedup/selection keyed on `userId` (`:393`, `:262-267`); no auto-create on row tap (`:401-412`); `creating` guard blocks repeat-tap double-submit (`:300-311`); four distinct empty/error/loading copy variants (`:436-459`).
+- Spec: plan §11.2/§11.3.
+- Preserve this when the sheet is extended toward the approved D10 shape.
 
-## Plan-vs-tree drift
+## Findings — artboard-grounded (new, ADDENDUM 1)
 
-- `ConversationDetailsSheet.tsx` (§19.3 line 823 leases it to M03D) does not exist on `main`; it exists only on unmerged `agent/messages-instant-entry` / `ci-fix-1833` (F1). This is the priority item the team lead flagged, confirmed and localized.
-- `FairwayTeamBroadcastSheet.tsx` and `conversation-kind.ts` appear in no §19.3 lease row (confirmed by reading the full table, lines 815-830). `FairwayTeamBroadcastSheet.tsx` is a recipient-selection surface and belongs under M03D per §21's role-summary table (line 809: "Recipient/details/action/reaction surfaces"). `conversation-kind.ts` is consumed by at least the thread header (this lane's overlay trigger reads `isGroup` from it) and, on the branch, by `ConversationDetailsSheet.tsx` itself — a shared derivation with multiple consumers and no owner is the exact collision §19.3's closing paragraph warns against; recommend either an explicit shared-file lease or folding it under M02's "conversation state owners" row.
-- §21's V20 row ("Group header/details only partially represented") describes the unmerged branch's state, not `main`'s (F1/F14 — on `main` it is not partial, it is absent).
-- §10.3's "current implementation" characterization of the Search row (F3) is less true than the plan states: the row is unreachable dead code, not a misdirected search.
+### F13 plan-drift: §11.1's "D10 is only a partial crop" no longer holds [plan-drift] [severity: high]
+- Evidence: `NewMessage.dc.html` (140 lines) is a complete, self-contained 390×844 artboard — full header (`Cancel` / `New message` / `Start`), removable chips, a focused search field, a `SEND TO EVERYONE` section, a `PLAYERS` section, and a bottom primary CTA, all with literal values.
+- Spec: plan §11.1 — "D10 shows only part of the artboard... Do not fabricate a claim of pixel-perfect restoration."
+- Gap: this limitation is stale as of ADDENDUM 1. Per the team lead's correction, the §11.2 target is now audited as approved design, not proposal (F16).
+
+### F14 decision-needed: the two reference action-sheet artboards disagree with each other on item order [decision-needed] [severity: med]
+- Evidence: `Actions.dc.html:40-56` orders **Copy, Reply, Edit, [divider], Delete**. `Reactions.dc.html:76-92` — the action list under an *already-reacted* message — orders **Reply, Copy, Edit, [divider], Delete**. Row height also differs: 52px (`Actions.dc.html:40`) vs 50px (`Reactions.dc.html:76`).
+- Spec: plan §12.4 itself proposes a third order — "Reply, Copy, Edit, then separated Delete" — which matches `Reactions.dc.html` but not `Actions.dc.html`.
+- Not resolved here per the team lead's instruction to record artboard conflicts as `decision-needed` for M00 rather than resolve them. Whoever decides should also confirm whether the 52px/50px difference is intentional (e.g., reaction-context rows compressed to fit the tray above them) or drift between mock passes.
+
+### F15 observed: numeric delta table for D04 (`GroupDetails.dc.html`) vs the branch's `ConversationDetailsSheet.tsx` [observed] [severity: high]
+- Evidence/Spec/Gap, one row per artboard element (all `GroupDetails.dc.html` line numbers; branch file is `ConversationDetailsSheet.tsx` unless noted):
+
+| Element | Artboard (`GroupDetails.dc.html`) | Current (branch) | Gap |
+| --- | --- | --- | --- |
+| Sheet surface | `:44-46` warm frosted glass: `rgb(244 232 210/0.88)` + `backdrop-filter: blur(36px) saturate(190%)`, top radius `1.75rem` | Generic `Sheet` primitive: `bg-elevated` (opaque token) + `shadow-fw-modal`, `rounded-t-fw-lg` (`Sheet.tsx:52,207`) | No blur/warm-tint treatment exists on the shared primitive at all — this is an **A03 shared-primitive question** per §19.3, not something M03D can fork locally. |
+| Grip | `:48` 38×4px, `oklch(0.32 0.045 68/0.18)` | `Sheet.tsx:214` `h-1.5 w-10` (24×40px in default rem scale, i.e. ~6×40px), `bg-border-strong` | Close in width, off in height/color-treatment; shared-primitive scope again. |
+| Identity | `:52-57` four overlapping 58px circles, `-18px` overlap, 3px ring border, real initials, "+6" overflow styled identically to a member avatar | None — sheet shows only a single DM avatar or nothing; no stack of any kind (`ConversationDetailsSheet.tsx:74-84`) | Full gap — F2's "no avatar stack" now has an exact target: 58px/-18px/3px-border/4-visible-then-overflow. |
+| Title + creation metadata | `:59-60` one line `"Travel — Kiawah"` (20px/600) + one subtitle line `"9 members · created by you, Jul 21"` combining count and creator/date with a middot | `:80-91` title only; count line exists (`"N members"`) but never combined with creator/date — no creation metadata rendered at all | `golf_conversations.created_by`/`created_at` exist in schema (`database.ts:12353-12385`) — this is buildable without a migration, just unbuilt. |
+| Three action tiles | `:65-78` equal-weight, `flex-grow:1`, `height:68px`, `border-radius:1rem`, icon 21px + label 12px/500 stacked, cream gradient | None | Full gap, exact target now available for M03D to build against. |
+| Members header + Add | `:80-83` `MEMBERS` eyebrow (11px/600, uppercase tracking) + trailing `Add` (12px/500, green) | `:117-124` `Members` heading with `Users` icon, no `Add` control at all | Add is missing entirely, not just ungated. |
+| Member row | `:85-92` 42px avatar, name 15px/500 (+"(you)" in lighter weight), secondary line (role or class year), first (self) row carries an `Admin` pill (green, 11px/600) | `:126-141` avatar-or-nothing (no placeholder for missing photo), name only, no secondary line, no role/admin pill of any kind | Confirms F2's member-row gap with the artboard's exact fields: name + one secondary line + conditional role pill. |
+| Presence dot | `:96` green 11px dot, bottom-right of Alexis Bennett's avatar, 2px border | Not present (branch has no presence concept anywhere in messages) | **Flagging as `decision-needed` per the team lead's caution** — §24.5 bars inventing presence, but this artboard (like `Main.dc.html`) shows it. Needs real backing data (a presence/last-active signal) before this is buildable; recording for M00, not resolving or building it. |
+| Show all | `:117-119` indented row, `"Show all 9"`, 13px/500, green | Not present — the branch always renders the full unpaginated list | No abbreviation/pagination exists at all, so nothing triggers "Show all" — a gap in the opposite direction from what the plan's checklist implies (nothing to expand because nothing is ever collapsed). |
+| Shared files | `:122-140` `SHARED FILES` eyebrow + two inline preview tiles (doc icon+name+size in mono, or an image-gradient placeholder) | Not present | Full gap. |
+| Leave group | `:142-144` full-width pill, 50px height, fully rounded, **soft** red tint (`oklch(0.505 0.19 27/0.09)` background, not solid), 15px/600 red text | Not present | Full gap; artboard confirms §10.2's "quiet destructive... not the most visually attractive primary action" is a literal low-opacity tint, not merely a smaller button. |
+
+- Overall: `ConversationDetailsSheet.tsx` (147 lines) implements roughly 3 of the artboard's ~11 distinct elements (title, member count, a flat member list) at reduced fidelity (no role/admin/presence data, no photo-fallback, no combined creation line) and is missing the other 8 outright. This replaces F2's qualitative "stripped-down" framing with a citable count.
+
+### F16 observed: D10 (`NewMessage.dc.html`) vs current recipient flows — no longer a proposal-vs-current comparison, now an approved-design gap [observed] [severity: high]
+- Evidence: `NewMessage.dc.html` is one unified sheet: `Cancel` / `New message` / `Start` header row (`:47-51`); removable recipient chips already selected (`:54-65`, pill with a 24px initials badge + name + × glyph); one focused search field with a green focus ring (`:68-72`); a `SEND TO EVERYONE` section containing a single **Team broadcast** row with a distinct icon and `"Everyone on Demo University Golf · 9"` subtitle (`:74-84`); a `PLAYERS` section of individually toggleable rows, each with a trailing selection ring (filled green check when selected, hollow outline when not) (`:86-128`); and a bottom pill CTA whose label changes with selection count — `"Start group · 2"` shown for 2 selected (`:130-135`), implying `"Open conversation"` (or similar) for exactly 1 and `"Start group · N"` for 2+, per §11.2's "primary action labels the actual operation."
+- Spec: was plan §11.2 (marked `proposal`); ADDENDUM 1 makes this an approved target (F13).
+- Gap: current `main` has two separate sheets instead of this one unified surface — `FairwayNewMessageSheet.tsx` (single-select DM, no chips, generic "Start conversation" label regardless of count) and `FairwayTeamBroadcastSheet.tsx` (a distinct two-step modal, not a row inside the same sheet, and restricted to the coach role/fixed team roster rather than being one row alongside individual recipients for anyone). Neither has removable chips, a mixed broadcast-row-plus-individual-rows structure, or a selection-count-driven CTA label. This is now a real, approved-spec delta rather than a distance-from-proposal note.
+- Proposal: the two existing sheets' logic (verbatim recipient search/create-conversation calls, verbatim broadcast creation) can likely be recomposed under the artboard's single-sheet layout without touching the underlying server actions — a layout/composition change, not a new data layer, based on what's read here. Confirming that needs the write-phase implementer's own read of the full data flow.
+
+### F17 observed: `Actions.dc.html`/`Reactions.dc.html` show a labeled vertical action LIST; current code (both trees) shows an icon-only horizontal row [observed] [severity: high]
+- Evidence: `Actions.dc.html:40-56` and `Reactions.dc.html:76-92` are both full-width rows — 21px icon + 16px/500 text label per row, height 50-52px, vertically stacked, with an explicit divider line before Delete. Neither artboard renders a "close" control — dismissal is implied to be scrim-tap (consistent with §12.1's overlay model). Current code, on both `main` (`MessageThreadPane.tsx:1114-1126`) and the branch (`:1497-1547`), renders `IconButton`-only glyphs (no text label at all) in a single horizontal `Inset` strip, plus an explicit `X` "Close" button that has no artboard counterpart.
+- Spec: plan §12.4 — "consistent row heights, left icon alignment, text weight, and separator placement" (implicitly assumes labeled rows, now confirmed literally by the artboards).
+- Gap: icon-only vs labeled-list is a different interaction pattern, not a styling delta — a user cannot read what a bare icon does without recognizing the glyph. The extra "X" close button is very likely compensating for the missing scrim (F6/F18) rather than an intentional design element; removing it once a proper scrim/overlay exists would align with the artboards' no-close-row composition.
+
+### F18 observed: `Reactions.dc.html` confirms the floating-tray-over-dimmed-background composition; current code has neither [observed] [severity: high]
+- Evidence: `Reactions.dc.html:36,55-65` — background messages sit at `opacity: 0.34` (`:36`), the held/selected bubble stays fully opaque and gains a lifted shadow (`lit-accent` box-shadow, `:19,67`), and the reaction tray is a `position: relative; z-index: 2` floating pill (`:57-65`, 46×46px circular targets, `backdrop-filter: blur(36px) saturate(190%)`, warm-glass background) positioned ABOVE the held bubble — not appended below it in document flow. Current code (branch, `MessageThreadPane.tsx:1497-1547`) has none of: opacity-reduced siblings, an elevated/re-shadowed selected bubble, a floating/absolutely-positioned tray, or a blur/glass surface — it is a plain sibling `<div>` in the same flex column as the bubble, at the bubble's *default* elevation.
+- Spec: plan §12.1's "one visual composition, one focus owner" now has a literal opacity value (0.34) and a literal tray treatment to build against.
+- Reaction-chip positioning, by contrast, is close: branch's `ReactionChips` uses `-mt-2` overlap (`MessageThreadPane.tsx:329`, ≈-8px in the default 4px scale) against the artboard's `margin-top: -9px` (`Reactions.dc.html:39,44`) — within a token-quantization rounding difference, and both order chips by descending count. This one piece does not need rework; it's cited so the write phase doesn't regress it while rebuilding the rest.
+
+### F19 decision-needed: `GroupDetails.dc.html`'s "Admin" pill needs a data model that doesn't exist yet [decision-needed] [severity: med]
+- Evidence: `GroupDetails.dc.html:91` shows an "Admin" pill on the self/coach row, separate from the "Head Coach" secondary-line role text on the same row conceptually (the artboard's self row actually shows the pill instead of a role line, but the plan text and the artboard together imply both could coexist). `golf_conversations.created_by` (`database.ts:12353-12385`) is the only existing signal that could back a single-creator-is-admin model.
+- Spec: plan §10.4 — "A Head Coach role is not proof of private-group Admin... `created_by` may support a creator-managed model; transferable/multiple admins require explicit representation."
+- Not resolved here: whether "Admin" in the shipped sheet should be a `created_by === current_user` check (single, non-transferable) or requires new schema for multiple/transferable admins is a product decision, flagged for M00 rather than answered.
 
 ## Checks scored
 
-All device/pixel-fidelity aspects of these checks are `NOT_RUN` — no screenshots exist on this machine (per shared brief) and no dev server/runtime was started (read-only constraint). Structural/wiring aspects are scored from source.
+Device/pixel-rendering fidelity remains `NOT_RUN` for every check below (no browser/device this phase, per ADDENDUM 1's own limit: "It does NOT make runtime/device/multi-user evidence possible"). Structural/geometric/wiring aspects are now scored against the artboards where one exists, not "no reference" placeholders.
 
 | Check | Score | Reason |
 | --- | --- | --- |
-| M-V37 (D04 composition) | FAIL | Absent on `main`; on branch, only title/count/member-list/dead-search exist — no avatar stack, no action tiles, no file preview, no leave (F1, F2). |
-| M-V38 (Details actions scoped effects/permission gating) | FAIL | None of Mute/Search/Files/Add/Show all/Leave function on either tree; Search is unreachable dead code on the branch (F3, F10). |
-| M-V39 (Member/files partial data, failed read ≠ "no files") | FAIL | No-photo members lose their avatar slot entirely; failed roster read renders as a near-empty sheet with no error text (F2, F4). |
-| M-V40 (D10 proposed completion) | FAIL | No chip/multi-select/scoped-audience specimen exists in either tree (F11). |
-| M-V41 (Recipient create: distinct one/multi paths, exact DM/group ops, repeat-tap safety) | FAIL (structural) | Single-DM path is correct and repeat-tap-safe (F12); no general multi-select "create group" path exists, so the compound requirement is unmet (F11). |
-| M-V42 (D06/D07 focus/portal scene) | FAIL | No scrim, portal, or dimmed background in either tree; both use an inline flex row (F6). |
-| M-V43 (Reaction tray: five choices, selected ring, stable order/counts, no generic picker) | FAIL (`main`) / NOT_RUN for visual fidelity (branch) | `main` has zero reaction implementation (F5). Branch has the correct five-emoji closed set with an `aria-pressed` indicator, but it is not a floating tray per D07 and chip-order/count-jump behavior cannot be assessed without a rendered screenshot. |
-| M-V44 (Hold/cancel/access — reachable without long press) | FAIL | Hold-cancel-on-move works (`onPointerMove` cancels the timer); "reachable without long press" fails on both mobile (no persistent kebab) and desktop (context menu actively suppressed, hover row not keyboard-visible) (F8). |
-| M-T14 (reaction convergence) | NOT_RUN | Requires two authenticated accounts and a running app; not attempted (read-only Wave 0 constraint). |
-| M-T16 (member capability enforcement server-side) | NOT_RUN | No Add/Leave/Mute server actions exist yet to test (F10, F11); would need multi-user runtime regardless. |
-| M-T20 (actions/accessibility: hold-yields-to-scroll, alternatives, VoiceOver, haptics-off) | NOT_RUN | Hold-yields-to-scroll is structurally present (`onPointerMove` cancels) but VoiceOver/haptics-off/large-text behavior needs a device, not attempted. |
+| M-V37 (D04 composition) | FAIL | Artboard-confirmed: ~3 of 11 distinct D04 elements exist, all at reduced fidelity, on the branch; zero on `main` (F15). |
+| M-V38 (Details actions scoped effects/permission gating) | FAIL | Mute/Add/Files/Show all/Leave don't exist in any tree; Search is dead code (F3, F10, F15). |
+| M-V39 (Member/files partial data, failed read ≠ "no files") | FAIL | No-photo members lose their avatar slot entirely; failed roster read renders as a near-empty sheet with no error text (F4, F15). |
+| M-V40 (D10 proposed completion) | FAIL — **re-scored: this is now an approved-spec FAIL, not a "no proposal exists" placeholder** | A complete, approved D10 artboard exists (F13); current code has two narrower, structurally different sheets, neither matching its chip/broadcast-row/CTA-label composition (F16). |
+| M-V41 (Recipient create: distinct one/multi paths, exact DM/group ops, repeat-tap safety) | FAIL (structural), single-DM sub-path correct | Single-DM path is correct and repeat-tap-safe (F12); no unified sheet with the artboard's broadcast-row + individually-toggleable-rows + count-driven CTA exists (F16). |
+| M-V42 (D06/D07 focus/portal scene) | FAIL — **re-scored with exact target** | Artboard specifies 0.34 background opacity + floating glass tray + re-elevated held bubble (F18); current code has none of the three, in either tree. |
+| M-V43 (Reaction tray: five choices, selected ring, stable order/counts, no generic picker) | FAIL (`main`) / FAIL (branch, tray structure) — **chip positioning/ordering sub-check now PASSES** | `main`: zero implementation (F5). Branch: exact 5-emoji set matches (F5); tray is inline, not floating/glass per F18 (FAIL); but chip overlap (-8px vs -9px) and count-descending order match the artboard closely enough to score that specific sub-part a pass, not a gap (F18, last paragraph). |
+| M-V44 (Hold/cancel/access — reachable without long press) | FAIL | Hold-cancel-on-move works; no non-long-press path exists on mobile (no kebab) or desktop (context menu suppressed) in either tree (F8). No artboard bears on this specific check (it's an interaction-model question, not a visual one). |
+| M-T14 (reaction convergence) | NOT_RUN | Requires two authenticated accounts and a running app — still true after the addendum, which supplies design source, not runtime. |
+| M-T16 (member capability enforcement server-side) | NOT_RUN | No Add/Leave/Mute server actions exist yet to test (F10, F16); needs multi-user runtime regardless. |
+| M-T20 (actions/accessibility: hold-yields-to-scroll, alternatives, VoiceOver, haptics-off) | NOT_RUN | Hold-yields-to-scroll is structurally present; VoiceOver/haptics-off/large-text still need a device. |
+
+## Plan-vs-tree / plan-vs-artboard drift
+
+- `ConversationDetailsSheet.tsx` (§19.3:823 leases it to M03D) does not exist on `main`; exists only on unmerged `agent/messages-instant-entry` / `ci-fix-1833` (F1, priority task).
+- `FairwayTeamBroadcastSheet.tsx` and `conversation-kind.ts` appear in no §19.3 lease row (confirmed reading the full table, lines 815-830). `FairwayTeamBroadcastSheet.tsx` belongs under M03D per §21's role-summary line 809; `conversation-kind.ts` has 3+ consumers across lanes and no owner — recommend an explicit shared-file lease or folding under M02.
+- §21's V20 row ("only partially represented") describes the unmerged branch, not `main` (absent there) — unaffected by the addendum, still true.
+- **§11.1's partial-D10 evidence limit is stale as of ADDENDUM 1** (F13) — `NewMessage.dc.html` is a complete artboard; the §11.2 target is no longer `proposal`.
+- **New: the two action-sheet artboards disagree with each other and with §12.4's own prose on item order** (F14) — a `decision-needed` conflict in the source of truth itself, not a code defect.
+- **New: `GroupDetails.dc.html` shows a presence dot and an "Admin" pill** with no backing data model in the tree today (F15/F19) — recorded as `decision-needed` per the team lead's instruction, not resolved or built.
 
 ## What I could not determine and why
 
-- Whether `agent/messages-instant-entry` or `ci-fix-1833` is the intended write-phase base, or whether they've diverged further than the identical files I checked — no `gh`/network access was used this phase (read-only audit; invoking it would need `dangerouslyDisableSandbox`, out of scope for Wave 0).
-- Whether the `is_group`/`participant_count` disagreement in F9 occurs in live data — would need a read-only query against `golf_conversations`, not run this phase.
-- Any actual pixel/contrast/scrim/shadow/clipping fidelity for D04/D06/D07/D10 — no screenshots exist on this machine per the shared brief; every finding above is structural/wiring, not visual.
-- `FairwayNewMessageSheet.test.tsx` and `MessageComposer.enterKey.test.tsx` and other test files in the directory were grepped for context but not read line-by-line; I can't rule out additional coverage or gaps they encode.
-- Whether `AttachmentButton.tsx`/`AttachmentPreview.tsx` under `src/components/golf/messages/` interact with any overlay/action surface in my scope — grepped for reaction/context-menu terms only (no matches), not read in full (out of this lane's Section 10-12 scope).
-- RLS/authorization behavior for any of the not-yet-built actions (Add, Leave, Mute) — no policies exist to read since no action exists yet; this is a write-phase design question, not an audit gap.
+- Whether `agent/messages-instant-entry` or `ci-fix-1833` is the intended write-phase base, or whether they've diverged further than the identical files checked — no `gh`/network access this phase.
+- Whether the `is_group`/`participant_count` disagreement in F9 occurs in live data — needs a read-only query against `golf_conversations`, not run this phase.
+- Actual rendered fidelity (does the shared `Sheet` primitive's `bg-elevated` visually clash with the artboard's warm/blur treatment badly enough to need a token exception, exact blur/backdrop-filter browser support, real contrast ratios) — the artboard gives literal source values but I have no browser this phase to render either side; this is exactly the boundary ADDENDUM 1 draws ("does NOT make runtime/device/multi-user evidence possible").
+- `unmapped oklch() values` — I did not attempt a token-by-token reconciliation against `src/styles/design-tokens.css`'s `--fw-*` custom properties for every literal in these four artboards; that mapping exercise is explicitly A03's per §14.2, and I did not want to preempt it with a partial pass. Flagging that a full reconciliation pass is still owed, not done here.
+- `FairwayNewMessageSheet.test.tsx` and other test files in the directory were grepped for context but not read line-by-line.
+- Whether `AttachmentButton.tsx`/`AttachmentPreview.tsx` under `src/components/golf/messages/` interact with any overlay/action surface in my scope — grepped for reaction/context-menu terms only (no matches), not read in full (out of Section 10-12 scope).
+- RLS/authorization behavior for any of the not-yet-built actions (Add, Leave, Mute) — no policies exist to read since no action exists yet.
