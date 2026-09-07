@@ -1,5 +1,83 @@
 # Test ledger — team_communications
 
+## 2026-09-07 — W7b group membership: pgTAP + 31 more component/action assertions
+
+- SHA: 79f6e1a07.
+- Added `supabase/tests/rls/golf_group_membership_management.sql` (14 pgTAP
+  assertions), 31 tests to
+  `src/components/fairway/pages/messages/GroupDetailsSheet.test.ts` (45 → 76),
+  and `GroupDetailsSheet.membership.test.tsx` (24 jsdom render tests, of which
+  19 fail against the pre-change component — the 5 that pass are correctly the
+  read-only assertions).
+- THE PGTAP SUITE IS THE LOAD-BEARING ONE, and the split is deliberate: the
+  component suite pins TEXT (the migration says what it must, the actions
+  surface a refusal, the sheet offers the control to the right person), while
+  only the pgTAP suite proves BEHAVIOUR. `pg_policies` will happily show a
+  policy whose three bounds are each present and jointly wrong — this same table
+  has already shipped a predicate that read correctly and evaluated to
+  `p.x = p.x`.
+- RUN IN BOTH DIRECTIONS, which is what makes it evidence. With the migration
+  applied: 14/14. With both policies reverted to their pre-migration shape
+  inside the same transaction: exactly 3 fail (the delete policy's creator
+  branch, the add, the remove) and the rest still pass. Those matter as much as
+  the 3 — they are the 2026-08-19 refusals and the creation order, and they show
+  the widening did not disturb them.
+- A THIRD CONTROL RUN, AND THE SUITE RECORDS WHAT IT FOUND AGAINST ITSELF. GROUP
+  4 (creator leaves, then tries to remove someone) was added for the DELETE
+  branch's new participation clause — and with that clause ALONE removed, all 14
+  still pass. Measured reason: `golf_participants_select_v2` already makes the
+  target rows invisible to a non-participant. So GROUP 4 is a contract on the
+  OUTCOME, holding today through two independent mechanisms, and the file says
+  so in a "ONE HONEST LIMIT" note rather than letting a reader take it for a
+  test of the clause. Test 13 (the leave itself succeeded) exists so test 14
+  cannot pass because the leave silently did nothing.
+- THE REFUSALS ARE PAIRED WITH PERMISSIONS ON PURPOSE. The trap is named in
+  20260819070000's own verification block: a predicate that blocks everything
+  passes every refusal check. So "creator CAN add a teammate" sits beside
+  "CANNOT add a non-teammate", and the two-statement creation order — the exact
+  shape `createConversation` uses, and the thing a naive "zero existing
+  participants" predicate breaks — is asserted alongside them.
+- THE ASSERTION THAT WAS WRONG FIRST. A DELETE denied by RLS removes zero rows
+  rather than raising, so these are row-count assertions, not `throws_ok`. The
+  first draft took those counts AS THE ACTING USER and reported test 11 red for
+  the right outcome by the wrong route: the creator's participant row is not
+  selectable by a non-creator either way, so the count reads 0 whether the
+  delete was refused or succeeded. Both delete assertions now `RESET role`
+  first. This is the class of test that passes against the defect it exists to
+  catch.
+- ANON IS ASSERTED SEPARATELY FROM PUBLIC on the new definer helper, because
+  they are two different grants and revoking one is a common half-fix. A
+  SECURITY DEFINER function is EXECUTE-to-PUBLIC by default and anyone holding
+  the publishable key is `anon`, so without both this helper is an
+  unauthenticated roster oracle.
+- THE RECURSION TRAP IS ASSERTED AS AN ABSENCE, scoped to the policy body rather
+  than the file: the INSERT policy must not contain
+  `from public.golf_conversation_participants`. An inline read of its own table
+  fails EVERY query against the table, not just that branch, and the repo has
+  been bitten by this before.
+- THREE BOUNDS, THREE SEPARATE ASSERTIONS. Team-chat-only, creator-only, and
+  target-already-on-team are checked individually so dropping any ONE of them
+  goes red — the safety argument is that they hold TOGETHER, and a single
+  combined assertion would let two-of-three pass.
+- THE ABSENCE LIST SHRANK, WHICH IS THE MECHANISM WORKING. `'Add member'` and
+  `'Leave group'` were removed from the deferred-control `it.each`; Mute, Search
+  and Files stay. That block was written so enabling one of these costs a
+  deleted assertion — it did, and the comment now records that it happened
+  rather than leaving the list looking as though it had always been three.
+- TWO ACTION-COUNT TRIPWIRES MOVED, with the arithmetic written into both:
+  `coverage-contract.foundation` 428 → 432 (and golf message exports 10 → 14),
+  `feature-registry` 420 → 424. The second was needed because
+  `src/app/actions/messages.ts` is one of the explicitly-listed manifest entries
+  rather than an `'ALL'`-mapped file, so the four new actions had to be named in
+  `feature-registry.ts` too. Neither is a known-bad ratchet being raised to pass
+  a build — they are exact-count tripwires whose whole job is to make a new
+  public POSTable server action a deliberate act.
+- THE ARTBOARD IS MEASURED ON BOTH SIDES for the two controls it actually draws:
+  the "Add" link's 12px/500 accent against `caption-1`'s own 12px/400 step, and
+  the "Leave group" pill's 50px height and 15px against `subhead`. The artboard
+  draws no per-row Remove at all — that affordance is an addition, and is
+  recorded as one rather than being attributed to the design.
+
 ## 2026-09-07 — W7 GroupDetailsSheet.test.ts
 
 - SHA: 0897e63cc.

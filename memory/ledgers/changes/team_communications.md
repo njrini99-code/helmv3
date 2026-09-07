@@ -1,5 +1,163 @@
 # Change ledger — team_communications
 
+## 2026-09-07 — group membership: add, remove, leave (owner request, mid-run)
+
+- SHA: 79f6e1a07.
+- Change: new migration
+  `20260907160000_golf_team_chat_membership_management.sql` (written, NOT
+  applied); new pgTAP suite
+  `supabase/tests/rls/golf_group_membership_management.sql`; four server
+  actions in `src/app/actions/messages.ts` re-exported through
+  `src/app/golf/actions/messages.ts`; Add / Remove / Leave in
+  `GroupDetailsSheet.tsx`, wired in `FairwayMessages.tsx`; declarative schema
+  updated in `supabase/schemas/policies/golf.sql` and `functions/public.sql`.
+- THE REQUEST WAS NOT A WIRING TASK, and establishing that came first. Read off
+  live production `pg_policies`, not off the migration files:
+  `golf_participants_delete` is `USING (user_id = auth.uid())` — self only, so a
+  creator cannot remove anybody — and `golf_participants_insert_v2`'s creator
+  branch carries `AND NOT golf_conversation_has_other_participant(...)`, so
+  adding to a settled thread is refused. Both halves of "add member and delete
+  member need wired in" were blocked by policy before a line was written.
+- AND THE BLOCKING CLAUSE HAS A REASON.
+  `20260819070000_conversation_creator_cannot_inject_third_party.sql` added it
+  after a **verified production attack**, confirmed by controlled reproduction
+  against a copy of live data. So this is a security surface, not an oversight,
+  and the migration re-opening it is the owner's to apply — deliberately, after
+  review.
+- NOT A REVERSAL, AND THE MIGRATION ARGUES IT IN THAT MIGRATION'S OWN TERMS. Its
+  header says the product having no add-participant flow "bounds who is likely
+  to have exercised it. It does not bound the policy, which is the only
+  control." The branch it removed authorized an insert on the sole basis that
+  the actor created the conversation — no bound on WHICH conversation, none on
+  WHO was being added, reachable against a private DM. The replacement is
+  bounded on three axes that must hold together: a genuine team chat
+  (`is_team_chat AND team_id IS NOT NULL`, so a DM is unreachable — the case the
+  attack used), the actor is `created_by`, and for INSERT the person being added
+  is ALREADY on the owning team. So it grants no ability to introduce an
+  outsider to anything; only to include a teammate in a channel their team
+  already owns.
+- A TARGET-USER HELPER WAS NECESSARY, not a convenience.
+  `golf_conversation_on_my_team` reads `auth.uid()` through
+  `is_golf_team_player`/`is_golf_team_coach` and therefore answers for the
+  CALLER — it cannot be aimed at the person being added, who is by definition
+  not the caller. `golf_user_on_conversation_team(p_conversation_id, p_user_id)`
+  mirrors those two helpers exactly, including the players' `status = 'active'`
+  bound, and is SECURITY DEFINER for the reason the 2026-08-19 migration
+  documents at length: a policy on `golf_conversation_participants` that reads
+  that table inline recurses, and Postgres then fails EVERY query against it.
+  Paired with `REVOKE ALL ... FROM public, anon` + `GRANT ... TO authenticated`,
+  because a definer function is EXECUTE-to-PUBLIC by default and anyone holding
+  the publishable key is `anon`.
+- THE ORPHAN GUARD IS ONE CLAUSE AND IT IS DELIBERATE. The DELETE creator branch
+  carries `user_id <> auth.uid()`; since that branch already requires the actor
+  to BE the creator, this is exactly "not the creator's row", so Remove is never
+  a second, unlabelled way to leave. Removing yourself is still possible —
+  through the self-delete branch, which is Leave, and which has a different
+  consequence and its own control.
+- THE DELETE BRANCH DOES NOT REST ON 20260819070000'S 11-OF-11 OBSERVATION,
+  BECAUSE THIS CHANGE STALED IT. That header recorded no golf conversation
+  having a creator who was not a participant, and the branch was free to lean on
+  it — except the same change ships Leave group, which the creator can use. Data
+  gathered before a capability existed cannot bound a capability it introduces,
+  so the question was re-asked against a real Postgres rather than re-cited:
+  acting as a creator who is NOT a participant, the conversation IS visible (a
+  coach branch in `golf_conversations_select_v2`) but ZERO participant rows are,
+  because `golf_participants_select_v2` has no coach branch. A DELETE over
+  invisible rows removes nothing; the departed creator was already powerless.
+  The branch states the bound itself anyway — `conversation_id IN (SELECT
+  user_conversation_ids(…))`, the existing definer helper that other policy
+  already uses — deliberately redundant, because a DELETE branch whose only real
+  bound lives in a DIFFERENT policy is one edit to that policy away from being
+  unbounded with nothing here to notice. A group CAN end up with no creator
+  among its members, via Leave; the consequence is that nobody can remove
+  anyone, which is the right direction to fail in.
+- THE HISTORY EXPOSURE IS STATED RATHER THAN LEFT AS AN IMPLEMENTATION DETAIL.
+  `golf_participants_select_v2` grants a participant the conversation's full
+  prior history, unchanged here — so adding a member hands them the backlog.
+  Very likely correct for a team channel, and it is how the existing
+  13-participant channel already works for everyone in it, but it is a
+  consequence for the owner to accept knowingly. There is no per-message
+  watermark in the schema, so "messages after you joined" is a different
+  feature, not a variant of this migration.
+- CREATOR-ONLY, NOT ANY COACH, and said in one line rather than blocking on it.
+  `golf_conversation_participants` has no role column of any kind, so
+  `created_by` is the only thing "admin" can mean — the same fact the Admin pill
+  already draws. Widening to any coach on the owning team is a later decision.
+- TESTED AGAINST A REAL POSTGRES, WHICH IS THE THING 20260819070000 COULD NOT
+  DO. Its header records "Docker was unavailable, so the clean-room local-stack
+  replay could not be exercised." Docker was available here, and the owner
+  suggested using it. Fourteen pgTAP assertions against a local stack: all pass
+  with the migration applied; with both policies reverted to their pre-migration
+  shape inside the same transaction, exactly three fail — the delete policy's
+  creator branch, the add (42501), the remove (0 rows) — while the 2026-08-19
+  refusals (DM injection, non-creator add) and the two-statement creation order
+  still pass. The suite discriminates, and the widening demonstrably did not
+  disturb what the earlier hardening closed.
+- ONE ASSERTION WAS WRONG FIRST, AND THE REASON IS WORTH MORE THAN THE FIX. The
+  first draft counted rows as the acting user after a denied DELETE. RLS filters
+  a denied delete to zero rows rather than raising, and the same SELECT policy
+  also hides the row from that user — so the count reads 0 whether the delete
+  was refused or succeeded. It would have passed against the very defect it
+  exists to catch. Those assertions now take their counts with RLS off.
+- THE CANDIDATE LOADER ABSORBED TWO ERRORS IT ARGUED IT MUST NOT. It checked
+  `existing.error` and wrote out why an empty exclusion set is unacceptable —
+  then let `members.error` and `staff.error` through. Both roster reads run
+  under the caller's RLS; on error `.data` is null, both loops iterate zero
+  times, and the sheet renders "Everyone on this team is already in the group."
+  A failed read and a genuinely-full group were indistinguishable, and one of
+  them means "try again". Both now throw, and the render test could not have
+  caught it — it mocks `loadAddCandidates`.
+- THE DECLARATIVE SCHEMA IS A BLOCKING GATE, not bookkeeping.
+  `scripts/db/check-new-migrations-in-schema.sh` fails a PR whose migration is
+  not reflected under `supabase/schemas/**`. Equality was proven rather than
+  assumed: the declarative statements were applied to a scratch transaction and
+  Postgres's own deparse of the result diffed byte-for-byte against the deparse
+  of what the migration produces. Identical.
+- NO INDEX WAS NEEDED, CHECKED RATHER THAN ASSUMED. Every column the two new
+  branches read is already indexed in production — including
+  `golf_team_members`' partial `(team_id, player_id) WHERE status='active'`,
+  which is exactly the helper's hot path.
+- LEAVE SHIPS LIVE; ADD AND REMOVE SHIP VISIBLE AND REFUSING. Leave works
+  against production RLS as it stands. Add and Remove render only for a team
+  chat's creator — derived from `creator_id === currentUserId`, the same fact
+  the Admin pill uses — and until the migration is applied they return 42501,
+  which surfaces as an error in the sheet and is recorded through
+  `maybeCaptureRlsDenial`. Never a silent no-op.
+- NO FEATURE-FLAG CONSTANT, considered and rejected. A hardcoded `false` ships
+  no capability to anyone, so it satisfies the request no better than deferring
+  would, while adding a hand-flip the owner has to remember alongside the
+  migration and a test asserting the flag's state that whoever enables it has to
+  delete. The capability predicate is real data the sheet already holds.
+- SELF-REMOVAL IS ROUTED TO LEAVE, and that is a product bound rather than a
+  policy one — the creator CAN delete their own row through the self branch.
+  Routing it through a member row's Remove would hide "you lose this thread"
+  behind a control that reads as administrative.
+- A DUPLICATE PARTICIPANT (23505) IS REPORTED AS SUCCESS. Two coaches, or a
+  double tap: the desired end state already holds, and an error the user cannot
+  act on is worse than none.
+- THE DELETE NAMES BOTH COLUMNS. `.eq('conversation_id', …).eq('user_id', …)` —
+  dropping the conversation filter would remove that person from every
+  conversation they are in, so both equalities are present by construction.
+- CANDIDATES INCLUDE COACHES. `getGolfTeamPlayersForBroadcast` is players-only;
+  reusing it would have made assistant coaches silently unaddable. The candidate
+  query excludes everyone already in the group, and that exclusion set cannot be
+  absorbed on error — an empty set would offer to add existing members and the
+  unique violation reads as a bug.
+- MUTATIONS REFETCH RATHER THAN PATCH LOCAL STATE. `groupParticipants` and the
+  header's "N members" come from the same rows, which is the disagreement W7
+  removed; patching one locally would re-open it for as long as the sheet stayed
+  open. Leave additionally deselects the conversation, because the participant
+  row is gone and the thread cannot keep rendering.
+- BOTH DESTRUCTIVE PATHS CONFIRM INLINE, reusing G-56's two-icon `Inset`
+  pattern. A second overlay above a `Sheet` is the z-index trap
+  `design-system.md` documents, and `window.confirm` blocks the WKWebView
+  outright. Every armed confirmation clears on close — one left armed across a
+  close-and-reopen is what turns a mis-tap into a removal.
+- BASEBALL IS UNTOUCHED, deliberately. Its policies carry the identical creator
+  branch and the same argument would hold, but it has no group-details surface
+  to drive it and is seed data nobody uses; adding an unused write path is not a
+  safety improvement.
+
 ## 2026-09-07 — group details: the entry point, the data and the sheet (G-33 · D-03a · G-30 · G-57)
 
 - SHA: 0897e63cc.
