@@ -1794,7 +1794,10 @@ features:
     criticality: high
     observability:
       feature_keys: []
-      reason: "The gate itself is not wrapped/feature-tagged — it writes its own admin_events row (event_type: 'email.suppressed') directly via src/lib/admin-logger.ts, not through the Bridge withFeature path."
+      reason: >-
+        The gate itself is not wrapped/feature-tagged. It writes its own admin_events row
+        (event_type email.suppressed) directly via src/lib/admin-logger.ts, not through the
+        Bridge withFeature path.
     docs:
       feature: memory/features/email_outbound.md
       flows: []

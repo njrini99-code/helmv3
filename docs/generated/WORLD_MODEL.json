@@ -86,6 +86,13 @@
         "status": "active"
       },
       {
+        "id": "email_outbound",
+        "name": "Outbound Customer Email (kill switch)",
+        "criticality": "high",
+        "owner": "founder",
+        "status": "active"
+      },
+      {
         "id": "feature_awareness_system",
         "name": "Feature Awareness System",
         "criticality": "high",
@@ -357,6 +364,11 @@
       {
         "id": "routes:src/app/api/cron/refresh-engagement/**",
         "pattern": "src/app/api/cron/refresh-engagement/**",
+        "category": "routes"
+      },
+      {
+        "id": "routes:src/app/api/cron/v3/weekly-coach-email/**",
+        "pattern": "src/app/api/cron/v3/weekly-coach-email/**",
         "category": "routes"
       },
       {
@@ -1389,6 +1401,11 @@
         "id": "actions:src/app/golf/admin/crm/components/resend/actions.ts",
         "pattern": "src/app/golf/admin/crm/components/resend/actions.ts",
         "category": "actions"
+      },
+      {
+        "id": "actions:src/app/lifting/actions/invites.ts",
+        "pattern": "src/app/lifting/actions/invites.ts",
+        "category": "actions"
       }
     ],
     "services": [
@@ -1578,6 +1595,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/auth/send-password-reset.ts",
+        "pattern": "src/lib/auth/send-password-reset.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/baseball/**",
         "pattern": "src/lib/baseball/**",
         "category": "services"
@@ -1628,6 +1650,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/coachhelm/v3/foundation/email.ts",
+        "pattern": "src/lib/coachhelm/v3/foundation/email.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/coachhelm/v3/foundation/generator-toggles.ts",
         "pattern": "src/lib/coachhelm/v3/foundation/generator-toggles.ts",
         "category": "services"
@@ -1653,6 +1680,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/email/**",
+        "pattern": "src/lib/email/**",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/fairway/haptics.ts",
         "pattern": "src/lib/fairway/haptics.ts",
         "category": "services"
@@ -1675,6 +1707,11 @@
       {
         "id": "services:src/lib/native/**",
         "pattern": "src/lib/native/**",
+        "category": "services"
+      },
+      {
+        "id": "services:src/lib/notifications/email.ts",
+        "pattern": "src/lib/notifications/email.ts",
         "category": "services"
       },
       {
@@ -1825,6 +1862,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+        "pattern": "src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
         "pattern": "src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
         "category": "tests"
@@ -1862,6 +1904,16 @@
       {
         "id": "tests:src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts",
         "pattern": "src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/coachhelm/v3/foundation/__tests__/email.test.ts",
+        "pattern": "src/lib/coachhelm/v3/foundation/__tests__/email.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/email/__tests__/outbound-gate.test.ts",
+        "pattern": "src/lib/email/__tests__/outbound-gate.test.ts",
         "category": "tests"
       },
       {
@@ -7951,16 +8003,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/auth/send-password-reset.ts",
-          "line": 4
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/auth/send-password-reset.ts",
-          "line": 6
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/supabase/__tests__/expect-rows.test.ts",
           "line": 21
         },
@@ -8087,6 +8129,18 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/demo-access.ts",
           "line": 14
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/auth.ts",
+          "line": 23
         }
       ]
     },
@@ -8604,11 +8658,6 @@
           "kind": "import_graph",
           "path": "src/app/baseball/actions/auth.ts",
           "line": 20
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/baseball/actions/auth.ts",
-          "line": 25
         },
         {
           "kind": "import_graph",
@@ -10969,6 +11018,18 @@
           "kind": "import_graph",
           "path": "src/app/baseball/actions/demo-access.ts",
           "line": 14
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/baseball/actions/auth.ts",
+          "line": 25
         }
       ]
     },
@@ -14072,6 +14133,163 @@
       ]
     },
     {
+      "source": "email_outbound",
+      "target": "actions:src/app/lifting/actions/invites.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/lifting/actions/invites.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "admin_platform",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/send-password-reset.ts",
+          "line": 4
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/send-password-reset.ts",
+          "line": 6
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/email/__tests__/outbound-gate.test.ts",
+          "line": 9
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/email/outbound-gate.ts",
+          "line": 24
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/notifications/email.ts",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "auth_onboarding_join",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/lifting/actions/invites.ts",
+          "line": 34
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/lifting/actions/invites.ts",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "routes:src/app/api/cron/v3/weekly-coach-email/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/api/cron/v3/weekly-coach-email/**"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/auth/send-password-reset.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/auth/send-password-reset.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/coachhelm/v3/foundation/email.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/coachhelm/v3/foundation/email.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/email/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/email/**"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/notifications/email.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/notifications/email.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "tests:src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "tests:src/lib/coachhelm/v3/foundation/__tests__/email.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/coachhelm/v3/foundation/__tests__/email.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "tests:src/lib/email/__tests__/outbound-gate.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/email/__tests__/outbound-gate.test.ts"
+        }
+      ]
+    },
+    {
       "source": "feature_awareness_system",
       "target": "admin_incidents",
       "kind": "feature_relation",
@@ -16640,6 +16858,18 @@
     },
     {
       "source": "player_coachhelm_development",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/notifications/dispatch.ts",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -17477,6 +17707,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/fairway/pages/qualifiers/**"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/qualifying/player-notify.ts",
+          "line": 20
         }
       ]
     },
@@ -21589,7 +21831,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
-          "line": 16
+          "line": 17
         }
       ]
     },
@@ -21730,6 +21972,23 @@
     },
     {
       "source": "team_operations",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/task-reminders.ts",
+          "line": 13
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/task-reminders.ts",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
       "target": "golf_recruit_documents",
       "kind": "feature_table",
       "evidence": [
@@ -21757,12 +22016,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
-          "line": 15
+          "line": 16
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
-          "line": 17
+          "line": 18
         },
         {
           "kind": "import_graph",
