@@ -29,7 +29,7 @@ the repo's idiom is the arbitrary-property escape
 `[box-shadow:var(--fw-shadow-card)]`, used at roughly eight sites. Bridging it
 as `shadow-fw-card` would be a reasonable A03 request in its own right.
 
-## The unmapped values: five at W3, six after W4
+## The unmapped values: five at W3, seven after W4
 
 The manifest counts six because two lanes reported the same value
 independently. `.send-on` in `Composer.dc.html:26` and the pinned-rail pill in
@@ -68,6 +68,53 @@ Until the variant exists the token's 24px ships. The alternative — writing
 `leading-[22px]` next to `text-body` — would be a magic number stacked on a
 token that already specifies its own leading, which is how a type scale stops
 meaning anything.
+
+## A seventh, from the photo specimen (G-29b)
+
+| # | Value | Nearest existing token | Why it cannot be mapped | Seen |
+|---|---|---|---|---|
+| 7 | `border-radius: 1rem 1rem 0.5rem 0.25rem` on the image inside a photo bubble | `--fw-radius-md` (14px) is the closest single step to the 16px top corners | it is not one radius, it is an asymmetric per-corner echo of the bubble's own tail, and 8px and 4px are both below `--fw-radius-sm` (10px) — the same floor that already blocks A03 entries 4 and 5 | `Bubbles.dc.html:78` |
+
+`rounded-fw-md` ships in the meantime, and it is a defensible interim rather
+than a wrong one: with the bubble now a 4px frame around a 20px `rounded-card`
+outer, a 14px inner radius reads as concentric.
+
+**The artboard shows ONE state.** The specimen is an incoming bubble with a
+bottom-left tail. The component's radius matrix has four
+(`isFirstInGroup` x `isLastInGroup` x `isOwn`), and a grouped middle photo has
+no tail at all. The other three are not invented here; whoever grants this
+request needs to say what the echo does when there is nothing to echo.
+
+## Absorbed in G-29b, not requested
+
+Three deltas taken rather than requested, all on the 4px spacing scale and all
+1px:
+
+- frame `5px` → `p-1` (4px). One pixel on a photo frame.
+- caption inset `8px 11px 0 11px` → `px-2.5 pt-2` (10px/8px). The vertical is
+  exact; the horizontal is 1px.
+- caption type `14px/20px` → `text-body-sm` is `13px/20px`. **Not taken** — see
+  below.
+
+The caption type is the one that did NOT get absorbed. `text-body-sm` matches
+the artboard's line-height exactly and its size by 1px, which by the rule above
+would be noise. But the caption currently renders at `text-body` (15px) along
+with every other message body, and splitting a photo caption into its own type
+role is a design decision, not a measurement. Recorded here as an open question
+for A03 rather than settled by an implementer: **is a photo caption a distinct
+type role from a message body, or the same one?** The artboard says 14 vs 15;
+that 1px is either a deliberate role or a hand-tune, and only the design owner
+knows which.
+
+## The specimen widths, deliberately not reproduced
+
+`Bubbles.dc.html:77` caps the photo bubble at `250px` and the shipped code
+capped the image at `260px` and the file chip at `260px`. All three are gone.
+G-50b settled that the column takes the stated 288px RULE and not a scene
+specimen, and a 260px cap inside a 288px column never bound anyway — a dead
+number that looked like a constraint. The file bubble at `Bubbles.dc.html:88`
+is drawn at the same 288px the `.bub` rule states, which is the column's cap
+already.
 
 ## Two more that belong to A03 rather than to messaging
 

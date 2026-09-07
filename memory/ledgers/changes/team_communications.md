@@ -440,3 +440,43 @@
 - Worth recording for G-29b: the photo specimen is in `Bubbles.dc.html:73-83`,
   NOT in `Thread.dc.html`, which contains no photo message at all. M03B cited
   measurements against "the artboard" without naming which one.
+
+## 2026-09-07 — the image is the message object (G-29b)
+
+- §8.6: "the image is the message object, with a caption below; it is not an
+  image nested inside a large padded generic chat card." Both halves were
+  violated. `msg.content` rendered before the attachments UNCONDITIONALLY, so
+  the caption sat above the image; and one flat `px-4 py-2.5` applied to text
+  and image alike, which is exactly the padded generic card.
+- The caption now renders after the attachments, and a photo message's bubble
+  becomes a frame (`p-1 pb-2.5`) instead of a padded card, with the caption
+  carrying its own inset so the image stays flush to the frame. The edited badge
+  picks up the same inset or it hangs off the edge.
+- `isPhotoMessage` is derived from the RESOLVED attachments rather than
+  `has_attachments`: until the signed URLs land there is nothing to frame, and
+  reshaping the bubble before then would make it visibly snap on load.
+- THREE DEAD WIDTH CAPS REMOVED. The image carried `max-w-[260px]` and the file
+  chip carried the same. Inside a 288px column (G-50b) neither ever bound —
+  numbers that looked like constraints and were not. The artboard puts the cap
+  on the bubble, and `Bubbles.dc.html:88` draws the file bubble at the same
+  288px the `.bub` rule states. The photo specimen's own `250px` is deliberately
+  NOT reproduced, on the precedent G-50b set: the column takes the stated rule,
+  not a scene specimen.
+- The specimen is `Bubbles.dc.html:73-83`. M03B cited its measurements against
+  "the artboard" without naming which one, and `Thread.dc.html` — the artboard a
+  reader would assume — contains no photo message at all. A test pins that, so
+  the point does not have to be re-derived.
+- What did NOT ship, and why. The image's asymmetric per-corner radius
+  (`1rem 1rem 0.5rem 0.25rem`) is A03 request #7: two of its corners are below
+  the ramp's 10px floor, and it is a tail ECHO, so it depends on a tail. The
+  artboard shows ONE state — incoming, bottom-left tail — while the component's
+  radius matrix has four, and a grouped middle photo has no tail to echo. The
+  other three are not invented here. `rounded-fw-md` ships as a defensible
+  interim: against a 20px `rounded-card` outer at a 4px frame, 14px reads as
+  concentric.
+- The caption's `14px/20px` is an OPEN QUESTION recorded in A03, not a silent
+  call. `text-body-sm` matches its leading exactly and its size by 1px, which by
+  this audit's own threshold is noise — but the caption ships at `text-body`
+  (15px) with every other message body, and splitting a photo caption into its
+  own type role is a design decision rather than a measurement. Only the design
+  owner can say whether that 1px is a role or a hand-tune.

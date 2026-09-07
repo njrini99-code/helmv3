@@ -313,7 +313,14 @@ function MessageAttachments({
                 width={att.width ?? undefined}
                 height={att.height ?? undefined}
                 loading="lazy"
-                className="max-h-64 w-full max-w-[260px] object-cover"
+                // G-29b — no max-width of its own. The artboard puts the cap
+                // on the BUBBLE (`Bubbles.dc.html:77`, 250px) and lets the
+                // image fill it; carrying `max-w-[260px]` here as well left a
+                // dead number that never bound inside a 288px column. The
+                // specimen's 250px is deliberately not reproduced — it is a
+                // scene specimen, and G-50b already settled that the column
+                // takes the stated 288px RULE, not a specimen width.
+                className="max-h-64 w-full object-cover"
               />
             </a>
           );
@@ -322,7 +329,11 @@ function MessageAttachments({
         const chip = (
           <span
             className={cn(
-              'inline-flex max-w-[260px] items-center gap-2 rounded-fw-md px-2.5 py-2',
+              // G-29b — no cap of its own either. `Bubbles.dc.html:88` draws
+              // the file bubble at the same 288px the `.bub` rule states, so
+              // the column's cap (G-50b) is already the right one; 260px here
+              // was a second, tighter number with nothing behind it.
+              'inline-flex items-center gap-2 rounded-fw-md px-2.5 py-2',
               isOwn ? 'bg-text-on-accent/15' : 'bg-surface',
             )}
           >
@@ -992,6 +1003,15 @@ export function MessageThreadPane({
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
               const resolvedAttachments = attachmentsByMessage[msg.id] ?? [];
               const hasAttachmentError = attachmentErrors.has(msg.id);
+              // G-29b — a photo message is framed differently from a text one:
+              // the image IS the object and the caption sits under it, so the
+              // bubble becomes a thin frame rather than a padded card. Derived
+              // from the RESOLVED attachments, not `has_attachments`: until the
+              // signed URLs land there is nothing to frame, and reshaping the
+              // bubble before then would make it visibly snap on load.
+              const isPhotoMessage = resolvedAttachments.some(
+                (att) => att.fileType === 'image' && !!att.url,
+              );
 
               // Bug fix #1 — resolve the real sender name + avatar for this message.
               // For group convs: look up in groupParticipants map (user_id → name/avatar).
@@ -1260,7 +1280,15 @@ export function MessageThreadPane({
                       <div
                         {...(isOwn ? longPressHandlers(msg.id) : {})}
                         className={cn(
-                          'px-4 py-2.5',
+                          // G-29b — §8.6: "the image is the message object,
+                          // with a caption below; it is not an image nested
+                          // inside a large padded generic chat card." The
+                          // generic card padding is exactly what made it the
+                          // latter, so a photo message gets a frame instead.
+                          // `Bubbles.dc.html:77` draws that frame at 5px with a
+                          // 10px foot; 5px is not on the 4px spacing scale, and
+                          // 1px on a frame is render noise, so `p-1 pb-2.5`.
+                          isPhotoMessage ? 'p-1 pb-2.5' : 'px-4 py-2.5',
                           // Own bubbles opt out of the iOS text-selection callout
                           // because long-press is now the actions gesture; Copy
                           // in that menu replaces what selection provided.
@@ -1278,27 +1306,6 @@ export function MessageThreadPane({
                           !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
                         )}
                       >
-                        {/* G-29 — message text is 15px, not 13px.
-                            `.bub { font-size: 15px; line-height: 22px; }` is a
-                            CLASS RULE in both `Bubbles.dc.html:17` and
-                            `Thread.dc.html:16`, and `text-body` is exactly 15px.
-                            M03B's F7 asked for 17px `body-lg`, but it sourced
-                            that from §8.3's prose ("approximately 17px"), not
-                            from an artboard — and the artboards state a rule.
-                            Same call as G-50b: the rule beats the prose.
-
-                            `leading-relaxed` goes with it. The token carries its
-                            own 24px line-height, and stacking a multiplier on
-                            top of a token that already specifies leading is how
-                            the scale stops meaning anything. 24px against the
-                            artboard's 22px is the one value here with no token —
-                            it is an A03 variant request, not a number to
-                            hardcode, and the token's 24px ships until then. */}
-                        {msg.content ? (
-                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body">
-                            {decodeMessageContent(msg.content)}
-                          </p>
-                        ) : null}
                         {/* Attachments — DORMANT unless has_attachments. Renders
                             the resolved (signed) gallery once it loads; falls
                             back to a quiet "Attachment" placeholder while the
@@ -1333,9 +1340,44 @@ export function MessageThreadPane({
                             </span>
                           )
                         ) : null}
+                        {/* G-29 — message text is 15px, not 13px.
+                            `.bub { font-size: 15px; line-height: 22px; }` is a
+                            CLASS RULE in both `Bubbles.dc.html:17` and
+                            `Thread.dc.html:16`, and `text-body` is exactly 15px.
+                            M03B's F7 asked for 17px `body-lg`, but it sourced
+                            that from §8.3's prose ("approximately 17px"), not
+                            from an artboard — and the artboards state a rule.
+                            Same call as G-50b: the rule beats the prose.
+
+                            `leading-relaxed` goes with it. The token carries its
+                            own 24px line-height, and stacking a multiplier on
+                            top of a token that already specifies leading is how
+                            the scale stops meaning anything. 24px against the
+                            artboard's 22px is the one value here with no token —
+                            it is an A03 variant request, not a number to
+                            hardcode, and the token's 24px ships until then.
+
+                            G-29b — and it renders AFTER the attachments now.
+                            The order used to be content-then-attachments
+                            unconditionally, which is the "caption above the
+                            image" §8.6 names. On a photo message it carries its
+                            own inset (`Bubbles.dc.html:79` draws it at
+                            `8px 11px 0`, and 11px is not on the 4px scale) so
+                            the caption is inset from the frame while the image
+                            stays flush to it. */}
+                        {msg.content ? (
+                          <p
+                            className={cn(
+                              'whitespace-pre-wrap break-words font-fw-sans text-body',
+                              isPhotoMessage && 'px-2.5 pt-2',
+                            )}
+                          >
+                            {decodeMessageContent(msg.content)}
+                          </p>
+                        ) : null}
                         {/* Edited badge — DORMANT unless edited_at. */}
                         {editedAt ? (
-                          <span className={cn('mt-1 block font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
+                          <span className={cn('mt-1 block font-fw-sans text-eyebrow', isPhotoMessage && 'px-2.5', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
                             edited
                           </span>
                         ) : null}

@@ -54,7 +54,15 @@ describe('G-29 — the bubble type size comes from the artboard rule', () => {
 
   it('the token the bubble uses resolves to exactly that size', () => {
     expect(tokenSize('body')).toBe(bubFontSize(bubbles));
-    expect(code).toContain('font-fw-sans text-body">');
+    // Anchored on the message paragraph's own class list rather than on a
+    // literal ending in `">`: G-29b turned that element into a `cn()` call, and
+    // a test about type size should not break on how the classes are assembled.
+    const idx = code.indexOf('whitespace-pre-wrap break-words font-fw-sans');
+    expect(idx).toBeGreaterThan(-1);
+    // NOT `\btext-body\b` — a word boundary sits happily before the hyphen in
+    // `text-body-sm`, so that spelling passed against the 13px code this test
+    // exists to fail. The lookahead is the assertion.
+    expect(code.slice(idx, idx + 120)).toMatch(/text-body(?![-\w])/);
   });
 
   it('is no longer the 13px token', () => {

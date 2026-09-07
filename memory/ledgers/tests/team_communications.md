@@ -229,3 +229,22 @@ rule, not a specimen" is the entire basis of the decision and would be silently
 gone if they diverged. The other pins that the size is not `body-lg`, so nobody
 "fixes" it back toward §8.3's 17px estimate without first noticing that the
 artboards disagree with the prose.
+
+## 2026-09-07 — photo framing (G-29b)
+
+`MessageThreadPane.photoFraming.test.ts` — 9 tests, **6 failing against the
+pre-fix component**, verified by checking out HEAD's version and re-running.
+
+Three of the nine pin the SPECIMEN rather than the component, because the
+specimen's location was itself a correction: they assert the 5px frame and the
+inset caption are in `Bubbles.dc.html`, that `Thread.dc.html` (the artboard
+M03B cited) contains no photo message, and that the artboard's own annotation
+still reads "the image IS the bubble, caption below it". If a photo message is
+ever added to `Thread.dc.html` with different numbers, that fails loudly instead
+of quietly contradicting the ledger.
+
+The rest pin STRUCTURE, not geometry — order, framing, and which element owns
+the width cap — because that is what §8.6 actually asks for and what regresses
+silently. Two are guards against numbers coming back: no `max-w-[250px]` or
+`max-w-[260px]` anywhere, per the G-50b precedent that the column carries the
+cap.
