@@ -174,6 +174,11 @@ features:
         - supabase/migrations/*helm_debug_db_stat_deltas*.sql
         - supabase/migrations/*helm_debug_observability_retention*.sql
         - supabase/migrations/*helm_debug_db_platform_samples*.sql
+        - supabase/migrations/*helm_debug_db_statement_samples*.sql
+        - supabase/migrations/*helm_debug_db_analysis_samples*.sql
+        - supabase/migrations/*helm_debug_db_table_samples*.sql
+        - supabase/migrations/*helm_debug_stat_*.sql
+        - supabase/migrations/*helm_debug_jobs_health*.sql
       tests:
         - src/lib/observability/supabase/__tests__/**
         - src/lib/admin/database/__tests__/**
@@ -630,7 +635,7 @@ features:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*helm_flight_recorder*.sql
-        - supabase/migrations/*helm_debug*.sql
+        - supabase/migrations/*helm_debug_retention.sql
         - supabase/migrations/*trace_*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint) — putt/proximity write-path and
@@ -2077,6 +2082,7 @@ systems:
     # left these 14 migrations with zero feature owner; per the plan, a
     # migration maps to exactly one feature or here, never neither.
     db:
+      - supabase/migrations/*helm_jobs*.sql
       - supabase/migrations/*prod_public_baseline*.sql
       - supabase/migrations/*rpc_grant_hardening*.sql
       - supabase/migrations/*service_role_statement_timeout*.sql

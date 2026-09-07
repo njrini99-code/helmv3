@@ -19,7 +19,7 @@
  *
  * Pure stdlib.
  */
-import { readFileSync, statSync } from 'node:fs';
+import { statSync } from 'node:fs';
 
 const BUDGET_TOKENS = 10_000;
 const BYTES_PER_TOKEN = 4;
