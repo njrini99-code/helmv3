@@ -2,14 +2,18 @@
 ## Shipping — docs, git, bash, Supabase, Vercel
 Loads every session. `docs/CONTROL_PLANE_ENFORCEMENT.md` is the live
 authority on what is enforced — check it before believing any claim here.
-`permissions.deny` and the one wired `PreToolUse` hook (`guard-canonical-write.mjs`,
-refusing `Write`/`Edit`/`MultiEdit` into the canonical checkout) are real and
-survive `bypassPermissions`. Nothing else here is mechanically enforced.
+`permissions.deny` and the wired `PreToolUse` hooks are real and survive
+`bypassPermissions`: `guard-canonical-write.mjs` (Write/Edit/MultiEdit into
+canonical), `guard-git.mjs` (dangerous Bash git/gh/vercel commands),
+`guard-sql.mjs` (destructive SQL to Supabase MCP or Bash psql/supabase-db),
+`guard-config-change.mjs` (a config-surface change without
+`HELM_CONFIG_EDIT=1`) — each is text/path matching, not a parser; see its
+own header for what it misses. Nothing else here is mechanically enforced.
 
 **The canonical checkout boundary is a table, not an absolute**: the three
 editing tools are blocked; a Bash redirect, `cp`, `mv` or formatter writing
 the same bytes is not. Do not close this with a Bash command parser (deleted
-for cause); the structural fix is `sandbox.filesystem`, owner's call.
+for cause); the structural fix is `sandbox.filesystem`, disabled, owner's call.
 
 ### Docs
 
@@ -19,34 +23,32 @@ for cause); the structural fix is `sandbox.filesystem`, owner's call.
 - A "DO NOT EDIT — regenerated" stamp is not proof; verify the generator.
   Staleness markers are a SHA or a ratchet count, never a bare date. Never
   bulk-repoint dead paths by basename search.
-- Rules files state current behavior only; history belongs in `memory/incidents/` — `npm run docs:rules-current` enforces this.
+- Rules files state current behavior only; history belongs in
+  `memory/incidents/`. `npm run docs:rules-current` enforces this.
 
 ### Git
 
 - `git add <explicit paths>`, never `-A` — the tree is shared. Confirm the
-  branch before editing (`git rev-parse --abbrev-ref HEAD`) and a branch's
-  upstream before pushing (`git for-each-ref --format='%(refname:short) ->
-  %(upstream:short)' refs/heads`) — a stray `merge = refs/heads/main`
-  makes a plain push target main.
-- Worktrees only via `scripts/new-worktree.sh` (the one door); prune only
-  via `npm run worktrees{,:park,:retire}`. A deleted branch is preserved as
-  an `archive/<branch>` tag first. `autoMemoryEnabled` is `false`, set only
-  in `.claude/settings.json` — `memory/` is the only memory this repo uses.
+  branch (`git rev-parse --abbrev-ref HEAD`) and a branch's upstream before
+  pushing (`git for-each-ref --format='%(refname:short) -> %(upstream:short)'
+  refs/heads`) — a stray `merge = refs/heads/main` makes a plain push main.
+- Worktrees only via `scripts/new-worktree.sh`; prune only via `npm run
+  worktrees{,:park,:retire}`. A deleted branch is tagged `archive/<branch>` first.
+- `autoMemoryEnabled` is `false`, in `.claude/settings.json`; `memory/` is
+  the only memory this repo uses.
 
 ### Bash
 
 - Never pipe a gate command — capture to a file, check the exit code.
-  `timeout` does not exist on macOS (`gtimeout` or none); `ls` is aliased
-  to `eza`, use `/bin/ls` in scripts.
+  `timeout` does not exist on macOS (`gtimeout` or none); `ls` is aliased to
+  `eza`, use `/bin/ls` in scripts.
 - zsh reads `$var:r`/`:h`/`:t`/`:e` as history modifiers — write
   `git push origin "$b"`, never a bare variable glued to a `:`.
+- `npm run dev` in the Bash sandbox floods EMFILE and logs "Ready" while
+  serving nothing — use `dangerouslyDisableSandbox: true` and `curl` it first.
 - Recursive `rm` is UNENFORCED, and so is force push; scope them yourself.
-- `npm run dev` inside the Bash sandbox floods EMFILE and logs "Ready" while
-  serving nothing — run it with `dangerouslyDisableSandbox: true` and `curl`
-  it before reporting it up.
-- `gh` (and any GitHub API call) needs `dangerouslyDisableSandbox: true` for
-  that one command in this environment; a background shell cannot reach
-  GitHub at all, so check-polling loops must run unsandboxed too.
+- `gh` and any GitHub call need `dangerouslyDisableSandbox: true`; a background
+  shell cannot reach GitHub, so check-polling loops run unsandboxed too.
 
 ### Supabase and MCP
 
@@ -57,21 +59,18 @@ for cause); the structural fix is `sandbox.filesystem`, owner's call.
   `REVOKE EXECUTE ... FROM PUBLIC, anon`, re-revoked after recreating a
   view. "Recorded" ≠ "applied" — verify against `information_schema`.
 - `.mcp.json` declares exactly one server *in this repo* (Supabase,
-  production project, `read_only=true`; never edit that flag out). It
-  is not the list of MCP tools you have: account-level connectors add more
-  and appear in no file here. The account-wide connector is the connected
-  query path today — its mutators are denied by UUID in `permissions.deny`
-  (exact spellings in `docs/CONTROL_PLANE_ENFORCEMENT.md`); `execute_sql` is
-  an unenforced write path, and the sanctioned namespace per service comes
-  from the generated `docs/TOOL_AUTHORITY_MATRIX.md`.
-- The Sentry MCP (start from the `helm-sentry` skill) is the working Sentry
-  read path (org `helm-xs`). A `401 Invalid token` from the `.env.local`
-  token means rotate it, not gone — `usableSecret()` checks shape only.
+  production project, `read_only=true`; never edit that flag out) — not the
+  full tool list, since account-level connectors add more and appear in no
+  file here. The account-wide connector's mutators are denied by UUID in
+  `permissions.deny` (spellings in `docs/CONTROL_PLANE_ENFORCEMENT.md`); its
+  `execute_sql` is unenforced; the sanctioned namespace per service is the
+  generated `docs/TOOL_AUTHORITY_MATRIX.md`.
+- The Sentry MCP (`helm-sentry` skill) is the working read path (org
+  `helm-xs`). A `401 Invalid token` means rotate it, not gone.
 
 ### Vercel
 
 - Pushing does not deploy — the git integration is disconnected; production
-  ships only through `scripts/deploy-prod.sh`, which enforces the deploy budget.
-- `vercel deploy` needs `--archive=tgz`; `.vercelignore` REPLACES the default
-  ignore set; team-scoped env vars do not show in `vercel env ls` — capture
-  CLI output to a variable before parsing it, never pipe it into a reader.
+  ships only through `scripts/deploy-prod.sh` (enforces the deploy budget).
+- `vercel deploy` needs `--archive=tgz`; `.vercelignore` REPLACES the
+  default ignore set; team-scoped env vars don't show in `vercel env ls`.

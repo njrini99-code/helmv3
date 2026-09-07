@@ -47,7 +47,7 @@ is a second thing to keep true.
 **Supabase Database Observability — Zero-Cost Error/Health Control Plane** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/observability-supabase.md`
-- **Code:** `src/app/admin/database/**`, `src/app/api/cron/db-health-sampler/**`, `src/app/api/cron/db-stat-delta/**`, `src/app/api/cron/db-observability-prune/**`, `src/app/admin/database/log-evidence-actions.ts`, `src/lib/observability/supabase/**` … and 13 more in the registry
+- **Code:** `src/app/admin/database/**`, `src/app/api/cron/db-health-sampler/**`, `src/app/api/cron/db-stat-delta/**`, `src/app/api/cron/db-observability-prune/**`, `src/app/admin/database/log-evidence-actions.ts`, `src/lib/observability/supabase/**` … and 18 more in the registry
 - **Telemetry:** none. This module IS the observability layer for Postgres/Supabase (error envelope, health/statement/platform samplers, alert policy, advisor and log-evidence integrations) — instrumenting itself would be circular, the same reasoning observability_sentry above states for the Sentry-side layer.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

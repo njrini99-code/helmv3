@@ -141,6 +141,17 @@ export default defineConfig({
             // they stay out until someone fixes the underlying violations.
             'scripts/__tests__/seed-baseball-stats.safety.test.mjs',
             'scripts/__tests__/baseball-demo-seed-surfaces.test.mjs',
+            // Config-hardening hooks (2026-09-07): fixture-stdin subprocess
+            // tests for the PreToolUse/UserPromptSubmit/PreCompact/
+            // SessionStart/Stop hooks wired in .claude/settings.json. Same
+            // "named explicitly, not swept in" rule applies — an unlisted
+            // file under scripts/__tests__/ runs under nothing.
+            'scripts/__tests__/hooks/guard-git.test.mjs',
+            'scripts/__tests__/hooks/guard-sql.test.mjs',
+            'scripts/__tests__/hooks/guard-config-change.test.mjs',
+            'scripts/__tests__/hooks/route-prompt.test.mjs',
+            'scripts/__tests__/hooks/session-state-compaction.test.mjs',
+            'scripts/__tests__/hooks/require-gates.test.mjs',
             // Named explicitly for the same reason as the line above (no
             // `scripts/**` glob — the legacy `node --test` files must not be
             // swept in). This one guards the transient-retry wrapper that sits

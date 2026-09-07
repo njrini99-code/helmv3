@@ -2675,13 +2675,13 @@
           "supabase/migrations/20260903180000_helm_debug_db_error_events.sql",
           "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql",
           "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql",
+          "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql",
           "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql",
+          "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql",
+          "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql",
           "supabase/migrations/20260825200811_helm_flight_recorder.sql",
           "supabase/migrations/20260903150000_helm_debug_agent_runs.sql",
-          "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql",
-          "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql",
-          "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql",
-          "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
+          "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
         ]
       },
       {
@@ -16504,7 +16504,19 @@
         },
         {
           "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
           "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
         }
       ]
     },
@@ -19459,42 +19471,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
         }
       ]
     },

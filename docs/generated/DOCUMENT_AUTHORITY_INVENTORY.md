@@ -262,7 +262,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/shipping.md` | current | - | - | yes | 23 | 6 | 1 |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 15 | 10 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 15 | 17 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 7 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 21 |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 1 | 0 | - |
