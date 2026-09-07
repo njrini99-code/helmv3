@@ -1,5 +1,7 @@
 # W10: Users & Teams + Drill-downs + Read-Only Impersonation
 
+Status: active
+
 **Goal:** Ship `/admin/users` (cross-sport directory, teams table, at-risk list with CRM link-out), per-user drill-down, and the v1 read-only "view as" — super-admin only, strictly read-only by construction, time-boxed, bannered, audit-logged on enter/exit (owner decision #9).
 
 **Depends-on:** W3 (sessions RPC), W7 (SessionsPanel + revoke), W8 (TeamHealthTable, classifyTeamHealth).

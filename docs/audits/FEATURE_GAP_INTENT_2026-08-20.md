@@ -1,5 +1,7 @@
 # Feature Gap / Intent Audit — Documented-Intent Side
 
+Status: active
+
 **Date:** 2026-08-20
 **Scope:** `memory/context/golfhelm-features.md`, `memory/context/baseballhelm-features.md`,
 `memory/context/coachhelm-ai.md`, `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`,

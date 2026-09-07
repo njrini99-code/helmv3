@@ -1,5 +1,7 @@
 # W15: Total Error-Capture Coverage — feature column, feature registry, batched instrumentation
 
+Status: active
+
 **Goal:** Every GolfHelm + CoachHelm server action (424 exports; CRM excluded, baseball/lifting deferred) runs inside `withAdminObserved({sport,feature,…})`; every capture lands in `admin_events` tagged with a canonical `feature` key; RLS-denial detection is centralized; a `get_feature_health()` RPC serves the W16 board — all without changing any wrapped function's behavior.
 
 **Spec:** `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` (canonical registry, matrix, noise charter — read §0–§2 before starting ANY task).

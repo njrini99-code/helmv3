@@ -1,5 +1,7 @@
 # Shot Tracking Flight Recorder Findings — 2026-08-25
 
+Status: active
+
 ## Scope and safety
 
 This audit was run on the local Docker/Supabase stack from the current task

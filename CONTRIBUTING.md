@@ -59,7 +59,7 @@ spacing, and `bg-white` are caught by the lint ratchet and will fail CI.
 routes images through it — `git lfs ls-files` returns zero tracked objects,
 so every screenshot ever committed sits in plain git blob storage, growing
 the repo forever. A one-off QA/visual-audit screenshot pack
-(`docs/qa/baseball-fairway-visual-audit-2026-07-04/` was ~80MB before being
+(docs/qa/baseball-fairway-visual-audit-2026-07-04/ was ~80MB before being
 pruned) belongs in a PR description or an external link, not a committed
 directory.
 

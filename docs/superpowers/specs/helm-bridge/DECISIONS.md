@@ -1,5 +1,7 @@
 # Helm Bridge — Locked Decisions & Open-Question Resolutions
 
+Status: active
+
 _Owner: Nick (njrini99). Date: 2026-07-01. Base branch: `feat/helm-bridge-command-center` off `origin/main` (tip 53697b35c)._
 
 These are BINDING inputs for planning. Do not re-litigate.

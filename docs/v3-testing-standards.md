@@ -41,7 +41,7 @@ Each composer (`composeRoundReview`, `composeHeroNarrative`, `composeCoachChat`)
 2. **Regenerate-once** — first response fails verification → composer regenerates → second response passes → returned. Mock the LLM call boundary.
 3. **Fallback to template** — second response also fails → composer returns the deterministic template result with `fallback_to_template = true` recorded in `golf_coachhelm_llm_calls`.
 4. **Budget exhaustion** — coach over budget → `coach_chat` and `round_review` continue (per priority), `hero_narrative` falls back. Test the priority ordering explicitly.
-5. **Prompt-snapshot** — every composer ships with a frozen prompt-snapshot test under `src/test/llm/snapshots/`. Editing the prompt must update the snapshot in the same PR. Drift between prompt and snapshot fails CI.
+5. **Prompt-snapshot** — every composer ships with a frozen prompt-snapshot test under src/test/llm/snapshots/. Editing the prompt must update the snapshot in the same PR. Drift between prompt and snapshot fails CI.
 
 LLM tests never call the real API. The model boundary is mocked via the `compose()` wrapper.
 

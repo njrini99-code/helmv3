@@ -318,9 +318,9 @@ Generators may use a small library of sentence templates to vary phrasing, but e
 | Team | Owns |
 |---|---|
 | **Foundation** | Migration, `src/lib/coachhelm/v2/insights/upsert.ts`, drill library seed, lifecycle cron |
-| **Group A — Putts** | `src/lib/coachhelm/v2/mining/putt-analytics.ts` |
+| **Group A — Putts** | src/lib/coachhelm/v2/mining/putt-analytics.ts |
 | **Group B — Approach + Scrambling + Tee** | `src/lib/coachhelm/v2/mining/approach-analytics.ts`, `scrambling-analytics.ts`, `tee-strategy.ts` |
-| **Group C — Round-context** | `src/lib/coachhelm/v2/mining/scoring-context.ts`, `course-management.ts`, `pressure-gap.ts` |
+| **Group C — Round-context** | src/lib/coachhelm/v2/mining/scoring-context.ts, `course-management.ts`, `pressure-gap.ts` |
 | **UI** | `src/components/golf/coachhelm/insights/EvidencePanel.tsx`, `DrillAttachment.tsx`, edits to `AIInsightsPanel.tsx` |
 
 Foundation must finish before A/B/C/UI start. A/B/C run in parallel. UI starts when at least one of A/B/C is done.

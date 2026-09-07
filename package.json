@@ -58,6 +58,7 @@
     "knowledge:orphans-check:test": "node --test scripts/knowledge/__tests__/check-registry-orphans.test.mjs",
     "knowledge:authority-check": "node scripts/knowledge/check-authority.mjs",
     "knowledge:doc-inventory": "node scripts/knowledge/document-inventory.mjs",
+    "knowledge:doc-inventory:check": "node scripts/knowledge/document-inventory.mjs --check",
     "knowledge:ledger-check": "node scripts/knowledge/check-ledger-integrity.mjs",
     "knowledge:feature-map": "tsx scripts/knowledge/gen-feature-map.ts",
     "knowledge:feature-map:check": "tsx scripts/knowledge/gen-feature-map.ts --check",

@@ -1,5 +1,7 @@
 # Helm OS truth convergence — 2026-08-30
 
+Status: active
+
 <!-- markdownlint-disable MD013 -->
 
 **Starting `main`:** `df7bb77fd55d5f9ffa2eb068faa59ec318c6206e`
@@ -55,7 +57,7 @@ mechanically in `docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md`.
 | `docs/OBSERVABILITY.md` | implied every server failure reaches both surfaces | owns EMISSION only; points at the authority contract | scope narrowed |
 | `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | "Canonical spec" | `DESIGN_SPEC`, historical | demoted |
 | `docs/ai-system/selfheal/STATE-2026-08-28.md` | dated file with no marker | `SNAPSHOT — NOT CURRENT AUTHORITY` | banner added |
-| `.coachhelm-fix-progress.md` | root-level progress file asking "Ready to proceed?" | archived with the evidence that its items landed | moved to `docs/archive/2026-08/` |
+| `.coachhelm-fix-progress.md` | root-level progress file asking "Ready to proceed?" | archived with the evidence that its items landed | moved to docs/archive/2026-08/ |
 | `helm-newsletter-march-2026.{docx,html}` | root clutter | `docs/business/` | moved |
 | `docs/HELM_OS.md` | — | the navigation map | created |
 | `memory/decisions/ADR-2026-08-30-…` | — | the authority decision | created |
@@ -133,7 +135,7 @@ run is built on, applied to the checker itself.
 | Item | Why historical | Current replacement |
 | --- | --- | --- |
 | `memory/context/golfhelm-features.md` | Gen-1 corpus; every feature it covers has a `features/` doc | `memory/registry.yml` → `memory/features/*.md` |
-| `docs/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md` | its own header has read SUPERSEDED since 2026-07-10 | `memory/incidents/**` |
+| docs/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md | its own header has read SUPERSEDED since 2026-07-10 | `memory/incidents/**` |
 | `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md` | 2026-02 point-in-time report | `memory/incidents/**` |
 | `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-05/superpowers/plans/2026-05-28-ai-codebase-intelligence.md` | completed-wave plan | `docs/ai-system/helmv3-ai-codebase-intelligence.md` |
 | `FEATURE_COVERAGE.md` | a spec is not a registry | `feature-registry.ts` + `memory/registry.yml` |

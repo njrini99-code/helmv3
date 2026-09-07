@@ -52,11 +52,11 @@ workflow itself, `if: always()`.
 > agent sessions per day, each capable of opening a PR against the same
 > backlog). The launchd agent
 > (`~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist`, installed from
-> the then-repo-tracked `config/launchd/com.helm.bridge-rca-repair.plist` via
+> the then-repo-tracked config/launchd/com.helm.bridge-rca-repair.plist via
 > `npm run selfheal:repair:install`/`:doctor`), its outer bounded-runner
-> script (`scripts/run-selfheal-repair.mjs`,
-> `scripts/lib/selfheal-repair-runner.mjs`), and its Sentry check-in helper
-> (`scripts/lib/sentry-cron-checkin.mjs`) are all gone from the repo. The
+> script (scripts/run-selfheal-repair.mjs,
+> scripts/lib/selfheal-repair-runner.mjs), and its Sentry check-in helper
+> (scripts/lib/sentry-cron-checkin.mjs) are all gone from the repo. The
 > plist is archived on the owner's machine at
 > `~/.claude/backups/reset-2026-09-05/com.helm.bridge-rca-repair.plist`. The
 > `~/.claude/scheduled-tasks/helm-bridge-rca-repair/` pointer this doc used to

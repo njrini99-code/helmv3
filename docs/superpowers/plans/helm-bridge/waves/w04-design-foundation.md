@@ -1,5 +1,7 @@
 # W4: Design Foundation — Ops Chrome, Sport Inks, Panel Pattern
 
+Status: active
+
 **Goal:** Build the reusable presentation layer every tab composes: the Fairway `AppShell` ops chrome wired into `/admin`, the NEW baseball clay ink token (the `.living-annual` scope from the design DOES NOT EXIST — reground §2.3), the dark status banner, KPI tile, and the Suspense/STALE/error-boundary panel pattern.
 
 **Depends-on:** W1 (`/admin` layout exists).
