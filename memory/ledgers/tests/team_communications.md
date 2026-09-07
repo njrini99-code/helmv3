@@ -1,5 +1,44 @@
 # Test ledger — team_communications
 
+## 2026-09-07 — G-42 incoming actions and the desktop path
+
+- SHA: fa83dbf42.
+- Added `src/components/fairway/pages/messages/MessageThreadPane.incomingActions.test.ts`
+  (15 tests). Verified to fail (10 of 15) against the pre-fix component; 11 of
+  the two suites' 27 fail together, because one assertion in the G-55 suite was
+  strengthened at the same time.
+- ASSERTED BEHAVIOURALLY throughout — which handlers fire, what the timer does,
+  which buttons exist, what the class list says. Every one of those is something
+  jsdom models honestly; none of it needs layout.
+- The guarantees that matter most, in the order they would regress:
+  1. A long press on an INCOMING message opens the row (the spread is no longer
+     own-only), and the row is Copy + Close with Edit/Delete withheld.
+  2. The hold survives finger jitter. Four sub-slop moves and it still fires —
+     the assertion that catches the zero-tolerance cancel, which is a silent
+     failure mode: nothing errors, the menu simply never appears.
+  3. The slop is a RADIUS. 8px on each axis exceeds it; a per-axis check would
+     read that as two small moves and keep the timer alive.
+  4. The full 500ms is required. Advancing to `LONG_PRESS_MS` alone pins
+     nothing — it passes at 450 too — so the assertion is that the tick BEFORE
+     the deadline is still silent. Verified red by reverting the constant.
+  5. `select-none [-webkit-touch-callout:none]` is on BOTH bubble kinds. This is
+     the assertion that would have caught the near-miss described in the change
+     ledger, and it is the one with no visible symptom in jsdom.
+  6. Escape closes the row, and the window listener is ABSENT while no row is
+     open — otherwise it would swallow the key from the edit field.
+- A scroll still cancels the hold. Kept and re-pointed at a 60px drag, since
+  attaching long-press to every message doubles how often a scroll begins on a
+  listening element.
+- The G-55 suite's incoming case is now pinned by what the row HOLDS
+  (Copy, Close) rather than only by two nulls, which were passing for two
+  stacked reasons — the tap row could lose its separator, or the own-only hover
+  row could stop rendering, and either would have read as success.
+- Not covered: that the row is VISIBLE at >=1024px (jsdom applies no Tailwind,
+  so `lg:hidden` is only a string to it — the class's absence is what is
+  asserted), and the real-device feel of the 500ms/10px pair. Both belong to the
+  W8 rendered-fidelity pass. `e2e/messages.spec.ts` was read and touches no
+  action row, long press or context menu.
+
 ## 2026-09-07 — G-55 separator and action order
 
 - SHA: 70844b57b.

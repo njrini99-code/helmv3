@@ -1,5 +1,55 @@
 # Change ledger — team_communications
 
+## 2026-09-07 — incoming messages get an action surface, and desktop gets a path (G-42)
+
+- SHA: fa83dbf42.
+- Change: `MessageThreadPane.tsx`. The long-press spread and the bubble's
+  `select-none [-webkit-touch-callout:none]` are both unconditional now; only
+  the desktop hover row is still `isOwn`, because Edit and Delete are the
+  own-only pair. The tap row lost `lg:hidden`, the hover row gained
+  `focus-within:opacity-100`, `onContextMenu` opens the row instead of only
+  suppressing the native one, and Escape closes it.
+- Why: §12.4 asks incoming messages to omit EDIT AND DELETE. The code omitted
+  the entire menu, so the one message in a thread you could not copy was the
+  one somebody else sent you (`M03D-overlays.md:83`). Separately, desktop had
+  no path at all: `preventDefault` with a `lg:hidden` substitute opens
+  nothing, and `opacity-0` with no focus variant means Tab reaches invisible
+  buttons — §15.3 and §12.2 (`M03D-overlays.md:89`).
+- FOUR CORRECTIONS the first pass needed, recorded because three of them are
+  the kind that ship silently:
+  1. The iOS callout suppression stayed `isOwn` while the gesture went
+     unconditional — which would have raced our menu against the native
+     callout on precisely the messages the finding is about.
+  2. The pre-existing comment said `onContextMenu`'s `preventDefault` was what
+     suppressed that callout. It is not: iOS Safari has not fired
+     `contextmenu` on a long press since iOS 13 (react/react#21812). What it
+     protects is Android Chrome, which does fire it, plus the desktop
+     right-click. Locating the real mechanism is what surfaced (1).
+  3. Nothing dismissed the row but its Close button — `FairwayMessages.tsx`
+     holds the id and nothing else clears it. Fine while touch-only, a trap
+     once right-click opens it on desktop. Escape now closes it; the scrim and
+     outside-click stay with G-56, which owns the dismissal model.
+  4. The move cancel fired on ANY `pointermove`, and a finger resting on glass
+     never emits zero of them, so a real hold was killed by its own jitter.
+     Pre-existing, but G-42 is what makes it matter: on an incoming message
+     the hold is now the only action surface a touch device has.
+- THE GESTURE'S AUTHORITY IS UIKIT, not the web. This ships as a Capacitor app
+  (`capacitor.config.ts`, `@capacitor/ios`), so the surface is a WKWebView on a
+  phone where every other long press is a `UILongPressGestureRecognizer`. Slop
+  mirrors `allowableMovement` at 10px, measured as a RADIUS — 8px on each axis
+  is 11.3px of travel, which a per-axis check would let through. Duration moved
+  450 -> 500 (`minimumPressDuration`): the finding recorded the 50ms delta
+  rather than retuning a design value it does not own, and the OWNER overrode
+  that default explicitly, for the App Store submission. Apple's constants
+  could not be verified against a primary source in-session —
+  developer.apple.com renders client-side — so they are written as the
+  convention they are, corroborated by Android's ~8dp scaled touch slop.
+- Release note: `capacitor.config.ts` points the WKWebView at a REMOTE url
+  (`https://www.helmsportslabs.com/golf/dashboard`). The binary is a shell, so
+  this reaches users on a web deploy, not on an App Store submission.
+- Not changed: the `isOwn` gate on the hover row (Edit/Delete are own-only by
+  §12.4), and the G-55 separator, which travels with them.
+
 ## 2026-09-07 — the message actions get the separator that gives Delete distance (G-55)
 
 - SHA: 70844b57b.
