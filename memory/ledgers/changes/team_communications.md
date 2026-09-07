@@ -1,5 +1,119 @@
 # Change ledger — team_communications
 
+## 2026-09-07 — group details: the entry point, the data and the sheet (G-33 · D-03a · G-30 · G-57)
+
+- SHA: 0897e63cc.
+- Change: new `src/components/fairway/pages/messages/GroupDetailsSheet.tsx`; a
+  trailing info control in `MessageThreadPane.tsx`'s header behind a new
+  `onOpenGroupDetails` prop; `FairwayMessages.tsx` widens the participant join
+  and owns the sheet's open state; `use-golf-messages.ts` stops dropping
+  `creator_id` / `participant_ids` and populates the latter.
+- Why these four are ONE change: D04 was not "a sheet that needs rebuilding".
+  It had no entry point (G-30: the header markup had no trailing slot at all),
+  no data (G-33: `participant_ids: []` for every group, forever), and no
+  component — `ConversationDetailsSheet.tsx` is cited throughout the audit
+  corpus and exists nowhere under `src/`; it lived on unmerged branches, so
+  nothing was ported.
+- G-57 IS ALREADY 2/3 SHIPPED, and this records that rather than re-claiming
+  it. G-29c put the member stack and the live "N members" subtitle in this
+  header. The only remaining delta was the trailing control, which is G-30 —
+  so G-57 is now fully explained by G-30 alone.
+- CORRECTION TO G-34, verified against the function definition, not inferred:
+  G-34 reads as though the RPC branch never populates `creator_id`. The
+  baseline migration's `get_golf_conversations_with_details` selects
+  `c.created_by AS creator_id`
+  (`20260527000000_prod_public_baseline.sql:2820`), and the RPC's rows reach
+  the transform untouched, so RPC-origin rows always carried it. The transform
+  was the only thing losing it — on BOTH paths, since its `is_group` branch
+  copied out neither field. That is why every group conversation reached the UI
+  without a creator regardless of where it came from.
+- THE IDS COST NOTHING AND CLOSE A DISAGREEMENT. The participant query that
+  produced `participant_count` already ran; it asked for `conversation_id`
+  alone. It now asks for `user_id` too, and the count is derived from the same
+  rows — so the header's "N members" and the sheet's member list cannot
+  disagree with each other. They used to be two independently-sourced facts.
+- AND IT IS NOW PAGINATED, which the count did not need. As a cardinality the
+  PostgREST 1000-row cap degraded quietly (a large team channel under-counted).
+  As the source of WHO is in the group it would silently drop members, which is
+  the class of defect this audit exists to remove. `fetchAllRowsResult` with the
+  helper's required stable `.order('id')` — ranging an unordered query lets page
+  boundaries drift, duplicating some rows and dropping others.
+- `participant_names` stays `[]`, deliberately and with the reason recorded in
+  code: nothing on the golf side reads it. The DM path resolves its one name
+  through `coachByUserId`/`playerByUserId` at transform time and the group path
+  resolves every name the same way, so filling the array would be a second,
+  independently-staleable copy of names the transform already has.
+- D-03a SHIPPED AS FROZEN. Subtitle is role-dependent — `golf_coaches.title`
+  for a coach, `Class of {golf_players.graduation_year}` for a player — two
+  columns added to a join that already ran for bubble-sender resolution, so the
+  sheet's names can never disagree with the names on the messages above it.
+  Either column missing renders NO subtitle. That is why the rows do not reuse
+  `GolfConversationParticipant`: its `subtitle` is required, and the DM path
+  that owns it fills the gap with exactly the `'Golf Coach'` / `'Golf Player'`
+  placeholder the decision forbids. Reusing the interface would have forced the
+  string the decision was written to prevent.
+- The Admin pill reads `golf_conversations.created_by` and nothing else, and is
+  read-only by construction: `golf_conversation_participants` has no role
+  column of any kind, so there is no schema a promotion could be written to.
+  `users.role = 'admin'` is explicitly not used — that enum is a PLATFORM
+  super-admin flag and would badge a Helm staff account as a group admin while
+  badging the actual creator as nothing (§24.5).
+- NO PRESENCE DOT, though `GroupDetails.dc.html:94-96` draws one. D-01a / G-51:
+  production `users` RLS cannot resolve a teammate's state, so it would be
+  decoration implying a fact nobody can check. The artboard's dot is pinned by
+  a test so the omission stays a decision rather than becoming an oversight.
+- ABSENT BY DEFERRAL, NOT DISAGREEMENT — the same disposition G-55 recorded for
+  Reply. The artboard also draws Mute / Search / Files tiles, an "Add" link, a
+  shared-files section and "Leave group". Mute is G-02, which waits on G-58's
+  migration being APPLIED (the owner's step). The other four have no capability
+  anywhere in the messages tree, and a control that does nothing scores as
+  coverage while reading as a bug. Each has an obvious slot when its capability
+  lands, and tests pin their absence so a later pass adding one has to mean it.
+- TOKENS, MEASURED ON BOTH SIDES. The panel is the shared `Sheet`'s bottom
+  variant untouched: the artboard's `1.75rem 1.75rem 0 0`, `rgb(244 232 210 /
+  0.88)`, `blur(36px)` and two-layer modal shadow are byte-identical to what it
+  already renders. Inside it, the row radius is `--fw-radius-md` (whose own
+  comment reads "list rows") and the MEMBERS heading is `eyebrow`
+  (11px / 0.06em / 600) — both byte-identical, both canonical.
+- THREE TYPE STEPS COME FROM THE iOS RAMP, ON A MEASUREMENT RATHER THAN A
+  PREFERENCE, and this is the one stylistic call worth arguing with. `.sub` is
+  12px at weight 400: `caption-1` exactly, where the canonical `caption` is the
+  same 12px but forces 500. `.nm` is 15px/21px: `subhead`'s 1.35 leads to
+  20.25px, canonical `body` to a flat 24px. The title is 20px/600, which is
+  `title-3` on both numbers. So on size AND weight the iOS steps hit the
+  artboard where the canonical ramp misses. The surface is an iOS-shaped detail
+  sheet in a Capacitor WKWebView, which is the use `tailwind.config.ts`'s own
+  comment names — the same reasoning that put `text-callout` on G-56's rows,
+  and the same asterisk: these are token-backed but are not Fairway ramp roles,
+  and `design-system.md` does not name the iOS block.
+- DESKTOP IS CAPPED, NOT DESIGNED. `SIDE_CLASS.bottom` is `inset-x-0`, so
+  uncapped this is a phone control stretched across a 1440px monitor.
+  `sm:max-w-sm sm:mx-auto` caps the measure; the leading edge keeps the
+  variant's `rounded-t-fw-lg` (rounding all four is wrong for a bottom-anchored
+  panel and trips G-48's file-wide guard). Every artboard here is a 390x844
+  phone scene and supplies no desktop authority, so nothing was invented —
+  identical disposition to G-56.
+- TWO ORDERINGS ARE CHOICES, AND ARE STATED RATHER THAN HIDDEN. (1) The
+  artboard's first member row is the viewer who is ALSO the creator, so it does
+  not discriminate between "viewer first" and "creator first". Viewer-first is
+  chosen because it holds for every member of every group, where creator-first
+  would reorder the list under you depending on which group you opened;
+  alphabetical after that, because the participant table carries no join order
+  worth surfacing. (2) The "created by …" clause drops WHOLE when the creator
+  cannot be named — no id, or names not yet landed — rather than printing
+  "created by someone"; an unparseable timestamp drops only the date. The count
+  always survives because it comes from the participant rows, not a name lookup.
+- The count and the names are handed to the sheet SEPARATELY on purpose. They
+  are different numbers: participant ROWS versus members whose coach/player row
+  resolved. Collapsing them would report the smaller one as the truth; kept
+  apart, the sheet can say "9 members" honestly while listing the 8 it can name.
+- `shrink-0` on the header control is load-bearing, not decoration. The title
+  column is `min-w-0 flex-1`, so without it a long group name compresses the
+  button instead of truncating itself and the control changes size with the
+  name. The control renders only for a group AND only when a handler is
+  supplied, so any caller without a details surface gets the previous header
+  byte for byte.
+
 ## 2026-09-07 — the message actions become a labelled bottom sheet (G-56 / M03D F17)
 
 - SHA: 0a6f67aef.

@@ -1,5 +1,60 @@
 # Test ledger — team_communications
 
+## 2026-09-07 — W7 GroupDetailsSheet.test.ts
+
+- SHA: 0897e63cc.
+- Added `src/components/fairway/pages/messages/GroupDetailsSheet.test.ts`
+  (45 tests). Verified to fail (12 of 45) against the pre-fix tree: the three
+  tracked files were reverted to HEAD, the suite run, and the tree restored.
+  The new component cannot be reverted (the suite imports it), so the 12 are
+  exactly the assertions about the DATA and the ENTRY POINT — which is the half
+  that existed before and was wrong.
+- MEASURED ON BOTH SIDES, which is the point of the artboard block: every
+  claimed token match parses the number out of `GroupDetails.dc.html` AND out of
+  `design-tokens.css` / `tailwind.config.ts`, then compares them. A hardcoded
+  expectation would let a token change slide past silently; this way the suite
+  goes red if EITHER side moves, and the premise under the fix is re-checked
+  rather than outliving its reason.
+- The assertion that carries the most weight is the subtitle one, because it is
+  the whole argument for reaching outside the canonical ramp: `.sub` sets
+  `font-size: 12px` and NO `font-weight`, so it is 400 — and the test asserts
+  both that `caption-1` is `'400'` and that canonical `caption` is `'500'`. If
+  someone later normalises the canonical step to 400, this goes red and the
+  reason for using the iOS step is re-examined instead of being inherited.
+- Same shape for the name: both `subhead` and `body` are asserted to be 15px,
+  so the test states plainly that the two steps differ only on leading, and
+  then pins the artboard's 21px against `subhead`'s 1.35 and `body`'s flat 24px.
+- THE PRESENCE DOT IS PINNED AS PRESENT IN THE ARTBOARD. The dot is genuinely
+  drawn (`:94-96`, accent-500 to the byte) and is deliberately not shipped
+  (D-01a / G-51). Asserting the artboard still draws it keeps the omission a
+  DECISION: if the design ever drops the dot, this test goes red and someone
+  re-reads why the code omits it, rather than the two silently agreeing for
+  different reasons.
+- The five deferred controls (Mute / Search / Files / Add member / Leave group)
+  are each asserted ABSENT, one case per label. Absence is normally the thing a
+  suite cannot see, and here it is the scope boundary: a later pass that adds
+  one has to delete an assertion, which is the point.
+- THE TWO DERIVATIONS ARE EXERCISED DIRECTLY, not asserted to exist — the split
+  the G-13 stale-fetch suite established: source assertions prove the code is
+  PRESENT, direct tests prove it is RIGHT. `orderMembers` and `describeGroup`
+  are exported for exactly this. Eleven cases cover viewer-first regardless of
+  input position, alphabetical remainder, the viewer absent, a null/undefined
+  viewer dropping nobody, non-mutation of the caller's array, both creator
+  branches, the creator who cannot be named (clause drops WHOLE — the
+  "created by someone" failure), a missing and an unparseable timestamp (date
+  drops, creator survives), and `1 member` singular.
+- Source-side guarantees on the hook, all comment-stripped first: every one of
+  these files documents the defect it fixes by quoting it, so a naive whole-file
+  search finds the old shape inside the prose describing its removal. The
+  stripped text is what the code assertions read.
+- The `shrink-0` assertion is scoped to a 300-character window after the
+  control's `aria-label`, not to the file, so it pins the property on THIS
+  element rather than passing on any `shrink-0` anywhere in a 1,900-line file.
+- The existing `MessageThreadPane.groupHeader.test.ts` (G-29c) was re-read
+  before the header change: its `<AvatarGroup>` slice assertion is 400
+  characters forward from the stack, and the new control is inserted AFTER the
+  title column, so nothing there is disturbed. It still passes unmodified.
+
 ## 2026-09-07 — G-56 action sheet, and two suites re-anchored
 
 - SHA: 0a6f67aef.
