@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { InlineNotice } from '@/components/fairway';
 import { LabNav } from './LabNav';
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface LabShellProps {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ interface LabShellProps {
  *   – Main content area (cream background)
  */
 export function LabShell({ children, coachRow, isViewOnly = false }: LabShellProps) {
+  const prefersReducedMotion = useReducedMotionGuard();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const router = useRouter();
@@ -147,17 +149,21 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
               className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
               onClick={() => setDrawerOpen(false)}
               aria-hidden
             />
             <motion.aside
               key="drawer"
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { x: '-100%' }}
+              animate={prefersReducedMotion ? { opacity: 1, x: 0 } : { x: 0 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { x: '-100%' }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { type: 'spring', stiffness: 400, damping: 35 }
+              }
               className="fixed inset-y-0 left-0 z-50 w-56 glass-standard border-r border-white/30 shadow-2xl lg:hidden flex flex-col"
               onKeyDown={(e) => { if (e.key === 'Escape') setDrawerOpen(false); }}
               role="dialog"
