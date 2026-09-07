@@ -253,6 +253,55 @@ title + two text buttons (Team, New message). Grep finds no bell anywhere in the
 surface or the shared `FairwayTopBar`. So this is not a duplicated-chrome case to
 de-duplicate — it is absent, and the badge count has no existing semantics to preserve.
 
+### G-48 — Bubble radii: the main value HAS a token, the code just uses the wrong one  [med] [coordinator-corrected]
+M03B's F12 reports the artboard's bubble radii (20/12/6px) match no `--fw-radius-*` token,
+citing the repo's sm/md/lg as 10/14/28px. **That misses `--fw-radius-card`.** Measuring both
+sides directly:
+
+- `src/styles/design-tokens.css:216-220` — sm `0.625rem`/10px, md `0.875rem`/14px,
+  **card `1.25rem`/20px**, lg `1.75rem`/28px, full 9999px.
+- `audit/reference/Bubbles.dc.html` — the dominant bubble radius is `1.25rem`, appearing in
+  every bubble shorthand (`1.25rem 1.25rem 0.375rem 1.25rem` and its mirrors). That is
+  **byte-identical to `--fw-radius-card`**, whose own comment calls it "THE card radius".
+- `MessageThreadPane.tsx:1201-1203` — the code reaches for `rounded-fw-lg` (28px) plus
+  `rounded-*-sm` (10px) corners.
+
+So this is a token **misuse**, not a missing token: the bubble is drawn one step too round,
+at the modal/sheet radius instead of the card radius that already matches the design exactly.
+Swapping `rounded-fw-lg` → `rounded-fw-card` on the bubble is most of the fix.
+
+Only the small values genuinely lack tokens: the tail at `0.375rem`/6px and the
+intermediate `0.75rem`/12px both fall below `--fw-radius-sm` (10px). Those two go to A03 —
+two values, not the whole scale.
+
+This keeps the pattern the other two lanes found (G-32): the token file already holds nearly
+everything; the gap is application, not vocabulary. It also matters for the estimate — a
+class swap is not the same job as negotiating a new radius scale.
+
+### G-49 — No absolute measure cap, and no depth system at all  [med] [lane-asserted]
+M03B F13/F14:
+- The repo constrains bubble width by percentage only, with no absolute cap. The artboard
+  specifies a literal 268–296px depending on DM/group context. On the desktop 720px-capped
+  panel a bubble can reach ~475px — well past the readable measure §8.3 is protecting.
+- Bubbles and canvas are flat single colors with **zero box-shadow**. The artboard gives
+  every surface a gradient + inset highlight + drop shadow. Hues match closely; the depth
+  system is simply absent. This is the same "material produces no visible separation" gap
+  M03A found on unread rows (G-03), so it is one systemic issue across two lanes, not two.
+
+### G-50 — Two artboard-vs-artboard disagreements  [info] [lane-asserted]
+M03B correctly reported these without picking a side:
+- Day chip: `Thread.dc.html` draws a floating glass/blur absolute chip; `Group.dc.html` an
+  inline bordered pill.
+- Bubble max-width: 288px generic vs 296px DM vs 268–292px group.
+The design source disagrees with itself, so §3's decision-freeze has to settle both before
+implementation. Neither is a code defect.
+
+Also noted: M03B **retracted** one of its own earlier sub-claims — the artboard's file
+specimen uses one generic document icon too, so "generic icon regardless of file type" is not
+a deviation; what is actually missing is the 38x38 icon tile with its background. Recording
+the retraction because the original would have sent someone building per-type iconography the
+design never asked for.
+
 ### G-45 — The artboard's focus glow contradicts a documented accessibility fix  [med] [coordinator-verified, DECISION-NEEDED]
 M03C's F14, and the evidence is stronger than the lane put it. The artboard's `.track-on`
 focus treatment is a two-layer soft glow built from `accent-500`. In
