@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 34 | 5 | 15 | 65 |
 | `AUDIT_SNAPSHOT` | 38 | 6 | 17 | 20 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 35 | 0 | 5 | 12 |
+| `HISTORY_LEDGER` | 35 | 0 | 5 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
@@ -64,7 +64,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
-| `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 5 | - |
+| `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 6 | - |
 | `AGENTS.md` | current | yes | - | yes | 0 | 17 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 8 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
@@ -425,7 +425,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 19 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 2 | 6 | - |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | 1 | 6 | - |
-| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 5 | 47 | 2 |
+| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 5 | 47 | 3 |
 | `memory/ledgers/changes/observability_supabase.md` | current | - | - | - | 3 | 45 | - |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
@@ -526,7 +526,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 9 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 9 | 21 | - |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 9 | 22 | - |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | - |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
@@ -554,7 +554,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 13 | 3 |
 | `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 2 | 6 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
-| `docs/observability/SENTRY_SNAPSHOTS.md` | current | - | - | - | 1 | 4 | - |
+| `docs/observability/SENTRY_SNAPSHOTS.md` | current | - | - | - | 1 | 5 | - |
 | `docs/observability/SENTRY_SUPABASE_TRACING.md` | current | yes | - | yes | 3 | 5 | - |
 | `docs/observability/SENTRY_TELEMETRY_TAXONOMY.md` | current | yes | - | yes | 2 | 8 | - |
 | `docs/observability/SUPABASE_CERTIFICATION.md` | current | - | - | - | 1 | 21 | - |
@@ -575,7 +575,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | 3 | 30 | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 | 61 | 4 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | - |
-| `docs/operations/COST_CONTROLS.md` | current | - | - | - | 3 | 7 | - |
+| `docs/operations/COST_CONTROLS.md` | current | - | - | - | 3 | 6 | - |
 | `docs/operations/DECLARATIVE_SCHEMA.md` | current | - | - | yes | 3 | 11 | - |
 | `docs/operations/GATES.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/GITHUB_LABELS_AND_PROJECT_SETUP.md` | current | - | - | yes | 0 | 1 | - |

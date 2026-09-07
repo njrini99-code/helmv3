@@ -23,7 +23,10 @@ const only = args.includes('--only') ? args[args.indexOf('--only') + 1].split(',
 
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8' }).trim();
 const HEAD_SHA = git('rev-parse', 'HEAD');
-const BASE_SHA = git('merge-base', baseRef, 'HEAD');
+const tryGit = (...a) => { try { return git(...a); } catch { return ''; } };
+// PR semantics: diff against the merge-base with main. Fall back the way
+// .github/scripts/changed-files.sh does when no such ref exists (fixtures).
+const BASE_SHA = tryGit('merge-base', baseRef, 'HEAD') || tryGit('merge-base', 'main', 'HEAD') || tryGit('rev-parse', 'HEAD^') || HEAD_SHA;
 const env = { ...process.env, BASE_SHA, HEAD_SHA, GITHUB_WORKSPACE: process.cwd(), CI: '', FORCE_COLOR: '1' };
 
 const wf = yamlLoad(readFileSync('.github/workflows/review-gate.yml', 'utf8'));

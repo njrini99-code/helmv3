@@ -213,53 +213,13 @@ else
   echo "pre-push: no src/ or scripts/ changes — skipping the lint ratchet."
 fi
 
-# --- 6. sqlfluff on changed migrations ------------------------------------
-SQL_FILES=()
-while IFS= read -r f; do
-  [ -n "$f" ] && [ -f "$f" ] && SQL_FILES+=("$f")
-done < <(filtered '^supabase/migrations/.*\.sql$' "${CHANGED_FILES[@]}")
-
-if [ "${#SQL_FILES[@]}" -gt 0 ]; then
-  if command -v sqlfluff >/dev/null 2>&1; then
-    run_step_informational "sqlfluff (changed migrations)" sqlfluff lint --dialect postgres --rules core "${SQL_FILES[@]}"
-  else
-    echo "pre-push: sqlfluff not installed — skipping. Install with 'pip install sqlfluff' (CI's Review Gate still runs it)."
-  fi
-else
-  echo "pre-push: no changed supabase/migrations/*.sql — skipping sqlfluff."
-fi
-
-# --- 7. gitleaks over the pushed range(s) --------------------------------
-if command -v gitleaks >/dev/null 2>&1; then
-  GITLEAKS_CONFIG="$REPO_ROOT/.gitleaks.toml"
-  for range in "${RANGES[@]}"; do
-    if [ -f "$GITLEAKS_CONFIG" ]; then
-      run_step "gitleaks ($range)" gitleaks git --log-opts="$range" --config "$GITLEAKS_CONFIG" --no-banner
-    else
-      run_step "gitleaks ($range)" gitleaks git --log-opts="$range" --no-banner
-    fi
-  done
-else
-  echo "pre-push: gitleaks not installed — skipping. Install with 'brew install gitleaks' (CI's Review Gate still runs it)."
-fi
-
-# --- 8. markdownlint-cli2 on changed .md, then the full ratchet ---------
-MD_FILES=()
-while IFS= read -r f; do
-  [ -n "$f" ] && [ -f "$f" ] && MD_FILES+=("$f")
-done < <(filtered '\.md$' "${CHANGED_FILES[@]}")
-
-if [ "${#MD_FILES[@]}" -gt 0 ]; then
-  MDLINT_BIN="$REPO_ROOT/node_modules/.bin/markdownlint-cli2"
-  if [ -x "$MDLINT_BIN" ]; then
-    run_step_informational "markdownlint-cli2 (changed files)" "$MDLINT_BIN" "${MD_FILES[@]}"
-  else
-    echo "pre-push: markdownlint-cli2 not found under node_modules/.bin — run 'npm ci'. Skipping."
-  fi
-  run_step "markdown:ratchet" node scripts/markdown-lint-ratchet.mjs
-else
-  echo "pre-push: no changed .md files — skipping markdownlint."
-fi
+# --- 6. Review Gate mirror -------------------------------------------------
+# Runs every step of .github/workflows/review-gate.yml (ast-grep, semgrep,
+# gitleaks, actionlint, yamllint, shellcheck, markdown + sql ratchets,
+# hadolint, env-secrets) on the files changed vs merge-base with origin/main,
+# exactly the PR diff GitHub sees — the same
+# script `npm run gates:review` runs. Missing tools are reported SKIPPED.
+run_step "gates:review (Review Gate mirror)" node scripts/review-gate-local.mjs
 
 # --- 9. generated docs — fail the push if regenerating produces a diff --
 if matches '\.md$|^memory/registry\.yml$|^supabase/migrations/.*\.sql$' "${CHANGED_FILES[@]}"; then

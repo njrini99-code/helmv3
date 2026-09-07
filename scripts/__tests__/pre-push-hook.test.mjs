@@ -96,6 +96,9 @@ function makeFixture(committedContent) {
   // there too. Always exits 0 — this test is about the generated-docs step,
   // not the markdown ratchet itself.
   writeFileSync(join(dir, 'scripts', 'markdown-lint-ratchet.mjs'), '#!/usr/bin/env node\nprocess.exit(0);\n');
+  // Stand-in for scripts/review-gate-local.mjs (the Review Gate mirror); its
+  // own behaviour is not under test here.
+  writeFileSync(join(dir, 'scripts', 'review-gate-local.mjs'), '#!/usr/bin/env node\nprocess.exit(0);\n');
 
   // Committed docs/generated content — whatever the caller passed as the
   // "already on disk" version. Matching REGENERATED_CONTENT makes the next
