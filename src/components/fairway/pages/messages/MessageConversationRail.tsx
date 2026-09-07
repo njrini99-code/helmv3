@@ -9,9 +9,9 @@
  * never a card-in-card — mirrors AskConversationRail.
  *
  * TRIAGE ordering (spec): unread threads float to top; within that, conversations
- * group by recency (Today / Yesterday / This Week / Earlier) rendered as quiet
- * Fairway eyebrow labels. The grouping helper preserves the legacy
- * `groupConversationsByTime` boundaries exactly.
+ * group by recency (Today / Earlier) rendered as quiet Fairway eyebrow labels —
+ * the artboard's section set (`Main.dc.html:61,111`). See groupConversationsByTime
+ * for why the legacy four-bucket split was collapsed.
  *
  * HONESTY CONTRACT:
  *   • unread count renders as a quiet accent Badge (numeric, tabular) — NOT a
@@ -93,17 +93,28 @@ function formatTime(dateStr: string | null | undefined): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** Recency buckets — PRESERVES the legacy groupConversationsByTime boundaries. */
+/**
+ * Recency buckets — TODAY and EARLIER, the artboard's section set.
+ *
+ * This used to carry the legacy four (Today / Yesterday / This Week / Earlier).
+ * Measured against the approved design at 390×844 with a six-conversation
+ * fixture, those four plus the Unread bucket printed FIVE section headers for
+ * six rows — a label for nearly every row, which is what read as "choppy".
+ * `Main.dc.html` labels exactly two sections (`:61` TODAY, `:111` EARLIER) for
+ * seven rows, so the section set here now matches it.
+ *
+ * No information is lost: `formatTime` above already stamps each row with
+ * "Yesterday", a weekday ("Fri"), or a date ("Aug 28"), which is where the
+ * finer boundaries actually belonged. Collapsing to one boundary also shrinks
+ * the surface of M03A F09 (row time and section grouping used two different
+ * day rules) from three shared boundaries to one.
+ */
 function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-  const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const groups = {
     today: [] as GolfConversationWithMeta[],
-    yesterday: [] as GolfConversationWithMeta[],
-    thisWeek: [] as GolfConversationWithMeta[],
     older: [] as GolfConversationWithMeta[],
   };
 
@@ -112,8 +123,6 @@ function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
       ? new Date(conv.last_message.created_at)
       : new Date(0);
     if (lastMsgDate >= today) groups.today.push(conv);
-    else if (lastMsgDate >= yesterday) groups.yesterday.push(conv);
-    else if (lastMsgDate >= lastWeek) groups.thisWeek.push(conv);
     else groups.older.push(conv);
   });
 
@@ -122,8 +131,6 @@ function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
 
 const GROUP_ORDER: ReadonlyArray<{ key: keyof ReturnType<typeof groupConversationsByTime>; label: string }> = [
   { key: 'today', label: 'Today' },
-  { key: 'yesterday', label: 'Yesterday' },
-  { key: 'thisWeek', label: 'This Week' },
   { key: 'older', label: 'Earlier' },
 ];
 
@@ -297,6 +304,23 @@ export function MessageConversationRail({
   // (searchGolfMessages: participant-scoped, wildcard-escaped, 50-row cap).
   // Drives the bezel/padding gate on the panel below — see the note there.
   const isDesktop = useMediaQuery('(min-width: 768px)');
+
+  // A phone never shows this rail BESIDE an open thread — FairwayMessages hides
+  // the rail entirely once `mobileShowChat` is true. So on a phone `selectedId`
+  // describes nothing the user can see, and painting its row with the selected
+  // treatment (`bg-surface-sunken/90` + accent ring) claimed a state that was
+  // not real: the page auto-selects the first conversation on load, so the
+  // inbox opened with one arbitrary row tinted as if it were open.
+  //
+  // That fill is also the ONLY one a read row could get, so it broke the single
+  // contrast the artboard defines for this list — unread lifts on a cream card,
+  // read lies flat on the canvas (`Main.dc.html:66` vs `:82`) — by giving one
+  // read row a third material. This is the rendered evidence M03A F06 asked for
+  // and could not gather: measured at 390×844 the selected row paints
+  // `oklab(0.963 0.0022 0.0209 / 0.9)`, which IS the search well's
+  // `surface-sunken` fill, so the two states did collapse visually.
+  const activeId = isDesktop ? selectedId : null;
+
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
@@ -510,7 +534,7 @@ export function MessageConversationRail({
               <li key={result.messageId}>
                 <SearchResultRow
                   result={result}
-                  isSelected={selectedId === result.conversationId}
+                  isSelected={activeId === result.conversationId}
                   onSelect={() => handleResultSelect(result)}
                 />
               </li>
@@ -539,7 +563,7 @@ export function MessageConversationRail({
                 >
                   <ConversationRow
                     conv={conv}
-                    isSelected={selectedId === conv.id}
+                    isSelected={activeId === conv.id}
                     onSelect={() => onSelect(conv.id)}
                   />
                 </li>
@@ -565,7 +589,7 @@ export function MessageConversationRail({
                   >
                     <ConversationRow
                       conv={conv}
-                      isSelected={selectedId === conv.id}
+                      isSelected={activeId === conv.id}
                       onSelect={() => onSelect(conv.id)}
                     />
                   </li>

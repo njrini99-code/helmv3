@@ -286,7 +286,43 @@ it is the owner's, through `db-apply`.
       visible to a group's creator and fail with a surfaced error; Leave works today.
 
 ## W8 — Rendered fidelity review (M05 / D-02)
-- [ ] Serve the app against the local stack and compare against `reference/*.dc.html`
+- [x] Serve the app against the local stack and compare against `reference/*.dc.html`.
+      Served the built app at 390×844 against the local stack. The one-conversation
+      seed could not show list rhythm at all, so the fixture was widened to the
+      artboard's shape (six conversations, two groups, mixed read state, spread
+      across today / this week / a fortnight ago) before measuring. Two defects,
+      both fixed, both closing an open audit item:
+  - [x] **OVER-SEGMENTATION** — the rail printed FIVE section headers for six rows
+        (Unread + Today + Yesterday + This Week + Earlier). `Main.dc.html:61,111`
+        labels exactly two sections for seven rows. It also ran time backwards on
+        screen: an unread row stamped "Yesterday" sat above a section headed TODAY.
+        Collapsed the four recency buckets to Today / Earlier. Nothing is lost —
+        `formatTime` already stamps each row "Yesterday" / "Fri" / "Aug 28". This
+        also shrinks **M03A F09**'s risk surface (row time and section grouping used
+        two different day rules) from three shared boundaries to one. Neither
+        `DECISIONS.md` nor the manifest freezes the Unread bucket or authorises
+        removing it, so it stays — only the recency split changed.
+  - [x] **A FALSE SELECTED ROW ON A PHONE** — the page auto-selects the first
+        conversation on load, and a phone hides the rail once a thread is open, so
+        `selectedId` described nothing visible yet still painted its row. Measured:
+        that row is `oklab(0.963 0.0022 0.0209 / 0.9)`, which IS the search well's
+        `surface-sunken` fill. **This is the rendered evidence M03A F06 asked for
+        and could not gather** — the two states did collapse visually. It was also
+        the only fill a READ row could receive, so it broke the artboard's single
+        list contrast (unread lifts on a card `:66`, read lies flat `:82`) with a
+        third material. Selection is now gated on the desktop media query the rail
+        already reads.
+  - Confirmed correct and deliberately NOT changed: read rows are flat and unread
+    rows lift on a card (G-32, matches `:66`/`:82`); the page paints
+    `bg-canvas-gradient` (M03A F11 already shipped); `isGroupConversation`
+    classifies both groups and none of the five DMs (G-15's flag distinction).
+  - Left alone, with the reason: **G-01** pinned strip and **G-03/G-04** filter
+    chips need data that does not exist (a pin column, filter state) plus the two
+    unmapped gradients M03A routed to A03 — all already in DEFERRED above.
+    **G-31**'s bell is app-wide chrome, likewise deferred. The
+    Messages/Announcements strip is `FairwayHubSubNav`, rendered at shell level for
+    every golf hub; folding the page's actions into it would put a cross-surface
+    component in a messages-scoped PR.
 - [ ] Confirm G-26 is actually fixed in a real browser, not just in jsdom
 
 ---
