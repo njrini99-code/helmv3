@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 34 | 5 | 15 | 65 |
 | `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 22 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 35 | 0 | 6 | 13 |
+| `HISTORY_LEDGER` | 35 | 0 | 7 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
@@ -192,7 +192,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 51 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
-| `memory/features/team-communications.md` | current | yes | - | - | 9 | 11 | - |
+| `memory/features/team-communications.md` | current | yes | - | - | 9 | 12 | - |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 17 | - |
 
 ### `REFERENCE`
@@ -376,7 +376,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/M03C-composer.md` | current | - | - | yes | 0 | 20 | - |
 | `audit/M03D-overlays.md` | current | - | - | yes | 0 | 16 | 2 |
 | `audit/M04-media.md` | current | - | - | - | 0 | 21 | - |
-| `audit/PROGRESS.md` | current | - | - | yes | 0 | 4 | - |
+| `audit/PROGRESS.md` | current | - | - | yes | 0 | 8 | - |
 | `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 3 | 0 | - |
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 8 | 19 | 6 |
 | `docs/SECURITY_AUDIT.md` | current | yes | - | - | 4 | 13 | - |
@@ -451,7 +451,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 37 | - |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/team_communications.md` | current | - | - | yes | 1 | 13 | - |
+| `memory/ledgers/changes/team_communications.md` | current | - | - | yes | 1 | 20 | - |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | - |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
@@ -465,7 +465,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 47 | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | 1 | 1 | - |
-| `memory/ledgers/tests/team_communications.md` | current | - | - | - | 1 | 9 | - |
+| `memory/ledgers/tests/team_communications.md` | current | - | - | yes | 1 | 12 | - |
 
 ### `INCIDENT`
 

@@ -3159,6 +3159,10 @@
         "definedIn": "supabase/migrations/20260803120200_golf_join_code_requires_proof.sql"
       },
       {
+        "id": "golf_user_on_conversation_team",
+        "definedIn": "supabase/migrations/20260907160000_golf_team_chat_membership_management.sql"
+      },
+      {
         "id": "guard_users_role_self_change",
         "definedIn": "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
       },
