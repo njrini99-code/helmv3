@@ -33,6 +33,7 @@ import {
 } from '@/components/icons';
 import { haptic } from '@/lib/lifting/haptics';
 import { submitBodyweightEntry } from '@/app/lifting/actions/weight-checkins';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,6 +74,7 @@ export function WeightEntryModal({
   onClose,
   onSuccess,
 }: WeightEntryModalProps) {
+  const prefersReducedMotion = useReducedMotionGuard();
   const [weightRaw, setWeightRaw] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -149,7 +151,7 @@ export function WeightEntryModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
             onClick={onClose}
             aria-hidden="true"
           />
@@ -161,10 +163,14 @@ export function WeightEntryModal({
             aria-modal="true"
             aria-label="Enter weight"
             className="fixed inset-x-0 bottom-0 z-50 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4"
-            initial={{ opacity: 0, y: 40 }}
+            initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 40 }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { type: 'spring', stiffness: 340, damping: 32 }
+            }
           >
             <div className="relative w-full rounded-t-3xl bg-[#FFFEFA] px-6 pb-10 pt-5 shadow-2xl sm:max-w-sm sm:rounded-3xl sm:pb-8">
               {/* Handle pill — mobile only */}

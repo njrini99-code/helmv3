@@ -33,6 +33,7 @@ import {
 } from '@/app/lifting/actions/invites';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { getOrgTeamsForLifting, type OrgTeamOption } from './actions';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import type {
   HelmLiftingCoachRow,
   HelmLiftingCoachAssignmentRow,
@@ -77,6 +78,7 @@ function AlertBanner({
   type: 'error' | 'success' | 'info';
   children: React.ReactNode;
 }) {
+  const prefersReducedMotion = useReducedMotionGuard();
   const styles = {
     error: 'bg-red-50 border-red-200 text-red-700',
     success: 'bg-primary-50 border-primary-200 text-primary-700',
@@ -85,8 +87,9 @@ function AlertBanner({
   const Icon = type === 'error' ? AlertCircle : type === 'success' ? CheckCircle2 : AlertCircle;
   return (
     <motion.div
-      initial={{ opacity: 0, y: -4 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={prefersReducedMotion ? { duration: 0 } : undefined}
       className={`flex items-start gap-2.5 px-4 py-3 border rounded-xl text-sm ${styles[type]}`}
       role={type === 'error' ? 'alert' : 'status'}
     >
@@ -106,6 +109,7 @@ interface TeamPickerProps {
 }
 
 function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
+  const prefersReducedMotion = useReducedMotionGuard();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [teams, setTeams] = useState<OrgTeamOption[]>([]);
@@ -204,10 +208,10 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: -4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.12 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.12 }}
             className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-surface border border-border-subtle rounded-xl shadow-flat overflow-hidden"
           >
             {/* Search input */}
