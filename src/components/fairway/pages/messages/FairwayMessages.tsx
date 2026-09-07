@@ -55,7 +55,14 @@ import { logError } from '@/lib/error-logging';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
-import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/messages';
+import {
+  createGolfConversation,
+  getPlayerUserId,
+  getGolfGroupAddCandidates,
+  addGolfGroupMember,
+  removeGolfGroupMember,
+  leaveGolfGroup,
+} from '@/app/golf/actions/messages';
 import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
@@ -68,7 +75,11 @@ import { EmptyState } from '@/components/fairway/feedback';
 
 import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
-import { GroupDetailsSheet, type GroupMember } from './GroupDetailsSheet';
+import {
+  GroupDetailsSheet,
+  type GroupMember,
+  type GroupAddCandidate,
+} from './GroupDetailsSheet';
 import { MessageComposer } from './MessageComposer';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
@@ -826,6 +837,42 @@ export function FairwayMessages() {
           currentUserId={currentUserId || userId}
           memberCount={selectedConversation.participant_count}
           members={Array.from(groupParticipants.values())}
+          /* Membership management. Every one of these ends in a refetch of
+             the conversation list rather than a local mutation of
+             `groupParticipants`: that map is derived from the same rows the
+             header's "N members" counts, so patching it locally would let the
+             two disagree for exactly as long as the sheet stayed open — the
+             disagreement W7 removed. `fetchGroupParticipants` re-runs from the
+             refreshed conversation, so both come from one read. */
+          onAddMember={async (targetUserId) => {
+            const result = await addGolfGroupMember(selectedConversation.id, targetUserId);
+            if ('error' in result) return { error: result.error };
+            await refetch();
+            await fetchGroupParticipants(selectedConversation.id);
+            return;
+          }}
+          onRemoveMember={async (targetUserId) => {
+            const result = await removeGolfGroupMember(selectedConversation.id, targetUserId);
+            if ('error' in result) return { error: result.error };
+            await refetch();
+            await fetchGroupParticipants(selectedConversation.id);
+            return;
+          }}
+          onLeaveGroup={async () => {
+            const result = await leaveGolfGroup(selectedConversation.id);
+            if ('error' in result) return { error: result.error };
+            // The conversation is gone for this user, so the open thread has
+            // to go with it — leaving it selected would show a thread whose
+            // participant row no longer exists.
+            setSelectedConversationId(null);
+            await refetch();
+            return;
+          }}
+          loadAddCandidates={async () => {
+            const result = await getGolfGroupAddCandidates(selectedConversation.id);
+            if ('error' in result) throw new Error(result.error);
+            return result.candidates as GroupAddCandidate[];
+          }}
         />
       )}
 

@@ -217,11 +217,16 @@ describe('D-03a — the Admin pill reads a real column, and nothing else', () =>
 });
 
 describe('W7 scope — the controls with no capability behind them are absent', () => {
-  // Mute is G-02 (needs G-58's migration APPLIED, the owner's step); Search,
-  // Files, Add and Leave have no contract anywhere in the messages tree.
-  // Absent by deferral, not disagreement — and pinned so a later pass adding
-  // one has to mean it.
-  it.each(['Mute', 'Search', 'Files', 'Add member', 'Leave group'])(
+  // Mute is G-02 and still waits on G-58's migration being APPLIED (the
+  // owner's step); Search and Files have no contract anywhere in the messages
+  // tree. Absent by deferral, not disagreement — and pinned so a later pass
+  // adding one has to mean it.
+  //
+  // 'Add member' and 'Leave group' USED TO BE IN THIS LIST and were removed
+  // deliberately when the membership actions landed, which is the mechanism
+  // this block was written to force: enabling one of these costs a deleted
+  // assertion, so it cannot happen by accident.
+  it.each(['Mute', 'Search', 'Files'])(
     'does not draw a dead %s control',
     (label) => {
       expect(sheetCode).not.toContain(`>${label}<`);
@@ -417,5 +422,283 @@ describe('describeGroup', () => {
 
   it('says "1 member", not "1 members"', () => {
     expect(describeGroup({ total: 1, members })).toBe('1 member');
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Membership management — add, remove, leave.
+//
+// The three do NOT have the same standing, and the difference is in the
+// database rather than in this component:
+//
+//   • LEAVE works against production RLS as it stands (`golf_participants_-
+//     delete` is `USING (user_id = auth.uid())`).
+//   • ADD and REMOVE need 20260907160000 APPLIED. Until then both come back
+//     42501.
+//
+// So the assertions below are in two groups: the ones that pin the SOURCE (the
+// migration exists and says what it must, the actions surface a refusal rather
+// than swallowing it) and the ones that pin the PREDICATE (who is offered the
+// controls at all). Behaviour of the policies themselves is not this suite's
+// job — that is `supabase/tests/rls/golf_group_membership_management.sql`,
+// which exercises a real Postgres.
+// ───────────────────────────────────────────────────────────────────────────
+
+const migration = read(
+  'supabase/migrations/20260907160000_golf_team_chat_membership_management.sql',
+);
+const actions = strip(read('src/app/actions/messages.ts'));
+const rlsSuite = read('supabase/tests/rls/golf_group_membership_management.sql');
+
+describe('membership — the migration is bounded on all three axes', () => {
+  // The whole defensibility of re-opening a branch closed after a verified
+  // production attack rests on these three bounds holding TOGETHER. Each is
+  // asserted separately so dropping any one of them goes red.
+  it('bounds the new INSERT branch to a genuine team chat, never a DM', () => {
+    expect(migration).toContain('c.is_team_chat = true');
+    expect(migration).toContain('c.team_id is not null');
+  });
+
+  it('bounds the actor to the conversation creator', () => {
+    expect(migration).toContain('golf_conversation_created_by_me(');
+  });
+
+  it('bounds the person being ADDED to someone already on the owning team', () => {
+    expect(migration).toContain('golf_user_on_conversation_team(');
+  });
+
+  it('keeps both pre-existing INSERT branches verbatim', () => {
+    // Branch 2 is 20260819070000's own hardening. If this clause disappears,
+    // the 2026-08-19 defect is back regardless of what the new branch says.
+    expect(migration).toContain('not public.golf_conversation_has_other_participant(conversation_id)');
+    // Branch 1 is the 2026-08-07 self-add bound.
+    expect(migration).toContain('golf_conversation_on_my_team(');
+  });
+
+  it('keeps self-delete as the DELETE policy\'s first branch — that is Leave group', () => {
+    expect(migration).toContain('golf_conversation_participants.user_id = (select auth.uid())');
+  });
+
+  it('excludes the creator\'s own row from the creator DELETE branch (orphan guard)', () => {
+    expect(migration).toContain('golf_conversation_participants.user_id <> (select auth.uid())');
+  });
+
+  it('requires the ACTOR to still be in the conversation to remove anyone', () => {
+    // This PR ships Leave group, so 20260819070000's "creator is always a
+    // participant" observation stopped bounding anything the moment the DELETE
+    // branch existed. Measured on a real Postgres: a departed creator already
+    // removes nothing, because golf_participants_select_v2 makes the target
+    // rows invisible. The clause is deliberately redundant with THAT policy —
+    // it keeps this branch's bound inside this branch, so an edit over there
+    // cannot silently unbound it here.
+    const del = migration.slice(migration.indexOf('create policy golf_participants_delete'));
+    expect(del.slice(0, del.indexOf('commit;'))).toContain(
+      'select public.user_conversation_ids((select auth.uid()))',
+    );
+  });
+
+  it('pairs the new SECURITY DEFINER helper with the revokes anon requires', () => {
+    // A definer function is EXECUTE-to-PUBLIC by default, and anyone holding
+    // the publishable key is `anon`. Without both revokes this helper is an
+    // unauthenticated roster oracle.
+    expect(migration).toContain('security definer');
+    expect(migration).toMatch(/revoke all on function public\.golf_user_on_conversation_team\(\s*uuid, uuid\s*\) from public;/);
+    expect(migration).toMatch(/revoke all on function public\.golf_user_on_conversation_team\(\s*uuid, uuid\s*\) from anon;/);
+    expect(migration).toMatch(/grant execute on function public\.golf_user_on_conversation_team\(\s*uuid, uuid\s*\) to authenticated;/);
+  });
+
+  it('pins search_path on the helper', () => {
+    expect(migration).toContain('set search_path = public, pg_temp');
+  });
+
+  it('never reads golf_conversation_participants inline — the recursion trap', () => {
+    // A policy ON that table that reads it inline recurses, and Postgres then
+    // fails EVERY query against the table, not just this branch. The helper
+    // exists to avoid exactly that; the guard test is
+    // src/test/schema/no-self-referencing-rls-policy.test.ts.
+    const policyBody = migration.slice(migration.indexOf('create policy golf_participants_insert_v2'));
+    expect(policyBody).not.toContain('from public.golf_conversation_participants');
+  });
+});
+
+describe('membership — the RLS suite proves the policy, not just its text', () => {
+  it('asserts both the new capabilities AND the refusals the widening must not touch', () => {
+    expect(rlsSuite).toContain('the creator CAN add a teammate to a settled TEAM CHAT');
+    expect(rlsSuite).toContain('the creator CANNOT add someone who is not on the conversation');
+    expect(rlsSuite).toContain('2026-08-19 stays closed');
+    expect(rlsSuite).toContain('the creator CAN remove another member from a team chat');
+    expect(rlsSuite).toContain('a non-creator CANNOT delete the creator');
+    expect(rlsSuite).toContain('"Leave group" is unchanged');
+  });
+
+  it('keeps the creation-order check a refusal-only suite would let rot', () => {
+    // The trap 20260819070000's verification block names: a predicate that
+    // blocks everything passes every refusal check. This is the pairing.
+    expect(rlsSuite).toContain('conversation creation still works');
+  });
+
+  it('covers the creator who LEFT, and says plainly what that group cannot isolate', () => {
+    expect(rlsSuite).toContain('a creator who has LEFT can no longer remove the members who stayed');
+    // A third control run — that clause alone removed — still passes all
+    // fourteen. Recording the limit is what keeps the suite honest; a reader
+    // would otherwise take GROUP 4 for a test of the clause.
+    expect(rlsSuite).toContain('ONE HONEST LIMIT');
+  });
+
+  it('takes its delete assertions with RLS OFF', () => {
+    // Counting as the acting user cannot tell "the row is gone" from "the row
+    // is invisible to me" — the same SELECT policy filters both. The suite's
+    // first draft got a pass for the wrong reason on exactly this.
+    expect(rlsSuite).toContain('RESET role;');
+    expect(rlsSuite).toContain('THE COUNT IS TAKEN WITH RLS OFF');
+  });
+});
+
+describe('membership — the server actions refuse rather than pretend', () => {
+  it('records an RLS denial on every membership write path', () => {
+    // Before the migration is applied these return 42501. Capturing it makes a
+    // premature attempt a signal instead of a mystery toast.
+    for (const action of [
+      'messages.addGolfGroupMember',
+      'messages.removeGolfGroupMember',
+      'messages.leaveGolfGroup',
+    ]) {
+      expect(actions).toContain(action);
+    }
+    expect(actions).toContain('maybeCaptureRlsDenial');
+  });
+
+  it('treats a duplicate participant as success, not an error the user cannot act on', () => {
+    expect(actions).toContain("error.code === '23505'");
+  });
+
+  it('routes self-removal to Leave group instead of Remove', () => {
+    expect(actions).toContain('Use Leave group to remove yourself');
+  });
+
+  it('deletes by BOTH conversation_id and user_id', () => {
+    // Either equality alone is a different statement: dropping the
+    // conversation filter would remove that user from every conversation.
+    const remove = actions.slice(actions.indexOf('async function removeGolfGroupMemberImpl'));
+    const body = remove.slice(0, remove.indexOf('const observedRemoveGolfGroupMember'));
+    expect(body).toContain(".eq('conversation_id', conversationId)");
+    expect(body).toContain(".eq('user_id', userId)");
+  });
+
+  it('offers coaches as well as players as add candidates', () => {
+    // getGolfTeamPlayersForBroadcast is players-only; reusing it would have
+    // made assistant coaches silently unaddable.
+    const impl = actions.slice(actions.indexOf('async function getGolfGroupAddCandidatesImpl'));
+    expect(impl.slice(0, impl.indexOf('const observedGetGolfGroupAddCandidates'))).toContain(
+      'golf_team_coach_staff',
+    );
+  });
+
+  it('fails the candidate load when a ROSTER read fails, not just the participant read', () => {
+    // Both roster reads run under the caller's RLS. On error `.data` is null,
+    // both loops iterate zero times, and the sheet renders "Everyone on this
+    // team is already in the group." — a failed read and a genuinely-full
+    // group would be indistinguishable, and one of them means "try again".
+    const impl = actions.slice(actions.indexOf('async function getGolfGroupAddCandidatesImpl'));
+    const body = impl.slice(0, impl.indexOf('const observedGetGolfGroupAddCandidates'));
+    expect(body).toContain('Failed to load the team roster');
+    expect(body).toContain("table: 'golf_team_members' as const");
+    expect(body).toContain("table: 'golf_team_coach_staff' as const");
+  });
+
+  it('excludes people already in the group from the candidate list', () => {
+    expect(actions).toContain('alreadyIn.has(');
+  });
+});
+
+describe('membership — who the sheet offers the controls to', () => {
+  it('derives the offer from creator === viewer, the same fact the Admin pill uses', () => {
+    expect(sheetCode).toContain('const isCreator = Boolean(creatorId) && creatorId === currentUserId');
+  });
+
+  it('never offers Remove on the viewer\'s own row', () => {
+    // The component's mirror of the policy's orphan guard: the creator leaving
+    // is "Leave group", which has a different consequence.
+    expect(sheetCode).toContain("canRemove={canManage && m.id !== currentUserId}");
+  });
+
+  it('requires the handlers to be supplied, so a read-only caller stays read-only', () => {
+    expect(sheetCode).toContain('const canManage = isCreator && Boolean(onAddMember) && Boolean(onRemoveMember)');
+  });
+
+  it('shows Leave group to every member, not only the creator', () => {
+    // Unlike Add and Remove, self-delete is permitted by production RLS today.
+    expect(sheetCode).toContain('{!adding && onLeaveGroup && (');
+  });
+
+  it('surfaces a refusal in the sheet instead of failing silently', () => {
+    expect(sheetCode).toContain('setError(result.error)');
+    expect(sheetCode).toContain('text-fw-danger-ink');
+  });
+
+  it('confirms both destructive actions inline rather than in a stacked overlay', () => {
+    // A second overlay above a Sheet is the z-index trap design-system.md
+    // documents, and window.confirm blocks the WKWebView outright.
+    expect(sheetCode).toContain('Remove?');
+    expect(sheetCode).toContain('Leave this group?');
+    expect(sheetCode).not.toContain('window.confirm');
+  });
+
+  it('clears every armed confirmation when the sheet closes', () => {
+    // A confirmation left armed across close-and-reopen turns a mis-tap into
+    // a removal.
+    const effect = sheetCode.slice(sheetCode.indexOf('if (!open) {'));
+    const body = effect.slice(0, effect.indexOf('}, [open]);'));
+    expect(body).toContain('setRemoveConfirmId(null)');
+    expect(body).toContain('setLeaveConfirm(false)');
+    expect(body).toContain('setAdding(false)');
+  });
+
+  it('loads add candidates on open, never on mount', () => {
+    expect(sheetCode).toContain('const openAdd = React.useCallback(');
+    expect(sheetCode).toContain('if (!loadAddCandidates) return;');
+  });
+
+  it('applies the artboard\'s accent Add link on the MEMBERS baseline', () => {
+    // `:80-82` — 12px / 500 in the accent, right-aligned on the heading's
+    // baseline. Both sides measured.
+    const add = artboard.match(
+      /<span style="font-size: (\d+)px; font-weight: (\d+); color: oklch\(([^)]+)\);">Add<\/span>/,
+    );
+    expect(add, 'expected the artboard to draw an Add link').not.toBeNull();
+    expect(add![1]).toBe('12');
+    expect(add![2]).toBe('500');
+    expect(typeStep('caption-1')).toContain("'12px'");
+    expect(typeStep('caption-1')).toContain("fontWeight: '400'");
+    expect(sheetCode).toContain('items-baseline justify-between');
+    expect(sheetCode).toContain('text-caption-1 font-medium text-accent-700');
+  });
+
+  it('applies the artboard\'s Leave group pill geometry', () => {
+    // `:141-143` — 50px tall, fully rounded, 15px / 600 on the danger tint.
+    expect(artboard).toContain('height: 50px');
+    expect(artboard).toContain('Leave group');
+    expect(typeStep('subhead')).toContain("'15px'");
+    expect(sheetCode).toContain('h-[50px] w-full rounded-full bg-fw-danger-bg');
+    expect(sheetCode).toContain('text-subhead font-semibold text-fw-danger-ink');
+  });
+});
+
+describe('membership — the page hands the sheet server actions, not local state', () => {
+  it('refetches after every mutation instead of patching the member map', () => {
+    // `groupParticipants` and the header's "N members" come from the same
+    // rows. Patching one locally lets them disagree for as long as the sheet
+    // stays open — the disagreement W7 removed.
+    expect(pageCode).toContain('await fetchGroupParticipants(selectedConversation.id)');
+    const add = pageCode.slice(pageCode.indexOf('onAddMember={'));
+    expect(add.slice(0, add.indexOf('onRemoveMember='))).toContain('await refetch()');
+  });
+
+  it('deselects the conversation on leave', () => {
+    // The participant row is gone, so the thread cannot keep rendering.
+    const leave = pageCode.slice(pageCode.indexOf('onLeaveGroup={'));
+    expect(leave.slice(0, leave.indexOf('loadAddCandidates='))).toContain(
+      'setSelectedConversationId(null)',
+    );
   });
 });

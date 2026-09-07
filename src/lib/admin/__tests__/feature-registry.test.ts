@@ -377,7 +377,14 @@ describe('FEATURE_REGISTRY completeness', () => {
     // dead `createFocusAreaFromReview(reviewId, focusAreaData)` (-1 — zero
     // importers; development.ts's camelCase-args variant is the one every
     // real caller uses).
-    expect(total).toBe(420);
+    // 2026-09-07 (+4), golf group membership: getGolfGroupAddCandidates,
+    // addGolfGroupMember, removeGolfGroupMember and leaveGolfGroup added to
+    // `messaging`'s explicit array in src/app/actions/messages.ts. That file
+    // is one of the explicitly-listed (non-'ALL') manifest entries, so unlike
+    // an 'ALL'-mapped file it needs the names spelled out here as well as
+    // being picked up by the live scan in coverage-contract.foundation
+    // (428 -> 432 there).
+    expect(total).toBe(424);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

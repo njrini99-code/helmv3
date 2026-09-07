@@ -20,13 +20,43 @@
  *
  *   • Mute is G-02, deferred — it depends on G-58's migration being APPLIED,
  *     which is the owner's step, not this branch's.
- *   • Search, Files, Add member and Leave group have no existing capability
- *     anywhere in the messages tree. Drawing a control that does nothing is
- *     worse than not drawing it: it scores as coverage and reads as a bug.
+ *   • Search and Files have no capability anywhere in the messages tree.
+ *     Drawing a control that does nothing is worse than not drawing it: it
+ *     scores as coverage and reads as a bug.
  *
  * So they are absent by deferral, not by disagreement — the same disposition
  * G-55 recorded for Reply. The sheet is laid out so each has an obvious slot
  * when its capability lands.
+ *
+ * MEMBERSHIP: ADD, REMOVE, LEAVE
+ * The artboard's "Add" link (`:82`) and "Leave group" row (`:143`) are now
+ * live, and a per-row Remove — which the artboard does not draw — is added
+ * beside them, because "add a member" without "remove a member" leaves a group
+ * that can only ever grow.
+ *
+ * These three are NOT equally available, and the difference is in the database,
+ * not here:
+ *
+ *   • LEAVE works against production RLS as it stands. The baseline
+ *     `golf_participants_delete` is `USING (user_id = auth.uid())` — deleting
+ *     your own participant row is the one membership mutation permitted today.
+ *   • ADD and REMOVE need
+ *     `20260907160000_golf_team_chat_membership_management.sql` APPLIED. Until
+ *     it is, `golf_participants_insert_v2`'s creator branch is bounded to
+ *     creation time and the delete policy has no creator branch at all, so both
+ *     are refused with 42501.
+ *
+ * They are still rendered rather than gated behind a flag, because the
+ * predicate that decides whether they APPEAR is a real one — you must be the
+ * group's creator, the same bound both new policy branches carry and the same
+ * bound the Admin pill already draws. A refusal surfaces as the action's error
+ * message and is recorded through `maybeCaptureRlsDenial`; it is never a silent
+ * no-op. A flag constant would add a second thing for the owner to remember and
+ * would still ship no capability.
+ *
+ * Both destructive paths confirm inline, reusing the two-icon `Inset` pattern
+ * G-56 established for message delete rather than a stacked overlay — a second
+ * overlay above a Sheet is the z-index trap `design-system.md` documents.
  *
  * TOKENS — measured on both sides, not chosen
  * Every value below was read out of the artboard and matched against the token
@@ -67,9 +97,11 @@
  */
 
 import * as React from 'react';
+import { Check, UserMinus, X } from 'lucide-react';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
-import { Button } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
+import { Inset } from '@/components/fairway/surfaces/surface';
 import { cn } from '@/lib/utils';
 
 /**
@@ -88,6 +120,19 @@ export interface GroupMember {
   avatar: string | null;
   /** `golf_coaches.title`, or `Class of {golf_players.graduation_year}`. */
   subtitle?: string;
+  type: 'coach' | 'player';
+}
+
+/**
+ * A teammate who could be added — the shape `getGolfGroupAddCandidates`
+ * returns. Separate from `GroupMember` because it is a different fact: a
+ * candidate has no participant row yet, so it has no membership to describe.
+ */
+export interface GroupAddCandidate {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  subtitle: string | null;
   type: 'coach' | 'player';
 }
 
@@ -112,6 +157,22 @@ export interface GroupDetailsSheetProps {
    * whose NAME resolved, and can legitimately be lower.
    */
   memberCount?: number;
+
+  /**
+   * Membership management. All three are optional: a caller that supplies none
+   * gets exactly the read-only sheet, which is what every non-group surface
+   * and every test written before this wiring expects.
+   *
+   * Add and Remove additionally require the viewer to be the creator — the
+   * component decides that from `creatorId`/`currentUserId` rather than taking
+   * it on trust, so a caller cannot accidentally offer a control the database
+   * will refuse.
+   */
+  onAddMember?: (userId: string) => Promise<{ error?: string } | void>;
+  onRemoveMember?: (userId: string) => Promise<{ error?: string } | void>;
+  onLeaveGroup?: () => Promise<{ error?: string } | void>;
+  /** Loads the addable teammates, called when Add is opened (never on mount). */
+  loadAddCandidates?: () => Promise<GroupAddCandidate[]>;
 }
 
 /** `Jul 21` — month and day, the artboard's own format (`:60`). */
@@ -180,10 +241,23 @@ function MemberRow({
   member,
   isYou,
   isAdmin,
+  canRemove,
+  confirming,
+  busy,
+  onAskRemove,
+  onCancelRemove,
+  onConfirmRemove,
 }: {
   member: GroupMember;
   isYou: boolean;
   isAdmin: boolean;
+  /** Creator, and not this row — see the sheet's membership note. */
+  canRemove: boolean;
+  confirming: boolean;
+  busy: boolean;
+  onAskRemove: () => void;
+  onCancelRemove: () => void;
+  onConfirmRemove: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 rounded-fw-md px-2.5 py-2">
@@ -212,6 +286,80 @@ function MemberRow({
           Admin
         </span>
       )}
+      {/* Confirmation is INLINE and mirrors G-56's message-delete pattern —
+          `Inset` on the danger tokens, a check and an X. A stacked overlay
+          above a Sheet is the z-index trap design-system.md documents, and a
+          window.confirm would block the WKWebView outright. */}
+      {canRemove && confirming && (
+        <Inset padding="none" className="flex flex-shrink-0 items-center gap-1 bg-fw-danger-bg px-2.5 py-1.5">
+          <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger-ink">Remove?</span>
+          <IconButton
+            variant="danger"
+            size="sm"
+            aria-label={`Confirm remove ${member.name}`}
+            disabled={busy}
+            onClick={onConfirmRemove}
+          >
+            <Check size={18} aria-hidden="true" />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            aria-label="Cancel remove"
+            disabled={busy}
+            onClick={onCancelRemove}
+          >
+            <X size={18} aria-hidden="true" />
+          </IconButton>
+        </Inset>
+      )}
+      {canRemove && !confirming && (
+        <IconButton
+          variant="ghost"
+          size="sm"
+          aria-label={`Remove ${member.name}`}
+          className="flex-shrink-0"
+          onClick={onAskRemove}
+        >
+          <UserMinus size={18} aria-hidden="true" />
+        </IconButton>
+      )}
+    </div>
+  );
+}
+
+/** One row of the add-a-member list — a teammate who is not in the group. */
+function CandidateRow({
+  candidate,
+  busy,
+  onAdd,
+}: {
+  candidate: GroupAddCandidate;
+  busy: boolean;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-fw-md px-2.5 py-2">
+      <Avatar decorative name={candidate.name} src={candidate.avatarUrl} size="md" />
+      <div className="flex min-w-0 flex-1 flex-col gap-px">
+        <span className="truncate font-fw-sans text-subhead font-medium text-text-primary">
+          {candidate.name}
+        </span>
+        {candidate.subtitle && (
+          <span className="truncate font-fw-sans text-caption-1 text-text-tertiary">
+            {candidate.subtitle}
+          </span>
+        )}
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        disabled={busy}
+        onClick={onAdd}
+        className="h-9 flex-shrink-0 rounded-fw-md px-3 font-fw-sans text-caption-1 font-medium text-accent-700"
+      >
+        Add
+      </Button>
     </div>
   );
 }
@@ -225,13 +373,81 @@ export function GroupDetailsSheet({
   currentUserId,
   members,
   memberCount,
+  onAddMember,
+  onRemoveMember,
+  onLeaveGroup,
+  loadAddCandidates,
 }: GroupDetailsSheetProps) {
   const [showAll, setShowAll] = React.useState(false);
+  const [adding, setAdding] = React.useState(false);
+  const [candidates, setCandidates] = React.useState<GroupAddCandidate[] | null>(null);
+  const [removeConfirmId, setRemoveConfirmId] = React.useState<string | null>(null);
+  const [leaveConfirm, setLeaveConfirm] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  // Collapse again on close, so reopening starts where the artboard does.
+  // Reset every transient state on close, so reopening starts where the
+  // artboard does. A confirmation left armed across a close-and-reopen is the
+  // shape that turns a mis-tap into a removal.
   React.useEffect(() => {
-    if (!open) setShowAll(false);
+    if (!open) {
+      setShowAll(false);
+      setAdding(false);
+      setCandidates(null);
+      setRemoveConfirmId(null);
+      setLeaveConfirm(false);
+      setError(null);
+    }
   }, [open]);
+
+  /**
+   * The viewer created this group.
+   *
+   * The same predicate both new policy branches carry, and the same one the
+   * Admin pill already draws — so what the sheet OFFERS and what the database
+   * PERMITS are derived from one fact rather than two that can drift.
+   */
+  const isCreator = Boolean(creatorId) && creatorId === currentUserId;
+  const canManage = isCreator && Boolean(onAddMember) && Boolean(onRemoveMember);
+
+  // Every membership call funnels through here so no path can forget to clear
+  // `busy` or to surface a refusal. A 42501 from an unapplied migration
+  // arrives as `error` and is shown, never swallowed into a silent no-op.
+  const run = React.useCallback(
+    async (fn: () => Promise<{ error?: string } | void>, onDone?: () => void) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const result = await fn();
+        if (result && 'error' in result && result.error) {
+          setError(result.error);
+          return;
+        }
+        onDone?.();
+      } catch {
+        setError('Something went wrong. Try again.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [],
+  );
+
+  const openAdd = React.useCallback(() => {
+    setAdding(true);
+    setError(null);
+    if (!loadAddCandidates) return;
+    // Loaded on open rather than on mount: the list is only meaningful once
+    // someone asks for it, and a group's roster is a query nobody should pay
+    // for by opening the details sheet.
+    setCandidates(null);
+    void loadAddCandidates()
+      .then(setCandidates)
+      .catch(() => {
+        setCandidates([]);
+        setError('Could not load teammates.');
+      });
+  }, [loadAddCandidates]);
 
   const ordered = React.useMemo(
     () => orderMembers(members, currentUserId),
@@ -287,10 +503,64 @@ export function GroupDetailsSheet({
           </div>
         </div>
 
-        <div className="mb-2 px-1">
-          <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">Members</span>
+        {/* The artboard puts "Add" on the MEMBERS heading's baseline, right-
+            aligned (`:80-82`) — 12px / 500 in the accent, which is
+            `text-caption-1 font-medium text-accent-700`. It appears only for
+            the creator, because only the creator's insert is permitted. */}
+        <div className="mb-2 flex items-baseline justify-between px-1">
+          <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+            {adding ? 'Add member' : 'Members'}
+          </span>
+          {canManage && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={adding ? () => setAdding(false) : openAdd}
+              className="h-auto rounded-fw-sm px-1 py-0 font-fw-sans text-caption-1 font-medium text-accent-700"
+            >
+              {adding ? 'Done' : 'Add'}
+            </Button>
+          )}
         </div>
 
+        {/* A refusal has to be visible. Before the membership migration is
+            applied, an add or a remove comes back 42501 and lands here rather
+            than looking like a control that did nothing. */}
+        {error && (
+          <p className="mb-2 px-1 font-fw-sans text-caption-1 text-fw-danger-ink">{error}</p>
+        )}
+
+        {adding ? (
+          <div className="flex flex-col gap-px">
+            {candidates === null && (
+              <p className="px-3.5 py-3 font-fw-sans text-caption-1 text-text-tertiary">
+                Loading teammates…
+              </p>
+            )}
+            {candidates?.length === 0 && (
+              <p className="px-3.5 py-3 font-fw-sans text-caption-1 text-text-tertiary">
+                Everyone on this team is already in the group.
+              </p>
+            )}
+            {candidates?.map((c) => (
+              <CandidateRow
+                key={c.userId}
+                candidate={c}
+                busy={busy}
+                onAdd={() =>
+                  void run(
+                    () => onAddMember!(c.userId),
+                    // Drop the added teammate from the list rather than
+                    // refetching: the server is the authority on membership,
+                    // but re-querying on every add would make a run of adds
+                    // N round trips slower for no new information.
+                    () => setCandidates((prev) => (prev ?? []).filter((x) => x.userId !== c.userId)),
+                  )
+                }
+              />
+            ))}
+          </div>
+        ) : (
         <div className="flex flex-col gap-px">
           {visible.map((m) => (
             <MemberRow
@@ -298,6 +568,21 @@ export function GroupDetailsSheet({
               member={m}
               isYou={m.id === currentUserId}
               isAdmin={Boolean(creatorId) && m.id === creatorId}
+              /* Never on your own row: the creator leaving is "Leave group",
+                 which has a different consequence and its own control. This
+                 mirrors the policy's own orphan guard rather than restating
+                 it — the branch requires `user_id <> auth.uid()`. */
+              canRemove={canManage && m.id !== currentUserId}
+              confirming={removeConfirmId === m.id}
+              busy={busy}
+              onAskRemove={() => {
+                setError(null);
+                setRemoveConfirmId(m.id);
+              }}
+              onCancelRemove={() => setRemoveConfirmId(null)}
+              onConfirmRemove={() =>
+                void run(() => onRemoveMember!(m.id), () => setRemoveConfirmId(null))
+              }
             />
           ))}
           {/* The artboard truncates at four and offers "Show all 9" (`:83`), so
@@ -316,14 +601,62 @@ export function GroupDetailsSheet({
             </Button>
           )}
         </div>
+        )}
 
         {/* A group whose names have not resolved yet — the participant rows
             exist (the count above is real) but no coach/player row matched.
             Says so, rather than rendering an empty list under a live count. */}
-        {ordered.length === 0 && (
+        {!adding && ordered.length === 0 && (
           <p className={cn('px-3.5 py-3 font-fw-sans text-caption-1 text-text-tertiary')}>
             Member details are unavailable right now.
           </p>
+        )}
+
+        {/* Leave group — the artboard's bottom pill (`:141-144`): full-width,
+            50px, fully rounded, 15px/600 on the danger tokens. Unlike Add and
+            Remove this works against production RLS as it stands, so it is
+            shown to every member including the creator; the policy's self-
+            delete branch is what backs it. */}
+        {!adding && onLeaveGroup && (
+          <div className="mt-5">
+            {leaveConfirm ? (
+              <Inset padding="none" className="flex h-[50px] items-center justify-center gap-2 rounded-full bg-fw-danger-bg px-4">
+                <span className="font-fw-sans text-footnote text-fw-danger-ink">
+                  Leave this group?
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => void run(() => onLeaveGroup(), () => onOpenChange(false))}
+                  className="h-9 rounded-full px-3 font-fw-sans text-footnote font-semibold text-fw-danger-ink"
+                >
+                  Leave
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => setLeaveConfirm(false)}
+                  className="h-9 rounded-full px-3 font-fw-sans text-footnote font-medium text-text-secondary"
+                >
+                  Cancel
+                </Button>
+              </Inset>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setError(null);
+                  setLeaveConfirm(true);
+                }}
+                className="h-[50px] w-full rounded-full bg-fw-danger-bg font-fw-sans text-subhead font-semibold text-fw-danger-ink"
+              >
+                Leave group
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </Sheet>

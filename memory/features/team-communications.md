@@ -247,6 +247,92 @@ when the column is empty. That is why `GroupMember` is its own type rather than
 `GolfConversationParticipant`, whose `subtitle` is required and whose DM path
 fills the gap with `'Golf Coach'` / `'Golf Player'`.
 
+## Group membership management, and why it needed a policy change
+
+Adding or removing a member of a team chat is NOT a wiring problem. Verified
+against live production `pg_policies` before any code was written:
+
+- `golf_participants_delete` was `USING (user_id = auth.uid())` — self only. A
+  creator could not remove anybody.
+- `golf_participants_insert_v2`'s creator branch carried
+  `AND NOT golf_conversation_has_other_participant(conversation_id)`, so an
+  insert into a thread that already held someone else was refused.
+
+That clause is
+`20260819070000_conversation_creator_cannot_inject_third_party.sql`, added
+after a **verified production attack**. So "Leave group" was the only membership
+mutation the product could perform, and it still is until
+`20260907160000_golf_team_chat_membership_management.sql` is APPLIED.
+
+**The new migration is a scoped allowance, not a reversal.** The 2026-08-19
+branch authorized an insert on the sole basis that the actor created the
+conversation — no bound on which conversation, none on who was being added, and
+reachable against a private DM. The replacement is bounded on three axes at
+once, and all three must hold:
+
+1. the conversation is a genuine team chat (`is_team_chat AND team_id IS NOT
+   NULL`) — a DM is unreachable, which is the case the attack used;
+2. the actor is the conversation's `created_by`;
+3. **for INSERT**, the person being added is already an active player or a
+   coach on the owning team (`golf_user_on_conversation_team`, a target-user
+   helper — `golf_conversation_on_my_team` answers for the CALLER and cannot
+   be aimed at someone else).
+
+The DELETE branch adds `user_id <> auth.uid()`, which given branch 2's creator
+requirement is exactly "not the creator's own row" — so Remove is never a
+second, unlabelled way to leave. Removing yourself is still the self-delete
+branch, i.e. Leave.
+
+**The DELETE branch does not rest on the 11-of-11 observation, because this
+change staled it.** 20260819070000's header recorded that no golf conversation
+had a creator who was not a participant, and the DELETE branch would have been
+free to lean on that — except the same change ships Leave group, which the
+creator can use. Re-asked directly against a real Postgres: acting as a creator
+who is NOT a participant, the conversation IS visible (a coach branch in
+`golf_conversations_select_v2`) but ZERO participant rows are, because
+`golf_participants_select_v2` has no coach branch. A DELETE over invisible rows
+removes nothing, so a departed creator was already powerless. The branch states
+the bound itself anyway — `conversation_id IN (SELECT user_conversation_ids(…))`
+— deliberately redundant, so that a DELETE branch's only real bound never lives
+in a different policy one edit away from disappearing unnoticed.
+
+A group CAN end up with no creator among its members, via Leave. The
+consequence is that nobody can remove anyone afterwards, which is the intended
+direction to fail in.
+
+**Adding a member hands them the whole backlog.** `golf_participants_select_v2`
+grants a participant the conversation's full prior history and this migration
+does not change that. There is no per-message join watermark in the schema, so
+"only messages after you joined" is a different feature, not a variant.
+
+**Creator-only, not any coach on the team.** `golf_conversation_participants`
+has no role column of any kind, so `created_by` is the only thing "admin" can
+mean here — the same fact the sheet's Admin pill draws, and the same predicate
+the UI uses to decide whether to offer the controls at all. Deriving both from
+one fact is deliberate: what the sheet offers and what the database permits
+cannot drift apart.
+
+**Where the proof lives.**
+`supabase/tests/rls/golf_group_membership_management.sql` (14 pgTAP
+assertions) exercises a real Postgres, not `pg_policies` text. Run against a
+local stack with the migration applied, all 14 pass; with both policies reverted
+to their pre-migration shape inside the same transaction, exactly three fail
+while the 2026-08-19 refusals and the two-statement creation order still pass.
+A refusal-only suite would have passed against a predicate that blocks
+everything — that trap is named in the 2026-08-19 migration's own verification
+block, and the creation-order check is its pairing.
+
+The suite records its own limit rather than overstating: the two departed-creator
+assertions do NOT discriminate on the DELETE branch's participation clause. A
+third control run with that clause alone removed still passes all 14, for the
+measured reason above. They are a contract on the outcome, which currently holds
+through two independent mechanisms.
+
+**One trap worth carrying forward:** a DELETE denied by RLS removes zero rows
+rather than raising, and counting the rows afterwards AS THE ACTING USER cannot
+distinguish "the row is gone" from "the row is invisible to me" — the same
+SELECT policy filters both. Those assertions take their counts with RLS off.
+
 ## Known Risk Areas
 
 - Announcement inline tasks can drift from task completion state if tasks and assignment tables are not read consistently.

@@ -199,6 +199,92 @@ it is the owner's, through `db-apply`.
       clause drops **whole** when the creator cannot be named, rather than printing a
       placeholder. 45 tests, 12 failing pre-fix.
 
+## W7b — Group membership: add, remove, leave (owner request, outside the original manifest)
+- [x] **Add member and Remove member wired in, and the honest half is stated.** Asked
+      for directly by the owner mid-run ("Add member and delete member need wired in.
+      Don't worry about search"), so it is not a numbered finding. It is also **not a
+      wiring task**, which the first thing this wave did was establish against live
+      production `pg_policies`: `golf_participants_delete` is
+      `USING (user_id = auth.uid())` — self only, so a creator **cannot** remove anyone —
+      and `golf_participants_insert_v2`'s creator branch carries
+      `AND NOT golf_conversation_has_other_participant(conversation_id)`, so adding to an
+      **existing** group is refused. That clause is
+      `20260819070000_conversation_creator_cannot_inject_third_party.sql`, whose header
+      records it as a control added after a **verified production attack**. Both halves of
+      the request therefore need a policy change, which is the owner's to apply.
+      **This is not a reversal of that hardening**, and the migration says why in its own
+      terms: the branch removed on 2026-08-19 authorized an insert on the sole basis that
+      the actor created the conversation — no bound on which conversation, none on who was
+      being added, and reachable against a private DM. The new branch is bounded on three
+      axes at once: the conversation must be a genuine team chat
+      (`is_team_chat AND team_id IS NOT NULL`, so a DM is unreachable), the actor must be
+      its creator, and **for INSERT the person being added must already be on the owning
+      team** — so it grants no ability to introduce an outsider to anything, only to
+      include a teammate in a channel their team already owns. The DELETE branch excludes
+      the creator's own row, so "remove" can never orphan a group of its only Admin.
+      **The history exposure is named, not buried:** `golf_participants_select_v2` gives a
+      participant the conversation's full prior history, so adding a member hands them the
+      backlog. Almost certainly right for a team channel, and the owner's call to make
+      knowingly. **Creator-only, not any coach** — matching the Admin pill, which is the
+      only thing "admin" can mean on a table with no role column.
+- [x] **Tested against a real Postgres, both directions** — the thing
+      `20260819070000` could not do ("Docker was unavailable, so the clean-room
+      local-stack replay could not be exercised"). Docker was available this time.
+      `supabase/tests/rls/golf_group_membership_management.sql`, 14 pgTAP assertions,
+      run against the local stack with the migration applied: all 14 pass. Re-run with
+      both policies reverted to their pre-migration shape inside the same transaction:
+      exactly 3 fail — the delete policy's creator branch, the add (42501) and the remove
+      (0 rows) — while the 2026-08-19 refusals (DM injection, non-creator add) and the
+      two-statement creation order still pass. So the suite discriminates, and the
+      widening demonstrably did not disturb what the earlier hardening closed.
+- [x] **Two defects found on review, both fixed, and one of them corrected a claim
+      rather than only the code.** (a) The DELETE branch's safety argument cited
+      20260819070000's "creator is always a participant" finding — evidence this very
+      PR staled by shipping Leave group. Re-asked against a real Postgres instead of
+      re-cited: a creator who is not a participant sees the conversation but zero
+      participant rows (`golf_participants_select_v2` has no coach branch), so the
+      DELETE was already a no-op. The branch now states the bound itself via
+      `user_conversation_ids` — deliberately redundant, so this branch's only real bound
+      does not live in a different policy. GROUP 4's two new assertions cover the
+      outcome, and the suite says plainly that they do NOT discriminate on that clause:
+      a third control run with it alone removed still passes all 14. (b)
+      `getGolfGroupAddCandidatesImpl` checked `existing.error` and explained why it must
+      not be absorbed, then absorbed `members.error` and `staff.error` — on which the
+      sheet renders "Everyone on this team is already in the group", making a failed
+      read indistinguishable from a full one. Both now throw.
+- [x] **One assertion was wrong first and the fix is recorded:** counting rows as the
+      acting user cannot tell "the row is gone" from "the row is invisible to me" — the
+      same SELECT policy filters both — so the delete assertions now take their counts
+      with RLS off. The first draft passed for the wrong reason.
+- [x] **Declarative schema updated and proven equal.** `supabase/schemas/policies/golf.sql`
+      and `functions/public.sql` carry the new shapes;
+      `scripts/db/check-new-migrations-in-schema.sh` is a blocking CI gate, so a migration
+      without them fails the PR. Equality is not assumed: the declarative statements were
+      applied to a scratch transaction and Postgres's own deparse of the result diffed
+      byte-for-byte against the deparse of what the migration produces. Identical.
+- [x] **Leave group ships live and ungated**, because it is the one membership mutation
+      production RLS already permits (the baseline self-delete). Add and Remove render for
+      the creator of a team chat — derived from `creator_id === currentUserId`, the same
+      fact the Admin pill uses, so what the sheet offers and what the database permits come
+      from one predicate rather than two that can drift. Before the migration is applied
+      they return 42501, and that surfaces as an error in the sheet and is recorded through
+      `maybeCaptureRlsDenial` — never a silent no-op. **No feature-flag constant**: a
+      hardcoded `false` would ship no capability while adding a second thing for the owner
+      to remember and a test to delete on enablement.
+- [x] **The absence assertions were updated deliberately, which is the mechanism they
+      exist for.** `'Add member'` and `'Leave group'` were removed from the deferred-control
+      `it.each` list; Mute, Search and Files stay. Enabling one costs a deleted assertion,
+      so it cannot happen by accident. 73 tests total (45 → 73), 18 failing pre-change.
+- [x] **Two action-count tripwires moved, with the arithmetic written down** —
+      `coverage-contract.foundation` 428 → 432 and golf message exports 10 → 14;
+      `feature-registry` 420 → 424, because `src/app/actions/messages.ts` is one of the
+      explicitly-listed manifest entries rather than an `'ALL'`-mapped file, so the four
+      new actions had to be named in `feature-registry.ts` too.
+- [ ] **BLOCKED ON THE OWNER, and nothing else is:** apply
+      `20260907160000_golf_team_chat_membership_management.sql` through `db-apply` after
+      `db-migration-reviewer` (mandatory before applying). Until then Add and Remove are
+      visible to a group's creator and fail with a surfaced error; Leave works today.
+
 ## W8 — Rendered fidelity review (M05 / D-02)
 - [ ] Serve the app against the local stack and compare against `reference/*.dc.html`
 - [ ] Confirm G-26 is actually fixed in a real browser, not just in jsdom

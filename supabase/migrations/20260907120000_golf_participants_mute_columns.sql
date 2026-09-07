@@ -66,10 +66,20 @@
 -- `db:drift:check` against the migrations rebuild — so deleting or breaking
 -- this file fails CI rather than silently reopening the gap.
 --
--- REVERSAL: `ALTER TABLE public.golf_conversation_participants DROP COLUMN
--- notification_level, DROP COLUMN muted_until;` — destructive, and only ever
--- correct in an environment where this migration actually created them. Never
--- in production, where they hold real rows.
+-- VERIFY: select 1 from information_schema.columns
+-- VERIFY:  where table_schema = 'public' and table_name = 'golf_conversation_participants'
+-- VERIFY:    and column_name = 'notification_level' and is_nullable = 'NO';
+-- VERIFY: select 1 from information_schema.columns
+-- VERIFY:  where table_schema = 'public' and table_name = 'golf_conversation_participants'
+-- VERIFY:    and column_name = 'muted_until';
+-- VERIFY: select 1 from pg_constraint
+-- VERIFY:  where conname = 'golf_participants_notification_level_check';
+--
+-- ROLLBACK: `ALTER TABLE public.golf_conversation_participants DROP COLUMN
+-- ROLLBACK: notification_level, DROP COLUMN muted_until;` — destructive, and only
+-- ROLLBACK: ever correct in an environment where this migration actually created
+-- ROLLBACK: them. NEVER in production, where they already hold real rows and this
+-- ROLLBACK: migration is a no-op — there the correct rollback is to do nothing.
 
 ALTER TABLE "public"."golf_conversation_participants"
 ADD COLUMN IF NOT EXISTS "notification_level" text DEFAULT 'all'::text NOT NULL;
