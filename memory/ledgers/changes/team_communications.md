@@ -751,3 +751,39 @@
   for the same file, so a 4xx on one would say nothing about the other.
 - The `contentType` option is kept, not deleted. It is correct for the raw-body
   branch, and the comment now says which branch reads it.
+
+## G-09b — the numbers come from the transfer
+
+- Change: `uploadAttachment` uploads through `createSignedUploadUrl` + an
+  `XMLHttpRequest` PUT, reporting `upload.onprogress` bytes. The hardcoded
+  10 / 90 / 100 and the "we simulate progress for UX" comment are gone.
+  `supabase.storage.upload()` stays as the fallback.
+- `XMLHttpRequest` rather than `fetch`, and no new dependency: `xhr.upload.
+  onprogress` is the only upload-progress signal a browser gives without a
+  streaming request body, and it is the same object whose `abort()` G-24
+  needs. A TUS client would add nothing this path uses.
+- The headers are COPIED from the SDK's own raw-body branch
+  (`@supabase/storage-js/dist/index.mjs:631-636`) rather than invented — that
+  branch is the proof the endpoint accepts a raw body PUT. `cache-control:
+  max-age=3600` is carried across deliberately; it was easy to drop while
+  rewriting the call and would have silently changed object caching. No
+  `Authorization` and no `apikey`: the token is in the query string, which is
+  what lets a bare XHR work.
+- WHEN THE FALLBACK FIRES, narrower than "anything not 2xx" and stated because
+  it is a judgement call: a signing failure and a transport failure mean no
+  server answered, so the other path can still succeed. A 4xx IS an answer —
+  and since G-61 both paths send the same mime for the same bytes, re-sending
+  them would collect the same refusal at twice the latency. 5xx falls back: a
+  server fault is not a verdict about this request.
+- `lengthComputable === false` reports NOTHING. `event.total` is 0 there, so
+  `loaded / total` is NaN or Infinity, and a number derived from it is exactly
+  the fabricated progress §1.1 forbids. The bar holds its position, which is
+  the honest reading of "we cannot tell".
+- Capped at 99 while bytes are moving; 100 is reported by the caller once the
+  response has arrived. "The last byte left this device" and "the server
+  accepted it" are different facts, and the gap between them is the window in
+  which the upload can still be refused.
+- The fallback reports 0 and then 100 and nothing between. `.upload()` exposes
+  no transfer signal, and the shimmer overlay at 0% already reads as "working".
+  Recorded here rather than hidden: the fallback also cannot be cancelled,
+  which G-24 inherits.

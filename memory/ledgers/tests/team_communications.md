@@ -385,3 +385,25 @@ The other assertions guard what is easy to lose while rewriting this call: the
 file name (so the extension still matches the bytes), the byte count, the
 metadata agreeing with what was stored, `cacheControl: '3600'`, and the
 identity pass-through that avoids copying a 10MB photo in the common case.
+
+## G-09b — attachments.uploadTransport.test.ts
+
+15 tests, 12 failing pre-fix. Driven through a fake `XMLHttpRequest` and a
+stubbed Supabase client, so every branch that chooses between the two paths is
+exercised rather than read: signed PUT, signing failure, transport failure,
+5xx, 4xx, and no `XMLHttpRequest` at all.
+
+The progress assertions measure the transfer, not the call: 50/200 bytes must
+surface as 25 and 150/200 as 75, and 10 and 90 must NOT appear — the two
+numbers the old path could produce. A non-computable length must produce no
+report at all, and a fully-sent body must not read 100 until the response
+lands.
+
+Header assertions pin what a rewrite of this call would silently drop:
+`content-type` (G-61's property, now enforced on the request itself),
+`cache-control: max-age=3600`, and `x-upsert: false`.
+
+Two source assertions, on a comment-stripped read, guard the regression rather
+than the defect: no `onProgress(10)`/`onProgress(90)`/"simulate progress" may
+return, and every reported number must derive from `event.loaded /
+event.total` behind an `event.lengthComputable` guard.

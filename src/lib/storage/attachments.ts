@@ -13,6 +13,9 @@ import { convertHeicToJpeg } from './heic-to-jpeg';
 // Constants
 export const STORAGE_BUCKET = 'golf-attachments';
 
+/** Object cache lifetime, in seconds. Sent on both upload paths. */
+const CACHE_CONTROL_SECONDS = '3600';
+
 // File size limits by type (in bytes)
 export const FILE_SIZE_LIMITS: Record<string, number> = {
   image: 10 * 1024 * 1024,    // 10MB for images
@@ -225,6 +228,138 @@ function getVideoMetadata(
   });
 }
 
+/** What the transport did, flattened for the caller's one decision. */
+interface TransportOutcome {
+  success: boolean;
+  /** 0 for a transport failure — no response was read. */
+  status: number;
+  error?: string;
+}
+
+/**
+ * PUT a file to a signed upload URL, reporting REAL transfer progress (G-09b).
+ *
+ * `XMLHttpRequest` rather than `fetch` for one reason: `xhr.upload.onprogress`
+ * is the only upload-progress signal a browser gives without a streaming
+ * request body, and it is the same signal `xhr.abort()` makes cancellable
+ * (G-24). No new dependency, and nothing here that a TUS client would add.
+ *
+ * The headers are copied from the SDK's own raw-body branch
+ * (`@supabase/storage-js/dist/index.mjs:631-636`) rather than invented — that
+ * branch is the proof this endpoint accepts a raw body PUT. Note what is NOT
+ * here: no `Authorization`, no `apikey`. The token travels in the query
+ * string, which is what makes a bare XHR work at all.
+ */
+function putWithProgress(
+  signedUrl: string,
+  file: File,
+  contentType: string,
+  onProgress?: (progress: number) => void,
+): Promise<TransportOutcome> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', signedUrl, true);
+    xhr.setRequestHeader('content-type', contentType);
+    xhr.setRequestHeader('cache-control', `max-age=${CACHE_CONTROL_SECONDS}`);
+    xhr.setRequestHeader('x-upsert', 'false');
+
+    xhr.upload.onprogress = (event: ProgressEvent) => {
+      if (!onProgress) return;
+      // NO NUMBER WHEN THERE IS NO NUMBER. Without a computable length
+      // `event.total` is 0, and `loaded / total` is NaN or Infinity —
+      // reporting anything derived from it is precisely the fabricated
+      // progress §1.1 forbids and G-09 is named for. The bar stays where it
+      // is, which is the honest reading of "we cannot tell".
+      if (!event.lengthComputable || event.total <= 0) return;
+      // Capped below 100 while bytes are still moving: the last byte leaving
+      // this device is not the upload succeeding, and the difference is
+      // exactly the window in which the server can still refuse it. 100 is
+      // reported by the caller, once the response says so.
+      onProgress(Math.min(99, (event.loaded / event.total) * 100));
+    };
+
+    xhr.onload = () =>
+      resolve({
+        success: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        error: xhr.responseText || undefined,
+      });
+    xhr.onerror = () => resolve({ success: false, status: 0, error: 'Network error during upload' });
+    xhr.ontimeout = () => resolve({ success: false, status: 0, error: 'Upload timed out' });
+
+    xhr.send(file);
+  });
+}
+
+/**
+ * Upload the bytes, preferring the path that can report progress (G-09b).
+ *
+ * Replaces a hardcoded 10 / 90 / 100. Those constants were not merely
+ * approximate, they were unconnected to the transfer — and until G-09a wired
+ * the callback through they reached no pixel either, so nothing false was ever
+ * on screen. This is the signal that makes the bar mean something.
+ *
+ * WHEN THE FALLBACK FIRES, and why it is narrower than "anything that is not
+ * 2xx": a signing failure and a transport failure are cases where the server
+ * never answered, so trying the other path can still succeed. A 4xx IS an
+ * answer — the request was refused, and since G-61 both paths send the same
+ * mime type for the same bytes, re-sending them through `.upload()` would
+ * collect the same refusal at twice the latency. 5xx is kept because a server
+ * fault is not a verdict about this request.
+ *
+ * The fallback reports 0 and then 100 and nothing between. `.upload()` gives
+ * no transfer signal at all, and the shimmer overlay at 0% already reads as
+ * "working" without claiming a fraction that nobody measured.
+ */
+async function uploadBytes(
+  supabase: ReturnType<typeof createClient>,
+  storagePath: string,
+  file: File,
+  contentType: string,
+  onProgress?: (progress: number) => void,
+): Promise<{ success: boolean; error?: string }> {
+  if (typeof XMLHttpRequest !== 'undefined') {
+    const { data: signed, error: signError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .createSignedUploadUrl(storagePath);
+
+    if (signError || !signed?.signedUrl) {
+      console.warn(
+        '[Attachments] Could not sign an upload URL; falling back to the SDK upload:',
+        describeError(signError),
+      );
+    } else {
+      const put = await putWithProgress(signed.signedUrl, file, contentType, onProgress);
+      if (put.success) return { success: true };
+
+      if (put.status >= 400 && put.status < 500) {
+        return { success: false, error: put.error || `Upload rejected (${put.status})` };
+      }
+
+      console.warn(
+        `[Attachments] Signed upload failed (status ${put.status}); falling back to the SDK upload:`,
+        put.error,
+      );
+    }
+  }
+
+  const { error: uploadError } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(storagePath, file, {
+      cacheControl: CACHE_CONTROL_SECONDS,
+      upsert: false,
+      // Kept for the raw-body branch, which DOES read it. For the Blob body
+      // this call passes it is inert — see the `typedFile` note in
+      // `uploadAttachment`, which is what actually carries the type.
+      contentType,
+    });
+
+  if (uploadError) {
+    return { success: false, error: uploadError.message };
+  }
+  return { success: true };
+}
+
 /**
  * Upload a file to Supabase Storage
  */
@@ -317,35 +452,29 @@ export async function uploadAttachment(
     console.warn('[Attachments] Failed to get media metadata:', describeError(err));
   }
 
-  // Upload to Supabase Storage
-  // Note: Supabase JS client doesn't support progress tracking directly
-  // We simulate progress for UX
-  if (onProgress) {
-    onProgress(10); // Start
-  }
+  // Zero, because zero is true: nothing has been transferred yet.
+  onProgress?.(0);
 
-  const { error: uploadError } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .upload(storagePath, typedFile, {
-      cacheControl: '3600',
-      upsert: false,
-      // Kept for the raw-body branch, which DOES read it. For the Blob body
-      // this call passes it is inert — see the `typedFile` note above, which
-      // is what actually carries the type.
-      contentType: resolvedMimeType,
-    });
+  const transfer = await uploadBytes(
+    supabase,
+    storagePath,
+    typedFile,
+    resolvedMimeType,
+    onProgress,
+  );
 
-  if (uploadError) {
-    console.error('[Attachments] Upload error:', describeError(uploadError));
+  if (!transfer.success) {
+    console.error('[Attachments] Upload error:', transfer.error);
     return {
       success: false,
-      error: `Upload failed: ${uploadError.message}`,
+      error: `Upload failed: ${transfer.error}`,
     };
   }
 
-  if (onProgress) {
-    onProgress(90);
-  }
+  // The bytes are stored. Reported HERE and not from the progress handler,
+  // because "the last byte left this device" and "the server accepted it" are
+  // different facts and only the second one is 100%.
+  onProgress?.(100);
 
   // Get signed URL (valid for 1 hour)
   const { data: urlData, error: urlError } = await supabase.storage
@@ -358,10 +487,6 @@ export async function uploadAttachment(
       success: false,
       error: 'Upload succeeded but failed to get URL',
     };
-  }
-
-  if (onProgress) {
-    onProgress(100);
   }
 
   return {
