@@ -27,7 +27,7 @@ import { useState } from 'react';
 
 import { Button, Surface, Switch, ViewHeader } from '@/components/fairway';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { toast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   setAllChannels,
   setCategoryChannel,
@@ -129,7 +129,7 @@ export function FairwaySettingsNotifications({
     const result = await setCategoryChannel(cat, channel, enabled);
     if (!result.ok) {
       setPrefs(previousPrefs);
-      toast.error(result.error || 'Failed to save notification preference');
+      fairwayToast.danger(result.error || 'Failed to save notification preference');
     }
     setPending(key, false);
   }
@@ -142,7 +142,7 @@ export function FairwaySettingsNotifications({
     const result = await setQuietMode(enabled);
     if (!result.ok) {
       setQuiet(previousQuiet);
-      toast.error(result.error || 'Failed to save quiet mode');
+      fairwayToast.danger(result.error || 'Failed to save quiet mode');
     }
     setPending('quiet', false);
   }
@@ -167,11 +167,11 @@ export function FairwaySettingsNotifications({
     const result = await setAllChannels(nextPrefs);
     if (!result.ok) {
       setPrefs(previousPrefs);
-      toast.error(result.error || failureMessage);
+      fairwayToast.danger(result.error || failureMessage);
     } else {
       // Visibility of system status: a multi-second bulk write that succeeds
       // must confirm itself — without it the buttons re-enable with no signal.
-      toast.success(successMessage);
+      fairwayToast.success(successMessage);
     }
     setPending(BULK_KEY, false);
   }
