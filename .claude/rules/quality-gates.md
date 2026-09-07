@@ -60,6 +60,10 @@ Gate's blocking rules live in `.coderabbit/ast-grep/` and
 them directly. A zero-finding semgrep run is not evidence of a clean tree —
 check the scanned-file count.
 
+### Typecheck
+`typecheck:fast` (`tsgo`, the Go port of TypeScript) is the local loop only;
+`typecheck` (`tsc`) stays the CI gate — do not swap the gate for `tsgo`.
+
 ### CI shape
 Every GitHub Actions workflow that posts on a PR, one line each:
 `ci.yml` (typecheck, lint, vitest, build, RLS, doc gates → required
