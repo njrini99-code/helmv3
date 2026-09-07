@@ -233,12 +233,57 @@ describe('checkBudget — where the number came from', () => {
     expect(result.fallback_reason).toBe('budget_unresolved');
   });
 
+  /**
+   * `no_team` is account-shaped, not a billing or infra fault — it should
+   * stay findable in admin_events without paging as a Sentry issue. See
+   * `docs/observability/SENTRY_COVERAGE_MATRIX.md`'s `v3.llm.budget.*` note.
+   */
+  it('does not page Sentry for a coach on no team', async () => {
+    await checkBudget(fakeSb({ teamId: null }), 'c1', 0.05);
+
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('no team staff row'),
+      expect.objectContaining({ action: 'v3.llm.budget.no_team', skipSentry: true }),
+      'warning',
+    );
+  });
+
+  it('does not page Sentry for the platform-default fallback', async () => {
+    await checkBudget(fakeSb({ teamId: 't1', settingsByCoach: {} }), 'skip-sentry-coach', 0.05);
+
+    expect(logServerEvent).toHaveBeenCalledWith(
+      expect.stringContaining('no configured daily budget'),
+      expect.objectContaining({ action: 'v3.llm.budget.platform_default', skipSentry: true }),
+      'info',
+    );
+  });
+
   it('never reads a failed settings read as "this team has no budget"', async () => {
     const result = await checkBudget(fakeSb({ teamId: 't1', settingsError: true }), 'c1', 0.05);
 
     expect(result.source).toBe('unresolved');
     expect(result.fallback_reason).toBe('budget_unresolved');
     expect(result.fallback_reason).not.toBe('budget_disabled');
+  });
+
+  /**
+   * Unlike `no_team` and `platform_default`, a failed settings read is a
+   * genuine technical fault (bad query, RLS, transient Supabase blip) —
+   * left paging on purpose, not "anything similar" to the non-actionable
+   * outcomes above.
+   */
+  it('still pages Sentry for a failed settings lookup (a real fault, not an expected state)', async () => {
+    await checkBudget(fakeSb({ teamId: 't1', settingsError: true }), 'c1', 0.05);
+
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('settings lookup failed'),
+      expect.objectContaining({ action: 'v3.llm.budget.settings' }),
+      'warning',
+    );
+    const call = vi
+      .mocked(logServerError)
+      .mock.calls.find(([, ctx]) => (ctx as { action?: string }).action === 'v3.llm.budget.settings');
+    expect((call?.[1] as { skipSentry?: boolean } | undefined)?.skipSentry).not.toBe(true);
   });
 
   it('reports exhaustion separately from every other denial', async () => {

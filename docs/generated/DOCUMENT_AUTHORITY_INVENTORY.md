@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1238 | 0 | 431 | 579 |
-| `UNKNOWN` | 113 | 12 | 46 | 150 |
+| `UNKNOWN` | 113 | 12 | 46 | 151 |
 
 ## Files
 
@@ -610,7 +610,7 @@ them would bury everything above.
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
-| `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 26 | 7 |
+| `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 29 | 8 |
 | `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 11 | 3 |
 | `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 2 | 6 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
@@ -646,7 +646,7 @@ them would bury everything above.
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | 1 | 0 | - |
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 4 | 4 | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 0 | 1 | - |
-| `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 2 | 1 | - |
+| `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 3 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 5 | - |
 | `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 11 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
