@@ -4,11 +4,11 @@ Loads every session. `docs/CONTROL_PLANE_ENFORCEMENT.md` is the live
 authority on what is enforced — check it before believing any claim here.
 `permissions.deny` and the wired `PreToolUse` hooks are real and survive
 `bypassPermissions`: `guard-canonical-write.mjs` (Write/Edit/MultiEdit into
-canonical), `guard-git.mjs` (dangerous Bash git/gh/vercel commands),
-`guard-sql.mjs` (destructive SQL to Supabase MCP or Bash psql/supabase-db),
-`guard-config-change.mjs` (a config-surface change without
-`HELM_CONFIG_EDIT=1`) — each is text/path matching, not a parser; see its
-own header for what it misses. Nothing else here is mechanically enforced.
+canonical), `guard-git.mjs` (dangerous Bash git/gh/vercel commands, matched
+past quoted strings), `guard-sql.mjs` (destructive SQL to Supabase MCP or Bash
+psql/supabase-db), `guard-config-change.mjs` (a write whose target is a config
+surface, lifted only by `HELM_CONFIG_EDIT=1` set when Claude Code launches) —
+each is text/path matching, not a parser. Nothing else here is enforced.
 
 **The canonical checkout boundary is a table, not an absolute**: the three
 editing tools are blocked; a Bash redirect, `cp`, `mv` or formatter writing
