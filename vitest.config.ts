@@ -199,6 +199,12 @@ export default defineConfig({
             // its neighbours; it is the failure-injection suite for the
             // tools/mcp-deny-connector-ids verifier check.
             'scripts/__tests__/mcp-deny-connector-ids.test.ts',
+            // Fixture-repo tests for .githooks/pre-push (the local pre-push
+            // gate wired by scripts/setup-hooks.mjs): the HELM_SKIP_PREPUSH
+            // escape hatch, and the generated-docs regenerate-then-diff step
+            // both staying stale (fails) and clean (passes) against a
+            // disposable temp git repo — never this repo's own git state.
+            'scripts/__tests__/pre-push-hook.test.mjs',
             // Settings ownership (A6): user-scope leaks of repo-specific
             // rules, project-scope rules gating an uninstalled plugin
             // namespace, and rule files naming an unrecorded connector id.

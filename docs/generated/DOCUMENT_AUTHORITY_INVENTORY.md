@@ -27,7 +27,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 20 | 2 | 9 | 0 |
+| `POLICY` | 20 | 2 | 8 | 0 |
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
@@ -68,7 +68,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENTS.md` | current | yes | - | yes | 0 | 17 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 8 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
-| `README.md` | current | - | - | yes | 0 | 4 | - |
+| `README.md` | current | - | - | - | 0 | 5 | - |
 | `SECURITY.md` | current | - | - | - | 0 | 1 | - |
 
 ### `AGENT_SKILL`
@@ -260,7 +260,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/security-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/shipping.md` | current | - | - | yes | 23 | 6 | - |
+| `.claude/rules/shipping.md` | current | - | - | yes | 23 | 8 | - |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 14 | 17 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 7 | 3 | - |
@@ -526,7 +526,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 9 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 7 | 15 | - |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 9 | 21 | - |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | - |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |

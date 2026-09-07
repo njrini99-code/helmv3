@@ -1,10 +1,15 @@
 #!/bin/bash
-# scripts/git-hooks/pre-commit — tracked equivalent of the untracked
+# .githooks/pre-commit — tracked equivalent of the untracked
 # .git/hooks/pre-commit this repo has run locally for a while: regenerate
 # database types when a migration is staged, so a commit that adds a
 # migration doesn't also leave database.ts stale.
 #
-# Install with: npm run hooks:install  (git config core.hooksPath scripts/git-hooks)
+# Installed automatically by `npm install` (the `prepare` lifecycle script,
+# scripts/setup-hooks.mjs) or by hand with `npm run hooks:install` — both set
+# the SHARED `core.hooksPath` to the tracked `.githooks/` directory instead of
+# the untracked, unreviewable `.git/hooks/`. This file moved here from
+# `scripts/git-hooks/pre-commit` when `.githooks/pre-push` was added, so both
+# hooks live under one `core.hooksPath`.
 #
 # WHY THIS FILE EXISTS. The hook it reproduces lived only in
 # .git/hooks/pre-commit — untracked, unreviewable, and silently different
