@@ -30,6 +30,7 @@ import { useToast } from '@/components/ui/sonner';
 import { IconX, IconFlag } from '@/components/icons';
 import type { GolfCourseTeeWithHoles, GolfTeeCategory } from '@/lib/types/golf-course';
 import { createTee, updateTee } from '@/app/golf/actions/course-library';
+import { MAX_STORED_PAR, MIN_PAR, parChoicesFor } from '@/lib/golf/par';
 
 // ── Local row model for the editor ───────────────────────────────────────────
 
@@ -57,7 +58,6 @@ const CATEGORY_OPTIONS: { value: GolfTeeCategory; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
-const PAR_OPTIONS = [3, 4, 5, 6] as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -200,8 +200,14 @@ export function TeeFormDrawer({
 
     const holes: { holeNumber: number; par: number; yardage: number | null; handicapIndex: number | null }[] = [];
     for (const r of rows) {
-      if (!Number.isFinite(r.par) || r.par < 3 || r.par > 6) {
-        setError(`Hole ${r.holeNumber}: par must be between 3 and 6.`);
+      // Validated against the STORED bound, not the entry bound. This drawer
+      // opens in `mode: 'edit'` over tees saved before par was clamped to
+      // 3-5; validating those on the entry bound would make an existing par-6
+      // tee unsavable, so a coach could not fix a yardage typo on it without
+      // first changing a par. The clamp is applied to the <select> options
+      // instead — new pars can only be 3-5, existing ones survive untouched.
+      if (!Number.isFinite(r.par) || r.par < MIN_PAR || r.par > MAX_STORED_PAR) {
+        setError(`Hole ${r.holeNumber}: par must be between ${MIN_PAR} and ${MAX_STORED_PAR}.`);
         return null;
       }
 
@@ -489,7 +495,7 @@ export function TeeFormDrawer({
                           'min-h-[40px] w-[56px] appearance-none rounded-fw-sm border border-border-subtle bg-surface-sunken px-2 text-center text-body text-text-primary focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-primary-500/30',
                         )}
                       >
-                        {PAR_OPTIONS.map((p) => (
+                        {parChoicesFor(row.par).map((p) => (
                           <option key={p} value={p}>
                             {p}
                           </option>

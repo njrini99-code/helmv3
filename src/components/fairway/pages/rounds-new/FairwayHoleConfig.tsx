@@ -43,6 +43,7 @@ import { fwHaptic } from '@/lib/fairway/haptics';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Input } from '@/components/fairway/forms/Input';
 import type { HoleConfig } from '@/lib/types/golf-course';
+import { MAX_STORED_PAR, MIN_PAR, parChoicesFor } from '@/lib/golf/par';
 
 interface FairwayHoleConfigProps {
   initialHoles?: HoleConfig[];
@@ -154,12 +155,25 @@ export function FairwayHoleConfig({
   }
 
   function handleSubmit() {
-    const isValid = holes.every((h) => h.par >= 3 && h.par <= 6 && h.yardage > 0 && h.yardage <= MAX_HOLE_YARDAGE);
+    // Par is validated against the STORED bound. This step is pre-filled from
+    // saved courses, and a course that recorded a par 6 before the 3-5 clamp
+    // must still be playable — refusing to submit would strand the round. New
+    // pars are held to 3-5 by the chips below, which is where entry is
+    // actually constrained.
+    const isValid = holes.every(
+      (h) =>
+        h.par >= MIN_PAR &&
+        h.par <= MAX_STORED_PAR &&
+        h.yardage > 0 &&
+        h.yardage <= MAX_HOLE_YARDAGE,
+    );
     if (!isValid) {
       // B5: the server's own comprehensiveHoleSchema puts no upper bound on
       // yardage at all — this ceiling is the only thing standing between a
       // typo and a hole nobody can meaningfully play.
-      setValidationError(`Please ensure all holes have valid par (3-6) and yardage between 1 and ${MAX_HOLE_YARDAGE}`);
+      setValidationError(
+        `Please ensure all holes have valid par (${MIN_PAR}-${MAX_STORED_PAR}) and yardage between 1 and ${MAX_HOLE_YARDAGE}`,
+      );
       return;
     }
     setValidationError(null);
@@ -264,7 +278,7 @@ export function FairwayHoleConfig({
                   </span>
                 </div>
                 <div className="flex items-center justify-center gap-1.5 px-2 py-2">
-                  {[3, 4, 5].map((par) => {
+                  {parChoicesFor(hole.par).map((par) => {
                     const selected = hole.par === par;
                     return (
                       // eslint-disable-next-line helm/no-raw-button -- custom par-selector chip (aria-pressed segmented control), not a design-system Button

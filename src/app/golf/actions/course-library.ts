@@ -52,6 +52,7 @@ import type {
   GolfTeeCategory,
 } from '@/lib/types/golf-course';
 import type { Database } from '@/lib/types/database';
+import { MAX_STORED_PAR, MIN_PAR } from '@/lib/golf/par';
 
 type CourseUpdate = Database['public']['Tables']['golf_courses']['Update'];
 type TeeUpdate = Database['public']['Tables']['golf_course_tees']['Update'];
@@ -1979,7 +1980,13 @@ function normalizeHoleInputs(holes: TeeHoleInput[]): TeeHoleInput[] {
   const byNumber = new Map<number, TeeHoleInput>();
   for (const h of holes) {
     if (!Number.isInteger(h.holeNumber) || h.holeNumber < 1 || h.holeNumber > 18) continue;
-    if (!Number.isInteger(h.par) || h.par < 3 || h.par > 6) continue;
+    // STORED bound, not the entry bound. This normalizer serves tee EDITS as
+    // well as creates, and an out-of-range row is dropped rather than
+    // rejected — clamping it to 3-5 would silently delete a legacy par-6 hole
+    // from a tee being saved for an unrelated reason, turning a complete tee
+    // into a draft with no message. Entry is clamped in the UI. See
+    // src/lib/golf/par.ts.
+    if (!Number.isInteger(h.par) || h.par < MIN_PAR || h.par > MAX_STORED_PAR) continue;
     byNumber.set(h.holeNumber, h);
   }
   return [...byNumber.values()].sort((a, b) => a.holeNumber - b.holeNumber);
