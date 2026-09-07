@@ -7,10 +7,30 @@ name: PR E2E smoke
 # playwright.yml's full chromium suite is manual `workflow_dispatch` only
 # (`inputs.full_e2e == 'true'`); it has no `push`/`pull_request` trigger at
 # all, so nothing there runs automatically on `main` either.
+#
+# ADVISORY (not a required check — see docs/CI_RUNBOOK.md), so the
+# frontend/e2e-relevance gate lives at the trigger level below rather than
+# as a `detect-changes` job the way ci.yml's required jobs do it (a required
+# check cannot use a trigger-level `paths:` filter without leaving the
+# context permanently "Expected" on a non-matching PR — see
+# .github/branch-protection.md). A docs-only or backend-only PR matches none
+# of these paths and this workflow never starts: zero check rows.
 
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'e2e/**'
+      - 'public/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/pr-smoke.yml'
+      - '.github/workflows/playwright.yml'
 
 concurrency:
   group: pr-smoke-${{ github.ref }}
@@ -25,39 +45,8 @@ env:
   NODE_OPTIONS: --max-old-space-size=4096
 
 jobs:
-  detect-changes:
-    name: Detect E2E-relevant paths
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      e2e_relevant: ${{ steps.check.outputs.e2e_relevant }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Check changed paths
-        id: check
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA" || true)"
-          if echo "$changed" | grep -Eq '^(src/|app/|components/|lib/|e2e/|public/)|^(playwright\.config\.ts|package\.json|package-lock\.json)$|^\.github/workflows/(pr-smoke|playwright)\.yml$'; then
-            echo "e2e_relevant=true" >> "$GITHUB_OUTPUT"
-            echo "Frontend/e2e paths changed — accessibility smoke will run."
-          else
-            echo "e2e_relevant=false" >> "$GITHUB_OUTPUT"
-            echo "No frontend/e2e path changes — skipping accessibility smoke."
-          fi
-
   accessibility-smoke:
     name: Playwright PR smoke (a11y)
-    needs: detect-changes
-    if: needs.detect-changes.outputs.e2e_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     # ADVISORY: this cheap PR smoke reports a11y violations as annotations but

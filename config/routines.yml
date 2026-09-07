@@ -76,6 +76,19 @@ routines:
     status: active
     description: Weekly CodeQL analysis (actions/javascript-typescript/python matrix).
 
+  - id: baseball-readiness-matrix-weekly
+    trigger: github-actions-schedule
+    source: .github/workflows/baseball-readiness-matrix.yml
+    schedule: "30 8 * * 3"
+    status: active
+    description: >-
+      Weekly advisory check of docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md:
+      every cited route resolves to a real App Router page, and every
+      owner-issue URL is open. Moved off `pull_request` (2026-09-06, PR
+      throughput) since neither check depends on a PR's own diff — a cited
+      issue can close, or a route can disappear, with no repo change at all.
+      Wednesday 08:30 UTC does not collide with any other entry in this file.
+
   - id: types-regen
     trigger: github-actions-schedule
     source: .github/workflows/types-regen.yml

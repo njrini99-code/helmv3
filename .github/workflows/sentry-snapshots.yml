@@ -41,6 +41,13 @@ name: Sentry Snapshots
 # "Advisory-then-required plan"): this workflow is not added to branch
 # protection's required checks. A capture failure here can never block a
 # merge on its own; only promoting it into the required list later can.
+# Because it is advisory, `pull_request` carries a trigger-level `paths:`
+# filter below (unlike ci.yml's required jobs, which gate an already-started
+# job instead — see branch-protection.md on why a required check can never
+# use a trigger-level filter). A docs-only or backend-only PR that matches
+# none of these paths never starts this workflow at all: zero check rows,
+# not a skipped one. `push: main` stays unfiltered (no `paths:`) since it
+# always needs to refresh the base build regardless of what changed.
 #
 # SECURITY: zero untrusted user input in run: blocks — only trusted secrets,
 # github.sha, and a workflow_dispatch-free set of pull_request/push events.
@@ -48,6 +55,14 @@ name: Sentry Snapshots
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'public/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/sentry-snapshots.yml'
   push:
     branches:
       - main
@@ -60,32 +75,21 @@ permissions:
   contents: read
 
 jobs:
-  # Cheap on every PR (a few seconds): decide whether the heavy job below
-  # should run at all. Two independent reasons to skip, both intentional
-  # cost controls learned from this repo's CI history (see ci.yml's own
-  # "PR throughput" note and baseball-auth-smoke's move off the PR gate):
-  #   1. No SENTRY_AUTH_TOKEN secret yet — capturing screenshots nobody can
-  #      upload is pure cost with no product. Re-arms itself automatically
-  #      once the owner adds the secret (see docs, "OWNER ACTION").
-  #   2. On a `pull_request` run, no frontend/e2e-relevant path changed —
-  #      mirrors pr-smoke.yml's `detect-changes` job exactly, so a docs-only
-  #      or backend-only PR never pays for a Next build + Playwright browser
-  #      install + capture it has no reason to need. A `push` to `main`
-  #      always runs regardless (see header: main refreshes the base build).
+  # Cheap on every run (a few seconds): decide whether the heavy job below
+  # should run at all. Path relevance is now handled at the trigger level
+  # (see the `on.pull_request.paths` filter above) — a docs-only or
+  # backend-only PR never starts this workflow, so this job only has one
+  # remaining reason to gate: no SENTRY_AUTH_TOKEN secret yet — capturing
+  # screenshots nobody can upload is pure cost with no product. Re-arms
+  # itself automatically once the owner adds the secret (see docs, "OWNER
+  # ACTION").
   gate:
     name: Check Sentry snapshot prerequisites
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       enabled: ${{ steps.token.outputs.enabled }}
-      relevant: ${{ steps.paths.outputs.relevant }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
       # `if:` cannot read `secrets.*` directly (GitHub Actions does not
       # expose the secrets context to job/step `if:` conditions) — resolve it
       # to a step output here instead, exactly the way ci.yml's own
@@ -103,40 +107,10 @@ jobs:
             echo "::notice::SENTRY_AUTH_TOKEN is not set — Sentry snapshot capture and upload are skipped. See docs/observability/SENTRY_SNAPSHOTS.md OWNER ACTION."
           fi
 
-      - name: Check changed paths
-        id: paths
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -uo pipefail
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "relevant=true" >> "$GITHUB_OUTPUT"
-            echo "non-PR event (push to main refreshes the base build) -> relevant"
-            exit 0
-          fi
-          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
-            echo "relevant=true" >> "$GITHUB_OUTPUT"
-            echo "missing base/head sha -> relevant (fail closed)"
-            exit 0
-          fi
-          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
-            echo "relevant=true" >> "$GITHUB_OUTPUT"
-            echo "git diff failed -> relevant (fail closed)"
-            exit 0
-          fi
-          if echo "$changed" | grep -Eq '^(src/|e2e/|public/)|^(playwright\.config\.ts|package\.json|package-lock\.json)$|^\.github/workflows/sentry-snapshots\.yml$'; then
-            echo "relevant=true" >> "$GITHUB_OUTPUT"
-            echo "Frontend/e2e paths changed -> Sentry snapshots will run."
-          else
-            echo "relevant=false" >> "$GITHUB_OUTPUT"
-            echo "No frontend/e2e path changes -> skipping Sentry snapshots."
-          fi
-
   snapshots:
     name: Capture + upload Sentry snapshots
     needs: gate
-    if: needs.gate.outputs.enabled == 'true' && needs.gate.outputs.relevant == 'true'
+    if: needs.gate.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
