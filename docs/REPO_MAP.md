@@ -1,6 +1,7 @@
 # Repo Map for Agents
 
 Status: SUPERSEDED — superseded by `docs/generated/HELM_FEATURE_MAP.md`.
+KEPT FOR HISTORY -- until the attic move; live docs still cite it by path.
 Feature routing now goes through `memory/registry.yml`,
 `docs/generated/HELM_FEATURE_MAP.md`, and `npm run knowledge:context` (see
 `AGENTS.md`, `CLAUDE.md`). This file is scheduled to move to the docs attic
