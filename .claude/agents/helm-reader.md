@@ -1,7 +1,7 @@
 ---
 name: helm-reader
 description: Read-only audit contract — inspects code/config/docs and reports findings with file:line citations, never edits anything.
-tools: Read, Glob, Grep, Bash
+tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, SendMessage, ListAgents, mcp__supabase__list_tables, mcp__supabase__list_extensions, mcp__supabase__list_migrations, mcp__supabase__get_advisors, mcp__supabase__search_docs
 model: sonnet
 ---
 

@@ -73,7 +73,7 @@ deny overrides a user-scope allow (probed 2026-08-29).
 | Claim | Mechanism | Config location | How observed |
 | --- | --- | --- | --- |
 | A write into the canonical checkout via Write/Edit/MultiEdit is refused | PreToolUse hook `guard-canonical-write.mjs`, PreToolUse hook `guard-config-change.mjs` | .claude/settings.json → hooks.PreToolUse | WIRED — matcher covers the tool names; exercised in src/test/hooks/ |
-| A write into the canonical checkout via Bash is refused | PreToolUse hook `guard-git.mjs`, PreToolUse hook `guard-sql.mjs`, PreToolUse hook `guard-config-change.mjs` | .claude/settings.json → hooks.PreToolUse | WIRED |
+| A write into the canonical checkout via Bash is refused | NONE | — | UNENFORCED — no hook on Bash refuses a write for where it lands; they refuse command shapes, and the one that does resolve canonical narrows to a config-surface list |
 | Destructive SQL (DROP TABLE / TRUNCATE / unqualified DELETE) is refused before it runs | hook guard-sql.mjs, hook guard-sql.mjs | .claude/settings.json | CONFIGURED |
 | An MCP tool call can be refused by a hook | guard-sql.mjs | .claude/settings.json | WIRED |
 | A recursive rm outside the project is refused | NONE | — | UNENFORCED |

@@ -38,10 +38,10 @@ are not reasons to ask.
 ### What actually makes this safe
 `permissions.deny` and the wired `PreToolUse` hooks survive `bypassPermissions`:
 `guard-canonical-write.mjs` (canonical Write/Edit/MultiEdit), `guard-git.mjs`
-(dangerous Bash git/gh/vercel commands), `guard-sql.mjs` (destructive SQL
-text), `guard-config-change.mjs` (a config-surface change without
-`HELM_CONFIG_EDIT=1`) — none is a shell or SQL parser, and no hook covers
-Bash-driven writes into the canonical checkout or a recursive `rm`.
-`docs/CONTROL_PLANE_ENFORCEMENT.md` is the live source of truth for what is
-actually blocked; check it before believing an enforcement claim, including
-this one.
+(dangerous Bash git/gh/vercel commands), `guard-sql.mjs` (destructive SQL to
+production; a local target is exempt), `guard-config-change.mjs` (a config
+surface inside canonical; a worktree is unguarded) — none is a shell or SQL
+parser, and no hook covers Bash-driven writes into
+the canonical checkout or a recursive `rm`. `docs/CONTROL_PLANE_ENFORCEMENT.md`
+is the live source of truth for what is actually blocked; check it before
+believing an enforcement claim, including this one.
