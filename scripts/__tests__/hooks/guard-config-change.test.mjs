@@ -111,6 +111,25 @@ describe('guard-config-change Bash write targets', () => {
     expect(isGuardedBashWrite(`cd ${CANON} && cp foo.json .claude/settings.json`)).toBe(true);
   });
 
+  // REGRESSION. `cp` and `install` were matched operand-by-operand, so
+  // copying a canonical config file OUT to /tmp — a pure read — was refused.
+  // `mv` must stay blocked: it removes the file it names first.
+  it('allows copying a guarded path OUT, still blocks copying INTO one', () => {
+    expect(isGuardedBashWrite(`cp ${inCanon('.mcp.json')} /tmp/x.json`)).toBe(false);
+    expect(isGuardedBashWrite(`cp -p ${inCanon('.claude/settings.json')} /tmp/s.json`)).toBe(false);
+    expect(isGuardedBashWrite(`cp foo.json ${inCanon('.mcp.json')}`)).toBe(true);
+    // Both operands guarded: still a write, because the DESTINATION is.
+    expect(
+      isGuardedBashWrite(`cp ${inCanon('.mcp.json')} ${inCanon('.claude/settings.json')}`),
+    ).toBe(true);
+    // A canonical destination that is NOT a config surface is not this hook's
+    // business — Bash writes into canonical are unguarded by design.
+    expect(isGuardedBashWrite(`cp ${inCanon('.mcp.json')} ${inCanon('.mcp.bak.json')}`)).toBe(false);
+    expect(isGuardedBashWrite(`install -m 644 foo ${inCanon('.mcp.json')}`)).toBe(true);
+    // mv removes its source, so moving a guarded file OUT is still a write.
+    expect(isGuardedBashWrite(`mv ${inCanon('.mcp.json')} /tmp/x.json`)).toBe(true);
+  });
+
   it('allows reads of a guarded path', () => {
     expect(isGuardedBashWrite(`cat ${inCanon('.claude/settings.json')}`)).toBe(false);
     expect(isGuardedBashWrite(`grep -n matcher ${inCanon('.claude/settings.json')}`)).toBe(false);
