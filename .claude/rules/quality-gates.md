@@ -24,6 +24,10 @@ lives in the file, never in prose. Never raise a baseline to pass a
 build — fix the violation and re-run the `--update` command. Adding a new
 violation always fails regardless of baseline.
 
+### Typecheck
+tsgo has shown parity with `tsc`. `typecheck:fast` is the local loop;
+`typecheck` stays `tsc` as the CI gate — no further switch pending.
+
 ### Gates that do not currently enforce coverage
 - `check:types-drift` silently degrades to a warning + `exit 0` if
   `SUPABASE_ACCESS_TOKEN` is unset in CI — a passing job doesn't prove the
