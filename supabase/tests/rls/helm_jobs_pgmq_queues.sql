@@ -9,7 +9,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(17);
+SELECT plan(18);
 
 -- ============================================================================
 -- Part 1 — anon/authenticated cannot execute any facade; service_role can.
@@ -121,6 +121,10 @@ DECLARE
 BEGIN
   SELECT msg_id INTO v_msg_id FROM helm_jobs.dedupe_keys WHERE dedupe_key = 'dedupe-r2';
   FOR v_i IN 1..5 LOOP
+    -- helm_jobs_fail backs the message off (set_vt 20s, 40s, ...), which hides
+    -- it from the next read and would freeze read_ct at 1. Collapse the
+    -- backoff so each cycle is a real read, as the consumer sees it later.
+    PERFORM pgmq.set_vt('coachhelm_analysis', v_msg_id, 0);
     PERFORM msg_id FROM public.helm_jobs_read_batch('coachhelm_analysis', 1, 0);
     PERFORM public.helm_jobs_fail('coachhelm_analysis', v_msg_id, 'synthetic pgTAP failure');
   END LOOP;
