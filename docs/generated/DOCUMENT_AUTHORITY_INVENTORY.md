@@ -36,9 +36,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 54 | 6 | 29 | 22 |
+| `AUDIT_SNAPSHOT` | 55 | 6 | 29 | 22 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 35 | 0 | 5 | 14 |
+| `HISTORY_LEDGER` | 35 | 0 | 5 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
@@ -362,6 +362,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `audit/00-EVIDENCE-POLICY.md` | current | - | - | yes | 0 | 4 | - |
 | `audit/00-SHARED-BRIEF.md` | current | - | - | yes | 0 | 2 | - |
+| `audit/A03-VARIANT-REQUESTS.md` | current | - | - | - | 0 | 2 | - |
 | `audit/A2-RESOLUTION.md` | current | - | - | - | 0 | 3 | - |
 | `audit/BLOCKED.md` | current | - | - | - | 0 | 0 | - |
 | `audit/DECISIONS.md` | current | - | - | yes | 0 | 3 | - |
@@ -464,7 +465,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 47 | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | 1 | 1 | - |
-| `memory/ledgers/tests/team_communications.md` | current | - | - | - | 1 | 5 | 1 |
+| `memory/ledgers/tests/team_communications.md` | current | - | - | - | 1 | 5 | - |
 
 ### `INCIDENT`
 
