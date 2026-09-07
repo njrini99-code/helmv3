@@ -41,7 +41,7 @@ import type {
 } from '@/hooks/golf/use-golf-messages';
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
@@ -843,9 +843,15 @@ export function MessageThreadPane({
   // conversation" to both people in it. Read the participant count instead,
   // and say nothing when the count is unknown rather than guess wrong.
   const participantCount = conversation.participant_count ?? 0;
+  // G-29c — the literal count, not a category. `Group.dc.html:34` writes
+  // "9 members"; the code wrote "Group conversation", which is the one thing a
+  // reader already knows from the stack of faces next to it. The count is the
+  // new information, and `participant_count` was already being read one line
+  // above to decide WHICH label to show — so this needs no new plumbing, only
+  // the willingness to print the number it already had.
   const headerSubtitle = conversation.is_group
     ? participantCount > 2
-      ? 'Group conversation'
+      ? `${participantCount} members`
       : participantCount === 2
         ? 'Direct message'
         : ''
@@ -893,10 +899,37 @@ export function MessageThreadPane({
           <ArrowLeft size={20} aria-hidden="true" />
           Messages
         </Button>
+        {/* G-29c — a group's identity is WHO is in it, so the header shows an
+            overlapping member stack rather than a generic Users glyph.
+            `groupParticipants` (user_id → name/avatar) was already threaded into
+            this component for per-bubble sender attribution and simply never
+            surfaced here.
+
+            The generic icon stays as the fallback, and deliberately: the map is
+            fetched async, so before it lands there is nobody to stack. Rendering
+            an empty stack — or worse, a "+N" derived from a half-loaded map —
+            would be a header that lies for a moment on every group open.
+
+            `ring-surface`, not the primitive's `ring-canvas` default: the rim is
+            meant to read as a cutout in whatever the stack sits ON, and this
+            header sits on the InstrumentPanel's `--fw-color-surface`, which is
+            exactly the artboard's `2px solid oklch(0.984 0.016 86)`.
+
+            The avatars are decorative — the subtitle beside them says "N
+            members" and the title names the group, so announcing every face
+            again would only make the header longer to listen to. */}
         {isGroup ? (
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
-            <Users size={18} aria-hidden="true" />
-          </span>
+          groupParticipants && groupParticipants.size > 0 ? (
+            <AvatarGroup size="sm" max={2} ring="ring-surface" className="flex-shrink-0">
+              {Array.from(groupParticipants.values()).map((p, i) => (
+                <Avatar key={i} decorative name={p.name} src={p.avatar} size="sm" />
+              ))}
+            </AvatarGroup>
+          ) : (
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+              <Users size={18} aria-hidden="true" />
+            </span>
+          )
         ) : (
           <Avatar
             name={conversation.other_participant?.name || 'User'}

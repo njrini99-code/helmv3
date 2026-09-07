@@ -480,3 +480,37 @@
   (15px) with every other message body, and splitting a photo caption into its
   own type role is a design decision rather than a measurement. Only the design
   owner can say whether that 1px is a role or a hand-tune.
+
+## 2026-09-07 — a group's identity is who is in it (G-29c)
+
+- The thread header rendered a single static `Users` glyph in a tinted circle
+  and a subtitle reading "Group conversation" — a category label sitting next to
+  a stack of nothing, restating what the reader already knows. `Group.dc.html:27-34`
+  draws an overlapping member stack and the literal count, "9 members".
+- Both now ship, and neither needed new plumbing. `groupParticipants`
+  (user_id → name/avatar) was already threaded into this component for
+  per-bubble sender attribution and simply never surfaced in the header;
+  `participant_count` was already being read one line above the subtitle, to
+  decide WHICH label to show. The count only ever needed printing.
+- The generic glyph stays as the fallback, deliberately. The participants map is
+  fetched async, so before it lands there is nobody to stack — an empty stack, or
+  a "+N" derived from a half-loaded map, would be a header that lies for a
+  moment on every group open.
+- A PRIMITIVE GAINED A KNOB RATHER THAN A FORK. `AvatarGroup` hardcoded
+  `ring-canvas` on both the avatar rims and the overflow chip. The rim exists to
+  read as a cutout in whatever the stack sits ON, and this header sits on the
+  InstrumentPanel's `--fw-color-surface` — byte-identical to the artboard's
+  `2px solid oklch(0.984 0.016 86)`. So `AvatarGroup` takes an optional `ring`,
+  defaulting to `ring-canvas`; every existing caller is unchanged. A messaging
+  copy of the primitive to fix one token would have been the wrong trade.
+- Two geometry deltas absorbed, recorded in A03 with different reasoning. 34px →
+  32px is 2px on an avatar, in line with every other absorption here. -12px →
+  -8px is 4px and larger, taken anyway because the overlap lives on the shared
+  `ringPad` scale: changing it restacks every avatar group in the app, and a
+  messaging-only overlap would be forking a primitive to gain 4px. If that is
+  ever granted it belongs on `ringPad`.
+- The faces are `decorative`. The subtitle beside them says "N members" and the
+  title names the group, so announcing every face again would only make the
+  header longer to listen to.
+- G-29 is now complete: G-29a (typography), G-29b (photo framing), G-29c (this),
+  day separators closed by G-50a, and pagination deferred to G-17 as recorded.

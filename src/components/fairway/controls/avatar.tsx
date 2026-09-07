@@ -159,6 +159,15 @@ export interface AvatarGroupProps extends HTMLAttributes<HTMLDivElement> {
   size?: AvatarSize;
   /** Show at most this many avatars; the rest collapse into a "+N" chip. */
   max?: number;
+  /**
+   * Tailwind ring-colour class for the cutout rims, e.g. `ring-surface`.
+   *
+   * The rim exists to read as a cutout in whatever the stack is sitting ON, so
+   * it has to match that surface — `ring-canvas` is right on the page ground
+   * and wrong inside a card. Defaults to `ring-canvas`, so every existing
+   * caller is unchanged.
+   */
+  ring?: string;
   children: ReactNode;
 }
 
@@ -176,7 +185,7 @@ const ringPad: Record<AvatarSize, string> = {
  * offset; it does not resize children, so set their `size` to match this group.
  */
 export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function AvatarGroup(
-  { className, size = 'md', max, children, ...props },
+  { className, size = 'md', max, ring = 'ring-canvas', children, ...props },
   ref,
 ) {
   const items = Array.isArray(children) ? children : [children];
@@ -191,14 +200,15 @@ export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function
       {...props}
     >
       {visible.map((child, i) => (
-        <span key={i} className="rounded-full ring-2 ring-canvas">
+        <span key={i} className={cn('rounded-full ring-2', ring)}>
           {child}
         </span>
       ))}
       {overflow > 0 && (
         <span
           className={cn(
-            'relative inline-flex flex-shrink-0 items-center justify-center rounded-full ring-2 ring-canvas',
+            'relative inline-flex flex-shrink-0 items-center justify-center rounded-full ring-2',
+            ring,
             'bg-surface-sunken text-text-secondary font-fw-mono font-semibold tabular-nums',
             sizePx[size],
           )}

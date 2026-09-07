@@ -116,6 +116,28 @@ number that looked like a constraint. The file bubble at `Bubbles.dc.html:88`
 is drawn at the same 288px the `.bub` rule states, which is the column's cap
 already.
 
+## Absorbed in G-29c: the member stack's geometry
+
+`Group.dc.html:28-30` draws the header stack as three 34px circles at
+`margin-left: -12px`. `AvatarGroup size="sm"` gives 32px at `-space-x-2` (8px).
+Both deltas are taken rather than requested, and the reasoning differs:
+
+- **34px → 32px.** 2px on an avatar, consistent with every other 1-2px
+  absorption in this audit.
+- **-12px → -8px.** 4px, and the larger of the two. Taken anyway because the
+  overlap is a property of the shared `AvatarGroup` primitive's `ringPad` scale,
+  not of messaging: changing it would restack every avatar group in the app, and
+  a messaging-only overlap would be a fork of a primitive to gain 4px. If a
+  future variant request is granted it belongs on `ringPad`, not here.
+
+**What did NOT get absorbed** is the rim colour, and it is the reason this entry
+exists at all. The artboard's rim is `2px solid oklch(0.984 0.016 86)` —
+`--fw-color-surface`, byte-identical — because the rim reads as a *cutout in
+whatever the stack sits on*. `AvatarGroup` hardcoded `ring-canvas`, and this
+header sits on the InstrumentPanel's surface. That is not a variant request; it
+is a primitive missing a knob, so the primitive gained one (`ring`, defaulting
+to `ring-canvas`, every existing caller unchanged).
+
 ## Two more that belong to A03 rather than to messaging
 
 - **Avatar fallback.** The artboard's person avatar is

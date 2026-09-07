@@ -248,3 +248,22 @@ the width cap — because that is what §8.6 actually asks for and what regresse
 silently. Two are guards against numbers coming back: no `max-w-[250px]` or
 `max-w-[260px]` anywhere, per the G-50b precedent that the column carries the
 cap.
+
+## 2026-09-07 — group header member stack (G-29c)
+
+`MessageThreadPane.groupHeader.test.ts` — 11 tests, **8 failing against the
+pre-fix code**, verified by checking out HEAD's versions of both the pane and
+the avatar primitive and re-running.
+
+Measured on both sides for the value that mattered: the artboard's rim colour is
+compared against `--fw-color-surface` read out of the token file, AND asserted to
+differ from `--fw-color-canvas` — so the test states WHY the primitive's default
+was wrong here rather than just asserting the new class. It also counts the
+artboard's circles (two members plus one overflow chip) and compares that shape
+against the `max` the component passes.
+
+Three tests cover the primitive rather than the caller, because the change to
+`AvatarGroup` is the part with blast radius: that the `ring` prop exists, that it
+still defaults to `ring-canvas` so no existing caller moved, and that it reaches
+BOTH the avatar rims and the overflow chip — missing either leaves one visibly
+mismatched circle in the stack.
