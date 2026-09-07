@@ -288,6 +288,55 @@ M03B F13/F14:
   system is simply absent. This is the same "material produces no visible separation" gap
   M03A found on unread rows (G-03), so it is one systemic issue across two lanes, not two.
 
+### G-51 — REFERRAL, outside messaging: the shipped roster presence indicator is probably dead  [high] [coordinator-verified as far as source allows]
+M01's addendum, which it self-corrected from "no presence infrastructure exists" to something
+sharper — and the corrected version is the more serious claim. I verified both halves:
+
+- A real presence mechanism already ships app-wide: `usePresence()`, a `heartbeat()` RPC,
+  `users.last_seen`, `isUserOnline()`. It is consumed today on the roster, not on messaging.
+- The roster reads it through the **ordinary RLS-respecting server client**:
+  `src/app/golf/(dashboard)/dashboard/roster/page.tsx:1` imports `createClient` from
+  `@/lib/supabase/server`, calls it at `:77`, and embeds `user:users(last_seen)` at `:174`
+  and `:294`.
+- `public.users` has exactly **two SELECT policies** in the entire migration history
+  (`20260527000000_prod_public_baseline.sql`): `users_select_own` at `:20160`
+  (`auth.uid() = id`) and `admin_read_all` at `:17497`. There is no team- or roster-scoped
+  SELECT policy anywhere.
+
+If those are the live policies, a coach opening the roster gets `null` for every player's
+`last_seen`, and the online dot can only ever light for the viewer's own row. A shipped
+indicator that silently never fires — the same "looks like data, isn't" class this audit
+keeps finding, but in a feature nobody was auditing.
+
+**Status is `inferred`, not observed**, and it is blocked by the same thing as G-38: no
+production read. The `pg_policies` query already drafted for G-38 answers this too — add
+`tablename='users'` and it is one query for both.
+
+**This is outside the messaging scope and should not be absorbed into it.** Referring it to
+the owner as its own item; the messaging write phase must not quietly adopt a roster fix.
+
+### G-52 — Presence for messaging is a policy problem, not a build-from-zero  [med] [decision-input]
+Consequence of G-51 for the deferred D-01. The owner has already decided to defer presence
+dots, so nothing changes now. But the reason to revisit is different from what the manifest
+previously recorded: the mechanism exists and is reusable — what blocks it is a missing
+team-scoped SELECT policy on `public.users`, which is a security decision (who may see whose
+online state), not an infrastructure build. If presence is ever revived, it starts there.
+
+### G-53 — Bell badge and recipient directory both already have correct contracts  [info] [lane-asserted]
+Two of the four artboard-driven questions M01 was asked came back clean:
+- **Masthead bell** — a correctly per-viewer contract already exists
+  (`notification-badge-context.tsx`, `golf_calendar_notifications`). It is app-wide
+  notification chrome, not messaging-owned, so G-31's masthead work should consume it rather
+  than invent a count. Ownership note, not a defect.
+- **Recipient directory** (`NewMessage.dc.html`) — the contract exists today at
+  `FairwayNewMessageSheet.tsx:97-280` and is already correctly tenant-scoped. M01 checked the
+  historical `golf_coaches_select_all USING(true)` PII exposure and confirms it was fixed by a
+  later migration and not re-widened. **No new column, RPC, or broadened policy is needed** —
+  the only lane answer in this audit that costs nothing.
+
+Carried forward as fact, not a recommendation: that directory reads via direct client-side
+Supabase queries relying on RLS alone (same pattern as M01-8).
+
 ### G-50 — Two artboard-vs-artboard disagreements  [info] [lane-asserted]
 M03B correctly reported these without picking a side:
 - Day chip: `Thread.dc.html` draws a floating glass/blur absolute chip; `Group.dc.html` an
