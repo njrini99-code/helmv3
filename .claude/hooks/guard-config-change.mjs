@@ -187,7 +187,9 @@ const HOW_TO_OVERRIDE =
   '(scripts/new-worktree.sh <task>) and it ships through the PR like any other. ' +
   'To edit canonical directly instead, HELM_CONFIG_EDIT=1 must be set in the ' +
   'environment Claude Code was LAUNCHED with — exporting it inside a Bash tool ' +
-  'call does not reach this hook. Restart with: HELM_CONFIG_EDIT=1 claude.';
+  'call does not reach this hook. Restart with: HELM_CONFIG_EDIT=1 claude \u{2014} but ' +
+  'that reaches Bash writes only: on Write/Edit/MultiEdit guard-canonical-write.mjs ' +
+  'still refuses canonical and has no override at all.';
 
 function blockedMessage(what) {
   return (

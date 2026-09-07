@@ -144,7 +144,7 @@ describe('guard-sql local stack', () => {
 
   it('re-arms when any remote marker is present, even beside a local one', () => {
     expect(targetsLocalStack('psql --local --linked -c "DROP TABLE t"')).toBe(false);
-    expect(targetsLocalStack('psql "postgresql://x@db.qmnssrrolpinvwjjnufo.supabase.co:5432/p"')).toBe(false);
+    expect(targetsLocalStack('psql "postgresql://x@db.aaaaaaaaaaaaaaaaaaaa.supabase.co:5432/p"')).toBe(false);
     expect(targetsLocalStack('supabase db push --project-ref abc --local')).toBe(false);
   });
 });

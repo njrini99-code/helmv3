@@ -176,6 +176,12 @@ describe('guard-config-change subprocess contract', () => {
     expect(result.stderr).toMatch(/worktree/);
     expect(result.stderr).toMatch(/LAUNCHED with/);
     expect(result.stderr).toMatch(/HELM_CONFIG_EDIT=1 claude/);
+    // The override must not be stated as if it worked on THIS path. It does not:
+    // guard-canonical-write.mjs refuses canonical Write/Edit with no env escape,
+    // so naming it as the remedy here would be the same unreachable-remedy bug
+    // this hook's own message existed to cause.
+    expect(result.stderr).toMatch(/reaches Bash writes only/);
+    expect(result.stderr).toMatch(/guard-canonical-write\.mjs still refuses canonical/);
   });
 
   it('allows a canonical Edit with HELM_CONFIG_EDIT=1', () => {
