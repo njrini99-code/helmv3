@@ -163,6 +163,31 @@ routines:
       route's own "designed to fire Sundays" comment — not a live cron.
     verified: 2026-09-06
 
+      Database Plan D6 (2026-09-06): added /api/jobs/consume (every minute,
+      pgmq queue consumer — degrades to a 200 no-op until the owner applies
+      supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql). The
+      existing coachhelm-safety-net entry in this same crons array is NOT
+      retired by this — it retires only after the queue has run clean in
+      production for seven consecutive days (see
+      docs/operations/JOBS_QUEUE.md); until then both remain active
+      simultaneously by design, since the safety net is the only backstop
+      while the queue is unproven.
+
+  - id: restore-rehearsal-quarterly
+    trigger: owner-manual
+    source: docs/operations/RESTORE_RUNBOOK.md
+    schedule: "0 0 1 */3 *"
+    status: owner-manual
+    description: >-
+      Database Plan D7: quarterly PITR restore-to-scratch-project rehearsal.
+      No file or script in this repo runs this — it is a human following
+      docs/operations/RESTORE_RUNBOOK.md end to end (confirm PITR is on,
+      restore to a throwaway project, run the ten verification queries, log
+      the timing sheet, tear the scratch project down). Recorded here so
+      repo:doctor's routines check has it as a KNOWN, tracked entry rather
+      than an undocumented one — it cannot verify a human actually ran it;
+      the runbook's own timing sheet is the artifact of having done so.
+
   - id: helm-demo-readiness
     trigger: claude-scheduled-task
     source: ~/.claude/scheduled-tasks/helm-demo-readiness

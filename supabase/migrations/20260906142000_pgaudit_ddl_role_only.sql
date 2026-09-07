@@ -1,0 +1,73 @@
+-- pgaudit — DDL and ROLE classes only (Database Plan D7)
+--
+-- RISK TIER: R3 (privileged, extension + instance-level config). HELD — see
+-- supabase/migrations/HELD.md. Never applied by an agent; owner-apply-only,
+-- and only after db-migration-reviewer sign-off.
+--
+-- WHY DDL + ROLE ONLY, NOT READ/WRITE
+-- ------------------------------------
+-- pgaudit's `log = 'read, write'` classes log every SELECT/DML, which on
+-- this project's write volume (golf_rounds, golf_shots, golf_holes,
+-- notifications) would multiply the Postgres log volume by an order of
+-- magnitude for a benefit this repo does not currently need: the questions
+-- this repo has actually needed answered after an incident are "who ran a
+-- DDL/role change and when" (a schema/grant surprise) — reads are NOT
+-- audited by this migration, and that is a deliberate scope decision, not
+-- an oversight. If a future incident needs row-level read/write auditing,
+-- that is a SEPARATE, deliberately-scoped migration, not an expansion of
+-- this one's `pgaudit.log` value.
+--
+-- OWNER STEPS BEFORE APPLYING (do these first; this file only sets the GUC)
+-- ---------------------------------------------------------------------------
+-- 1. Enable the extension. On hosted Supabase this is USUALLY only
+--    possible from the Dashboard (Database -> Extensions -> pgaudit) even
+--    for a role with otherwise-broad privilege, because pgaudit also
+--    requires being loaded via `shared_preload_libraries`, which only the
+--    platform (not a migration) can set. Do this via the dashboard FIRST;
+--    the `create extension if not exists` below is a safe no-op either way.
+-- 2. After the dashboard enable, confirm `shared_preload_libraries` was
+--    actually updated and the database restarted to pick it up (Supabase
+--    typically handles the restart itself — verify via the query below
+--    rather than assuming):
+--      show shared_preload_libraries; -- must contain 'pgaudit'
+-- 3. Apply this migration to set `pgaudit.log`.
+--
+-- WHAT THE OWNER WILL SEE IN THE LOG DRAIN
+-- ------------------------------------------
+-- Once both this migration AND the Sentry log drain
+-- (docs/observability/SENTRY_SUPABASE_TRACING.md, dashboard-configured,
+-- owner step, not built by this migration) are in place, every DDL
+-- statement (CREATE/ALTER/DROP on any object) and every ROLE statement
+-- (CREATE ROLE/ALTER ROLE/GRANT/REVOKE/etc.) executed against this
+-- database appears as a structured `AUDIT:` line in the Postgres log,
+-- which the drain forwards to Sentry as a log event (not an issue/error —
+-- pgaudit lines are informational unless something else also errors).
+-- READS ARE NOT AUDITED — a `SELECT` produces no pgaudit line under this
+-- configuration, by design (see above).
+--
+-- VERIFY AFTER APPLYING:
+--   show pgaudit.log; -- expect 'ddl, role' (or a value containing both)
+--   -- then run any DDL statement (e.g. `create table pgaudit_probe(id int);
+--   -- drop table pgaudit_probe;`) in a throwaway/scratch context and
+--   -- confirm an AUDIT: line appears in the project's Postgres logs
+--   -- (Dashboard -> Logs -> Postgres Logs) within a few seconds.
+--
+-- ROLLBACK:
+-- alter role postgres reset pgaudit.log; -- or set back to whatever it was
+-- (this migration does not DROP the extension — leaving it installed but
+-- unconfigured is harmless and avoids re-triggering the
+-- shared_preload_libraries restart dance for a rollback).
+
+-- Owner step, not run by this file in practice (see step 1 above) — the
+-- IF NOT EXISTS guard makes re-running this line after a dashboard enable a
+-- safe no-op either way.
+create extension if not exists pgaudit;
+
+-- Session/database-level default. `ddl` covers CREATE/ALTER/DROP/etc.;
+-- `role` covers CREATE ROLE/ALTER ROLE/GRANT/REVOKE and role membership
+-- changes. Deliberately excludes `read`, `write`, `function`, `misc` — see
+-- header. Set at the `postgres` role level (not a global ALTER SYSTEM,
+-- which this migration cannot issue safely inside a normal transaction on
+-- managed Postgres) so it applies to every connection authenticating as
+-- that role, which on Supabase includes the pooled application roles.
+alter role postgres set pgaudit.log = 'ddl, role';

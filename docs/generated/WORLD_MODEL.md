@@ -6,8 +6,13 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
+<<<<<<< HEAD
 **Node counts:** 29 features, 73 routes, 45 components, 30 apis, 91 actions, 71 services, 58 tests, 131 tables, 158 rpcs, 27 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
 **Edges:** 1052 (merged; an edge with more than one evidence kind is a stronger claim).
+=======
+**Node counts:** 28 features, 72 routes, 45 components, 30 apis, 90 actions, 67 services, 55 tests, 131 tables, 158 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1036 (merged; an edge with more than one evidence kind is a stronger claim).
+>>>>>>> 28315a25c (db(D6+D7): pgmq job queues with dead letters and a consumer route, jobs panel, generated retention table, restore runbook, pgaudit (held))
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -338,6 +343,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/v3/goal-suggestions-evaluate` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/goal-suggestions-write` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/standing-refresh` | vercel_cron | `coachhelm_ai` |
+| `vercel_cron:/api/jobs/consume` | vercel_cron | _unmapped_ |
 
 ---
 

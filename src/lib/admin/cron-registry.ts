@@ -35,6 +35,9 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY, schedule: '0 7 * * *' },
   { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY, schedule: '30 7 * * *' },
   { jobType: 'admin-digest', path: '/api/cron/admin-digest', cadenceMinutes: DAILY, schedule: '0 11 * * *' },
+  // Database Plan D6: pgmq queue consumer. Degrades to a 200 no-op until the
+  // owner applies 20260906140000_helm_jobs_pgmq_queues.sql (HELD).
+  { jobType: 'jobs-consume', path: '/api/jobs/consume', cadenceMinutes: 1, schedule: '*/1 * * * *' },
   // vercel.json schedules this "10 */4 * * *" — every 4 hours, not 5 minutes.
   // The 5-minute value survived here because the contract test below only
   // ever diffed the SET of paths between this file and vercel.json, never

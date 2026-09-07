@@ -3657,6 +3657,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/v3/standing-refresh",
         "schedule": "20 2 * * *"
+      },
+      {
+        "id": "vercel_cron:/api/jobs/consume",
+        "kind": "vercel_cron",
+        "path": "/api/jobs/consume",
+        "schedule": "*/1 * * * *"
       }
     ],
     "invariants": [
@@ -14511,11 +14517,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 40
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 41
         },
         {
@@ -14527,6 +14528,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
           "line": 43
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 44
         },
         {
           "kind": "import_graph",
@@ -14680,17 +14686,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 24
+          "line": 25
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 45
+          "line": 46
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 51
+          "line": 52
         },
         {
           "kind": "import_graph",
@@ -14782,7 +14788,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 29
+          "line": 30
         }
       ]
     },
@@ -14908,11 +14914,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 31
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 32
         },
         {
@@ -14923,7 +14924,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 57
+          "line": 34
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 58
         },
         {
           "kind": "import_graph",
@@ -15082,7 +15088,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7197
+          "line": 7226
         }
       ]
     },
@@ -15130,7 +15136,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 30
+          "line": 31
         },
         {
           "kind": "import_graph",
@@ -15157,12 +15163,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2322
+          "line": 2323
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2556
+          "line": 2557
         }
       ]
     },
