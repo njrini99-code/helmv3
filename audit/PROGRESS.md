@@ -61,9 +61,19 @@ it is the owner's, through `db-apply`.
       NOT applied.
 
 ## W2 — Migration written, NOT applied
-- [ ] **G-58** forward migration adding `muted_until` + `notification_level`
+- [x] **G-58** forward migration adding `muted_until` + `notification_level`
       `IF NOT EXISTS` with production's exact default and CHECK, so production is a no-op and
       every rebuilt-from-migrations environment converges. Leave for `db-apply`.
+      `supabase/migrations/20260907120000_golf_participants_mute_columns.sql` — WRITTEN, NOT
+      APPLIED to production. Shapes read from the production catalog, not the mirror. Verified
+      against the local stack: before = `id, conversation_id, user_id, joined_at, last_read_at`
+      (G-58's own evidence), after = production's exact shape, second apply a no-op. Adds no
+      index, because production has none and one would stop this being a no-op. The
+      `COMMENT ON` is guarded on absence — production's existing comment is the only written
+      record of the mute semantics anywhere, and an unguarded one would overwrite it.
+      Now ENFORCED: both columns added to `GOLF_EXPECTED_COLUMNS` in
+      `scripts/db/check-supabase-drift.mjs`, which `ci.yml` runs against the migrations
+      rebuild — the schemas→migrations direction nothing was checking.
 
 ## W3 — Design-system prerequisites (blocks W5)
 - [ ] **G-46** migrate `AttachmentPreview.tsx` off legacy classes onto Fairway

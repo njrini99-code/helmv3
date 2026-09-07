@@ -186,3 +186,44 @@
   — the viewer's own row included — so the write refetches the rail. Pinned by
   test, because the sibling receipts subscription in `useGolfMessages`
   deliberately ignores the current user and is an easy thing to copy.
+
+## 2026-09-07 — the mute columns get a migration (G-58)
+
+- `golf_conversation_participants.notification_level` and `.muted_until` exist
+  in production and are declared in `supabase/schemas/golf/10_tables.sql`, but
+  no file under `supabase/migrations/` creates either. The only other hits are
+  in `supabase/migrations_archive/`, which is never replayed. Confirmed by
+  querying the local stack, which is built from migrations: it had exactly
+  `id, conversation_id, user_id, joined_at, last_read_at`.
+- So every environment built from migrations — fresh local stack, CI, preview
+  branch, disaster-recovery restore — lacked the mute contract. Production was
+  the only place it existed, and a restore-from-migrations would have dropped
+  it silently.
+- `supabase/migrations/20260907120000_golf_participants_mute_columns.sql`
+  converges them. Shapes were read from the production catalog
+  (`information_schema.columns`, `pg_constraint`, `pg_indexes`,
+  `col_description`), not from the mirror, because the mirror is the artifact
+  under suspicion.
+- It is a strict no-op against production, and that constrained three choices:
+  no index (production has none on either column); column order matching
+  production's ordinal positions, so a rebuild converges on the same shape and
+  not merely the same set; and a `COMMENT ON` guarded on the comment being
+  absent. That last one matters — production's comment on `notification_level`
+  is the only written record anywhere of the mute semantics (the level lapses
+  back to `all` once `muted_until` passes, evaluated on read), and it is in no
+  repo file. An unguarded `COMMENT ON` would have overwritten it with a worse
+  paraphrase.
+- `ADD CONSTRAINT` has no `IF NOT EXISTS` in PostgreSQL, hence the `pg_constraint`
+  lookup in a `DO` block rather than a bare `ALTER`.
+- WRITTEN, NOT APPLIED. Applying it is the owner's, through `npm run db:apply`
+  after `db-migration-reviewer`. It is not a held migration and gets no row in
+  `supabase/migrations/HELD.md`.
+- Verified rather than assumed: applied to the local stack, which then matched
+  production's shape exactly; a second apply changed nothing and did not
+  duplicate the constraint.
+- Enforced from here. Both columns are now in `GOLF_EXPECTED_COLUMNS` in
+  `scripts/db/check-supabase-drift.mjs`, and `ci.yml` runs `db:drift:check`
+  against the stack it rebuilds from migrations. That is the schemas→migrations
+  direction — `ci.yml`'s declarative-schema step checks migrations→schemas, and
+  the drift check's golf invariant did not name these two, so neither would
+  have caught it. Deleting or breaking the migration now fails CI.
