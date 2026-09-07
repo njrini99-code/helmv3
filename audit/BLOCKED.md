@@ -11,7 +11,14 @@ do myself, in one place.
 
 ## A. Needs access I don't have
 
-### A1. Production DB read — settles 4 findings
+### A1. Production DB read — **MOSTLY RESOLVED, see `A1-RESOLUTION.md`**
+> Answered 2026-09-07 via #1890's `db-apply` dry-run (production ledger: **zero pending
+> migrations**, so `20260819070000` IS applied — G-38 downgraded) and a local
+> migrations-rebuilt stack (**G-51 confirmed as predicted**; G-40 needs no new column).
+> A production *catalog* read is still unavailable, which matters because the same work
+> found **G-58**: `muted_until` and `notification_level` exist in production but **no
+> migration creates them**. Read `A1-RESOLUTION.md` before acting on anything below.
+
 Supabase SQL editor, project ref `qmnssrrolpinvwjjnufo`. Read-only.
 
 ```sql
