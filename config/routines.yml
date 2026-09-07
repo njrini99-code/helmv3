@@ -64,7 +64,20 @@ routines:
     description: >-
       Daily production-vs-migration-ledger schema invariant check (separate
       question from CI's own migrations-rebuilt-locally check — see that
-      workflow's own header).
+      workflow's own header), plus D4's ledger-vs-catalog object check. On
+      failure opens/updates the `db-drift` GitHub issue and emails the owner
+      through the ops-digest transport.
+
+  - id: db-advisors-weekly
+    trigger: github-actions-schedule
+    source: .github/workflows/db-advisors.yml
+    schedule: "20 7 * * 1"
+    status: active
+    description: >-
+      Weekly Supabase security/performance advisor ratchet against
+      supabase-advisor-baseline.json — a class may only shrink. On
+      regression opens/updates the same `db-drift` issue and emails the
+      owner; uploads the full advisor JSON as a run artifact every run.
 
   - id: codeql-analysis
     trigger: github-actions-schedule
