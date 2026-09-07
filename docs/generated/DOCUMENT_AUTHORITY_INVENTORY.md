@@ -465,7 +465,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 47 | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | 1 | 1 | - |
-| `memory/ledgers/tests/team_communications.md` | current | - | - | - | 1 | 8 | - |
+| `memory/ledgers/tests/team_communications.md` | current | - | - | - | 1 | 9 | - |
 
 ### `INCIDENT`
 
