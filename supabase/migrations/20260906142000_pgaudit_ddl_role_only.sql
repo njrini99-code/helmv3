@@ -61,7 +61,7 @@
 -- Owner step, not run by this file in practice (see step 1 above) — the
 -- IF NOT EXISTS guard makes re-running this line after a dashboard enable a
 -- safe no-op either way.
-create extension if not exists pgaudit;
+create extension if not exists pgaudit schema extensions;
 
 -- Session/database-level default. `ddl` covers CREATE/ALTER/DROP/etc.;
 -- `role` covers CREATE ROLE/ALTER ROLE/GRANT/REVOKE and role membership
