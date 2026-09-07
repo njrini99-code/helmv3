@@ -33,7 +33,7 @@ human has to remember to invalidate them.
 
 | Service | Authority | Scope | Source | Runtime evidence |
 | --- | --- | --- | --- | --- |
-| Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read_only=true | .mcp.json (this repo) | **STALE** — observed 2026-09-01 under config 7a677da5aeb057cd; config is now 49f53dafb743834b |
+| Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read_only=true | .mcp.json (this repo) | **STALE** — observed 2026-09-01 under config 7a677da5aeb057cd; config is now 8b6ac5c09396583f |
 | Sentry | `mcp__claude_ai_Sentry__*` | org helm-xs | account connector | **EXERCISED** — 2026-08-29 — find_organizations -> org helm-xs (us.sentry.io). 2026-09-01: no tool carries this display-name prefix in the session inventory; the same connector answers as mcp__7524981b-0003-40de-9f86-c5275420784a__* (see that row). The 2026-08-29 PASS was made under this spelling. Re-checked 2026-09-06: still absent from the session inventory under this name. |
 | Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **STALE** — observed 2026-09-01 under config 5b174c1ef5d936bb; config is now 1fd295b13e537b5b |
 | GitHub | `gh CLI (gh api)` | repo njrini99-code/helmv3 | scripts/worktree-lifecycle.mjs | **EXERCISED** — 2026-08-29 — exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). Capability is fingerprintable after all: the authenticated account id, the repository id and the OAuth scope set (X-Oauth-Scopes response header) are all stable and carry no secret material. Recorded 2026-08-30; control-plane:verify re-measures them live and reports drift. |
@@ -101,7 +101,7 @@ When a fingerprint changes, every EXERCISED claim under it becomes STALE.
 
 | Service | Fingerprint | Drift detectable? |
 | --- | --- | --- |
-| Supabase | `49f53dafb743834b` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
+| Supabase | `8b6ac5c09396583f` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Sentry | `6965b945cbb523f5` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Vercel | `1fd295b13e537b5b` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | GitHub | `ungoverned:87544794` | **NO** — no allow/deny/ask rule or `.mcp.json` entry in this repo governs it, so there is nothing here to fingerprint |

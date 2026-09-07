@@ -5,6 +5,56 @@ read-only script that connects directly to Postgres and asserts a fixed
 list of production-correctness invariants discovered during the 2026-07
 stabilization pass. It never writes.
 
+## The three checks, the alert path, and the cadence (D4)
+
+`.github/workflows/db-drift.yml` runs daily and chains two read-only checks
+against production, in order:
+
+1. **Schema invariants** — `npm run db:drift:check`
+   (`scripts/db/check-supabase-drift.mjs`), described in the rest of this
+   doc.
+2. **Ledger vs. catalog** — `npm run db:ledger-vs-catalog`
+   (`scripts/db/check-ledger-vs-catalog.mjs`). Different question from #1
+   and from `npm run db:ledger-drift`: for every version in
+   `supabase_migrations.schema_migrations` that has a local file, it parses
+   the `CREATE TABLE` / `CREATE FUNCTION` / `CREATE POLICY` names out of
+   that file and asserts each object exists in the live catalog (FAIL if
+   not — a version can be "applied" on both sides while a statement inside
+   it silently failed). It also checks that every table in `public` traces
+   to some migration file or to a `supabase/schemas/**` file (WARN, never
+   FAIL — legitimate exceptions exist).
+
+If either check fails, the workflow alerts the owner within the run,
+through two owner-only channels, never customer mail:
+
+- **A GitHub issue** labelled `db-drift` — opened once, then commented on
+  for repeat failures rather than duplicated daily.
+- **One email** through the same dedicated ops-digest transport as
+  `src/lib/admin/digest/transport.ts` (`OPS_DIGEST_RESEND_API_KEY`,
+  `OPS_DIGEST_TO`), via `scripts/db/notify-drift.mjs`. If those secrets
+  aren't configured in this repo's GitHub Actions, the email step is
+  skipped without failing the workflow — the issue is the alert of record.
+
+A separate weekly workflow, `.github/workflows/db-advisors.yml` (Mondays
+07:20 UTC, after the daily drift run), runs `npm run db:advisor-ratchet`
+(`scripts/db/advisor-ratchet.mjs`) against the Supabase Management API's
+security and performance advisors, comparing counts per advisor class
+against `supabase-advisor-baseline.json`. A class may only shrink; a
+brand-new class at a nonzero count is also a regression. On failure it
+alerts through the same `db-drift` issue thread and the same email path,
+and uploads the full advisor JSON (both types) as a run artifact
+regardless of pass/fail, so the weekly trend is inspectable even when
+nothing regressed.
+
+The baseline's header notes that the `pg_graphql_authenticated_table_exposed`
+and `pg_graphql_anon_table_exposed` security classes only reach zero once
+the owner removes the exposed GraphQL schema in the Supabase dashboard —
+that's an owner action this repo's tooling cannot perform.
+
+**Goal**: a failure in any of the three checks reaches the owner within the
+hour of the scheduled run that found it, and the weekly advisor note shows
+zero drift for four straight weeks before this guard is considered settled.
+
 ## Why this exists, and why it doesn't use `schema_migrations`
 
 `docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md` found that local
