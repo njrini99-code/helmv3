@@ -284,6 +284,14 @@ export default defineConfig({
             // Migration-ledger reconciliation: every file on disk has a
             // ledger entry and vice versa.
             'scripts/__tests__/check-migration-ledger.test.mjs',
+            // D4 (db-tooling-drift): object-level drift — every CREATE
+            // TABLE/FUNCTION/POLICY an applied migration claims exists in
+            // the catalog, and every public table traces to a migration or
+            // supabase/schemas/** file.
+            'scripts/__tests__/check-ledger-vs-catalog.test.mjs',
+            // D4 (db-tooling-drift): pure tally/regression helpers behind
+            // the weekly Supabase advisor ratchet.
+            'scripts/__tests__/advisor-ratchet.test.mjs',
             // Migration filename version prefixes are unique and
             // well-formed (the #220 duplicate-version hazard class).
             'scripts/__tests__/check-migration-versions.test.mjs',

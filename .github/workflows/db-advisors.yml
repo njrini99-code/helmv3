@@ -1,0 +1,109 @@
+name: Supabase advisors (weekly)
+
+# Watches the Supabase security/performance advisor counts so a new finding
+# is caught within a week instead of sitting unnoticed in the dashboard.
+# Same shape as db-drift.yml: scheduled (not per-PR, because production
+# advisor state is not something a PR introduces), same read-only Management
+# API transport and secrets, same owner-only alert path — never customer
+# mail. See docs/operations/SUPABASE_DRIFT_GUARD.md.
+
+on:
+  schedule:
+    # Mondays 07:20 UTC — after db-drift.yml's daily 07:00 run, so an advisor
+    # regression and a schema drift failure on the same morning land as two
+    # distinct alerts rather than racing in the same window.
+    - cron: '20 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: db-advisors-weekly
+  cancel-in-progress: false
+
+jobs:
+  advisors:
+    name: Advisor count ratchet
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check advisor counts against the baseline
+        id: advisor_check
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: npm run db:advisor-ratchet
+
+      # Uploaded unconditionally (not just on failure) so the weekly trend is
+      # inspectable even on a passing run.
+      - name: Save full advisor JSON
+        if: always()
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p .artifacts
+          curl -sf -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_ID}/advisors/security" \
+            -o .artifacts/security-advisors.json || echo '{"error":"fetch failed"}' > .artifacts/security-advisors.json
+          curl -sf -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_ID}/advisors/performance" \
+            -o .artifacts/performance-advisors.json || echo '{"error":"fetch failed"}' > .artifacts/performance-advisors.json
+
+      - name: Upload advisor JSON artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: supabase-advisors-${{ github.run_id }}
+          path: .artifacts/
+          retention-days: 90
+
+      # Same two owner-only channels as db-drift.yml's alert path, and the
+      # SAME `db-drift` issue thread — one place the owner checks for either
+      # kind of database alert, not two.
+      - name: Open or update the db-drift alert issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh label create db-drift --description "Automated production database drift/advisor alerts" --color B60205 --force >/dev/null 2>&1 || true
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --label db-drift --state open --json number --jq '.[0].number // empty')"
+          body="The weekly Supabase advisor ratchet found a regression (some advisor class grew past its baseline).
+
+          Run: ${RUN_URL}
+
+          The full advisor JSON is attached to the run as an artifact. Baseline: supabase-advisor-baseline.json."
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "Database drift check failing" --label db-drift --body "$body"
+          fi
+
+      - name: Email the owner
+        if: failure()
+        env:
+          OPS_DIGEST_RESEND_API_KEY: ${{ secrets.OPS_DIGEST_RESEND_API_KEY }}
+          OPS_DIGEST_TO: ${{ secrets.OPS_DIGEST_TO }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          node scripts/db/notify-drift.mjs "Supabase advisor ratchet regression" "The weekly Supabase advisor check found a regression. Run: ${RUN_URL}"
