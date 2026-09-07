@@ -592,3 +592,56 @@
   fail — now a lookbehind/lookahead pair. And a blanket "no raw box-shadow"
   regex flagged G-50a's day chip, which legitimately composes two tokens inside
   the escape; narrowed to forbid a hand-typed `oklch(`/`rgb(` instead.
+
+## G-20a — the "Didn't send" banner, and the half of it that already shipped
+`src/components/fairway/pages/messages/MessageComposer.tsx`
+
+- THE EIGHTH CORRECTION FROM MEASUREMENT, and it changed what got built. G-20
+  says Did-not-send "has no implementation in MessageComposer.tsx — no failure
+  banner, no Retry". Tracing both send paths shows that is half stale:
+  - `onSend` → `FairwayMessages.handleSendMessage` → `useGolfMessages.sendMessage`.
+    The optimistic row is pushed BEFORE the `try`, unconditionally, so no text
+    failure can avoid it: every one ends as a muted bubble with its own Retry.
+    G-19 built the artboard's sixth state already, in a better place than the
+    artboard drew it — §9.2 keeps the message where the user sent it rather
+    than pushing it back into the field.
+  - `onSendWithAttachments` → `handleSendMessageWithAttachments` →
+    `useMessageAttachments`. No optimistic row anywhere in that path. On failure
+    there is a toast and nothing else, and the message exists nowhere but in the
+    composer. That is the case the banner is for, and the only one.
+- AND THE TRACE FOUND A DEFECT G-19 LEFT BEHIND. `if (success)` guarded the
+  draft clear, so a failed TEXT send kept the words in the field while G-19's
+  bubble showed the same words in the thread: one sentence, two places, two
+  different retries, and pressing both would have been the duplicate-send risk
+  `memory/features/team-communications.md:82-90` already treats as accepted
+  doctrine. The composer now lets go on that path — the thread owns it.
+- The clear reuses the mid-flight logic, extracted as `dropSent`. A blanket
+  `setMessage('')` would discard a second sentence typed while the failed send
+  was in flight, which is the exact bug §9.3's original comment exists to
+  prevent; only `sentRaw` leaves the field, on success and on failure alike.
+- NO PROP SIGNATURE CHANGED. `hasAttachments` is already computed at the top of
+  the submit and is exactly the discriminator, so the composer knows which path
+  it took without being told. The asymmetry is documented on the state instead:
+  `onSend` returning false means the thread holds a failed row;
+  `onSendWithAttachments` returning false means nothing was recorded anywhere.
+- Retry on this path re-submits what is still staged rather than calling
+  `retryMessage`. There is no persisted id to re-send — `useMessageAttachments`
+  wrote nothing — so the draft and the pending files ARE the record of the
+  attempt. That is what the artboard's "the text is never lost" caption means
+  here.
+- `sendError` gained `retryable`, which separates the two things that land in
+  it. A failed attachment send can be tried again; the G-21 refusal (no
+  attachment-capable handler) cannot — retrying a missing prop just refuses
+  again — so it keeps its text and shows no Retry.
+- The banner moved ABOVE the track, where `Composer.dc.html:140-149` draws it.
+  Below it (where the G-21 refusal whispered in secondary ink) it read as a
+  footnote to a field that still looked ready.
+- Values: `px-3 py-2` and `rounded-fw-md` are exact against the artboard's
+  `8px 12px` / `0.875rem`; `gap-2` absorbs 1px off 9px; `text-caption` is
+  12px/18px against 12px/17px — one line, so a 1px leading delta does not
+  compound the way G-29's per-line 2px did. The ink is A03 entry #3 already
+  (`oklch(0.505 0.19 27)`, a genuinely unmapped third step on the danger ramp);
+  `fw-danger-ink` ships paired with `fw-danger-bg` because that pairing is the
+  one the token file actually contrast-measured (7.27:1 on the light wash).
+  Approximating the artboard's 8%-alpha tint under a borrowed ink would have
+  been a guess at both halves.

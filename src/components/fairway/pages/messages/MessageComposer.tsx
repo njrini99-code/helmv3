@@ -24,7 +24,7 @@
  * ========================================================================== */
 
 import { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { AlertCircle, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
@@ -62,11 +62,24 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   const [sending, setSending] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   /**
-   * A refusal the user needs to see (G-21). Distinct from a failed send, which
-   * is reported on the message itself in the thread — this is the case where
-   * nothing was even attempted, so the thread has nothing to show.
+   * A failure the THREAD cannot report, because nothing was recorded there.
+   *
+   * The two send paths behave differently and G-20a turns on the difference
+   * (traced in the ledger). `onSend` reaches `useGolfMessages.sendMessage`,
+   * which pushes an optimistic row BEFORE anything can throw, so every text
+   * failure ends up as a muted bubble with its own Retry (G-19) — the thread
+   * owns it and the composer must get out of the way. `onSendWithAttachments`
+   * reaches `useMessageAttachments`, which creates no optimistic row at all:
+   * on failure there is a toast and nothing else, and the message exists
+   * nowhere but in this field. That is the artboard's "Didn't send" state, and
+   * it is the only case this banner is for.
+   *
+   * `retryable` separates the two things that can land here. A failed
+   * attachment send can be tried again with exactly what is still staged; the
+   * G-21 refusal (no attachment-capable handler) cannot — retrying a missing
+   * prop just refuses again.
    */
-  const [sendError, setSendError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<{ text: string; retryable: boolean } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const attachmentIdCounter = useRef(0);
@@ -208,8 +221,36 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     });
   };
 
+  /**
+   * Remove exactly what was sent from the field, and nothing else (§9.3).
+   *
+   * A blanket `setMessage('')` discards anything typed during the round trip —
+   * on a slow phone that is a whole second sentence, silently gone the moment
+   * the first one lands. Shared by the success path and the text-failure path
+   * because both are letting go of the same `sentRaw` for the same reason.
+   */
+  const dropSent = (sentRaw: string) => (prev: string) => {
+    if (prev === sentRaw) return '';
+    if (prev.startsWith(sentRaw)) return prev.slice(sentRaw.length);
+    // Edited mid-flight beyond a simple append: keep every character rather
+    // than guess which ones were theirs to lose.
+    return prev;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await submitSend();
+  };
+
+  /**
+   * The send itself, separated from the form event so the failure banner's
+   * Retry can re-run it against whatever is still staged. That IS the retry on
+   * this path: `useMessageAttachments` persisted no id, so there is no row to
+   * re-send the way `useGolfMessages.retryMessage` does — the draft and the
+   * pending files in this component are the only record of the attempt, which
+   * is what the artboard's "the text is never lost" caption is describing.
+   */
+  const submitSend = async () => {
     const hasAttachments = pendingAttachments.length > 0;
     if ((!message.trim() && !hasAttachments) || sending) return;
 
@@ -242,7 +283,10 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       // Latent rather than live: the production call site always passes the
       // handler. Refusing costs nothing there and removes the failure mode.
       if (!onSendWithAttachments) {
-        setSendError('Attachments can’t be sent from here. Your message was not sent.');
+        setSendError({
+          text: 'Attachments can’t be sent from here. Your message was not sent.',
+          retryable: false,
+        });
         setSending(false);
         return;
       }
@@ -255,17 +299,21 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       pendingAttachments.forEach(a => {
         if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
       });
-      // Clear only what was actually sent (§9.3). A blanket `setMessage('')`
-      // discards anything typed during the round trip — on a slow phone that is
-      // a whole second sentence, silently gone the moment the first one lands.
-      setMessage(prev => {
-        if (prev === sentRaw) return '';
-        if (prev.startsWith(sentRaw)) return prev.slice(sentRaw.length);
-        // Edited mid-flight beyond a simple append: keep every character rather
-        // than guess which ones were theirs to lose.
-        return prev;
-      });
+      setMessage(dropSent(sentRaw));
       setPendingAttachments([]);
+    } else if (hasAttachments) {
+      // G-20a — the artboard's sixth state. Nothing reached the thread on this
+      // path, so a toast that fades is the message's only trace: the banner is
+      // what makes the failure recoverable instead of merely announced. The
+      // draft and the staged files stay exactly where they are.
+      setSendError({ text: 'Couldn’t send — check your connection.', retryable: true });
+    } else {
+      // G-20a — the text path failed, and `useGolfMessages` already put the
+      // message in the thread as a muted bubble with its own Retry (G-19). If
+      // the composer also kept the draft the same sentence would be on screen
+      // TWICE, in two places offering two different retries. The thread owns
+      // it; the field lets go of it.
+      setMessage(dropSent(sentRaw));
     }
     setSending(false);
   };
@@ -315,6 +363,48 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       onSubmit={handleSubmit}
       className="border-t border-border-subtle bg-surface-sunken p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-4 lg:pb-4"
     >
+      {/* G-20a — the "Didn't send" banner, ABOVE the track, which is where
+          `Composer.dc.html:140-149` draws it. Below the track (where the G-21
+          refusal used to whisper in secondary ink) it read as a footnote to a
+          field that still looked ready; above it, it is the first thing between
+          the thread and the words you are about to lose.
+
+          Numbers from the artboard: `padding: 8px 12px` → `px-3 py-2`,
+          `border-radius: 0.875rem` → `rounded-fw-md` (14px, exact), `gap: 9px`
+          → `gap-2` (1px absorbed), 12px text → `text-caption` (12px/18px
+          against the artboard's 17px — one line, so a 1px leading delta does
+          not compound the way G-29's per-line 2px did).
+
+          The ink is A03 entry #3: `oklch(0.505 0.19 27)` is a genuinely
+          unmapped third step between `--fw-color-danger` and
+          `--fw-color-danger-ink`. `fw-danger-ink` ships as the interim, paired
+          with `fw-danger-bg` because that pairing is the one the token file
+          actually contrast-measured (7.27:1 on the light wash) — an approximated
+          8%-alpha tint under a borrowed ink would be a guess at both. */}
+      {sendError && (
+        <div
+          role="alert"
+          className="mb-2 flex items-center gap-2 rounded-fw-md bg-fw-danger-bg px-3 py-2"
+        >
+          <AlertCircle size={16} className="flex-shrink-0 text-fw-danger-ink" aria-hidden="true" />
+          <p className="min-w-0 flex-grow font-fw-sans text-caption text-fw-danger-ink">
+            {sendError.text}
+          </p>
+          {sendError.retryable && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => { void submitSend(); }}
+              disabled={sending}
+              className="min-h-0 flex-shrink-0 rounded px-2 py-1 font-fw-sans text-caption font-semibold text-fw-danger-ink hover:bg-fw-danger-ink/10"
+            >
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Pending attachment previews — REUSED component, render only when present. */}
       {pendingAttachments.length > 0 && (
         <AttachmentPreview
@@ -400,13 +490,9 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           vertical space a phone composer has, and on mobile the counter is
           usually the only occupant. `ml-auto` keeps the counter right-aligned
           once the hint beside it is gone. */}
-      {(isPointerFine || charsLeft || sendError) && (
+      {(isPointerFine || charsLeft) && (
         <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
-          {sendError ? (
-            <p className="font-fw-sans text-eyebrow text-text-secondary" role="alert">
-              {sendError}
-            </p>
-          ) : isPointerFine && (
+          {isPointerFine && (
             <p className="font-fw-sans text-eyebrow text-text-tertiary">
               Press Enter to send, Shift+Enter for a new line.
             </p>

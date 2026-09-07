@@ -305,3 +305,18 @@ Two patterns caught by their own failures before landing: `\bshadow-card\b`
 matches inside `--fw-shadow-card` (word boundary before a hyphen — the same
 false positive as `text-body` vs `text-body-sm` in G-29a), and a blanket
 "no raw box-shadow" regex flagged G-50a's legitimate two-token composition.
+
+## G-20a — MessageComposer.didNotSend.test.tsx
+7 tests, 5 failing against the pre-fix component, verified by restoring the file
+from HEAD and re-running.
+
+Behavioural, not source-read: what distinguishes fixed from broken is what the
+component DOES with a `false` return, and both branches are reachable simply by
+rendering it with a handler that resolves false. Three of the seven exist to pin
+the correction itself — that a failed TEXT send raises no banner (the thread has
+it) and releases the draft (so it is not on screen twice), and that the
+mid-flight edit survives that release.
+
+The G-21 suite is untouched and still passes: its refusal keeps its exact text
+and its `role="alert"`, and a new test asserts it shows no Retry, since retrying
+a missing handler only refuses again.

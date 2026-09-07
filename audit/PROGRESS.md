@@ -132,6 +132,8 @@ it is the owner's, through `db-apply`.
 
 ## W5 — Composer (only after W3)
 - [ ] **G-20** two of six composer states do not exist
+  - [x] **G-20a** the "Didn't send" state — and a CORRECTION: it was half-shipped already. The two send paths differ. `onSend` reaches `sendMessage`, which pushes an optimistic row before anything can throw, so every text failure is already a muted bubble with its own Retry (G-19) — the artboard's sixth state, in the better place §9.2 asks for. `onSendWithAttachments` reaches `useMessageAttachments`, which creates NO optimistic row: a toast and nothing else. The banner is for that path only. Also closes a defect G-19 left behind — the composer kept the draft on a failed text send, so the same sentence sat on screen twice offering two different retries. 7 tests, 5 failing pre-fix
+  - [ ] **G-20b** the §9.5 outcome taxonomy — "Confirmation unavailable" vs "Could not send"
 - [ ] **G-09** upload progress is fabricated [cross-lane + artboard confirmed]
 - [ ] **G-24** no cancel path for an in-flight upload
 - [ ] **G-22** five-line growth is a hardcoded 120px
