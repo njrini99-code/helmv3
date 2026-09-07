@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
 | `.claude/rules/database.md` | current | - | - | - | 6 | 5 | - |
-| `.claude/rules/design-system.md` | current | - | - | yes | 7 | 6 | - |
+| `.claude/rules/design-system.md` | current | - | - | yes | 8 | 6 | - |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
@@ -375,7 +375,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/M03C-composer.md` | current | - | - | yes | 0 | 20 | - |
 | `audit/M03D-overlays.md` | current | - | - | yes | 0 | 16 | 2 |
 | `audit/M04-media.md` | current | - | - | - | 0 | 21 | - |
-| `audit/PROGRESS.md` | current | - | - | - | 0 | 1 | - |
+| `audit/PROGRESS.md` | current | - | - | - | 0 | 3 | - |
 | `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 3 | 0 | - |
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 8 | 19 | 6 |
 | `docs/SECURITY_AUDIT.md` | current | yes | - | - | 4 | 13 | - |
@@ -450,7 +450,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 37 | - |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/team_communications.md` | current | - | - | - | 1 | 1 | - |
+| `memory/ledgers/changes/team_communications.md` | current | - | - | - | 1 | 9 | - |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | - |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
@@ -464,7 +464,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | 2 | 47 | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | 1 | 1 | - |
-| `memory/ledgers/tests/team_communications.md` | current | - | - | - | 1 | 2 | - |
+| `memory/ledgers/tests/team_communications.md` | current | - | - | - | 1 | 3 | - |
 
 ### `INCIDENT`
 
@@ -624,7 +624,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 1 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 26 | 41 | - |
+| `supabase/migrations/HELD.md` | current | - | - | - | 27 | 41 | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 1 |
