@@ -1339,6 +1339,32 @@ export function MessageThreadPane({
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',
+                          // G-49 (F14) — every bubble in the artboard casts a
+                          // shadow; the repo drew them flat. Same systemic gap
+                          // G-32 already closed on the rail's unread rows, which
+                          // the manifest calls out as "one systemic issue across
+                          // two lanes, not two".
+                          //
+                          // Incoming is free: `Bubbles.dc.html:18`'s `.lit` is
+                          // BYTE-IDENTICAL to `--fw-shadow-card` — inset 0 1px 0
+                          // oklch(1 0 0 / 0.55), then 0 1px 2px /0.05 and
+                          // 0 4px 10px /0.06. The arbitrary-property escape is
+                          // the repo idiom for that token because `shadow-card`
+                          // is a TRAP: it is a legacy Tailwind entry with a
+                          // different value, not a bridge to `--fw-shadow-card`.
+                          //
+                          // Own is NOT free. `.lit-accent` (`:19`) is a green
+                          // ambient — 0 8px 20px oklch(0.488 0.124 150 / 0.22) —
+                          // over a much dimmer 0.14 inset, because the surface
+                          // beneath it is dark green. No token expresses a
+                          // hued shadow, so it is A03 request #8. `shadow-soft`
+                          // ships until then: it IS a real bridge to
+                          // `--fw-shadow-soft`, and it carries the two-layer
+                          // ambient without the inset — which matters, since
+                          // `--fw-shadow-card`'s 0.55 white inset on a dark green
+                          // bubble would paint a bright specular rim the artboard
+                          // explicitly dims to 0.14.
+                          isOwn ? 'shadow-soft' : '[box-shadow:var(--fw-shadow-card)]',
                           // G-19: a failed send stays legible but visibly not
                           // delivered — muted, never removed.
                           (msg as MessageWithReadStatus).sendFailed && 'opacity-60',

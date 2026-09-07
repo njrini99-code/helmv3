@@ -546,3 +546,49 @@
   comment I had written in the component saying "roughly 85 characters" was wrong.
   Removed both. The finding stands on the maximum being exceeded, which needs no
   invented constant.
+
+## G-49b — the bubble depth system
+`src/components/fairway/pages/messages/MessageThreadPane.tsx`
+
+- F14: "Bubbles and canvas are flat single colors with zero box-shadow. The
+  artboard gives every surface a gradient + inset highlight + drop shadow. Hues
+  match closely; the depth system is simply absent." The manifest adds that this
+  is the same gap M03A found on unread rows (G-03) — "one systemic issue across
+  two lanes, not two."
+- THE OTHER LANE WAS ALREADY CLOSED. G-32 applied `--fw-shadow-card` to the
+  rail's unread row and layered `bg-canvas-gradient` over `bg-canvas` at four
+  page-shell sites. So F14's canvas half and G-03's elevation half both shipped
+  three commits ago; this commit is the thread-bubble half, and G-03 does not
+  become newly outstanding because of it. (G-03 stays in PROGRESS.md's DEFERRED
+  table for its own reason — it is sequenced behind G-04 — and its elevation
+  claim specifically is satisfied.)
+- INCOMING WAS FREE. `Bubbles.dc.html:18`'s `.lit` is byte-identical to
+  `--fw-shadow-card`. Not asserted from memory: the test parses both
+  declarations, normalises whitespace and compares, so if either side moves the
+  suite fails rather than shipping a stale value.
+- `shadow-card` is NOT that token. It is a legacy Tailwind entry with a
+  different value, which is why the escape `[box-shadow:var(--fw-shadow-card)]`
+  is the repo idiom — the same trap G-32's rail comment records, now pinned by a
+  test that also asserts the bridge really is absent from tailwind.config.ts.
+- OWN WAS NOT FREE. `.lit-accent` is a hued ambient —
+  `0 8px 20px oklch(0.488 0.124 150 / 0.22)` — a green cast under a green
+  bubble. Every `--fw-shadow-*` is a neutral warm grey; a hued shadow is not a
+  step on that ramp but a different kind of value. A03 request #8, and the test
+  compares `.lit-accent` against EVERY shadow token to prove the request is
+  real rather than unexamined.
+- Reusing `--fw-shadow-card` there would have been a visible defect, not an
+  absorption: its inset is a 0.55-alpha white top edge for a light cream card,
+  and the artboard dims the same edge to 0.14 on the green bubble because the
+  surface beneath is dark. `shadow-soft` ships instead — a real bridge, the same
+  two-layer ambient structure, and no inset at all.
+- The failed-send state is left alone deliberately. `Bubbles.dc.html:132` draws
+  it as `.bub green` WITHOUT `.lit-accent` — the ambient comes off and a danger
+  ring replaces it. G-19's `opacity-60` reaches approximately the same place
+  from the other direction, fading the shadow with the fill. Recorded in A03 as
+  a question for whoever revisits that treatment, not as a request.
+- Two test patterns I wrote too broadly and narrowed, both the hyphen-boundary
+  trap this audit keeps hitting: `\bshadow-card\b` matches INSIDE
+  `--fw-shadow-card` (a word boundary sits before a hyphen), so it could never
+  fail — now a lookbehind/lookahead pair. And a blanket "no raw box-shadow"
+  regex flagged G-50a's day chip, which legitimately composes two tokens inside
+  the escape; narrowed to forbid a hand-typed `oklch(`/`rgb(` instead.

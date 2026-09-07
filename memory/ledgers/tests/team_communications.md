@@ -284,3 +284,24 @@ element legitimately has one.
 `bubbleWidth.test.ts`'s last assertion is re-anchored: it asserted the override
 was present, which encoded G-50b's decision rather than its derivation. It now
 asserts the absence and cites G-49 in the test body.
+
+## G-49b — MessageThreadPane.bubbleDepth.test.ts
+11 tests, 3 failing against the pre-fix component (`the incoming branch applies
+that token`, `ships shadow-soft as the interim`, `applies a shadow on each
+branch of the same conditional`), verified by restoring the file from HEAD and
+re-running.
+
+The byte-identity claim is MEASURED, not asserted: `.lit` is parsed out of
+`audit/reference/Bubbles.dc.html` and `--fw-shadow-card` out of
+`design-tokens.css`, both whitespace-normalised, then compared. The same
+machinery proves the A03 request is real — `.lit-accent` is compared against
+every `--fw-shadow-*` token in the file and must match none.
+
+Reading the light-theme token specifically matters: the file redefines each
+`--fw-shadow-*` under the dark theme further down, so the parser takes the first
+declaration and the collector de-dupes by name in file order.
+
+Two patterns caught by their own failures before landing: `\bshadow-card\b`
+matches inside `--fw-shadow-card` (word boundary before a hyphen — the same
+false positive as `text-body` vs `text-body-sm` in G-29a), and a blanket
+"no raw box-shadow" regex flagged G-50a's legitimate two-token composition.

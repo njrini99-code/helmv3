@@ -29,7 +29,7 @@ the repo's idiom is the arbitrary-property escape
 `[box-shadow:var(--fw-shadow-card)]`, used at roughly eight sites. Bridging it
 as `shadow-fw-card` would be a reasonable A03 request in its own right.
 
-## The unmapped values: five at W3, seven after W4
+## The unmapped values: five at W3, eight after W4
 
 The manifest counts six because two lanes reported the same value
 independently. `.send-on` in `Composer.dc.html:26` and the pinned-rail pill in
@@ -105,6 +105,40 @@ for A03 rather than settled by an implementer: **is a photo caption a distinct
 type role from a message body, or the same one?** The artboard says 14 vs 15;
 that 1px is either a deliberate role or a hand-tune, and only the design owner
 knows which.
+
+## An eighth, from the bubble depth system (G-49b)
+
+| # | Value | Nearest existing token | Why it cannot be mapped | Seen |
+|---|---|---|---|---|
+| 8 | `.lit-accent` — `inset 0 1px 0 oklch(1 0 0 / 0.14), 0 1px 2px oklch(0.18 0.01 60 / 0.07), 0 8px 20px oklch(0.488 0.124 150 / 0.22)` | none. Compared against every `--fw-shadow-*` in `design-tokens.css` and matched by none, which the suite asserts rather than my claiming it | the ambient layer is **hued** — a green cast under a green bubble. Every fw shadow token is a neutral warm grey (`oklch(0.18 0.01 60)` at 0.05-0.16). A hued shadow is not a step on that ramp; it is a different kind of value | `Bubbles.dc.html:19`, on every outgoing bubble |
+
+**The incoming half needed no request at all, and that is the finding.**
+`Bubbles.dc.html:18`'s `.lit` is byte-identical to `--fw-shadow-card` — inset
+`0 1px 0 oklch(1 0 0 / 0.55)`, then `0 1px 2px /0.05` and `0 4px 10px /0.06`.
+Exactly the same free win G-32 found on the rail's unread rows, which is why
+the manifest calls F14 and G-03 "one systemic issue across two lanes, not two".
+The test parses both declarations and compares them, so if either side ever
+moves the token stops being the answer and the suite says so.
+
+**Why `--fw-shadow-card` cannot simply be reused on the outgoing bubble.** Its
+inset is a `0.55`-alpha white top edge, designed for a light matte cream card.
+The artboard dims the same edge to `0.14` on the green bubble because the
+surface underneath is dark. Painting the card inset there would be a bright
+specular rim on a dark green fill — a visible defect, not the 1-2px class of
+delta this document absorbs elsewhere.
+
+`shadow-soft` ships until the variant exists: it is a real Tailwind bridge to
+`--fw-shadow-soft`, it carries the same two-layer ambient structure, and it has
+no inset at all — so it is quiet where the artboard is quiet rather than wrong
+where the artboard is dim.
+
+**One state deliberately left alone.** `Bubbles.dc.html:132` draws the
+failed-send bubble as `.bub green` WITHOUT `.lit-accent` — the ambient comes off
+when a message did not send, replaced by a danger ring. The component reaches
+approximately the same place from the other direction: G-19's `opacity-60`
+fades the shadow along with the fill. Whether the artboard's explicit removal
+should be reproduced exactly belongs to whoever revisits the failed-send
+treatment; it is not a variant request.
 
 ## The specimen widths, deliberately not reproduced
 
