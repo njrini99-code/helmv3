@@ -29,7 +29,7 @@ the repo's idiom is the arbitrary-property escape
 `[box-shadow:var(--fw-shadow-card)]`, used at roughly eight sites. Bridging it
 as `shadow-fw-card` would be a reasonable A03 request in its own right.
 
-## The unmapped values: five, not six
+## The unmapped values: five at W3, six after W4
 
 The manifest counts six because two lanes reported the same value
 independently. `.send-on` in `Composer.dc.html:26` and the pinned-rail pill in
@@ -50,6 +50,24 @@ second stop" are one request, not two.
 uses `linear-gradient(90deg, oklch(0.567 0.142 149.6), oklch(0.648 0.149 149.6))`
 — both stops are exact token matches (`--fw-color-accent-600` →
 `--fw-color-accent-500`). It needs no request.
+
+## A sixth request, added in W4 (G-29)
+
+| # | Value | Nearest existing token | Why it cannot be mapped | Seen |
+|---|---|---|---|---|
+| 6 | `line-height: 22px` on 15px message text | `--text-body` carries `24px` in its own tuple | the size matches exactly and the leading does not; a 2px delta **per line** compounds down a multi-line bubble, unlike a 1px specular rim | the `.bub` class rule in `Bubbles.dc.html:17` and `Thread.dc.html:16` — a rule, not a specimen |
+
+Deliberately a request rather than an absorption, and the distinction is the
+point of this document. The G-50a alpha delta was absorbed because
+`rgb(…/0.6)` against `/0.5` on a 1px rim over glass is invisible once
+rendered. This one is not the same shape: 22px against 24px is 2px on every
+line, so a six-line message is 12px taller than the artboard draws it. That is
+a design value, not render noise.
+
+Until the variant exists the token's 24px ships. The alternative — writing
+`leading-[22px]` next to `text-body` — would be a magic number stacked on a
+token that already specifies its own leading, which is how a type scale stops
+meaning anything.
 
 ## Two more that belong to A03 rather than to messaging
 

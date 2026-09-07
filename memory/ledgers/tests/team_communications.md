@@ -211,3 +211,21 @@ Loosening a matcher is exactly how a test quietly stops being a gate, so this
 was proved rather than assumed: checked out `21e33781b~1` (the commit before
 the G-26 fix) and re-ran — both tests still fail against the original
 sibling-metadata layout. The test still catches the defect it was written for.
+
+## 2026-09-07 — bubble type size (G-29a)
+
+`MessageThreadPane.bodyType.test.ts` — 6 tests, **4 failing against the pre-fix
+component**, verified by checking out HEAD's version and re-running.
+
+Measured on both sides, and on the TOKEN rather than the class name: the size is
+parsed out of the `.bub` rule and compared against what `text-body` actually
+resolves to in `tailwind.config.ts`. So the suite fails if the artboard moves,
+if the token is redefined, or if the class is swapped — where asserting the
+class alone would survive `body` being quietly redefined to 13px.
+
+Two of the six are guards rather than assertions about the current code. One
+pins that both artboards still state the SAME `.bub` font-size, since "it is a
+rule, not a specimen" is the entire basis of the decision and would be silently
+gone if they diverged. The other pins that the size is not `body-lg`, so nobody
+"fixes" it back toward §8.3's 17px estimate without first noticing that the
+artboards disagree with the prose.

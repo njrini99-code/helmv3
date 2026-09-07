@@ -406,3 +406,37 @@
   incoming and outgoing alike (358px of content, minus the 40px gutter, still
   leaves 318px), so the derivation only becomes visible below roughly a 360px
   viewport. That is what the rule produces. It is not the artboard's 268.
+
+## 2026-09-07 — message text is the artboards' 15px (G-29a)
+
+- Bubble text was `text-body-sm` (13px) with `leading-relaxed` on top. It is now
+  `text-body`, which the type scale defines at exactly 15px — the size stated in
+  the `.bub` CLASS RULE, identically, in both `Bubbles.dc.html:17` and
+  `Thread.dc.html:16`.
+- SEVENTH CORRECTION FROM MEASUREMENT. M03B's F7 asked for 17px `body-lg`,
+  reasoning that "the repo already has a semantic token at exactly the spec's
+  target size". It does — but the target came from §8.3's PROSE, "approximately
+  17px", not from an artboard. The artboards state a rule and the prose gives an
+  approximation. The rule wins, which is the same call DECISIONS.md made for
+  G-50b's width, and 17px would have been 2px larger than the design in the
+  direction the finding did not check.
+- `leading-relaxed` is gone rather than carried across. The token specifies its
+  own 24px leading, and stacking a multiplier on a token that already carries
+  one is how a type scale stops meaning anything.
+- The 22px the artboard states has no token and is NOT hardcoded: it is A03
+  variant request #6, and the token's 24px ships until it exists. Deliberately a
+  request rather than an absorption — 2px per line compounds down a multi-line
+  bubble, so a six-line message is 12px taller than the artboard draws it. That
+  is a design value, not the render noise the G-50a alpha delta was.
+- The inline edit `Textarea` moves with the bubble. Left at 13px the text would
+  shrink the moment you tapped edit and grow back on save — the same words at
+  two sizes, which reads as a rendering bug.
+- SCOPE. G-29 is four sub-items on one line. This commit is the typography one.
+  Day separators were already closed by G-50a (M03B's F8 IS that finding).
+  Pagination past the newest-200 fetch is out of lease for this file — the
+  `.limit(200)` with no cursor lives in `use-golf-messages.ts` — and is deferred
+  to G-17, recorded in PROGRESS.md rather than dropped. Photo layout (G-29b) and
+  the group member stack (G-29c) follow as their own commits.
+- Worth recording for G-29b: the photo specimen is in `Bubbles.dc.html:73-83`,
+  NOT in `Thread.dc.html`, which contains no photo message at all. M03B cited
+  measurements against "the artboard" without naming which one.

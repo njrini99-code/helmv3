@@ -120,7 +120,12 @@ it is the owner's, through `db-apply`.
       group-mates. jsdom cannot see this — verify in W8
 - [x] **G-50a** day chip → floating glass chip (`DECISIONS.md`) — static, not sticky; four unused `--fw-glass-*`/`--fw-shadow-pop` tokens matched the artboard exactly; 11 tests, 6 failing pre-fix
 - [x] **G-50b** bubble max-width → 288px base, group-incoming derived from the avatar gutter — the rule, not the specimens; 268 written nowhere; the decision’s stated 288−gutter=268 arithmetic does not reproduce from the measured 40px gutter (see the ledger); 7 tests, 3 failing pre-fix
-- [ ] **G-29** thread typography, photo layout, day separators
+- **G-29** is four sub-items on one line; split, one commit each (M03B F7/F8/F9 + the pagination note):
+  - [x] **G-29a** thread typography — `text-body-sm` (13px) → `text-body` (15px), the `.bub` CLASS RULE stated in both `Bubbles.dc.html:17` and `Thread.dc.html:16`. **Correction:** M03B's F7 asked for 17px `body-lg`, sourced from §8.3's prose ("approximately 17px"), not from an artboard — the rule beats the prose, same call as G-50b. The inline edit field moves with it. The 22px line-height has no token and is now A03 request #6, so the token's 24px ships. 6 tests, 4 failing pre-fix
+  - [ ] **G-29b** photo layout — the image IS the bubble, caption below. Specimen is `Bubbles.dc.html:73-83` (NOT `Thread.dc.html`, which has no photo message): `max-width: 250px`, `padding: 5px 5px 10px 5px`, image `height: 150px` at `border-radius: 1rem 1rem 0.5rem 0.25rem`, caption below at `padding: 8px 11px 0 11px` and `14px/20px`
+  - [ ] **G-29c** group header — overlapping member stack + literal member count. `Group.dc.html:27-34`: three 34px circles, `2px` border in the header's own background, `margin-left: -12px`, a literal `+7` overflow badge, then a real "9 members" subtitle. `groupParticipants` and `participant_count` are already threaded into the component and unused in the header
+  - [x] **day separators** — closed by G-50a. M03B's F8 IS that finding; nothing further is owed here
+  - [ ] **pagination past the newest-200 fetch** — OUT OF LEASE for this file. The `.limit(200)` with no cursor lives in `use-golf-messages.ts`; M03B:56 says so explicitly and it agrees with G-17. Deferred to **G-17**, not dropped
 - [ ] **G-49** absolute measure cap and the depth system
 
 ## W5 — Composer (only after W3)

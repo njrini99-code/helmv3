@@ -1218,7 +1218,11 @@ export function MessageThreadPane({
                         <Textarea
                           value={editContent}
                           onChange={(e) => onEditContentChange(e.target.value)}
-                          className="w-full min-w-0 border-0 bg-transparent p-0 font-fw-sans text-body-sm text-text-primary focus:ring-0"
+                          // Moves WITH the bubble (G-29). Left at 13px it
+                          // would shrink the text the moment you tapped edit
+                          // and grow it back on save — the same words at two
+                          // sizes, which reads as a rendering bug.
+                          className="w-full min-w-0 border-0 bg-transparent p-0 font-fw-sans text-body text-text-primary focus:ring-0"
                           rows={Math.min(5, editContent.split('\n').length || 1)}
                           // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
@@ -1274,8 +1278,24 @@ export function MessageThreadPane({
                           !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
                         )}
                       >
+                        {/* G-29 — message text is 15px, not 13px.
+                            `.bub { font-size: 15px; line-height: 22px; }` is a
+                            CLASS RULE in both `Bubbles.dc.html:17` and
+                            `Thread.dc.html:16`, and `text-body` is exactly 15px.
+                            M03B's F7 asked for 17px `body-lg`, but it sourced
+                            that from §8.3's prose ("approximately 17px"), not
+                            from an artboard — and the artboards state a rule.
+                            Same call as G-50b: the rule beats the prose.
+
+                            `leading-relaxed` goes with it. The token carries its
+                            own 24px line-height, and stacking a multiplier on
+                            top of a token that already specifies leading is how
+                            the scale stops meaning anything. 24px against the
+                            artboard's 22px is the one value here with no token —
+                            it is an A03 variant request, not a number to
+                            hardcode, and the token's 24px ships until then. */}
                         {msg.content ? (
-                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body-sm leading-relaxed">
+                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body">
                             {decodeMessageContent(msg.content)}
                           </p>
                         ) : null}
