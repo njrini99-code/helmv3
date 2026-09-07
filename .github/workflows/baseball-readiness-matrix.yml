@@ -20,11 +20,18 @@ on:
       - 'docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md'
       - 'scripts/baseball/check-readiness-matrix.ts'
       - 'scripts/baseball/resolve-route.ts'
-  pull_request:
-    paths:
-      - 'docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md'
-      - 'scripts/baseball/check-readiness-matrix.ts'
-      - 'scripts/baseball/resolve-route.ts'
+  # NOT `pull_request` (removed — PR throughput): this check reads live
+  # GitHub issue state (open/closed) and route resolution against the tree,
+  # neither of which a PR's own diff changes in a way worth re-checking on
+  # every push to the branch — an issue can close without any repo change at
+  # all, and only a `push` to `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md`
+  # (or the two scripts) actually needs a fresh run. The weekly schedule
+  # below is what catches an issue closing (or a route disappearing) between
+  # edits to the matrix — the same shape as the drift the routes/issues
+  # check was written to catch. See config/routines.yml (`baseball-readiness-
+  # matrix-weekly`) for the registered schedule.
+  schedule:
+    - cron: '30 8 * * 3'
 
 concurrency:
   group: baseball-readiness-matrix-${{ github.ref }}

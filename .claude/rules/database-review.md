@@ -8,6 +8,10 @@ paths:
 
 # Database review checklist
 
+`supabase/schemas/**` is the declarative source of truth for current shape
+(Database Plan D2); edit it, then `supabase db diff -f <name>` to generate
+the matching migration — see `docs/operations/DECLARATIVE_SCHEMA.md`.
+
 This is a multi-tenant college-athletics SaaS holding minors' academic +
 athletic PII. **Database safety IS product safety** — a cross-tenant leak
 is the worst-case, business-ending failure. Patterns + required tests:

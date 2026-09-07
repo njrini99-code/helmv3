@@ -3,7 +3,7 @@
  * check-supabase-drift.mjs — read-only Supabase/Baseball/Bridge drift guard.
  *
  * Connects directly to Postgres (never through the app, never through
- * schema_migrations bookkeeping — see docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md
+ * schema_migrations bookkeeping — see https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md
  * for why the migration ledger cannot be trusted alone on this project) and
  * asserts a fixed list of production-correctness invariants discovered
  * during the 2026-07 stabilization pass. Every check is a plain SELECT;
@@ -104,7 +104,7 @@ const GOLF_REMOVED_COLUMNS = [
 const GOLF_REMOVED_TABLES = ['golf_event_rsvps'];
 
 // Admin rollup RPCs Helm Bridge depends on (see
-// docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md and the
+// https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md and the
 // admin_rollup_consistent_super_admin_gate migration).
 const ADMIN_ROLLUP_FUNCTIONS = [
   'get_admin_analytics_rollup',

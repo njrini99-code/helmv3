@@ -61,11 +61,11 @@ These branches must **not** trigger automatic Vercel preview builds. With the po
 | Workflow | Runs when | What it does |
 |----------|-----------|--------------|
 | **`CI`** (`.github/workflows/ci.yml`) | Every PR | typecheck, lint, unit tests, build, RLS tests |
-| **`PR E2E smoke`** (`.github/workflows/pr-smoke.yml`) | Every PR (a11y path-filtered inside workflow) | Public **accessibility** Playwright only when src/e2e paths change (~12 min max) |
+| **`Playwright PR smoke (a11y)`** (`pr-smoke-a11y` job in `.github/workflows/ci.yml`, folded in from the now-deleted `pr-smoke.yml` on 2026-09-06) | Every PR (gated on `detect-changes`'s `code`/`frontend` outputs) | Public **accessibility** Playwright only when src/e2e paths change (~12 min max); downloads `ci.yml`'s own `next-build` artifact instead of rebuilding |
 | **`Review Gate`** | Every PR | Static analyzers (fast) |
-| **`Playwright E2E`** (`.github/workflows/playwright.yml`) | Manual only (since 2026-09-02) | Full Chromium suite on `workflow_dispatch`. The **Smoke checks** build job it carried on every PR was a duplicate of CI's `Next build` and is gone. |
+| **`Playwright E2E`** (`.github/workflows/playwright.yml`) | Manual only (since 2026-09-02) | Full Chromium suite on `workflow_dispatch`. The **Smoke checks** build job it carried on every PR was a duplicate of CI's `Next build` and is gone; the job now downloads `ci.yml`'s `next-build` artifact for the same commit when one exists, building only as a fallback. |
 
-**PR a11y path filter** (pr-smoke): docs-only PRs skip the accessibility job; the build verdict comes from CI's `Next build` (inside `CI aggregate`).
+**PR a11y path filter**: docs-only PRs skip the accessibility job (`detect-changes`'s `code`/`frontend` outputs both false); the build verdict comes from CI's `Next build` (inside `CI aggregate`).
 
 ### `main` branch pushes
 
@@ -95,7 +95,7 @@ Playwright workflows retain reports **3 days** (was 14).
 If the org uses GitHub Actions metered billing, set budget alerts in **Organization → Settings → Billing** (or personal account equivalent). Watch for:
 
 - Playwright browser install + 75-minute jobs on every PR (now disabled)
-- Duplicate `npm run build` across workflows (PR smoke avoids a separate build; main Playwright still builds once per job that needs it)
+- Duplicate `npm run build` across workflows (PR smoke and the Sentry snapshot capture job both reuse `ci.yml`'s single `next-build` artifact now; manual `playwright.yml` reuses it too when one exists for the commit, falling back to its own build)
 
 ---
 
@@ -112,7 +112,7 @@ no CI cost from it to control.
 
 ```
 PR (paths: src/e2e/…)
-  └─ pr-smoke.yml → accessibility.spec.ts only
+  └─ ci.yml (pr-smoke-a11y job) → accessibility.spec.ts only
 
 main push
   └─ ci.yml → typecheck, lint, test, build

@@ -129,8 +129,8 @@ The click-extraction trigger didn't install or the payload shape changed. Confir
 ## Files
 
 - Migrations:
-  - `supabase/migrations/20260420000000_resend_activity_mirror.sql`
-  - `supabase/migrations/20260421000000_email_clicks_and_coach_denorm.sql`
+  - `supabase/migrations_archive/pre_20260527/20260420000000_resend_activity_mirror.sql`
+  - `supabase/migrations_archive/pre_20260527/20260421000000_email_clicks_and_coach_denorm.sql`
 - Webhook: `src/app/api/webhooks/resend/route.ts`
 - Server actions: `src/app/golf/actions/resend-activity.ts` (includes `getEmailClicks` and `getCoachLastEmailActivity`)
 - UI components: `src/app/golf/admin/crm/components/resend/`

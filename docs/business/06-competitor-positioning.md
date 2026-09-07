@@ -4,7 +4,7 @@
 
 This doc maps the golf competitive landscape, states where Helm is deliberately differentiated, and gives the reviewer lens for catching PRs that quietly erode a differentiator or copy a competitor weakness we have explicitly criticized. Baseball competitors are named separately, for interop only — GolfHelm is the product with a researched, named competitive set; BaseballHelm is not (see grounding note at the end).
 
-Primary source of truth for everything in this doc is `docs/v3-research-competitive-landscape.md`, which itself states: "Every 'this is white space' or 'this is table stakes' claim in the master plan traces back here." Read that file before making a strategic claim not covered below. See also `03-product-invariants.md` for the engineering-level rules that back these positioning claims (SG correctness, LLM citation/regeneration, budget enforcement).
+Primary source of truth for everything in this doc is docs/v3-research-competitive-landscape.md, which itself states: "Every 'this is white space' or 'this is table stakes' claim in the master plan traces back here." Read that file before making a strategic claim not covered below. See also `03-product-invariants.md` for the engineering-level rules that back these positioning claims (SG correctness, LLM citation/regeneration, budget enforcement).
 
 This doc is the competitor-positioning-specific reference — the canonical place for the Clippd/DECADE/Arccos/Whoop landscape, per-competitor criticism, and the reviewer lens. `08-golfhelm-business-context.md` §7 ("Competitive Angle vs. Clippd") and §8 ("Intended Differentiation Not Yet Built") summarize and derive from this doc, expanding the same differentiators into GolfHelm's full business context (personas, features, domain grounding, compliance). If the two ever disagree, this doc wins; update `08-golfhelm-business-context.md` §7-8 to match.
 
@@ -70,7 +70,7 @@ Named for completeness, none of these change Helm's roadmap directly:
 - **Golf Genius / CoachNow Academy** — tournament-management infrastructure + video/communication layer (CoachNow "Spaces"). Distribution-channel risk (they could bundle a "good enough" analytics tile), not an analytics threat.
 - **Shot Scope, TheGrint, 18Birdies, AimPoint, TrackMan Performance Studio, Hudl** — recreational, hardware-bound, or non-college-team products. 18Birdies' AI Coach (swing-video feedback) is the closest existing thing to a "coach chat" UX that college players see for free, worth knowing about but not worth building against directly. TrackMan's "Tracy" AI is a single drill recommender, not a conversational round-review layer.
 
-Full detail on all twelve profiled companies lives in `docs/v3-research-competitive-landscape.md` — do not duplicate that research here; link to it.
+Full detail on all twelve profiled companies lives in docs/v3-research-competitive-landscape.md — do not duplicate that research here; link to it.
 
 ---
 

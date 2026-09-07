@@ -14,7 +14,7 @@ Baseline: `origin/main` e63de6044 — tsc/lint/ratchet/unit all green.
   `BaseballFairwayShell` **unconditionally** — delete the `isRedesignEnabled()` forks
   (baseball layouts only; golf untouched).
 - Delete `src/app/baseball/(coach-dashboard)/` entirely (zero page.tsx, confirmed dead).
-- Remove the **baseball** nav paths from `src/components/layout/sidebar.tsx`
+- Remove the **baseball** nav paths from src/components/layout/sidebar.tsx
   (5 legacy arrays: collegeTeamNav/hsCoachTeamNav/jucoTeamNav/showcaseOrgNav/playerTeamNav +
   `buildCondensedBaseballNavigation`); the golf branch stays byte-identical.
 - Delete `BaseballShellLayout`/`BaseballDashboardShell` baseball render path once unreferenced.

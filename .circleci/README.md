@@ -4,8 +4,11 @@
 CircleCI owns the things GitHub Actions does poorly:
 
 - **Weekly heavy jobs**: Knip dead-code, Stryker mutation tests on
-  CoachHelm V2, full-repo sqlfluff, npm audit, Squawk migration safety,
-  Janitor entropy report (advisory — never fails, never edits source).
+  CoachHelm V2, full-repo sqlfluff, npm audit, Squawk migration safety
+  (advisory full-history sweep — `|| true`, never blocks; the per-PR,
+  blocking Squawk gate scoped to just the migrations a PR adds lives in
+  `.github/workflows/ci.yml`'s `supabase` job, D2), Janitor entropy report
+  (advisory — never fails, never edits source).
 - **iOS Capacitor compile**: builds on M-series macOS runners (~2×
   faster, ~⅓ the cost of GitHub Actions' `macos-13`). Catches
   Xcode/Capacitor breakage before TestFlight.

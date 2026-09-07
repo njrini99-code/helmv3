@@ -1,5 +1,7 @@
 # Repo wiring audit — is every check actually wired?
 
+Status: active
+
 Measured **2026-08-30** against `a03ef845d`..`ad57fa828`. A point-in-time
 audit, not a live document. Staleness:
 `git rev-list --count ad57fa828..HEAD -- 'scripts/**' '.github/**'`.

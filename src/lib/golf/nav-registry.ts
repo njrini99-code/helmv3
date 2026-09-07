@@ -2,7 +2,7 @@
 // src/lib/golf/nav-registry.ts
 //
 // WAVE W2 (2026-07-09) — SINGLE SOURCE OF TRUTH for GolfHelm's 8-tab coach and
-// 8-tab player navigation IA (docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md
+// 8-tab player navigation IA (https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MISSION_2026-07-09.md
 // § Target IA). Mirrors the SHAPE of BaseballHelm's proven hub pattern
 // (src/lib/baseball/nav-registry.ts + the baseball dashboard's
 // hub-definitions.ts / resolve-active-hub.ts), simplified: golf has no

@@ -2,7 +2,7 @@
 // src/lib/golf/nav-registry.test.ts
 //
 // WAVE W2 (2026-07-09) — pins GolfHelm's 8-tab coach / 8-tab player Target IA
-// (docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md § Target IA) to
+// (https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MISSION_2026-07-09.md § Target IA) to
 // reality:
 //   1. Both roles' rail item count is EXACTLY 8.
 //   2. Every hub sub-tab href resolves to a real page.tsx on disk.

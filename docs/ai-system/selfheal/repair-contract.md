@@ -439,7 +439,7 @@ worktree you could not create — not when you correctly decided to open nothing
 
 ### Historical: the launchd config used to be tracked in the repo
 
-Until 2026-09-05, `config/launchd/com.helm.bridge-rca-repair.plist` was the
+Until 2026-09-05, config/launchd/com.helm.bridge-rca-repair.plist was the
 source of truth for a launchd agent on the owner's Mac running in parallel
 with this workflow, installed via `npm run selfheal:repair:install` and
 checked with `npm run selfheal:repair:doctor`. Both the plist and those two

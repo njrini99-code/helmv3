@@ -64,10 +64,23 @@ routines:
     description: >-
       Daily production-vs-migration-ledger schema invariant check (separate
       question from CI's own migrations-rebuilt-locally check — see that
-      workflow's own header). Moved from "0 7 * * *" to "10 7 * * *" 2026-09-06
-      (cron consolidation): it collided with the Vercel `integrity-check`
-      cron at the same "0 7 * * *" minute.
+      workflow's own header), plus D4's ledger-vs-catalog object check. On
+      failure opens/updates the `db-drift` GitHub issue and emails the owner
+      through the ops-digest transport. Moved from "0 7 * * *" to
+      "10 7 * * *" 2026-09-06 (cron consolidation): it collided with the
+      Vercel `integrity-check` cron at the same "0 7 * * *" minute.
     verified: 2026-09-06
+
+  - id: db-advisors-weekly
+    trigger: github-actions-schedule
+    source: .github/workflows/db-advisors.yml
+    schedule: "20 7 * * 1"
+    status: active
+    description: >-
+      Weekly Supabase security/performance advisor ratchet against
+      supabase-advisor-baseline.json — a class may only shrink. On
+      regression opens/updates the same `db-drift` issue and emails the
+      owner; uploads the full advisor JSON as a run artifact every run.
 
   - id: codeql-analysis
     trigger: github-actions-schedule
@@ -75,6 +88,19 @@ routines:
     schedule: "35 23 * * 4"
     status: active
     description: Weekly CodeQL analysis (actions/javascript-typescript/python matrix).
+
+  - id: baseball-readiness-matrix-weekly
+    trigger: github-actions-schedule
+    source: .github/workflows/baseball-readiness-matrix.yml
+    schedule: "30 8 * * 3"
+    status: active
+    description: >-
+      Weekly advisory check of docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md:
+      every cited route resolves to a real App Router page, and every
+      owner-issue URL is open. Moved off `pull_request` (2026-09-06, PR
+      throughput) since neither check depends on a PR's own diff — a cited
+      issue can close, or a route can disappear, with no repo change at all.
+      Wednesday 08:30 UTC does not collide with any other entry in this file.
 
   - id: types-regen
     trigger: github-actions-schedule
@@ -161,7 +187,32 @@ routines:
       a deliberately-off automation. `schedule` above is what would be used
       if/when customer email is re-enabled — Sundays 14:00 UTC, matching the
       route's own "designed to fire Sundays" comment — not a live cron.
+
+      Database Plan D6 (2026-09-06): added /api/jobs/consume (every minute,
+      pgmq queue consumer — degrades to a 200 no-op until the owner applies
+      supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql). The
+      existing coachhelm-safety-net entry in this same crons array is NOT
+      retired by this — it retires only after the queue has run clean in
+      production for seven consecutive days (see
+      docs/operations/JOBS_QUEUE.md); until then both remain active
+      simultaneously by design, since the safety net is the only backstop
+      while the queue is unproven.
     verified: 2026-09-06
+
+  - id: restore-rehearsal-quarterly
+    trigger: owner-manual
+    source: docs/operations/RESTORE_RUNBOOK.md
+    schedule: "0 0 1 */3 *"
+    status: owner-manual
+    description: >-
+      Database Plan D7: quarterly PITR restore-to-scratch-project rehearsal.
+      No file or script in this repo runs this — it is a human following
+      docs/operations/RESTORE_RUNBOOK.md end to end (confirm PITR is on,
+      restore to a throwaway project, run the ten verification queries, log
+      the timing sheet, tear the scratch project down). Recorded here so
+      repo:doctor's routines check has it as a KNOWN, tracked entry rather
+      than an undocumented one — it cannot verify a human actually ran it;
+      the runbook's own timing sheet is the artifact of having done so.
 
   - id: helm-demo-readiness
     trigger: claude-scheduled-task

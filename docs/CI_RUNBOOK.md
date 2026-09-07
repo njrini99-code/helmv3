@@ -9,6 +9,44 @@ the authoritative source of truth for which checks are actually enforced —
 if the two ever disagree, branch protection wins and this doc should be
 updated.
 
+## 0. Before you push
+
+`npm install` wires a `pre-push` git hook automatically (the `prepare`
+lifecycle script, `scripts/setup-hooks.mjs` — sets `core.hooksPath` to the
+tracked `.githooks/`; `npm run hooks:install` does the same by hand). It
+runs the cheap checks that actually fail PRs, scoped to only the files the
+push changes, so failures show up in seconds locally instead of ~20 minutes
+later on GitHub:
+
+- `typecheck:fast` (tsgo, falling back to `tsc` if tsgo isn't installed) —
+  only when a `.ts`/`.tsx` file changed.
+- `eslint` on the changed `.ts`/`.tsx`/`.mjs` files (warnings print; only an
+  error-severity finding fails the step).
+- `npm run lint:ratchet` (full-repo, ~1 min) — only when a changed file is
+  under `src/` or `scripts/`.
+- `sqlfluff lint --dialect postgres --rules core` on changed
+  `supabase/migrations/*.sql` — **informational only** (prints findings, never
+  fails the push): the SQL backlog is grandfathered on purpose, and the only
+  thing that actually gates it anywhere, CI included, is the full-repo
+  ratchet (`scripts/sql-lint-ratchet.mjs`). Skipped, not run, if `sqlfluff`
+  isn't on `PATH`.
+- `gitleaks git --log-opts=<range>` over the pushed commit range — skipped,
+  not failed, if `gitleaks` isn't on `PATH`.
+- `markdownlint-cli2` on changed `.md` files — **informational only**, same
+  reasoning as sqlfluff above (34,576 pre-existing violations are
+  grandfathered) — then `npm run markdown:ratchet` (full-repo, **this one
+  fails the push**) when a `.md` file changed.
+- Regenerates `docs/generated/` (doc inventory, world model, feature map,
+  entry points) when a `.md`, `memory/registry.yml`, or migration file
+  changed, and **fails the push** if that regeneration produces a diff —
+  commit the regenerated files and push again. It never commits for you.
+- `npm run docs:rules-current` when a `.claude/rules/*.md`, `CLAUDE.md`, or
+  `AGENTS.md` file changed.
+
+Every step is timed and printed. Skip the whole hook for one push with
+`HELM_SKIP_PREPUSH=1 git push` (prints a loud notice) — CI still runs every
+check regardless, so skipping only defers when you find out.
+
 ## 1. Status classification — hard gate vs. advisory
 
 **SIX** required contexts are enforced on `main` as of 2026-09-06 (`block-historical-edits`
@@ -97,17 +135,19 @@ branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
-| `CI aggregate` | `ci.yml` | aggregate: `Static checks` (DB-types drift, schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles — named steps of one job since 2026-09-02), `TypeScript`, `Lint` (ESLint + ratchets), `Unit tests` ×3, `Next build`, **`Supabase lint + RLS tests`** | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
+| `CI aggregate` | `ci.yml` | aggregate: `Static checks` (DB-types drift, schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles — named steps of one job since 2026-09-02), `TypeScript`, `Lint` (ESLint + ratchets) — these three ALWAYS run — plus `Unit tests` ×3, `Next build`, and **`Supabase lint + RLS tests`**, which SKIP when `detect-changes` (`.github/workflows/detect-changes.yml`, a shared `dorny/paths-filter` reusable workflow, 2026-09-06) finds no changed path under `src/**`, `supabase/**`, `e2e/**`, `package*.json`, `next.config.*`, `tsconfig*.json`, `vitest.config.ts`, `eslint.config.mjs`, `tailwind.config.*`, `postcss.config.*`, `middleware.ts`, `scripts/**/*.{ts,mjs}`, or `ci.yml`/`detect-changes.yml` themselves. Those three heavy jobs (plus `unit-tests-timezone`) also `needs: [typecheck, lint]` (2026-09-06) so a typecheck/lint failure stops them before they spend runner minutes. A docs-only or config-only PR outside that list finishes in minutes (detect + static + typecheck + lint + aggregate, no install-heavy build/test/Supabase job); a `push` to `main` always runs the full set. | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
 | `Review Gate aggregate` | `review-gate.yml` | aggregate: `Review Gate checks` (ast-grep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint, env-secrets as steps) + `semgrep (custom rules)` | **Hard gate** — uniquely named since 2026-08-19 |
 | ~~`Smoke checks`~~ | ~~`playwright.yml`~~ | ~~build-only smoke: `npm ci` + `next build`~~ | **REMOVED 2026-09-02** — a duplicate of `Next build`; context dropped first, job second |
-| `Playwright PR smoke (a11y)` | `pr-smoke.yml` | public-route accessibility Playwright only when frontend/e2e paths change | Advisory |
+| `Playwright PR smoke (a11y)` | `ci.yml` (`pr-smoke-a11y` job) | public-route accessibility Playwright | Advisory — **folded in from the now-deleted `pr-smoke.yml` (2026-09-06)**; gated on `detect-changes`'s `code`/`frontend` outputs (a non-matching PR shows this job SKIPPED rather than not starting at all, since it now lives inside `ci.yml`), and consumes `next-build`'s uploaded `.next` artifact instead of running `npm run dev` itself |
 | `CodeRabbit` | CodeRabbit GitHub App | ~~assertive line-level review + blocking custom checks~~ | **DROPPED 2026-07-20** — removed from the required set by founder decision; `.coderabbit.yaml` is a disable stub. If a `CodeRabbit` status still appears, it is informational. The custom rule packs under `.coderabbit/` REMAIN and are consumed directly by the Review Gate. |
 | `CodeQL` | GitHub's code-scanning app, posted for `codeql.yml`'s scans | summarizes alert-count deltas for the commit (distinct from the three `Analyze (...)` runs the callout above documents, which only assert the scan completed) | **Not required** — the callout above already says so; this row used to say "Hard gate" directly under it, contradicting it. It can show `failure` (new alerts introduced) while all three `Analyze (...)` show `success` simultaneously, so it is real signal that nothing currently blocks on. |
 | `the external review bot` | the external review bot GitHub App | ~~whole-codebase review~~ | **DROPPED 2026-07-20** — the retired rules directory is deleted. Neither external AI reviewer is a gate any more; the deterministic Review Gate + CodeQL cover the same hard rules. |
-| `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E (mandatory Baseball smoke + mobile-viewport regression + broader chromium suite) — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches. **Note:** `Playwright (chromium)`'s broader-suite step no longer masks its exit code (`|| echo ...` removed) — a red run here now means a real failure, not just "see artifact." |
+| `Playwright (chromium)` / `Course picker screenshots` / `BaseballHelm seeded smoke` | `playwright.yml` | full E2E (mandatory Baseball smoke + mobile-viewport regression + broader chromium suite) — **main push + manual `workflow_dispatch` only** (not PRs) | Advisory on main; manual for feature branches. **Note:** `Playwright (chromium)`'s broader-suite step no longer masks its exit code (`|| echo ...` removed) — a red run here now means a real failure, not just "see artifact." **2026-09-06:** tries to download the `next-build` artifact from `ci.yml` for the same commit first, falling back to its own `npm run build` when there is none. |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, branch-gated: `main` / `release/*` / `ios/*` / `capacitor/*` / `agent/fix-circleci-ios-*` | Advisory unless the PR touches iOS |
 | `ci/circleci: android-compile` | CircleCI | Android `assembleDebug` (no signing), branch-gated: `main` / `release/*` / `android/*` / `capacitor/*` / `ci/android-*` | Advisory unless the PR touches Android |
-| `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | **Hard gate** — promoted to required 2026-09-05, applied and verified live 2026-09-06 |
+| `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | **Hard gate** — promoted to required 2026-09-05, applied and verified live 2026-09-06. Its own changed-path check now reads the shared `detect-changes.yml`'s `migrations` output (2026-09-06) instead of running its own `changed-files.sh` scan. |
+| `Capture + upload Sentry snapshots` | `ci.yml` (`sentry-snapshot-capture` job) | visual diff of a curated screen set against Sentry Snapshots | Advisory — **folded in from the now-deleted `sentry-snapshots.yml` (2026-09-06)**; gated on `detect-changes`'s `code`/`e2e` outputs plus an in-job `SENTRY_SNAPSHOTS_AUTH_TOKEN` check step (the old separate "Check Sentry snapshot prerequisites" job is now a step); `push` to `main` always runs to refresh the base build; consumes `next-build`'s uploaded `.next` artifact instead of running its own `npm run build` <!-- markdownlint-disable-line MD013 --> |
+| `check (advisory — routes + owner issues)` | `baseball-readiness-matrix.yml` | every route cited in the BaseballHelm readiness matrix resolves; every owner-issue link is open | Advisory, **not on `pull_request`** since 2026-09-06 (neither check depends on a PR's diff) — runs on `push` to `main` touching the matrix doc/scripts, plus a Wednesday 08:30 UTC `schedule` (`config/routines.yml`'s `baseball-readiness-matrix-weekly`) <!-- markdownlint-disable-line MD013 --> |
 | `Vercel` / `Vercel Preview Comments` | Vercel GitHub App | was posting a Vercel Toolbar comment-sync status as recently as PR #1835; absent from every PR audited from #1839 on | **No longer posts on PRs.** Git deploys are disconnected (`vercel.json`'s `deploymentEnabled: {"*": false}`, no branch auto-deploys, production is an on-demand CLI promote) — there is nothing left for the GitHub App to report against. Do not wait on this check; its absence is expected, not stuck. |
 
 ## 2. Expected wait windows
@@ -125,9 +165,15 @@ Don't treat a check as "stuck" before its normal window has passed:
   see `.claude/rules/code-review-tooling.md`. There is no AI review on a PR,
   so their absence is never a pending check. The Review Gate + CodeQL cover
   the same hard rules deterministically.
-- **PR smoke** (`pr-smoke.yml`) — optional `Playwright PR smoke (a11y)` ~12 min
-  when frontend/e2e paths change. (The `Smoke checks` build is gone since
-  2026-09-02; `Next build` inside CI is the build verdict, ~6 min warm.)
+- **PR smoke** (`ci.yml`'s `pr-smoke-a11y` job, folded in from the deleted
+  `pr-smoke.yml` on 2026-09-06) — optional `Playwright PR smoke (a11y)` ~12
+  min. Gated on `detect-changes`'s `code`/`frontend` outputs and
+  `needs: next-build`: a non-matching PR (or one where `next-build` itself
+  skipped) shows this job SKIPPED rather than not starting at all, since it
+  now lives inside `ci.yml` alongside everything else. (The `Smoke checks`
+  build is gone since 2026-09-02; `Next build` inside CI is the build
+  verdict, ~6 min warm, and this job now downloads that same build instead
+  of compiling its own.)
 - **Full Playwright** (`playwright.yml`, manual `workflow_dispatch` only since
   2026-09-02) — `e2e` job, 120-minute budget.
 - **`baseball-auth-smoke` (#372)** — 30-minute budget. It

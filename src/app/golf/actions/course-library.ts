@@ -7,7 +7,7 @@
  * golf_course_tee_holes, golf_team_saved_courses, + edit-history) and the
  * additive golf_courses cloud columns.
  *
- * Invariants enforced here (see docs/audits/COURSE_LIBRARY_AUDIT_2026-06-13.md):
+ * Invariants enforced here (see https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/COURSE_LIBRARY_AUDIT_2026-06-13.md):
  *  • SNAPSHOT SAFETY — nothing in this file touches golf_rounds / golf_holes /
  *    golf_shots. Editing a tee or its holes NEVER rewrites historical round
  *    truth; rounds snapshot par/yards at submit time and a tee only feeds

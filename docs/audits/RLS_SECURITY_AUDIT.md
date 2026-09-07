@@ -1,7 +1,7 @@
 <!--
 STATUS: STALE
 DATE: 2026-07-10
-SUPERSEDED BY / WHY: Generated 2026-01-01 against the same 19-user snapshot DB as docs/architecture/USER_ROLE_DATA_OWNERSHIP.md. Superseded by the Wave A IDOR/RLS/anon-grant hardening (#327) and docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md.
+SUPERSEDED BY / WHY: Generated 2026-01-01 against the same 19-user snapshot DB as docs/architecture/USER_ROLE_DATA_OWNERSHIP.md. Superseded by the Wave A IDOR/RLS/anon-grant hardening (#327) and https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/DB_FORENSIC_AUDIT_2026-07-08.md.
 KEPT FOR HISTORY -- do not delete this file.
 -->
 

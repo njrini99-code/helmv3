@@ -41,4 +41,6 @@ src/hooks/golf/           # Realtime, data, offline hooks (see memory/projects/g
 src/stores/               # Zustand (auth-store.ts — shared across golf + baseball, not golf-specific)
 ```
 
+Deliverables (screenshots, exports, scratch reports) never enter the repo; a test's own baseline file lives next to that test, not in a shared top-level folder.
+
 ---

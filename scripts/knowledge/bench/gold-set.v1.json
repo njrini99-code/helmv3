@@ -1,10 +1,10 @@
 {
-  "schema_version": "1.0.0",
-  "frozen_at": "2026-09-02",
-  "frozen_against_commit": "c34aa936e",
-  "provenance": "Hand-curated from all 11 memory/incidents/**/INC-*.md files that existed at freeze time (`find memory/incidents -iname \"INC-*.md\"`). NOT machine-extracted: each incident file carries a structured `- Feature:` (and sometimes `- Also affects:`) line, which is the source of gold_feature/gold_feature_secondary below, but NO structured touched-files list — file paths appear only in prose (body text, code fences, and the Verification/Repair sections' test-file mentions). gold_files below were extracted by reading each incident in full and keeping only paths independently confirmed to exist via `git ls-files` in this worktree at freeze time. Where an incident named a bare test filename with no directory (e.g. a Verification-section mention with no path prefix), the full path was resolved by an exact `git ls-files` basename search; unresolvable names were dropped rather than guessed.",
-  "seed_rule": "seed_file is exactly ONE file per task: the single source file (or, for three tasks with no named source file, the migration file) a developer would plausibly open first while investigating the incident's symptom, chosen from the incident's own prose (its 'What was wrong'/'Root cause'/'Symptom' section, or the object a fix migration targets). gold_files is every OTHER real file the incident names, excluding seed_file and excluding the incident's own .md file. This is deliberately NOT the full touched-file set: handing the retriever every file the incident already names as input would make every metric trivially perfect. A retrieval path is scored by whether it gets from the ONE seed file to the feature, the feature's own docs, and (via the feature's registered code globs) the OTHER files a developer would still need to find.",
-  "known_limitation": "11 tasks is a small, honest sample (K.7's own risk note: 'a Context Retrieval Bench built on today's small memory/incidents/** corpus is a noisy sample -- treat early scores as directional, not a hard gate, until the corpus grows'). Every number this bench reports should be read that way until the incident corpus is materially larger.",
+  "schema_version": "1.1.0",
+  "frozen_at": "2026-09-06",
+  "frozen_against_commit": "0486c8e04",
+  "provenance": "Hand-curated from all 11 memory/incidents/**/INC-*.md files that existed at freeze time (`find memory/incidents -iname \"INC-*.md\"`). NOT machine-extracted: each incident file carries a structured `- Feature:` (and sometimes `- Also affects:`) line, which is the source of gold_feature/gold_feature_secondary below, but NO structured touched-files list \u2014 file paths appear only in prose (body text, code fences, and the Verification/Repair sections' test-file mentions). gold_files below were extracted by reading each incident in full and keeping only paths independently confirmed to exist via `git ls-files` in this worktree at freeze time. Where an incident named a bare test filename with no directory (e.g. a Verification-section mention with no path prefix), the full path was resolved by an exact `git ls-files` basename search; unresolvable names were dropped rather than guessed. EXTENDED 2026-09-06 (Phase 5, gold set to >=30): 17 more tasks hand-curated from the remaining memory/incidents/**/INC-*.md files that existed at the original freeze time (all of admin_platform and golf_round_lifecycle not yet used, and every feature_awareness_system incident), plus 2 tasks derived from recent merged PRs (title + touched files -> expected feature, per the same existing-file-only rule as the original 11). Extending this gold set surfaced a real router gap: most feature_awareness_system incidents fix in .claude/rules/**, .claude/settings.json, scripts/new-worktree.sh, scripts/worktree-lifecycle.mjs, scripts/deploy-prod.sh, .vercelignore, or config/open-pr-dispositions.json -- none of which were in that feature's registered code glob before this change. memory/registry.yml's feature_awareness_system.code.services was extended to include them, since these ARE this repo's agent-tooling artifacts, not a gold-set workaround.",
+  "seed_rule": "seed_file is exactly ONE file per task: the single source file (or, for three tasks with no named source file, the migration file) a developer would plausibly open first while investigating the incident's symptom, chosen from the incident's own prose (its 'What was wrong'/'Root cause'/'Symptom' section, or the object a fix migration targets). gold_files is every OTHER real file the incident names, excluding seed_file and excluding the incident's own .md file. This is deliberately NOT the full touched-file set: handing the retriever every file the incident already names as input would make every metric trivially perfect. A retrieval path is scored by whether it gets from the ONE seed file to the feature, the feature's own docs, and (via the feature's registered code globs) the OTHER files a developer would still need to find. The 19-task extension follows the identical rule: seed_file is the ONE file a developer would open first from the incident's own 'Fix / where it lives now' section (or, for the 2 PR-derived tasks, the PR's primary touched file); gold_files is every OTHER real file the incident or PR names, verified via git ls-files in this worktree. Several tasks (5 of the 15 feature_awareness_system ones) have gold_files: [] because the incident names no other real file -- that is honest, not an omission.",
+  "known_limitation": "30 tasks after the 2026-09-06 extension (up from 11): still a small, hand-curated sample skewed toward feature_awareness_system (15 of 30) because that is where most of this repo's incident history lives. Read every number here as directional per K.7's own instruction, not a hard gate, until the incident corpus grows across more product features.",
   "tasks": [
     {
       "id": "INC-2026-08-22-end-date-closed-qualifier-early",
@@ -35,7 +35,9 @@
       "id": "INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback",
       "incident_path": "memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md",
       "gold_feature": "golf_round_lifecycle",
-      "gold_feature_secondary": ["shot_tracking"],
+      "gold_feature_secondary": [
+        "shot_tracking"
+      ],
       "seed_file": "src/app/golf/actions/golf.ts",
       "gold_files": [
         "src/app/golf/actions/__tests__/golf-round-submit-abort-no-destructive-fallback.test.ts",
@@ -76,7 +78,9 @@
       "id": "INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge",
       "incident_path": "memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md",
       "gold_feature": "admin_platform",
-      "gold_feature_secondary": ["coachhelm_ai"],
+      "gold_feature_secondary": [
+        "coachhelm_ai"
+      ],
       "seed_file": "src/app/api/cron/event-reminders/route.ts",
       "gold_files": [
         "src/lib/notifications/golf-message-fanout.ts",
@@ -90,7 +94,9 @@
       "id": "INC-2026-08-22-delete-shot-stale-id",
       "incident_path": "memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md",
       "gold_feature": "shot_tracking",
-      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "gold_feature_secondary": [
+        "golf_round_lifecycle"
+      ],
       "seed_file": "src/app/golf/actions/golf.ts",
       "gold_files": [
         "src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx",
@@ -103,7 +109,9 @@
       "id": "INC-2026-08-22-confirmed-snapshot-recovery-prompt",
       "incident_path": "memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md",
       "gold_feature": "shot_tracking",
-      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "gold_feature_secondary": [
+        "golf_round_lifecycle"
+      ],
       "seed_file": "src/lib/utils/emergency-save.ts",
       "gold_files": [
         "src/lib/utils/emergency-save.test.ts",
@@ -115,7 +123,9 @@
       "id": "INC-2026-08-22-partial-save-round-deletion",
       "incident_path": "memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md",
       "gold_feature": "shot_tracking",
-      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "gold_feature_secondary": [
+        "golf_round_lifecycle"
+      ],
       "seed_file": "src/app/golf/actions/golf.ts",
       "gold_files": [
         "src/lib/utils/emergency-save.ts"
@@ -126,7 +136,9 @@
       "id": "INC-2026-08-25-atomic-snapshot-hole-mismatch",
       "incident_path": "memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md",
       "gold_feature": "shot_tracking",
-      "gold_feature_secondary": ["golf_round_lifecycle"],
+      "gold_feature_secondary": [
+        "golf_round_lifecycle"
+      ],
       "seed_file": "supabase/migrations/20260825152726_guard_round_snapshot_shot_group_integrity.sql",
       "gold_files": [
         "supabase/tests/rls/golf_atomic_snapshot_integrity.sql"
@@ -137,12 +149,211 @@
       "id": "INC-2026-08-25-completed-round-sg-capability",
       "incident_path": "memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md",
       "gold_feature": "golf_round_lifecycle",
-      "gold_feature_secondary": ["stats_analytics"],
+      "gold_feature_secondary": [
+        "stats_analytics"
+      ],
       "seed_file": "supabase/migrations/20260825153105_permit_completed_round_sg_recalculation.sql",
       "gold_files": [
         "supabase/tests/rls/golf_completed_round_sg_recalculation.sql"
       ],
       "task_description": "recalculate_round_strokes_gained didn't declare the narrow stats_cache lifecycle capability before updating derived SG fields, so the completed-round guard rejected the write as a prohibited general edit. Find the capability-granting migration and its RLS suite."
+    },
+    {
+      "id": "INC-2026-07-29-postgres-wedge-took-down-every-route",
+      "incident_path": "memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md",
+      "gold_feature": "admin_platform",
+      "gold_feature_secondary": [
+        "auth_onboarding_join"
+      ],
+      "seed_file": "src/lib/auth/resilient-get-user.ts",
+      "gold_files": [
+        "scripts/lib/retrying-fetch.ts"
+      ],
+      "task_description": "A wedged production Postgres was reported ACTIVE_HEALTHY by the control plane while the middleware auth fallback's own final step threw on an unguarded getSession() refresh call, turning a degraded backend into a 500 on every route. Find the resilient auth fallback and the retrying-fetch wrapper that absorb this."
+    },
+    {
+      "id": "INC-2026-08-19-assistant-coach-cascade-delete-round-history",
+      "incident_path": "memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md",
+      "gold_feature": "golf_round_lifecycle",
+      "gold_feature_secondary": [],
+      "seed_file": "supabase/migrations/20260819060000_restrict_round_history_delete_to_head_coach.sql",
+      "gold_files": [],
+      "task_description": "An existence-only coach predicate let any assistant coach delete a team's entire round/shot history through three DELETE RLS policies. Find the migration that repoints those policies to the role-checking head-coach predicate."
+    },
+    {
+      "id": "INC-2026-08-16-parallel-agents-shared-tree",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/rules/autonomy.md",
+      "gold_files": [
+        "scripts/new-worktree.sh"
+      ],
+      "task_description": "Two agents dispatched in parallel into the canonical checkout each ran git checkout -b; the second moved HEAD out from under the first mid-edit and a follow-up git add -A swept unrelated files into the wrong branch's commit. Find the rule and tool that now prevent this."
+    },
+    {
+      "id": "INC-2026-08-18-worktrees-inside-repo-duplicate-tree",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/rules/autonomy.md",
+      "gold_files": [
+        "scripts/new-worktree.sh",
+        "AGENTS.md"
+      ],
+      "task_description": "A worktree created inside the repo at .worktrees/ was hidden from git status by .gitignore but not from find/grep, duplicating every file under src/ in agent search results and causing agents to edit the wrong branch. Find the rule requiring worktrees outside the repo."
+    },
+    {
+      "id": "INC-2026-08-19-codeql-matrix-rename-phantom-checks",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/rules/quality-gates.md",
+      "gold_files": [],
+      "task_description": "Renaming a CodeQL matrix job silently renamed the required status check GitHub was waiting on, making every PR unsatisfiable until branch protection was updated to match. Find where this trap is documented."
+    },
+    {
+      "id": "INC-2026-08-29-disk-exhaustion-from-six-worktrees",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-29-disk-exhaustion-from-six-worktrees.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": "scripts/worktree-lifecycle.mjs",
+      "gold_files": [
+        "scripts/new-worktree.sh"
+      ],
+      "task_description": "Six worktrees created in one day ran the volume to zero free bytes because an approval-gated cleanup step never got acted on. Find the lifecycle tool and the mutation-worktree cap that now prevent this."
+    },
+    {
+      "id": "INC-2026-08-30-worktree-removed-without-owner-consent",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-30-worktree-removed-without-owner-consent.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": "scripts/worktree-lifecycle.mjs",
+      "gold_files": [
+        "config/open-pr-dispositions.json",
+        "AGENTS.md"
+      ],
+      "task_description": "worktree-lifecycle.mjs --retire removed a concurrent session's OPEN-PR worktree because lsof sampling one instant read absence of a visible cwd as proof of inactivity. Find the two gates that now apply before any automatic park/retire."
+    },
+    {
+      "id": "INC-2026-08-30-zsh-history-modifier-broke-pushes",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-30-zsh-history-modifier-broke-pushes.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/rules/shipping.md",
+      "gold_files": [],
+      "task_description": "zsh read a bare variable glued to a colon as a history modifier, mangling a git push refspec. Find where this trap and its fix (quote the variable) are documented."
+    },
+    {
+      "id": "INC-2026-08-31-vercel-upload-cap-vercelignore-fix",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".vercelignore",
+      "gold_files": [],
+      "task_description": "A vercel deploy upload exceeded the platform's 15,000-file cap twice because .vercelignore replaces rather than extends the default ignore set. Find the file that was grown to cover the offending directories."
+    },
+    {
+      "id": "INC-2026-08-31-worktree-report-missed-remote-branches",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": "scripts/worktree-lifecycle.mjs",
+      "gold_files": [],
+      "task_description": "worktree-lifecycle.mjs enumerated refs/heads only, so a branch whose local copy had been pruned was invisible to it and the report claimed zero branches to delete. Find the tool that now reports on remote branches too."
+    },
+    {
+      "id": "INC-2026-09-02-ci-runner-slot-starvation-consolidation",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/rules/code-review-tooling.md",
+      "gold_files": [
+        ".claude/rules/quality-gates.md",
+        "docs/CI_RUNBOOK.md"
+      ],
+      "task_description": "Roughly 47 check runs per PR were starving a 20-slot runner pool. Find where the consolidated CI job shape (one Review Gate checks job, one Static checks/Lint job) is documented."
+    },
+    {
+      "id": "INC-2026-09-02-vercel-cli-pipe-close-abort",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": "scripts/deploy-prod.sh",
+      "gold_files": [],
+      "task_description": "A production promote died with exit 134 because piping the Vercel CLI's output straight into awk closed the pipe early. Find the deploy script that now captures the CLI's whole output into a variable first."
+    },
+    {
+      "id": "INC-2026-09-04-automemory-user-scope-drift",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/settings.json",
+      "gold_files": [],
+      "task_description": "autoMemoryEnabled must be false for Helm work but was also set true in user scope, leaving which scope wins unverified. Find where the setting now lives with no second value to reconcile."
+    },
+    {
+      "id": "INC-2026-09-04-golf-e2e-env-injection-skip",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/rules/quality-gates.md",
+      "gold_files": [
+        "e2e/golf-critical-paths.spec.ts"
+      ],
+      "task_description": "The Golf e2e suite silently skipped every test because Playwright's own injected env never reached the spec module's top-level env read, and the exit code looked identical whether it ran or skipped. Find where the required export-into-shell workaround is documented."
+    },
+    {
+      "id": "INC-2026-09-04-mcp-namespace-policy-contradiction",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": "AGENTS.md",
+      "gold_files": [
+        "docs/TOOL_AUTHORITY_MATRIX.md",
+        "docs/CONTROL_PLANE_ENFORCEMENT.md"
+      ],
+      "task_description": "An absolute rule that Supabase MCP access must stay project-scoped and read-only contradicted the owner's own apply_migration authorization, letting six unreviewed grants sit unnoticed. Find where the current, actually-connected MCP surface is now stated."
+    },
+    {
+      "id": "INC-2026-09-04-sandboxed-dev-server-false-ready",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": ".claude/rules/shipping.md",
+      "gold_files": [],
+      "task_description": "npm run dev inside the Bash sandbox floods EMFILE errors and prints Ready while serving nothing. Find the rule requiring dangerouslyDisableSandbox and a curl check before reporting a dev server up."
+    },
+    {
+      "id": "INC-2026-09-04-surface-registry-miscategorized-as-generated",
+      "incident_path": "memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md",
+      "gold_feature": "feature_awareness_system",
+      "gold_feature_secondary": [],
+      "seed_file": "CLAUDE.md",
+      "gold_files": [
+        "src/lib/golf/surface-registry.ts"
+      ],
+      "task_description": "CLAUDE.md listed a hand-maintained file among generated artifacts that outrank prose, for an unknown duration. Find where this is now corrected to say the file is hand-maintained and canonical."
+    },
+    {
+      "id": "PR-1857-course-library-unpaginated-read",
+      "incident_path": null,
+      "gold_feature": "golf_round_lifecycle",
+      "gold_feature_secondary": [],
+      "seed_file": "src/app/golf/actions/course-library.ts",
+      "gold_files": [],
+      "task_description": "PR #1857 (ratchets: unpaginated reads 12 -> 0) touched a course-library action to fix a PostgREST 1000-row cap silently truncating results. Find the feature that owns this action."
+    },
+    {
+      "id": "PR-1867-log-retention-cron",
+      "incident_path": null,
+      "gold_feature": "admin_selfheal",
+      "gold_feature_secondary": [],
+      "seed_file": "src/app/api/cron/log-retention/route.ts",
+      "gold_files": [
+        "src/app/api/cron/log-retention/__tests__/route.test.ts"
+      ],
+      "task_description": "PR #1867 (crons: one retention policy...) fixed a stale HELD header and consolidated the log-retention cron job. Find the feature and its test coverage."
     }
   ]
 }

@@ -1,5 +1,15 @@
 # Repo Map for Agents
 
+Status: SUPERSEDED — superseded by `docs/generated/HELM_FEATURE_MAP.md`.
+KEPT FOR HISTORY -- until the attic move; live docs still cite it by path.
+Feature routing now goes through `memory/registry.yml`,
+`docs/generated/HELM_FEATURE_MAP.md`, and `npm run knowledge:context` (see
+`AGENTS.md`, `CLAUDE.md`). This file is scheduled to move to the docs attic
+(`docs-attic-2026-09`) once the tree-move PR lands; until then its
+route-atlas/idiom/trap content below is still the best structural reference,
+but treat its counts and anchors as unverified per the staleness warning
+already in this file.
+
 Structural map of helmv3: route atlas, canonical idioms (with file:line
 anchors), known traps, and a pre-code checklist. This is a map of *shape and
 convention*, not of feature behavior — for feature behavior use
@@ -363,7 +373,7 @@ Eight traps found with concrete repo evidence (not assumed from memory).
    (`team.tabs[0]!.href`), `src/lib/golf/strokes-gained.ts:122`
    (`distances[0]!`), `src/lib/golf/progress-drivers.ts:145`
    (`goals[0]!.player_id // non-empty (guarded above)`). Convention
-   confirmed in `docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md:927`.
+   confirmed in `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/superpowers/plans/2026-06-07-coachhelm-to-90.md:927`.
    When `noUncheckedIndexedAccess` forces a `T | undefined` at an index
    you've already proven non-empty (length check, `.filter`, upstream
    invariant), assert with `!` **and** leave a one-line comment naming the

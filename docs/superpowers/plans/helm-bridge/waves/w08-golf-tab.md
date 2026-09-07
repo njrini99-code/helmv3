@@ -1,5 +1,7 @@
 # W8: Golf Tab (+ Tracer Port)
 
+Status: active
+
 **Goal:** Ship `/admin/golf` — activity pulse, teams health, CoachHelm engine health, AI/LLM spend, demo strip — plus the ported Tracer data-quality suite (the only admin surface with remediation powers), preserved with its null-score refusal guard intact.
 
 **Depends-on:** W3 (data layer patterns), W4 (chrome), W5 (AutoRefresh/panels).

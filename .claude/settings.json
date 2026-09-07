@@ -22,6 +22,7 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run lint:*)",
       "Bash(npm run docs:check:*)",
+      "Bash(npm run db:apply -- *)",
       "Bash(npx tsc --noEmit:*)",
       "Bash(npx vitest run:*)",
       "Bash(rg:*)",
@@ -44,9 +45,15 @@
       "Grep",
       "WebFetch",
       "WebSearch",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_extensions",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__get_advisors",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__generate_typescript_types",
+      "mcp__supabase__get_logs",
       "Bash(gh api:*)",
       "Bash(gh run rerun:*)",
-      "Bash(gh pr merge:*)",
       "Bash(supabase:*)",
       "Bash(docker:*)",
       "Bash(npm run:*)",
@@ -101,6 +108,7 @@
       "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__list_teams"
     ],
     "deny": [
+      "Bash(npm run db:apply -- *--apply*)",
       "Bash(supabase config push:*)",
       "Bash(supabase db reset:*)",
       "Bash(vercel alias set:*)",
@@ -290,6 +298,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "compact|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/restore-session-state.mjs",
+            "timeout": 10,
+            "statusMessage": "engineering-os: restore session state"
+          }
+        ]
       }
     ],
     "WorktreeCreate": [
@@ -303,6 +322,18 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/route-prompt.mjs",
+            "timeout": 10,
+            "statusMessage": "engineering-os: route prompt"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -310,6 +341,36 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-canonical-write.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-config-change.mjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-git.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-config-change.mjs"
+          }
+        ]
+      },
+      {
+        "matcher": "^mcp__.*__(execute_sql|apply_migration)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-sql.mjs"
           }
         ]
       }
@@ -338,6 +399,18 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs",
+            "timeout": 10,
+            "statusMessage": "engineering-os: save session state"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -348,15 +421,31 @@
             "statusMessage": "verify before stopping"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-gates.mjs",
+            "timeout": 10,
+            "statusMessage": "engineering-os: gates reminder (advisory)"
+          }
+        ]
       }
     ]
   },
   "enabledPlugins": {
     "claude-security@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "sentry@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": false,
+    "sentry@claude-plugins-official": false,
     "superpowers@claude-plugins-official": false,
-    "vercel@claude-plugins-official": true
+    "vercel@claude-plugins-official": false,
+    "sonarqube@claude-plugins-official": false,
+    "github@claude-plugins-official": false,
+    "hookify@claude-plugins-official": false,
+    "ralph-loop@claude-plugins-official": false,
+    "claude-md-management@claude-plugins-official": false,
+    "frontend-design@claude-plugins-official": false
   },
   "autoMemoryEnabled": false
 }

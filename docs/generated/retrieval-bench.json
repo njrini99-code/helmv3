@@ -1,8 +1,8 @@
 {
   "goldSet": {
-    "schema_version": "1.0.0",
-    "frozen_at": "2026-09-02",
-    "frozen_against_commit": "c34aa936e"
+    "schema_version": "1.1.0",
+    "frozen_at": "2026-09-06",
+    "frozen_against_commit": "0486c8e04"
   },
   "perTask": [
     {
@@ -25,9 +25,9 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 45000,
-      "total_feature_doc_chars": 45000,
-      "included_doc_count": 12,
+      "irrelevant_chars": 50000,
+      "total_feature_doc_chars": 50000,
+      "included_doc_count": 13,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -42,7 +42,7 @@
       "wrong_features": [
         "team_access_control"
       ],
-      "gold_file_recall": 0.6666666666666666,
+      "gold_file_recall": 0.3333333333333333,
       "gold_files_total": 3,
       "recall_at_k_full": {
         "5": true,
@@ -52,9 +52,9 @@
         "5": true,
         "10": true
       },
-      "irrelevant_chars": 23255,
-      "total_feature_doc_chars": 78255,
-      "included_doc_count": 19,
+      "irrelevant_chars": 23448,
+      "total_feature_doc_chars": 93448,
+      "included_doc_count": 22,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -81,8 +81,8 @@
         "10": true
       },
       "irrelevant_chars": 15000,
-      "total_feature_doc_chars": 65000,
-      "included_doc_count": 16,
+      "total_feature_doc_chars": 70000,
+      "included_doc_count": 17,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -112,25 +112,23 @@
       "id": "INC-2026-08-25-recap-persist-schema-permission",
       "gold_feature": "golf_round_lifecycle",
       "predicted_features": [
-        "team_access_control"
+        "golf_round_lifecycle"
       ],
-      "feature_recall_hit": false,
-      "wrong_features": [
-        "team_access_control"
-      ],
-      "gold_file_recall": 1,
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 0.6666666666666666,
       "gold_files_total": 3,
       "recall_at_k_full": {
-        "5": false,
-        "10": false
+        "5": true,
+        "10": true
       },
       "recall_at_k_feature_docs_only": {
-        "5": false,
-        "10": false
+        "5": true,
+        "10": true
       },
-      "irrelevant_chars": 38255,
-      "total_feature_doc_chars": 38255,
-      "included_doc_count": 11,
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 50000,
+      "included_doc_count": 13,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -179,8 +177,8 @@
         "10": false
       },
       "irrelevant_chars": 15000,
-      "total_feature_doc_chars": 65000,
-      "included_doc_count": 16,
+      "total_feature_doc_chars": 70000,
+      "included_doc_count": 17,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -229,8 +227,8 @@
         "10": false
       },
       "irrelevant_chars": 15000,
-      "total_feature_doc_chars": 65000,
-      "included_doc_count": 16,
+      "total_feature_doc_chars": 70000,
+      "included_doc_count": 17,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -238,13 +236,35 @@
       "id": "INC-2026-08-25-atomic-snapshot-hole-mismatch",
       "gold_feature": "shot_tracking",
       "predicted_features": [
-        "team_access_control"
+        "shot_tracking"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 0,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 35000,
+      "included_doc_count": 10,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-25-completed-round-sg-capability",
+      "gold_feature": "golf_round_lifecycle",
+      "predicted_features": [
+        "stats_analytics"
       ],
       "feature_recall_hit": false,
-      "wrong_features": [
-        "team_access_control"
-      ],
-      "gold_file_recall": 1,
+      "wrong_features": [],
+      "gold_file_recall": 0,
       "gold_files_total": 1,
       "recall_at_k_full": {
         "5": false,
@@ -254,14 +274,43 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 38255,
-      "total_feature_doc_chars": 38255,
-      "included_doc_count": 11,
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 35000,
+      "included_doc_count": 10,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
     {
-      "id": "INC-2026-08-25-completed-round-sg-capability",
+      "id": "INC-2026-07-29-postgres-wedge-took-down-every-route",
+      "gold_feature": "admin_platform",
+      "predicted_features": [
+        "roster_team",
+        "auth_onboarding_join",
+        "team_access_control"
+      ],
+      "feature_recall_hit": false,
+      "wrong_features": [
+        "roster_team",
+        "team_access_control"
+      ],
+      "gold_file_recall": 0,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": false,
+        "10": false
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": false,
+        "10": false
+      },
+      "irrelevant_chars": 31615,
+      "total_feature_doc_chars": 68149,
+      "included_doc_count": 18,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-19-assistant-coach-cascade-delete-round-history",
       "gold_feature": "golf_round_lifecycle",
       "predicted_features": [
         "team_access_control"
@@ -270,8 +319,8 @@
       "wrong_features": [
         "team_access_control"
       ],
-      "gold_file_recall": 1,
-      "gold_files_total": 1,
+      "gold_file_recall": null,
+      "gold_files_total": 0,
       "recall_at_k_full": {
         "5": false,
         "10": false
@@ -280,25 +329,433 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 38255,
-      "total_feature_doc_chars": 38255,
+      "irrelevant_chars": 38448,
+      "total_feature_doc_chars": 38448,
       "included_doc_count": 11,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "INC-2026-08-16-parallel-agents-shared-tree",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 1,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-08-18-worktrees-inside-repo-duplicate-tree",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 1,
+      "gold_files_total": 2,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-08-19-codeql-matrix-rename-phantom-checks",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-08-29-disk-exhaustion-from-six-worktrees",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 1,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-08-30-worktree-removed-without-owner-consent",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 1,
+      "gold_files_total": 2,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-08-30-zsh-history-modifier-broke-pushes",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-08-31-vercel-upload-cap-vercelignore-fix",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-08-31-worktree-report-missed-remote-branches",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-09-02-ci-runner-slot-starvation-consolidation",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 0.5,
+      "gold_files_total": 2,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-09-02-vercel-cli-pipe-close-abort",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-09-04-automemory-user-scope-drift",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-09-04-golf-e2e-env-injection-skip",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 0,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-09-04-mcp-namespace-policy-contradiction",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 0,
+      "gold_files_total": 2,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-09-04-sandboxed-dev-server-false-ready",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "INC-2026-09-04-surface-registry-miscategorized-as-generated",
+      "gold_feature": "feature_awareness_system",
+      "predicted_features": [
+        "feature_awareness_system"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 0,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30082,
+      "included_doc_count": 21,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": true
+    },
+    {
+      "id": "PR-1857-course-library-unpaginated-read",
+      "gold_feature": "golf_round_lifecycle",
+      "predicted_features": [
+        "golf_round_lifecycle"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": null,
+      "gold_files_total": 0,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 50000,
+      "included_doc_count": 13,
+      "stale_doc_count": 0,
+      "historical_analogue_hit": false
+    },
+    {
+      "id": "PR-1867-log-retention-cron",
+      "gold_feature": "admin_selfheal",
+      "predicted_features": [
+        "admin_selfheal"
+      ],
+      "feature_recall_hit": true,
+      "wrong_features": [],
+      "gold_file_recall": 1,
+      "gold_files_total": 1,
+      "recall_at_k_full": {
+        "5": true,
+        "10": true
+      },
+      "recall_at_k_feature_docs_only": {
+        "5": true,
+        "10": true
+      },
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 30000,
+      "included_doc_count": 9,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     }
   ],
   "aggregate": {
-    "task_count": 11,
-    "feature_recall": 0.36363636363636365,
-    "wrong_feature_rate": 0.7272727272727273,
-    "gold_file_recall": 0.37878787878787873,
-    "gold_file_recall_sample_size": 11,
-    "recall_at_5_full": 0.18181818181818182,
-    "recall_at_10_full": 0.18181818181818182,
-    "recall_at_5_feature_docs_only": 0.18181818181818182,
-    "recall_at_10_feature_docs_only": 0.18181818181818182,
-    "irrelevant_token_rate": 0.5265807583945314,
+    "task_count": 30,
+    "feature_recall": 0.7666666666666667,
+    "wrong_feature_rate": 0.23333333333333334,
+    "gold_file_recall": 0.3333333333333333,
+    "gold_file_recall_sample_size": 21,
+    "recall_at_5_full": 0.7,
+    "recall_at_10_full": 0.7,
+    "recall_at_5_feature_docs_only": 0.7,
+    "recall_at_10_feature_docs_only": 0.7,
+    "irrelevant_token_rate": 0.16963487885536882,
     "stale_context_rate": 0,
-    "historical_analogue_retrieval_rate": 0
+    "historical_analogue_retrieval_rate": 0.5
   }
 }

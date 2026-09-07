@@ -1,5 +1,7 @@
 # W3: Server Data Layer — Sentry/Vercel clients, session + resolve RPCs, triage merge
 
+Status: active
+
 **Goal:** Build the fail-soft, server-only read layer Helm Bridge panels consume: `sentry-api.ts`, `vercel-api.ts`, the `get_active_sessions()`/`resolve_admin_event()` RPCs, and the merged triage-queue fetcher.
 
 **Depends-on:** W1 (gate + `is_super_admin()`), W2 (`fingerprint`/`source` columns + regenerated types).

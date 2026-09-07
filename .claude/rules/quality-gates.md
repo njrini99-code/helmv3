@@ -47,7 +47,7 @@ violation always fails regardless of baseline.
 |---|---|---|---|
 | Unit/unit-dom/integration/business/contract | vitest projects | `src/**/*.test.{ts,tsx}` + named `scripts/**` files | `test:run`, `test:integration` |
 | RLS | pgTAP | `supabase/tests/rls/*.sql` | Supabase lint + RLS tests job |
-| E2E | Playwright | `e2e/**` | PR smoke is path-gated; the full suite is manual (`workflow_dispatch`, `full_e2e=true`) |
+| E2E | Playwright | `e2e/**` | PR smoke (`ci.yml`'s `pr-smoke-a11y` job) is gated on `frontend`; the full suite is manual (`workflow_dispatch`, `full_e2e=true`) |
 
 `npm test` runs unit + unit-dom only, the fast loop. `npm run test:all` runs
 every project.
@@ -65,15 +65,6 @@ check the scanned-file count.
 `typecheck` (`tsc`) stays the CI gate — do not swap the gate for `tsgo`.
 
 ### CI shape
-Every GitHub Actions workflow that posts on a PR, one line each:
-`ci.yml` (typecheck, lint, vitest, build, RLS, doc gates → required
-`CI aggregate`); `review-gate.yml` (static analyzers → required
-`Review Gate aggregate`); `codeql.yml` (three required `Analyze (...)`
-legs plus GitHub's own non-required `CodeQL` status); `sentry-snapshots.yml`
-(visual diff, advisory); `feature-awareness.yml` (context pack, advisory,
-code paths only); `pr-smoke.yml` (a11y smoke, advisory, frontend paths);
-`migration-lockdown.yml` (`block-historical-edits`, reports on every PR);
-`claude-code.yml` (gated agent run). CircleCI runs the weekly heavy jobs and
-the branch-gated native compiles. `main` has `enforce_admins` on; take the
-required-checks list from GitHub and `docs/CONTROL_PLANE_ENFORCEMENT.md`,
-never from prose.
+`.github/workflows/detect-changes.yml`, ONE `workflow_call` reusable workflow called by `ci.yml`/`codeql.yml`/`feature-awareness.yml`/`migration-lockdown.yml`, is the only changed-path detector in the repo: outputs `code`, `frontend`, `e2e`, `migrations`, `python`, `actions`, `docs_only`, `mapped_feature_code`.
+
+`ci.yml`: `code` gates `Next build`/`Unit tests`/`Supabase lint + RLS tests` (each also `needs: [typecheck, lint]`) → required `CI aggregate`, passing a skip only when nothing code-relevant changed. `pr-smoke-a11y` and `sentry-snapshot-capture` are advisory jobs inside `ci.yml` (not separate workflows), gated on `frontend`/`e2e`, consuming `next-build`'s `.next` artifact instead of rebuilding. `review-gate.yml` → required `Review Gate aggregate`. `codeql.yml`: three required `Analyze (...)` legs + non-required `CodeQL`; `javascript-typescript` is gated by the shared `code` output. `baseball-readiness-matrix.yml`: advisory, no `pull_request`. `feature-awareness.yml`: advisory, gated on `mapped_feature_code`. `migration-lockdown.yml`: `block-historical-edits`, every PR, gated on `migrations`. `claude-code.yml`: gated agent run. `playwright.yml` (manual only) downloads `ci.yml`'s `next-build` artifact when one exists, building only as a fallback. CircleCI: weekly heavy jobs + branch-gated native compiles. `main` has `enforce_admins` on; take required checks from GitHub.

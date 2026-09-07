@@ -969,7 +969,7 @@
     {
       "id": "c49-other",
       "kind": "other",
-      "text": "- `memory/context/golfhelm-features.md`\n- `memory/context/golfhelm-database.md`\n- `docs/features/SHOT_TRACKING_DATA_FLOW.md`\n- `docs/features/SHOT_TRACKING_VERIFICATION.md`\n- `docs/ROUND_REVIEW_ACCURACY_REPORT.md`\n- `docs/v3-testing-standards.md`",
+      "text": "- `memory/context/golfhelm-features.md`\n- `memory/context/golfhelm-database.md`\n- `docs/features/SHOT_TRACKING_DATA_FLOW.md`\n- `docs/features/SHOT_TRACKING_VERIFICATION.md`\n- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`\n- `docs/v3-testing-standards.md`",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/golf-round-lifecycle.md",
@@ -984,7 +984,7 @@
           "memory/context/golfhelm-database.md",
           "docs/features/SHOT_TRACKING_DATA_FLOW.md",
           "docs/features/SHOT_TRACKING_VERIFICATION.md",
-          "docs/ROUND_REVIEW_ACCURACY_REPORT.md",
+          "https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md",
           "docs/v3-testing-standards.md"
         ],
         "globs": [],

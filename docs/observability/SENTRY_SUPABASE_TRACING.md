@@ -214,6 +214,39 @@ issues; alerting on it must be built on Logs.
 **Rollback:** delete the drain in the same screen. Billing is per-hour in
 arrears and stops at removal.
 
+### 7a. Database Plan D7 — which log types to drain
+
+Still owner-decided, still not enabled — this narrows the operator checklist
+above to the two log types this plan actually needs, rather than draining
+everything Supabase can emit:
+
+1. **Postgres errors.** Dashboard → **Project Settings → Log Drains → Add
+   Log Drain → Sentry**, then under the drain's source filter select
+   **Postgres logs**, severity **error and above**. This is the half that
+   catches a failing RPC, a constraint violation, or (once
+   `20260906142000_pgaudit_ddl_role_only.sql` is applied — HELD, see
+   `supabase/migrations/HELD.md`) a pgaudit `AUDIT:` line for an unexpected
+   DDL/role change.
+2. **Slow statements over 500ms.** Requires `pg_stat_statements` (already
+   enabled — see `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`)
+   and, on the log-drain side, the Postgres log's `log_min_duration_statement`
+   threshold set to `500` (Dashboard → Database → Settings → in the
+   Postgres config panel, NOT a migration — this is an instance-level GUC
+   Supabase exposes there, not something `ALTER DATABASE`/`ALTER ROLE` can
+   set safely from a migration on managed Postgres). Below 500ms, statement
+   logging is deliberately silent — this project's own
+   `helm_debug.db_stat_deltas` Top-K sampler already covers aggregate slow-
+   query trends without per-statement log volume; the drain exists to catch
+   an individual outlier statement, not to duplicate that sampler.
+
+**Datadog is not the alternative here.** `datadog/README.md` (this repo)
+already states Datadog is browser RUM + browser logs ONLY — "PostgreSQL
+monitoring via DD Agent" and "Log ingestion from the Node.js runtime" are
+both explicitly listed as things this repo does NOT use Datadog for, with
+Sentry named as the server-side path instead. So the Sentry log drain above
+is not competing with an existing Datadog integration; there is nothing to
+choose between.
+
 ---
 
 ## 8. Sampling strategy
@@ -270,14 +303,30 @@ authorization.
 
 ---
 
-## 10. pgAudit (NOT enabled — procedure only)
+## 10. pgAudit (NOT enabled — HELD migration prepared, Database Plan D7)
 
-Do not enable broadly. If temporarily needed: scope to `function, write` (never
-`all`), verify experimentally which role's settings capture writes inside a
-`SECURITY DEFINER` RPC (the `authenticator` role governs API traffic, but
-DEFINER internals may not follow it — this is untested), never log parameters,
-and reset immediately after. Impact: significant log volume, which now meters
-against Logs Ingest.
+**Superseded by a scoped decision, 2026-09-06**: the original guidance below
+(scope to `function, write`) was written before a concrete need existed.
+Database Plan D7's actual need is narrower — "who ran a DDL/role change and
+when," not row-level read/write auditing — so
+`supabase/migrations/20260906142000_pgaudit_ddl_role_only.sql` (HELD, see
+`supabase/migrations/HELD.md`) sets `pgaudit.log = 'ddl, role'` instead.
+That keeps the original caution about `function, write`/`all` log volume:
+this repo has not enabled either, and this migration does not either. If a
+future need genuinely requires row-level write auditing, that is a
+SEPARATE, deliberately-scoped migration on top of this one, not a widening
+of `ddl, role`.
+
+**Original guidance (kept for the write/function case, if it's ever
+needed)**: scope to `function, write` (never `all`), verify experimentally
+which role's settings capture writes inside a `SECURITY DEFINER` RPC (the
+`authenticator` role governs API traffic, but DEFINER internals may not
+follow it — this is untested), never log parameters, and reset immediately
+after. Impact: significant log volume, which now meters against Logs
+Ingest.
+
+**Reads are not audited under either scope** — `ddl, role` (what's actually
+prepared) never was a read-auditing mechanism to begin with.
 
 ---
 

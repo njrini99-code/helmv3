@@ -506,7 +506,7 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 - `memory/context/golfhelm-database.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
-- `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`
 - `docs/v3-testing-standards.md`
 
 ## iOS shell chrome (updated 2026-08-26)

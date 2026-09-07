@@ -577,18 +577,20 @@ export function classifyWorkspaceKind(facts) {
   return { kind: MUTATION, counts: true, reason: `declared kind '${f.declaredKind}'` };
 }
 
-// Raised 1 -> 3 with the "one workspace door" change (2026-09-05). The
-// mutation budget now has to cover every path that allocates a workspace, not
-// just a human running scripts/new-worktree.sh: the WorktreeCreate hook routes
+// Raised 1 -> 3 with the "one workspace door" change (2026-09-05), then
+// 3 -> 6 with the tree/routing/speed reorg (2026-09-06) once gate timing
+// (scripts/serialize.mjs, memory/ledgers/gates.jsonl) gave visibility into
+// actual machine load instead of a guess. The mutation budget now has to
+// cover every path that allocates a workspace, not just a human running
+// scripts/new-worktree.sh: the WorktreeCreate hook routes
 // `isolation: "worktree"` subagents and background sessions through the same
 // door (scripts/lib/create-workspace.mjs), and a session doing legitimate
-// parallel work — say, one task worktree plus two isolated subagent checks —
-// would otherwise be refused by a budget sized for a single human session.
-// 3 is still a budget, not a suggestion: it is refused BEFORE allocation the
-// same way 1 was, and AGENTS.md / autonomy.md's "one mutation workspace at a
-// time" prose is now stale by exactly this amount — see
-// docs/operations/WORKSPACES.md for the corrected line pending that edit.
-export const DEFAULT_MUTATION_BUDGET = 3;
+// parallel work — several task worktrees plus isolated subagent checks —
+// would otherwise be refused by a budget sized for far less concurrency.
+// 6 is still a budget, not a suggestion: it is refused BEFORE allocation the
+// same way 1 and 3 were before it. See docs/operations/WORKSPACES.md for the
+// full history of this number.
+export const DEFAULT_MUTATION_BUDGET = 6;
 
 /**
  * Decide whether one more mutation workspace may be created.

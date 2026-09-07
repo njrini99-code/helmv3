@@ -73,15 +73,24 @@ describe('hook wiring is real', () => {
     }
   });
 
-  it('exactly one hook can refuse a tool call, and it is the canonical-write guard', () => {
-    // If this ever legitimately changes, the inventory changes with it and this
-    // assertion is what forces the docs to be regenerated rather than drift.
+  it('every PreToolUse guard added by the config-hardening pass is wired', () => {
+    // 2026-09-07: guard-git.mjs, guard-sql.mjs, and guard-config-change.mjs
+    // joined guard-canonical-write.mjs as PreToolUse hooks that can refuse a
+    // tool call — this repo's config-hardening pass. If this count or set
+    // ever legitimately changes again, the inventory changes with it and
+    // this assertion is what forces the docs to be regenerated rather than
+    // silently drift.
     const blocking = hookRows().filter((r) => r.event === 'PreToolUse');
-    expect(blocking).toHaveLength(1);
-    const only = blocking[0];
-    expect(only, 'expected exactly one PreToolUse hook').toBeDefined();
-    expect(only!.command).toContain('guard-canonical-write.mjs');
-    expect(only!.matcher).toBe('Write|Edit|MultiEdit');
+    const scripts = blocking.map((r) => scriptPath(r.command));
+    expect(scripts).toEqual(
+      expect.arrayContaining([
+        '.claude/hooks/guard-canonical-write.mjs',
+        '.claude/hooks/guard-config-change.mjs',
+        '.claude/hooks/guard-git.mjs',
+        '.claude/hooks/guard-sql.mjs',
+      ]),
+    );
+    expect(blocking.length).toBeGreaterThan(1);
   });
 
   it('no hook claims to cover MCP unless one actually matches mcp__', () => {
@@ -176,11 +185,17 @@ describe('the three corrected claims stay corrected', () => {
     read(p)
       .replace(/[\u201c\u201d"][^\u201c\u201d"]*[\u201c\u201d"]/g, ' ');
 
-  it('database.md does not claim destructive SQL is blocked by a hook', () => {
-    expect(asserted('.claude/rules/database.md')).not.toMatch(/are blocked by a PreToolUse hook/);
+  it('database.md describes guard-sql.mjs\'s actual, narrow coverage rather than a blanket block', () => {
+    // 2026-09-07: guard-sql.mjs now really does refuse DROP TABLE/SCHEMA,
+    // TRUNCATE, a WHERE-less DELETE, and ALTER...DROP COLUMN — so the old
+    // "blocked by a PreToolUse hook on both the file-write and MCP paths"
+    // phrasing this suite used to forbid is no longer a lie to correct, it
+    // is closer to true. What must still not happen is overclaiming: the
+    // hook is text matching over SQL syntax, not a parser, and everything
+    // outside that exact statement shape is explicitly out of scope.
     const db = read('.claude/rules/database.md');
-    expect(db).toMatch(/UNENFORCED/);
-    // and it records that the false version escaped into user scope
+    expect(db).toMatch(/guard-sql\.mjs/);
+    expect(db).toMatch(/not a parser/);
     expect(db).toMatch(/autoMode/);
   });
 
@@ -200,16 +215,24 @@ describe('the three corrected claims stay corrected', () => {
     // The most consequential of the four. A now-deleted paragraph told the
     // reader it was safe to proceed without asking, and named three shapes —
     // force push, destructive SQL, unscoped recursive rm — as
-    // deterministically blocked. None of the three is covered by any hook or
-    // deny rule. The correction narrative itself was later removed (rules
-    // files state current behavior only, per docs:rules-current) — what
-    // this suite pins now is that the current-state fact survived the
-    // narrative's removal, not the story of how it got there.
+    // deterministically blocked, when none of the three was covered by any
+    // hook or deny rule.
+    //
+    // 2026-09-07: force push and destructive SQL got REAL, narrow guards
+    // (guard-git.mjs, guard-sql.mjs) — so the blanket "no hook covers force
+    // push, destructive SQL, or recursive rm" this suite used to pin is now
+    // itself the kind of overclaim this file exists to prevent, just
+    // pointed the other way. What must still hold: autonomy.md names each
+    // guard's actual scope (a subset of commands/statements, not a shell or
+    // SQL parser) rather than claiming blanket coverage, and it still names
+    // the two things nothing catches — Bash-driven writes into the
+    // canonical checkout, and a recursive `rm`.
     const a = asserted('.claude/rules/autonomy.md');
     expect(a).not.toMatch(/they block the shapes\s+that actually matter/);
-    expect(read('.claude/rules/autonomy.md')).toMatch(
-      /no hook covers force push, destructive SQL, (or )?recursive/,
-    );
+    const raw = read('.claude/rules/autonomy.md');
+    expect(raw).toMatch(/guard-git\.mjs/);
+    expect(raw).toMatch(/guard-sql\.mjs/);
+    expect(raw).toMatch(/no hook covers\s+Bash-driven writes into\s+the canonical checkout or a recursive `rm`/);
   });
 
   it('all four point readers at the generated inventory', () => {

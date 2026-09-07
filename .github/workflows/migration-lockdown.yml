@@ -12,6 +12,12 @@ name: migration-lockdown
 # running on every PR and doing the path check as the first STEP instead —
 # the job now always reports a conclusion, which is what a required check
 # needs.
+#
+# 2026-09-06: that "first STEP" now reads the shared detect-changes.yml
+# workflow's `migrations` output instead of running its own
+# changed-files.sh scan — see the `detect-changes` job and the
+# `block-historical-edits` job's `if:` guard below for how it stays
+# fail-closed even if the shared job errors.
 on:
   merge_group:
   pull_request:
@@ -25,7 +31,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Reusable workflow (2026-09-06) — see .github/workflows/detect-changes.yml.
+  # Called unconditionally, with NO `if:` on this job — `block-historical-
+  # edits` below must always report a conclusion (that's this whole
+  # workflow's reason for running on every PR with no trigger-level `paths:`
+  # filter, per the top-of-file comment), so it cannot skip just because this
+  # helper job failed.
+  detect-changes:
+    name: Detect changes
+    uses: ./.github/workflows/detect-changes.yml
+
   block-historical-edits:
+    needs: detect-changes
+    # ALWAYS runs, even if `detect-changes` itself failed — see the comment
+    # on that job above. The one step gated on its output (below) treats a
+    # missing/failed `migrations` output as fail-closed true via `!= 'false'`
+    # rather than skipping.
+    if: always() && !cancelled()
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -41,23 +63,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect changed migration files
-        id: touched
-        run: |
-          set -euo pipefail
-          mapfile -t files < <(bash .github/scripts/changed-files.sh 'supabase/migrations/*.sql')
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "no migration files changed"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          printf 'Migration files touched by this PR:\n'
-          printf '  %s\n' "${files[@]}"
-
+      # Replaces the old "Detect changed migration files" step's own
+      # .github/scripts/changed-files.sh invocation — that boolean is now
+      # the shared detector's `migrations` output. `!= 'false'` (not
+      # `== 'true'`) is deliberate: an empty/missing output (detect-changes
+      # job failed outright) must still run the deep check below, matching
+      # this workflow's fail-closed posture — a security gate must not go
+      # quiet because its helper job errored.
       - name: Detect edits to historical migrations
         id: check
-        if: steps.touched.outputs.changed == 'true'
+        if: needs.detect-changes.outputs.migrations != 'false'
         run: |
           set -euo pipefail
           BASELINE="20260527120000"

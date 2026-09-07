@@ -230,6 +230,7 @@ android/keystore.properties
 # scattered across the top level.
 .dev-screenshots/
 .dev-assets/
+frames/
 
 # session/tool artifacts (added 2026-08-15)
 .ultracode/
@@ -323,3 +324,6 @@ docs/ui-audits/**/*.jpg
 # `npm run janitor` locally to read them.
 docs/generated/JANITOR_REPORT.md
 docs/generated/janitor-findings.json
+
+# FUSE leftovers (open handle on a deleted file); three were committed on 2026-03-09
+.fuse_hidden*

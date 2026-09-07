@@ -29,10 +29,8 @@ substitute.
    exit codes as observed, never inferred (`/status`, `/gates`).
 6. **Push and PR.** `git push -u origin <branch>`; `gh pr create`. Pushing
    does **not** deploy — the git integration is disconnected.
-7. **Land.** `/land <pr>` (`npm run pr:land -- <pr>` — this script ships on
-   the worktree-hygiene PR; if it is not yet on `main`, treat `npm run
-   pr:land -- <n>` as the target interface and say so rather than
-   hand-merging). Never `gh pr merge` directly, never `--admin`.
+7. **Land.** `/land <pr>` (`npm run pr:land -- <pr>`, `scripts/pr-land.mjs`,
+   on `main`). Never `gh pr merge` directly, never `--admin`.
 8. **Retire.** `npm run worktrees:retire` (or `:park` for a disposable,
    unmerged checkout). This is the sole lifecycle authority — never remove a
    worktree or delete a branch by hand. A deleted branch is preserved first
