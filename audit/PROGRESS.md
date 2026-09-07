@@ -518,7 +518,45 @@ worktree with HMR so the owner is reviewing what is actually committed.
       assertions that read `Group.dc.html:44`'s literal out of the artboard,
       plus a standing guard that the absolute positioning does not return. Its
       `stripComments` took the whole-block strip `unreadLift` already had.
-- [ ] **Rendered check still owed** (W8). Nothing in W10 measured a pixel.
+- [x] **Rendered check done.** Served at 390x844 against the local stack, signed in
+      as `coach@local.test`, opened the "Kiawah Trip" group. The seeded thread had
+      two messages on one day, which cannot show a day boundary or a multi-message
+      run at all, so the fixture was widened first (five messages from two other
+      participants spread across Saturday / yesterday / today, including a
+      two-message run from one sender) — same fixture-widening the W8 rail pass
+      needed. Every W10 claim measured, none asserted from a class list:
+  - **Ground vs bubble.** Scroll region `oklab(0.953 0.0027 0.0218)` = canvas;
+    incoming bubble `oklab(0.984 0.0011 0.0160)` = surface. The 0.031 step the
+    shadows were drawn against, live. Own bubble `oklab(0.540 -0.114 0.0666)` =
+    accent-650, unchanged.
+  - **Avatar tint.** Every incoming message avatar is `oklab(0.939 -0.0390 0.0225)`
+    = accent-100 with `oklab(0.488 -0.107 0.062)` = accent-700 ink. The header
+    stack renders NR accent and AB `oklab(0.963 0.0022 0.0209)` = surface-sunken —
+    the artboard's first-face-accent rule, not a blanket tint. Rail avatars stayed
+    neutral, so the opt-in default held.
+  - **Day chip cannot collide any more.** All three boundaries are
+    `position: static`. SATURDAY chip ends y=125, the "Jordan Rivera" label under
+    it starts y=141; YESTERDAY ends y=331 against "Maya Torres" at y=347 — 16px of
+    clearance both times, which is `Group.dc.html:44`'s `padding: 0 0 16px 0`.
+    The pre-fix build painted the chip ON that label.
+  - **Avatar is directly beside the message.** Avatar x=16..48, bubble x=56 — an
+    8px `gap-2`, and the avatar's box bottom is level with the column's foot, i.e.
+    the group's timestamp, which is what `align-items: flex-end` draws in
+    `Group.dc.html:48`.
+  - **The header back control is ONE line and vertically centred.**
+    `getClientRects().length === 1`, arrow at x=17 and label at x=39 on the same
+    20px row, button centre y=44; the title/subtitle block spans y=24..64, centre
+    y=44. Exactly the anonymous-box split the `leftIcon` move was meant to fix.
+    Avatar stack right edge x=199, title x=213 — 14px, which is the row's 10px
+    gap plus `Group.dc.html:32`'s `margin-left: 4px`. The title is not optically
+    centred in the bar and cannot be: the labelled back control is 101px wide.
+    That is the shipped back affordance, not a defect this round introduced.
+- [ ] **NOTED, not fixed, out of W10's scope:** with the widened fixture the thread
+      did not auto-scroll to the newest message — content continued below the
+      scroll region's foot while the view sat mid-thread. It may be an artifact of
+      rows inserted straight into Postgres arriving by realtime rather than by the
+      initial fetch. It needs its own reproduction against a normal send before
+      anything is changed; recording it rather than guessing at it.
 
 ## DEFERRED — deliberately not in this PR, with the reason
 Scaling scope down is the owner's call, so these are named rather than silently dropped.

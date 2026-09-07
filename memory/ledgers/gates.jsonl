@@ -178,3 +178,4 @@
 {"ts":1788820672306,"gate":"typecheck","waitMs":1,"runMs":7125,"slots":2}
 {"ts":1788820701357,"gate":"test:run","waitMs":0,"runMs":367854,"slots":2}
 {"ts":1788821120451,"gate":"build","waitMs":0,"runMs":341481,"slots":2}
+{"ts":1788821537878,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":10828,"slots":2}
