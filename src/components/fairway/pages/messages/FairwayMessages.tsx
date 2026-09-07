@@ -378,13 +378,27 @@ export function FairwayMessages() {
     }
   };
 
-  const handleSendMessageWithAttachments = async (content: string, attachments: PendingAttachment[]) => {
+  /**
+   * G-09a — `onProgress` is forwarded, not invented here.
+   *
+   * `useMessageAttachments` accepts a per-file `onProgress` and threads it into
+   * `uploadAttachment`; this call site simply never passed one, which is why
+   * nothing the transport reported could reach the screen. The composer owns
+   * the staged tiles and therefore owns the callback; this handler's only job
+   * is to stop dropping it on the floor.
+   */
+  const handleSendMessageWithAttachments = async (
+    content: string,
+    attachments: PendingAttachment[],
+    onProgress?: (attachmentId: string, progress: number) => void,
+  ) => {
     if (!selectedConversationId) return false;
     try {
       const result = await sendMessageWithAttachments({
         conversationId: selectedConversationId,
         content,
         attachments,
+        onProgress,
       });
       if (!result.success) {
         showToast(result.error || 'Failed to send message', 'error');

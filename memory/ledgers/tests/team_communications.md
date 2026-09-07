@@ -343,3 +343,26 @@ taxonomy.
 `markSendFailed(optimisticId)` exactly, freezing a signature it does not own.
 Now argument-agnostic past the property it does own. Verified against
 `fef04dbb9~1` (pre-G-19): all six still fail there.
+
+## G-09a — MessageComposer.uploadProgress.test.tsx
+
+10 tests, 9 failing pre-fix. Behavioural through the real component tree — the
+composer, the real `AttachmentPreview`, and a fake send standing in for the
+transport, held open so mid-flight state can be observed. It measures what the
+user sees: the rendered percentage and the bar's inline `width`, not the state
+that feeds them.
+
+Covered: the callback is passed at all (the defect, exactly); a reported
+percentage reaches the screen; the bar starts at zero when the TRANSFER starts
+and not at staging; a re-announced lower chunk cannot move it backwards; an
+overshooting transport is clamped; two staged files track independently (one
+shared counter would show the same number twice); and a failed send returns the
+tiles to staged instead of freezing the bar.
+
+The parent's forwarding is asserted on a comment-stripped read of
+`FairwayMessages.tsx` — it runs against a real conversation id, the attachments
+hook and a toast provider, and what distinguishes fixed from broken is whether
+the callback is forwarded at all. One assertion is a regression guard rather
+than a defect test: the parent must hold no progress state of its own.
+
+The one test that passes pre-fix asserts that absence, and is honest about it.

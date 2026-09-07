@@ -51,8 +51,22 @@ function charsLeftHelp(value: string, max: number): string | undefined {
 export interface MessageComposerProps {
   /** Send plain text (the unchanged useGolfMessages.sendMessage path). */
   onSend: (content: string) => Promise<boolean>;
-  /** Send with attachments (the unchanged useMessageAttachments path). */
-  onSendWithAttachments?: (content: string, attachments: PendingAttachment[]) => Promise<boolean>;
+  /**
+   * Send with attachments (the unchanged useMessageAttachments path).
+   *
+   * The third argument is the transfer signal (G-09a). `useMessageAttachments`
+   * has ACCEPTED an `onProgress(attachmentId, progress)` since it was written,
+   * and threads it into `uploadAttachment` per file — but no caller ever
+   * supplied one, so `AttachmentPreview`'s percentage and bar rendered the
+   * `uploadProgress: 0` written at staging and never moved again. Optional, so
+   * the G-21 refusal case and any caller that does not want the signal stay
+   * assignable.
+   */
+  onSendWithAttachments?: (
+    content: string,
+    attachments: PendingAttachment[],
+    onProgress?: (attachmentId: string, progress: number) => void,
+  ) => Promise<boolean>;
   /** Throttled typing broadcast (the unchanged useGolfMessages.sendTypingStatus). */
   onTyping?: (isTyping: boolean) => void;
 }
@@ -237,6 +251,26 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     return prev;
   };
 
+  /**
+   * Route one file's transfer progress onto its own staged tile (G-09a).
+   *
+   * Monotonic on purpose. An upload reports per chunk, and a transport that
+   * re-sends one can re-announce a lower byte count — on screen that is a bar
+   * sliding backwards, the one thing a progress indicator must never do.
+   * Clamped for the same reason in the other direction: a transport that
+   * overshoots its own total cannot paint past the end of the track.
+   */
+  const reportProgress = (attachmentId: string, progress: number) => {
+    const next = Math.max(0, Math.min(100, Math.round(progress)));
+    setPendingAttachments(prev =>
+      prev.map(a =>
+        a.id === attachmentId
+          ? { ...a, uploadProgress: Math.max(a.uploadProgress, next) }
+          : a,
+      ),
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await submitSend();
@@ -290,7 +324,14 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
         setSending(false);
         return;
       }
-      success = await onSendWithAttachments(sentRaw.trim(), pendingAttachments);
+      // G-09a — the bar starts when the transfer does, not before. Everything
+      // staged moves to `uploading` in one write, so the tiles switch from
+      // their idle state to a 0% bar at the instant the upload begins; the
+      // per-file callback below moves each one from there.
+      setPendingAttachments(prev =>
+        prev.map(a => ({ ...a, status: 'uploading' as const, uploadProgress: 0 })),
+      );
+      success = await onSendWithAttachments(sentRaw.trim(), pendingAttachments, reportProgress);
     } else {
       success = await onSend(sentRaw.trim());
     }
@@ -302,6 +343,13 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       setMessage(dropSent(sentRaw));
       setPendingAttachments([]);
     } else if (hasAttachments) {
+      // G-09a — the tiles cannot keep the position they died at. Whatever
+      // fraction was on screen when the send failed is now a claim about a
+      // transfer that is not happening, and Retry restarts the upload from the
+      // first byte, so the tiles go back to staged rather than freezing.
+      setPendingAttachments(prev =>
+        prev.map(a => ({ ...a, status: 'pending' as const, uploadProgress: 0 })),
+      );
       // G-20a — the artboard's sixth state. Nothing reached the thread on this
       // path, so a toast that fades is the message's only trace: the banner is
       // what makes the failure recoverable instead of merely announced. The

@@ -682,3 +682,40 @@
   failure branch MARKS rather than filters). Both are now argument-agnostic past
   the part they own. Proven not weakened: checked out `fef04dbb9~1` — the commit
   before G-19 — and all six still fail there.
+
+## G-09a — the upload bar was wired to nothing
+
+- Change: `MessageComposer.onSendWithAttachments` takes a third argument, a
+  per-file `onProgress(attachmentId, progress)` the composer supplies;
+  `FairwayMessages.handleSendMessageWithAttachments` accepts it and forwards it
+  into `sendMessageWithAttachments`. The composer moves everything staged to
+  `uploading` when the transfer starts and updates each tile's
+  `uploadProgress` as the transport reports.
+- A CORRECTION to the finding, and it changes its severity claim. M00 reads
+  G-09 as a §1.1 "no false progress" violation on the strength of
+  `attachments.ts`'s hardcoded 10/90/100. Those constants reached no pixel.
+  `useMessageAttachments` has always ACCEPTED an `onProgress` and threaded it
+  into `uploadAttachment` per file, and `AttachmentPreview.tsx:170,189` has
+  always rendered `{uploadProgress}%` and a bar at that width — but
+  `FairwayMessages` called `sendMessageWithAttachments({conversationId,
+  content, attachments})` with no callback, and the composer wrote
+  `uploadProgress: 0` at staging and never wrote it again. Nothing false was on
+  screen because nothing was on screen. The defect is a dead wire, not a lie.
+- Split from the transport for that reason. G-09a is the wiring and carries no
+  transport risk: it makes the bar move in real time even against today's
+  simulated constants, and it is the socket a real byte signal plugs into.
+  G-09b (XHR over `createSignedUploadUrl`, replacing the fabricated constants,
+  with the current `storage.upload()` as the fallback) is where the risk lives
+  and is tracked separately.
+- Monotonic and clamped. An upload reports per chunk and a transport that
+  re-sends one can re-announce a lower byte count; a bar that slides backwards
+  is the one thing a progress indicator must never do. `Math.max` against the
+  tile's current value holds it, and the 0–100 clamp stops a transport that
+  overshoots its own total from painting past the track.
+- A failed send returns the tiles to `pending` at 0 rather than freezing them
+  mid-bar. Whatever fraction was on screen when the send failed is a claim
+  about a transfer that is not happening, and this path's Retry (G-20a) starts
+  the upload from the first byte.
+- The composer owns the staged tiles, so the composer owns the callback. The
+  parent holds no progress state of its own — a second source would drift from
+  what is rendered.
