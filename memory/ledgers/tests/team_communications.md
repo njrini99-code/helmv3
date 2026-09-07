@@ -366,3 +366,22 @@ the callback is forwarded at all. One assertion is a regression guard rather
 than a defect test: the parent must hold no progress state of its own.
 
 The one test that passes pre-fix asserts that absence, and is honest about it.
+
+## G-61 — attachments.mimeType.test.ts
+
+8 tests, 2 failing pre-fix. Both sides measured, which is what this finding
+needs: the behavioural half drives `uploadAttachment` against a stubbed
+Supabase client and reads the mime off the body actually handed to the SDK —
+not off the option passed beside it, which is the whole point — while the
+source half reads the vendored `@supabase/storage-js` and asserts the premise:
+the Blob branch of `uploadOrUpdate` never mentions `contentType`, and only the
+raw-body branch sets the header from it.
+
+If a future SDK version starts honouring the option for a Blob, that second
+half fails. That is the correct alarm rather than a brittle one: the fix stays
+correct, but the reasoning written above it would no longer be.
+
+The other assertions guard what is easy to lose while rewriting this call: the
+file name (so the extension still matches the bytes), the byte count, the
+metadata agreeing with what was stored, `cacheControl: '3600'`, and the
+identity pass-through that avoids copying a 10MB photo in the common case.

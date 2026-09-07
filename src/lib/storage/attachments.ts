@@ -259,10 +259,7 @@ export async function uploadAttachment(
   const storagePath = generateStoragePath(conversationId, messageId, uploadFile.name);
 
   // One resolved type for the whole upload. Using a raw `type` here would
-  // record an empty mimeType, categorise the file as a 'document', and — worse
-  // — let Supabase infer `application/octet-stream` for the object, which the
-  // bucket's `allowed_mime_types` does not permit. The photo would then fail
-  // at the Storage API even after passing validation.
+  // record an empty mimeType and categorise the file as a 'document'.
   const resolvedMimeType = resolveFileMimeType(uploadFile);
   const fileType = getFileType(resolvedMimeType);
   const metadata: AttachmentMetadata = {
@@ -271,6 +268,34 @@ export async function uploadAttachment(
     mimeType: resolvedMimeType,
     fileSize: uploadFile.size,
   };
+
+  /**
+   * G-61 — put the resolved type where the SDK will actually read it.
+   *
+   * The `contentType` option below is INERT for this call. `.upload()` sends a
+   * Blob body down `uploadOrUpdate`'s FormData branch
+   * (`@supabase/storage-js/dist/index.mjs:622-626`), which appends the file and
+   * never touches `options.contentType`; only the raw-body branch at 631-636
+   * sets a `content-type` header from it. A `File` IS a Blob, and
+   * `convertHeicToJpeg` returns the ORIGINAL file untouched for anything that
+   * is not HEIC — so the mime the Storage API sees is the file's own `type`,
+   * and for an iOS camera capture that reports `""` the browser labels the
+   * multipart part `application/octet-stream`. That is exactly the rejection
+   * the `contentType` option was added to prevent, and it never prevented it.
+   *
+   * Retyping the Blob is the fix that does not depend on the SDK's branch:
+   * whichever body shape it chooses, the type is on the bytes.
+   * `heic-to-jpeg.ts:69` builds a File the same way, so this is the local
+   * idiom rather than a new one, and it costs nothing when the type already
+   * agrees (the common case returns the same object).
+   */
+  const typedFile =
+    uploadFile.type === resolvedMimeType
+      ? uploadFile
+      : new File([uploadFile], uploadFile.name, {
+          type: resolvedMimeType,
+          lastModified: uploadFile.lastModified,
+        });
 
   // Get dimensions for images/videos and duration for audio
   try {
@@ -301,12 +326,12 @@ export async function uploadAttachment(
 
   const { error: uploadError } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .upload(storagePath, uploadFile, {
+    .upload(storagePath, typedFile, {
       cacheControl: '3600',
       upsert: false,
-      // Explicit, because the SDK otherwise infers from `file.type` — blank on
-      // an iOS camera capture — and sends `application/octet-stream`, which
-      // this bucket's `allowed_mime_types` rejects.
+      // Kept for the raw-body branch, which DOES read it. For the Blob body
+      // this call passes it is inert — see the `typedFile` note above, which
+      // is what actually carries the type.
       contentType: resolvedMimeType,
     });
 

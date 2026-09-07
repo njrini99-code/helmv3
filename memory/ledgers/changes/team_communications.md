@@ -719,3 +719,35 @@
 - The composer owns the staged tiles, so the composer owns the callback. The
   parent holds no progress state of its own — a second source would drift from
   what is rendered.
+
+## G-61 — the `contentType` upload option was inert (new finding, found under G-09)
+
+- Change: `uploadAttachment` retypes the Blob it uploads. When
+  `uploadFile.type` already equals the resolved type the same object is passed
+  through untouched; otherwise a `File` is rebuilt with
+  `{ type: resolvedMimeType, lastModified }`. `heic-to-jpeg.ts:69` constructs a
+  File the same way, so this is the local idiom.
+- The defect: `.upload(path, file, { contentType: resolvedMimeType })` does not
+  do what the comment above it said. `uploadOrUpdate`
+  (`@supabase/storage-js/dist/index.mjs:615-641`) branches on the body type —
+  a Blob goes into a `FormData` with the file appended and `options.contentType`
+  never read; only the raw-body branch (631-636) turns that option into a
+  `content-type` header. A `File` is a Blob, and `convertHeicToJpeg` returns
+  the ORIGINAL file for anything that is not HEIC, so the mime the Storage API
+  saw was the file's own `type` — blank on an iOS camera capture, which the
+  browser then labels `application/octet-stream` in the multipart part.
+- LATENT, not confirmed live, and the distinction is deliberate. What the SDK
+  source supports is that the option is dropped for a Blob body and the comment
+  overstated it. Whether the Storage API then rejects the object depends on how
+  it reads a multipart part's type, which is not visible from this repo. Sentry
+  (org `helm-xs`) is quiet over 90d on upload/mime failures, which is weak
+  evidence either way — this path may simply carry little traffic. Written as
+  latent for the same reason the "85 characters a line" constant was retracted
+  earlier in this audit: the finding does not need the stronger claim.
+- Found while tracing G-09's transport. Landed on its own and BEFORE the
+  transport change, because it survives if G-09b defers, it needs no transport
+  mocking to test, and it makes the two upload paths coherent: without it the
+  signed-URL PUT and the `.upload()` fallback would send different mime types
+  for the same file, so a 4xx on one would say nothing about the other.
+- The `contentType` option is kept, not deleted. It is correct for the raw-body
+  branch, and the comment now says which branch reads it.
