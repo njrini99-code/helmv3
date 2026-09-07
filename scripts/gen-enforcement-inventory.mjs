@@ -180,23 +180,32 @@ export function collectDenies(settings) {
 }
 
 /**
- * True when a hook script actually works out where the canonical checkout is.
+ * True when a hook script refuses a write for landing inside canonical, whatever
+ * the path is.
  *
- * A hook that never resolves the canonical root cannot be refusing a write for
- * landing inside it, whatever else it refuses. Read from disk rather than kept
- * as a list here, so deleting the check inside a hook shows up as a downgraded
- * verdict instead of a stale name in this file. A script that cannot be read
- * counts as not resolving it.
+ * Two conditions, and the second is the one that keeps this honest. The script
+ * must resolve the canonical root — a hook that never works out where canonical
+ * is cannot be refusing a write for being inside it. And it must not narrow
+ * itself to a fixed list of paths: `guard-config-change.mjs` resolves canonical
+ * too, but only to scope a config-surface allowlist, so counting it would report
+ * a general boundary on the evidence of a specific one.
+ *
+ * Read from disk rather than kept as a list here, so deleting the check inside a
+ * hook downgrades the verdict instead of leaving a stale name in this file. A
+ * script that cannot be read counts as not refusing.
  */
-function resolvesCanonicalRoot(rel) {
+function refusesAnyCanonicalWrite(rel) {
   if (!rel) return false;
   const abs = resolve(ROOT, rel);
   if (!existsSync(abs)) return false;
+  let src;
   try {
-    return /canonicalRoot|CANONICAL_ROOT/.test(readFileSync(abs, 'utf-8'));
+    src = readFileSync(abs, 'utf-8');
   } catch {
     return false;
   }
+  if (!/canonicalRoot|CANONICAL_ROOT/.test(src)) return false;
+  return !/GUARDED_RE|isGuardedPath/.test(src);
 }
 
 /**
@@ -234,10 +243,10 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
         // a write whose target is a config surface — and none of them asks
         // where the bytes land, so listing them here reported WIRED for a
         // boundary that a redirect, `cp` or a formatter walks straight through.
-        // A hook counts only if it actually resolves the canonical root, the
+        // A hook counts only if it refuses by destination for any path, the
         // same narrowing the destructive-SQL claim below defends. It fails
         // toward under-claiming, which is the safe direction for this file.
-        const hits = matcherCovers(/Bash/).filter((h) => resolvesCanonicalRoot(h.script));
+        const hits = matcherCovers(/Bash/).filter((h) => refusesAnyCanonicalWrite(h.script));
         return hits.length
           ? {
               mechanism: hits.map((h) => `${h.event} hook \`${basename(h.script ?? '?')}\``).join(', '),
@@ -248,7 +257,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
               mechanism: 'NONE',
               where: '—',
               observed:
-                'UNENFORCED — no hook on Bash resolves the canonical root; the Bash-matched hooks refuse command shapes, not writes by destination',
+                'UNENFORCED — no hook on Bash refuses a write for where it lands; they refuse command shapes, and the one that does resolve canonical narrows to a config-surface list',
             };
       },
     },

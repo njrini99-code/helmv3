@@ -5,9 +5,9 @@ authority on what is enforced — check it before believing any claim here.
 `permissions.deny` and the wired `PreToolUse` hooks are real and survive
 `bypassPermissions`: `guard-canonical-write.mjs` (Write/Edit/MultiEdit into
 canonical), `guard-git.mjs` (dangerous Bash git/gh/vercel commands, matched
-past quoted strings), `guard-sql.mjs` (destructive SQL to Supabase MCP or Bash
-psql/supabase-db), `guard-config-change.mjs` (a write whose target is a config
-surface, lifted only by `HELM_CONFIG_EDIT=1` set when Claude Code launches) —
+past quoted strings), `guard-sql.mjs` (destructive SQL to production; an
+explicitly-local target is exempt), `guard-config-change.mjs` (a write to a
+config surface inside canonical only — in a worktree they are unguarded) —
 each is text/path matching, not a parser. Nothing else here is enforced.
 
 **The canonical checkout boundary is a table, not an absolute**: the three
