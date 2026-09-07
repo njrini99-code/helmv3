@@ -660,7 +660,34 @@ export function MessageComposer({
           isGrown ? 'items-end' : 'items-center',
           'border border-border-subtle bg-surface',
           'transition-colors duration-200',
-          'focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-border-focus/30',
+          // G-45 / D-05 — the artboard's glow GEOMETRY on the token's COLOUR.
+          //
+          // The decision is frozen in `audit/DECISIONS.md`: the artboard's
+          // two-layer soft glow is adopted, its `accent-500` literal is not.
+          // `design-tokens.css:150-165` is why — accent-500 on the warm canvas
+          // measures ~2.67:1 against WCAG 2.2's 3:1 non-text minimum, and the
+          // token was moved to accent-600 precisely because 175 call sites
+          // reaching for `ring-border-focus` were "drawing a ring nobody with
+          // low vision could reliably find". `focus-within:border-accent-500`
+          // was one of them, and copying the artboard's literal would have
+          // re-opened a closed accessibility defect.
+          //
+          // It is also THEME-DEPENDENT, which is the part the lane missed and
+          // the reason this must stay a token: dark theme keeps accent-500 on
+          // purpose (`design-tokens.css:512`), where it is the LIGHTER green
+          // and the one that earns contrast against a dark ground. A literal
+          // would be wrong in exactly one theme, whichever one it was picked
+          // for.
+          //
+          // Geometry, from `Composer.dc.html:24`'s `.track-on`: a 1px ring at
+          // 30% and a 4px ring at 10%. The inner layer is the BORDER that is
+          // already there rather than a ring outside it — same 1px of weight,
+          // and no 1px of layout shift the moment the field takes focus. The
+          // outer layer is the only new box-shadow, written through the same
+          // `color-mix(in oklab, …)` the Tailwind alpha bridge itself emits
+          // (`tailwind.config.ts:38`), so both layers resolve from one token.
+          'focus-within:border-border-focus/30',
+          'focus-within:[box-shadow:0_0_0_4px_color-mix(in_oklab,var(--fw-color-border-focus)_10%,transparent)]',
         )}
       >
         {/* Attachment trigger — REUSED UNCHANGED. */}

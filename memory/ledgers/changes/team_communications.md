@@ -904,3 +904,38 @@
   the artboard's `.track` gradient fill, `.send-on` gradient and `.send-off`
   `oklch(0.963 0.021 84)` are not among G-47's five bullets. The track keeps
   `bg-surface` and the disabled send keeps `bg-surface-sunken`.
+
+## 2026-09-07 — G-45 / D-05 the focus ring: artboard geometry, token colour
+
+- Change: the composer track's focus treatment is
+  `focus-within:border-border-focus/30` plus a single new outer shadow,
+  `0 0 0 4px color-mix(in oklab, var(--fw-color-border-focus) 10%,
+  transparent)`. It replaces `focus-within:border-accent-500
+  focus-within:ring-2 focus-within:ring-border-focus/30`.
+- Implements the owner's FROZEN call (`audit/DECISIONS.md` D-05): keep the
+  tokens, take the artboard's geometry. Not a preference of this session's.
+- The conflict was real and the fix turns on it. `Composer.dc.html:24`'s
+  `.track-on` glow is built from `oklch(0.648 0.149 149.6)` — accent-500 to the
+  byte — and `design-tokens.css:150-165` documents that light theme must not
+  use accent-500 for focus: ~2.67:1 against WCAG 2.2's 3:1 non-text minimum,
+  `fwFocusRing` had already hard-coded accent-600 for that reason, and 175 call
+  sites reaching for `ring-border-focus` were "drawing a ring nobody with low
+  vision could reliably find". `focus-within:border-accent-500` WAS one of
+  those 175. Copying the artboard literal would have re-opened a closed
+  accessibility defect.
+- The part the lane missed, and the reason this stays a token rather than a
+  chosen literal: it is THEME-DEPENDENT. Dark keeps accent-500 deliberately
+  (`design-tokens.css:512`) because there it is the lighter green and the one
+  that earns contrast. Any single literal is wrong in exactly one theme.
+- The inner 1px layer is the BORDER that was already on the element, not a
+  ring outside it. Same 1px of visual weight, and no 1px of layout shift the
+  moment the field takes focus. Only the 4px outer layer is a new shadow.
+- Written with `color-mix(in oklab, …)`, which is what the Tailwind alpha
+  bridge itself emits (`tailwind.config.ts:38`) — a channel-triplet or rgba
+  form against a raw `var()` token emits no rule at all, which is the trap
+  `AttachmentPreview`'s G-46 note already recorded.
+- OBSERVATION, not a deviation: the composite indicator (1px @ 30% + 4px @
+  10%) is lighter than the `ring-2 @ 30%` it replaces. D-05 states the glow
+  geometry "carries no contrast risk", and that is the frozen call, so it
+  ships as decided — but nothing here MEASURED the rendered result, and a
+  rendered contrast check of the focus indicator belongs to W8 alongside G-26.

@@ -493,3 +493,25 @@ real drop rather than two classes that happen to agree.
 Proven stronger, not weaker, against both defect shapes: with the override
 deleted it fails, and with the override present but still paying the safe-area
 term it also fails. The original assertion caught only the first.
+
+## 2026-09-07 — G-45 MessageComposer.focusRing.test.tsx
+
+10 tests, 5 failing pre-fix. Four of the five that pass before and after are
+deliberate: they prove the CONFLICT rather than the fix. The artboard's
+`.track-on` glow is parsed out of `Composer.dc.html` and compared against
+`--fw-color-accent-500` parsed out of `design-tokens.css` (on the oklch
+coordinates, since the artboard writes the alpha inside the parens); the focus
+token is asserted to be accent-600 in light and accent-500 in dark; and the
+frozen D-05 wording is asserted in `audit/DECISIONS.md`. If any of those move,
+the premise under this fix is re-checked automatically instead of silently
+outliving its reason.
+
+Token lookup reads ALL occurrences and indexes by file order — first is light,
+last is dark — because the theme split is the whole point here, not an
+inconvenience to de-duplicate away.
+
+The five that fail pre-fix cover what the component draws: no `accent-500`
+literal in any focus utility, both layers resolving from
+`var(--fw-color-border-focus)`, the artboard's 1px/30% + 4px/10% geometry, the
+`color-mix(in oklab, …)` form the Tailwind bridge emits, and the removal of the
+flat `ring-2`.
