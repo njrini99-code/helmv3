@@ -72,3 +72,22 @@
   collides on `golf_messages`' primary key and the action reports 23505 as the
   success it is, rather than duplicating. `sendFailed` is client-only and can
   never appear on a row that came from the database.
+
+## 2026-09-07 — attachment send fails closed; stale fetch guarded (G-21, G-13)
+
+- SHA: f5744c0bc.
+- G-21: `MessageComposer` branched `if (hasAttachments && onSendWithAttachments)
+  … else onSend(text)`, so a missing handler fell through to the text-only path
+  — message delivered, files silently dropped, success reported. It now refuses,
+  retains the draft and staged files, and surfaces the reason. Latent (the
+  production call site always passes the handler), which is why nothing covered
+  the branch.
+- G-13: `useGolfMessages` takes the conversation id as an argument rather than a
+  React key, so one hook instance owns one `messages` state across conversation
+  switches, and `fetchMessages` wrote unconditionally. A slow fetch for A
+  resolving after B opened wrote A's messages/loading/error into B's view. Added
+  `liveConversationIdRef`, assigned during render and compared after all three
+  awaited writes.
+- Why the ref is assigned during render, not in an effect: an effect leaves it
+  one render behind exactly while a conversation switch is in progress, which is
+  the only moment it matters.

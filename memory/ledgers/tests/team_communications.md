@@ -41,3 +41,17 @@
   sibling send-integrity suite's idiom and stated reason. Note: its first
   version searched the whole file and matched the fix's OWN docstring quoting
   the old expression; assertions now read a comment-stripped copy.
+
+## 2026-09-07 — G-21 fail-closed and G-13 staleness guarantees
+
+- SHA: f5744c0bc.
+- `MessageComposer.attachmentFailClosed.test.tsx` (5) — with files pending and
+  no handler: the text path is NOT called, the user is told nothing was sent,
+  and the draft plus attachment survive. Plain text sends and the
+  handler-supplied path are unaffected. Verified to fail 3-of-5 against the
+  fail-open branch.
+- `use-golf-messages.stale-fetch.test.ts` (8) — 4 source-level (the ref exists,
+  is assigned during render, and guards all three awaited writes, with the
+  messages setter and error branch checked specifically), plus 4 exercising the
+  staleness comparison directly, including the shared-prefix case that a
+  `startsWith` implementation would get wrong.
