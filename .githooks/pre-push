@@ -159,7 +159,32 @@ filtered() {
   printf '%s\n' "$@" | grep -E "$regex" || true
 }
 
-# --- 3. typecheck:fast (tsgo), falling back to tsc if tsgo is missing ---
+# --- 3. generated docs — fail the push if regenerating produces a diff --
+#        Deliberately FIRST. This is the only step whose failure is routine
+#        (touch a doc, the inventory goes stale) and it costs seconds, while
+#        the steps below cost 60-90s. Running it last meant every stale-docs
+#        push paid the full pass, then aborted, then paid it again after the
+#        one-line commit. Three of those in one session is 4+ wasted minutes.
+if matches '\.md$|^memory/registry\.yml$|^supabase/migrations/.*\.sql$' "${CHANGED_FILES[@]}"; then
+  echo "pre-push: docs/registry/migration changes — regenerating docs/generated/ to check for drift..."
+  GEN_OUT="$(npm run --silent knowledge:doc-inventory && npm run --silent knowledge:world-model && npm run --silent knowledge:feature-map && npm run --silent knowledge:entry-points 2>&1)"
+  GEN_STATUS=$?
+  if [ $GEN_STATUS -ne 0 ]; then
+    echo "✗ generated docs FAILED to regenerate"
+    echo "$GEN_OUT"
+    FAILED=1
+  elif ! git diff --quiet -- docs/generated/; then
+    echo "✗ generated docs were stale — regenerated; commit docs/generated and push again"
+    git diff --stat -- docs/generated/
+    FAILED=1
+  else
+    echo "✓ generated docs OK (already current)"
+  fi
+else
+  echo "pre-push: no docs/registry/migration changes — skipping generated-docs regen."
+fi
+
+# --- 4. typecheck:fast (tsgo), falling back to tsc if tsgo is missing ---
 #        Routed through scripts/serialize.mjs (HELM_GATE_NOWAIT=1: never
 #        wait behind another gate, just run) so a full project-wide
 #        typecheck never stacks memory with a heavy gate already running in
@@ -185,7 +210,7 @@ else
   echo "pre-push: no .ts/.tsx changes — skipping typecheck."
 fi
 
-# --- 4. eslint on the changed .ts/.tsx/.mjs files only -------------------
+# --- 5. eslint on the changed .ts/.tsx/.mjs files only -------------------
 LINT_FILES=()
 while IFS= read -r f; do
   [ -n "$f" ] && [ -f "$f" ] && LINT_FILES+=("$f")
@@ -205,7 +230,7 @@ else
   echo "pre-push: no changed .ts/.tsx/.mjs files — skipping eslint."
 fi
 
-# --- 5. lint:ratchet — full run, only when src/ or scripts/ changed -----
+# --- 6. lint:ratchet — full run, only when src/ or scripts/ changed -----
 if matches '^(src|scripts)/' "${CHANGED_FILES[@]}"; then
   echo "pre-push: src/ or scripts/ changed — running the full lint ratchet (~1 min)..."
   run_step "lint:ratchet" node scripts/lint-ratchet.mjs
@@ -213,7 +238,7 @@ else
   echo "pre-push: no src/ or scripts/ changes — skipping the lint ratchet."
 fi
 
-# --- 6. Review Gate mirror -------------------------------------------------
+# --- 7. Review Gate mirror -------------------------------------------------
 # Runs every step of .github/workflows/review-gate.yml (ast-grep, semgrep,
 # gitleaks, actionlint, yamllint, shellcheck, markdown + sql ratchets,
 # hadolint, env-secrets) on the files changed vs merge-base with origin/main,
@@ -221,27 +246,7 @@ fi
 # script `npm run gates:review` runs. Missing tools are reported SKIPPED.
 run_step "gates:review (Review Gate mirror)" node scripts/review-gate-local.mjs
 
-# --- 9. generated docs — fail the push if regenerating produces a diff --
-if matches '\.md$|^memory/registry\.yml$|^supabase/migrations/.*\.sql$' "${CHANGED_FILES[@]}"; then
-  echo "pre-push: docs/registry/migration changes — regenerating docs/generated/ to check for drift..."
-  GEN_OUT="$(npm run --silent knowledge:doc-inventory && npm run --silent knowledge:world-model && npm run --silent knowledge:feature-map && npm run --silent knowledge:entry-points 2>&1)"
-  GEN_STATUS=$?
-  if [ $GEN_STATUS -ne 0 ]; then
-    echo "✗ generated docs FAILED to regenerate"
-    echo "$GEN_OUT"
-    FAILED=1
-  elif ! git diff --quiet -- docs/generated/; then
-    echo "✗ generated docs were stale — regenerated; commit docs/generated and push again"
-    git diff --stat -- docs/generated/
-    FAILED=1
-  else
-    echo "✓ generated docs OK (already current)"
-  fi
-else
-  echo "pre-push: no docs/registry/migration changes — skipping generated-docs regen."
-fi
-
-# --- 10. docs:rules-current on rules/CLAUDE.md/AGENTS.md changes --------
+# --- 8. docs:rules-current on rules/CLAUDE.md/AGENTS.md changes ---------
 if matches '^\.claude/rules/.*\.md$|^CLAUDE\.md$|^AGENTS\.md$' "${CHANGED_FILES[@]}"; then
   run_step "docs:rules-current" npm run --silent docs:rules-current
 else

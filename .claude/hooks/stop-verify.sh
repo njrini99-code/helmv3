@@ -155,9 +155,35 @@ ADVISORY
 fi
 
 # ── MAIN PATH: this session touched something, or has an outstanding gap ───
-STATE=$(printf '%s%s%s' "$(git rev-parse HEAD 2>/dev/null)" \
-                        "$(git status --porcelain 2>/dev/null)" \
-                        "$(git diff --stat 2>/dev/null)" \
+# What this hash answers: "is this the same tree I already pushed back on?"
+# Two kinds of churn made it answer NO for a tree whose SOURCE had not moved,
+# re-arming a gate whose own demand produced the churn:
+#
+#   1. memory/ledgers/ — running the gates appends a timing row to
+#      gates.jsonl (scripts/serialize.mjs). The act this hook demands changed
+#      the tree state, which re-armed the hook, which demanded it again. A
+#      measured session: seven fires, ~four wasted full gate passes. Every
+#      escape made it worse — committing the ledger moved HEAD, reverting it
+#      after later commits produced a third unseen state.
+#   2. Untracked NON-SOURCE files — a worktree writing screenshots and a
+#      findings report re-armed the gate once per file, none of which is
+#      source. Note the qualifier: dropping untracked files wholesale is the
+#      wrong fix, because a brand-new .ts file is untracked too and IS work
+#      this gate exists to ask about. So untracked paths are filtered by
+#      SRC_RE rather than discarded, and enumerated with `git ls-files`
+#      instead of read off `git status`, whose `?? path` line is identical
+#      before and after an edit to the file it names.
+#
+# Neither is a source change, so neither belongs in the IDENTITY of a tree
+# state. Both are excluded here and only here: the verification demands still
+# come from stop-check.mjs, and the untracked-source advisory below still
+# reads full `git status`. Pathspecs are rooted with `:/` so this is correct
+# from any cwd inside the repo.
+LEDGERS=':(exclude)memory/ledgers'
+STATE=$(printf '%s%s%s%s' "$(git rev-parse HEAD 2>/dev/null)" \
+                          "$(git status --porcelain --untracked-files=no -- ':/' "$LEDGERS" 2>/dev/null)" \
+                          "$(git ls-files --others --exclude-standard -- ':/' "$LEDGERS" 2>/dev/null | grep -E "$SRC_RE")" \
+                          "$(git diff --stat -- ':/' "$LEDGERS" 2>/dev/null)" \
         | shasum | cut -d' ' -f1)
 # SESSION-SCOPED, not state-scoped. The hash alone was a cross-session
 # fail-open: session A gets nagged at tree state X, leaves the mark, and a
@@ -176,7 +202,13 @@ MARK="$GITDIR/claude-stop-verify-$SESSION_ID_SAFE-$STATE"
 # Already pushed back on this exact tree state IN THIS SESSION — let it go.
 [ -f "$MARK" ] && exit 0
 
-find "$GITDIR" -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 -delete 2>/dev/null
+# Housekeeping for marks left by sessions that are over — never for THIS
+# session's own. Without the exclusion a session running longer than four
+# hours had its marks deleted out from under it and was nagged again at a
+# state it had already been nagged at, which is precisely what the message
+# below promises will not happen.
+find "$GITDIR" -maxdepth 1 -name 'claude-stop-verify-*' -mmin +240 \
+     ! -name "claude-stop-verify-$SESSION_ID_SAFE-*" -delete 2>/dev/null
 : > "$MARK"
 printf '%s\n' "$(git status --porcelain 2>/dev/null | grep -E "$SRC_RE" | awk '{print $NF}' | sort)" > "$BASE"
 
@@ -289,7 +321,10 @@ command's exit code, so a failing suite reads as success.
 Never delete, skip, or weaken a test to reach green.${SERVER_ACTION}${GAP_SECTION}
 
 If you already ran these and they passed, say so with the exit codes and stop —
-this will not fire again for this tree state. If a gate is genuinely unrunnable
+in this session this will not fire again until a tracked source file changes.
+(A gates-ledger append or an untracked scratch file is not one. The mark is
+session-scoped by design, so a NEW session may ask once more.) If a gate is
+genuinely unrunnable
 here (supabase start needs Docker, which this machine lacks), name that limit
 and stop.
 EOF

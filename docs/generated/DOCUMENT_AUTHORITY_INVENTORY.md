@@ -64,7 +64,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
-| `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 6 | - |
+| `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 7 | - |
 | `AGENTS.md` | current | yes | - | yes | 0 | 17 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 8 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
@@ -262,7 +262,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/shipping.md` | current | - | - | yes | 23 | 7 | - |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 14 | 17 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 14 | 18 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 7 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 1 | 0 | - |

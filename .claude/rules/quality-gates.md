@@ -50,7 +50,15 @@ violation always fails regardless of baseline.
 | E2E | Playwright | `e2e/**` | PR smoke (`ci.yml`'s `pr-smoke-a11y` job) is gated on `frontend`; the full suite is manual (`workflow_dispatch`, `full_e2e=true`) |
 
 `npm test` runs unit + unit-dom only, the fast loop. `npm run test:all` runs
-every project.
+every project. `npm run test:file -- <paths>` is the scoped inner loop — same
+two projects, no serialize queue, for iterating on one file before the gate.
+
+### Running a gate takes longer than a Bash call
+A full local pass is 8-12 minutes and `scripts/serialize.mjs` queues it behind
+gates in sibling worktrees (`HELM_GATE_SLOTS`, default 2), while the Bash tool
+times out at 120s. Background the run and read its log; never poll it with
+`sleep`. `typecheck` and `typecheck:fast` set `--max-old-space-size=8192`
+themselves — `tsc` costs ~2.85 GB here and dies at the default heap.
 
 ### Lint
 `npm run lint` is the gate; `npm run lint:ratchet` enforces the count.
