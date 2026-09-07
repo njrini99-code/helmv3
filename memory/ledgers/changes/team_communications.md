@@ -120,3 +120,21 @@
   `withOneTransportRetry` and `retryMessage` depend on is preserved exactly.
 - Why failing closed here is not a regression: G-19 landed first, so the caller
   retains the optimistic bubble and offers Retry instead of deleting it.
+
+## 2026-09-07 — Enter no longer sends mid-IME-composition (G-23)
+
+- `MessageComposer`'s Enter-to-send treated every unshifted Enter as a send. For
+  a Japanese/Chinese/Korean/Vietnamese IME, Enter is the COMMIT key, so
+  confirming a candidate mid-sentence sent the fragment and cleared the box.
+- Three signals are read, because no single one covers every engine: the
+  standard `nativeEvent.isComposing` (Chromium, Gecko), the legacy
+  `keyCode === 229` (what some Android WebViews report instead), and a ref
+  driven by compositionstart/compositionend for WebKit, which ends composition
+  BEFORE dispatching the commit keydown.
+- The ref is cleared on a macrotask, not synchronously. That is deliberate: it
+  swallows exactly the one keydown WebKit dispatches after compositionend, and
+  nothing a human could type in the next turn of the event loop.
+- The guard RETURNS rather than calling `preventDefault()` — consuming the event
+  would stop the IME committing the candidate at all.
+- Only reachable with a fine pointer, since a touch keyboard already falls
+  through to a native newline (the `isPointerFine` branch above it).

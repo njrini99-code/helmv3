@@ -70,6 +70,31 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const attachmentIdCounter = useRef(0);
+  /**
+   * True while an IME (Japanese, Chinese, Korean, Vietnamese …) is composing
+   * into the textarea, and for the remainder of the tick in which composition
+   * ended (G-23).
+   *
+   * Enter is the key an IME uses to COMMIT a candidate, so an unguarded
+   * Enter-to-send fires mid-word and sends a fragment. The guard reads three
+   * signals because no single one covers every engine:
+   *
+   *   • `nativeEvent.isComposing` — the standard, and correct on Chromium and
+   *     Gecko, which fire the commit keydown while composition is still open.
+   *   • `keyCode === 229` — the legacy signal the same engines set, and the
+   *     only one some Android WebViews set. Deprecated, and the reason it is
+   *     still here: it is what an engine that omits `isComposing` reports.
+   *   • this ref — WebKit ends composition BEFORE dispatching the commit
+   *     keydown, so on Safari the other two are already false by then. The ref
+   *     is therefore cleared on a macrotask rather than synchronously, which
+   *     swallows exactly that one keydown and nothing a human could type next.
+   *
+   * Note the neighbouring `isPointerFine` guard means this only matters on a
+   * hardware keyboard — which is also the only place an IME candidate window
+   * and Enter-to-send coexist.
+   */
+  const isComposingRef = useRef(false);
+  const compositionClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Enter-to-send is a HARDWARE-KEYBOARD affordance, and treating it as
    * universal cost phone users the ability to write a paragraph.
@@ -139,6 +164,9 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+      }
+      if (compositionClearTimerRef.current) {
+        clearTimeout(compositionClearTimerRef.current);
       }
       for (const attachment of pendingAttachmentsRef.current) {
         if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
@@ -242,10 +270,36 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     setSending(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleCompositionStart = () => {
+    if (compositionClearTimerRef.current) {
+      clearTimeout(compositionClearTimerRef.current);
+      compositionClearTimerRef.current = null;
+    }
+    isComposingRef.current = true;
+  };
+
+  const handleCompositionEnd = () => {
+    // Deferred, not synchronous — see isComposingRef.
+    if (compositionClearTimerRef.current) clearTimeout(compositionClearTimerRef.current);
+    compositionClearTimerRef.current = setTimeout(() => {
+      isComposingRef.current = false;
+      compositionClearTimerRef.current = null;
+    }, 0);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Touch keyboards fall through to the textarea's native newline; the send
     // button is the only send affordance there. See `isPointerFine` above.
     if (!isPointerFine) return;
+    // An IME is mid-word: this Enter commits a candidate, it does not send
+    // (G-23). See isComposingRef for why all three signals are read.
+    if (
+      isComposingRef.current ||
+      (e.nativeEvent as KeyboardEvent).isComposing ||
+      e.keyCode === 229
+    ) {
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -290,6 +344,8 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           value={message}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           placeholder="Type a message…"
           rows={1}
           maxLength={MESSAGE_MAX}

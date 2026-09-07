@@ -72,3 +72,16 @@
   successful send does no extra round trip. Verified to fail 6-of-7 against the
   unconditional short-circuit. The harness sequences INSERT and the later SELECT
   on the SAME table, which a table-keyed mock cannot.
+
+## 2026-09-07 — IME composition (G-23)
+
+- `MessageComposer.imeComposition.test.tsx` (8) — each of the three signals is
+  pinned SEPARATELY, so an engine-specific fix cannot pass the suite: native
+  `isComposing`, `keyCode === 229`, an open composition with neither, and the
+  WebKit compositionend-then-keydown order. Plus: the guard is not sticky (the
+  next Enter sends), it does not defaults the composing Enter (the IME still
+  gets its commit key), an ordinary Enter is unchanged, and Shift+Enter stays a
+  newline during composition.
+- Verified to fail 5-of-8 against the unguarded handler. The pre-existing
+  `MessageComposer.enterKey.test.tsx` passed green over this whole contract
+  without exercising it — the shape `.claude/rules/quality-gates.md` warns about.

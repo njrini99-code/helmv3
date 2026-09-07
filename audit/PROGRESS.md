@@ -47,7 +47,10 @@ it is the owner's, through `db-apply`.
       conversation + sender + content before claiming success; invisible row or failed
       lookup fails closed. Safe only because G-19 landed first — the caller now retains
       the message and offers Retry.
-- [ ] **G-23** no IME composition guard on Enter-to-send
+- [x] **G-23** no IME composition guard on Enter-to-send. Guards on three signals
+      (`nativeEvent.isComposing`, legacy `keyCode === 229`, and a
+      compositionstart/end ref cleared on a macrotask for WebKit's
+      compositionend-before-keydown order). 8 tests, 5 verified failing pre-fix.
 - [ ] **G-40** group unread is shared, not per-viewer. Uses the existing
       `participants.last_read_at` — no new column (see `A1-RESOLUTION.md` §3)
 
