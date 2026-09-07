@@ -1872,6 +1872,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/stats-data.test.ts",
         "pattern": "src/app/golf/actions/__tests__/stats-data.test.ts",
         "category": "tests"
@@ -20920,6 +20925,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "e2e/messages.spec.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts"
         }
       ]
     },
