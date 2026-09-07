@@ -173,3 +173,8 @@
 {"ts":1788818346835,"gate":"typecheck","waitMs":1,"runMs":62065,"slots":2}
 {"ts":1788818430118,"gate":"test","waitMs":1,"runMs":416393,"slots":2}
 {"ts":1788818850578,"gate":"build","waitMs":0,"runMs":171746,"slots":2}
+{"ts":1788820179053,"gate":"typecheck","waitMs":0,"runMs":83655,"slots":2}
+{"ts":1788820284185,"gate":"test:run","waitMs":0,"runMs":381091,"slots":2}
+{"ts":1788820672306,"gate":"typecheck","waitMs":1,"runMs":7125,"slots":2}
+{"ts":1788820701357,"gate":"test:run","waitMs":0,"runMs":367854,"slots":2}
+{"ts":1788821120451,"gate":"build","waitMs":0,"runMs":341481,"slots":2}

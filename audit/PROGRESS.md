@@ -357,9 +357,20 @@ it is the owner's, through `db-apply`.
   - **The sides.** Once the rows went flat, nothing carried an edge: the list
     ran to the page padding with only a hairline between rows, so a grouped
     set of conversations had no boundary at all. Each triage section's `<ul>`
-    is now a grouped card -- `rounded-fw-lg bg-surface` carrying
-    `var(--fw-shadow-card), var(--fw-shadow-soft)`, two ramp tokens composed,
-    no literal. The depth moved UP one level: it belongs to the list, never
+    is now a grouped card. **Corrected in the same pass, after the owner
+    rejected the first attempt as "doing too much":** it shipped as
+    `rounded-fw-lg` carrying `--fw-shadow-card` composed over
+    `--fw-shadow-soft`, and both halves overshot in a way a token comment names
+    outright. `--fw-radius-lg` is 28px and reserved for "modals, sheets, hero
+    plinths, glass bars"; `--fw-radius-card` is the one whose comment says "THE
+    card radius". And `card` and `soft` each carry a `0 1px 2px` CONTACT layer,
+    so stacking them doubled it to roughly 0.11 at 2px blur — a hard dark edge
+    at the card's foot, which is the "resting on" tell and the opposite of
+    floating. It is now `rounded-card bg-surface shadow-raise`: ONE radius
+    token, ONE shadow token, whose own comment names the state that was asked
+    for — "popovers / floating glass" — and a mapped utility rather than a
+    bracket, because the complaint was too much machinery. The depth moved UP
+    one level: it belongs to the list, never
     back onto the row, so the one-cadence fix above is preserved -- every row
     is still `rounded-none border-0 p-3` with no shadow of its own, and the
     inner container is pinned to the avatar's height (`flex h-12 items-center
@@ -457,6 +468,57 @@ times for reading choppy.
   motion with a reduced-motion collapse.
 
 ---
+
+## W10 — Ground, tint and the day-chip collision (owner review round 5)
+Two owner messages on live screenshots: "Add some color and depth to this. Some
+like shadow. And the top looks kinda rough. Not centered and spacing throughout
+isn't very consistent. The avatars should have some color", then "The avatars
+should be directly beside the message and messages should never appear like
+this, with the lettering popping it over."
+
+Note on the screenshots: they were taken against a stale `next start` build left
+running by an earlier gate pass, so the meta-row complaint ("lettering popping
+it over" — the timestamp sitting BESIDE the bubble) was already fixed on this
+branch by G-26 and is not re-fixed here. The dev server now runs from this
+worktree with HMR so the owner is reviewing what is actually committed.
+
+- [x] **The flatness was the GROUND, not the fill.** Scroll region `bg-surface`
+      (0.984) under an incoming bubble of `bg-elevated` (0.993) — nine
+      thousandths, which no shadow can rescue. Region → `bg-canvas` (0.953),
+      bubble → `bg-surface`. That is the 0.031 step G-49/F14's shadows were
+      drawn against, and `bg-surface` is independently the right fill:
+      `Bubbles.dc.html:20` / `Thread.dc.html:57` paint the bubble a gradient
+      whose mean is 0.9845 — `--fw-color-surface` to three places — while
+      `elevated` overshoots the ramp into the "cold white sheet"
+      `design-tokens.css:118` explicitly bans.
+- [x] **`Avatar` gains an opt-in `tone="accent"`**; default `neutral` unchanged,
+      so no other caller in the app moves. `bg-accent-100` / `text-accent-700`
+      are byte-identical to what `Group.dc.html:28,49` and `Thread.dc.html:35`
+      fill a person's avatar with. Applied to the 1:1 header avatar, the
+      incoming message avatar, and the group stack's FIRST face only — the
+      artboard leaves the ones behind it `surface-sunken`, which is the default.
+- [x] **The incoming avatar renders on every incoming row, not groups only.**
+      The gate was argued on width; measured, the column costs nothing (390px
+      screen − 32px padding − 40px column = 318px, still clear of the 288px
+      bubble cap). Wrong premise, gate removed.
+- [x] **The day chip is inline, which is why it can no longer collide.**
+      G-50a generalised `Thread.dc.html:51`'s floating chip — a container-pinned
+      current-day indicator — into a per-boundary separator, so it painted over
+      the next group's sender name ("TODAY" over "Alexis Bennett" in the
+      screenshot). `Group.dc.html:44`, the artboard matching a group thread,
+      draws the same chip in flow and centred. Material unchanged (DECISIONS.md
+      froze the glass); only placement moved.
+- [x] **Header**: `<ArrowLeft>` moved into `Button`'s `leftIcon` slot — the
+      primitive's sanctioned API for an icon beside a label — and the title
+      column took `ml-1`, `Group.dc.html:32`'s `margin-left: 4px` on top of the
+      row's gap. The artboard's asymmetric `padding: 14px 14px 12px 8px` was
+      deliberately NOT ported: it exists because its back affordance is a bare
+      44px icon box, and ours is a labelled button with `-ml-2`.
+- [x] `MessageThreadPane.dayChip.test.ts` re-anchored under G-49a — inline
+      assertions that read `Group.dc.html:44`'s literal out of the artboard,
+      plus a standing guard that the absolute positioning does not return. Its
+      `stripComments` took the whole-block strip `unreadLift` already had.
+- [ ] **Rendered check still owed** (W8). Nothing in W10 measured a pixel.
 
 ## DEFERRED — deliberately not in this PR, with the reason
 Scaling scope down is the owner's call, so these are named rather than silently dropped.

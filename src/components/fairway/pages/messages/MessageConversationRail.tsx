@@ -644,7 +644,24 @@ export function MessageConversationRail({
             <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
               Unread
             </p>
-            <ul className="divide-y divide-border-subtle overflow-hidden rounded-fw-lg bg-surface [box-shadow:var(--fw-shadow-card),var(--fw-shadow-soft)]">
+            {/* ONE radius token, ONE shadow token — the ramp already decided both.
+                The first attempt composed `--fw-shadow-card` over
+                `--fw-shadow-soft` (five layers) on `rounded-fw-lg`, and both
+                halves were over-reach a token comment names outright:
+                `--fw-radius-lg` is 28px for "modals, sheets, hero plinths,
+                glass bars", while `--fw-radius-card` says "THE card radius";
+                and stacking card over soft doubles their `0 1px 2px` CONTACT
+                layer to roughly 0.11 at 2px blur, which is a hard dark edge at
+                the card's foot. A contact shadow is the "resting on" tell —
+                the opposite of floating.
+                `--fw-shadow-raise`'s own comment is the answer: "popovers /
+                floating glass". Its contact layer is a whisper (0.07) and its
+                ambient is wide enough (18px/44px) to have no visible edge, and
+                `shadow-raise` is a real mapping in tailwind.config.ts — unlike
+                `shadow-card`, which is the legacy cool-grey trap the suite
+                below guards. Plain utility, no bracket: the complaint was too
+                much machinery, so the fix should not read as more of it. */}
+            <ul className="divide-y divide-border-subtle overflow-hidden rounded-card bg-surface shadow-raise">
               {unread.map((conv, i) => (
                 <li
                   key={conv.id}
@@ -670,7 +687,7 @@ export function MessageConversationRail({
               <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
                 {label}
               </p>
-              <ul className="divide-y divide-border-subtle overflow-hidden rounded-fw-lg bg-surface [box-shadow:var(--fw-shadow-card),var(--fw-shadow-soft)]">
+              <ul className="divide-y divide-border-subtle overflow-hidden rounded-card bg-surface shadow-raise">
                 {group.map((conv, i) => (
                   <li
                     key={conv.id}

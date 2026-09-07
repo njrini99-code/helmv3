@@ -52,6 +52,16 @@ const config = read('tailwind.config.ts');
  */
 const stripComments = (src: string) =>
   src
+    // Block comments removed WHOLE, before the line filter. A line filter alone
+    // is not enough: a JSX `{/* … *\u002f}` opens on a line that trims to `{`,
+    // so neither the opener nor the prose lines under it match any prefix and
+    // the entire body leaks into the searched text. That is not hypothetical —
+    // it broke two negative assertions here the moment a JSX comment explained
+    // which radius and shadow the card avoids, which is precisely the failure
+    // mode this helper's docstring already describes.
+    // `MessageThreadPane.bubbleWidth.test.ts` strips blocks this way for the
+    // same reason; the two now agree.
+    .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
     .filter((line) => {
       const t = line.trim();
@@ -125,13 +135,32 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
     // inside them stay identical boxes, so the cadence the flattening bought
     // survives. A shadow on the ROW is what this whole suite forbids.
     const cards = railCode.match(
-      /divide-y divide-border-subtle overflow-hidden rounded-fw-lg bg-surface \[box-shadow:var\(--fw-shadow-card\),var\(--fw-shadow-soft\)\]/g,
+      /divide-y divide-border-subtle overflow-hidden rounded-card bg-surface shadow-raise/g,
     ) ?? [];
     expect(cards.length).toBe(2);
-    // Two tokens composed, not a hand-typed shadow: `card` carries the lit top
-    // edge that makes a cream surface read as lit-from-above, `soft` carries
-    // the ambient that actually lifts it off the champagne. `card` alone is
-    // the resting whisper and the owner measured it as still too flat.
+    // RE-ANCHORED onto ONE radius token and ONE shadow token. The first
+    // attempt composed `--fw-shadow-card` over `--fw-shadow-soft` on
+    // `rounded-fw-lg`, and the owner rejected it as "doing too much" — so the
+    // count assertion above is what still does the work here, and these two
+    // pins are what keep the composite from creeping back:
+    //
+    //   • `rounded-fw-lg` is 28px and its token comment reserves it for
+    //     "modals, sheets, hero plinths, glass bars"; `--fw-radius-card`'s
+    //     says "THE card radius". A list card taking the sheet radius was a
+    //     token misuse, not a taste call.
+    //   • `card` and `soft` each carry a `0 1px 2px` CONTACT layer. Stacked
+    //     they read ~0.11 at 2px blur — a hard dark edge at the card's foot,
+    //     which is the "resting on" tell and the opposite of floating.
+    //     `--fw-shadow-raise`'s own comment names the state the owner asked
+    //     for: "popovers / floating glass".
+    expect(railCode).not.toContain('rounded-fw-lg');
+    expect(railCode).not.toContain('var(--fw-shadow-soft)');
+    expect(tokens).toContain('--fw-radius-card: 1.25rem;');
+    expect(tokens).toMatch(/--fw-shadow-raise:[\s\S]*?floating glass/);
+    // A mapped utility, not a bracket — `shadow-raise` resolves to the fw
+    // token in tailwind.config.ts. The prohibition below stands regardless:
+    // no hand-typed colour may enter a box-shadow on this surface.
+    expect(config).toContain("'raise':         'var(--fw-shadow-raise)'");
     expect(railCode).not.toMatch(/box-shadow:[^'"`\]]*(oklch|rgba?)\(/);
     // …and the unread row is a step ABOVE that card, not a box on the canvas.
     const rowStart = railCode.indexOf("!isSelected && hasUnread &&");

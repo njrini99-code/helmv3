@@ -96,10 +96,23 @@
   can be minted from the existing ramp rather than a new colour. The bubbleDepth
   suite now proves that equality by parsing both sides rather than asserting it.
 - THE RAIL'S DEPTH IS ON THE LIST, NEVER BACK ON THE ROW. Each triage section is
-  a raised card — `rounded-fw-lg bg-surface` with `--fw-shadow-card` composed
-  over `--fw-shadow-soft` (the lit top edge that makes cream read as lit from
-  above, plus the ambient that actually lifts it; `card` alone was still too
-  flat) — and the rows inside stay identical boxes with a hairline between them.
+  a raised card — `rounded-card bg-surface shadow-raise` — and the rows inside
+  stay identical boxes with a hairline between them.
+  **Superseded within the same day, and the correction is the durable part.**
+  This first shipped as `rounded-fw-lg` with `--fw-shadow-card` composed over
+  `--fw-shadow-soft`, on the reasoning that `card` carries the lit top edge and
+  `soft` carries the ambient. The owner rejected it — "you're doing too much
+  with the cards, just make it look like it's floating" — with a zoomed
+  screenshot of the corner showing a blob radius and a hard dark band at the
+  card's foot. Both halves were over-reach a token comment names outright, so
+  this generalises: `--fw-radius-lg` (28px) is reserved for "modals, sheets,
+  hero plinths, glass bars" while `--fw-radius-card` says "THE card radius"; and
+  EVERY tier in the shadow ramp already contains its own `0 1px 2px` contact
+  layer, so composing two tiers doubles it to ~0.11 at 2px blur — a hard edge,
+  which is the "resting on" tell and the exact opposite of floating.
+  `--fw-shadow-raise`'s comment names the state that was asked for: "popovers /
+  floating glass". Taken as the mapped `shadow-raise` utility, not a bracket,
+  because the complaint was about machinery.
   This is the whole point: the cadence the flattening bought survives, because
   nothing about a row changes when it is unread. A shadow or radius on the ROW
   would undo it, and the suite now asserts the row's own class list carries
@@ -1534,3 +1547,98 @@
   geometry "carries no contrast risk", and that is the frozen call, so it
   ships as decided — but nothing here MEASURED the rendered result, and a
   rendered contrast check of the focus indicator belongs to W8 alongside G-26.
+
+## 2026-09-07 — W10 · thread ground, avatar tint, inline day chip (owner review round 5)
+
+Owner review of a live group thread: "Add some color and depth to this. Some
+like shadow. And the top looks kinda rough. Not centered and spacing throughout
+isn't very consistent. The avatars should have some color" — then, on a DM
+screenshot, "The avatars should be directly beside the message and messages
+should never appear like this, with the lettering popping it over."
+
+Four changes, every value already a token or an artboard literal.
+
+- **The thread ground was the flatness, not the bubble fill.** The scroll region
+  painted `bg-surface` (0.984) and the incoming bubble painted `bg-elevated`
+  (0.993): nine thousandths of separation, which no shadow can rescue. The
+  artboards float the bubbles over the canvas. The region is `bg-canvas` (0.953)
+  now and the incoming bubble is `bg-surface` — the 0.031 step the G-49/F14
+  shadows were drawn against. `bg-surface` is also the correct fill on its own
+  terms: `Bubbles.dc.html:20` and `Thread.dc.html:57` both paint the bubble
+  `linear-gradient(180deg, oklch(0.989 …), oklch(0.980 …))`, mean 0.9845 —
+  `--fw-color-surface` to three places, and inside the gradient's range rather
+  than a step past its bright stop. `--fw-color-elevated` overshoots the whole
+  ramp, and `design-tokens.css:118` is pointed about exactly that: surface is
+  "warm CREAM, not white … never by being a cold white sheet". A white slab is
+  what it shipped as. The flat token at the gradient's mean, not the gradient —
+  same G-50b logic, and no new machinery two rounds after the owner's "you're
+  doing too much with the cards".
+- **`Avatar` gains an opt-in `tone`.** Default `neutral` is unchanged, so every
+  existing caller in the app renders exactly what it renders today. `accent`
+  fills `bg-accent-100` over `text-accent-700` and draws NO ring — all three
+  artboard specimens are fill-and-ink only, and inside an `AvatarGroup` the
+  stack already draws its own cutout rim, so a second inset ring under it reads
+  as a muddy double edge rather than as depth. Those are `oklch(0.939 0.045
+  150)` and `oklch(0.488 0.124 150)` — byte for byte what `Group.dc.html:28,49`
+  and `Thread.dc.html:35` fill a person's initials avatar with. Messages opts
+  in: the 1:1 header avatar, the incoming message avatar, and the FIRST face of
+  the group stack (`Group.dc.html:28` leaves the ones behind it
+  `oklch(0.963 0.021 84)` = `surface-sunken`, which is the neutral default). One
+  hue, helm green, so the "one accent, spent on meaning only" discipline holds.
+  OPEN FOR THE OWNER: whether accent should become the primitive's default
+  app-wide is a call this lane deliberately did not make.
+- **The incoming avatar now renders on every incoming row, not groups only.**
+  The gate was argued on width — the column "cost 40px on every single line of
+  the narrowest screen". Measured, it costs nothing: 390px screen, 16px padding
+  a side, so 358px of row; the 32px column plus `gap-2` leaves 318, still clear
+  of the 288px bubble cap, which is what actually binds. The premise was wrong,
+  so the gate went.
+- **The day chip is inline (`Group.dc.html:44`), not absolute.** G-50a read
+  `Thread.dc.html:51`'s authored "the day chip FLOATS over the thread on glass"
+  as a rule for every day boundary. It is not — Thread positions that chip
+  against the SCROLL CONTAINER at `top: 12px`, one chip pinned at the head of
+  the pane, i.e. a current-day indicator. Ported onto each boundary it became an
+  absolute element over a zero-height row and painted on top of the sender name
+  of the group below it, which is the "TODAY" over "Alexis Bennett" collision in
+  the owner's screenshot. `Group.dc.html:44` is the artboard matching a group
+  thread and draws the same chip `display: flex; justify-content: center;
+  padding: 0 0 16px 0`. The chip's MATERIAL is still Thread's glass — DECISIONS.md
+  froze that and the owner did not object to it; only the placement moved.
+- **Header**: the back control's `<ArrowLeft>` moved from a bare child to the
+  primitive's `leftIcon` slot (`button.tsx:179`). This is a real defect, not a
+  tidy-up: `button.tsx`'s CHILDREN CONTRACT warns that children are wrapped in a
+  single bare `<span>` and that sibling elements "get silently split across
+  lines by CSS anonymous-box rules", and the owner's screenshot shows exactly
+  that — the arrow rendering on its own line ABOVE the "Messages" label, which
+  is what made the bar read two rows tall and off-centre. The title column took
+  `ml-1` — `Group.dc.html:32`'s
+  `margin-left: 4px` on top of the row's 10px gap, the one header spacing number
+  the artboard states independently of its own back-affordance geometry.
+
+Tests: `MessageThreadPane.dayChip.test.ts` re-anchored under G-49a — the
+float assertions are replaced by inline ones that read `Group.dc.html:44`'s
+literal out of the artboard first, plus a standing guard that the absolute
+positioning does not come back. Its `stripComments` helper also picked up the
+whole-block strip the `unreadLift` suite already has: a JSX comment opens `{/*`,
+which trims to start with `{`, so the line filter alone let comment bodies
+satisfy assertions.
+
+REGISTRY GAP, stated rather than papered over: `src/components/fairway/
+controls/avatar.tsx` maps to NO feature — `knowledge:map` returns
+`impactedFeatures: []` for it. It is a shared primitive with no owning doc, and
+routing it into team-communications would be wrong (it is not a messages file).
+The `tone` prop is recorded here because Messages is its only caller today; if a
+second surface adopts it, the primitive needs a home in `memory/registry.yml`.
+
+ALSO IN THIS COMMIT, carried over from the previous round and not separately
+committed: the rail's two triage cards moved from
+`rounded-fw-lg [box-shadow:var(--fw-shadow-card),var(--fw-shadow-soft)]` to
+`rounded-card shadow-raise` — one radius token and one shadow token. Composing
+two tiers doubled the `0 1px 2px` contact layer each already carries into a hard
+dark edge at ~0.11 opacity, which is the "resting on" tell and the opposite of
+floating; `--fw-shadow-raise`'s own comment in `design-tokens.css` reads
+"popovers / floating glass".
+
+NOT VERIFIED HERE: nothing in this entry measures a rendered pixel. The dev
+server is up for the owner's own review; a rendered check stays W8's.
+

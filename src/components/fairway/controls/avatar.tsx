@@ -34,6 +34,16 @@ export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chil
   status?: AvatarStatus;
   /** Square-with-soft-corners instead of a circle. */
   square?: boolean;
+  /**
+   * Fallback tint. `neutral` (default) is the warm matte the whole app ships
+   * today. `accent` is the green-tinted identity chip the artboards draw for a
+   * person: `Group.dc.html:28,49` and `Thread.dc.html:35` all fill an initials
+   * avatar `oklch(0.939 0.045 150)` with `oklch(0.488 0.124 150)` ink — which
+   * are `--fw-color-accent-100` and `--fw-color-accent-700` byte for byte.
+   * Opt-in, so the default stays exactly what every existing caller renders;
+   * whether it should BECOME the default is the owner's call, not this PR's.
+   */
+  tone?: 'neutral' | 'accent';
   /** Override the auto-generated initials. */
   fallback?: ReactNode;
   /**
@@ -89,7 +99,7 @@ export function initialsFromName(name?: string | null): string {
 }
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
-  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, ...props },
+  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, tone = 'neutral', ...props },
   ref,
 ) {
   const [errored, setErrored] = useState(false);
@@ -109,8 +119,15 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
       <span
         className={cn(
           'flex h-full w-full select-none items-center justify-center overflow-hidden',
-          'bg-surface-sunken text-text-secondary font-fw-sans font-semibold uppercase',
-          'ring-1 ring-inset ring-border-subtle',
+          'font-fw-sans font-semibold uppercase',
+          // Accent carries NO ring. All three artboard specimens
+          // (`Group.dc.html:28,49`, `Thread.dc.html:35`) are fill-and-ink only,
+          // and inside an AvatarGroup the stack already draws its own
+          // `ring-2 ring-<surface>` cutout rim — a second inset ring under it
+          // reads as a muddy double edge rather than as depth.
+          tone === 'accent'
+            ? 'bg-accent-100 text-accent-700'
+            : 'bg-surface-sunken text-text-secondary ring-1 ring-inset ring-border-subtle',
           square ? 'rounded-fw-md' : 'rounded-full',
           fwTransition,
           className,

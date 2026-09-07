@@ -235,10 +235,24 @@ Anything that reintroduces a per-row box — a radius, a shadow, a gap, a
 taller unread row — brings the uneven cadence back.
 
 **Depth belongs to the list, not the row.** Each triage section is a raised
-card (`rounded-fw-lg bg-surface`, `--fw-shadow-card` composed over
-`--fw-shadow-soft`); the rows inside it are flat and identical. That is what
-lets the surface read as lifted without the rhythm depending on which rows are
-unread. The unread fill is `bg-elevated` — one step above the card it sits in.
+card (`rounded-card bg-surface shadow-raise`); the rows inside it are flat and
+identical. That is what lets the surface read as lifted without the rhythm
+depending on which rows are unread. The unread fill is `bg-elevated` — one step
+above the card it sits in.
+
+**One radius token, one shadow token — and the ramp already decided which.**
+This shipped once as `rounded-fw-lg` carrying `--fw-shadow-card` composed over
+`--fw-shadow-soft`, and was rejected as "doing too much". Both halves are
+over-reach a token comment names outright, so the rule generalises past this
+surface: `--fw-radius-lg` (28px) is reserved for "modals, sheets, hero plinths,
+glass bars" and `--fw-radius-card` (20px) says "THE card radius", so a list card
+taking the sheet radius is a token misuse rather than a taste call; and **every
+tier in the shadow ramp already contains its own contact layer**, so composing
+two tiers doubles it — `card` + `soft` reads ~0.11 at 2px blur, a hard dark edge
+at the card's foot. A contact shadow is the "resting on" tell, which is the
+opposite of floating. If a surface should float, take the tier whose comment
+says so (`--fw-shadow-raise` — "popovers / floating glass"), and take it as the
+mapped `shadow-raise` utility rather than a `[box-shadow:…]` bracket.
 
 **Bubble fills are roles, and the roles are not interchangeable.** The incoming
 bubble is `bg-elevated`, not `bg-surface-sunken`. Sunken is the WELL role (input
@@ -443,6 +457,50 @@ inline the four `fwPress` utilities and cite `_internal.ts:62-63` rather than
 importing it: nothing outside `controls/` imports that module, and the
 underscore is announcing a boundary. `messages.motionAndBusy.test.ts` pins both
 halves against `_internal.ts` itself so the copy cannot drift from its source.
+
+## Depth comes from the GROUND, and identity from one tint (2026-09-07)
+
+Three rounds of "it looks flat" were answered by changing bubble shadows. The
+shadows were fine. The thread's scroll region painted `bg-surface` (0.984) and
+the incoming bubble painted `bg-elevated` (0.993): a bubble nine thousandths off
+its own background, which no shadow can rescue. The artboards float bubbles over
+the CANVAS. The region is `bg-canvas` (0.953) and the incoming bubble is
+`bg-surface` — a 0.031 step, which is what `--fw-shadow-card` was drawn against.
+
+`bg-surface` is also the correct bubble fill on its own terms. `Bubbles.dc.html:20`
+and `Thread.dc.html:57` paint it `linear-gradient(180deg, oklch(0.989 0.013 87),
+oklch(0.980 0.017 86))`, mean 0.9845 — `--fw-color-surface` to three places, and
+inside the gradient's range. `--fw-color-elevated` overshoots the whole ramp, and
+`design-tokens.css:118` is pointed about it: surface is "warm CREAM, not white …
+never by being a cold white sheet (we keep coming back to this: no white cards)".
+
+Avatar identity is one opt-in prop, not a palette. `Avatar` takes
+`tone?: 'neutral' | 'accent'`, default `neutral`, so every existing caller across
+the app is untouched. `accent` is `bg-accent-100` over `text-accent-700` —
+`oklch(0.939 0.045 150)` and `oklch(0.488 0.124 150)`, byte for byte what
+`Group.dc.html:28,49` and `Thread.dc.html:35` draw. Messages opts in on the 1:1
+header avatar, the incoming message avatar, and the group stack's FIRST face;
+the faces behind it stay neutral because the artboard fills them
+`oklch(0.963 0.021 84)`, which is `surface-sunken` — the default already. One
+hue, so "one accent, spent on meaning only" survives. Whether accent should
+become the primitive's app-wide default is an open question for the owner, not
+a call this lane made.
+
+The incoming avatar renders on every incoming row, 1:1 included. It was gated to
+groups on a width argument that does not survive measurement: 390px screen, 16px
+padding a side, 32px column plus `gap-2` — 318px left against a 288px bubble cap.
+
+## The day chip is a per-boundary separator, so it sits in flow (2026-09-07)
+
+`Thread.dc.html:51`'s authored comment — "the day chip FLOATS over the thread on
+glass, not inline in it" — describes a chip positioned against the SCROLL
+CONTAINER at `top: 12px`: ONE chip pinned at the head of the pane, a current-day
+indicator. Generalised into a per-boundary separator it became an absolute
+element over a zero-height row and painted on top of the sender name of the
+group beneath it. `Group.dc.html:44` is the artboard that matches a group thread
+and draws the same chip `display: flex; justify-content: center; padding: 0 0
+16px 0` — in flow, so it structurally cannot collide. The chip's material stays
+Thread's glass, which `audit/DECISIONS.md` froze; only the placement moved.
 
 ## Known Risk Areas
 

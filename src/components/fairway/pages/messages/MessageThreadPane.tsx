@@ -1128,9 +1128,9 @@ export function MessageThreadPane({
           size="sm"
           onClick={onBack}
           aria-label="Back to conversations"
+          leftIcon={<ArrowLeft size={20} aria-hidden="true" />}
           className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
         >
-          <ArrowLeft size={20} aria-hidden="true" />
           Messages
         </Button>
         {/* G-29c — a group's identity is WHO is in it, so the header shows an
@@ -1155,8 +1155,14 @@ export function MessageThreadPane({
         {isGroup ? (
           groupParticipants && groupParticipants.size > 0 ? (
             <AvatarGroup size="sm" max={2} ring="ring-surface" className="flex-shrink-0">
+              {/* First face accent, the rest neutral — `Group.dc.html:28`
+                  fills the leading avatar `oklch(0.939 0.045 150)` over
+                  `oklch(0.488 0.124 150)` and leaves the ones behind it
+                  `oklch(0.963 0.021 84)`. Those are `accent-100`/`accent-700`
+                  and `surface-sunken`: the stack reads as depth because the
+                  top of it is tinted, not because it is all one colour. */}
               {Array.from(groupParticipants.values()).map((p, i) => (
-                <Avatar key={i} decorative name={p.name} src={p.avatar} size="sm" />
+                <Avatar key={i} decorative name={p.name} src={p.avatar} size="sm" tone={i === 0 ? 'accent' : 'neutral'} />
               ))}
             </AvatarGroup>
           ) : (
@@ -1169,9 +1175,15 @@ export function MessageThreadPane({
             name={conversation.other_participant?.name || 'User'}
             src={conversation.other_participant?.avatar}
             size="sm"
+            tone="accent"
           />
         )}
-        <div className="min-w-0 flex-1">
+        {/* `ml-1` — `Group.dc.html:32` sets `margin-left: 4px` on the title
+            column ON TOP of the row's 10px gap, so the name sits 14px off the
+            faces while every other pair in the bar stays at 10px. It is the one
+            spacing number the artboard states independently of its own
+            back-affordance geometry, so it is the one worth porting. */}
+        <div className="ml-1 min-w-0 flex-1">
           {/* One line, truncated — this is a nav bar now, not a page masthead.
               `line-clamp-2` let a long group title push the bar to two rows and
               shove the thread down. */}
@@ -1216,7 +1228,7 @@ export function MessageThreadPane({
           reads cleanly against the raised glass bezel. */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-surface px-4 py-5 sm:px-5"
+        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
         data-scroll-container
       >
         {loading ? (
@@ -1249,10 +1261,17 @@ export function MessageThreadPane({
                 key={i}
                 className={cn('flex items-end gap-2', bubble.own ? 'justify-end' : 'justify-start')}
               >
-                {!bubble.own && <Skeleton circle className="h-8 w-8 flex-shrink-0" />}
+                {/* `bg-surface`, overriding the primitive's `bg-surface-sunken`
+                    default. The placeholder reserves a BUBBLE, so it has to
+                    carry the bubble's tone: on the thread's `bg-canvas` ground
+                    (0.953) the sunken default sits 0.010 away, and first paint
+                    would read exactly as flat as the defect this round fixed.
+                    The shimmer is unaffected — it is a `before:` layer over
+                    whatever fill the block has. */}
+                {!bubble.own && <Skeleton circle className="h-8 w-8 flex-shrink-0 bg-surface" />}
                 <Skeleton
                   className={cn(
-                    'max-w-[288px] rounded-card',
+                    'max-w-[288px] rounded-card bg-surface',
                     bubble.own ? 'rounded-br-sm' : 'rounded-bl-sm',
                     bubble.width,
                     bubble.height,
@@ -1381,19 +1400,23 @@ export function MessageThreadPane({
                   </div>
                 )}
                 {startsDay && (
-                  // G-50a — the day chip FLOATS over the thread on glass rather
-                  // than sitting inline in it. That is `Thread.dc.html`'s own
-                  // authored comment, and DECISIONS.md takes it over
-                  // `Group.dc.html`'s unannotated inline bordered pill: a stated
-                  // intent beats a variant that does not say why it looks that
-                  // way. So the two hairlines are gone — they were what bound
-                  // the label into the list — and the row contributes no height.
+                  // G-50a took the FLOATING chip from `Thread.dc.html:52`,
+                  // whose authored comment says it "FLOATS over the thread on
+                  // glass, not inline in it". Shipped, that reading is wrong on
+                  // two counts. Thread's floater is positioned against the
+                  // SCROLL CONTAINER — one chip, `top: 12px`, pinned at the head
+                  // of the pane: a current-day indicator, not a per-boundary
+                  // separator. Ported onto each boundary it became an absolute
+                  // element over a zero-height row, and it landed on top of the
+                  // sender name of the group below it. `Group.dc.html:44` is the
+                  // artboard that matches a group thread and it draws the same
+                  // chip INLINE — `justify-content: center; padding: 0 0 16px 0`
+                  // — which structurally cannot collide. Inline it is.
                   //
-                  // STATIC, not sticky. The decision is presentation (float-over
-                  // vs. sit-inline); pinning the chip while scrolling would turn
-                  // a boundary label into a running current-day indicator, which
-                  // is new behaviour nobody asked for and which overlaps G-29's
-                  // still-open day-separator work.
+                  // STATIC, not sticky, unchanged: pinning would turn a boundary
+                  // label into a running current-day indicator, which is new
+                  // behaviour nobody asked for and overlaps G-29's still-open
+                  // day-separator work.
                   //
                   // The glass licence is this chip and nothing else. DECISIONS.md
                   // bounds it — "does not license glass on any larger surface" —
@@ -1409,10 +1432,10 @@ export function MessageThreadPane({
                   // property escape, never `bg-glass` / `backdrop-blur-glass` —
                   // those are the LEGACY cream-100 utilities the design-system
                   // rule bans, unrelated to the --fw-glass-* tokens.
-                  <div className="pointer-events-none relative z-raised h-0" role="separator">
+                  <div className="pointer-events-none flex justify-center pb-4" role="separator">
                     <span
                       className={cn(
-                        'absolute -top-3 left-0 right-0 mx-auto flex w-fit items-center rounded-full px-3.5 py-1.5',
+                        'flex w-fit items-center rounded-full px-3.5 py-1.5',
                         'font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.06em] text-text-secondary',
                         '[background:var(--fw-glass-bg)]',
                         '[backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
@@ -1453,14 +1476,19 @@ export function MessageThreadPane({
                     isLastInGroup ? 'mb-1.5' : 'mb-0.5',
                   )}
                 >
-                  {/* Incoming avatar — GROUPS ONLY, once per group.
-                      A 1:1 thread does not need a repeated face: there is
-                      exactly one other person, their name and avatar are in
-                      the header two inches above, and the column cost 40px of
-                      width on every single line of the narrowest screen in the
-                      product. In a group it is load-bearing — it is how you
-                      tell four people apart while scrolling. */}
-                  {!isOwn && isGroup && (
+                  {/* Incoming avatar — EVERY incoming row, once per group.
+                      This was gated to groups on the argument that the column
+                      "cost 40px of width on every single line of the narrowest
+                      screen". Measured, it costs nothing: the narrowest screen
+                      is 390px, the thread pads 16px a side, so an incoming row
+                      has 358px and the avatar column plus `gap-2` leaves 318 —
+                      still clear of the 288px bubble cap, which is what
+                      actually binds. The premise was wrong, so the gate goes.
+                      `Group.dc.html:48` draws the column; `Thread.dc.html`
+                      omits it in a 1:1, but that is an unannotated specimen
+                      choice, and the owner has asked for the face beside the
+                      message directly. */}
+                  {!isOwn && (
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
                       {/* On the LAST message of the group, not the first.
                           The row is `items-end`, so anchoring the avatar to the
@@ -1476,6 +1504,7 @@ export function MessageThreadPane({
                           name={senderName}
                           src={senderAvatar}
                           size="sm"
+                          tone="accent"
                         />
                       ) : null}
                     </div>
@@ -1672,23 +1701,32 @@ export function MessageThreadPane({
                           // callout on exactly the messages the finding was
                           // about, which is worse than the gap it closed.
                           'select-none [-webkit-touch-callout:none]',
-                          // Incoming is `bg-elevated`, not `bg-surface-sunken`.
-                          // The sunken token is the WELL role — input tracks and
-                          // insets, the things that sit DOWN into the page — and
-                          // at 0.963 it is barely a step off the 0.953 canvas.
-                          // `Bubbles.dc.html:20` paints the incoming bubble
-                          // `linear-gradient(180deg, oklch(0.989 …), oklch(0.980 …))`:
-                          // the brightest cream in the system, a lifted surface.
-                          // `--fw-color-elevated` (0.993) is the token for that
-                          // role and the nearest step to the artboard's top stop.
-                          // Shipping a well tone where the design specifies a
-                          // lifted one is why the thread read flat no matter what
-                          // shadow sat under it — the fill was fighting the
-                          // shadow. (The exact two-stop gradient stays A03 #1;
-                          // this is the role fix, which is separate.)
+                          // Incoming is `bg-surface`. `Bubbles.dc.html:20` and
+                          // `Thread.dc.html:57` both paint it
+                          // `linear-gradient(180deg, oklch(0.989 …), oklch(0.980 …))`,
+                          // whose mean is 0.9845 — `--fw-color-surface` (0.984)
+                          // to three places, and inside the gradient's own range
+                          // rather than a step past its bright stop.
+                          // `--fw-color-elevated` (0.993) overshoots the whole
+                          // ramp, and `design-tokens.css:118` is pointed about
+                          // exactly that: surface is "warm CREAM, not white …
+                          // never by being a cold white sheet (we keep coming
+                          // back to this: no white cards)". A white slab is what
+                          // it shipped as.
+                          //
+                          // What actually made the thread read flat was the
+                          // GROUND, not the fill: the scroll region was itself
+                          // `bg-surface`, so a 0.984 bubble sat on a 0.984 page
+                          // and no shadow could rescue nine thousandths of
+                          // separation. The artboards float the bubbles over the
+                          // canvas. It is `bg-canvas` now (0.953), which is the
+                          // 0.031 step the shadows were drawn against. Taking the
+                          // flat token at the gradient's mean, not porting the
+                          // gradient — same G-50b logic, and no new machinery two
+                          // rounds after "you're doing too much with the cards".
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
-                            : 'bg-elevated text-text-primary',
+                            : 'bg-surface text-text-primary',
                           // G-49 (F14) — every bubble in the artboard casts a
                           // shadow; the repo drew them flat. Same systemic gap
                           // G-32 already closed on the rail's unread rows, which

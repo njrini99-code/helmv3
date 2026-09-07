@@ -1,12 +1,22 @@
 /**
- * G-50a — the day separator is a floating glass chip, not an inline hairline row.
+ * G-50a — the day separator is a glass chip, sitting INLINE in the thread.
  *
- * `Thread.dc.html:51` carries an authored comment — "the day chip FLOATS over
- * the thread on glass, not inline in it" — and `DECISIONS.md` takes that over
- * `Group.dc.html`'s unannotated inline bordered pill, on the rule that a stated
- * intent beats a variant that does not say why it looks that way. The shipped
- * code was neither: a flex row with two `h-px flex-1` hairlines binding the
- * label into the list.
+ * The chip's MATERIAL is still `Thread.dc.html:53`'s glass, and the first
+ * describe below still measures it against the tokens byte for byte. Its
+ * PLACEMENT is not. G-50a read `Thread.dc.html:51`'s authored comment — "the
+ * day chip FLOATS over the thread on glass, not inline in it" — as a rule about
+ * every day boundary. It is not: Thread positions that chip against the SCROLL
+ * CONTAINER (`position: absolute; top: 12px`), one chip pinned at the head of
+ * the pane, which is a current-day indicator. Ported onto each boundary it
+ * became an absolute element over a zero-height row and landed on top of the
+ * sender name of the group beneath it — visible in the owner's screenshot of a
+ * group thread, "TODAY" overlapping "Alexis Bennett".
+ *
+ * `Group.dc.html:44` is the artboard that matches a group thread, and it draws
+ * the same boundary chip inline: `display: flex; justify-content: center;
+ * padding: 0 0 16px 0`. Inline is what these assertions pin, because inline is
+ * what structurally cannot collide. The two `h-px flex-1` hairlines the
+ * original shipped code used stay gone — neither artboard draws them.
  *
  * MEASURED ON BOTH SIDES. Every assertion reads the artboard's literal value out
  * of `audit/reference/Thread.dc.html` AND the token's value out of
@@ -20,11 +30,15 @@ import { join } from 'node:path';
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 
 const artboard = read('audit/reference/Thread.dc.html');
+const groupArtboard = read('audit/reference/Group.dc.html');
 const tokens = read('src/styles/design-tokens.css');
 const source = read('src/components/fairway/pages/messages/MessageThreadPane.tsx');
 
-/** Comment-stripped, so the fix's own docstring cannot satisfy an assertion. */
+/** Comment-stripped, so the fix's own docstring cannot satisfy an assertion.
+ *  Block comments are removed WHOLE first: a JSX comment opens `{/*`, which
+ *  trims to start with `{`, so the line filter alone lets its body through. */
 const code = source
+  .replace(/\/\*[\s\S]*?\*\//g, '')
   .split('\n')
   .filter((line) => {
     const t = line.trim();
@@ -82,26 +96,35 @@ describe('G-50a — the artboard chip and the tokens agree', () => {
   });
 });
 
-describe('G-50a — the component floats the chip instead of inlining it', () => {
+const CHIP_ROW = 'pointer-events-none flex justify-center pb-4';
+
+describe('G-50a — the component inlines the chip instead of floating it', () => {
   it('no longer draws the two hairlines that bound the label into the list', () => {
     expect(code).not.toContain('<span className="h-px flex-1 bg-border-subtle" />');
   });
 
-  it('contributes no layout height — it floats OVER the thread', () => {
-    // `h-0` plus an absolutely-positioned chip. If someone reinstates an
-    // in-flow row, the chip is inline again and G-50a silently reverts.
-    expect(code).toContain('pointer-events-none relative z-raised h-0');
-    expect(code).toContain('absolute -top-3 left-0 right-0');
+  it('sits IN FLOW and centred — it cannot overlap the group below it', () => {
+    // `Group.dc.html:44` — `display: flex; justify-content: center; padding: 0
+    // 0 16px 0`. Assert the artboard still says so, then that the row does.
+    const groupChipRow = groupArtboard
+      .split('\n')
+      .find((l) => l.includes('justify-content: center') && l.includes('padding: 0 0 16px 0'));
+    expect(groupChipRow, 'Group.dc.html no longer draws an inline centred chip row').toBeDefined();
+    expect(code).toContain(CHIP_ROW);
+    // The regression this replaces: an absolute chip over a zero-height row
+    // painted on top of the next group's sender name.
+    expect(code).not.toContain('absolute -top-3 left-0 right-0');
+    expect(code).not.toContain('relative z-raised h-0');
   });
 
   it('keeps role="separator" — the a11y semantics a visual change quietly loses', () => {
-    const idx = code.indexOf('pointer-events-none relative z-raised h-0');
+    const idx = code.indexOf(CHIP_ROW);
     expect(idx).toBeGreaterThan(-1);
     expect(code.slice(idx, idx + 200)).toContain('role="separator"');
   });
 
   it('references the glass TOKENS, never the banned legacy glass-* utilities', () => {
-    const idx = code.indexOf('pointer-events-none relative z-raised h-0');
+    const idx = code.indexOf(CHIP_ROW);
     const block = code.slice(idx, idx + 1200);
     expect(block).toContain('[background:var(--fw-glass-bg)]');
     expect(block).toContain('blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))');
@@ -112,9 +135,10 @@ describe('G-50a — the component floats the chip instead of inlining it', () =>
   });
 
   it("carries the artboard's padding, radius and tracking", () => {
-    const idx = code.indexOf('pointer-events-none relative z-raised h-0');
+    const idx = code.indexOf(CHIP_ROW);
     const block = code.slice(idx, idx + 1200);
     // 6px 14px → py-1.5 px-3.5; 9999px → rounded-full; 0.06em tracking.
+    // Material stays Thread's glass chip; only the placement took Group's.
     expect((chipLine ?? '')).toContain('padding: 6px 14px');
     expect(block).toContain('rounded-full px-3.5 py-1.5');
     expect((chipLine ?? '')).toContain('letter-spacing: 0.06em');

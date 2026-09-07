@@ -452,7 +452,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 37 | - |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/team_access_control.md` | current | - | - | - | 1 | 2 | - |
-| `memory/ledgers/changes/team_communications.md` | current | - | - | yes | 3 | 21 | - |
+| `memory/ledgers/changes/team_communications.md` | current | - | - | yes | 3 | 22 | - |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | - |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |

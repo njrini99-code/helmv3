@@ -64,7 +64,7 @@ describe('the thread’s first paint is a shape-matched skeleton', () => {
     );
     expect(decl.match(/own: false/g) ?? []).toHaveLength(2);
     expect(decl.match(/own: true/g) ?? []).toHaveLength(2);
-    expect(thread).toContain('{!bubble.own && <Skeleton circle className="h-8 w-8 flex-shrink-0" />}');
+    expect(thread).toContain('{!bubble.own && <Skeleton circle className="h-8 w-8 flex-shrink-0 bg-surface" />}');
     expect(thread).toContain("bubble.own ? 'rounded-br-sm' : 'rounded-bl-sm'");
   });
 });
