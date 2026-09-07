@@ -168,7 +168,7 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 | Drafts | `src/app/golf/actions/round-drafts.ts` |
 | Reviews | `src/app/golf/actions/round-reviews.ts` |
 | Shot analytics | `src/app/golf/actions/shot-analytics.ts` |
-| Auto-save hook | `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `use-offline-sync.ts` + `use-round-status-sync.ts` |
+| Auto-save hook | src/hooks/golf/use-auto-save-round.ts no longer exists; round persistence is `use-offline-sync.ts` + `use-round-status-sync.ts` |
 | Offline engine | `src/lib/offline/sync-engine.ts` |
 
 ### DB Tables
@@ -635,7 +635,7 @@ ROUND REVIEW PIPELINE:
 | Learning | `src/lib/coachhelm/v2/learning/` |
 | Reasoning | `src/lib/coachhelm/v2/reasoning/` |
 | NLG | `src/lib/coachhelm/v2/nlg/insight-composer.ts` |
-| Persistence | `src/lib/coachhelm/v2/services/` was removed; see `src/lib/coachhelm/v3/chat/persistence.ts` |
+| Persistence | src/lib/coachhelm/v2/services/ was removed; see `src/lib/coachhelm/v3/chat/persistence.ts` |
 | Types & constants | `src/lib/coachhelm/types.ts`, `constants.ts` |
 | Actions | `insight-management.ts`, `pattern-management.ts`, `round-reviews.ts`, `alerts.ts`, `coachhelm-analytics.ts`, `development.ts` |
 | UI (80+ components) | `src/components/golf/coachhelm/` |
@@ -943,7 +943,7 @@ triage (honest-empty, not a placeholder).
 | Route (Dashboard, fetches the data) | `src/app/golf/(dashboard)/dashboard/page.tsx` |
 | Redirect (former Hub route) | `src/app/golf/(dashboard)/dashboard/hub/page.tsx` |
 | Data | `src/app/golf/actions/player-hub-data.ts` (`getPlayerHubSummaryData`) |
-| Component | none — `src/components/fairway/pages/dashboard/PlayerActionCenter.tsx` was removed and nothing replaced it |
+| Component | none — src/components/fairway/pages/dashboard/PlayerActionCenter.tsx was removed and nothing replaced it |
 | Host component | `src/components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx` |
 | Shared presentational parts | `src/components/fairway/pages/hub/hub-parts.tsx` (TaskRow, RSVPRow, TripRow, TripDetailSheet, AnnouncementsList) |
 | Management surface | `src/app/golf/(dashboard)/dashboard/team-hub/**` (full tasks/travel CRUD) |

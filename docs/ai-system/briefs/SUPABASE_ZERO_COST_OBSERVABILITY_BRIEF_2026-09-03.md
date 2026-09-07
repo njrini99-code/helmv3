@@ -462,7 +462,7 @@ client-only gap; then auth, schema validation, allow-list, rate limit, dedupe, s
 
 Conceptual modules (adapt to authority): `src/lib/observability/supabase-error-
 classifier.ts`, `supabase-error-envelope.ts`, `record-db-error.ts`, `db-health-types.ts`,
-`src/lib/admin/data/database-health.ts`, `database-errors.ts`, `database-performance.ts`;
+src/lib/admin/data/database-health.ts, `database-errors.ts`, `database-performance.ts`;
 tables `helm_debug.db_error_events`, `db_health_samples`, `db_statement_samples`,
 `db_statement_catalog`, `db_lock_incidents`, `observability_state` — after inspecting the
 current `helm_debug` schema and reusing existing objects. Migrations follow current DB

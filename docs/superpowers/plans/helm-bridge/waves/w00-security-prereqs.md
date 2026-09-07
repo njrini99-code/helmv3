@@ -1,5 +1,7 @@
 # W0: P0 Security Prereqs
 
+Status: active
+
 **Goal:** Close the pre-existing privilege-escalation vector in `handle_new_user()`, downgrade the stale test-admin row, and replace the weak `error-monitoring.ts` logger — all BEFORE any `/admin` code ships.
 
 **Depends-on:** nothing (first wave).

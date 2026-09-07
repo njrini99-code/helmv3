@@ -1,5 +1,7 @@
 # CoachHelm Instrumentation & Action Loop — Implementation Plan
 
+Status: active
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make CoachHelm able to report honestly on itself — when a finding was last verified, when it last actually moved, and whether a coach ever acted on it — then rank the coach's feed on those signals instead of on a timestamp frozen in June.

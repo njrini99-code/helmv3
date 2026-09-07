@@ -1,5 +1,7 @@
 # W6: Errors Tab + RLS-Denial Capture + `withAdminObserved`
 
+Status: active
+
 **Goal:** Full error drill-down (`/admin/errors`) — Sentry table, errors-over-time with deploy markers, in-app incident feed with URL-persisted filters, per-fingerprint detail — plus two of the four net-new capture classes: `rls_denial` and `server_action_failed`.
 
 **Depends-on:** W2 (columns + writer), W3 (sentry-api, triage), W4 (panel pattern), W5 (resolve action in use).

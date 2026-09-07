@@ -510,6 +510,51 @@ jobs:
         id: knowledge_bench
         continue-on-error: true
         run: npm run knowledge:bench:check
+      # Document authority inventory (docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md)
+      # — non-mutating drift check, same shape as "Generated inventory is
+      # current" above. Added 2026-09-06 (docs reorg W4) alongside the
+      # --dead-refs/--lifecycle ratchets below: without this step the
+      # committed table could drift from the tracked tree on the very next
+      # doc edit and nothing would notice.
+      - name: Document authority inventory is current
+        id: doc_inventory
+        continue-on-error: true
+        run: npm run knowledge:doc-inventory:check
+
+      # Feature map (docs/generated/HELM_FEATURE_MAP.md) — same drift-check
+      # shape, generated from memory/registry.yml. Added 2026-09-06 alongside
+      # the doc-inventory check above for the same reason: a committed
+      # generated artifact with no CI caller is not actually gated.
+      - name: Feature map is current
+        id: feature_map
+        continue-on-error: true
+        run: npm run knowledge:feature-map:check
+
+      # Living dead-reference ratchet (docs reorg Phase 6 / W4). Counts
+      # backticked repo-relative paths that resolve to nothing tracked,
+      # restricted to the nine "living" categories (REFERENCE,
+      # GENERATED_TRUTH, CURRENT_FEATURE, PROCESS_CONTRACT, RUNBOOK, POLICY,
+      # DESIGN_SPEC, STATE_SNAPSHOT, AGENT_SKILL) — HISTORY_LEDGER, ARCHIVE,
+      # PLAN, AUDIT_SNAPSHOT, ADR, INCIDENT, INDEX and UNKNOWN are excluded
+      # because dated/historical records are allowed to name paths that no
+      # longer exist. Ratchets against .dead-refs-baseline.json — the
+      # baseline may only fall, never rise; a NEW dead reference always
+      # fails regardless of the baseline.
+      - name: Living dead references at or under baseline
+        id: dead_refs
+        continue-on-error: true
+        run: npm run docs:dead-refs
+
+      # Lifecycle gate: fails if any living doc outside the attic
+      # (docs/archive/, archive/) carries its own Status header reading
+      # SUPERSEDED/DONE/COMPLETE — threshold is a hardcoded 0, with an
+      # explicit "KEPT FOR HISTORY" exemption for the handful of superseded
+      # docs that stay in place on purpose because live docs still cite them
+      # by path and line range.
+      - name: No done/superseded records outside the attic
+        id: lifecycle
+        continue-on-error: true
+        run: npm run docs:lifecycle
 
       # `steps` (the context) holds every step above that carries an `id`, with
       # the outcome BEFORE continue-on-error rewrote it. Anything other than

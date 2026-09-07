@@ -53,7 +53,7 @@ alerts, and manual preview guidance.
 
 Separate from the admin panel above: PRs can show a pending or failing
 Vercel Preview / CircleCI Lighthouse check. See
-`docs/operations/CI_CHECKS_AND_PREVIEW_RUNBOOK.md` for:
+docs/operations/CI_CHECKS_AND_PREVIEW_RUNBOOK.md for:
 
 - Expected wait windows for Vercel preview builds.
 - Exact rerun commands for CodeRabbit / Playwright / CircleCI.

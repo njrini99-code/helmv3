@@ -1,5 +1,7 @@
 # W5: Overview Tab
 
+Status: active
+
 **Goal:** Ship the Level-1 "is anything on fire?" screen: status banner, 6-tile KPI strip, unified triage queue with inline resolve, regressed callout, deploy rail, and the watch-the-watcher staleness widget — hard-capped at ~10 tiles, every number a deep link.
 
 **Depends-on:** W3 (data layer), W4 (chrome + panel pattern).
