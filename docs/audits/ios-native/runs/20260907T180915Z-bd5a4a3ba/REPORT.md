@@ -51,7 +51,16 @@ full-screen unlabelled containers, with **zero interaction targets** — and no
 on-screen string ("Dashboard", "Sign", "Players", "Schedule") resolves by text
 predicate either. Two independent query paths, same answer. The control makes it
 solid: the same harness against Apple's Settings app returns fourteen labelled
-tappable targets and resolves "General" by text. Enabling accessibility on the
+tappable targets and resolves "General" by text.
+
+One confound had to be eliminated before this stood up. The first text probe
+searched for "Dashboard", "Players" and "Schedule" — all of which happened to be
+*behind* an open push-permission sheet. That component is built on Radix Dialog,
+which `aria-hidden`s the background while open, so those strings being
+unreachable was correct behaviour and proved nothing. Re-probing for
+**foreground** text on the sheet itself — "Not now", "Stay in the loop",
+"Enable Notifications" — also resolves nothing. The confound is gone and the
+finding is stronger for it. Enabling accessibility on the
 simulator changes nothing, and there is no accessibility code anywhere in the
 Swift shell to explain it.
 
@@ -121,7 +130,29 @@ One real item survives the retraction: axe now reports color-contrast
 image-bearing ancestors it cannot sample. Incomplete is not a pass. Those nodes
 are unmeasured, and checking the gradient headings by hand is still outstanding.
 
-**5. F-KBD-AUTOFOCUS-01 (P2) — autofocus is gated in six components and ungated
+**5. F-CONTRAST-PLAYER-01 (P2) — the player screens have real contrast failures,
+and this time I checked twice.** Six of eight player screens carry serious
+contrast violations; my-standing alone has 43. The measured ratios sit at
+**4.03–4.06:1 where 4.5:1 is required** — brand green on cream (`#238d46` on
+`#fff9ee`) and pale green on green (`#d7f4db` on `#248342`), at 12px and 15px.
+
+Given that this audit already retracted one contrast finding, these were
+verified by a second, independent in-page measurement that resolves the app's
+`oklab()` colours through a canvas readback. It reproduced axe's numbers to
+within rounding (4.06 vs 4.05; 4.03 vs 4.03). Two methods, same answer. The
+margins are small, but they are real, they are on the screens players use most,
+and this is an app read outdoors.
+
+It is a token pair, not a component: the same combinations recur across
+unrelated screens, so nudging the green in `design-tokens.css` clears all of
+them at once.
+
+**6. F-TITLE-01 (P3) — four player screens are titled "CoachHelm" to a player.**
+`my-standing`, `my-development`, `my-game-profile` and `my-insights` all report
+a document title of "CoachHelm | GolfHelm" — the name of the coach tool.
+`my-qualifiers` gets it right, so the correct pattern is already in the tree.
+
+**7. F-KBD-AUTOFOCUS-01 (P2) — autofocus is gated in six components and ungated
 at most other sites.** The codebase already knows the right answer:
 `autoFocus={finePointer}`, where `finePointer` is `useMediaQuery('(pointer: fine)')`.
 It just is not shared — the hook is re-declared inline in six components, so the
@@ -130,12 +161,12 @@ phone the ungated ones throw the keyboard up over half the sheet before the user
 has decided to type. Messages, coach notes, log-progress, expenses and three
 auth pages are among them.
 
-**6. F-BRAND-01 (P3) — two brand marks in three seconds.** The splash carries
+**8. F-BRAND-01 (P3) — two brand marks in three seconds.** The splash carries
 the ship's-wheel company mark; the login screen 0.5s later carries the
 golf-ball-in-wheel product mark. Reported in August, unchanged, and still an
 owner decision rather than a defect.
 
-**7. F-PLIST-IPAD-01 (P3) — a dead `~ipad` orientation block still ships.**
+**9. F-PLIST-IPAD-01 (P3) — a dead `~ipad` orientation block still ships.**
 The iPhone array is correctly portrait-only; the `~ipad` array still lists all
 four orientations in an app whose device family is iPhone-only.
 
@@ -171,14 +202,19 @@ scrolls and measurements only, nothing submitted, sent, edited or deleted. That
 sweep produced F-TAP-01 and F-SEARCH-HEIGHT-01, the two findings most directly
 about why the app feels like a website.
 
-Still unexercised: every write journey (J05-J08, J10), the player-side app, and
-every physical-device check. The first is a deliberate authorization boundary;
-the last is a hardware gap.
+The player account was then swept the same way across eight player-only screens,
+which produced F-CONTRAST-PLAYER-01 and F-TITLE-01 — neither visible from the
+coach side at all.
+
+Still unexercised: every write journey (J05-J08, J10) and every physical-device
+check. The first is a deliberate authorization boundary; the second is a
+hardware gap.
 
 ## Confirmed defects
 
-F-TAP-01, F-SEARCH-HEIGHT-01, F-KBD-AUTOFOCUS-01, F-BRAND-01, F-PLIST-IPAD-01,
-and the *symptom* of F-A11Y-NATIVE-01. F-CONTRAST-01 is **retracted** — see above. See `FINDINGS.json` for reproduction steps,
+F-TAP-01, F-SEARCH-HEIGHT-01, F-CONTRAST-PLAYER-01, F-TITLE-01,
+F-KBD-AUTOFOCUS-01, F-BRAND-01, F-PLIST-IPAD-01, and the *symptom* of
+F-A11Y-NATIVE-01. F-CONTRAST-01 is **retracted** — see above. See `FINDINGS.json` for reproduction steps,
 evidence paths, and the separate `rootCauseStatus` on each.
 
 ## Suspected issues needing targeted reproduction
@@ -250,11 +286,12 @@ could not be run. That remains true from the August audit.
    else about accessibility should be touched until it answers.
 2. **T2** — raise the 59 stragglers to the 44pt floor the system already uses.
    Gap-closing against an existing norm, not a new convention.
-3. **T3** — measure the twelve contrast nodes axe cannot sample. Measurement
-   only; no token changes until a real number exists.
-4. **T4** — extract `useFinePointer()`, then decide the ungated sites one by
+3. **T3** — nudge the player-side green/cream token pairs over 4.5:1, and
+   measure the twelve login nodes axe cannot sample.
+4. **T4** — retitle the four player pages. Trivial.
+5. **T5** — extract `useFinePointer()`, then decide the ungated sites one by
    one, then add the lint rule that stops the next one.
-5. **T5** — delete the `~ipad` block whenever a binary is next built.
+6. **T6** — delete the `~ipad` block whenever a binary is next built.
 
 Full task shapes, non-goals and rollbacks in `IMPLEMENTATION-PLAN.md`.
 

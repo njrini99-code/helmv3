@@ -21,7 +21,7 @@ function toAxePage(page: import('@playwright/test').Page): AxePage {
  * phone": tap targets below Apple's 44pt minimum, text below 11pt, horizontal
  * overflow, and content colliding with the home indicator.
  */
-const ROUTES = [
+const COACH_ROUTES = [
   ['dashboard', '/golf/dashboard'],
   ['roster', '/golf/dashboard/roster'],
   ['calendar', '/golf/dashboard/calendar'],
@@ -31,6 +31,22 @@ const ROUTES = [
   ['courses', '/golf/dashboard/courses'],
   ['insights', '/golf/dashboard/insights'],
 ] as const;
+
+const PLAYER_ROUTES = [
+  ['dashboard', '/golf/dashboard'],
+  ['my-development', '/golf/dashboard/my-development'],
+  ['my-qualifiers', '/golf/dashboard/my-qualifiers'],
+  ['my-standing', '/golf/dashboard/my-standing'],
+  ['my-game-profile', '/golf/dashboard/my-game-profile'],
+  ['my-insights', '/golf/dashboard/my-insights'],
+  ['messages', '/golf/dashboard/messages'],
+  ['calendar', '/golf/dashboard/calendar'],
+] as const;
+
+// A player signing in lands on the same /golf/dashboard shell with a different
+// nav; the routes above are the player-only surfaces the coach sweep cannot see.
+const ROLE = process.env.HELM_AUDIT_ROLE === 'player' ? 'player' : 'coach';
+const ROUTES = ROLE === 'player' ? PLAYER_ROUTES : COACH_ROUTES;
 
 const MIN_TAP_PT = 44;
 const MIN_TEXT_PX = 11;
@@ -56,7 +72,7 @@ async function settle(page: import('@playwright/test').Page) {
 }
 
 for (const [name, route] of ROUTES) {
-  test(`signed-in screen: ${name}`, async ({ page }, testInfo) => {
+  test(`signed-in ${ROLE} screen: ${name}`, async ({ page }, testInfo) => {
     const res = await page.goto(route, { waitUntil: 'domcontentloaded' });
     expect(res!.status(), `${route} must not be an error document`).toBeLessThan(400);
     // A bounce to /login means the session expired mid-run; measuring the login
@@ -144,9 +160,9 @@ for (const [name, route] of ROUTES) {
     // failing assertion here would stop the sweep at the first screen instead
     // of producing the comparison across all eight.
     const dir = process.env.HELM_AUDIT_DIR!;
-    fs.mkdirSync(path.join(dir, 'signed-in'), { recursive: true });
+    fs.mkdirSync(path.join(dir, ROLE === 'player' ? 'signed-in-player' : 'signed-in'), { recursive: true });
     fs.writeFileSync(
-      path.join(dir, 'signed-in', `${name}.json`),
+      path.join(dir, ROLE === 'player' ? 'signed-in-player' : 'signed-in', `${name}.json`),
       JSON.stringify({ route, metrics, axe: {
         violations: axe.violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.length })),
         incomplete: axe.incomplete.map(v => ({ id: v.id, nodes: v.nodes.length })),

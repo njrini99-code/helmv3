@@ -42,7 +42,11 @@ configuration, CI, migration, or production setting was touched.
 
 | Artifact | What it holds |
 |---|---|
-| `signed-in/<screen>.json` | per-screen tap-target, tiny-text, overflow and axe measurements |
+| `signed-in/<screen>.json` | coach: per-screen tap-target, tiny-text, overflow and axe measurements |
+| `signed-in-player/<screen>.json` | player: the same measurements on the player-only screens |
+| `signed-in/height-histogram.txt` | full height distribution of all 432 controls |
+| `native/waitforui-probe.txt` | both rounds of the text probe, the confounded one marked invalid |
+| `native/probe2-state.png` | screen state during the valid foreground probe |
 | `playwright/native-audit/journeys.spec.ts` | the read-only sweep itself |
 | `playwright/native-audit/signed-in.setup.ts` | sign-in that writes storage state OUTSIDE the repo |
 

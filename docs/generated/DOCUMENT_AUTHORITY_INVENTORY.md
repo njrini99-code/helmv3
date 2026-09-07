@@ -325,7 +325,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 3 | 40 | 1 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | yes | - | yes | 3 | 0 | - |
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 1 | 6 | 4 |
-| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/IMPLEMENTATION-PLAN.md` | current | - | - | - | 0 | 3 | - |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/IMPLEMENTATION-PLAN.md` | current | - | - | - | 0 | 4 | - |
 | `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 0 | 69 | 18 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | 2 | 20 | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 1 | 23 | 4 |

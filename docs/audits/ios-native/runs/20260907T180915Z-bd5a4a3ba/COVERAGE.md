@@ -68,6 +68,25 @@ Two items surfaced here and are recorded but not yet investigated: the
 reported **incomplete** for 101 nodes on rounds — incomplete is not a pass, and
 101 is enough to deserve its own look.
 
+## Player-side read-only sweep
+
+Same lane, `HELM_AUDIT_ROLE=player`, throwaway player account. Navigations,
+scrolls and measurements only.
+
+| Screen | Undersized controls | axe violations |
+|---|---|---|
+| dashboard | 12 | color-contrast (serious ×2), empty-heading, heading-order |
+| my-development | 3 | color-contrast (serious ×9), aria-prohibited-attr, heading-order |
+| my-qualifiers | 4 | none |
+| my-standing | 1 | color-contrast (serious ×43), heading-order |
+| my-game-profile | 4 | color-contrast (serious ×7), heading-order, scrollable-region-focusable |
+| my-insights | 1 | color-contrast (serious ×7) |
+| messages | 0 | color-contrast (serious), page-has-heading-one |
+| calendar | 7 (all day cells, excluded) | color-contrast (serious ×2) |
+
+Findings: F-CONTRAST-PLAYER-01, F-TITLE-01. Neither is visible from the coach
+side, which is the argument for having swept both roles.
+
 ## Corrections made during this run
 
 Two claims in earlier drafts were wrong and were corrected against fresh
@@ -86,3 +105,15 @@ measurement rather than quietly edited:
    or above 44pt with the mode at exactly 44, so the floor exists and 59
    controls escape it. The fix changed from "establish a floor" to "close a
    gap", and the priority dropped from P1 to P2.
+3. **The first native text probe was confounded and was re-run.** It searched
+   only for strings sitting *behind* an open push-permission sheet, and that
+   component is built on Radix Dialog, which `aria-hidden`s the background while
+   open — so those strings being unreachable was correct behaviour. Re-probing
+   for foreground text on the sheet itself gave the same negative result, which
+   eliminates the confound and leaves F-A11Y-NATIVE-01 standing on better
+   evidence than before. Both rounds are recorded in
+   `native/waitforui-probe.txt`.
+4. **A verification probe of the player contrast numbers was itself wrong once.**
+   It parsed the first three numbers out of the app's `oklab()` colour strings as
+   if they were RGB. Redone with a canvas readback so the browser resolves the
+   colour, it reproduced axe's ratios to within rounding.

@@ -6,7 +6,7 @@
     "category": "accessibility",
     "priority": "P1",
     "status": "CONFIRMED",
-    "confidence": "high that this automation harness sees zero targets; the VoiceOver consequence is UNTESTED. Both paths used (AXe snapshot-ui and wait-for-ui text predicates) sit in the same accessibility API family. XCUITest - the path Maestro and Xcode UI tests use - was NOT exercised and can behave differently on WKWebView.",
+    "confidence": "high that this automation harness sees zero targets. The overlay confound has been eliminated: an initial probe searched only for text sitting BEHIND an open Radix-Dialog sheet (which correctly aria-hides the background), so it was invalid; re-probing for FOREGROUND sheet text ('Not now', 'Stay in the loop', 'Enable Notifications') also resolves nothing. The VoiceOver consequence remains UNTESTED - snapshot-ui and wait-for-ui share one accessibility API family, and XCUITest, the path Xcode UI tests and Maestro drive, was not exercised and can behave differently on WKWebView.",
     "journeyIds": [
       "J03",
       "J11"
@@ -24,20 +24,22 @@
     "webDeployment": "https://www.helmsportslabs.com (revision unverified)",
     "reproductionSteps": [
       "Build Release for an iOS 26.5 simulator and launch com.helmsportslabs.golfhelm.",
-      "Let the coach dashboard settle (~9s). Screenshot to confirm the screen is full of text and controls.",
+      "Let it settle (~10s). Screenshot to record exactly what is on screen, including any modal.",
       "PATH 1: xcodebuildmcp ui-automation snapshot-ui --simulator-id <udid>. Observe 18 elements, 0 likely targets, 1 scroll area.",
-      "PATH 2: xcodebuildmcp ui-automation wait-for-ui --simulator-id <udid> --predicate textContains --text Dashboard (also Sign, Players, Schedule). All four time out.",
-      "CONTROL: launch com.apple.Preferences. snapshot-ui returns 14 labelled tappable targets, and wait-for-ui --text General resolves. Both paths work against native UI.",
-      "Repeat the GolfHelm snapshot with ApplicationAccessibilityEnabled=true. Result unchanged.",
-      "NOT RUN: Xcode Accessibility Inspector, XCUITest, and VoiceOver on a device. Each could still see content these paths do not."
+      "PATH 2: xcodebuildmcp ui-automation wait-for-ui --predicate textContains --text 'Not now' (also 'Stay in the loop', 'Enable Notifications'). All time out.",
+      "IMPORTANT: probe for text in the FOREGROUND. An earlier probe used background text behind an open sheet; Radix Dialog aria-hides the background, so that result was invalid and is recorded as such in native/waitforui-probe.txt.",
+      "Do NOT tap 'Enable Notifications' - it raises the iOS system permission dialog, which blocks automation and changes device state.",
+      "CONTROL: com.apple.Preferences. snapshot-ui returns 14 labelled targets; wait-for-ui --text General resolves.",
+      "Repeat with ApplicationAccessibilityEnabled=true. Unchanged.",
+      "NOT RUN: Xcode Accessibility Inspector, XCUITest, VoiceOver on a device."
     ],
     "expectedBehavior": "A WKWebView is normally expected to project its web content into the iOS accessibility tree so that buttons and links appear as native elements with labels. Whether that projection is on-demand - materialised only when a real assistive client attaches - is precisely what is unresolved here.",
     "observedBehavior": "Zero web content is projected to either query path. The tree stops at the WebView's own container views. The 18-element, all-role-'other', stops-at-the-container shape is equally consistent with 'remote tree never requested' and with 'content suppressed'; nothing collected distinguishes them.",
     "evidencePaths": [
       "native/snapshot-dashboard.txt",
-      "native/cold-03.0s.png",
+      "native/waitforui-probe.txt",
       "native/probe-state.png",
-      "native/waitforui-probe.txt"
+      "native/probe2-state.png"
     ],
     "rootCauseStatus": "UNKNOWN",
     "rootCauseExplanation": "Not isolated. There is no accessibility-related code anywhere in the Swift shell (grep over ios/App/App/*.swift returns nothing), so this is not an explicit opt-out in Helm's code. Candidate causes, none tested: (1) WKWebView's remote accessibility tree is built lazily and may only populate once an assistive client attaches, which the AXe path may never trigger - this is the leading candidate and would make the finding a testability problem, not a user problem; (2) a Capacitor/WebView configuration suppresses it; (3) something upstream in the OS version. Determining which changes the severity by an order of magnitude.",
@@ -413,5 +415,98 @@
     "backwardCompatibilityRequirement": "n/a",
     "effortClass": "none",
     "rollbackApproach": "n/a"
+  },
+  {
+    "id": "F-CONTRAST-PLAYER-01",
+    "shortTitle": "Player screens carry real sub-AA text contrast, confirmed by two methods",
+    "category": "accessibility",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high, and deliberately double-checked because this audit already retracted one contrast finding. axe-core reported these on a settled page (the sweep scrolls end to end before measuring), and an independent in-page measurement that resolves oklab() colours through a canvas readback reproduced axe's numbers to within rounding: 4.06 vs axe's 4.05 for #d7f4db on #248342, and 4.03 vs 4.03 for #238d46 on #fff9ee. Two methods, same answer, unlike F-CONTRAST-01 where the page state itself was wrong.",
+    "userImpact": "Text on the player-facing screens sits just under the WCAG AA 4.5:1 minimum - around 4.03-4.06:1 - at 12px and 15px. Six of eight player screens carry serious contrast violations, worst on my-standing with 43 nodes. The pattern is brand green on cream (#238d46 on #fff9ee) and pale green on green (#d7f4db on #248342). These are small margins, not dramatic ones, but they are real, they are on the screens players use most, and a golf app is read outdoors in bright light where the effective contrast is worse.",
+    "journeyIds": [
+      "J03",
+      "J11"
+    ],
+    "rolesAffected": [
+      "player"
+    ],
+    "sourceLocations": [
+      "src/styles/design-tokens.css - the green/cream token pairs",
+      "player screens: my-standing, my-development, my-game-profile, my-insights, dashboard, calendar, messages"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "reproductionSteps": [
+      "HELM_AUDIT_ROLE=player with the player account's credentials, then npx playwright test -c playwright/native-audit.config.ts --project=webkit-phone-signed-in",
+      "Read signed-in-player/*.json; the color-contrast entries under axe.violations are VIOLATIONS, not incomplete."
+    ],
+    "expectedBehavior": "Normal-size text meets 4.5:1 against its own background.",
+    "observedBehavior": "Serious color-contrast violations on 6 of 8 player screens: my-standing 43 nodes, my-development 9, my-game-profile 7, my-insights 7, dashboard 2, calendar 2, messages 1. Measured ratios cluster at 4.03-4.06:1 where 4.5:1 is required.",
+    "evidencePaths": [
+      "signed-in-player/my-standing.json",
+      "signed-in-player/my-development.json",
+      "signed-in-player/my-game-profile.json"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "A token pair problem, not a component problem: the same green-on-cream and pale-green-on-green combinations recur across unrelated player screens. Nudging the green darker (or the pale text lighter) in src/styles/design-tokens.css clears every instance at once. The margins are small enough that a modest token change closes them.",
+    "existingContract": "AGENTS.md: src/styles/design-tokens.css is the authority for --fw-* colours; tokens beat prose.",
+    "proposedSmallestFix": "Adjust the offending token pairs in design-tokens.css, then re-run the player sweep. Do NOT patch individual screens - the pairs are shared, and a local fix would create a second vocabulary.",
+    "filesLikelyToChange": [
+      "src/styles/design-tokens.css"
+    ],
+    "regressionTest": "The player sweep already records these per screen; assert zero serious color-contrast violations once the tokens change.",
+    "verificationLayers": [
+      "WebKit browser, two independent methods (done)",
+      "physical device in daylight (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "effortClass": "small",
+    "rollbackApproach": "Revert the token values."
+  },
+  {
+    "id": "F-TITLE-01",
+    "shortTitle": "Four player screens are titled 'CoachHelm' to a player",
+    "category": "polish",
+    "priority": "P3",
+    "status": "CONFIRMED",
+    "confidence": "high - document.title captured directly on each screen during the player sweep.",
+    "userImpact": "A player opening their own standing, development, insights or game profile gets a page titled 'CoachHelm | GolfHelm' - the name of the coach-facing tool. It shows in the browser tab and in anything that reads the document title. Small, but it is exactly the kind of seam that tells a user they are looking at a web page built for somebody else.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "player"
+    ],
+    "sourceLocations": [
+      "src/app/golf/(dashboard)/dashboard/my-standing/page.tsx",
+      "src/app/golf/(dashboard)/dashboard/my-development/page.tsx",
+      "src/app/golf/(dashboard)/dashboard/my-game-profile/page.tsx",
+      "src/app/golf/(dashboard)/dashboard/my-insights/page.tsx"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "reproductionSteps": [
+      "Run the player sweep and read metrics.title in signed-in-player/*.json."
+    ],
+    "expectedBehavior": "A player-facing screen is titled for the player, e.g. 'My Standing | GolfHelm'.",
+    "observedBehavior": "my-standing, my-development, my-game-profile and my-insights all report document.title 'CoachHelm | GolfHelm'. my-qualifiers correctly reports 'My Qualifiers | GolfHelm', which shows the right pattern already exists.",
+    "evidencePaths": [
+      "signed-in-player/my-standing.json",
+      "signed-in-player/my-qualifiers.json"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Not traced to source. Most likely a shared metadata export inherited from a CoachHelm layout or a copied page template. my-qualifiers gets it right, so the correct pattern is already in the tree to copy.",
+    "proposedSmallestFix": "Give each of the four pages its own metadata title, matching my-qualifiers.",
+    "filesLikelyToChange": [
+      "the four page.tsx files above"
+    ],
+    "regressionTest": "Assert document.title per route in journeys.spec.ts.",
+    "verificationLayers": [
+      "WebKit browser (done)"
+    ],
+    "nativeBinaryRequired": "no",
+    "effortClass": "trivial",
+    "rollbackApproach": "Revert the metadata."
   }
 ]

@@ -74,31 +74,45 @@ test. **Binary:** none — web deploy only. **Rollback:** revert the token.
 
 ---
 
-## T3 — Measure the twelve contrast nodes axe cannot reach
+## T3 — Close the player-side contrast gap, then measure what axe cannot reach
 
-**Findings:** F-CONTRAST-01 (retracted), residual open item
-**Current state:** the original contrast finding was withdrawn — the Sign in
-label measures 5.02:1 and passes. But axe returns `color-contrast` as
-**incomplete** for twelve nodes on the login page: the gradient-backed headings
-(`h1 > span`, `h2`, `.z-20`) whose background it cannot resolve, and several
-nodes whose ancestors contain an image. Incomplete is not a pass; those twelve
-are simply unmeasured.
+**Findings:** F-CONTRAST-PLAYER-01, plus the F-CONTRAST-01 residual
+**Current state:** six of eight player screens carry serious contrast
+violations, worst on my-standing (43 nodes), measured at 4.03-4.06:1 against a
+4.5:1 requirement. Confirmed by axe and by an independent canvas-readback
+measurement that agree to within rounding.
 
-**Steps:** for each of the twelve, sample the actual rendered pixel behind the
-text (canvas readback of a screenshot, or `getComputedStyle` up the chain where
-the gradient stops are known) and compute the true ratio against both ends of
-the gradient. Worst case governs.
+**Extend, do not add:** the failing combinations are token pairs (`#238d46` on
+`#fff9ee`, `#d7f4db` on `#248342`) recurring across unrelated screens. Fix them
+in `src/styles/design-tokens.css`, never per screen. The margins are small, so a
+modest darkening of the green clears every instance.
 
-**Non-goals:** do not change any token before a real number exists. The first
-version of this task changed a token on a number that turned out to be an
-artifact; that is the mistake this task exists to avoid repeating.
+**Cross-sport scope:** the green tokens are shared, so BaseballHelm inherits the
+change. Desirable, but the visual diff is wide — check both products.
 
-**Verification:** a table of twelve measured ratios in the run directory.
-**Binary:** none. **Rollback:** nothing is changed by this task.
+**Then, separately:** the login page still returns twelve `color-contrast`
+*incomplete* nodes (gradient backgrounds, image-bearing ancestors). Incomplete
+is not a pass. Sample the actual rendered pixels for those twelve and compute
+real ratios against both ends of each gradient; worst case governs.
+
+**Non-goals:** do not change a token on an unverified number. The first version
+of this audit did exactly that and had to retract it.
+**Verification:** player sweep reports zero serious color-contrast violations.
+**Binary:** none. **Rollback:** revert the token values.
 
 ---
 
-## T4 — Make autofocus a decision instead of a default
+## T4 — Retitle the four player pages (trivial)
+
+**Findings:** F-TITLE-01
+`my-standing`, `my-development`, `my-game-profile` and `my-insights` report
+document titles of "CoachHelm | GolfHelm". `my-qualifiers` already does it
+correctly — copy that. **Verification:** assert `document.title` per route in
+`journeys.spec.ts`. **Rollback:** revert the metadata.
+
+---
+
+## T5 — Make autofocus a decision instead of a default
 
 **Findings:** F-KBD-AUTOFOCUS-01
 **Current state:** `useMediaQuery('(pointer: fine)')` is re-declared inline in
@@ -126,7 +140,7 @@ pass over the changed surfaces.
 
 ---
 
-## T5 — Delete the dead `~ipad` orientation block
+## T6 — Delete the dead `~ipad` orientation block
 
 **Findings:** F-PLIST-IPAD-01. One key, one line, ships in the next binary
 whenever one is built. Not worth a build of its own.

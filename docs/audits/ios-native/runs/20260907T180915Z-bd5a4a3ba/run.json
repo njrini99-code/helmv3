@@ -61,9 +61,9 @@
   "lanes": {
     "signedInWebKit": {
       "authorization": "owner-supplied throwaway coach + player test accounts",
-      "mutations": "none - navigations, scrolls and measurements only",
-      "playerAccountUsed": false,
-      "screens": 8,
+      "mutations": "none - navigations, scrolls and measurements only, both roles",
+      "playerAccountUsed": true,
+      "screens": "8 coach + 8 player",
       "stateLocation": "~/Library/Logs/HelmNativeAudit/.state/ (outside every checkout, never committed)"
     }
   }
