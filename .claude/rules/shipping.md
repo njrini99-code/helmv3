@@ -63,9 +63,9 @@ for cause); the structural fix is `sandbox.filesystem`, disabled, owner's call.
   (exact spellings in `docs/CONTROL_PLANE_ENFORCEMENT.md`), its
   `execute_sql` is an unenforced production write path — and the sanctioned
   namespace per service comes from the generated `docs/TOOL_AUTHORITY_MATRIX.md`.
-- The Sentry MCP is the working Sentry read path (org `helm-xs`). A `401
-  Invalid token` from the `.env.local` token means rotate it, not that the
-  path is gone — `usableSecret()` checks shape only, so a placeholder passes.
+- The Sentry MCP (start from the `helm-sentry` skill) is the working Sentry
+  read path (org `helm-xs`). A `401 Invalid token` from the `.env.local`
+  token means rotate it, not gone — `usableSecret()` checks shape only.
 
 ### Vercel
 

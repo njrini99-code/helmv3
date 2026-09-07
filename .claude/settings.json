@@ -60,7 +60,12 @@
       "Bash(./node_modules/.bin/supabase projects list:*)",
       "Bash(./node_modules/.bin/supabase status:*)",
       "Bash(./node_modules/.bin/supabase inspect db:*)",
-      "Bash(./node_modules/.bin/supabase functions list:*)"
+      "Bash(./node_modules/.bin/supabase functions list:*)",
+      "mcp__7524981b-0003-40de-9f86-c5275420784a__find_organizations",
+      "mcp__7524981b-0003-40de-9f86-c5275420784a__find_projects",
+      "mcp__7524981b-0003-40de-9f86-c5275420784a__search_issues",
+      "mcp__7524981b-0003-40de-9f86-c5275420784a__search_events",
+      "mcp__7524981b-0003-40de-9f86-c5275420784a__get_sentry_resource"
     ],
     "deny": [
       "Bash(supabase config push:*)",
