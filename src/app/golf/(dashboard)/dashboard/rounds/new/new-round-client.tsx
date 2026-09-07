@@ -60,6 +60,7 @@ import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking'
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { localDayIso } from '@/lib/golf/local-day';
+import { useActiveWork } from '@/lib/recovery/use-active-work';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -565,6 +566,14 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // Save data when user leaves the page (phone lock, app switch, tab close)
   const stepRef = useRef(step);
   stepRef.current = step;
+  // A02-001: same gate as handleBeforeUnload below — once setup has been left,
+  // or a course has been named, a stale-asset recovery must not replace the
+  // document out from under the entry the player has not saved yet.
+  useActiveWork(
+    'golf-round-new',
+    step !== 'setup' || Boolean(setupData.courseName),
+  );
+
   useEffect(() => {
     // Warn before closing tab/navigating away if there's any data to lose
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {

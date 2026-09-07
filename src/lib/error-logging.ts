@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/nextjs';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
+import { requestRecovery } from '@/lib/recovery/client';
 
 const SEVERITY_TO_SENTRY_LEVEL: Record<'low' | 'medium' | 'high' | 'critical', Sentry.SeverityLevel> = {
   low: 'info',
@@ -497,65 +498,35 @@ function sendToMonitoringService(logEntry: ErrorLogEntry): void {
 }
 
 /**
- * Storage key used to ensure we only auto-reload once per session after
- * detecting a stale-server-action error. Prevents an infinite reload loop
- * if for some reason the new bundle is still broken.
+ * Storage key the stale-server-action reload used to guard itself with.
  *
- * Exported so other modules (e.g. RouteErrorBoundary) coordinate on the
- * same key — there must be exactly one source of truth, otherwise two
- * paths can each "first-reload" the same session.
+ * Kept only because `RouteErrorBoundary` reports its value in error logs —
+ * a session that reloaded under the old scheme still carries it. The live
+ * budget is the recovery coordinator's ledger, not this key.
  */
 export const STALE_ACTION_RELOAD_KEY = 'stale-action-auto-reload';
 
 /**
- * Module-level fallback flag for environments where sessionStorage throws
- * (Safari private mode, sandboxed iframes, storage quota exceeded). Without
- * this, a sessionStorage failure in the catch block would silently fall
- * through and the reload would fire on every error → infinite loop.
- */
-let reloadAttempted = false;
-
-/**
- * Reload the page once per session after a stale-server-action error,
- * showing a toast to explain what's happening if a toast system is mounted.
- * Falls back to a silent reload if `sonner` isn't loaded yet.
+ * Hand a stale-server-action failure to the one recovery coordinator.
  *
- * Reload-guarding is layered: sessionStorage is the primary signal (survives
- * the reload itself), but the module-level `reloadAttempted` flag is the
- * authoritative fallback when sessionStorage is unavailable or throws.
+ * This function used to own its own session flag, module flag and
+ * `window.location.reload()`, which meant it could replace the document
+ * while the boot script was separately replacing it for the same error —
+ * and it did so without asking whether the user had unsaved work. Both
+ * decisions now belong to `window.__helmRecovery`: it holds the single
+ * attempt budget, the in-flight latch, and the work-state check.
+ *
+ * The toast is still ours, because the coordinator is boot-safe and cannot
+ * import `sonner`. It only appears when an attempt was actually claimed.
  */
-export function softReloadForStaleServerAction(): void {
+export function softReloadForStaleServerAction(message?: unknown): void {
   if (typeof window === 'undefined') return;
 
-  // Module-level guard catches the private-mode case where sessionStorage
-  // throws on every read AND every write — without this, both fail silently
-  // and we'd reload forever.
-  if (reloadAttempted) return;
+  const status = requestRecovery(
+    message ?? 'Failed to find Server Action. This request was not found on the server.',
+  );
+  if (status !== 'scheduled') return;
 
-  let storageAvailable = true;
-  try {
-    const already = window.sessionStorage.getItem(STALE_ACTION_RELOAD_KEY);
-    if (already) return;
-  } catch {
-    storageAvailable = false;
-  }
-
-  if (storageAvailable) {
-    try {
-      window.sessionStorage.setItem(STALE_ACTION_RELOAD_KEY, Date.now().toString());
-    } catch {
-      // setItem can throw even when getItem succeeds (quota exceeded /
-      // privacy mode partial support). Fall through to the module flag.
-      storageAvailable = false;
-    }
-  }
-
-  // Always set the module flag so a same-tick second call cannot reload
-  // again, regardless of sessionStorage state.
-  reloadAttempted = true;
-
-  // Best-effort toast. Dynamic import keeps this file framework-agnostic and
-  // avoids pulling sonner into the server bundle.
   void import('sonner')
     .then(({ toast }) => {
       try {
@@ -565,13 +536,7 @@ export function softReloadForStaleServerAction(): void {
       }
     })
     .catch(() => {
-      /* sonner not available — silent reload is fine */
-    })
-    .finally(() => {
-      // Small delay so the toast has a chance to render before reload.
-      setTimeout(() => {
-        window.location.reload();
-      }, 250);
+      /* sonner not available — a silent recovery is fine */
     });
 }
 
@@ -638,7 +603,7 @@ export function setupGlobalErrorHandlers(): void {
 
       // Stale server action — soft-reload once per session and don't log.
       if (isStaleServerActionError(reason) || isStaleServerActionError(reasonMessage)) {
-        softReloadForStaleServerAction();
+        softReloadForStaleServerAction(reasonMessage);
         return;
       }
 
@@ -659,7 +624,7 @@ export function setupGlobalErrorHandlers(): void {
     window.addEventListener('error', (event) => {
       const err = event.error || new Error(event.message);
       if (isStaleServerActionError(err)) {
-        softReloadForStaleServerAction();
+        softReloadForStaleServerAction(err.message || event.message);
         return;
       }
       const errorKind = classifyGlobalErrorKind(err.message || event.message || '');
