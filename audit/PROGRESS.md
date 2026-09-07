@@ -551,12 +551,9 @@ worktree with HMR so the owner is reviewing what is actually committed.
     gap plus `Group.dc.html:32`'s `margin-left: 4px`. The title is not optically
     centred in the bar and cannot be: the labelled back control is 101px wide.
     That is the shipped back affordance, not a defect this round introduced.
-- [ ] **NOTED, not fixed, out of W10's scope:** with the widened fixture the thread
-      did not auto-scroll to the newest message — content continued below the
-      scroll region's foot while the view sat mid-thread. It may be an artifact of
-      rows inserted straight into Postgres arriving by realtime rather than by the
-      initial fetch. It needs its own reproduction against a normal send before
-      anything is changed; recording it rather than guessing at it.
+- [x] **A new defect found while measuring, reproduced, and deliberately NOT fixed
+      here** — filed below under NEW findings as N-04. Not a realtime artifact as
+      first suspected: it reproduces on a cold page load through the normal fetch.
 
 ## DEFERRED — deliberately not in this PR, with the reason
 Scaling scope down is the owner's call, so these are named rather than silently dropped.
@@ -580,6 +577,49 @@ None is blocked by anything above; each is its own piece of work.
 | **G-10 / G-11 / G-12 / G-17 / G-25 / G-28 / G-34..G-37 / G-43** | Lower severity or dependent on a deferred item above |
 
 ## NEW findings from the write phase
+
+### N-04 — a thread opens at its OLDEST message once it overflows (pre-existing)
+Found while measuring W10, reproduced on a cold load, and left for its own PR
+because the fix is surgery on the most carefully-reasoned block in
+`MessageThreadPane` and the cause is inferred, not proven.
+
+**Reproduction** (390x844, `coach@local.test`, "Kiawah Trip" with 7 messages):
+open the thread from the rail. `scrollTop = 0`, `clientHeight = 621`,
+`scrollHeight = 750` — the newest message sits 129px below the fold.
+
+**Measured, not inferred:**
+- Instrumenting the `scrollTop` setter on the scroll region across a full page
+  load and thread open records **zero writes**. The pin at `MessageThreadPane.tsx:915`
+  never executes with a real height.
+- Appending 40px of content (750 -> 790) does not move `scrollTop`. The
+  re-pin `ResizeObserver` at `:947` is inert too, so the recovery path the
+  comment at `:917-932` describes is not running either.
+
+**Two candidate causes, both consistent with the above, neither proven:**
+1. The mobile pane is mounted BEFORE it is visible — measured: every thread
+   element reports a 0x0 box while the rail is showing, and the page
+   auto-selects the first conversation. A layout effect firing then sees
+   `scrollHeight === 0`, so `scrollTop = scrollHeight` is a write of 0, and
+   `pendingInitialScrollConversationIdRef` is nulled at `:935` — spending the
+   one-shot sentinel. Tapping that same already-selected conversation does not
+   change `conversation.id`, so the effect never re-runs with real geometry.
+2. The content observer at `:942` returns early because `messagesContentRef`
+   (`:1318`, inside the loaded branch) is still null when it first runs; its
+   deps are `[conversation?.id]`, which then never change, so it is never
+   re-attached.
+
+**Why it was invisible until now:** before W10 the day separators were
+zero-height absolute rows. Removing 3 x 44px of content put this thread at
+618px against a 621px viewport — it did not overflow, so `scrollTop = 0` was
+correct and the broken pin was a no-op. Inlining the chips (which is what stops
+"TODAY" landing on the sender name) is what made the thread taller than its
+viewport. W10 exposed this defect; it did not introduce it.
+
+**Do not fix by widening the near-bottom tolerance or adding a timeout.** Both
+candidates are one-shot-sentinel/attachment bugs; a delay would paper over
+whichever one is real and reintroduce the "opens at the top" report the existing
+comments were written to close.
+
 Found while doing something else, recorded rather than silently absorbed.
 
 | Finding | What |
