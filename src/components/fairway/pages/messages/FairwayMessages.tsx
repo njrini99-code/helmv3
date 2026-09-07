@@ -157,6 +157,16 @@ export function FairwayMessages() {
     Map<string, GroupMember>
   >(new Map());
 
+  // W7b — the identity map above resolves MESSAGE SENDERS, which is a strictly
+  // larger set than the group's current members: once Remove and Leave exist,
+  // somebody who is gone can still own messages in the backlog. Keying the map
+  // on current participants alone made their bubbles read "Unknown", which is
+  // both wrong and alarming. So the map covers senders too, and this set is
+  // what the details sheet lists — a former sender must never appear there.
+  const [groupMemberIds, setGroupMemberIds] = React.useState<Set<string>>(
+    new Set(),
+  );
+
   const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
     const supabase = createClient();
     const { data: participants, error: participantsError } = await supabase
@@ -174,7 +184,31 @@ export function FairwayMessages() {
 
     if (!participants || participants.length === 0) return;
 
-    const userIds = participants.map(p => p.user_id);
+    const memberIds = new Set(participants.map(p => p.user_id));
+
+    // Everyone who has SPOKEN here, which after a removal is not the same set
+    // as everyone who is here. PostgREST caps this at 1000 rows and returns
+    // the oldest first, so on a thread longer than that the names that could
+    // go unresolved are the most RECENT senders — who are, by construction,
+    // the ones most likely to still be participants and therefore already
+    // covered above. Anything still unresolved renders as "Former member" in
+    // the thread pane, never "Unknown".
+    const { data: senders, error: sendersError } = await supabase
+      .from('golf_messages')
+      .select('sender_id')
+      .eq('conversation_id', conversationId);
+
+    if (sendersError) {
+      logError(
+        new Error(sendersError.message || 'Failed to fetch group message senders'),
+        { component: 'FairwayMessages', action: 'fetchGroupParticipants', sport: 'shared' },
+        'low'
+      );
+    }
+
+    const userIds = Array.from(
+      new Set([...memberIds, ...(senders ?? []).map(m => m.sender_id)]),
+    );
 
     // D-03a — `title` and `graduation_year` are the member row's subtitle, and
     // they are the ONLY two new columns this whole wave asks for. Both are
@@ -229,12 +263,14 @@ export function FairwayMessages() {
       }
     });
     setGroupParticipants(map);
+    setGroupMemberIds(memberIds);
   }, []);
 
   // Fetch participant names whenever we enter a group conversation; clear on 1:1.
   React.useEffect(() => {
     if (!selectedConversationId) {
       setGroupParticipants(new Map());
+      setGroupMemberIds(new Set());
       return;
     }
     const conv = conversations.find(c => c.id === selectedConversationId);
@@ -242,6 +278,7 @@ export function FairwayMessages() {
       fetchGroupParticipants(selectedConversationId);
     } else {
       setGroupParticipants(new Map());
+      setGroupMemberIds(new Set());
     }
   }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
@@ -836,7 +873,9 @@ export function FairwayMessages() {
           creatorId={selectedConversation.creator_id}
           currentUserId={currentUserId || userId}
           memberCount={selectedConversation.participant_count}
-          members={Array.from(groupParticipants.values())}
+          members={Array.from(groupParticipants.values()).filter((m) =>
+            groupMemberIds.has(m.id),
+          )}
           /* Membership management. Every one of these ends in a refetch of
              the conversation list rather than a local mutation of
              `groupParticipants`: that map is derived from the same rows the

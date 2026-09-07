@@ -1695,13 +1695,27 @@ async function getGolfGroupAddCandidatesImpl(
     // below iterate zero times, and the sheet renders "Everyone on this team
     // is already in the group." A failed read and a genuinely-full group would
     // be indistinguishable — and one of them means "try again".
-    for (const failed of [
-      { result: members, table: 'golf_team_members' as const },
-      { result: staff, table: 'golf_team_coach_staff' as const },
-    ]) {
-      if (!failed.result.error) continue;
-      maybeCaptureRlsDenial(failed.result.error, {
-        table: failed.table,
+    //
+    // Each `.error` is named directly rather than walked through a list.
+    // `helm/no-unchecked-supabase-error` is syntactic: it pairs a `.data` read
+    // with a `.error` read on the SAME identifier, and cannot see an error
+    // reached through an intermediate object. Both of these reads were
+    // unchecked before this change, and both were counted.
+    if (members.error) {
+      maybeCaptureRlsDenial(members.error, {
+        table: 'golf_team_members',
+        verb: 'select',
+        action: 'messages.getGolfGroupAddCandidates',
+        sport: 'golf',
+        feature: 'messaging',
+        userId: user.id,
+      });
+      throw new Error('Failed to load the team roster');
+    }
+
+    if (staff.error) {
+      maybeCaptureRlsDenial(staff.error, {
+        table: 'golf_team_coach_staff',
         verb: 'select',
         action: 'messages.getGolfGroupAddCandidates',
         sport: 'golf',

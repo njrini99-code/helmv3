@@ -304,7 +304,34 @@ describe('G-30 / G-57 — the header has an entry point now', () => {
     // coach/player row resolved. Collapsing them would report the smaller one
     // as the truth.
     expect(pageCode).toContain('memberCount={selectedConversation.participant_count}');
-    expect(pageCode).toContain('members={Array.from(groupParticipants.values())}');
+    expect(pageCode).toContain('members={Array.from(groupParticipants.values()).filter((m) =>');
+  });
+
+  it('resolves message senders who are no longer members, without listing them as members', () => {
+    // Removing a member made their existing bubbles render "Unknown", because
+    // the identity map was keyed on CURRENT participants. Senders are a larger
+    // set than members once Remove and Leave exist, so the map covers both —
+    // and `groupMemberIds` is what the sheet lists, so a departed sender can
+    // never reappear in the member list as a side effect of the fix.
+    expect(pageCode).toContain("from('golf_messages')");
+    expect(pageCode).toContain("select('sender_id')");
+    expect(pageCode).toContain('new Set([...memberIds, ...(senders ?? []).map(m => m.sender_id)])');
+    expect(pageCode).toContain('setGroupMemberIds(memberIds);');
+    expect(pageCode).toContain('groupMemberIds.has(m.id),');
+  });
+
+  it('clears the member set wherever it clears the identity map', () => {
+    // Two pieces of state that must move together: a stale member set against
+    // a fresh map would list the previous conversation's people.
+    const clears = pageCode.split('setGroupParticipants(new Map())').length - 1;
+    const memberClears = pageCode.split('setGroupMemberIds(new Set())').length - 1;
+    expect(memberClears).toBe(clears);
+  });
+
+  it('names a departed sender "Former member", never "Unknown"', () => {
+    // Past the participant fetch's 1000-row cap the lookup can still miss.
+    // "Unknown" reads as a data fault; "Former member" is the true statement.
+    expect(paneCode).toContain("const senderName = senderInfo?.name ?? 'Former member';");
   });
 });
 
@@ -602,8 +629,14 @@ describe('membership — the server actions refuse rather than pretend', () => {
     const impl = actions.slice(actions.indexOf('async function getGolfGroupAddCandidatesImpl'));
     const body = impl.slice(0, impl.indexOf('const observedGetGolfGroupAddCandidates'));
     expect(body).toContain('Failed to load the team roster');
-    expect(body).toContain("table: 'golf_team_members' as const");
-    expect(body).toContain("table: 'golf_team_coach_staff' as const");
+    // Each error is named on its OWN identifier, not reached through a list.
+    // `helm/no-unchecked-supabase-error` pairs `.data` with `.error` on the
+    // same name and cannot see an indirection — the first version of this fix
+    // used a loop, and the ratchet still counted both reads as unchecked.
+    expect(body).toContain('if (members.error) {');
+    expect(body).toContain('if (staff.error) {');
+    expect(body).toContain("table: 'golf_team_members',");
+    expect(body).toContain("table: 'golf_team_coach_staff',");
   });
 
   it('excludes people already in the group from the candidate list', () => {

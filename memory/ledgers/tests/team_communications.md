@@ -1,5 +1,12 @@
 # Test ledger — team_communications
 
+<!-- schema-drift-absent: golf_group_membership_management -->
+<!--
+  Not a database object — the pgTAP suite's filename
+  (`supabase/tests/rls/golf_group_membership_management.sql`), which happens to
+  start with `golf_`.
+-->
+
 ## 2026-09-07 — W7b group membership: pgTAP + 31 more component/action assertions
 
 - SHA: 79f6e1a07.

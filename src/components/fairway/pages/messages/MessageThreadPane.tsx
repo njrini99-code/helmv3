@@ -1298,7 +1298,13 @@ export function MessageThreadPane({
                     name: conversation.other_participant?.name ?? 'Unknown',
                     avatar: conversation.other_participant?.avatar ?? null,
                   };
-              const senderName = senderInfo?.name ?? 'Unknown';
+              // W7b — "Unknown" was the fallback, and once Remove and Leave
+              // exist it is the WRONG word: the sender is not unknown, they
+              // have left. FairwayMessages now resolves former senders too, so
+              // this fires only past the participant fetch's 1000-row cap —
+              // and "Former member" is still true there, where "Unknown" reads
+              // as a data fault.
+              const senderName = senderInfo?.name ?? 'Former member';
               const senderAvatar = senderInfo?.avatar ?? null;
 
               return (

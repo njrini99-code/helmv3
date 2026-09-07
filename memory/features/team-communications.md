@@ -247,6 +247,19 @@ when the column is empty. That is why `GroupMember` is its own type rather than
 `GolfConversationParticipant`, whose `subtitle` is required and whose DM path
 fills the gap with `'Golf Coach'` / `'Golf Player'`.
 
+<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team -->
+<!--
+  `golf_user_on_conversation_team` is a real function, created by
+  20260907160000 — which is written and NOT applied, so it is correctly absent
+  from the production schema snapshot `db:types` generates. Delete this name
+  from the declaration above the moment the owner applies the migration and
+  re-runs `npm run db:types`; leaving it here would exempt a real object from
+  the drift check.
+  `golf_group_membership_management` is not a database object at all — it is
+  the pgTAP suite's filename (`supabase/tests/rls/golf_group_membership_-
+  management.sql`), which happens to start with `golf_`.
+-->
+
 ## Group membership management, and why it needed a policy change
 
 Adding or removing a member of a team chat is NOT a wiring problem. Verified
