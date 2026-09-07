@@ -645,3 +645,40 @@
   one the token file actually contrast-measured (7.27:1 on the light wash).
   Approximating the artboard's 8%-alpha tint under a borrowed ink would have
   been a guess at both halves.
+
+## G-20b — the §9.5 outcome taxonomy
+`src/hooks/golf/use-golf-messages.ts`, `FairwayMessages.tsx`, `MessageThreadPane.tsx`
+
+- §9.5, quoted in `audit/M03C-composer.md:36`: "An unknown commit outcome uses
+  Checking status or Confirmation unavailable, not a red definitive failure that
+  invites duplication." F3 measures the collapse: every non-success path was
+  treated identically and one generic toast covered all of them, so nothing on
+  screen could tell "it was refused" from "we don't know".
+- THE DISCRIMINATOR WAS ALREADY THERE. `isTransientNetworkErrorMessage` exists
+  and is already used by `withOneTransportRetry` on this exact call. A transport
+  error means `fetch` itself threw, so no response was ever read and the POST
+  may have committed. Anything else — including an `{ error }` the action
+  returned — means the request arrived and the server refused it. No new
+  plumbing, no new classification vocabulary.
+- TWO OUTCOMES, NOT EIGHT. §9.5's table names eight (Sending / Sent / Read /
+  Checking status·Confirmation unavailable / Could not send / Access revoked /
+  Invalid content / Local persistence failed). F3 documents ONE collapse as the
+  gap. The other six have no evidence asking for them and are not invented here.
+- The row and the toast read the same classifier, so they cannot disagree: the
+  bubble says "Not confirmed" instead of "Not sent", and the toast says
+  "Couldn't confirm this send — check the thread before sending again."
+- `retryMessage` clears `sendOutcome` along with `sendFailed`. Left behind, a
+  row that retried out of `unknown` into `refused` would still be wearing the
+  old label.
+- Duplication risk unchanged and still safe: `retryMessage` reuses the row's
+  existing id, so a retry racing a commit collides on the primary key and the
+  action reports 23505 as the success it is. The taxonomy fixes what the user is
+  TOLD, which is the gap F3 isolates — explicitly separate from the idempotency
+  question `memory/features/team-communications.md:82-90` already treats as
+  accepted doctrine.
+- A test assertion re-anchored, not weakened. The G-19 suite pinned
+  `markSendFailed(optimisticId)` exactly and the row's whole shape, so adding a
+  second parameter broke two tests about a property they do not own (every
+  failure branch MARKS rather than filters). Both are now argument-agnostic past
+  the part they own. Proven not weakened: checked out `fef04dbb9~1` — the commit
+  before G-19 — and all six still fail there.

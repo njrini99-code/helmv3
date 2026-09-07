@@ -131,9 +131,9 @@ it is the owner's, through `db-apply`.
   - [x] **G-49b** the depth system — both bubble sides are lit. `.lit` (`Bubbles.dc.html:18`) is byte-identical to `--fw-shadow-card`, so incoming was a free token application, the same win G-32 found on the rail's unread rows; the manifest calls F14 and G-03 "one systemic issue across two lanes, not two", and the canvas half already shipped in G-32's page wash. `.lit-accent` is a HUED ambient no fw token expresses — A03 request #8, with `shadow-soft` shipping as the interim because `--fw-shadow-card`'s 0.55 white inset would paint a specular rim on a dark green fill. 11 tests, 3 failing pre-fix
 
 ## W5 — Composer (only after W3)
-- [ ] **G-20** two of six composer states do not exist
+- [x] **G-20** two of six composer states do not exist — G-20a + G-20b landed; G-20c (replying) deferred with its four pieces named below
   - [x] **G-20a** the "Didn't send" state — and a CORRECTION: it was half-shipped already. The two send paths differ. `onSend` reaches `sendMessage`, which pushes an optimistic row before anything can throw, so every text failure is already a muted bubble with its own Retry (G-19) — the artboard's sixth state, in the better place §9.2 asks for. `onSendWithAttachments` reaches `useMessageAttachments`, which creates NO optimistic row: a toast and nothing else. The banner is for that path only. Also closes a defect G-19 left behind — the composer kept the draft on a failed text send, so the same sentence sat on screen twice offering two different retries. 7 tests, 5 failing pre-fix
-  - [ ] **G-20b** the §9.5 outcome taxonomy — "Confirmation unavailable" vs "Could not send"
+  - [x] **G-20b** the §9.5 outcome taxonomy. The discriminator needed no new plumbing: a transport error means `fetch` itself threw, so no response was read and the commit state is genuinely unknown; anything else means the server answered. The failed row now reads "Not confirmed" instead of "Not sent", and the toast says so too — both through the same helper, so they cannot disagree. Two outcomes only: §9.5 names eight, M03C's F3 documents this one collapse, and the other six are not invented. 12 tests, 7 failing pre-fix
 - [ ] **G-09** upload progress is fabricated [cross-lane + artboard confirmed]
 - [ ] **G-24** no cancel path for an in-flight upload
 - [ ] **G-22** five-line growth is a hardcoded 120px
@@ -171,6 +171,7 @@ None is blocked by anything above; each is its own piece of work.
 | **G-14 / G-16** send-path unification, reconnect/foreground resync | Architecture, not a defect fix. Wrong thing to land un-reviewed overnight |
 | **G-39 / D-04** branch reconciliation | Needs the local-vs-remote tip (`e3aec2315` ≠ `c65dd47b5`) chosen explicitly first |
 | **G-02** mute UI | Depends on G-58's migration being *applied*, which is the owner's step |
+| **G-20c** replying — the composer's reply-context slot | Named rather than built, because a slot with nothing to fill it and nothing to render the result is decoration that scores green. Four pieces, and NO MIGRATION GATE: `golf_messages.reply_to_id` already exists with its FK (`src/lib/types/database.ts:14216,14260`), so whoever picks this up does not need to re-derive that. (1) initiate from a bubble — the long-press action row G-19 built is where it goes; (2) thread the id through `sendMessage`, which hardcodes `reply_to_id: null` at `use-golf-messages.ts:662`; (3) the composer's quote slot, drawn at `Composer.dc.html:69-86`; (4) render the quote in the recipient's bubble |
 | **G-51** remove the dead roster presence dot | Referral — outside the messages tree, different lease |
 | **G-52** messaging presence | Policy problem (RLS), not a build |
 | **G-41** DM creation race | Needs a unique constraint ⇒ migration ⇒ owner |

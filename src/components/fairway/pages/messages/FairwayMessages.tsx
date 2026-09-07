@@ -69,6 +69,7 @@ import { EmptyState } from '@/components/fairway/feedback';
 import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
 import { MessageComposer } from './MessageComposer';
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
 export function FairwayMessages() {
   const { showToast } = useToast();
@@ -351,7 +352,23 @@ export function FairwayMessages() {
       await sendMessage(content);
       return true;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
+      // G-20b — the two outcomes §9.5 requires kept apart. A transport error
+      // means `fetch` itself threw, so no response was ever read and the POST
+      // may have committed: reporting that as a definitive failure is what
+      // "invites duplication". Anything else means the server answered.
+      //
+      // The row in the thread carries the same distinction (`sendOutcome`), so
+      // the toast and the bubble cannot disagree — both read the same class of
+      // error through the same helper.
+      const unknownCommit = isTransientNetworkErrorMessage(
+        error instanceof Error ? error.message : String(error),
+      );
+      showToast(
+        unknownCommit
+          ? 'Couldn’t confirm this send — check the thread before sending again.'
+          : error instanceof Error ? error.message : 'Failed to send message',
+        'error',
+      );
       logError(
         error instanceof Error ? error : new Error('Failed to send message'),
         { component: 'FairwayMessages', action: 'handleSendMessage', sport: 'shared' },

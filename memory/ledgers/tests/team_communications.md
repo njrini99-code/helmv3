@@ -320,3 +320,26 @@ mid-flight edit survives that release.
 The G-21 suite is untouched and still passes: its refusal keeps its exact text
 and its `role="alert"`, and a new test asserts it shows no Retry, since retrying
 a missing handler only refuses again.
+
+## G-20b — use-golf-messages.send-outcome.test.ts
+12 tests, 7 failing against the pre-fix files, verified by restoring all three
+from HEAD and re-running.
+
+Two layers, two idioms. The classifier's logic runs DIRECTLY against real engine
+wording — WKWebView's "Load failed" (the failure two Shenandoah players hit
+mid-send on 2026-09-01/02), Chrome's "Failed to fetch", Gecko's, WebKit's
+mid-request loss, a `net::ERR_` — plus the cases that must NOT be unknown: a
+server refusal however worded, and an `AbortError`, which is our own timeout
+firing rather than their connection dropping. Its PLACEMENT (which branch marks
+which outcome) is asserted on the source, matching the sibling send-integrity
+suites: reaching `sendMessage` behaviourally needs a full supabase + auth +
+realtime harness.
+
+One test exists to stop the regression rather than the defect: no catch may
+hardcode an outcome, since assuming in a catch is exactly what collapsed the
+taxonomy.
+
+`use-golf-messages.failed-send.test.ts` (G-19) is re-anchored: it pinned
+`markSendFailed(optimisticId)` exactly, freezing a signature it does not own.
+Now argument-agnostic past the property it does own. Verified against
+`fef04dbb9~1` (pre-G-19): all six still fail there.

@@ -45,13 +45,20 @@ describe('use-golf-messages — a failed send retains the message (G-19)', () =>
 
   it('marks the row failed instead, at every failure branch', () => {
     // Three branches: error result, non-success result, and the catch.
-    const marks = code.match(/markSendFailed\(optimisticId\)/g) ?? [];
+    //
+    // Argument-agnostic on purpose. G-20b gave `markSendFailed` a second
+    // parameter (which outcome it was), and the property THIS test owns is
+    // that every branch marks rather than filters — not what else it records.
+    // Pinning the full call froze a signature this suite does not own.
+    const marks = code.match(/markSendFailed\(optimisticId[,)]/g) ?? [];
     expect(marks.length).toBe(3);
   });
 
   it('sets a client-only sendFailed flag rather than mutating a real column', () => {
     expect(code).toContain('sendFailed?: boolean;');
-    expect(code).toContain('m.id === optimisticId ? { ...m, sendFailed: true } : m');
+    // Again argument-agnostic past the flag itself: G-20b sets `sendOutcome`
+    // alongside it, and this test owns the flag, not the row's whole shape.
+    expect(code).toMatch(/m\.id === optimisticId \? \{ \.\.\.m, sendFailed: true[,\s}]/);
   });
 
   it('exposes a retry that reuses the SAME id, so pressing it twice cannot duplicate', () => {

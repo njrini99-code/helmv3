@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
-import { withOneTransportRetry } from '@/lib/transient-network-error';
+import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
@@ -82,6 +82,24 @@ export interface GolfMessage extends GolfMessageRow {
    * RETAINED, shown muted, and offered a retry.
    */
   sendFailed?: boolean;
+  /**
+   * WHY the send failed, in the only two classes we can actually distinguish
+   * (G-20b, §9.5).
+   *
+   * `refused` — the server answered and said no. `fetch` resolved, so the
+   * request demonstrably arrived; whatever it says is the truth.
+   *
+   * `unknown` — the transport died and there is no answer to read. The POST
+   * may have committed with only the response lost, which is exactly the case
+   * §9.5 says must NOT be reported as a definitive failure: "An unknown commit
+   * outcome uses Checking status or Confirmation unavailable, not a red
+   * definitive failure that invites duplication."
+   *
+   * Only these two, deliberately. §9.5 names eight outcomes, but M03C's F3
+   * documents this one collapse as the gap; the other six have no evidence
+   * asking for them and are not invented here.
+   */
+  sendOutcome?: 'refused' | 'unknown';
 }
 
 // Keep old name for backward compatibility
@@ -624,11 +642,25 @@ export function useGolfMessages(conversationId: string) {
    * with that id and inherit the existing primary-key collision handling that
    * makes a duplicate attempt safe.
    */
-  const markSendFailed = (optimisticId: string) => {
+  const markSendFailed = (optimisticId: string, sendOutcome: 'refused' | 'unknown') => {
     setMessages(prev =>
-      prev.map(m => (m.id === optimisticId ? { ...m, sendFailed: true } : m)),
+      prev.map(m => (m.id === optimisticId ? { ...m, sendFailed: true, sendOutcome } : m)),
     );
   };
+
+  /**
+   * Classify a send failure into the two outcomes §9.5 needs kept apart.
+   *
+   * The discriminator is already sitting there and needs no new plumbing: a
+   * transport-layer error means `fetch` itself threw, so no response was ever
+   * read and the commit state is genuinely unknown. Anything else — including
+   * an `{ error }` the action returned — means the request arrived and the
+   * server refused it.
+   */
+  const classifySendFailure = (error: unknown): 'refused' | 'unknown' =>
+    isTransientNetworkErrorMessage(error instanceof Error ? error.message : String(error))
+      ? 'unknown'
+      : 'refused';
 
   const sendMessage = async (content: string) => {
     // Clear typing indicator when sending
@@ -680,20 +712,25 @@ export function useGolfMessages(conversationId: string) {
       );
 
       // Check if the result indicates an error
+      // The action answered. Whatever it says, the request demonstrably
+      // arrived, so this is a refusal and not an unknown commit (G-20b).
       if (result && 'error' in result && result.error) {
-        markSendFailed(optimisticId);
+        markSendFailed(optimisticId, 'refused');
         throw new Error(result.error);
       }
 
       if (!result || !result.success) {
-        markSendFailed(optimisticId);
+        markSendFailed(optimisticId, 'refused');
         throw new Error('Failed to send message');
       }
 
       return true;
     } catch (error) {
-      // Retain the message, marked failed — see markSendFailed (G-19).
-      markSendFailed(optimisticId);
+      // Retain the message, marked failed — see markSendFailed (G-19) — and
+      // record WHICH kind of failure it was (G-20b). Re-marking a row the
+      // branches above already marked is harmless: those errors carry app
+      // wording, so they classify as `refused` a second time.
+      markSendFailed(optimisticId, classifySendFailure(error));
       logError(
         error instanceof Error ? error : new Error(String(error)),
         { component: 'useGolfMessages', action: 'send-message', sport: 'golf', conversationId },
@@ -722,7 +759,11 @@ export function useGolfMessages(conversationId: string) {
     if (!target) return false;
 
     setMessages(prev =>
-      prev.map(m => (m.id === messageId ? { ...m, sendFailed: false } : m)),
+      prev.map(m =>
+        // The outcome goes with the flag. Left behind, a row that retried out
+        // of `unknown` into `refused` would still be carrying the old label.
+        m.id === messageId ? { ...m, sendFailed: false, sendOutcome: undefined } : m,
+      ),
     );
 
     try {
@@ -731,12 +772,12 @@ export function useGolfMessages(conversationId: string) {
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
       if (!result || !result.success || ('error' in result && result.error)) {
-        markSendFailed(messageId);
+        markSendFailed(messageId, 'refused');
         return false;
       }
       return true;
     } catch (error) {
-      markSendFailed(messageId);
+      markSendFailed(messageId, classifySendFailure(error));
       logError(
         error instanceof Error ? error : new Error(String(error)),
         { component: 'useGolfMessages', action: 'retry-message', sport: 'golf', conversationId },

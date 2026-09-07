@@ -1457,8 +1457,18 @@ export function MessageThreadPane({
                         to be a toast: what happened, and the two ways out. */}
                     {(msg as MessageWithReadStatus).sendFailed && (
                       <div className="flex items-center gap-2 pt-0.5">
+                        {/* G-20b — "Not sent" is a claim, and on a transport
+                            failure it is one we cannot make: the POST may have
+                            committed with only the response lost. §9.5 names
+                            that case exactly — "An unknown commit outcome uses
+                            Checking status or Confirmation unavailable, not a
+                            red definitive failure that invites duplication."
+                            The refused case keeps the definite wording, because
+                            there the server answered and we know. */}
                         <span className="font-fw-sans text-eyebrow text-text-tertiary">
-                          Not sent
+                          {(msg as MessageWithReadStatus).sendOutcome === 'unknown'
+                            ? 'Not confirmed'
+                            : 'Not sent'}
                         </span>
                         {onRetryMessage && (
                           <Button
