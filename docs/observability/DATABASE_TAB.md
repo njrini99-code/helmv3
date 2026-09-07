@@ -28,7 +28,7 @@ client-side Supabase call.
 - `20260906115900_helm_debug_stat_statements_snapshot_min_exec.sql` — adds
   `min_exec_ms` to the already-applied `helm_debug_stat_statements_snapshot`
   return shape (additive, same signature).
-- `20260906120000_helm_debug_db_statement_samples.sql` — `db_statement_samples`,
+- `20260906120010_helm_debug_db_statement_samples.sql` — `db_statement_samples`,
   `db_statement_alert_state`, `record_db_statement_samples`,
   `helm_debug_read_statement_alert_state`, `helm_debug_read_db_statement_samples`.
 - `20260906120100_helm_debug_db_analysis_samples.sql` — `db_analysis_samples`,
