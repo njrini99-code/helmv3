@@ -45,6 +45,19 @@ describe('sendOpsDigest', () => {
   });
 
   /**
+   * CONTROL for the outbound customer-email kill switch (owner decision,
+   * 2026-09-06, src/lib/email/outbound-gate.ts): ops mail to OPS_DIGEST_TO
+   * is explicitly NOT gated and must still send with the switch off (the
+   * repo default — this test never sets HELM_CUSTOMER_EMAIL_ENABLED).
+   */
+  it('still sends the ops digest with HELM_CUSTOMER_EMAIL_ENABLED off', async () => {
+    vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', '');
+    const res = await sendOpsDigest(email);
+    expect(res).toMatchObject({ sent: true, messageId: 'msg-1' });
+    expect(mocks.send).toHaveBeenCalledTimes(1);
+  });
+
+  /**
    * The briefing goes to more than one inbox (owner, 2026-07-30). Resend needs
    * an ARRAY: handed the raw "a@x.com,b@y.com" string it treats the whole thing
    * as one address and rejects it, so this asserts the split rather than just

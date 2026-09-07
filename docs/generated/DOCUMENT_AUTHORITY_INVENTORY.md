@@ -29,7 +29,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 9 |
 | `AGENT_SKILL` | 86 | 0 | 4 | 2 |
-| `CURRENT_FEATURE` | 26 | 26 | 11 | 31 |
+| `CURRENT_FEATURE` | 27 | 27 | 11 | 31 |
 | `REFERENCE` | 58 | 15 | 18 | 100 |
 | `GENERATED_TRUTH` | 22 | 3 | 7 | 37 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1238 | 0 | 431 | 579 |
-| `UNKNOWN` | 113 | 12 | 46 | 151 |
+| `UNKNOWN` | 113 | 12 | 46 | 150 |
 
 ## Files
 
@@ -177,7 +177,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/calendar-events.md` | current | yes | - | - | 3 | 24 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 28 | 2 |
-| `memory/features/crm_outreach.md` | current | yes | - | - | 1 | 24 | - |
+| `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
+| `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 30 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
@@ -270,7 +271,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 15 | 10 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 6 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 201 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 208 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
@@ -622,7 +623,7 @@ them would bury everything above.
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 29 | 7 |
-| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 13 | 4 |
+| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 13 | 3 |
 | `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 2 | 6 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
 | `docs/observability/SENTRY_SNAPSHOTS.md` | current | - | - | - | 1 | 4 | - |

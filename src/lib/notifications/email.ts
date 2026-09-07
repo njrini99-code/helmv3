@@ -7,6 +7,7 @@
 
 import { describeError } from '@/lib/utils/describe-error';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { gateCustomerEmail } from '@/lib/email/outbound-gate';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 
@@ -911,6 +912,20 @@ export async function sendEmailNotification(
       return { success: true }; // User opted out, but not an error
     }
 
+    // Outbound customer-email kill switch (owner decision, 2026-09-06) — the
+    // single choke point every player/coach/parent notification email
+    // (messages, announcements, qualifiers, watchlist, pipeline, profile
+    // views, tasks, dev plans) routes through. See
+    // memory/features/email_outbound.md.
+    const gate = gateCustomerEmail({
+      kind: type,
+      recipientCount: 1,
+      source: 'notifications/email.sendEmailNotification',
+    });
+    if (!gate.allowed) {
+      return { success: false, error: gate.reason };
+    }
+
     // Get Resend client
     const resend = await getResendClient();
     if (!resend) {
@@ -925,13 +940,16 @@ export async function sendEmailNotification(
     const template = generateEmailTemplate(type, enrichedData);
 
     // Send email
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: 'Helm Sports <notifications@helmsportslabs.com>',
       to: recipientEmail,
       subject: template.subject,
       html: template.html,
       text: template.text,
     });
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
     // Note: In-app notifications are handled by the golf_calendar_notifications table
     // (written at the call site in golf.ts, messages.ts, announcements.ts, etc.)

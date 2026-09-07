@@ -1787,6 +1787,49 @@ features:
         - node --check replay/runners/manifest.mjs
         - node --check replay/runners/gen-coverage-index.mjs
 
+  email_outbound:
+    name: Outbound Customer Email (kill switch)
+    status: active
+    owner: founder
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: >-
+        The gate itself is not wrapped/feature-tagged. It writes its own admin_events row
+        (event_type email.suppressed) directly via src/lib/admin-logger.ts, not through the
+        Bridge withFeature path.
+    docs:
+      feature: memory/features/email_outbound.md
+      flows: []
+      business_logic:
+        - src/lib/email/outbound-gate.ts
+      incidents: []
+    code:
+      routes:
+        - src/app/api/cron/v3/weekly-coach-email/**
+      components: []
+      api: []
+      actions:
+        - src/app/lifting/actions/invites.ts
+      services:
+        - src/lib/notifications/email.ts
+        - src/lib/auth/send-password-reset.ts
+        - src/lib/coachhelm/v3/foundation/email.ts
+        - src/lib/email/**
+      db: []
+      tests:
+        - src/lib/email/__tests__/outbound-gate.test.ts
+        - src/lib/coachhelm/v3/foundation/__tests__/email.test.ts
+        - src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts
+    integrations:
+      - resend
+    review:
+      required_docs:
+        - memory/features/email_outbound.md
+      required_checks:
+        - npm run typecheck
+        - npx vitest run src/lib/email src/lib/notifications src/lib/coachhelm/v3/foundation
+
   team_access_control:
     name: Team Access Control And RLS
     status: active
