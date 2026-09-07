@@ -53,7 +53,104 @@ max_client_conn = 100
 enabled = true
 # Specifies an ordered list of schema files that describe your database.
 # Supports glob patterns relative to supabase directory: "./schemas/*.sql"
-schema_paths = []
+#
+# D2 declarative schema (docs/operations/DECLARATIVE_SCHEMA.md). Order is
+# dependency order, not alphabetical, so every path is listed explicitly
+# rather than as a directory glob. This order was verified empirically by
+# applying it to a fresh Supabase stack via `supabase db diff -f` (see
+# docs/operations/DECLARATIVE_SCHEMA.md) — every step below failed at least
+# once during that process and was reordered until the shadow db built clean:
+#   1. extensions — types like "public"."citext" and functions like
+#      gen_random_uuid() are used in column definitions below
+#   2. schemas, types, sequences (shared) — nothing else compiles without these
+#   3. tables, per domain (shared before golf/baseball/lifting/helm_debug/
+#      helm_private/archive) — shared carries users/organizations/audit_log,
+#      which golf_*/baseball_*/helm_lifting_* tables foreign-key against
+#   4. constraints (FK/PK ADD CONSTRAINT), per domain — needs every
+#      referenced table to already exist, so this runs right after tables
+#   5. functions — triggers, views, indexes, and policies below all call these
+#   6. triggers, per domain — needs both the table and the function
+#   7. views, per domain — reads tables and functions; a materialized view is
+#      a real relation, so it must exist before anything indexes it
+#   8. indexes, per domain — safe once both the table (or materialized view)
+#      and, for expression indexes calling helper functions, the function
+#      exist. This runs after views on purpose: `db diff -f` broke here first
+#      (`relation "public.crm_coach_engagement" does not exist` — a unique
+#      index on a materialized view, scheduled before the view existed)
+#   9. policies, per domain, then policies/rls_enable.sql — USING/WITH CHECK
+#      clauses call the functions above; RLS is turned on only after every
+#      policy for a table exists, so a table is never briefly wide open
+#  10. comments — pure metadata, safe last among DDL
+#  11. grants — always last so nothing is grantable before it exists
+#
+# helm_private has no tables/functions/grants file below because production
+# has none today; add the path here the day it does.
+#
+# shared/01_extensions.sql exists (and runs first) because it has to:
+# `supabase db dump` does not emit CREATE EXTENSION for this project, but
+# building the shadow db from these files empirically fails without it
+# (`type "public.citext" does not exist`) — the file lists only the
+# extensions this repo's own DDL actually references, hand-verified against
+# `list_extensions` on the linked project. Whole-database extension
+# enablement policy otherwise stays D1's call (config.toml [db] / extension
+# sections) — reconcile, don't duplicate, if that lands a different way to
+# declare installed extensions.
+#
+# `archive/` covers two production schemas — "archive" and "graveyard" —
+# that were NOT in the original task-4-schema plan. They surfaced only
+# because `supabase db diff --linked` against the first cut (shared/golf/
+# baseball/lifting/helm_debug/helm_private only) came back non-empty: both
+# schemas exist in production (retired baseball lift-tracking tables plus
+# one golf Momentic snapshot) and had to be dumped and added or the diff
+# would never be empty. See docs/operations/DECLARATIVE_SCHEMA.md and the PR
+# description for the full discrepancy list.
+schema_paths = [
+  "./schemas/shared/01_extensions.sql",
+  "./schemas/shared/02_schemas.sql",
+  "./schemas/shared/03_types.sql",
+  "./schemas/shared/10_tables.sql",
+  "./schemas/golf/10_tables.sql",
+  "./schemas/baseball/10_tables.sql",
+  "./schemas/lifting/10_tables.sql",
+  "./schemas/helm_debug/10_tables.sql",
+  "./schemas/archive/10_tables.sql",
+  "./schemas/shared/20_constraints.sql",
+  "./schemas/golf/20_constraints.sql",
+  "./schemas/baseball/20_constraints.sql",
+  "./schemas/lifting/20_constraints.sql",
+  "./schemas/helm_debug/20_constraints.sql",
+  "./schemas/archive/20_constraints.sql",
+  "./schemas/functions/helm_private.sql",
+  "./schemas/functions/public.sql",
+  "./schemas/triggers/shared.sql",
+  "./schemas/triggers/golf.sql",
+  "./schemas/triggers/baseball.sql",
+  "./schemas/views/shared.sql",
+  "./schemas/views/baseball.sql",
+  "./schemas/shared/30_indexes.sql",
+  "./schemas/golf/30_indexes.sql",
+  "./schemas/baseball/30_indexes.sql",
+  "./schemas/lifting/30_indexes.sql",
+  "./schemas/helm_debug/30_indexes.sql",
+  "./schemas/archive/30_indexes.sql",
+  "./schemas/policies/shared.sql",
+  "./schemas/policies/golf.sql",
+  "./schemas/policies/baseball.sql",
+  "./schemas/policies/lifting.sql",
+  "./schemas/policies/archive.sql",
+  "./schemas/policies/rls_enable.sql",
+  "./schemas/shared/90_comments.sql",
+  "./schemas/golf/90_comments.sql",
+  "./schemas/baseball/90_comments.sql",
+  "./schemas/helm_debug/90_comments.sql",
+  "./schemas/archive/90_comments.sql",
+  "./schemas/shared/95_grants.sql",
+  "./schemas/golf/95_grants.sql",
+  "./schemas/baseball/95_grants.sql",
+  "./schemas/lifting/95_grants.sql",
+  "./schemas/archive/95_grants.sql",
+  "./schemas/functions/95_grants.sql",
+]
 
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
