@@ -42,3 +42,7 @@
 {"ts":1788774550790,"gate":"typecheck","waitMs":1,"runMs":56501,"slots":2}
 {"ts":1788774613048,"gate":"test","waitMs":0,"runMs":329681,"slots":2}
 {"ts":1788774942890,"gate":"build","waitMs":0,"runMs":92957,"slots":2}
+{"ts":1788775143921,"gate":"typecheck:fast","waitMs":1,"runMs":6030,"slots":2}
+{"ts":1788775210797,"gate":"typecheck","waitMs":1,"runMs":56636,"slots":2}
+{"ts":1788775292993,"gate":"test","waitMs":1,"runMs":329988,"slots":2}
+{"ts":1788775631273,"gate":"build","waitMs":0,"runMs":94708,"slots":2}

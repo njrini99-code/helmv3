@@ -138,3 +138,51 @@
   would stop the IME committing the candidate at all.
 - Only reachable with a fine pointer, since a touch keyboard already falls
   through to a native newline (the `isPointerFine` branch above it).
+
+## 2026-09-07 — group unread is per-viewer (G-40)
+
+- `get_golf_conversations_with_details` computes `unread_count` as
+  `COUNT(*) WHERE read = FALSE AND sender_id <> me`, running on
+  `golf_messages.read` — ONE boolean shared by every participant.
+  `mark_golf_messages_read` flips it on every message the opener did not send,
+  so in a 3+ person team chat one member opening the thread cleared the badge
+  for everyone (§17.2, M-T06 FAIL).
+- A correct per-viewer computation already existed in `useGolfConversations` —
+  but only on the SUPPLEMENTAL team-chat path, reached for chats the RPC
+  missed. The normal path was the broken one. The same computation now runs
+  over every group conversation the RPC returns, from the viewer's own
+  `golf_conversation_participants.last_read_at`. No schema change: that column
+  exists in production and in the migrations (`A1-RESOLUTION.md` §3).
+- DMs are deliberately left on the shared boolean. With two people, "not sent
+  by me" and "not read by me" are the same set, so it is already per-viewer
+  there — and it is what DM read receipts are built on.
+- Degradation is explicit: if the `last_read_at` lookup fails, every badge
+  keeps the RPC's number; if one conversation's count fails, only that one
+  does. A failed count must never read as 0, which looks like "caught up".
+- Two pure functions carry the decisions — `perViewerUnreadTargets` (which rows)
+  and `applyPerViewerUnread` (what happens to a row with no recomputed number)
+  — so they can be exercised without a realtime + auth harness. This is also
+  why `ConversationRow` was hoisted to module scope as
+  `GolfConversationRpcRow`.
+- Still open, and NOT fixed here: the RPC itself. Correcting `unread_count` at
+  the source means changing a SECURITY DEFINER function, i.e. a migration —
+  writing one is in scope for this branch, applying it is not, and the client
+  cannot depend on an unapplied function. The client-side derivation is what
+  actually ships.
+- `head: true, count: 'exact'` transfers zero rows, so the PostgREST 1000-row
+  cap cannot silently under-count a busy chat; the id list is chunked at 200
+  because PostgREST filters travel in the URL.
+- Cost note: the per-conversation head count now fires for EVERY group row,
+  where the supplemental path only ever covered rows the RPC had missed. The
+  "team chats per viewer are few" reasoning behind the `Promise.all` was
+  written for that rare path and now covers the common one — production
+  currently has 6 team chats total, so N is small, but this is the number to
+  watch if group chats grow.
+- What clears the badge changed with it. The count no longer falls because
+  `golf_messages.read` flipped; it falls because the viewer's own
+  `last_read_at` moved. `markMessagesAsRead` writes that row first and treats
+  it as the primary read marker, and the rail's realtime subscription is
+  `golf_conversation_participants` / `event: '*'` / `filter: user_id=eq.<me>`
+  — the viewer's own row included — so the write refetches the rail. Pinned by
+  test, because the sibling receipts subscription in `useGolfMessages`
+  deliberately ignores the current user and is an easy thing to copy.

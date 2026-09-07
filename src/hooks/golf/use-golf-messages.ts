@@ -829,6 +829,93 @@ export function useGolfMessages(conversationId: string) {
   };
 }
 
+/**
+ * One row of `get_golf_conversations_with_details`, and the shape the
+ * supplemental team-chat path builds to match it.
+ *
+ * Declared at module scope rather than inside the fetch so the two pure
+ * decisions below can be exercised directly — the fetch itself needs a full
+ * supabase + auth harness to reach.
+ */
+export interface GolfConversationRpcRow {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  creator_id: string | null;
+  last_message_content: string | null;
+  last_message_at: string | null;
+  last_message_sender_id: string | null;
+  unread_count: number;
+  participant_ids: string[];
+  participant_names: string[];
+  is_group?: boolean;
+  title?: string | null;
+  participant_count?: number;
+  /**
+   * The RPC's 14th and final column. It was omitted from this interface, so it
+   * described 13 of the 14 columns the function actually returns and the value
+   * never reached the client (G-15).
+   *
+   * `is_team_channel` and `is_team_chat` are two DIFFERENT flags, not two
+   * spellings of one — both exist on `golf_conversations`. The function's
+   * `is_group` output is literally `COALESCE(c.is_team_chat, FALSE)`, so
+   * is_team_chat is the GROUPING flag; is_team_channel is separate and is used
+   * inside the function only by its own `ORDER BY`. See
+   * `audit/M01-TEAM-FLAGS.md`.
+   *
+   * Nothing branches on it yet — the inbox's ordering and sectioning are the
+   * client's own (G-01), and this only stops the type from lying.
+   */
+  is_team_channel?: boolean;
+}
+
+/**
+ * G-40 — which conversations must have their unread badge recomputed for THIS
+ * viewer.
+ *
+ * The RPC's `unread_count` is `COUNT(*) WHERE read = FALSE AND sender_id <>
+ * me`, i.e. it runs on `golf_messages.read`, ONE boolean shared by every
+ * participant. `mark_golf_messages_read` flips that boolean on every message
+ * the opener did not send — so in a 3+ person team chat, one member opening
+ * the thread clears the badge for everyone, including members who never saw
+ * those messages (§17.2).
+ *
+ * A DM is unaffected and deliberately left alone: with two people, "not sent
+ * by me" and "not read by me" are the same set, so the shared boolean is
+ * already per-viewer there, and it is what DM read receipts are built on.
+ *
+ * `alreadyPerViewer` is the set the supplemental team-chat path computed
+ * itself — those rows arrive with an honest count and must not be re-queried.
+ * That path was the "correct per-viewer fallback" the audit found: right, but
+ * reached only for team chats the RPC MISSED, so the normal path was the
+ * broken one.
+ */
+export function perViewerUnreadTargets(
+  rows: readonly GolfConversationRpcRow[] | null,
+  alreadyPerViewer: ReadonlySet<string>,
+): string[] {
+  return (rows ?? [])
+    .filter((row) => row.is_group === true && !alreadyPerViewer.has(row.id))
+    .map((row) => row.id);
+}
+
+/**
+ * G-40 — apply recomputed per-viewer counts.
+ *
+ * A conversation with no entry keeps the number it already had. That is the
+ * important half: when the recompute fails for one conversation, the badge
+ * degrades to the shared-boolean number rather than silently reading zero,
+ * which would look exactly like "you are caught up".
+ */
+export function applyPerViewerUnread(
+  rows: readonly GolfConversationRpcRow[] | null,
+  counts: ReadonlyMap<string, number>,
+): GolfConversationRpcRow[] {
+  return (rows ?? []).map((row) =>
+    counts.has(row.id) ? { ...row, unread_count: counts.get(row.id) as number } : row,
+  );
+}
+
 export function useGolfConversations() {
   const [conversations, setConversations] = useState<GolfConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -867,38 +954,6 @@ export function useGolfConversations() {
 
     // Use optimized DB function - single query replaces N+1 pattern (was 50-60 queries)
     // Note: Function added in migration, types may need regeneration with `npm run db:types`
-    interface ConversationRow {
-      id: string;
-      created_at: string;
-      updated_at: string;
-      creator_id: string | null;
-      last_message_content: string | null;
-      last_message_at: string | null;
-      last_message_sender_id: string | null;
-      unread_count: number;
-      participant_ids: string[];
-      participant_names: string[];
-      is_group?: boolean;
-      title?: string | null;
-      participant_count?: number;
-      /**
-       * The RPC's 14th and final column. It was omitted here, so this
-       * interface described 13 of the 14 columns the function actually
-       * returns and the value never reached the client (G-15).
-       *
-       * `is_team_channel` and `is_team_chat` are two DIFFERENT flags, not two
-       * spellings of one — both exist on `golf_conversations`. The function's
-       * `is_group` output is literally `COALESCE(c.is_team_chat, FALSE)`, so
-       * is_team_chat is the GROUPING flag; is_team_channel is separate and is
-       * used inside the function only by its own `ORDER BY`. See
-       * `audit/M01-TEAM-FLAGS.md`.
-       *
-       * Nothing branches on it yet — the inbox's ordering and sectioning are
-       * the client's own (G-01), and this only stops the type from lying.
-       */
-      is_team_channel?: boolean;
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawData, error } = await (supabase.rpc as any)(
       'get_golf_conversations_with_details',
@@ -920,7 +975,7 @@ export function useGolfConversations() {
       );
     }
 
-    let conversationsData = rawData as ConversationRow[] | null;
+    let conversationsData = rawData as GolfConversationRpcRow[] | null;
     if (teamAllow) {
       const allow = teamAllow;
       conversationsData = (conversationsData ?? []).filter((c) => allow.has(c.id));
@@ -957,8 +1012,13 @@ export function useGolfConversations() {
     }
 
     // Extract team chat conversations and merge them
-    const groupConversations: ConversationRow[] = [];
+    const groupConversations: GolfConversationRpcRow[] = [];
     const existingIds = new Set(conversationsData?.map(c => c.id) || []);
+    /**
+     * Conversations whose unread count this function computed itself, from the
+     * viewer's own `last_read_at`. They must NOT be recomputed below (G-40).
+     */
+    const perViewerUnreadIds = new Set<string>();
 
     if (groupConvs) {
       // Collect team chat conversations that aren't already in the RPC results
@@ -1077,6 +1137,7 @@ export function useGolfConversations() {
         for (const conv of teamChats) {
           const lastMsg = lastMsgByConv.get(conv.id);
           const unreadCount = unreadByConv.get(conv.id) ?? 0;
+          perViewerUnreadIds.add(conv.id);
 
           groupConversations.push({
             id: conv.id,
@@ -1104,6 +1165,102 @@ export function useGolfConversations() {
     // Merge group conversations with regular ones
     if (groupConversations.length > 0) {
       conversationsData = [...(conversationsData || []), ...groupConversations];
+    }
+
+    /**
+     * G-40 — recompute group unread for THIS viewer.
+     *
+     * See `perViewerUnreadTargets` for why the RPC's number is wrong for a 3+
+     * person chat and right for a DM. This is the same computation the
+     * supplemental team-chat path above already performs; it now covers the
+     * normal path too, which is where nearly every group conversation arrives.
+     *
+     * `head: true, count: 'exact'` transfers zero rows and is not subject to
+     * the PostgREST 1000-row cap, so a busy team chat cannot silently
+     * under-count. The id list is chunked because PostgREST filters travel in
+     * the URL and a long `.in()` is rejected with a bare 400.
+     *
+     * A viewer with a null `last_read_at` counts every message someone else
+     * sent, which is the honest reading of "has never opened this thread".
+     * `markMessagesAsRead` has written that column as the primary read marker
+     * for some time, so this is the same source the global unread badge and
+     * the notification digests already use.
+     */
+    const perViewerTargets = perViewerUnreadTargets(conversationsData, perViewerUnreadIds);
+    if (perViewerTargets.length > 0) {
+      const ID_CHUNK = 200;
+      const lastReadByConv = new Map<string, string | null>();
+      let lastReadFailed = false;
+
+      for (let i = 0; i < perViewerTargets.length; i += ID_CHUNK) {
+        const chunk = perViewerTargets.slice(i, i + ID_CHUNK);
+        const { data: myRows, error: myRowsError } = await supabase
+          .from('golf_conversation_participants')
+          .select('conversation_id, last_read_at')
+          .in('conversation_id', chunk)
+          .eq('user_id', userId);
+
+        if (myRowsError) {
+          lastReadFailed = true;
+          logError(
+            toPostgrestError(myRowsError),
+            {
+              component: 'useGolfConversations',
+              action: 'fetch-per-viewer-last-read',
+              sport: 'golf',
+              userId,
+              ...postgrestErrorContext(myRowsError),
+            },
+            'medium'
+          );
+          continue;
+        }
+        (myRows || []).forEach((row) => {
+          lastReadByConv.set(row.conversation_id, row.last_read_at);
+        });
+      }
+
+      // A failed read-marker lookup means we cannot compute an honest count,
+      // so leave every badge as the RPC reported it rather than counting every
+      // message as unread.
+      if (!lastReadFailed) {
+        const perViewerCounts = new Map<string, number>();
+
+        await Promise.all(
+          perViewerTargets.map(async (cid) => {
+            const lastReadAt = lastReadByConv.get(cid) ?? null;
+            let unreadQuery = supabase
+              .from('golf_messages')
+              .select('id', { count: 'exact', head: true })
+              .eq('conversation_id', cid)
+              .eq('is_deleted', false)
+              .neq('sender_id', userId);
+            if (lastReadAt) {
+              unreadQuery = unreadQuery.gt('created_at', lastReadAt);
+            }
+
+            const { count, error: unreadError } = await unreadQuery;
+            if (unreadError) {
+              // Leave this one conversation on the RPC's shared-boolean number.
+              logError(
+                toPostgrestError(unreadError),
+                {
+                  component: 'useGolfConversations',
+                  action: 'count-per-viewer-unread',
+                  sport: 'golf',
+                  userId,
+                  ...postgrestErrorContext(unreadError),
+                },
+                'medium'
+              );
+              return;
+            }
+            perViewerCounts.set(cid, count ?? 0);
+          }),
+        );
+
+        conversationsData = applyPerViewerUnread(conversationsData, perViewerCounts);
+      }
     }
 
     // `groupConvsError` joins the RPC error here rather than early-returning at

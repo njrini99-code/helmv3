@@ -51,8 +51,14 @@ it is the owner's, through `db-apply`.
       (`nativeEvent.isComposing`, legacy `keyCode === 229`, and a
       compositionstart/end ref cleared on a macrotask for WebKit's
       compositionend-before-keydown order). 8 tests, 5 verified failing pre-fix.
-- [ ] **G-40** group unread is shared, not per-viewer. Uses the existing
-      `participants.last_read_at` — no new column (see `A1-RESOLUTION.md` §3)
+- [x] **G-40** group unread is shared, not per-viewer. Uses the existing
+      `participants.last_read_at` — no new column (see `A1-RESOLUTION.md` §3).
+      Fixed client-side: the per-viewer computation that already existed on the
+      supplemental team-chat path now runs over every group conversation the RPC
+      returns. DMs deliberately untouched (with two people the shared boolean IS
+      per-viewer, and DM read receipts are built on it). The RPC's own
+      shared-boolean count still needs a migration to fix at the source — noted,
+      NOT applied.
 
 ## W2 — Migration written, NOT applied
 - [ ] **G-58** forward migration adding `muted_until` + `notification_level`

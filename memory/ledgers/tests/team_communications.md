@@ -85,3 +85,19 @@
 - Verified to fail 5-of-8 against the unguarded handler. The pre-existing
   `MessageComposer.enterKey.test.tsx` passed green over this whole contract
   without exercising it — the shape `.claude/rules/quality-gates.md` warns about.
+
+## 2026-09-07 — per-viewer group unread (G-40)
+
+- `use-golf-messages.per-viewer-unread.test.ts` (15). Eleven exercise the two
+  extracted pure functions directly: which conversations get recomputed (groups
+  yes, DMs no, already-counted skipped, an absent `is_group` is not a group,
+  null input safe) and what happens to the counts (overwrite, a genuine zero,
+  KEEP the previous number when no count was produced, other fields untouched,
+  no mutation).
+- Four assert the wiring on the source, which is what distinguishes fixed from
+  broken: both helpers called inside `fetchConversations`, the count is
+  head-only `exact` and filtered on sender/is_deleted, the id list is chunked,
+  and the supplemental path registers its conversations so they are not counted
+  twice. Verified: those 4 fail when the wiring is removed.
+- The "keeps the previous number" case is the one that matters most — a failed
+  recompute degrading to 0 would render as "you are caught up".
