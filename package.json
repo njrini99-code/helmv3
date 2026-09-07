@@ -122,6 +122,7 @@
     "ui:screenshots:capture": "tsx scripts/ui-intelligence/capture-desktop-screenshots.ts",
     "ui:screenshots:index": "tsx scripts/ui-intelligence/generate-screenshot-index.ts",
     "verify:business": "npm run test:business",
+    "gates:report": "node scripts/gates-report.mjs",
     "worktree:deps": "node scripts/ensure-worktree-deps.mjs",
     "worktrees": "node scripts/worktree-lifecycle.mjs",
     "worktrees:park": "node scripts/worktree-lifecycle.mjs --park",

@@ -51,7 +51,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.claude/rules/autonomy.md` | current | - | - | yes | 8 | 1 | - |
+| `.claude/rules/autonomy.md` | current | - | - | yes | 7 | 1 | - |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | 0 | 5 | - |
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
@@ -660,7 +660,7 @@ them would bury everything above.
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 1 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 4 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 5 | - |
-| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 11 | - |
+| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 13 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | 1 |
 | `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 11 | 3 |

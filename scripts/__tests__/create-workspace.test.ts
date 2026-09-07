@@ -118,12 +118,15 @@ describe('createWorkspace — refusals', () => {
     expect(git(['branch', '--list', 'agent/second'], seed)).toBe('');
   });
 
-  it('allows exactly the default budget of 3, and refuses the 4th', async () => {
+  it('allows exactly the default budget of 6, and refuses the 7th', async () => {
     await createWorkspace({ name: 'b1', repo: seed, home });
     await createWorkspace({ name: 'b2', repo: seed, home });
-    const r3 = await createWorkspace({ name: 'b3', repo: seed, home });
-    expect(existsSync(r3.path)).toBe(true);
-    await expect(createWorkspace({ name: 'b4', repo: seed, home })).rejects.toMatchObject({
+    await createWorkspace({ name: 'b3', repo: seed, home });
+    await createWorkspace({ name: 'b4', repo: seed, home });
+    await createWorkspace({ name: 'b5', repo: seed, home });
+    const r6 = await createWorkspace({ name: 'b6', repo: seed, home });
+    expect(existsSync(r6.path)).toBe(true);
+    await expect(createWorkspace({ name: 'b7', repo: seed, home })).rejects.toMatchObject({
       code: 'BUDGET_EXCEEDED',
     });
   });

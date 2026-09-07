@@ -22,18 +22,67 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const SLOTS = Math.max(1, Number(process.env.HELM_GATE_SLOTS ?? 2));
 const DIR = process.env.HELM_GATE_DIR ?? join(homedir(), '.helm-gates');
 const MAX_WAIT_MS = Number(process.env.HELM_GATE_MAX_WAIT_MS ?? 20 * 60 * 1000);
 const POLL_MS = 2000;
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(__dirname, '..');
+const LEDGER_PATH = process.env.HELM_GATE_LEDGER ?? join(REPO_ROOT, 'memory', 'ledgers', 'gates.jsonl');
+const LEDGER_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+// This file is both the CLI entry point and (for `recordGateTiming`) an
+// importable module for its unit test — guard the argv parsing and the
+// process.exit()-ing paths so `import { recordGateTiming } from
+// './serialize.mjs'` never triggers them.
+const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+
 const sep = process.argv.indexOf('--');
 const cmd = process.argv.slice(sep >= 0 ? sep + 1 : 2);
-if (cmd.length === 0) {
+if (isMain && cmd.length === 0) {
   console.error('usage: node scripts/serialize.mjs -- <command> [args...]');
   process.exit(2);
+}
+
+// The npm lifecycle name (e.g. "typecheck", "test", "build") is a stable,
+// short gate identifier when this runs via `npm run <script>`; fall back to
+// the wrapped command line for a direct invocation.
+const GATE_NAME = process.env.npm_lifecycle_event || cmd.join(' ');
+
+/**
+ * Append one timing row to the ledger and trim rows older than 30 days.
+ * Exported for the unit test; never throws — a ledger write failure must
+ * never turn a passing gate into a failing one.
+ */
+export function recordGateTiming({ ts, gate, waitMs, runMs, slots, ledgerPath = LEDGER_PATH }) {
+  try {
+    mkdirSync(dirname(ledgerPath), { recursive: true });
+    const cutoff = ts - LEDGER_RETENTION_MS;
+    let kept = [];
+    try {
+      kept = readFileSync(ledgerPath, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => {
+          try {
+            return JSON.parse(line);
+          } catch {
+            return null;
+          }
+        })
+        .filter((row) => row && typeof row.ts === 'number' && row.ts >= cutoff);
+    } catch {
+      /* no ledger yet */
+    }
+    kept.push({ ts, gate, waitMs, runMs, slots });
+    writeFileSync(ledgerPath, kept.map((row) => JSON.stringify(row)).join('\n') + '\n');
+  } catch (e) {
+    console.error(`[serialize] could not write gate timing ledger: ${e.message}`);
+  }
 }
 
 function alive(pid) {
@@ -90,7 +139,7 @@ async function acquire() {
           }
         };
         process.on('exit', release);
-        return;
+        return Date.now() - started;
       }
       try {
         unlinkSync(mine);
@@ -106,13 +155,14 @@ async function acquire() {
     }
     if (Date.now() - started > MAX_WAIT_MS) {
       console.error('[serialize] waited past HELM_GATE_MAX_WAIT_MS; running anyway');
-      return;
+      return Date.now() - started;
     }
     await new Promise((r) => setTimeout(r, POLL_MS));
   }
 }
 
-function run() {
+function run(waitMs) {
+  const runStarted = Date.now();
   const child = spawn(cmd[0], cmd.slice(1), { stdio: 'inherit', env: process.env });
   for (const sig of ['SIGINT', 'SIGTERM']) {
     process.on(sig, () => child.kill(sig));
@@ -122,12 +172,21 @@ function run() {
     process.exit(127);
   });
   child.on('exit', (code, signal) => {
+    recordGateTiming({
+      ts: runStarted,
+      gate: GATE_NAME,
+      waitMs,
+      runMs: Date.now() - runStarted,
+      slots: SLOTS,
+    });
     process.exit(code ?? (signal ? 1 : 0));
   });
 }
 
-if (process.env.HELM_GATE_NOWAIT === '1') {
-  run();
-} else {
-  acquire().then(run);
+if (isMain) {
+  if (process.env.HELM_GATE_NOWAIT === '1') {
+    run(0);
+  } else {
+    acquire().then(run);
+  }
 }

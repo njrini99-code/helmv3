@@ -371,6 +371,12 @@ export default defineConfig({
             // exercises .claude/hooks/worktree-create.mjs as a real
             // subprocess against a disposable git fixture.
             'scripts/__tests__/create-workspace.test.ts',
+            // Gate timing ledger (reorg Phase 7 / W3 Speed): the pure
+            // append-and-trim step in scripts/serialize.mjs that writes one
+            // row per gate run to memory/ledgers/gates.jsonl, exercised only
+            // against a disposable fake ledger path. Named here for the same
+            // reason as every neighbour above.
+            'scripts/__tests__/serialize-gate-timing.test.ts',
           ],
           exclude: [
             'node_modules',
