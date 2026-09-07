@@ -354,6 +354,13 @@ export default defineConfig({
             // reason as its scripts/**/__tests__ neighbours — no scripts/**
             // glob, so an unlisted file here executes nowhere at all.
             'scripts/knowledge/__tests__/world-model-core.test.mjs',
+            // Pure-logic coverage for the --dead-refs/--lifecycle/--staleness
+            // flags added to document-inventory.mjs (docs reorg W4,
+            // 2026-09-06): the status-header parser, the living-category
+            // ratchet set, and the Anchor SHA / rev-list command regexes.
+            // Same reason as its neighbour above — no scripts/** glob, so an
+            // unlisted file here executes nowhere at all.
+            'scripts/knowledge/__tests__/document-inventory-lifecycle.test.mjs',
             // The inline-array parsing bug in coerceScalar() that
             // world-model.mjs's first real read of `observability.
             // feature_keys` turned up (2026-09-02): a non-empty inline array
