@@ -359,6 +359,17 @@ export async function createWorkspace(opts = {}) {
 
   // 9. Node version pin, so a worktree does not silently fall back to the
   // machine default while CI pins something else.
+  // Warm typecheck: a fresh worktree has no tsconfig.tsbuildinfo, so its first
+  // `tsc --noEmit` is a cold full run (~8,700 files, ~2.8 GB). Copying the
+  // canonical checkout's incremental state makes that first run incremental.
+  // Stale entries are harmless — tsc re-checks anything whose hash moved.
+  // (.worktreeinclude lists this file for Claude Code's own worktree feature;
+  // this door never read that file, so the copy has to be explicit here.)
+  const tsBuildInfoSrc = join(canonicalRoot, 'tsconfig.tsbuildinfo');
+  if (existsSync(tsBuildInfoSrc) && !existsSync(join(path, 'tsconfig.tsbuildinfo'))) {
+    copyFileSync(tsBuildInfoSrc, join(path, 'tsconfig.tsbuildinfo'));
+  }
+
   const nodeVersionSrc = join(canonicalRoot, '.node-version');
   if (existsSync(nodeVersionSrc)) {
     copyFileSync(nodeVersionSrc, join(path, '.node-version'));
