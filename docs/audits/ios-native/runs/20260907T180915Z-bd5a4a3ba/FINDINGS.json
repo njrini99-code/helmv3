@@ -60,6 +60,113 @@
     "rollbackApproach": "n/a"
   },
   {
+    "id": "F-TAP-01",
+    "shortTitle": "59 controls escape the design system's own 44pt tap-target floor",
+    "category": "touch-targets",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high. Measured in WebKit at iPhone 13 geometry across eight signed-in screens after scrolling each end to end so IntersectionObserver reveals had fired, with hidden elements and children of larger interactive ancestors excluded, and three representative cases re-verified individually against their full ancestor chain. Counts were stable across two runs (59, then 58).",
+    "userImpact": "Apple's minimum comfortable tap target is 44x44pt. The good news first: the design system already honours it. Across eight signed-in coach screens, 373 of 432 visible interactive controls (86%) are at least 44pt tall, and the single most common height is exactly 44pt. The floor exists and is widely applied. But 59 controls (14%) sit below it, and they cluster in a handful of shared components rather than scattering randomly. The worst are on the roster: a per-player status toggle at 76x24 and an intent chip at 88x20, repeated once per player down the list, roughly a fingernail tall and about 2pt apart vertically. The section tab strip used on five screens is 38pt inside a 39pt nav, so there is no slack to absorb a slightly-off thumb.",
+    "journeyIds": [
+      "J03",
+      "J04",
+      "J11"
+    ],
+    "rolesAffected": [
+      "coach"
+    ],
+    "sourceLocations": [
+      "src/components/fairway/app-shell/ - section tab strip (38pt, appears on calendar, messages, qualifiers, roster, rounds)",
+      "src/components/fairway/ - filter chip control (30-36pt, on qualifiers and rounds)",
+      "src/components/fairway/ - search field (20-40pt, see F-SEARCH-HEIGHT-01)",
+      "roster player row: status toggle 76x24, set-intent chip 88x20"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "n/a - web layer",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "reproductionSteps": [
+      "HELM_AUDIT_BASE_URL=https://www.helmsportslabs.com npx playwright test -c playwright/native-audit.config.ts --project=webkit-phone-signed-in",
+      "Read signed-in/*.json in the evidence directory; smallTapTargets lists every control under 44pt with its measured box."
+    ],
+    "expectedBehavior": "Interactive controls on a touch screen are at least 44x44pt, per Apple HIG.",
+    "observedBehavior": "432 visible interactive controls across eight screens. 373 (86%) at or above 44pt, mode exactly 44pt (84 controls). 59 (14%) below, distributed 42pt x1, 40pt x14, 38pt x12, 36pt x7, 34pt x1, 32pt x1, 30pt x4, 28pt x1, 24pt x9, 20pt x9. The shape matters: a dense spike at 44 with a thin tail below it is a floor that exists and was missed in specific places, not an absent floor.",
+    "excludedAsNotDefects": "Seven calendar day cells measure 37pt wide. A 7-column month grid on a 390pt-wide phone cannot give each column 44pt; Apple's own Calendar has the same constraint. Counted separately and NOT in the 59. Screen-reader skip links (32x16), zero-size inputs and children of larger interactive ancestors were filtered out.",
+    "evidencePaths": [
+      "signed-in/roster.json",
+      "signed-in/insights.json",
+      "signed-in/rounds.json",
+      "signed-in/qualifiers.json",
+      "signed-in/height-histogram.txt"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "The 44pt floor is real and dominant across the product. These 59 controls carry explicit smaller heights in their own class names -- the tab link's padding 10px/14px/12px makes 38pt, chips use min-h-[36px] and h-7 (28pt), insights CTAs use min-h-[40px] and min-h-[36px] -- so each is a local override or a component that predates the floor, not a systemic gap. CORRECTION: an earlier draft of this finding claimed no control anywhere reached 44pt. That was wrong and circular -- it was computed over the set already filtered to controls UNDER 44. Measuring all 432 controls reversed the conclusion.",
+    "existingContract": "AGENTS.md Mobile UI rules: 'Reuse shared button/chip/tab/card/metric/empty-state components; no one-off spacing, radius, icon sizes, or control heights.' The components ARE shared here - the shared value is simply too small.",
+    "proposedSmallestFix": "Close the gap in the shared components rather than per screen: raise the tab strip, chip, field and the two roster row controls to the 44pt floor the rest of the system already uses. Where a design genuinely needs a smaller VISUAL control, keep the visual size and extend the hit area with padding or a pseudo-element. Because the floor already exists, this is gap-closing against an established norm, not a new convention -- which also makes it far lower risk than the earlier draft implied.",
+    "filesLikelyToChange": [
+      "src/styles/design-tokens.css",
+      "src/components/fairway/controls/*",
+      "src/components/fairway/app-shell/*"
+    ],
+    "regressionTest": "playwright/native-audit/journeys.spec.ts already records this per screen. Turn smallTapTargets.length into an assertion once the floor is raised.",
+    "verificationLayers": [
+      "WebKit browser (done)",
+      "native simulator",
+      "physical device (a real thumb is the actual test)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "backwardCompatibilityRequirement": "None. Old binaries pick this up on the next web deploy.",
+    "effortClass": "small-to-medium - a handful of shared components, against a floor that already exists",
+    "rollbackApproach": "Revert the token and component heights."
+  },
+  {
+    "id": "F-SEARCH-HEIGHT-01",
+    "shortTitle": "The same search field is four different heights on four screens",
+    "category": "design-system-consistency",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - measured in the same sweep, four screens, one control role.",
+    "userImpact": "A search field is a search field. Here it is 40pt on messages, 32pt on rounds, 24pt on qualifiers and 20pt on roster -- and the system's own norm, the most common control height in the product, is 44pt. So all four are wrong and they are wrong by different amounts. Nobody consciously notices this, which is exactly why it reads as 'website': native apps are visually predictable, and a control that resizes as you move between tabs quietly says these screens were built by different hands at different times.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach"
+    ],
+    "sourceLocations": [
+      "roster search: input.peer.min-w-0 at 20pt inside a 36pt bordered wrapper",
+      "qualifiers search: 24pt",
+      "rounds search: 32pt",
+      "messages search: 40pt"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "reproductionSteps": [
+      "Run the signed-in project and grep signed-in/*.json for labels matching /[Ss]earch/."
+    ],
+    "expectedBehavior": "One search control, one height, everywhere.",
+    "observedBehavior": "Four heights for one control role. On roster the tappable input is a 20pt strip inside a 36pt visual box, so even the visual control is under 44 and the actual target is far under it.",
+    "evidencePaths": [
+      "signed-in/roster.json",
+      "signed-in/qualifiers.json",
+      "signed-in/rounds.json",
+      "signed-in/messages.json"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Not traced to source this run. The measurements prove four different rendered heights; whether that is four separate components or one component with four sets of caller overrides is unresolved, and it changes the fix. Reading the four call sites answers it in minutes.",
+    "existingContract": "AGENTS.md Mobile UI rules: reuse shared components, no one-off control heights.",
+    "proposedSmallestFix": "Identify the four call sites, converge on the shared Fairway field component, and give it the 44pt floor from F-TAP-01.",
+    "filesLikelyToChange": [
+      "src/components/fairway/controls/*"
+    ],
+    "regressionTest": "Assert one height for the search field across the four screens in journeys.spec.ts.",
+    "verificationLayers": [
+      "WebKit browser (done)"
+    ],
+    "nativeBinaryRequired": "no",
+    "effortClass": "small once the call sites are identified",
+    "rollbackApproach": "Revert the component height."
+  },
+  {
     "id": "F-CONTRAST-01",
     "shortTitle": "RETRACTED - Sign in button contrast failure was a measurement artifact",
     "status": "RETRACTED",

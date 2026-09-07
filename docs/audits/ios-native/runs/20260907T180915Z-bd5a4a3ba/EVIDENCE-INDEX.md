@@ -37,3 +37,15 @@ production account and a Playwright trace of the live login page.
 
 Nothing else in the repository was modified. No application source, native
 configuration, CI, migration, or production setting was touched.
+
+## Signed-in sweep
+
+| Artifact | What it holds |
+|---|---|
+| `signed-in/<screen>.json` | per-screen tap-target, tiny-text, overflow and axe measurements |
+| `playwright/native-audit/journeys.spec.ts` | the read-only sweep itself |
+| `playwright/native-audit/signed-in.setup.ts` | sign-in that writes storage state OUTSIDE the repo |
+
+Session storage state lives at `~/Library/Logs/HelmNativeAudit/.state/` and is
+never committed. The setup refuses to write it inside a checkout. No credential,
+token or storage state appears in any file in this run directory.

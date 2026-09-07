@@ -32,7 +32,7 @@ if (target.username || target.password) {
 
 export default defineConfig({
   testDir: './native-audit',
-  testMatch: /login-audit\.spec\.ts/,
+  testMatch: /(login-audit|journeys)\.spec\.ts|signed-in\.setup\.ts/,
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -54,19 +54,41 @@ export default defineConfig({
   projects: [
     {
       name: 'webkit-phone-light',
+      testMatch: /login-audit\.spec\.ts/,
       use: { ...devices['iPhone 13'], browserName: 'webkit', colorScheme: 'light' },
     },
     {
       name: 'webkit-phone-dark',
+      testMatch: /login-audit\.spec\.ts/,
       use: { ...devices['iPhone 13'], browserName: 'webkit', colorScheme: 'dark' },
     },
     {
-      name: 'webkit-phone-reduced-motion',
+      name: 'signed-in-setup',
+      testMatch: /signed-in\.setup\.ts/,
+      use: { ...devices['iPhone 13'], browserName: 'webkit' },
+    },
+    {
+      // Signed-in sweep. Read-only: navigations, scrolls and measurements only.
+      name: 'webkit-phone-signed-in',
+      testMatch: /journeys\.spec\.ts/,
+      dependencies: ['signed-in-setup'],
       use: {
         ...devices['iPhone 13'],
         browserName: 'webkit',
         colorScheme: 'light',
-        reducedMotion: 'reduce',
+        storageState: process.env.HELM_AUDIT_STATE,
+      },
+    },
+    {
+      name: 'webkit-phone-reduced-motion',
+      testMatch: /login-audit\.spec\.ts/,
+      use: {
+        ...devices['iPhone 13'],
+        browserName: 'webkit',
+        colorScheme: 'light',
+        // The repo's spelling (e2e/accessibility.spec.ts): reducedMotion rides
+        // on contextOptions here, not directly on `use`.
+        contextOptions: { reducedMotion: 'reduce' },
       },
     },
   ],

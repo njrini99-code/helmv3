@@ -42,7 +42,7 @@ authenticated session from earlier owner work, which is itself consistent with
 the documented contract that the launch-time cache clear touches disk and memory
 caches only and never cookies.
 
-## Five highest-impact findings
+## Highest-impact findings
 
 **1. F-A11Y-NATIVE-01 (P1) — iOS UI automation cannot see anything inside the
 WebView.** A coach dashboard visibly showing a title, a greeting, three sheet
@@ -73,7 +73,39 @@ different products, and nothing collected this run distinguishes them. Resolving
 it is the first item in the plan and it needs a person at a Mac with the
 Inspector open.
 
-**2. F-CONTRAST-01 — RETRACTED. It was a measurement artifact, not a defect.**
+**2. F-TAP-01 (P2) — 59 controls escape the design system's own 44pt floor.**
+The encouraging part first: **the floor already exists and is honoured.** Of 432
+visible interactive controls across eight signed-in screens, **373 (86%) are at
+least 44pt tall, and the single most common height is exactly 44pt.** Whoever
+set that got it right and it is applied widely.
+
+The other **59 (14%)** fall below, and they cluster in a handful of shared
+components rather than scattering at random: the section tab strip used on five
+screens (38pt, inside a 39pt nav, so no slack for an off-centre thumb), the
+filter chips (30–36pt), the insights CTAs (36–40pt), and worst, the roster's
+per-player status toggle (76×24) and intent chip (88×20) — about a fingernail
+tall, repeated once per player, roughly 2pt apart vertically.
+
+Because the floor is already the norm, this is gap-closing against an
+established convention, not a new one — which makes it markedly lower risk than
+it first looks. The offending heights are explicit in the class names
+(`min-h-[36px]`, `h-7`, tab padding `10px/14px/12px`), so each is a local
+override or a component that predates the floor.
+
+Seven calendar day cells measure 37pt wide and are **excluded**: a 7-column
+month grid on a 390pt phone cannot give each column 44pt, and Apple's own
+Calendar has the same constraint.
+
+**3. F-SEARCH-HEIGHT-01 (P2) — the same search field is four different heights.**
+40pt on messages, 32pt on rounds, 24pt on qualifiers, 20pt on roster — against a
+system norm of 44. All four are wrong, by four different amounts. Nobody
+consciously notices this, which is precisely why it reads as "website": native
+apps are visually predictable, and a control that resizes as you move between
+tabs quietly says these screens were built by different hands at different
+times. On roster the tappable input is a 20pt strip inside a 36pt bordered box,
+so the visual control and the actual target disagree too.
+
+**4. F-CONTRAST-01 — RETRACTED. It was a measurement artifact, not a defect.**
 An earlier pass of this audit reported the Sign in label at 3.52:1 light /
 3.61:1 dark, below the 4.5:1 AA minimum. That was wrong. axe-core had run before
 the login form finished its entrance transition, so it sampled a
@@ -89,7 +121,7 @@ One real item survives the retraction: axe now reports color-contrast
 image-bearing ancestors it cannot sample. Incomplete is not a pass. Those nodes
 are unmeasured, and checking the gradient headings by hand is still outstanding.
 
-**3. F-KBD-AUTOFOCUS-01 (P2) — autofocus is gated in six components and ungated
+**5. F-KBD-AUTOFOCUS-01 (P2) — autofocus is gated in six components and ungated
 at most other sites.** The codebase already knows the right answer:
 `autoFocus={finePointer}`, where `finePointer` is `useMediaQuery('(pointer: fine)')`.
 It just is not shared — the hook is re-declared inline in six components, so the
@@ -98,12 +130,12 @@ phone the ungated ones throw the keyboard up over half the sheet before the user
 has decided to type. Messages, coach notes, log-progress, expenses and three
 auth pages are among them.
 
-**4. F-BRAND-01 (P3) — two brand marks in three seconds.** The splash carries
+**6. F-BRAND-01 (P3) — two brand marks in three seconds.** The splash carries
 the ship's-wheel company mark; the login screen 0.5s later carries the
 golf-ball-in-wheel product mark. Reported in August, unchanged, and still an
 owner decision rather than a defect.
 
-**5. F-PLIST-IPAD-01 (P3) — a dead `~ipad` orientation block still ships.**
+**7. F-PLIST-IPAD-01 (P3) — a dead `~ipad` orientation block still ships.**
 The iPhone array is correctly portrait-only; the `~ipad` array still lists all
 four orientations in an app whose device family is iPhone-only.
 
@@ -133,13 +165,20 @@ the four-tier round-durability stack.
 Full table in `COVERAGE.md`. Summary: **1 passed** (cold launch), **1 pass** (signed-out login render and its axe scan, after the entrance-settle
 fix; twelve contrast nodes remain unmeasurable by axe), **2 partial**, **4 blocked**, **5 not run**.
 
-Nothing behind the login was exercised. That is the single largest gap and it is
-an authorization gap, not an effort gap.
+The owner supplied throwaway coach and player test accounts mid-run, which
+unblocked a read-only sweep of eight signed-in coach screens — navigations,
+scrolls and measurements only, nothing submitted, sent, edited or deleted. That
+sweep produced F-TAP-01 and F-SEARCH-HEIGHT-01, the two findings most directly
+about why the app feels like a website.
+
+Still unexercised: every write journey (J05-J08, J10), the player-side app, and
+every physical-device check. The first is a deliberate authorization boundary;
+the last is a hardware gap.
 
 ## Confirmed defects
 
-F-KBD-AUTOFOCUS-01, F-BRAND-01, F-PLIST-IPAD-01, and the *symptom* of
-F-A11Y-NATIVE-01. F-CONTRAST-01 is **retracted** — see above. See `FINDINGS.json` for reproduction steps,
+F-TAP-01, F-SEARCH-HEIGHT-01, F-KBD-AUTOFOCUS-01, F-BRAND-01, F-PLIST-IPAD-01,
+and the *symptom* of F-A11Y-NATIVE-01. F-CONTRAST-01 is **retracted** — see above. See `FINDINGS.json` for reproduction steps,
 evidence paths, and the separate `rootCauseStatus` on each.
 
 ## Suspected issues needing targeted reproduction
@@ -209,11 +248,13 @@ could not be run. That remains true from the August audit.
 
 1. **T1** — isolate the accessibility cause. An experiment, not a patch. Nothing
    else about accessibility should be touched until it answers.
-2. **T2** — measure the twelve contrast nodes axe cannot sample. Measurement
+2. **T2** — raise the 59 stragglers to the 44pt floor the system already uses.
+   Gap-closing against an existing norm, not a new convention.
+3. **T3** — measure the twelve contrast nodes axe cannot sample. Measurement
    only; no token changes until a real number exists.
-3. **T3** — extract `useFinePointer()`, then decide the ungated sites one by
+4. **T4** — extract `useFinePointer()`, then decide the ungated sites one by
    one, then add the lint rule that stops the next one.
-4. **T4** — delete the `~ipad` block whenever a binary is next built.
+5. **T5** — delete the `~ipad` block whenever a binary is next built.
 
 Full task shapes, non-goals and rollbacks in `IMPLEMENTATION-PLAN.md`.
 

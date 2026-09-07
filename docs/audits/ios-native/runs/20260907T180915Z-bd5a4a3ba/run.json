@@ -54,6 +54,17 @@
     "xcodebuild": "26.6 (17F113)",
     "macOS": "26.3 (25D125)"
   },
-  "authorization": { "mutationsAllowed": false },
-  "status": "INCOMPLETE"
+  "authorization": {
+    "mutationsAllowed": false
+  },
+  "status": "INCOMPLETE",
+  "lanes": {
+    "signedInWebKit": {
+      "authorization": "owner-supplied throwaway coach + player test accounts",
+      "mutations": "none - navigations, scrolls and measurements only",
+      "playerAccountUsed": false,
+      "screens": 8,
+      "stateLocation": "~/Library/Logs/HelmNativeAudit/.state/ (outside every checkout, never committed)"
+    }
+  }
 }

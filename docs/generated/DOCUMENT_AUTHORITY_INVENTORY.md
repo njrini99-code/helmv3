@@ -35,8 +35,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 38 | 6 | 17 | 20 |
+| `PLAN` | 35 | 5 | 15 | 65 |
+| `AUDIT_SNAPSHOT` | 44 | 6 | 17 | 20 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -325,6 +325,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 3 | 40 | 1 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | yes | - | yes | 3 | 0 | - |
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 1 | 6 | 4 |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/IMPLEMENTATION-PLAN.md` | current | - | - | - | 0 | 3 | - |
 | `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 0 | 69 | 18 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | 2 | 20 | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 1 | 23 | 4 |
@@ -374,13 +375,19 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/FEATURE_GAP_INTENT_2026-08-20.md` | current | - | - | yes | 0 | 20 | 1 |
 | `docs/audits/HEALTH_AUDIT_2026_08_18.md` | current | - | - | yes | 0 | 14 | 1 |
 | `docs/audits/IOS_PREMIUM_APPLE_RESEARCH_2026-08-25.md` | current | - | - | - | 1 | 0 | - |
-| `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` | current | yes | - | yes | 3 | 21 | - |
+| `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` | current | yes | - | yes | 4 | 21 | - |
 | `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md` | current | - | - | yes | 1 | 4 | - |
 | `docs/audits/RLS_SECURITY_AUDIT.md` | current | - | - | - | 0 | 0 | - |
 | `docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md` | current | - | - | - | 0 | 5 | - |
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | 1 | 6 | - |
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 1 | 28 | - |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | 0 | 0 | - |
+| `docs/audits/ios-native/README.md` | current | - | - | - | 2 | 1 | - |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/COVERAGE.md` | current | - | - | - | 0 | 0 | - |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/DEVICE-CHECKS.md` | current | - | - | - | 0 | 0 | - |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/EVIDENCE-INDEX.md` | current | - | - | - | 0 | 2 | - |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/INVENTORY.md` | current | - | - | - | 0 | 4 | - |
+| `docs/audits/ios-native/runs/20260907T180915Z-bd5a4a3ba/REPORT.md` | current | - | - | - | 0 | 2 | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 1 | 35 | 2 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |

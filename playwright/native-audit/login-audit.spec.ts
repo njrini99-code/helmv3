@@ -1,5 +1,14 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import type { Page as AxePage } from 'playwright-core';
+
+// axe-core declares its peer on `playwright-core` while Playwright Test owns the
+// runtime page; npm may keep their patch releases in separate directories. Same
+// boundary, same isolation, as e2e/accessibility.spec.ts.
+function toAxePage(page: import('@playwright/test').Page): AxePage {
+  return page as unknown as AxePage;
+}
+
 
 /**
  * axe's color-contrast rule samples rendered pixels. An element still inside
@@ -75,7 +84,7 @@ test('GolfHelm signed-out login: visible controls and accessibility evidence', a
     contentType: 'image/png',
   });
 
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await new AxeBuilder({ page: toAxePage(page) }).analyze();
   await testInfo.attach('axe-results', {
     body: Buffer.from(JSON.stringify(results, null, 2)),
     contentType: 'application/json',

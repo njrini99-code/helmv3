@@ -40,3 +40,49 @@ An earlier first attempt at this measurement was discarded: the sleep targets
 were computed against a timestamp captured in a previous shell invocation, so
 every screenshot fired at once and the whole series showed the same frame. The
 numbers above come from a rerun with launch and capture inside a single process.
+
+## Signed-in read-only sweep (added mid-run)
+
+The owner supplied throwaway coach and player test accounts after the first
+pass, which unblocked J03-class navigation. Run as
+`--project=webkit-phone-signed-in`: navigations, scrolls and measurements only.
+Nothing was submitted, sent, edited or deleted, and the player account was not
+used this run.
+
+| Screen | Route | Result | Undersized controls | axe violations |
+|---|---|---|---|---|
+| dashboard | `/golf/dashboard` | PASS | 1 | none |
+| roster | `/golf/dashboard/roster` | PASS | 19 | heading-order (moderate) |
+| calendar | `/golf/dashboard/calendar` | PASS | 9 (7 are day cells, excluded) | color-contrast (serious) |
+| messages | `/golf/dashboard/messages` | PASS | 3 | page-has-heading-one (moderate) |
+| rounds | `/golf/dashboard/rounds` | PASS | 9 | heading-order (moderate) |
+| qualifiers | `/golf/dashboard/qualifiers` | PASS | 7 | none |
+| courses | `/golf/dashboard/courses` | PASS | 0 | heading-order (moderate) |
+| insights | `/golf/dashboard/insights` | PASS | 18 | aria-required-children (critical), aria-allowed-role (minor) |
+
+PASS means the screen loaded, stayed authenticated and was measured — not that
+it is defect-free. Findings: F-TAP-01, F-SEARCH-HEIGHT-01.
+
+Two items surfaced here and are recorded but not yet investigated: the
+`aria-required-children` critical violation on insights, and `color-contrast`
+reported **incomplete** for 101 nodes on rounds — incomplete is not a pass, and
+101 is enough to deserve its own look.
+
+## Corrections made during this run
+
+Two claims in earlier drafts were wrong and were corrected against fresh
+measurement rather than quietly edited:
+
+1. **F-CONTRAST-01 was retracted.** axe-core had sampled the login button
+   mid-entrance-transition and reported composites that appear in no rendered
+   frame. Settled, the label measures 5.02:1 and passes. Notably
+   `e2e/accessibility.spec.ts` already documents this exact trap ("/products
+   first reported 87 contrast failures, all of them arithmetic on part-revealed
+   text"); the new lane re-fell into it because it did not reuse the existing
+   `settleReveals` helper. It now does.
+2. **F-TAP-01's root cause was reversed.** The first draft claimed no control
+   anywhere reached 44pt. That was computed over the set already filtered to
+   controls *under* 44 — circular. Measuring all 432 controls showed 86% are at
+   or above 44pt with the mode at exactly 44, so the floor exists and 59
+   controls escape it. The fix changed from "establish a floor" to "close a
+   gap", and the priority dropped from P1 to P2.

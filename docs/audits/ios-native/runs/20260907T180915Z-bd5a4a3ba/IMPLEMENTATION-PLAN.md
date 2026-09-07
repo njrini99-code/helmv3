@@ -40,7 +40,41 @@ by an Inspector session or a device.
 
 ---
 
-## T2 — Measure the twelve contrast nodes axe cannot reach
+## T2 — Raise the 59 stragglers to the 44pt floor the system already uses
+
+**Findings:** F-TAP-01, F-SEARCH-HEIGHT-01
+**Current state:** 373 of 432 controls (86%) are already at least 44pt and the
+modal height is exactly 44pt, so the floor exists and is honoured. 59 controls
+(14%) fall below it, clustered in the tab strip (38pt), chips (30-36pt),
+insights CTAs (36-40pt), the search field (20-40pt) and two roster row controls
+(20-24pt). Their heights are explicit in their class names, so each is a local
+override or a component predating the floor.
+
+**Close the gap; do not invent a convention.** The norm already exists — raise
+the offending shared components to it. Patching the roster, then insights, then
+rounds screen-by-screen would manufacture exactly the competing vocabularies
+this work exists to end. Consider naming the existing 44pt norm as a token so
+the next component inherits it rather than rediscovering it.
+
+**Steps:**
+1. Add the token; raise the shared tab strip, chip, field and button components.
+2. Where a design genuinely needs a smaller *visual* control, keep the visual
+   size and extend the hit area with padding or a pseudo-element. This is the
+   standard technique and it satisfies 44pt without redrawing anything.
+3. Converge the four search-field call sites (F-SEARCH-HEIGHT-01) onto the
+   shared field component. Read the four call sites first — whether this is four
+   components or one with four overrides is unresolved and changes the fix.
+4. Re-run the signed-in sweep and turn `smallTapTargets.length` into an
+   assertion.
+
+**Non-goals:** the seven calendar day cells. A 7-column grid on a 390pt phone
+cannot reach 44pt per column and Apple's Calendar has the same constraint.
+**Verification:** the sweep is the gate; a real thumb on a device is the actual
+test. **Binary:** none — web deploy only. **Rollback:** revert the token.
+
+---
+
+## T3 — Measure the twelve contrast nodes axe cannot reach
 
 **Findings:** F-CONTRAST-01 (retracted), residual open item
 **Current state:** the original contrast finding was withdrawn — the Sign in
@@ -64,7 +98,7 @@ artifact; that is the mistake this task exists to avoid repeating.
 
 ---
 
-## T3 — Make autofocus a decision instead of a default
+## T4 — Make autofocus a decision instead of a default
 
 **Findings:** F-KBD-AUTOFOCUS-01
 **Current state:** `useMediaQuery('(pointer: fine)')` is re-declared inline in
@@ -92,7 +126,7 @@ pass over the changed surfaces.
 
 ---
 
-## T4 — Delete the dead `~ipad` orientation block
+## T5 — Delete the dead `~ipad` orientation block
 
 **Findings:** F-PLIST-IPAD-01. One key, one line, ships in the next binary
 whenever one is built. Not worth a build of its own.
