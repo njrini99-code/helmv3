@@ -1642,3 +1642,47 @@ floating; `--fw-shadow-raise`'s own comment in `design-tokens.css` reads
 NOT VERIFIED HERE: nothing in this entry measures a rendered pixel. The dev
 server is up for the owner's own review; a rendered check stays W8's.
 
+## 2026-09-07 — N-04 · a thread opened at its oldest message once it overflowed
+
+Owner request, after the defect was filed unfixed for want of a proven cause.
+Proven first, then fixed.
+
+PROOF. Instrumenting the `scrollTop` setter on the thread scroller and driving
+three phases in one browser session at 390x844:
+
+- cold load, tap the AUTO-SELECTED group — one write, `{set: 0, scrollHeight: 0,
+  clientHeight: 0}`; ends `scrollTop 0`, newest message 129px below the fold.
+- open a short DM (`conversation.id` CHANGES) — `621, 621, 621`; flush.
+- switch to the group (`conversation.id` CHANGES) — `621, 750, 750`; flush.
+
+An id change pins correctly and the auto-selected first open does not, and its
+only write is against a container with no layout. Two independent defects:
+
+1. **The opening effect spent its one-shot sentinel on a zero-height container.**
+   The phone mounts the pane while the rail is the visible half and a
+   conversation is already selected, so `MessageThreadPane.tsx`'s opening layout
+   effect ran with `clientHeight === 0`; `scrollTop = scrollHeight` was `0 = 0`
+   and `pendingInitialScrollConversationIdRef` was nulled below it. Tapping that
+   same row does not change `conversation.id`, so the effect never ran again.
+   Now: arm `stickToBottomRef` unconditionally (intent, independent of geometry),
+   and pin + spend the sentinel only when `container.clientHeight > 0`.
+2. **The stick-to-bottom observer was never attached in production.** It watches
+   `messagesContentRef`, which is rendered in the LOADED branch; a real open
+   mounts with `loading: true`, so `content` was null, the effect returned early,
+   and `[conversation?.id]` never changed to re-run it. That is why appending
+   40px to a live thread moved nothing. Deps are `[conversation?.id, loading]`.
+
+Both were needed: (1) alone leaves nothing to place the pane on reveal, (2)
+alone leaves the sentinel already spent.
+
+NOT done, deliberately: no widened near-bottom tolerance and no timeout. Both
+would have hidden the real defects and reintroduced the "it opens at the top"
+report the existing comments in that block were written to close.
+
+Verified in the browser after the fix: the cold-load tap on the auto-selected
+group lands `scrollTop 129` of 750/621 — flush — and the switch path still does.
+
+Tests: two in `MessageThreadPane.scroll.test.ts`, one per cause, both rendering.
+PROVEN to bite — with the source reverted they fail `expected +0 to be 750` and
+`expected 1 to be 2`.
+

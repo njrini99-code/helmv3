@@ -502,6 +502,36 @@ and draws the same chip `display: flex; justify-content: center; padding: 0 0
 16px 0` — in flow, so it structurally cannot collide. The chip's material stays
 Thread's glass, which `audit/DECISIONS.md` froze; only the placement moved.
 
+## Opening a thread at its newest message: arm, then pin (2026-09-07)
+
+Two defects made a thread open at its OLDEST message once it was tall enough to
+overflow, and they compounded. Both are closed; the shape of the fix is worth
+keeping because either half alone leaves the bug.
+
+**A pane with no layout must not decide anything.** On a phone the thread pane is
+MOUNTED while the rail is still the visible half — the page auto-selects the
+first conversation, so the opening layout effect runs against a container whose
+`clientHeight` is 0. Writing `scrollTop = scrollHeight` there is `0 = 0`, a
+no-op that looked like a completed pin, and the effect then spent its one-shot
+`pendingInitialScrollConversationIdRef`. Tapping that same already-selected row
+does not change `conversation.id`, so the effect never ran again. The effect now
+ARMS the stick-to-bottom hold unconditionally — that is the intent, true with or
+without geometry — and pins and spends the sentinel only when the container has
+height.
+
+**An effect that reads a ref from a conditional branch cannot be keyed on
+something that never changes.** The stick-to-bottom `ResizeObserver` watches
+`messagesContentRef`, which lives in the LOADED branch, so on a real open (always
+`loading: true` at mount) it is null, the effect returns early, and
+`[conversation?.id]` never changes to re-run it — the observer was never attached
+in production at all. Its deps are `[conversation?.id, loading]` now. Revealing
+the pane resizes the content from 0 to its real height, which is a growth event
+like the late images and font swaps the observer already existed to handle.
+
+The tell that this was two bugs and not one: switching conversations always
+worked, because that DOES change the id. Only the auto-selected first open broke.
+A test that renders with `loading: false` from the start cannot see either half.
+
 ## Known Risk Areas
 
 - Announcement inline tasks can drift from task completion state if tasks and assignment tables are not read consistently.

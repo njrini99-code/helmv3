@@ -912,6 +912,25 @@ export function MessageThreadPane({
 
     const container = messagesContainerRef.current;
     if (container) {
+      // ARM FIRST, PIN SECOND, and only SPEND THE SENTINEL if a pin actually
+      // happened. N-04: on a phone the pane is mounted while the RAIL is still
+      // the visible half — the page auto-selects the first conversation, so
+      // this effect runs against a container whose `clientHeight` is 0. The
+      // previous shape wrote `scrollTop = scrollHeight` (0 = 0, a no-op that
+      // looks like a completed pin) and then nulled
+      // `pendingInitialScrollConversationIdRef` below, spending the one-shot.
+      // Tapping that same already-selected row does not change
+      // `conversation.id`, so the effect never ran again and the thread stayed
+      // at its oldest message. Measured live: instrumenting the `scrollTop`
+      // setter across a cold load records exactly one write, `{set: 0,
+      // scrollHeight: 0, clientHeight: 0}`, and switching conversations — which
+      // DOES change the id — pins correctly. That contrast is the proof.
+      //
+      // Arming is the INTENT ("this thread wants its newest message"), which is
+      // true whether or not the pane has geometry yet. Pinning and spending the
+      // sentinel are the ACT, and both need a laid-out container.
+      stickToBottomRef.current = true;
+      if (container.clientHeight === 0) return;
       container.scrollTop = container.scrollHeight;
       // Hold the bottom until the reader actually moves.
       //
@@ -929,10 +948,11 @@ export function MessageThreadPane({
       //
       // The observer below re-pins on each of those growth events until the
       // reader scrolls, at which point their position is theirs and we stop
-      // touching it.
-      stickToBottomRef.current = true;
+      // touching it. That observer is also what places a pane that mounted
+      // without layout: revealing it resizes the content from 0 to its real
+      // height, which is a growth event like any other.
+      pendingInitialScrollConversationIdRef.current = null;
     }
-    pendingInitialScrollConversationIdRef.current = null;
   }, [conversation?.id, loading, messages, scrollToMessageId]);
 
   // Re-pin to the bottom while `stickToBottomRef` is armed and the content is
@@ -973,7 +993,17 @@ export function MessageThreadPane({
       container.removeEventListener('load', onLoad, true);
       container.removeEventListener('scroll', onScroll);
     };
-  }, [conversation?.id]);
+    // `loading` is a DEPENDENCY, not noise — the second half of N-04. The
+    // content node this observes (`messagesContentRef`) lives in the loaded
+    // branch, so on a real open — which always mounts with `loading: true` —
+    // `content` is null here, the effect returns early, and `conversation.id`
+    // alone never changes afterwards to re-run it. The observer was therefore
+    // never attached in production at all, which is why appending 40px of
+    // content to a live thread moved nothing. Keying on `loading` attaches it
+    // the moment the node exists. (The existing keyboard-shrink test renders
+    // with `loading: false` from the start, so it saw both observers and this
+    // gap stayed invisible.)
+  }, [conversation?.id, loading]);
 
   // Keep the newest message in view when the scroll region itself changes
   // height. The iOS keyboard opening shrinks it (FairwayMessages subtracts

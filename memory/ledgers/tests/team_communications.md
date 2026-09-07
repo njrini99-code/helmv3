@@ -776,3 +776,22 @@ literal in any focus utility, both layers resolving from
 `var(--fw-color-border-focus)`, the artboard's 1px/30% + 4px/10% geometry, the
 `color-mix(in oklab, …)` form the Tailwind bridge emits, and the removal of the
 flat `ring-2`.
+
+## 2026-09-07 — N-04 opening-scroll guarantees (MessageThreadPane.scroll.test.ts)
+
+Two new tests, one per cause, both RENDERING the pane — neither defect is visible
+in a class list, and the pre-existing keyboard-shrink test could not see either
+because it renders with `loading: false` from the start.
+
+- **"does not spend its one opening scroll on a pane that has no layout yet"** —
+  mounts with `loading: true` (jsdom reports `clientHeight` 0, which IS the
+  mounted-but-hidden phone state), lets messages land, then simulates the reveal
+  by giving the region real geometry and firing the captured ResizeObserver
+  callbacks WITHOUT changing `conversation.id`. Asserts the thread pins to 750.
+- **"attaches the stick-to-bottom observer on a thread that mounts while
+  loading"** — asserts exactly 1 observer while loading (the container-height one
+  can attach; the content one has no node) and exactly 2 once the thread renders.
+
+Both fail against the pre-fix source — `expected +0 to be 750` and
+`expected 1 to be 2` — so they are gates, not documentation.
+

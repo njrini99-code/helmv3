@@ -578,10 +578,10 @@ None is blocked by anything above; each is its own piece of work.
 
 ## NEW findings from the write phase
 
-### N-04 — a thread opens at its OLDEST message once it overflows (pre-existing)
-Found while measuring W10, reproduced on a cold load, and left for its own PR
-because the fix is surgery on the most carefully-reasoned block in
-`MessageThreadPane` and the cause is inferred, not proven.
+### N-04 — a thread opened at its OLDEST message once it overflowed — [x] FIXED
+Found while measuring W10, reproduced on a cold load, filed unfixed because the
+cause was inferred rather than proven, then PROVEN and fixed on owner request.
+Both defects below are closed; the proof that settled it is recorded first.
 
 **Reproduction** (390x844, `coach@local.test`, "Kiawah Trip" with 7 messages):
 open the thread from the rail. `scrollTop = 0`, `clientHeight = 621`,
@@ -595,7 +595,21 @@ open the thread from the rail. `scrollTop = 0`, `clientHeight = 621`,
   re-pin `ResizeObserver` at `:947` is inert too, so the recovery path the
   comment at `:917-932` describes is not running either.
 
-**Two candidate causes, both consistent with the above, neither proven:**
+**THE PROOF that settled it.** Instrumenting the `scrollTop` setter and driving
+three phases in one browser session:
+
+| phase | writes to the thread scroller | result |
+|---|---|---|
+| cold load, tap the auto-selected group | `{set: 0, scrollHeight: 0, clientHeight: 0}` | `scrollTop 0`, 129px from the bottom |
+| open a short DM (id CHANGES) | `621, 621, 621` | flush |
+| switch to the group (id CHANGES) | `621, 750, 750` | flush |
+
+A conversation-id change pins correctly; the auto-selected first open does not,
+and its single write is against a container with no layout. That contrast makes
+both candidates below facts rather than hypotheses — they compound, and each
+needed its own fix.
+
+**The two causes, now confirmed:**
 1. The mobile pane is mounted BEFORE it is visible — measured: every thread
    element reports a 0x0 box while the rail is showing, and the page
    auto-selects the first conversation. A layout effect firing then sees
@@ -615,10 +629,25 @@ correct and the broken pin was a no-op. Inlining the chips (which is what stops
 "TODAY" landing on the sender name) is what made the thread taller than its
 viewport. W10 exposed this defect; it did not introduce it.
 
-**Do not fix by widening the near-bottom tolerance or adding a timeout.** Both
-candidates are one-shot-sentinel/attachment bugs; a delay would paper over
-whichever one is real and reintroduce the "opens at the top" report the existing
-comments were written to close.
+**The fix, one change per cause, no timeouts and no widened tolerance** (both
+would have papered over the real defects and reintroduced the "opens at the top"
+report the existing comments were written to close):
+- The opening effect now ARMS the stick-to-bottom hold unconditionally — that is
+  the intent, and it is true whether or not the pane has geometry — but pins and
+  spends `pendingInitialScrollConversationIdRef` only when
+  `container.clientHeight > 0`. A pane with no layout decides nothing.
+- The stick-to-bottom observer's deps became `[conversation?.id, loading]`, so it
+  attaches the moment `messagesContentRef` exists. Revealing the pane then
+  resizes the content from 0 to its real height, which is a growth event like
+  the late images and font swaps the existing comment already handles.
+
+Verified in the browser after the fix: the cold-load tap on the auto-selected
+group lands at `scrollTop 129` of 750/621 — flush with the bottom — and
+switching away and back still does.
+
+Two regression tests in `MessageThreadPane.scroll.test.ts`, one per cause, both
+rendering rather than reading the class list. PROVEN to bite: with the source
+reverted they fail `expected +0 to be 750` and `expected 1 to be 2`.
 
 Found while doing something else, recorded rather than silently absorbed.
 
