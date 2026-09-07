@@ -15,11 +15,13 @@ in application behavior changes until an owner does both things.
 
 ## The three queues
 
+<!-- markdownlint-disable MD013 -->
 | Queue | Producer | Consumer handler | Payload |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `coachhelm_analysis` | `src/app/golf/actions/golf.ts` (post-round trigger) | `postRoundTrigger` (`src/lib/coachhelm/v2/post-round-trigger.ts`) | `{ roundId, playerId }` |
 | `email_send` | `sendEmailNotification` (`src/lib/notifications/email.ts`) | `sendEmailNotificationDirect` | `{ type, recipientId, recipientEmail, data }` |
 | `push_send` | `sendPushNotification` (`src/lib/notifications/push.ts`) | `sendPushNotificationDirect` | `{ type, userId, data }` |
+<!-- markdownlint-enable MD013 -->
 
 The consumer route, `src/app/api/jobs/consume/route.ts`, reads a small batch
 (20 messages, 60s visibility timeout) off each queue every minute
@@ -54,10 +56,12 @@ even across two different processes/instances.
 `helm_jobs_fail(queue, msg_id, error)` reads pgmq's own per-message
 `read_ct` as the attempt number:
 
+<!-- markdownlint-disable MD013 -->
 | Attempt | Action |
-|---|---|
+| --- | --- |
 | 1-4 | `pgmq.set_vt()` re-queues with exponential backoff: 10s, 20s, 40s, 80s (capped at 300s) |
 | 5 | Removed from the live queue and copied into `helm_jobs.dead_letters` with its payload, attempt count, and last error |
+<!-- markdownlint-enable MD013 -->
 
 ## Requeuing a dead letter
 

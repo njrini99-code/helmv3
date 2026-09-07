@@ -1,5 +1,7 @@
 # Deliberately unapplied migrations
 
+<!-- markdownlint-disable MD013 MD060 -->
+
 A migration file that exists here but has no row in the ledger looks identical
 whether it was **held on purpose** or **forgotten**. This file is the difference.
 

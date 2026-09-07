@@ -40,6 +40,7 @@ project, and never restore over any project with real user traffic.
 Run each against the SCRATCH project (never production). Record pass/fail
 and the returned value.
 
+<!-- markdownlint-disable MD013 -->
 1. `select count(*) from information_schema.tables where table_schema = 'public';`
    — sanity: nonzero, roughly matches production's live table count.
 2. `select count(*) from golf_rounds;` — a large, high-write table restored
@@ -68,6 +69,7 @@ and the returned value.
     project's connection string (never a shared/staging deployment) and
     confirm the app boots and a basic read (e.g. the golf dashboard for a
     known seed team) renders without error.
+<!-- markdownlint-enable MD013 -->
 
 ## 4. Timing sheet
 
@@ -75,7 +77,7 @@ Fill in during the rehearsal — this is the number that answers "how long
 would a real incident actually take":
 
 | Step | Started (UTC) | Finished (UTC) | Duration |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Restore initiated -> project READY | | | |
 | Verification queries 1-9 | | | |
 | Application boot check (query 10) | | | |

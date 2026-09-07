@@ -81,6 +81,11 @@
 -- Extensions -> pgmq), enable it there FIRST, then apply this migration.
 -- The IF NOT EXISTS guard makes re-running this line after a dashboard
 -- enable a safe no-op either way.
+-- Postgres does not create the target schema for an extension whose control
+-- file names none; CI's fresh local stack failed at this statement with
+-- `schema "pgmq" does not exist`. Create it first (no-op on hosted Supabase
+-- where the dashboard toggle already made it).
+create schema if not exists pgmq;
 create extension if not exists pgmq schema pgmq;
 
 select pgmq.create('coachhelm_analysis');
