@@ -53,3 +53,16 @@ configuration, CI, migration, or production setting was touched.
 Session storage state lives at `~/Library/Logs/HelmNativeAudit/.state/` and is
 never committed. The setup refuses to write it inside a checkout. No credential,
 token or storage state appears in any file in this run directory.
+
+## Hand-driven walkthrough of the real app
+
+| Artifact | What it holds |
+|---|---|
+| `VISUAL-WALKTHROUGH.md` | the written account, in the run directory |
+| `native/walkthrough/*.png` | 25 screenshots, coach and player, shipped simulator build |
+| `native/walkthrough/crop-sg.png` | magnified strokes-gained figure showing the square decimal |
+| `native/walkthrough/15..18-*.png` | the sign-out failure sequence, timestamped |
+
+Driven with `axe tap -x -y` on raw screen coordinates, because the automation
+toolchain's element-based tap could not address anything inside the WebView.
+Read-only: navigations, scrolls, one dismissal, one sign-out, one sign-in.

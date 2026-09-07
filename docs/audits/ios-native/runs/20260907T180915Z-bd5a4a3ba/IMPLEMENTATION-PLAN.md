@@ -6,6 +6,29 @@ patch for it now would be guessing.
 
 ---
 
+## T0 — Reproduce the sign-out failure
+
+**Findings:** F-SIGNOUT-01
+**Current state:** observed once. Sign out showed a pending state, the sheet
+dismissed, and the session was still live ~29 seconds later. A second attempt
+worked. This is the only correctness bug in the audit; everything else is craft,
+which is why it goes first even though it was found last.
+
+**This is a reproduction task, not a patch.** Attach a console and network
+capture to the simulator, sign in and out repeatedly, and record whether the
+signOut call rejects, times out, or resolves while the session survives. Only
+then decide the fix.
+
+**Regardless of cause, two invariants are already known to be wrong:** the sheet
+must not dismiss on an unconfirmed sign-out, and a failed sign-out must surface
+a visible error. Those can be specified now.
+
+**Acceptance:** a reproduction with a captured cause, or a documented failure to
+reproduce over N attempts. **Verification:** simulator, then device.
+**Binary:** none — web layer. **Rollback:** n/a, nothing is changed here.
+
+---
+
 ## T1 — Isolate why the accessibility tree is empty
 
 **Findings:** F-A11Y-NATIVE-01
@@ -37,6 +60,37 @@ against an unknown cause.
 by an Inspector session or a device.
 **Verification:** device required. **Binary:** unknown until the cause is known.
 **Rollback:** nothing is changed by this task.
+
+---
+
+## T1b — The seven visual defects from the walkthrough
+
+**Findings:** F-NAVCLIP-01, F-SEGMENTED-01, F-NUMERALS-01, F-TRUNCATE-01,
+F-SHEETFOOTER-01, F-RAWDATA-01
+**Why grouped:** five of the six are one-line fixes in a *shared* component or
+token, and each is visible on multiple screens. Fixing them per screen is the
+failure mode to avoid.
+
+1. **Bottom-nav clearance** (F-NAVCLIP-01, seven screens) — add it in the shared
+   shell. `AGENTS.md` already requires the shell to provide it, so this is an
+   unmet existing contract, not a new rule.
+2. **Segmented-control inset** (F-SEGMENTED-01, three instances) — the active
+   pill needs inset padding and the status dot needs to sit inside it.
+3. **Display numerals** (F-NUMERALS-01) — keep Fragment Mono for small tabular
+   columns if wanted; set display-size figures in the sans face with
+   `font-variant-numeric: tabular-nums`. Then settle the Stats/Rounds
+   inconsistency in one direction.
+4. **Sheet footer clearance** (F-SHEETFOOTER-01) — same shape as item 1, and give
+   the disabled CTA a real disabled treatment.
+5. **Truncation** (F-TRUNCATE-01) — the invite link is the functional one; let it
+   wrap or scroll. Let the roster column flex.
+6. **Display formatters** (F-RAWDATA-01) — a relative-time formatter and a
+   category label map.
+
+**Non-goals:** do not touch Courses, the Strokes Gained card, or the login
+screen. They are the strongest work in the app and nothing here implicates them.
+**Verification:** screenshot review on the affected screens; a device pass for
+the numerals. **Binary:** none. **Rollback:** per item.
 
 ---
 

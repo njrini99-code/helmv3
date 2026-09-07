@@ -508,5 +508,306 @@
     "nativeBinaryRequired": "no",
     "effortClass": "trivial",
     "rollbackApproach": "Revert the metadata."
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, hand-driven walkthrough (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "id": "F-SIGNOUT-01",
+    "shortTitle": "Sign-out silently failed on the first attempt, leaving the user signed in",
+    "category": "correctness",
+    "priority": "P1",
+    "status": "CONFIRMED_ONCE",
+    "confidence": "the observation is certain and screenshotted; the MECHANISM is unproven and it reproduced only once in two attempts.",
+    "userImpact": "Tapping Sign out showed a 'Signing out...' pending state, the sheet closed, and ~29 seconds later the app was still fully signed in on the coach dashboard with all team data visible. No error, no toast, no retry prompt. A second attempt worked immediately. The frequency is unknown; the failure MODE is what matters - a user is shown a sign-out that completes its animation and leaves them logged in. On a borrowed or shared phone that is a privacy problem, not a polish one.",
+    "journeyIds": [
+      "J09"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "reproductionSteps": [
+      "Sign in as coach in the simulator build.",
+      "More tab -> Sign out.",
+      "Observe the 'Signing out...' pending pill, then the sheet closing.",
+      "Wait 30s and screenshot. Observed: still on the coach dashboard, still authenticated.",
+      "Repeat: the second attempt reached the login screen immediately."
+    ],
+    "expectedBehavior": "Sign out either completes and lands on the login screen, or fails visibly with an error the user can act on.",
+    "observedBehavior": "It did neither. The sheet dismissed and the session persisted, with no signal that anything had gone wrong.",
+    "evidencePaths": [
+      "native/walkthrough/15-signout.png",
+      "native/walkthrough/16-login.png",
+      "native/walkthrough/17-after-wait.png",
+      "native/walkthrough/18-signout2.png"
+    ],
+    "rootCauseStatus": "UNKNOWN",
+    "rootCauseExplanation": "Not isolated. Candidates, untested: the signOut call rejected and the rejection is swallowed; a race between the sheet's dismiss animation and the navigation; or a network timeout with no error path. Reproducing it under a console/network capture is the next step, not a patch.",
+    "proposedSmallestFix": "None yet - reproduce first. Whatever the cause, the sheet must not dismiss on an unconfirmed sign-out, and a failed sign-out needs a visible error.",
+    "regressionTest": "An e2e assertion that after sign-out the session is gone and the login form is present.",
+    "effortClass": "investigation first",
+    "rollbackApproach": "n/a"
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, hand-driven walkthrough (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "id": "F-NUMERALS-01",
+    "shortTitle": "Deliberate mono numerals break down at display size, and are applied inconsistently",
+    "category": "typography",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - verified in the source token AND magnified from a device screenshot, so neither half is inferred.",
+    "userImpact": "Fragment Mono's period is a square block on a full monospace advance. At display size the player's strokes-gained figure renders as '-3 [] 62' - three tokens rather than one number. The same face produces slashed zeros in the priority list (01 02 03) and the coach trajectory row (3 up, 0 flat, 4 down), and wide gapping in '-4.8 / rd'. Message previews and relative dates are mono too, which makes a chat list look like log output.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "src/styles/design-tokens.css:375-378 (--fw-font-mono = Fragment Mono; comment: 'Numbers stay mono')"
+    ],
+    "reproductionSteps": [
+      "Sign in as the player, open the Stats tab, and magnify the strokes-gained figure.",
+      "Compare with the player Rounds tab, where the same class of number (20, 74.4, 68, +2.5, 30%) is set in the sans face."
+    ],
+    "expectedBehavior": "A headline number reads as one number.",
+    "observedBehavior": "It reads as three tokens, and the choice is not applied consistently between Stats and Rounds.",
+    "evidencePaths": [
+      "native/walkthrough/crop-sg.png",
+      "native/walkthrough/22-p-stats.png",
+      "native/walkthrough/21-p-rounds.png",
+      "native/walkthrough/07-rounds.png"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Deliberate, not a leaked developer font - the token and its comment are explicit. The defect is that a small-text tabular face is being used at display sizes where its square punctuation and fixed advance stop reading as typography. The inconsistency between Stats and Rounds shows the rule was never settled.",
+    "proposedSmallestFix": "Keep mono for small tabular columns if wanted, but set display-size figures in the sans face with font-variant-numeric: tabular-nums, which gives column alignment without the square period. Then pick one rule and apply it to both Stats and Rounds. This is a token decision, not a component rewrite.",
+    "filesLikelyToChange": [
+      "src/styles/design-tokens.css"
+    ],
+    "regressionTest": "None automatable cheaply; a screenshot diff on the Stats card would catch a regression.",
+    "effortClass": "small",
+    "rollbackApproach": "Revert the token."
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, hand-driven walkthrough (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "id": "F-SEGMENTED-01",
+    "shortTitle": "The selected pill escapes its segmented control, in three places",
+    "category": "layout",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - three independent instances of an identical visual signature.",
+    "userImpact": "The active pill sits flush against the track's edge with no inset while the opposite side has padding, its drop shadow bleeds outside the track, and a small green status dot sits half outside the pill's top-right corner. It reads as a control that does not fit its own container - the kind of detail that makes an interface feel unfinished without the user being able to say why.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "the shared Fairway segmented/tab control - dashboard WINDOW selector, calendar Day/Week/Month/Agenda switch, notifications All/Events/Recruiting filter"
+    ],
+    "reproductionSteps": [
+      "Coach dashboard: look at the WINDOW row, 'All' selected.",
+      "Calendar tab: the view switch, 'Agenda' selected.",
+      "Notification bell: the filter row, 'All' selected."
+    ],
+    "expectedBehavior": "The selected pill is inset from the track on all four sides, and any status dot is fully inside it.",
+    "observedBehavior": "Flush on one edge, shadow outside the track, dot clipped by the pill corner. Same in all three.",
+    "evidencePaths": [
+      "native/walkthrough/01-dashboard.png",
+      "native/walkthrough/05-calendar.png",
+      "native/walkthrough/11-notifications.png"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Not traced to source. The identical signature across three unrelated screens points at one shared component rather than three local mistakes; reading it will confirm in minutes.",
+    "proposedSmallestFix": "Add the missing inset padding on the track and bring the status dot inside the pill's bounds, in the shared component.",
+    "regressionTest": "A screenshot assertion on one instance covers all three if they share a component.",
+    "effortClass": "small",
+    "rollbackApproach": "Revert the component."
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, hand-driven walkthrough (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "id": "F-NAVCLIP-01",
+    "shortTitle": "Scroll content is hard-cut behind the bottom nav on nearly every screen",
+    "category": "layout",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - observed on seven screens across both roles.",
+    "userImpact": "Dashboard, Team, Rounds & Stats, Operations, Courses, player Rounds and player Stats all end mid-card or mid-row behind the tab bar with no fade, inset or scroll padding. On coach Rounds & Stats a player's data row is sliced horizontally through the middle. A native list ends; this one is guillotined, and it is the most repeated single tell in the app.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "the shared app-shell scroll container / bottom-nav clearance"
+    ],
+    "reproductionSteps": [
+      "Open any of the listed screens and look at the last visible element above the tab bar."
+    ],
+    "expectedBehavior": "The scroll region reserves bottom padding equal to the nav height plus the safe-area inset, so content comes to rest above it.",
+    "observedBehavior": "Content is clipped mid-element by the nav on seven of the screens visited.",
+    "evidencePaths": [
+      "native/walkthrough/02-dashboard-scrolled.png",
+      "native/walkthrough/07-rounds.png",
+      "native/walkthrough/09-operations.png",
+      "native/walkthrough/21-p-rounds.png"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Consistent with a shell that renders the nav over the scroll area without adding matching bottom padding. AGENTS.md already requires 'bottom-nav clearance' from the shared shell, so this is a contract that exists and is not being met.",
+    "existingContract": "AGENTS.md Mobile UI rules: every mobile screen uses the shared app shell (safe-area, page padding, section spacing, bottom-nav clearance).",
+    "proposedSmallestFix": "Add the clearance in the shared shell once, rather than per screen.",
+    "regressionTest": "Assert the last child's bottom is above the nav's top on a sample of routes.",
+    "effortClass": "small",
+    "rollbackApproach": "Revert the shell padding."
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, hand-driven walkthrough (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "id": "F-TRUNCATE-01",
+    "shortTitle": "Text truncates mid-word across six screens, including an unrecoverable invite link",
+    "category": "layout",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - six instances captured.",
+    "userImpact": "The worst case is functional, not cosmetic: the team invite link renders as 'https://helmsportslabs.com/gol' with no ellipsis and no way to reveal the rest. There are copy buttons, so the link is obtainable - but the user cannot read or verify what they are about to send. Elsewhere: 'Trending down - no f...' on the roster, squeezed into a narrow column while the button beside it has room to spare, plus truncated descriptions on Rounds & Stats, player dashboard, Stats, and an event title and venue name.",
+    "journeyIds": [
+      "J03",
+      "J04"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "reproductionSteps": [
+      "Team Info: read the INVITE LINK field.",
+      "Team tab: read the 'Who needs your attention' rows.",
+      "Rounds & Stats, player dashboard and player Stats: read the subtitle under each heading."
+    ],
+    "expectedBehavior": "Either the text fits, or it wraps, or it truncates with a visible ellipsis and a way to see the whole value.",
+    "observedBehavior": "The invite link is cut with no ellipsis at all; the roster row is cut mid-word next to unused horizontal space.",
+    "evidencePaths": [
+      "native/walkthrough/12-player-detail.png",
+      "native/walkthrough/04-team.png",
+      "native/walkthrough/07-rounds.png"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Not traced. The roster case looks like a fixed-width column rather than a flexible one; the invite link looks like an input with overflow hidden and no ellipsis.",
+    "proposedSmallestFix": "Let the roster column flex, and let the invite link wrap or scroll so the whole URL is readable.",
+    "effortClass": "small",
+    "rollbackApproach": "per-site"
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, hand-driven walkthrough (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "id": "F-RAWDATA-01",
+    "shortTitle": "Implementation detail is shown to users: UTC timestamps and lowercase enum values",
+    "category": "content",
+    "priority": "P3",
+    "status": "CONFIRMED",
+    "confidence": "high - read directly off the screens.",
+    "userImpact": "Coach Rounds & Stats prints three raw UTC timestamps in a row: 'stats cache as of 2026-07-21 01:06 UTC - rank snapshot as of 2026-09-07 02:20 UTC - oldest signal insight: 2026-08-17 02:03 UTC'. Operations shows lowercase category chips taken straight from the data (administrative, compliance, development, practice, preparation, travel) sitting beside a properly-cased 'All categories'. Courses says '57 courses in the cloud library'. None of this is wrong; all of it is the vocabulary of the system rather than the user.",
+    "journeyIds": [
+      "J03"
+    ],
+    "rolesAffected": [
+      "coach"
+    ],
+    "reproductionSteps": [
+      "Rounds & Stats: read the paragraph under the heading.",
+      "Operations: read the second chip row.",
+      "Courses: read the line under the heading."
+    ],
+    "expectedBehavior": "Freshness stated in human terms; category labels title-cased for display; no storage vocabulary.",
+    "observedBehavior": "Three ISO-8601 UTC strings, six lowercase enum values, and the word 'cloud library'.",
+    "evidencePaths": [
+      "native/walkthrough/07-rounds.png",
+      "native/walkthrough/09-operations.png",
+      "native/walkthrough/10-courses.png"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Raw values rendered without a display formatter.",
+    "proposedSmallestFix": "A relative-time formatter for freshness, and a display-label map for categories. Both are small and reusable.",
+    "effortClass": "small",
+    "rollbackApproach": "per-site"
+  },
+  {
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, iOS 26.5 simulator",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "verificationLayers": [
+      "native simulator, hand-driven walkthrough (done)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no - web deploy only",
+    "id": "F-SHEETFOOTER-01",
+    "shortTitle": "The New event sheet slices a field label behind its own footer",
+    "category": "layout",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high - visible in the capture.",
+    "userImpact": "The scroll region's bottom padding does not account for the pinned footer, so the 'End time' label is cut horizontally through the middle by the 'Create event' button. The disabled primary button is also a washed-out green with white text that does not read as disabled, and the form mixes two input styles - a bare field with a green left bar for the name, filled rounded boxes for dates and times - with a chevron on only one of the three.",
+    "journeyIds": [
+      "J06"
+    ],
+    "rolesAffected": [
+      "coach"
+    ],
+    "reproductionSteps": [
+      "Calendar tab -> New event. Scroll to the When section and look directly above the footer."
+    ],
+    "expectedBehavior": "The scroll area reserves the footer's height, so no content is ever under it.",
+    "observedBehavior": "A field label is sliced in half by the footer.",
+    "evidencePaths": [
+      "native/walkthrough/13-new-event.png"
+    ],
+    "rootCauseStatus": "SUSPECTED",
+    "rootCauseExplanation": "Same shape as F-NAVCLIP-01 - an overlay chrome element without matching scroll padding.",
+    "proposedSmallestFix": "Reserve the footer height in the sheet's scroll padding; give the disabled state a real disabled treatment.",
+    "effortClass": "small",
+    "rollbackApproach": "Revert the sheet."
   }
 ]

@@ -87,6 +87,21 @@ scrolls and measurements only.
 Findings: F-CONTRAST-PLAYER-01, F-TITLE-01. Neither is visible from the coach
 side, which is the argument for having swept both roles.
 
+## Hand-driven walkthrough (added last, at the owner's request)
+
+Shipped Release build, iOS 26.5 simulator, both accounts. 25 screens and
+overlays: coach dashboard (+scrolled), Helm, Team, Calendar, More sheet, Rounds
+& Stats, Messages, Operations, Courses, Team Info, notifications sheet, New
+event sheet, relaunch, sign-out x2, login, player dashboard, player Rounds,
+player Stats, player More.
+
+Produced F-SIGNOUT-01, F-NUMERALS-01, F-SEGMENTED-01, F-NAVCLIP-01,
+F-TRUNCATE-01, F-RAWDATA-01, F-SHEETFOOTER-01. Also confirmed as NOT defects:
+the push soft-ask correctly remembers a dismissal across relaunch (tested
+because it had appeared three launches running - all unanswered), and the
+"back to Settings" status-bar breadcrumb was an artifact of launching from
+Settings, not app chrome.
+
 ## Corrections made during this run
 
 Two claims in earlier drafts were wrong and were corrected against fresh
@@ -117,3 +132,9 @@ measurement rather than quietly edited:
    It parsed the first three numbers out of the app's `oklab()` colour strings as
    if they were RGB. Redone with a canvas readback so the browser resolves the
    colour, it reproduced axe's ratios to within rounding.
+5. **The mono numerals were nearly reported as a leaked developer font.** They
+   are deliberate — `design-tokens.css:375` says "Numbers stay mono" and sets
+   Fragment Mono. Checking the token before writing changed the finding from
+   "a dev font leaked into production" to the accurate and narrower "an
+   intentional small-text tabular face breaks down at display sizes, and is
+   applied inconsistently between two screens".

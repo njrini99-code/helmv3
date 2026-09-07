@@ -42,9 +42,37 @@ authenticated session from earlier owner work, which is itself consistent with
 the documented contract that the launch-time cache clear touches disk and memory
 caches only and never cookies.
 
+## The visual walkthrough (added after the measurement passes)
+
+The measurement passes above collected numbers, not judgement. The owner then
+asked for the real app to be driven by hand and looked at. That happened, in the
+shipped simulator build, on both accounts — and it produced the most important
+finding in the audit (`F-SIGNOUT-01`) plus six visual ones the scripts could
+never have seen. Full account with screenshots: **`VISUAL-WALKTHROUGH.md`**.
+
+Two things worth stating up front. **The app has real strengths** — Courses,
+the player Strokes Gained card, and the login screen are genuinely good and
+should not be rebuilt. And **the walkthrough had to run on raw screen
+coordinates**, because every tap command in the iOS automation toolchain needs
+an element reference and this app exposes none. That is F-A11Y-NATIVE-01 costing
+something concrete rather than hypothetically.
+
 ## Highest-impact findings
 
-**1. F-A11Y-NATIVE-01 (P1) — iOS UI automation cannot see anything inside the
+**1. F-SIGNOUT-01 (P1) — sign-out silently failed and left the session live.**
+Tapping Sign out showed a "Signing out…" pending state, the sheet closed, and
+**~29 seconds later the app was still fully signed in** on the coach dashboard
+with all team data visible. No error, no toast, no retry. A second attempt
+worked immediately.
+
+Seen once, so the mechanism is unproven and the frequency unknown — but the
+failure *mode* is what matters: the user is given a sign-out that completes its
+animation and leaves them logged in. On a borrowed or shared phone that is a
+privacy problem, not a polish one. Everything else in this audit is about how
+the app feels; this one is about whether it does what it says. Reproducing it
+under a console and network capture is the first thing to do.
+
+**2. F-A11Y-NATIVE-01 (P1) — iOS UI automation cannot see anything inside the
 WebView.** A coach dashboard visibly showing a title, a greeting, three sheet
 CTAs and a bottom nav produces a runtime accessibility tree of 18 elements, all
 full-screen unlabelled containers, with **zero interaction targets** — and no
@@ -82,7 +110,7 @@ different products, and nothing collected this run distinguishes them. Resolving
 it is the first item in the plan and it needs a person at a Mac with the
 Inspector open.
 
-**2. F-TAP-01 (P2) — 59 controls escape the design system's own 44pt floor.**
+**3. F-TAP-01 (P2) — 59 controls escape the design system's own 44pt floor.**
 The encouraging part first: **the floor already exists and is honoured.** Of 432
 visible interactive controls across eight signed-in screens, **373 (86%) are at
 least 44pt tall, and the single most common height is exactly 44pt.** Whoever
@@ -105,7 +133,7 @@ Seven calendar day cells measure 37pt wide and are **excluded**: a 7-column
 month grid on a 390pt phone cannot give each column 44pt, and Apple's own
 Calendar has the same constraint.
 
-**3. F-SEARCH-HEIGHT-01 (P2) — the same search field is four different heights.**
+**4. F-SEARCH-HEIGHT-01 (P2) — the same search field is four different heights.**
 40pt on messages, 32pt on rounds, 24pt on qualifiers, 20pt on roster — against a
 system norm of 44. All four are wrong, by four different amounts. Nobody
 consciously notices this, which is precisely why it reads as "website": native
@@ -114,7 +142,7 @@ tabs quietly says these screens were built by different hands at different
 times. On roster the tappable input is a 20pt strip inside a 36pt bordered box,
 so the visual control and the actual target disagree too.
 
-**4. F-CONTRAST-01 — RETRACTED. It was a measurement artifact, not a defect.**
+**5. F-CONTRAST-01 — RETRACTED. It was a measurement artifact, not a defect.**
 An earlier pass of this audit reported the Sign in label at 3.52:1 light /
 3.61:1 dark, below the 4.5:1 AA minimum. That was wrong. axe-core had run before
 the login form finished its entrance transition, so it sampled a
@@ -130,7 +158,7 @@ One real item survives the retraction: axe now reports color-contrast
 image-bearing ancestors it cannot sample. Incomplete is not a pass. Those nodes
 are unmeasured, and checking the gradient headings by hand is still outstanding.
 
-**5. F-CONTRAST-PLAYER-01 (P2) — the player screens have real contrast failures,
+**6. F-CONTRAST-PLAYER-01 (P2) — the player screens have real contrast failures,
 and this time I checked twice.** Six of eight player screens carry serious
 contrast violations; my-standing alone has 43. The measured ratios sit at
 **4.03–4.06:1 where 4.5:1 is required** — brand green on cream (`#238d46` on
@@ -147,12 +175,12 @@ It is a token pair, not a component: the same combinations recur across
 unrelated screens, so nudging the green in `design-tokens.css` clears all of
 them at once.
 
-**6. F-TITLE-01 (P3) — four player screens are titled "CoachHelm" to a player.**
+**7. F-TITLE-01 (P3) — four player screens are titled "CoachHelm" to a player.**
 `my-standing`, `my-development`, `my-game-profile` and `my-insights` all report
 a document title of "CoachHelm | GolfHelm" — the name of the coach tool.
 `my-qualifiers` gets it right, so the correct pattern is already in the tree.
 
-**7. F-KBD-AUTOFOCUS-01 (P2) — autofocus is gated in six components and ungated
+**8. F-KBD-AUTOFOCUS-01 (P2) — autofocus is gated in six components and ungated
 at most other sites.** The codebase already knows the right answer:
 `autoFocus={finePointer}`, where `finePointer` is `useMediaQuery('(pointer: fine)')`.
 It just is not shared — the hook is re-declared inline in six components, so the
@@ -161,12 +189,12 @@ phone the ungated ones throw the keyboard up over half the sheet before the user
 has decided to type. Messages, coach notes, log-progress, expenses and three
 auth pages are among them.
 
-**8. F-BRAND-01 (P3) — two brand marks in three seconds.** The splash carries
+**9. F-BRAND-01 (P3) — two brand marks in three seconds.** The splash carries
 the ship's-wheel company mark; the login screen 0.5s later carries the
 golf-ball-in-wheel product mark. Reported in August, unchanged, and still an
 owner decision rather than a defect.
 
-**9. F-PLIST-IPAD-01 (P3) — a dead `~ipad` orientation block still ships.**
+**10. F-PLIST-IPAD-01 (P3) — a dead `~ipad` orientation block still ships.**
 The iPhone array is correctly portrait-only; the `~ipad` array still lists all
 four orientations in an app whose device family is iPhone-only.
 
@@ -213,7 +241,9 @@ hardware gap.
 ## Confirmed defects
 
 F-TAP-01, F-SEARCH-HEIGHT-01, F-CONTRAST-PLAYER-01, F-TITLE-01,
-F-KBD-AUTOFOCUS-01, F-BRAND-01, F-PLIST-IPAD-01, and the *symptom* of
+F-KBD-AUTOFOCUS-01, F-BRAND-01, F-PLIST-IPAD-01, the seven walkthrough findings
+(F-NUMERALS-01, F-SEGMENTED-01, F-NAVCLIP-01, F-TRUNCATE-01, F-RAWDATA-01,
+F-SHEETFOOTER-01, and F-SIGNOUT-01 as CONFIRMED_ONCE), and the *symptom* of
 F-A11Y-NATIVE-01. F-CONTRAST-01 is **retracted** — see above. See `FINDINGS.json` for reproduction steps,
 evidence paths, and the separate `rootCauseStatus` on each.
 
@@ -282,16 +312,18 @@ could not be run. That remains true from the August audit.
 
 ## Recommended implementation order
 
-1. **T1** — isolate the accessibility cause. An experiment, not a patch. Nothing
+1. **T0** — reproduce the sign-out failure under a console and network capture.
+   The only correctness bug in the audit; everything else is craft.
+2. **T1** — isolate the accessibility cause. An experiment, not a patch. Nothing
    else about accessibility should be touched until it answers.
-2. **T2** — raise the 59 stragglers to the 44pt floor the system already uses.
+3. **T2** — raise the 59 stragglers to the 44pt floor the system already uses.
    Gap-closing against an existing norm, not a new convention.
-3. **T3** — nudge the player-side green/cream token pairs over 4.5:1, and
+4. **T3** — nudge the player-side green/cream token pairs over 4.5:1, and
    measure the twelve login nodes axe cannot sample.
-4. **T4** — retitle the four player pages. Trivial.
-5. **T5** — extract `useFinePointer()`, then decide the ungated sites one by
+5. **T4** — retitle the four player pages. Trivial.
+6. **T5** — extract `useFinePointer()`, then decide the ungated sites one by
    one, then add the lint rule that stops the next one.
-6. **T6** — delete the `~ipad` block whenever a binary is next built.
+7. **T6** — delete the `~ipad` block whenever a binary is next built.
 
 Full task shapes, non-goals and rollbacks in `IMPLEMENTATION-PLAN.md`.
 
