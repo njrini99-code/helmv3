@@ -35,6 +35,15 @@ import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStat
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { LogEvidenceForm } from './LogEvidenceForm';
+import {
+  SlowStatementsPanel,
+  IndexSuggestionsPanel,
+  UnusedIndexesPanel,
+  BloatPanel,
+  CoveragePanel,
+  DriftPanel,
+  ChangedSinceYesterdayStrip,
+} from './DatabaseTabPanels';
 
 export const dynamic = 'force-dynamic';
 
@@ -1247,6 +1256,19 @@ export default async function DatabasePage({
         </p>
       </div>
 
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Changed since yesterday</Eyebrow>
+          <div className="mt-2">
+            <PanelBoundary title="Changed since yesterday" skeleton={<PanelPageSkeleton rows={1} />}>
+              <ChangedSinceYesterdayStrip />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
       {incidentFingerprint !== null ? (
         <>
           <Surface>
@@ -1314,6 +1336,107 @@ export default async function DatabasePage({
           <div className="mt-3">
             <PanelBoundary title="Query Performance" skeleton={<PanelPageSkeleton rows={5} />}>
               <PerformancePanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Slow statements</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            Top 10 by mean time and top 10 by total time (of the stored top 25), with a 7-day mean-time sparkline per
+            fingerprint. A statement over 500ms mean pages Sentry once per day.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Slow statements" skeleton={<PanelPageSkeleton rows={5} />}>
+              <SlowStatementsPanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Index suggestions</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            index_advisor (via hypopg) run against the latest captured statements. Skipped, never CREATE EXTENSION'd,
+            when the extension is not installed.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Index suggestions" skeleton={<PanelPageSkeleton rows={5} />}>
+              <IndexSuggestionsPanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Unused indexes</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            Zero scans since stats reset, excluding primary-key and unique-constraint indexes.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Unused indexes" skeleton={<PanelPageSkeleton rows={5} />}>
+              <UnusedIndexesPanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Bloat</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            pgstattuple_approx over the 20 largest tables. Skipped, never CREATE EXTENSION'd, when pgstattuple is not
+            installed.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Bloat" skeleton={<PanelPageSkeleton rows={5} />}>
+              <BloatPanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Coverage</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            RLS-enabled tables with zero policies, and public SECURITY DEFINER functions still executable by
+            anon/authenticated.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Coverage" skeleton={<PanelPageSkeleton rows={5} />}>
+              <CoveragePanel />
+            </PanelBoundary>
+          </div>
+        </Inset>
+      </Surface>
+
+      <DatelineRule />
+
+      <Surface>
+        <Inset>
+          <Eyebrow as="h2">Drift</Eyebrow>
+          <p className="mt-1 text-xs text-warm-500">
+            Migration ledger count and last health-sample time — the fallback view when no live schema/types/ledger
+            drift verdict is reachable from this Bridge deployment.
+          </p>
+          <div className="mt-3">
+            <PanelBoundary title="Drift" skeleton={<PanelPageSkeleton rows={3} />}>
+              <DriftPanel />
             </PanelBoundary>
           </div>
         </Inset>

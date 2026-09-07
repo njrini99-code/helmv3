@@ -2644,7 +2644,9 @@
           "supabase/migrations/20260825200811_helm_flight_recorder.sql",
           "supabase/migrations/20260903150000_helm_debug_agent_runs.sql",
           "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql",
-          "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+          "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql",
+          "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql",
+          "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
         ]
       },
       {
@@ -3148,6 +3150,10 @@
         "definedIn": "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql"
       },
       {
+        "id": "helm_debug_db_analysis_snapshot",
+        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
+      },
+      {
         "id": "helm_debug_db_health_snapshot",
         "definedIn": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
       },
@@ -3185,7 +3191,11 @@
       },
       {
         "id": "helm_debug_prune_observability",
-        "definedIn": "supabase/migrations/20260903191300_helm_debug_observability_retention_v2.sql"
+        "definedIn": "supabase/migrations/20260906120200_helm_debug_observability_retention_v3.sql"
+      },
+      {
+        "id": "helm_debug_read_db_analysis_samples",
+        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
       },
       {
         "id": "helm_debug_read_db_error_events",
@@ -3208,6 +3218,10 @@
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
       },
       {
+        "id": "helm_debug_read_db_statement_samples",
+        "definedIn": "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql"
+      },
+      {
         "id": "helm_debug_read_db_table_health",
         "definedIn": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
       },
@@ -3218,6 +3232,10 @@
       {
         "id": "helm_debug_read_observability_sizes",
         "definedIn": "supabase/migrations/20260903191300_helm_debug_observability_retention_v2.sql"
+      },
+      {
+        "id": "helm_debug_read_statement_alert_state",
+        "definedIn": "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql"
       },
       {
         "id": "helm_debug_record_agent_run",
@@ -3233,7 +3251,7 @@
       },
       {
         "id": "helm_debug_stat_statements_snapshot",
-        "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+        "definedIn": "supabase/migrations/20260906115900_helm_debug_stat_statements_snapshot_min_exec.sql"
       },
       {
         "id": "helm_jobs_ack",
@@ -3388,6 +3406,10 @@
         "definedIn": "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
       },
       {
+        "id": "record_db_analysis_sample",
+        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
+      },
+      {
         "id": "record_db_error_event",
         "definedIn": "supabase/migrations/20260903193000_helm_debug_error_events_individual_rows.sql"
       },
@@ -3406,6 +3428,10 @@
       {
         "id": "record_db_stat_snapshot",
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+      },
+      {
+        "id": "record_db_statement_samples",
+        "definedIn": "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql"
       },
       {
         "id": "record_db_table_samples",
@@ -6260,6 +6286,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "helm_debug_read_statement_alert_state",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/db-stat-delta/route.ts",
+          "line": 262
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "helm_debug_record_agent_run",
       "kind": "feature_rpc",
       "evidence": [
@@ -6278,7 +6316,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
-          "line": 139
+          "line": 147
         }
       ]
     },
@@ -6573,7 +6611,19 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
-          "line": 213
+          "line": 221
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "record_db_statement_samples",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/db-stat-delta/route.ts",
+          "line": 292
         }
       ]
     },
@@ -15716,12 +15766,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 244
+          "line": 268
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 247
+          "line": 271
         },
         {
           "kind": "import_graph",
@@ -15752,6 +15802,21 @@
           "kind": "import_graph",
           "path": "src/lib/admin/database/alerts.ts",
           "line": 62
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 10
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 11
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 12
         },
         {
           "kind": "import_graph",
@@ -15870,6 +15935,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/database/statements.ts",
+          "line": 11
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/statements.ts",
+          "line": 12
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/database/tables.ts",
           "line": 16
         },
@@ -15961,6 +16036,18 @@
     },
     {
       "source": "observability_supabase",
+      "target": "helm_debug_read_db_analysis_samples",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
       "target": "helm_debug_read_db_error_events",
       "kind": "feature_rpc",
       "evidence": [
@@ -16036,6 +16123,18 @@
           "kind": "rpc_call",
           "path": "src/lib/admin/database/performance.ts",
           "line": 105
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_statement_samples",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/statements.ts",
+          "line": 92
         }
       ]
     },
@@ -18914,6 +19013,14 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
         }
       ]
     },
@@ -20825,6 +20932,14 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120000_helm_debug_db_statement_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
         }
       ]
     },

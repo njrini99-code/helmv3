@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 87 | 0 | 4 | 3 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 31 |
 | `REFERENCE` | 52 | 15 | 19 | 75 |
-| `GENERATED_TRUTH` | 23 | 3 | 7 | 38 |
+| `GENERATED_TRUTH` | 25 | 3 | 7 | 38 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
 | `RUNBOOK` | 5 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 28 | 15 | 2 | 3 |
 | `ADR` | 5 | 0 | 3 | 1 |
 | `INDEX` | 19 | 1 | 7 | 27 |
-| `UNKNOWN` | 92 | 12 | 40 | 145 |
+| `UNKNOWN` | 93 | 12 | 40 | 146 |
 
 ## Files
 
@@ -182,7 +182,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 29 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
-| `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 40 | 1 |
+| `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | 1 |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 28 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 3 | 14 | - |
@@ -267,6 +267,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 21 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 208 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 0 | 134 | 13 |
@@ -546,6 +548,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | 0 | 0 | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
+| `docs/observability/DATABASE_TAB.md` | current | - | - | - | 3 | 9 | 1 |
 | `docs/observability/DATADOG.md` | current | - | - | - | 0 | 3 | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 29 | 8 |
@@ -558,7 +561,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/observability/SUPABASE_CERTIFICATION.md` | current | - | - | - | 1 | 21 | 4 |
 | `docs/observability/SUPABASE_COVERAGE_MATRIX.md` | current | - | - | - | 2 | 2 | - |
 | `docs/observability/SUPABASE_DIAGNOSTICS.md` | current | - | - | yes | 2 | 17 | 1 |
-| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | yes | - | yes | 8 | 3 | - |
+| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | yes | - | yes | 8 | 4 | - |
 | `docs/observability/SUPABASE_OPERATING_MODEL.md` | current | - | - | - | 3 | 13 | - |
 | `docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md` | current | yes | - | yes | 4 | 14 | - |
 | `docs/observability/SUPABASE_RUNBOOKS.md` | current | - | - | - | 3 | 7 | 1 |
@@ -605,7 +608,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 1 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 24 | 38 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 25 | 41 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |

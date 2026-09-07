@@ -158,6 +158,30 @@ no `HELD.md` row.
   `/admin/database?incident=<fingerprint>`, linked from each error-group
   row. The admin gate still runs before any data access.
 
+### Database Plan track D5 (Database Tab: statement capture, index advice, bloat, coverage, drift, Sentry paging)
+
+Full detail: `docs/observability/DATABASE_TAB.md` (not duplicated here —
+that doc is the live authority on what each new section reads, retention,
+fail-open behaviour, and named gaps).
+
+- Tables: `helm_debug.db_statement_samples`, `db_statement_alert_state`,
+  `db_analysis_samples`. No new collector schedule — extends the existing
+  `db-stat-delta` (15 min) and `db-table-health` (hourly) crons.
+- Pure evaluators: `src/lib/observability/supabase/statement-ranking.ts`
+  (top-25-by-total/top-25-by-mean ranking, once-per-UTC-day Sentry paging
+  gate), `db-analysis.ts` (flatten/diff for the six-then-seven analysis
+  categories), `rls-coverage.ts` (RLS/grant coverage findings, importable
+  by `scripts/db/rls-coverage.mjs` without a live database).
+- Bridge readers: `src/lib/admin/database/statements.ts`, `analysis.ts`.
+- Bridge page additions: Slow statements, Index suggestions, Unused
+  indexes, Bloat, Coverage sections; a best-effort Drift section (no
+  persisted drift verdict or GitHub Actions credential reachable from this
+  Bridge deployment — falls back to a migration-ledger file count plus the
+  health sampler's last-sample time); a "Changed since yesterday" strip.
+- Coverage's third finding (policies with no matching pgTAP test) is
+  script-only (`npm run db:rls-coverage`), not live-trended — a SECURITY
+  DEFINER SQL function cannot read `supabase/tests/rls/*.sql`.
+
 ## Tests
 
 Unit-level TypeScript fixtures against every pure evaluator listed above
