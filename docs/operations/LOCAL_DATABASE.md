@@ -3,8 +3,10 @@
 ## Commands
 
 ```bash
-npm run db:local          # start (or reuse) the local Supabase stack, replay migrations + seeds
-npm run db:local -- --reset     # force a fresh replay even if the stack is already up
+npm run db:local          # start (or reuse) the local Supabase stack, replay
+migrations + seeds
+npm run db:local -- --reset     # force a fresh replay even if the stack is
+already up
 npm run db:local -- --no-seed   # replay migrations only, skip seed files
 npm run db:local:stop     # stop the stack
 ```
