@@ -30,7 +30,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `POLICY` | 20 | 2 | 9 | 10 |
 | `AGENT_SKILL` | 77 | 0 | 3 | 2 |
 | `CURRENT_FEATURE` | 26 | 26 | 11 | 31 |
-| `REFERENCE` | 56 | 15 | 18 | 100 |
+| `REFERENCE` | 58 | 15 | 18 | 100 |
 | `GENERATED_TRUTH` | 22 | 3 | 7 | 37 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
@@ -56,7 +56,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
+| `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 1 | 3 | - |
 | `.claude/rules/database.md` | current | - | - | - | 1 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | 1 |
@@ -64,7 +64,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
-| `.claude/rules/integrations.md` | current | - | - | - | 1 | 11 | 2 |
+| `.claude/rules/integrations.md` | current | - | - | - | 4 | 11 | 2 |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 6 | 1 |
 | `AGENTS.md` | current | yes | - | yes | 0 | 14 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 6 | 1 |
@@ -213,6 +213,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/features/coachhelm/coachhelm-master-blueprint.md` | superseded | - | - | - | 0 | 0 | - |
 | `docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md` | current | - | - | - | 3 | 37 | 7 |
 | `docs/research/coach-outreach-legal-and-best-practices.md` | current | - | - | - | 1 | 0 | - |
+| `docs/security/DEPENDABOT_TRIAGE_2026-09-06.md` | current | - | - | - | 0 | 0 | - |
+| `docs/security/GITHUB_APPS_2026-09-06.md` | current | - | - | - | 0 | 3 | - |
 | `docs/security/accepted-risks.md` | current | - | - | - | 0 | 0 | - |
 | `docs/security/auth-config.md` | current | yes | - | yes | 3 | 0 | - |
 | `docs/setup/BACKUP_AND_DISASTER_RECOVERY.md` | current | - | - | - | 0 | 0 | - |
@@ -569,17 +571,17 @@ them would bury everything above.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.devin/AGENTS-POINTER.md` | current | - | - | - | 0 | 0 | - |
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | 1 |
-| `.github/branch-protection.md` | current | - | - | - | 9 | 5 | 1 |
+| `.github/branch-protection.md` | current | - | - | - | 10 | 5 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 27 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 8 | 8 | 1 |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 9 | 11 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
-| `docs/REPO_MAP.md` | current | - | - | yes | 4 | 39 | 4 |
+| `docs/REPO_MAP.md` | current | - | - | yes | 4 | 40 | 4 |
 | `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | superseded | - | - | - | 4 | 7 | - |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 3 | 16 | 9 |
@@ -634,7 +636,7 @@ them would bury everything above.
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | 3 | 30 | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 7 | 61 | 6 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | 1 |
-| `docs/operations/COST_CONTROLS.md` | current | - | - | - | 4 | 6 | - |
+| `docs/operations/COST_CONTROLS.md` | current | - | - | - | 4 | 7 | - |
 | `docs/operations/GATES.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/GITHUB_LABELS_AND_PROJECT_SETUP.md` | current | - | - | yes | 1 | 1 | - |
 | `docs/operations/GIT_ACTIVITY_TIMELINE.md` | current | - | - | - | 3 | 0 | - |
