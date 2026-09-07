@@ -52,7 +52,7 @@ import type {
   GolfTeeCategory,
 } from '@/lib/types/golf-course';
 import type { Database } from '@/lib/types/database';
-import { MAX_STORED_PAR, MIN_PAR } from '@/lib/golf/par';
+import { MAX_PAR, MIN_PAR } from '@/lib/golf/par';
 
 type CourseUpdate = Database['public']['Tables']['golf_courses']['Update'];
 type TeeUpdate = Database['public']['Tables']['golf_course_tees']['Update'];
@@ -1986,7 +1986,7 @@ function normalizeHoleInputs(holes: TeeHoleInput[]): TeeHoleInput[] {
     // from a tee being saved for an unrelated reason, turning a complete tee
     // into a draft with no message. Entry is clamped in the UI. See
     // src/lib/golf/par.ts.
-    if (!Number.isInteger(h.par) || h.par < MIN_PAR || h.par > MAX_STORED_PAR) continue;
+    if (!Number.isInteger(h.par) || h.par < MIN_PAR || h.par > MAX_PAR) continue;
     byNumber.set(h.holeNumber, h);
   }
   return [...byNumber.values()].sort((a, b) => a.holeNumber - b.holeNumber);

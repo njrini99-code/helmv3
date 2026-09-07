@@ -2,6 +2,7 @@
 
 import { randomInt } from 'crypto';
 import { after } from 'next/server';
+import { MAX_STORED_PAR, MIN_PAR } from '@/lib/golf/par';
 import { createClient } from '@/lib/supabase/server';
 import { derivePlayerQualifierProgress } from './qualifier-progress';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -326,7 +327,7 @@ const comprehensiveShotSchema = z.object({
 
 const comprehensiveHoleSchema = z.object({
   holeNumber: z.number().int().min(1).max(18),
-  par: z.number().int().min(3).max(6),
+  par: z.number().int().min(MIN_PAR).max(MAX_STORED_PAR),
   yardage: z.number().min(0),
   score: z.number().int().min(1).max(20),
   putts: z.number().int().min(0).max(10),
@@ -391,7 +392,7 @@ const golfRoundComprehensiveSchema = z.object({
  */
 const partialHoleSchema = z.object({
   holeNumber: z.number().int().min(1).max(18),
-  par: z.number().int().min(3).max(6),
+  par: z.number().int().min(MIN_PAR).max(MAX_STORED_PAR),
   yardage: z.number().min(0),
   score: z.number().int().min(1).max(20).optional().nullable(),
   putts: z.number().int().min(0).max(10).optional().nullable(),
@@ -434,7 +435,7 @@ const partialRoundSchema = z.object({
   })).optional(),
   holeConfigs: z.array(z.object({
     holeNumber: z.number().int().min(1).max(18),
-    par: z.number().int().min(3).max(6),
+    par: z.number().int().min(MIN_PAR).max(MAX_STORED_PAR),
     yardage: z.number().min(0).optional().nullable(),
   })).optional(),
 });

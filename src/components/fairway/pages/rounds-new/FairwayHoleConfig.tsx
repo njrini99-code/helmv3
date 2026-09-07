@@ -43,7 +43,7 @@ import { fwHaptic } from '@/lib/fairway/haptics';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Input } from '@/components/fairway/forms/Input';
 import type { HoleConfig } from '@/lib/types/golf-course';
-import { MAX_STORED_PAR, MIN_PAR, parChoicesFor } from '@/lib/golf/par';
+import { MAX_PAR, MIN_PAR, parChoicesFor } from '@/lib/golf/par';
 
 interface FairwayHoleConfigProps {
   initialHoles?: HoleConfig[];
@@ -163,7 +163,7 @@ export function FairwayHoleConfig({
     const isValid = holes.every(
       (h) =>
         h.par >= MIN_PAR &&
-        h.par <= MAX_STORED_PAR &&
+        h.par <= MAX_PAR &&
         h.yardage > 0 &&
         h.yardage <= MAX_HOLE_YARDAGE,
     );
@@ -172,7 +172,7 @@ export function FairwayHoleConfig({
       // yardage at all — this ceiling is the only thing standing between a
       // typo and a hole nobody can meaningfully play.
       setValidationError(
-        `Please ensure all holes have valid par (${MIN_PAR}-${MAX_STORED_PAR}) and yardage between 1 and ${MAX_HOLE_YARDAGE}`,
+        `Please ensure all holes have valid par (${MIN_PAR}-${MAX_PAR}) and yardage between 1 and ${MAX_HOLE_YARDAGE}`,
       );
       return;
     }

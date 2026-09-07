@@ -321,27 +321,35 @@ export function FairwayRoundSubmitOverlay({
                   transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.5 }}
                   className="p-5 text-center"
                 >
-                  <p className="mb-4 font-fw-sans text-body-sm text-text-tertiary">
+                  <p className="font-fw-sans text-body-sm text-text-tertiary">
                     Round saved. Opening your review…
                   </p>
-                  <Button
-                    variant="primary"
-                    className="w-full"
-                    onClick={() => {
-                      hasNavigatedRef.current = false;
-                      navigateToRound();
-                    }}
-                  >
-                    View round review
-                  </Button>
+                  {/*
+                    No always-on "View round review" button here. This block
+                    fades in at 0.5s and navigateToRound() fires at
+                    SUCCESS_REVEAL_MS — a button mounted unconditionally would
+                    be on screen for ~200ms and unpressable in practice. The
+                    manual affordances belong to the 8s hang path below, which
+                    is the only state where the player actually needs one.
+                  */}
                   <AnimatePresence>
                     {showSuccessEscape && (
                       <m.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-3"
+                        className="mt-4 space-y-3"
                       >
+                        <Button
+                          variant="primary"
+                          className="w-full"
+                          onClick={() => {
+                            hasNavigatedRef.current = false;
+                            navigateToRound();
+                          }}
+                        >
+                          View round review
+                        </Button>
                         <Button
                           variant="secondary"
                           className="w-full"

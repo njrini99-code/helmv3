@@ -30,7 +30,7 @@ import { useToast } from '@/components/ui/sonner';
 import { IconX, IconFlag } from '@/components/icons';
 import type { GolfCourseTeeWithHoles, GolfTeeCategory } from '@/lib/types/golf-course';
 import { createTee, updateTee } from '@/app/golf/actions/course-library';
-import { MAX_STORED_PAR, MIN_PAR, parChoicesFor } from '@/lib/golf/par';
+import { MAX_PAR, MIN_PAR, parChoicesFor } from '@/lib/golf/par';
 
 // ── Local row model for the editor ───────────────────────────────────────────
 
@@ -206,8 +206,8 @@ export function TeeFormDrawer({
       // tee unsavable, so a coach could not fix a yardage typo on it without
       // first changing a par. The clamp is applied to the <select> options
       // instead — new pars can only be 3-5, existing ones survive untouched.
-      if (!Number.isFinite(r.par) || r.par < MIN_PAR || r.par > MAX_STORED_PAR) {
-        setError(`Hole ${r.holeNumber}: par must be between ${MIN_PAR} and ${MAX_STORED_PAR}.`);
+      if (!Number.isFinite(r.par) || r.par < MIN_PAR || r.par > MAX_PAR) {
+        setError(`Hole ${r.holeNumber}: par must be between ${MIN_PAR} and ${MAX_PAR}.`);
         return null;
       }
 

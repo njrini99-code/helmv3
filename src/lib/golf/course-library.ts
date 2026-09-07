@@ -5,6 +5,8 @@
  * later, by client dedup hints. Keep these pure so they can run on both sides.
  */
 
+import { MAX_STORED_PAR, MIN_PAR } from './par';
+
 import type {
   GolfCourse,
   GolfCourseTee,
@@ -163,7 +165,7 @@ export function isTeeComplete(
   for (const h of holes) {
     if (h.hole_number < 1 || h.hole_number > holesCount) return false;
     if (seen.has(h.hole_number)) return false;
-    if (!Number.isFinite(h.par) || h.par < 3 || h.par > 6) return false;
+    if (!Number.isFinite(h.par) || h.par < MIN_PAR || h.par > MAX_STORED_PAR) return false;
     seen.add(h.hole_number);
   }
   return seen.size === holesCount;

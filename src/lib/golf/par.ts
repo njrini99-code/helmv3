@@ -5,21 +5,26 @@
  * number. Keeping them apart is the whole point of this file.
  *
  * ENTRY bound (`MIN_PAR`..`MAX_PAR`, 3..5) governs what a par value may be
- * when it is being CREATED — the hole-config step of a new round, the tee
- * editor drawer, and the server-side normalizer both forms funnel into.
- * Real courses do not have par 6 holes; offering one was an entry defect.
+ * when it is being CREATED or EDITED — the hole-config step of a new round,
+ * the tee editor drawer, and the server-side normalizer both forms funnel
+ * into. Real courses do not have par 6 holes; offering one was an entry
+ * defect. These three paths both validate on this bound and offer only these
+ * choices, so no new par 6 can enter the system.
  *
- * READ bound (3..6) governs par values already stored in `golf_course_holes`
- * / `golf_course_tee_holes`. It stays wide on purpose. `isTeeComplete` and
- * the round-submission schemas in `src/app/golf/actions/golf.ts` all read
- * stored course data back out, and a round played on a course that recorded
- * a par 6 before this change must still save. Narrowing the read bound would
- * turn an old course into an unsavable round, which is a data-loss shape, not
- * a validation improvement.
+ * READ bound (`MAX_STORED_PAR`, 6) governs par values already stored in
+ * `golf_course_holes` / `golf_course_tee_holes` / `golf_holes`. It stays wide
+ * on purpose, and only on paths that SAVE A ROUND against stored course data:
+ * `isTeeComplete` and the round-submission schemas in
+ * `src/app/golf/actions/golf.ts`. Rejecting a round because the course it was
+ * played on holds an out-of-range par loses the round — a data-loss shape,
+ * not a validation improvement — so those stay permissive regardless of what
+ * the entry paths allow.
  *
- * So: tighten writes, leave reads alone. If the stored par-6 rows are ever
- * confirmed empty or migrated, the read bound can follow — that is a separate,
- * data-dependent decision.
+ * The entry bound is enforced rather than merely offered because production
+ * holds zero par-6 rows in any of the four tables with a `par` column
+ * (verified against `information_schema` + row counts), so there is no legacy
+ * value for the tighter bound to strand. `parChoicesFor` remains the guard
+ * for a par that somehow arrives outside 3-5 anyway.
  */
 
 /** Lowest par a new hole may be assigned. */
