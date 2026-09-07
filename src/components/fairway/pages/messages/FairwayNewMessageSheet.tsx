@@ -404,7 +404,20 @@ export function FairwayNewMessageSheet({
                         aria-pressed={isSelected}
                         className={cn(
                           'block w-full rounded-fw-md px-3 py-2.5 text-left',
-                          'transition-colors [transition-duration:var(--fw-dur-fast)]',
+                          'transition-[color,background-color,transform] [transition-duration:var(--fw-dur-fast)]',
+                          // A raw <button>, so it inherits none of the control
+                          // family's press response. Inlined rather than imported:
+                          // `controls/_internal.ts:62-63` is the canonical recipe
+                          // (`fwPress`), but nothing outside `controls/` imports
+                          // that module and the underscore is announcing a
+                          // boundary — so the four utilities are spelled out here
+                          // and cited, the way this tree cites artboard lines.
+                          // Without them a tap on a recipient was acknowledged by
+                          // a colour swap alone, which on a phone in sunlight is
+                          // not confirmation.
+                          'active:translate-y-[0.5px] active:scale-[0.98]',
+                          'active:[transition-timing-function:var(--fw-ease-spring)]',
+                          'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                           isSelected
                             ? 'bg-accent-50 ring-1 ring-inset ring-accent-200'

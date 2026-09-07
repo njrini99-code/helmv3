@@ -169,3 +169,7 @@
 {"ts":1788817003561,"gate":"typecheck","waitMs":1,"runMs":6107,"slots":2}
 {"ts":1788817030480,"gate":"test","waitMs":1,"runMs":353770,"slots":2}
 {"ts":1788817440916,"gate":"build","waitMs":0,"runMs":97640,"slots":2}
+{"ts":1788817765536,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":6538,"slots":2}
+{"ts":1788818346835,"gate":"typecheck","waitMs":1,"runMs":62065,"slots":2}
+{"ts":1788818430118,"gate":"test","waitMs":1,"runMs":416393,"slots":2}
+{"ts":1788818850578,"gate":"build","waitMs":0,"runMs":171746,"slots":2}

@@ -380,6 +380,82 @@ it is the owner's, through `db-apply`.
     `oklch(` inside a `box-shadow:` -- a first attempt at the hued value was
     rejected by that test and the CODE was changed, not the test.
 
+## W9 — Touch response, busy affordances and loading states (owner request, outside the original manifest)
+Same shape as W7b: an owner ask that arrived after the manifest was frozen, so
+it gets its own section rather than being filed under W8. Five gaps, one
+property each. Every one was found by reading the tree against its OWN
+standards, not against taste — each cites a place where this repo had already
+decided the answer and one Messages surface was not following it. Nothing new
+was invented and no new entrance animation was added: the tokens say "slow,
+cinematic, never twitchy", and the surface had already been rejected three
+times for reading choppy.
+
+- [x] **The thread's first paint was three grey bars.** `MessageThreadPane`'s
+      loading branch drew three raw `bg-surface-sunken` divs: not the
+      `Skeleton` primitive, so no shimmer; no `role="status"` / `aria-busy` /
+      SR-only label, so a screen reader heard nothing; and not bubble-shaped,
+      so the first paint jumped. `Skeleton.tsx`'s own header states all three
+      as the contract, and `MessageConversationRail`'s loading branch already
+      honoured all three — two standards in one directory. The placeholders now
+      alternate incoming / outgoing at the bubble's own geometry (`max-w-[288px]`,
+      `rounded-card` with the sharpened trailing corner, the 32px avatar gutter
+      held on incoming rows) so the slot the real messages land in is actually
+      reserved. `MessageThreadPane.bubbleWidth.test.ts` is RE-ANCHORED, not
+      relaxed: it located the bubble column by the file's first `max-w-[288px]`,
+      which the skeleton now precedes, so it anchors on the column's full
+      declaration instead — a stricter locator than the one it replaces.
+- [x] **A send in flight spoke the typing vocabulary, and said nothing at all
+      to assistive tech.** The send button drew three `animate-bounce` dots.
+      Three animated dots in a chat mean "someone is typing", which this tree
+      draws one file over in `TypingIndicator` — so a send in progress and a
+      peer composing a reply rendered as the same object. That indicator's own
+      comment also records that `animate-bounce` on dots was tried and rejected
+      for throwing them a third of their height on a spring curve. Worse, the
+      dots were `aria-hidden` and nothing else on the control changed, so a
+      screen-reader user got NOTHING while a send was in flight. Now `Loader2`
+      + `animate-spin motion-reduce:animate-none` (`ToastStack`'s in-repo idiom,
+      and the same shape `Button`'s own `busy` draws), plus `aria-busy` and a
+      label that switches to "Sending message". The primitive's `busy` prop is
+      deliberately NOT used here: `Button` renders its spinner ALONGSIDE
+      children, and this is a 40px `p-0` circle, so the ring and the paper
+      plane would share the well.
+- [x] **`GroupDetailsSheet` never said WHICH action was running.** Five
+      mutating controls set `disabled={busy}` and none set the primitive's own
+      `busy=`, so a tap greyed the whole sheet out and drew no progress
+      anywhere — while `FairwayNewMessageSheet` and `FairwayTeamBroadcastSheet`,
+      in the same directory, both already pass it on their CTA. The single
+      boolean could not simply be forwarded: Add is rendered once PER
+      CANDIDATE, so one flag would spin every row at once, which claims several
+      requests are running when one is. `run()` now takes an optional key and a
+      `pendingKey` names the pressed action; Add draws its spinner on that,
+      while confirm-remove and Leave — both singletons, one gated on
+      `removeConfirmId` and one on `leaveConfirm` — take `busy` directly. The
+      key clears on the failure path and on close, so a reopened sheet never
+      starts mid-spin.
+- [x] **The rail's press response fired but could not settle.** The rows are
+      `Button`s, so the primitive's base already carries `fwPress`
+      (`controls/_internal.ts:62-63`) — a 0.5px settle plus `scale-[0.98]` on a
+      spring curve, the one tactile language the system has for "I felt that".
+      But the row className carried a bare `transition-colors`, which displaces
+      the base's own property list through `cn`, and `transform` was in that
+      list: the press snapped on and snapped back and the spring easing governed
+      nothing. On a phone, where hover never happens, that press is the only
+      feedback a tap gets before the route changes. Widened by exactly ONE
+      property, deliberately — `fwTransition` also transitions `box-shadow`, and
+      a row shadow is what the one-cadence pass removed; putting it back in the
+      transition list invites per-row depth to return. A test pins its absence.
+- [x] **The recipient rows in both sheets acknowledged a tap with a colour swap
+      alone.** They are raw `<button>`s (each with its own
+      `helm/no-raw-button` disable), so they inherit nothing from the control
+      family. The four `fwPress` utilities are now inlined and cited rather than
+      imported: nothing outside `controls/` imports `_internal` and the
+      underscore is announcing a boundary, so the recipe is spelled out the way
+      this tree spells out artboard lines — and the test pins BOTH halves
+      against `_internal.ts` itself, so the copy cannot drift from its source.
+- `messages.motionAndBusy.test.ts` is the new suite: 14 tests across all five,
+  including one that walks every touched file and requires each to pair its
+  motion with a reduced-motion collapse.
+
 ---
 
 ## DEFERRED — deliberately not in this PR, with the reason

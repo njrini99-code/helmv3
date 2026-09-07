@@ -45,7 +45,7 @@ import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
 import type { GroupMember } from './GroupDetailsSheet';
 import { Button, IconButton } from '@/components/fairway/controls/button';
-import { EmptyState } from '@/components/fairway/feedback';
+import { EmptyState, Skeleton } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
 import { Textarea } from '@/components/ui/textarea';
@@ -398,6 +398,22 @@ function ReadReceipt({ isRead }: { isRead?: boolean }) {
     </span>
   );
 }
+
+/**
+ * The first-paint thread skeleton's shape.
+ *
+ * Alternating sides with descending widths, so the placeholder reads as a
+ * conversation and reserves the slot the real bubbles land in. Heights are the
+ * bubble's own resting geometry: a one-line bubble is `px-4 py-2.5` around a
+ * 15px/24px line, which is 44px; the taller entries stand in for a wrapped
+ * two-line message.
+ */
+const SKELETON_BUBBLES = [
+  { own: false, width: 'w-[62%]', height: 'h-11' },
+  { own: true, width: 'w-[48%]', height: 'h-11' },
+  { own: false, width: 'w-[72%]', height: 'h-16' },
+  { own: true, width: 'w-[40%]', height: 'h-11' },
+] as const;
 
 /** Typing indicator — three dim dots on a matte Inset (NOT a glass bubble). */
 function TypingIndicator() {
@@ -1204,10 +1220,46 @@ export function MessageThreadPane({
         data-scroll-container
       >
         {loading ? (
-          <div className="space-y-3 py-8">
-            <div className="h-4 w-3/4 rounded bg-surface-sunken" />
-            <div className="h-4 w-1/2 rounded bg-surface-sunken" />
-            <div className="h-4 w-2/3 rounded bg-surface-sunken" />
+          /* Shape-matched skeleton, not three grey bars.
+             `Skeleton.tsx`'s own header states the contract this branch was
+             the one place in the tree that ignored: blocks that RESERVE the
+             final layout, a cream shimmer sweep that stops under reduced
+             motion, and `role="status"` + `aria-busy` + an SR-only label so
+             assistive tech hears "loading" instead of reading empty boxes.
+             `MessageConversationRail.tsx`'s own loading branch already honours
+             all three, so this was two standards in one directory.
+
+             The placeholders alternate incoming / outgoing at the bubble's own
+             geometry — `max-w-[288px]`, `rounded-card` with the sharpened
+             trailing corner, the 32px avatar gutter on incoming rows — because
+             a placeholder that does not sit where the message will sit trades
+             one jump (empty -> content) for two (empty -> wrong shape ->
+             content). Widths descend so it reads as conversation rather than
+             as a loading bar; nothing here animates in, the shimmer is the only
+             motion. */
+          <div
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+            className="flex flex-col gap-3 py-2"
+          >
+            <span className="sr-only">Loading messages…</span>
+            {SKELETON_BUBBLES.map((bubble, i) => (
+              <div
+                key={i}
+                className={cn('flex items-end gap-2', bubble.own ? 'justify-end' : 'justify-start')}
+              >
+                {!bubble.own && <Skeleton circle className="h-8 w-8 flex-shrink-0" />}
+                <Skeleton
+                  className={cn(
+                    'max-w-[288px] rounded-card',
+                    bubble.own ? 'rounded-br-sm' : 'rounded-bl-sm',
+                    bubble.width,
+                    bubble.height,
+                  )}
+                />
+              </div>
+            ))}
           </div>
         ) : error ? (
           // P258: the fetch FAILED — render a recoverable error state with Retry,

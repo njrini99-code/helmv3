@@ -25,7 +25,7 @@
  * ========================================================================== */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AlertCircle, Send } from 'lucide-react';
+import { AlertCircle, Loader2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
@@ -733,7 +733,8 @@ export function MessageComposer({
           type="submit"
           variant="ghost"
           disabled={!canSend}
-          aria-label="Send message"
+          aria-busy={sending || undefined}
+          aria-label={sending ? 'Sending message' : 'Send message'}
           className={cn(
             // G-47 — a 40px CIRCLE at every width, with a 44px tap target
             // around it.
@@ -759,12 +760,32 @@ export function MessageComposer({
               : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',
           )}
         >
+          {/* A ring, not three bouncing dots. Two defects, and only one was
+              cosmetic.
+
+              The a11y one: the dots were `aria-hidden`, and nothing else on
+              the control changed, so a screen-reader user got NOTHING while a
+              send was in flight — the label still read "Send message". The
+              `aria-busy` + swapped label below is the fix; the glyph is the
+              sighted half of the same signal.
+
+              The semantic one: in a chat, three animated dots mean "someone is
+              typing". This tree already draws exactly that, one file over in
+              `MessageThreadPane`'s TypingIndicator — so a send in progress and
+              a peer composing a reply rendered as the same object in two
+              places. That file's own comment also records that `animate-bounce`
+              on dots was tried and rejected for throwing them a third of their
+              height on a spring curve, which is the animation this button was
+              still running.
+
+              `Loader2` + `animate-spin motion-reduce:animate-none` is the
+              in-repo idiom for a control-level busy glyph (`ToastStack.tsx`),
+              and it is the same shape the Button primitive's own `busy` state
+              draws. `busy` itself is not usable here: the primitive renders its
+              spinner ALONGSIDE children, and this is a 40px `p-0` circle, so
+              the ring and the paper plane would share the well. */}
           {sending ? (
-            <span className="flex items-center gap-1" aria-hidden="true">
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
-            </span>
+            <Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
           ) : (
             <Send size={18} aria-hidden="true" />
           )}

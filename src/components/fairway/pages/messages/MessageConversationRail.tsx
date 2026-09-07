@@ -171,7 +171,21 @@ function ConversationRow({
         // `rounded-full`, which the removed `rounded-fw-md` used to override.
         // Dropping the radius without replacing it painted the unread tint as
         // a pill, and would round the ends of the divider run.
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-none border-0 p-3 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
+        // `transition-[color,background-color,transform]`, not `transition-colors`.
+        // The row is a `Button`, so the primitive's base already carries
+        // `fwPress` — a 0.5px settle plus `scale-[0.98]` on a spring curve,
+        // the one tactile language the system has for "I felt that". A bare
+        // `transition-colors` displaces the base's own property list through
+        // `cn`, and transform was in that list: the press still fired, but it
+        // SNAPPED on and snapped back, and the spring easing governed nothing.
+        // On a phone, where hover never happens, that press is the only
+        // feedback a tap gets before the route changes.
+        //
+        // Widened by exactly one property, deliberately. `fwTransition` also
+        // transitions `box-shadow`, and a row shadow is what the one-cadence
+        // pass removed — putting it back in the transition list is an invitation
+        // to reintroduce per-row depth. The depth belongs to the list.
+        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-none border-0 p-3 text-left font-normal outline-none transition-[color,background-color,transform] [transition-duration:200ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
         // Unread is a FILL, not a raised card. G-32 read the artboard right —
@@ -334,7 +348,10 @@ function SearchResultRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
+        // Same widening as the conversation row above, same reason: the search
+        // result is a `Button`, and `transition-colors` alone left `fwPress`'s
+        // transform untransitioned.
+        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-[color,background-color,transform] [transition-duration:200ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         isSelected ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60' : 'hover:bg-surface-sunken/60',

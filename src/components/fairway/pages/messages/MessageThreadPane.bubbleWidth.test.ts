@@ -88,8 +88,20 @@ describe('G-50b — group-incoming is derived, not numbered', () => {
     // that is the whole mechanism by which an incoming row has 40px less room
     // without anyone writing a second number.
     const gutterIdx = code.indexOf('flex w-8 flex-shrink-0 flex-col items-center');
-    const columnIdx = code.indexOf('max-w-[288px]');
+    // RE-ANCHORED, not relaxed. This read `indexOf('max-w-[288px]')` and so
+    // depended on the bubble column owning the file's FIRST occurrence of the
+    // literal. The loading skeleton now also caps at 288 — deliberately, since
+    // a placeholder that does not reserve the real slot is not shape-matched —
+    // and it is declared earlier in the file, so the bare search started
+    // pointing at the placeholder instead. Anchoring on the bubble column's own
+    // full declaration names the element this suite is actually about, which is
+    // a stricter locator than the one it replaces: a bubble column that lost its
+    // `min-w-0` or its flex direction now fails here rather than silently
+    // matching some other 288.
+    const BUBBLE_COLUMN = 'group relative flex min-w-0 max-w-[288px] flex-col gap-1';
+    const columnIdx = code.indexOf(BUBBLE_COLUMN);
     expect(gutterIdx).toBeGreaterThan(-1);
+    expect(columnIdx, 'expected the bubble column declaration').toBeGreaterThan(-1);
     expect(columnIdx).toBeGreaterThan(gutterIdx);
     // Nothing closes the bubble column between them — the gutter's own <div>
     // opens and closes before the capped column opens.

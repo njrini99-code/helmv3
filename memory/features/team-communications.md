@@ -388,6 +388,62 @@ rather than raising, and counting the rows afterwards AS THE ACTING USER cannot
 distinguish "the row is gone" from "the row is invisible to me" — the same
 SELECT policy filters both. Those assertions take their counts with RLS off.
 
+## Motion and busy state: the standards were already here (2026-09-07)
+
+An owner ask — "make sure touch points have motion, make sure motion is good,
+loading states, etc" — resolved into five gaps, and not one of them needed a
+new idea. Each was a place where this repo had already decided the answer and
+one Messages surface was not following it. **Read that as the rule: before
+adding motion here, find where the repo already made the call.** The tokens
+say slow, cinematic, never twitchy; `Skeleton.tsx` bans spinners on primary
+data; the rail already runs `animate-fade-in-up`. Adding entrance animation
+anywhere new re-opens the choppiness complaint that took three rounds to close.
+
+**A loading state reserves the slot.** `Skeleton.tsx`'s header states the whole
+contract: shape-matched blocks that hold the layout the real content will
+occupy, a cream shimmer that stops under reduced motion, and `role="status"` +
+`aria-busy` + an SR-only label on every group. The thread's loading branch drew
+three raw `bg-surface-sunken` divs and satisfied none of it, in the same
+directory as a rail branch that satisfied all of it. The thread skeleton now
+alternates incoming/outgoing at the bubble's own geometry, avatar gutter
+included — a placeholder that does not sit where the message will sit trades
+one jump for two.
+
+**Busy is not the same as disabled.** `Button` and `IconButton` both take a
+`busy` prop that draws a spinner and sets `aria-busy`; `disabled` alone greys a
+control out and tells you nothing. Two sheets here pass `busy=`; `GroupDetailsSheet`
+set `disabled={busy}` on five controls and `busy=` on none. **The trap when
+fixing this:** a single in-flight boolean cannot be forwarded to a control that
+renders once per row — Add is per-candidate, and one flag spins every row at
+once, claiming several requests are running when one is. `run()` carries an
+optional key and `pendingKey` names the pressed action; singletons (confirm
+remove, Leave) can take the plain boolean because only one ever renders.
+
+**`Button`'s busy adds, `IconButton`'s busy swaps.** `Button` renders the
+spinner ALONGSIDE children, so a fixed-size circular button with an icon child
+gets two glyphs in one well — the composer's send button therefore draws its
+own `Loader2` (`ToastStack`'s idiom) rather than taking the prop.
+
+**A send in flight must not look like someone typing.** Three animated dots in
+a chat mean "a peer is composing". `TypingIndicator` owns that vocabulary here,
+and its comment records that `animate-bounce` on dots was tried and rejected.
+
+**`transition-colors` silently disarms the press response.** Every Fairway
+control's base carries `fwPress` (`controls/_internal.ts:62-63`): a 0.5px
+settle plus `scale-[0.98]` on a spring curve. A className with a bare
+`transition-colors` displaces the base's property list through `cn`, and
+`transform` is in that list — so the press still fires but snaps, and the
+spring easing governs nothing. On a phone, where hover never happens, that
+press is the only feedback a tap gets. Name `transform` explicitly; do NOT
+reach for `fwTransition` on a rail row, because it also transitions
+`box-shadow` and a row shadow is exactly what the one-cadence pass removed.
+
+**A raw `<button>` inherits none of this.** The recipient rows in both sheets
+inline the four `fwPress` utilities and cite `_internal.ts:62-63` rather than
+importing it: nothing outside `controls/` imports that module, and the
+underscore is announcing a boundary. `messages.motionAndBusy.test.ts` pins both
+halves against `_internal.ts` itself so the copy cannot drift from its source.
+
 ## Known Risk Areas
 
 - Announcement inline tasks can drift from task completion state if tasks and assignment tables are not read consistently.

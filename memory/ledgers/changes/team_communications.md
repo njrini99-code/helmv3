@@ -13,6 +13,58 @@
   `supabase/tests/rls/golf_group_membership_management.sql`.
 -->
 
+## 2026-09-07 — touch response, busy affordances, loading states (owner request)
+
+- SHA: pending (this commit).
+- Owner: "Make sure touch point have motion, make sure motion is good, loading
+  states, etc." Arrived after the manifest was frozen, so it is its own
+  PROGRESS.md section (W9), same shape as W7b.
+- Five gaps. **Not one needed a new idea** — each is a place this repo had
+  already decided the answer and one Messages surface was not following it.
+  Recorded that way deliberately: the finding is the method, not the five
+  diffs.
+  1. `MessageThreadPane`'s loading branch was three raw `bg-surface-sunken`
+     divs — no `Skeleton`, no shimmer, no `role="status"`/`aria-busy`/SR label,
+     not bubble-shaped. `Skeleton.tsx`'s own header states all three, and
+     `MessageConversationRail`'s branch already honoured all three. Two
+     standards, one directory. Now shape-matched: alternating sides at
+     `max-w-[288px]`, `rounded-card` with the sharpened trailing corner, the
+     32px avatar gutter held on incoming rows.
+  2. The send button drew three `animate-bounce` dots — the TYPING vocabulary,
+     which `TypingIndicator` owns one file over, and the exact animation that
+     indicator's comment records as tried and rejected. The dots were also
+     `aria-hidden` with no other state change, so a screen-reader user got
+     nothing at all during a send. Now `Loader2` + `animate-spin
+     motion-reduce:animate-none` (ToastStack's idiom), `aria-busy`, and a label
+     that switches to "Sending message".
+  3. `GroupDetailsSheet` set `disabled={busy}` on five mutating controls and
+     `busy=` on none, while both sibling sheets pass it. **The trap, worth
+     keeping:** the single boolean could not just be forwarded — Add renders
+     once per candidate, so one flag spins every row at once and claims several
+     requests are in flight when one is. `run()` takes an optional key;
+     `pendingKey` names the pressed action; the singletons (confirm remove,
+     Leave) take the plain boolean because only one ever renders.
+  4. The rail's rows are `Button`s and so already carried `fwPress`, but a bare
+     `transition-colors` displaced the base's property list through `cn` and
+     `transform` was in it — the press snapped and the spring easing governed
+     nothing. Widened by exactly one property; `box-shadow` deliberately kept
+     OUT, because a row shadow is what the cadence pass removed and a test now
+     pins its absence from the transition list.
+  5. The raw recipient rows in both sheets had no `active:` at all. The four
+     `fwPress` utilities are inlined and cited rather than imported — nothing
+     outside `controls/` imports `_internal` and the underscore is announcing a
+     boundary — with the test pinning both halves against `_internal.ts` so the
+     copy cannot drift.
+- **A test was re-anchored, not relaxed** (the G-49a precedent, third time in
+  this branch). `MessageThreadPane.bubbleWidth.test.ts` located the bubble
+  column by the file's FIRST `max-w-[288px]`; the skeleton legitimately caps at
+  288 too and is declared earlier. It now anchors on the column's full
+  declaration, which is a stricter locator than the one it replaced.
+- Nothing was added. No new entrance animation, no new keyframe, no new token.
+  The request said "make sure motion is good", and the calibration is that the
+  surface had already been rejected three times for reading choppy.
+- New suite: `messages.motionAndBusy.test.ts`, 14 tests. Scoped suite 373/373.
+
 ## 2026-09-07 — depth, put where it does not cost the cadence (owner request)
 
 - SHA: pending (this commit).

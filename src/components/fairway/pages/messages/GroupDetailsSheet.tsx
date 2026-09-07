@@ -293,11 +293,17 @@ function MemberRow({
       {canRemove && confirming && (
         <Inset padding="none" className="flex flex-shrink-0 items-center gap-1 bg-fw-danger-bg px-2.5 py-1.5">
           <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger-ink">Remove?</span>
+          {/* Safe to hand `busy` straight to the primitive: this pair only
+              renders for the ONE member whose `removeConfirmId` is armed, so
+              there is no set of siblings to spin at once. `IconButton` swaps
+              its child for the spinner rather than adding one beside it, so the
+              check becomes a ring in place. */}
           <IconButton
             variant="danger"
             size="sm"
             aria-label={`Confirm remove ${member.name}`}
             disabled={busy}
+            busy={busy}
             onClick={onConfirmRemove}
           >
             <Check size={18} aria-hidden="true" />
@@ -332,10 +338,13 @@ function MemberRow({
 function CandidateRow({
   candidate,
   busy,
+  pending,
   onAdd,
 }: {
   candidate: GroupAddCandidate;
   busy: boolean;
+  /** THIS row's add is the one in flight — only it draws the spinner. */
+  pending: boolean;
   onAdd: () => void;
 }) {
   return (
@@ -355,6 +364,7 @@ function CandidateRow({
         type="button"
         variant="ghost"
         disabled={busy}
+        busy={pending}
         onClick={onAdd}
         className="h-9 flex-shrink-0 rounded-fw-md px-3 font-fw-sans text-caption-1 font-medium text-accent-700"
       >
@@ -384,6 +394,25 @@ export function GroupDetailsSheet({
   const [removeConfirmId, setRemoveConfirmId] = React.useState<string | null>(null);
   const [leaveConfirm, setLeaveConfirm] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  /**
+   * WHICH action is in flight, not merely THAT one is.
+   *
+   * `busy` alone is enough to lock the sheet, and that is all it was ever used
+   * for — every mutating control set `disabled={busy}` and none set the
+   * primitive's own `busy` prop, so a tap greyed the whole sheet out and drew
+   * no progress anywhere. Two sheets in this same directory
+   * (`FairwayNewMessageSheet`, `FairwayTeamBroadcastSheet`) already pass
+   * `busy=` on their CTA, so this was the odd one out rather than a house
+   * style.
+   *
+   * A single boolean cannot be handed straight to `busy=` here, though: the
+   * Add button is rendered once PER CANDIDATE, so one flag would spin every
+   * row in the list at once — worse than the grey-out it replaced, because it
+   * claims several requests are running when one is. The key names the
+   * candidate (or the singleton action) that was actually pressed; every other
+   * control still takes plain `disabled={busy}`.
+   */
+  const [pendingKey, setPendingKey] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   // Reset every transient state on close, so reopening starts where the
@@ -397,6 +426,7 @@ export function GroupDetailsSheet({
       setRemoveConfirmId(null);
       setLeaveConfirm(false);
       setError(null);
+      setPendingKey(null);
     }
   }, [open]);
 
@@ -414,8 +444,13 @@ export function GroupDetailsSheet({
   // `busy` or to surface a refusal. A 42501 from an unapplied migration
   // arrives as `error` and is shown, never swallowed into a silent no-op.
   const run = React.useCallback(
-    async (fn: () => Promise<{ error?: string } | void>, onDone?: () => void) => {
+    async (
+      fn: () => Promise<{ error?: string } | void>,
+      onDone?: () => void,
+      key?: string,
+    ) => {
       setBusy(true);
+      setPendingKey(key ?? null);
       setError(null);
       try {
         const result = await fn();
@@ -428,6 +463,7 @@ export function GroupDetailsSheet({
         setError('Something went wrong. Try again.');
       } finally {
         setBusy(false);
+        setPendingKey(null);
       }
     },
     [],
@@ -547,6 +583,7 @@ export function GroupDetailsSheet({
                 key={c.userId}
                 candidate={c}
                 busy={busy}
+                pending={pendingKey === `add:${c.userId}`}
                 onAdd={() =>
                   void run(
                     () => onAddMember!(c.userId),
@@ -555,6 +592,7 @@ export function GroupDetailsSheet({
                     // but re-querying on every add would make a run of adds
                     // N round trips slower for no new information.
                     () => setCandidates((prev) => (prev ?? []).filter((x) => x.userId !== c.userId)),
+                    `add:${c.userId}`,
                   )
                 }
               />
@@ -628,7 +666,8 @@ export function GroupDetailsSheet({
                   type="button"
                   variant="ghost"
                   disabled={busy}
-                  onClick={() => void run(() => onLeaveGroup(), () => onOpenChange(false))}
+                  busy={busy}
+                  onClick={() => void run(() => onLeaveGroup(), () => onOpenChange(false), 'leave')}
                   className="h-9 rounded-full px-3 font-fw-sans text-footnote font-semibold text-fw-danger-ink"
                 >
                   Leave
