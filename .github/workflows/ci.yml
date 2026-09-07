@@ -858,6 +858,14 @@ jobs:
           path: |
             .next
             !.next/cache
+          # `.next` is a dot-directory and upload-artifact defaults
+          # include-hidden-files to false, so the upload matched nothing and
+          # warned instead of failing. Every consumer then died on
+          # "Artifact not found for name: next-build-<sha>".
+          include-hidden-files: true
+          # And a silent empty upload is what let that survive: fail the build
+          # job instead of handing the downstream jobs a missing artifact.
+          if-no-files-found: error
           retention-days: 1
 
   supabase:
