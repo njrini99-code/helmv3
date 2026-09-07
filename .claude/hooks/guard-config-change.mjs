@@ -3,10 +3,21 @@
 //
 // Refuses a change to one of the control-plane config surfaces —
 // `.claude/settings.json`, anything under `.claude/hooks/`, `.mcp.json`, or
-// anything under `.github/workflows/` — unless the environment variable
-// `HELM_CONFIG_EDIT=1` is set in the process that runs this hook. This is a
-// confirmation gate, not a review gate — the actual review happens on the PR
-// the change ships in.
+// anything under `.github/workflows/` — WHEN THE TARGET IS INSIDE THE CANONICAL
+// CHECKOUT. A config surface in a task worktree is not guarded at all.
+//
+// Scope is the whole point. This is a confirmation gate, not a review gate: the
+// review that actually catches a bad config change happens on the PR. A guard
+// that also refused the edit in the worktree where the PR is written bought no
+// review and cost the agent the ability to fix its own tooling — including this
+// file, whose repair it refused. Canonical is the shared checkout every session
+// resolves `$CLAUDE_PROJECT_DIR` to and the one a hook is read from on every
+// invocation, so an edit there takes effect immediately, for everyone, unseen.
+// That is worth a gate. A branch is not.
+//
+// `HELM_CONFIG_EDIT=1` still lifts the gate for canonical, and must be set in
+// the environment Claude Code is LAUNCHED with — this hook's process inherits
+// that environment, so an `export` inside a Bash tool call never reaches it.
 //
 // WRITE/EDIT/MULTIEDIT: the guarded path comes straight from
 // `tool_input.file_path`; exact and reliable.
@@ -45,6 +56,9 @@
 //
 // Contract: reads hook JSON on stdin, exit 0 to allow, exit 2 with a
 // one-line reason on stderr to block. Never throws — a crash must exit 0.
+
+import { resolveActiveRoot, canonicalRootOf } from './lib/workspace-identity.mjs';
+import { resolve, relative, isAbsolute, sep } from 'node:path';
 
 function readStdinJson() {
   return new Promise((resolvePromise) => {
@@ -117,27 +131,71 @@ export function writeTargets(command) {
   return targets.filter(Boolean);
 }
 
+/**
+ * True when `target` lands inside the canonical checkout.
+ *
+ * Canonical comes from git itself, the same source guard-canonical-write.mjs
+ * uses, so a worktree is never mistaken for it. A relative target is resolved
+ * against a leading `cd` in the command when there is one, and otherwise
+ * against this process's cwd.
+ *
+ * Fails OPEN: if canonical cannot be resolved, nothing is guarded. An agent
+ * unable to edit config is a real, daily cost; a config edit landing on a
+ * branch is reviewed on the PR like every other change.
+ */
+export function isInsideCanonical(target, baseDir) {
+  const raw = String(target || '');
+  if (!raw) return false;
+  let canonicalRoot;
+  try {
+    canonicalRoot = canonicalRootOf(resolveActiveRoot(baseDir || process.cwd()));
+  } catch {
+    return false;
+  }
+  if (!canonicalRoot) return false;
+  const abs = isAbsolute(raw) ? raw : resolve(baseDir || process.cwd(), raw);
+  const rel = relative(canonicalRoot, abs);
+  return rel === '' || (!rel.startsWith('..' + sep) && rel !== '..' && !isAbsolute(rel));
+}
+
+/** The directory a command runs in, when it opens with an unambiguous `cd`. */
+export function baseDirOf(command) {
+  const m = String(command || '').match(/^\s*cd\s+("[^"]+"|'[^']+'|[^\s;|&]+)/);
+  if (!m) return null;
+  const dir = m[1].replace(/^["']|["']$/g, '');
+  if (dir.includes('$')) return null;
+  return dir.startsWith('~') ? (process.env.HOME || '') + dir.slice(1) : dir;
+}
+
 /** True when `path` names one of the guarded config surfaces. */
 export function isGuardedPath(path) {
   return GUARDED_RE.test(String(path || ''));
 }
 
-/** True when a Bash command writes to a guarded config surface. */
+/**
+ * True when a Bash command writes to a guarded config surface INSIDE canonical.
+ */
 export function isGuardedBashWrite(command) {
-  return writeTargets(command).some(isGuardedPath);
+  const baseDir = baseDirOf(command);
+  return writeTargets(command).some(
+    (t) => isGuardedPath(t) && isInsideCanonical(t, baseDir),
+  );
 }
 
 const HOW_TO_OVERRIDE =
-  'To proceed, HELM_CONFIG_EDIT=1 must be set in the environment Claude Code was ' +
-  'LAUNCHED with — exporting it inside a Bash tool call does not reach this hook. ' +
-  'Restart with: HELM_CONFIG_EDIT=1 claude. This confirms the config change is ' +
-  'intentional; the actual review happens on the PR.';
+  'Only the canonical checkout is guarded: make this change in a task worktree ' +
+  '(scripts/new-worktree.sh <task>) and it ships through the PR like any other. ' +
+  'To edit canonical directly instead, HELM_CONFIG_EDIT=1 must be set in the ' +
+  'environment Claude Code was LAUNCHED with — exporting it inside a Bash tool ' +
+  'call does not reach this hook. Restart with: HELM_CONFIG_EDIT=1 claude \u{2014} but ' +
+  'that reaches Bash writes only: on Write/Edit/MultiEdit guard-canonical-write.mjs ' +
+  'still refuses canonical and has no override at all.';
 
 function blockedMessage(what) {
   return (
     `BLOCKED by guard-config-change: ${what} writes to a protected control-plane ` +
-    `config surface (.claude/settings.json, .claude/hooks/*, .mcp.json, ` +
-    `.github/workflows/*). ${HOW_TO_OVERRIDE}\n`
+    `config surface inside the canonical checkout (.claude/settings.json, ` +
+    `.claude/hooks/*, .mcp.json, .github/workflows/*). ${HOW_TO_OVERRIDE}\n`
   );
 }
 
@@ -153,7 +211,7 @@ async function run() {
 
   if (toolName === 'Write' || toolName === 'Edit' || toolName === 'MultiEdit') {
     const filePath = toolInput.file_path;
-    if (isGuardedPath(filePath)) {
+    if (isGuardedPath(filePath) && isInsideCanonical(filePath)) {
       process.stderr.write(blockedMessage(filePath));
       process.exit(2);
       return;
