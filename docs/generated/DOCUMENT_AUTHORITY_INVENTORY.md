@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 86 | 0 | 4 | 2 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 31 |
 | `REFERENCE` | 52 | 15 | 19 | 75 |
-| `GENERATED_TRUTH` | 22 | 3 | 7 | 37 |
+| `GENERATED_TRUTH` | 22 | 3 | 7 | 38 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
 | `RUNBOOK` | 4 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
@@ -40,10 +40,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 8 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 85 |
 | `INCIDENT` | 28 | 15 | 2 | 3 |
-| `ADR` | 4 | 0 | 3 | 1 |
-| `INDEX` | 19 | 1 | 7 | 28 |
-| `ARCHIVE` | 1321 | 0 | 465 | 775 |
-| `UNKNOWN` | 87 | 12 | 39 | 144 |
+| `ADR` | 5 | 0 | 3 | 3 |
+| `INDEX` | 19 | 1 | 7 | 27 |
+| `UNKNOWN` | 87 | 12 | 39 | 143 |
 
 ## Files
 
@@ -51,12 +50,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.claude/rules/autonomy.md` | current | - | - | yes | 8 | 1 | - |
+| `.claude/rules/autonomy.md` | current | - | - | yes | 7 | 1 | - |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | 0 | 5 | - |
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
+| `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 1 | 3 | - |
 | `.claude/rules/database.md` | current | - | - | - | 1 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | 1 |
@@ -212,15 +211,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/business/07-baseballhelm-context.md` | current | - | - | yes | 1 | 2 | 1 |
 | `docs/business/08-golfhelm-business-context.md` | current | - | - | yes | 1 | 13 | 1 |
 | `docs/business/09-coachhelm-business-context.md` | current | - | - | - | 1 | 5 | 1 |
-| `docs/features/SHOT_TRACKING_DATA_FLOW.md` | current | yes | - | - | 6 | 4 | 1 |
-| `docs/features/SHOT_TRACKING_VERIFICATION.md` | current | yes | - | - | 5 | 0 | - |
+| `docs/features/SHOT_TRACKING_DATA_FLOW.md` | current | yes | - | - | 5 | 4 | 1 |
+| `docs/features/SHOT_TRACKING_VERIFICATION.md` | current | yes | - | - | 4 | 0 | - |
 | `docs/features/coachhelm/COACHHELM_PRODUCTION_ALIGNMENT_2026-03-11.md` | current | - | - | - | 0 | 1 | 1 |
-| `docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md` | current | - | - | - | 3 | 37 | 7 |
+| `docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md` | current | - | - | - | 2 | 37 | 7 |
 | `docs/research/coach-outreach-legal-and-best-practices.md` | current | - | - | - | 1 | 0 | - |
 | `docs/security/DEPENDABOT_TRIAGE_2026-09-06.md` | current | - | - | - | 0 | 0 | - |
 | `docs/security/GITHUB_APPS_2026-09-06.md` | current | - | - | - | 0 | 3 | - |
 | `docs/security/accepted-risks.md` | current | - | - | - | 0 | 0 | - |
-| `docs/security/auth-config.md` | current | yes | - | yes | 3 | 0 | - |
+| `docs/security/auth-config.md` | current | yes | - | yes | 2 | 0 | - |
 | `docs/setup/BACKUP_AND_DISASTER_RECOVERY.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/DEPLOY.md` | current | - | - | - | 0 | 2 | 1 |
 | `docs/setup/ENVIRONMENT_VARIABLES.md` | current | - | - | - | 0 | 2 | - |
@@ -229,28 +228,28 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/setup/OAUTH_SECURITY_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/OAUTH_SETUP_CHECKLIST.md` | current | - | - | - | 0 | 0 | - |
 | `docs/setup/RESEND_SETUP.md` | current | - | - | - | 1 | 6 | 3 |
-| `docs/setup/RUN_ON_YOUR_MACHINE.md` | current | - | - | - | 3 | 1 | - |
-| `docs/setup/SUPABASE_MCP_SETUP.md` | current | - | - | - | 2 | 0 | - |
+| `docs/setup/RUN_ON_YOUR_MACHINE.md` | current | - | - | - | 2 | 1 | - |
+| `docs/setup/SUPABASE_MCP_SETUP.md` | current | - | - | - | 0 | 0 | - |
 | `docs/v3-decisions.md` | current | yes | - | yes | 1 | 1 | - |
 | `docs/v3-design-language.md` | current | yes | - | yes | 1 | 3 | - |
-| `docs/v3-research-golf-domain.md` | current | yes | - | yes | 17 | 1 | - |
+| `docs/v3-research-golf-domain.md` | current | yes | - | yes | 15 | 1 | - |
 | `docs/v3-rls-template.md` | current | yes | - | yes | 7 | 4 | 2 |
-| `docs/v3-testing-standards.md` | current | yes | - | - | 9 | 9 | 1 |
-| `docs/v3-wave-sequence.md` | superseded | - | - | yes | 6 | 5 | 1 |
+| `docs/v3-testing-standards.md` | current | yes | - | - | 8 | 9 | 1 |
+| `docs/v3-wave-sequence.md` | superseded | - | - | yes | 3 | 5 | 1 |
 | `memory/brand/logos.md` | current | - | - | - | 0 | 0 | - |
 | `memory/context/agent-operations.md` | current | yes | - | - | 2 | 5 | - |
 | `memory/context/agent-traps.md` | current | yes | - | - | 1 | 8 | - |
-| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 4 | 40 | 1 |
-| `memory/context/baseballhelm-features.md` | current | yes | - | yes | 14 | 23 | 1 |
+| `memory/context/baseballhelm-database.md` | current | yes | - | yes | 2 | 40 | 1 |
+| `memory/context/baseballhelm-features.md` | current | yes | - | yes | 11 | 23 | 1 |
 | `memory/context/baseballhelm-workflows.md` | current | - | - | yes | 2 | 5 | - |
-| `memory/context/coachhelm-ai.md` | current | yes | - | yes | 20 | 20 | 13 |
+| `memory/context/coachhelm-ai.md` | current | yes | - | yes | 16 | 20 | 13 |
 | `memory/context/engineering-methodology.md` | current | yes | - | yes | 6 | 12 | 2 |
-| `memory/context/golfhelm-features.md` | historical | - | - | yes | 41 | 63 | 23 |
-| `memory/prompts/docs-update.md` | current | - | - | - | 1 | 0 | - |
-| `memory/prompts/pr-review.md` | current | - | - | - | 1 | 1 | - |
-| `memory/templates/business-rule.md` | current | - | - | - | 1 | 0 | - |
-| `memory/templates/feature.md` | current | - | - | - | 1 | 0 | - |
-| `memory/templates/flow.md` | current | - | - | - | 1 | 0 | - |
+| `memory/context/golfhelm-features.md` | historical | - | - | yes | 28 | 63 | 23 |
+| `memory/prompts/docs-update.md` | current | - | - | - | 0 | 0 | - |
+| `memory/prompts/pr-review.md` | current | - | - | - | 0 | 1 | - |
+| `memory/templates/business-rule.md` | current | - | - | - | 0 | 0 | - |
+| `memory/templates/feature.md` | current | - | - | - | 0 | 0 | - |
+| `memory/templates/flow.md` | current | - | - | - | 0 | 0 | - |
 
 ### `GENERATED_TRUTH`
 
@@ -260,11 +259,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/security-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/shipping.md` | current | - | - | yes | 22 | 6 | 1 |
+| `.claude/rules/shipping.md` | current | - | - | yes | 23 | 6 | 1 |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 15 | 10 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 6 | 3 | - |
-| `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 20 |
+| `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 21 |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 208 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
@@ -274,9 +273,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | 0 | 43 | 1 |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | 1 |
-| `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 30 | 5 | - |
-| `memory/glossary.md` | current | yes | yes | yes | 22 | 10 | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | 5 | 259 | 1 |
+| `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 18 | 5 | - |
+| `memory/glossary.md` | current | yes | yes | yes | 19 | 10 | - |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | 3 | 259 | 1 |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | 0 | 0 | - |
 
 ### `PROCESS_CONTRACT`
@@ -290,15 +289,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 11 | 7 |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 5 | 2 |
 | `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 17 | - |
-| `memory/templates/ui-contract.md` | current | - | - | - | 1 | 0 | - |
+| `memory/templates/ui-contract.md` | current | - | - | - | 0 | 0 | - |
 
 ### `RUNBOOK`
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/operations/2026-05-17-p0-runbook.md` | current | yes | - | yes | 4 | 5 | 2 |
-| `docs/operations/2026-07-03-p0-service-role-key-rotation-runbook.md` | current | yes | - | - | 3 | 10 | 1 |
-| `docs/operations/VERCEL_ADMIN_DEPLOYS_RUNBOOK.md` | current | - | - | - | 3 | 5 | 1 |
+| `docs/operations/2026-05-17-p0-runbook.md` | current | yes | - | yes | 2 | 4 | 2 |
+| `docs/operations/2026-07-03-p0-service-role-key-rotation-runbook.md` | current | yes | - | - | 1 | 10 | 1 |
+| `docs/operations/VERCEL_ADMIN_DEPLOYS_RUNBOOK.md` | current | - | - | - | 2 | 5 | 1 |
 | `docs/operations/baseball-route-contract-runbook.md` | current | - | - | - | 1 | 10 | 2 |
 
 ### `DESIGN_SPEC`
@@ -306,9 +305,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docs/superpowers/specs/2026-07-01-helm-bridge-command-center-design.md` | current | - | - | yes | 1 | 17 | 4 |
-| `docs/superpowers/specs/2026-07-19-coachhelm-stats-redesign-design.md` | current | - | - | yes | 1 | 1 | 1 |
+| `docs/superpowers/specs/2026-07-19-coachhelm-stats-redesign-design.md` | current | - | - | yes | 0 | 1 | 1 |
 | `docs/superpowers/specs/2026-08-17-coachhelm-instrumentation-design.md` | current | - | - | - | 1 | 4 | 3 |
-| `docs/superpowers/specs/2026-08-18-golf-team-operations-design.md` | current | - | - | yes | 1 | 0 | - |
+| `docs/superpowers/specs/2026-08-18-golf-team-operations-design.md` | current | - | - | yes | 0 | 0 | - |
 | `docs/superpowers/specs/README.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/superpowers/specs/helm-bridge/DECISIONS.md` | current | - | - | yes | 2 | 3 | 1 |
 | `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | current | - | - | yes | 6 | 8 | 1 |
@@ -324,7 +323,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 1 | 6 | 4 |
 | `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 0 | 69 | 19 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | 2 | 20 | 1 |
-| `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 2 | 23 | 6 |
+| `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 1 | 23 | 6 |
 | `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md` | current | yes | - | - | 1 | 12 | 3 |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
 | `docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md` | current | - | - | - | 1 | 8 | - |
@@ -350,30 +349,30 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/helm-bridge/waves/w14-retirement-hardening.md` | current | - | - | - | 0 | 16 | 7 |
 | `docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md` | current | - | - | yes | 1 | 28 | - |
 | `docs/superpowers/plans/helm-bridge/waves/w16-feature-health-board.md` | current | - | - | yes | 1 | 16 | - |
-| `docs/v3-master-plan.md` | superseded | - | - | yes | 14 | 20 | 7 |
+| `docs/v3-master-plan.md` | superseded | - | - | yes | 9 | 20 | 7 |
 
 ### `AUDIT_SNAPSHOT`
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 5 | 0 | - |
-| `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 6 | 19 | 6 |
-| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 5 | 13 | 1 |
-| `docs/UIUX_AUDIT.md` | current | - | - | - | 2 | 0 | - |
-| `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 7 | 12 | 2 |
+| `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 3 | 0 | - |
+| `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 5 | 19 | 6 |
+| `docs/SECURITY_AUDIT.md` | current | yes | - | - | 4 | 13 | 1 |
+| `docs/UIUX_AUDIT.md` | current | - | - | - | 1 | 0 | - |
+| `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 6 | 12 | 2 |
 | `docs/audits/BASEBALLHELM_HONEST_FEATURE_READ.md` | current | - | - | yes | 0 | 0 | - |
-| `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` | current | - | - | yes | 5 | 8 | 1 |
+| `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` | current | - | - | yes | 4 | 8 | 1 |
 | `docs/audits/COACHHELM_PIPELINE_TRACE_2026-08-20.md` | current | - | - | yes | 0 | 22 | 1 |
-| `docs/audits/COACH_DASHBOARD_AUDIT_REPORT.md` | current | - | - | - | 6 | 1 | - |
-| `docs/audits/DATA_INTEGRITY_AUDIT.md` | current | - | - | - | 1 | 0 | - |
+| `docs/audits/COACH_DASHBOARD_AUDIT_REPORT.md` | current | - | - | - | 5 | 1 | - |
+| `docs/audits/DATA_INTEGRITY_AUDIT.md` | current | - | - | - | 0 | 0 | - |
 | `docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md` | current | - | - | yes | 0 | 8 | 5 |
 | `docs/audits/DUPLICATION_NESTING_2026-08-20.md` | current | - | - | yes | 0 | 20 | 1 |
 | `docs/audits/FEATURE_GAP_INTENT_2026-08-20.md` | current | - | - | yes | 0 | 20 | 3 |
 | `docs/audits/HEALTH_AUDIT_2026_08_18.md` | current | - | - | yes | 0 | 14 | 6 |
 | `docs/audits/IOS_PREMIUM_APPLE_RESEARCH_2026-08-25.md` | current | - | - | - | 1 | 0 | - |
 | `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` | current | yes | - | yes | 3 | 21 | 2 |
-| `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md` | current | - | - | yes | 2 | 4 | - |
-| `docs/audits/RLS_SECURITY_AUDIT.md` | current | - | - | - | 1 | 0 | - |
+| `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md` | current | - | - | yes | 1 | 4 | - |
+| `docs/audits/RLS_SECURITY_AUDIT.md` | current | - | - | - | 0 | 0 | - |
 | `docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md` | current | - | - | - | 0 | 5 | - |
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | 1 | 6 | - |
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 1 | 28 | 7 |
@@ -381,11 +380,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 1 | 35 | 7 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | 1 |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
-| `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 0 | 3 | 1 |
+| `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 0 | 2 | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-16.md` | current | - | - | - | 0 | 1 | 1 |
 | `docs/v3-feature-audit.md` | current | yes | - | yes | 2 | 8 | 2 |
 | `docs/v3-page-audit.md` | current | yes | - | yes | 1 | 1 | - |
-| `memory/prompts/master-feature-audit.md` | current | - | - | - | 1 | 1 | - |
+| `memory/prompts/master-feature-audit.md` | current | - | - | - | 0 | 1 | - |
 | `supabase/investigations/shot_type_findings.md` | current | - | - | yes | 0 | 3 | - |
 | `tools/ultra-agent-audit/README.md` | current | - | - | - | 0 | 0 | - |
 | `tools/ux-flow-auditor/CLAUDE.md` | current | - | - | yes | 0 | 4 | - |
@@ -487,6 +486,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/decisions/ADR-2026-08-30-sandbox-filesystem-allowwrite.md` | current | - | - | yes | 0 | 3 | - |
 | `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` | current | - | - | - | 5 | 3 | - |
 | `memory/decisions/ADR-2026-09-05-control-plane-reset.md` | current | - | - | yes | 3 | 9 | 1 |
+| `memory/decisions/ADR-2026-09-06-demo-seed-scope.md` | current | - | - | - | 0 | 5 | 2 |
 
 ### `INDEX`
 
@@ -494,7 +494,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.circleci/README.md` | current | - | - | - | 0 | 0 | - |
 | `datadog/README.md` | current | - | - | - | 0 | 3 | - |
-| `docs/README.md` | current | - | - | yes | 3 | 33 | 16 |
+| `docs/README.md` | current | - | - | yes | 3 | 32 | 15 |
 | `docs/db/drafts/README.md` | current | - | - | - | 0 | 1 | 1 |
 | `e2e/README.md` | current | - | - | yes | 0 | 10 | 4 |
 | `ios/App/CapApp-SPM/README.md` | current | - | - | - | 0 | 0 | - |
@@ -512,24 +512,18 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `tools/README.md` | current | - | - | yes | 0 | 0 | - |
 | `tools/continuous-improvement/README.md` | current | - | - | - | 0 | 2 | 2 |
 
-### `ARCHIVE`
-
-1321 file(s) under `docs/archive/` — historical evidence only, listed
-by count rather than by name because none of them is a reference and enumerating
-them would bury everything above.
-
 ### `UNKNOWN`
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.devin/AGENTS-POINTER.md` | current | - | - | - | 0 | 0 | - |
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | 1 |
-| `.github/branch-protection.md` | current | - | - | - | 10 | 5 | 1 |
+| `.github/branch-protection.md` | current | - | - | - | 5 | 5 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 27 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 9 | 12 | 1 |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 7 | 12 | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | 1 |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
@@ -538,14 +532,14 @@ them would bury everything above.
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 3 | 16 | 9 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 6 | 19 | 9 |
-| `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | 4 | 16 | 2 |
+| `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | 3 | 16 | 2 |
 | `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md` | current | - | - | yes | 1 | 15 | 3 |
 | `docs/baseball/COACH_NAV_8TAB_PROPOSAL.md` | current | - | - | yes | 0 | 2 | 1 |
 | `docs/baseball/ENTRY_SCENES_DESIGN.md` | current | - | - | - | 0 | 1 | 1 |
 | `docs/baseball/design-system-living-annual.md` | current | - | - | - | 2 | 1 | - |
 | `docs/baseball/legacy-backfill-runbook.md` | current | - | - | yes | 0 | 10 | - |
-| `docs/baseball/stats-architecture.md` | current | - | - | yes | 2 | 16 | 3 |
-| `docs/baseball/ui-migration-map.md` | current | - | - | - | 5 | 9 | 3 |
+| `docs/baseball/stats-architecture.md` | current | - | - | yes | 1 | 16 | 3 |
+| `docs/baseball/ui-migration-map.md` | current | - | - | - | 3 | 9 | 3 |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | 0 | 0 | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
@@ -567,42 +561,42 @@ them would bury everything above.
 | `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` | current | yes | - | - | 4 | 28 | - |
 | `docs/observability/SUPABASE_TRACE_PROPAGATION.md` | current | yes | - | - | 1 | 7 | - |
 | `docs/operations/2026-05-27-baseball-tables-scope.md` | current | - | - | - | 1 | 3 | - |
-| `docs/operations/2026-05-27-v3-w35-diagnosis.md` | current | - | - | - | 2 | 5 | - |
+| `docs/operations/2026-05-27-v3-w35-diagnosis.md` | current | - | - | - | 1 | 4 | - |
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | 1 |
 | `docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md` | current | - | - | - | 0 | 3 | - |
 | `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | 1 | 7 | 2 |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | 3 | 30 | - |
-| `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 7 | 61 | 6 |
+| `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 | 59 | 6 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | 1 |
-| `docs/operations/COST_CONTROLS.md` | current | - | - | - | 4 | 7 | - |
+| `docs/operations/COST_CONTROLS.md` | current | - | - | - | 3 | 7 | - |
 | `docs/operations/GATES.md` | current | - | - | - | 0 | 1 | - |
-| `docs/operations/GITHUB_LABELS_AND_PROJECT_SETUP.md` | current | - | - | yes | 1 | 1 | - |
-| `docs/operations/GIT_ACTIVITY_TIMELINE.md` | current | - | - | - | 3 | 0 | - |
-| `docs/operations/HELM_MISSION_CONTROL_OS.md` | current | - | - | yes | 6 | 9 | 2 |
-| `docs/operations/HULY_WORKSPACE_SETUP.md` | current | - | - | yes | 3 | 0 | - |
-| `docs/operations/MISSION_CONTROL_NEXT_STEPS.md` | current | - | - | - | 1 | 0 | - |
-| `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | 3 | 0 | - |
-| `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | 2 | 0 | - |
-| `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | 1 | 0 | - |
-| `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 4 | 4 | - |
+| `docs/operations/GITHUB_LABELS_AND_PROJECT_SETUP.md` | current | - | - | yes | 0 | 1 | - |
+| `docs/operations/GIT_ACTIVITY_TIMELINE.md` | current | - | - | - | 2 | 0 | - |
+| `docs/operations/HELM_MISSION_CONTROL_OS.md` | current | - | - | yes | 4 | 9 | 2 |
+| `docs/operations/HULY_WORKSPACE_SETUP.md` | current | - | - | yes | 2 | 0 | - |
+| `docs/operations/MISSION_CONTROL_NEXT_STEPS.md` | current | - | - | - | 0 | 0 | - |
+| `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | 2 | 0 | - |
+| `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | 1 | 0 | - |
+| `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | 0 | 0 | - |
+| `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 3 | 4 | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 1 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 4 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 4 | - |
 | `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 11 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | 1 |
-| `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 11 | 3 |
+| `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 9 | 2 |
 | `docs/operations/context/PRODUCT_CONTEXT_PACK.md` | current | - | - | yes | 0 | 2 | - |
 | `docs/operations/context/SYSTEMS_AND_DATA_MAP.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/operations/context/TELEMETRY_BASELINE.md` | current | - | - | yes | 0 | 5 | - |
 | `docs/operations/context/TOOLS_AND_SERVICES_REGISTRY.md` | current | - | - | yes | 0 | 28 | 7 |
-| `docs/seed/BASEBALLHELM_DEMO_DATA_CONTRACT.md` | current | - | - | yes | 2 | 8 | 2 |
+| `docs/seed/BASEBALLHELM_DEMO_DATA_CONTRACT.md` | current | - | - | yes | 0 | 8 | 2 |
 | `docs/testing/IOS_SIMULATOR_QA_HARNESS.md` | current | - | - | - | 0 | 0 | - |
 | `ios/appstore/RELEASE_CANDIDATE_2.0-9.md` | current | yes | - | - | 0 | 3 | 1 |
 | `ios/appstore/REVIEW_NOTES_2.0-9.md` | current | - | - | - | 0 | 0 | - |
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
-| `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
+| `src/test/SKIPPED.md` | current | - | - | yes | 1 | 15 | 4 |
 | `supabase/migrations/HELD.md` | current | - | - | - | 19 | 34 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |

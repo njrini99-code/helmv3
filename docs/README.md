@@ -49,9 +49,17 @@ npm run knowledge:context -- --files <paths...> --task "<task>"
 ```
 
 A file's presence in `memory/registry.yml` means its path is load-bearing — those files
-never move (see `docs/archive/` semantics below). Everything else in `docs/` is
+never move (see the attic note below). Everything else in `docs/` is
 organized into the clusters listed further down, or has already been swept into
-`docs/archive/`.
+the attic.
+
+## The attic
+
+Superseded and historical docs no longer live in this tree. They are preserved
+in full at the git tag `docs-attic-2026-09`, pushed to `origin` — browse a file
+at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/<path>`
+(the `<path>` is the file's old in-repo path, e.g. `docs/archive/2026-07/...`).
+A living doc that still needs to cite one of them links straight to that URL.
 
 ## Start here
 
@@ -84,17 +92,6 @@ For orientation before diving into a specific doc cluster, read (in rough order)
 - **`docs/baseball/`** — active BaseballHelm design docs (execution plan, production
   roadmap, "Living Annual" design system, stats architecture).
 
-## `docs/archive/<YYYY-MM>/`
-
-Every subfolder under `docs/archive/` is a dated bucket of superseded/historical
-docs — phase plans, stale architecture snapshots, completed audits, old UI-system docs.
-The `<YYYY-MM>` is the **content date** of the material (a `Generated:`/`Date:` header or
-a filename-embedded date), not the date it was archived — git-log dates on this repo are
-unreliable for that purpose (a 2026-07-01 bulk commit touched most files). Nothing under
-`docs/archive/` is maintained going forward; treat it as a historical record, not a live
-reference. If an archived doc is still linked from a living doc, that link is deliberately
-flagged as archived/stale at the link site rather than silently pointing into the past.
-
 ## Living clusters
 
 These directories are actively maintained and safe to treat as current:
@@ -115,12 +112,12 @@ For the current census — how many there are and what each one is — read the
 generated document inventory rather than a number typed here;
 `docs/HELM_OS.md` says where it lives.
 
-A 2026-08-20 sweep archived the unreferenced remainder into
-`docs/archive/superseded-2026-08/` — completed one-shot audits, fix plans and
-session reports (verified by grep across `CLAUDE.md`, `AGENTS.md`, `.claude/`,
-`memory/`, `scripts/`, `src/`, `.github/`, `.circleci/` and `package.json`
-before moving; the path-drift gate confirmed zero broken links after). They are
-history, not reference.
+A 2026-08-20 sweep archived the unreferenced remainder — completed one-shot
+audits, fix plans and session reports (verified by grep across `CLAUDE.md`,
+`AGENTS.md`, `.claude/`, `memory/`, `scripts/`, `src/`, `.github/`,
+`.circleci/` and `package.json` before moving; the path-drift gate confirmed
+zero broken links after). They are history, not reference, and now live only
+in the attic (see above).
 
 The two counts that stood here — "there are 22" and "the other 44" — are gone
 on purpose. `.claude/rules/shipping.md` §1 forbids writing a count into prose
