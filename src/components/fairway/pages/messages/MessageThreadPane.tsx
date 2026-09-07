@@ -176,6 +176,16 @@ export interface MessageThreadPaneProps {
   onSetMobileActions: (id: string | null) => void;
 
   /**
+   * G-19 — a send that failed leaves its message in the thread, muted, with a
+   * retry. Both are optional so every existing caller keeps compiling; when
+   * `onRetryMessage` is absent the failed bubble still renders (muted, labelled)
+   * and simply offers no button, which is strictly better than the old
+   * behaviour of deleting what the user wrote.
+   */
+  onRetryMessage?: (messageId: string) => void;
+  onDiscardFailedMessage?: (messageId: string) => void;
+
+  /**
    * Bug fix #1 — group sender resolution.
    * Maps user_id → { name, avatar } for every participant in a group
    * conversation.  FairwayMessages fetches this via golf_conversation_participants
@@ -392,6 +402,8 @@ export function MessageThreadPane({
   onConfirmDelete,
   onCancelDelete,
   onSetMobileActions,
+  onRetryMessage,
+  onDiscardFailedMessage,
   groupParticipants,
   scrollToMessageId,
   onScrolledToMessage,
@@ -1198,6 +1210,9 @@ export function MessageThreadPane({
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',
+                          // G-19: a failed send stays legible but visibly not
+                          // delivered — muted, never removed.
+                          (msg as MessageWithReadStatus).sendFailed && 'opacity-60',
                           isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
                           isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',
                           !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-tr-md rounded-br-sm' : 'rounded-fw-lg rounded-tl-md rounded-bl-sm'),
@@ -1251,6 +1266,41 @@ export function MessageThreadPane({
                         ) : null}
                       </div>
                     )}
+                    {/* G-19 — a send that failed keeps its message here rather
+                        than deleting it. The bubble above is dimmed via
+                        `sendFailed`, and this row is the only trace that used
+                        to be a toast: what happened, and the two ways out. */}
+                    {(msg as MessageWithReadStatus).sendFailed && (
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <span className="font-fw-sans text-eyebrow text-text-tertiary">
+                          Not sent
+                        </span>
+                        {onRetryMessage && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onRetryMessage(msg.id)}
+                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-secondary hover:bg-surface"
+                          >
+                            <RotateCw size={12} aria-hidden="true" />
+                            Retry
+                          </Button>
+                        )}
+                        {onDiscardFailedMessage && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDiscardFailedMessage(msg.id)}
+                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-surface"
+                          >
+                            Discard
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
                     {/* Time + read receipt (last of group, tabular-nums).
                         G-26: this belongs INSIDE the message column, not beside
                         it. The row above is `flex items-end gap-2`, so while

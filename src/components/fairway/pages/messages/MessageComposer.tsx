@@ -189,18 +189,32 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
 
     setSending(true);
 
+    // Capture EXACTLY what is being sent, before the round trip. The textarea
+    // stays enabled while a send is in flight — deliberately, so a slow network
+    // never blocks typing — which means `message` can grow underneath us.
+    const sentRaw = message;
+
     let success = false;
     if (hasAttachments && onSendWithAttachments) {
-      success = await onSendWithAttachments(message.trim(), pendingAttachments);
+      success = await onSendWithAttachments(sentRaw.trim(), pendingAttachments);
     } else {
-      success = await onSend(message.trim());
+      success = await onSend(sentRaw.trim());
     }
 
     if (success) {
       pendingAttachments.forEach(a => {
         if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
       });
-      setMessage('');
+      // Clear only what was actually sent (§9.3). A blanket `setMessage('')`
+      // discards anything typed during the round trip — on a slow phone that is
+      // a whole second sentence, silently gone the moment the first one lands.
+      setMessage(prev => {
+        if (prev === sentRaw) return '';
+        if (prev.startsWith(sentRaw)) return prev.slice(sentRaw.length);
+        // Edited mid-flight beyond a simple append: keep every character rather
+        // than guess which ones were theirs to lose.
+        return prev;
+      });
       setPendingAttachments([]);
     }
     setSending(false);

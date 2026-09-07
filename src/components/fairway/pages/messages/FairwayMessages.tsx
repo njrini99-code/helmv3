@@ -113,6 +113,8 @@ export function FairwayMessages() {
     error: messagesError,
     refetch: refetchMessages,
     sendMessage,
+    retryMessage,
+    discardFailedMessage,
     editMessage,
     removeMessage,
     isOtherTyping,
@@ -669,6 +671,8 @@ export function FairwayMessages() {
                 onConfirmDelete={handleConfirmDelete}
                 onCancelDelete={handleCancelDelete}
                 onSetMobileActions={setMobileActionsId}
+                onRetryMessage={retryMessage}
+                onDiscardFailedMessage={discardFailedMessage}
                 groupParticipants={groupParticipants}
                 scrollToMessageId={pendingScrollMessageId}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}

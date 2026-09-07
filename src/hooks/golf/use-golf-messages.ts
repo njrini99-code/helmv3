@@ -44,6 +44,18 @@ export interface GolfConversationWithMeta {
 // Extended message type with read receipt info
 export interface GolfMessage extends GolfMessageRow {
   isRead?: boolean; // Whether the other participant has read this message
+  /**
+   * CLIENT-ONLY, and only ever set on an optimistic row whose send failed
+   * (G-19). It is never selected, never written, and no realtime payload
+   * carries it — a row that came back from the database always leaves this
+   * undefined.
+   *
+   * It exists because the previous behaviour on a failed send was to remove
+   * the optimistic bubble from the thread, which deletes what the user wrote
+   * and leaves a toast as the only trace. §9.2 requires the message to be
+   * RETAINED, shown muted, and offered a retry.
+   */
+  sendFailed?: boolean;
 }
 
 // Keep old name for backward compatibility
@@ -545,6 +557,23 @@ export function useGolfMessages(conversationId: string) {
     });
   }, [conversationId, currentUserId]);
 
+  /**
+   * G-19: retain the optimistic row and mark it failed, instead of deleting it.
+   *
+   * Every failure branch below used to call
+   * `setMessages(prev => prev.filter(m => m.id !== optimisticId))`, which threw
+   * away the text the user wrote and left a toast as its only trace. Marking
+   * keeps the message on screen, muted, with a retry — and because the row is
+   * still present under the SAME optimistic id, `retryMessage` can re-send it
+   * with that id and inherit the existing primary-key collision handling that
+   * makes a duplicate attempt safe.
+   */
+  const markSendFailed = (optimisticId: string) => {
+    setMessages(prev =>
+      prev.map(m => (m.id === optimisticId ? { ...m, sendFailed: true } : m)),
+    );
+  };
+
   const sendMessage = async (content: string) => {
     // Clear typing indicator when sending
     sendTypingStatus(false);
@@ -596,19 +625,19 @@ export function useGolfMessages(conversationId: string) {
 
       // Check if the result indicates an error
       if (result && 'error' in result && result.error) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId);
         throw new Error(result.error);
       }
 
       if (!result || !result.success) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId);
         throw new Error('Failed to send message');
       }
 
       return true;
     } catch (error) {
-      // Roll back optimistic message on any error
-      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      // Retain the message, marked failed — see markSendFailed (G-19).
+      markSendFailed(optimisticId);
       logError(
         error instanceof Error ? error : new Error(String(error)),
         { component: 'useGolfMessages', action: 'send-message', sport: 'golf', conversationId },
@@ -616,6 +645,60 @@ export function useGolfMessages(conversationId: string) {
       );
       throw error;
     }
+  };
+
+  /**
+   * Re-send a message that is sitting in the thread marked failed (G-19).
+   *
+   * Reuses the row's EXISTING id rather than minting a new one, which is what
+   * makes this safe to press twice: `sendGolfMessage` writes the client id as
+   * the real `golf_messages.id`, so a retry that races an attempt which
+   * actually committed collides on the primary key and the action reports that
+   * 23505 back as the success it is, instead of creating a duplicate. Same
+   * property `withOneTransportRetry` already relies on above.
+   *
+   * Returns true on success. The failed flag is cleared optimistically before
+   * the attempt so the bubble stops looking failed while it is in flight, and
+   * restored if the attempt fails again.
+   */
+  const retryMessage = async (messageId: string): Promise<boolean> => {
+    const target = messages.find(m => m.id === messageId && m.sendFailed);
+    if (!target) return false;
+
+    setMessages(prev =>
+      prev.map(m => (m.id === messageId ? { ...m, sendFailed: false } : m)),
+    );
+
+    try {
+      const result = await withOneTransportRetry(
+        () => sendGolfMessage(conversationId, target.content, messageId),
+        SEND_TRANSPORT_RETRY_DELAY_MS,
+      );
+      if (!result || !result.success || ('error' in result && result.error)) {
+        markSendFailed(messageId);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      markSendFailed(messageId);
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'useGolfMessages', action: 'retry-message', sport: 'golf', conversationId },
+        'high',
+      );
+      return false;
+    }
+  };
+
+  /**
+   * Drop a failed message the user has decided not to send (G-19).
+   *
+   * Guarded on `sendFailed` so this can only ever remove a client-side row that
+   * never reached the database — it must not become a second delete path for a
+   * real message, which is `removeMessage`'s job.
+   */
+  const discardFailedMessage = (messageId: string) => {
+    setMessages(prev => prev.filter(m => !(m.id === messageId && m.sendFailed)));
   };
 
   // Edit a message
@@ -679,6 +762,8 @@ export function useGolfMessages(conversationId: string) {
     loading,
     error,
     sendMessage,
+    retryMessage,
+    discardFailedMessage,
     editMessage,
     removeMessage,
     refetch: fetchMessages,
