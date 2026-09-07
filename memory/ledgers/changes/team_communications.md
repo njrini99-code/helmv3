@@ -1,143 +1,34 @@
+# Change ledger — team_communications
 
-## 2026-08-26 — attachment send no longer blocks on notification fan-out
+## 2026-09-07 — a failed attachment insert stops reporting success (G-08)
 
-- SHA: pending commit on fix/message-attachment-fanout-after.
-- Change: `sendGolfMessageWithAttachments` moves its email/push/in-app
-  fan-out into `after()`; the sender's response returns as soon as the
-  message, attachment rows, and conversation bump are durable.
-- Why: on a 13-participant team chat the inline fan-out (one email + one
-  push edge-function call per recipient) pushed the action past what
-  mobile Safari would wait for. The response was lost and the composer
-  reported failure for sends that had fully landed — observed live
-  2026-08-26 (Guilford coach, same photo posted three times, told it
-  failed each time; zero server-side errors in Sentry). Same
-  response-loss class the round submit already fixed, same after() idiom.
-
-## 2026-08-26 — messaging/announcement sheets stop autofocusing on touch
-
-- SHA: f4216fef8 (+ 596913022 for the sheets).
-- Change: FairwayNewMessageSheet search, FairwayTeamBroadcastSheet search +
-  group-name, and FairwayCreateAnnouncement's setTimeout title-focus are
-  gated on a fine pointer. MessageThreadPane's edit-in-place autofocus is
-  intentionally untouched (the user tapped Edit to type).
-- Why: on iPhone these sheets opened with the keyboard covering the
-  recipient list / the tallest form in the app (owner TestFlight report).
-  Desktop type-ahead unchanged.
-
-## 2026-08-26 — Announcements: direct file upload in the composer
-
-- **What**: `FairwayCreateAnnouncement` gains an Upload control in its
-  Attachments section, wired to the Documents pipeline
-  (`uploadGolfDocument` → `createGolfDocument`) so a coach can attach a
-  photo/file straight from the device; the uploaded file lands in the team
-  document library and auto-attaches to the announcement via the existing
-  `documentIds` → `golf_announcement_documents` path. The Attachments
-  section previously rendered only when the team already had library
-  documents — a team with zero documents saw no attach affordance at all,
-  which a coach reported as "can't attach it in the announcements tab".
-  `teamId` is now threaded page → list → composer;
-  `createGolfDocument.uploaded_by` became optional (server always uses the
-  authenticated user; the param was ignored).
-- **Why**: production user report (Guilford coach, 2026-08-26) — second half
-  of the message-attachments incident.
-- **Verified**: typecheck 0, lint 0, focused vitest 20/20
-  (announcements + team-hub parity), production build.
-- **SHA**: (branch `fix/announcement-direct-upload`, PR pending)
-
-## 2026-08-27 — conversation-rail errors carry their Postgres code, and a team-chat failure no longer reads as an empty inbox
-
-**What changed**
-
-- `useGolfConversations`/`useGolfMessages` stopped wrapping Supabase errors as
-  `new Error(err.message)`. That wrapper discarded `code`, `details` and `hint`,
-  so the Bridge rendered a blank ERROR CODE for every messaging failure — an RLS
-  denial (42501), a statement timeout (57014) and a dropped connection were
-  indistinguishable in triage. Three sites now use `toPostgrestError()` +
-  `postgrestErrorContext()` from `src/lib/utils/describe-error.ts`.
-- The P257 terminal check now reads `(rpcError ?? groupConvsError)`. The
-  team-chat query's failure was previously logged and allowed to fall through to
-  the "No conversations yet" empty state.
-
-**Why this shape**
-
-- The code goes on `Error.name` because that is the only channel the client path
-  has: `/api/log-error` lifts `context.error.name` into `metadata.errorCode`,
-  where `incident-report.ts`'s `extractErrorCode()` reads. A context-level
-  `errorCode` is read only by `server-error-logger.ts`.
-- `details`/`hint` stay OUT of `.message`. `admin_events` fingerprints hash the
-  message and `details` carries row-specific text, so folding it in would mint a
-  new incident group per occurrence — the fragmentation already documented for
-  Cloudflare Ray IDs in `describe-error.ts`.
-- No early return at the team-chat site: it supplements the RPC, so returning
-  would blank a rail whose DMs loaded fine.
-
-**Expected effect on existing incidents**
-
-Existing incident groups for these three sites re-key once, because `.name`
-now participates in the signature. New groups appearing right after this ships
-are the SAME failures under a code-bearing identity, not new faults.
-
-**Registry**
-
-`src/hooks/**` was absent from `memory/registry.yml` entirely, so every golf
-hook resolved to no feature — `knowledge:map` returned an empty
-`impactedFeatures` for the hook owning the whole conversation rail. Mapped
-`use-golf-messages.ts` and `use-message-attachments.ts` by name (not
-`src/hooks/golf/**`; the other 15 hooks belong to other features). Same class as
-the Fairway calendar gap, and it hid for the same reason: `src/hooks` is outside
-`GOVERNED_PATTERNS`, so the context guard never tripped either.
-
-**Verified**
-
-`npx tsc --noEmit` exit 0 · `npm run lint` exit 0 · `npm run lint:ratchet` OK
-(68 warnings, no regressions) · `npm run knowledge:globs` 0 dead of 465 ·
-`npm run knowledge:check` clean · vitest 276 passed across
-`src/test/lib/utils`, `src/test/lib/admin`, `client-error-envelope`,
-`src/hooks/golf/__tests__` (9 new cases in
-`src/test/lib/utils/postgrest-error.test.ts`).
-
-**Not done here**
-
-~47 other `new Error(x.message)` sites remain. Each carries its own
-partial-vs-empty decision like the one above; a blanket sweep would be 47
-unverified behavior changes. The helpers are the mechanism for fixing them one
-verified site at a time.
-
-**Also found, not fixed:** `describeWriteFailure()` emits
-`pgCode`/`pgDetails`/`pgHint` into metadata, and nothing in the Bridge reads
-those three keys — verified by grep 2026-08-27. Those values are written and
-never displayed.
-
-## 2026-09-04 — "Can't see pics" had two causes, and a draft could reach the wrong person
-
-- SHA: PR #1828 (branch `agent/mobile-p0-stability`).
-- Change:
-  - `use-golf-messages.ts` thread select now includes `has_attachments`.
-    `MessageThreadPane` only signs attachments for messages where that flag is
-    truthy, so omitting it from the read made it `undefined` on every message
-    loaded from the database and signing never fired.
-  - `MessageThreadPane` treats a SUCCESSFUL-but-EMPTY attachment fetch as
-    unresolved (retry chip + one bounded auto-retry) instead of falling into no
-    branch and rendering a dead "Attachment" label forever.
-  - `<MessageComposer>` is keyed on the conversation. It was unkeyed, its draft
-    clears only on a successful send, and the send handlers read whichever
-    conversation is selected AT SEND TIME.
-  - Enter-to-send gated on `(pointer: fine)`; the desktop hint is gated the same
-    way.
-  - Read-marking now also fires when a message arrives while the thread is open
-    (debounced 900ms, gated on `document.visibilityState`).
-  - Optimistic sends carry a client-generated UUID inserted as the row's real
-    `id`, so the realtime echo reconciles by identity. `client_message_id` is
-    optional in `MessageSchemas.send`; a 23505 on retry is read as success.
-  - Presentation: day separators, a New marker frozen at open, grouping that
-    breaks on a 5-minute gap and a day boundary, arrival motion, group-only
-    sender identity, flattened panels below `md`.
-- Why: "Can't see pics" was reported in the live team chat and appeared in no
-  telemetry — nothing failed, the client never asked. It looked intermittent
-  because the realtime INSERT handler uses `payload.new` (the full row, flag
-  included), so a photo was visible to whoever had the thread open when it
-  arrived and gone for everyone afterwards.
-  The composer key is a privacy fix: a message or photo typed to one person and
-  abandoned was delivered to whoever was selected next, with no visual cue.
-  Enter-to-send assumed a Shift key exists; an iOS keyboard reports return as
-  plain `Enter`, so a player could not put a line break in a message at all.
+- SHA: fabfae3e5.
+- Change: `sendGolfMessageWithAttachmentsImpl`
+  (`src/app/golf/actions/message-attachments.ts`) compensates when the
+  `golf_message_attachments` insert fails instead of logging and falling
+  through to `{ success: true }`. It removes the orphaned storage objects;
+  deletes the message when no text survives (returning failure, so the
+  composer keeps the draft); and when text does survive, clears
+  `has_attachments` and falls THROUGH to the conversation-timestamp update and
+  the recipient fan-out before returning `attachmentsFailed: true`. Return type
+  widened with an optional `attachmentsFailed`.
+- Why: the `golf_messages` row commits first with `has_attachments: true`. A
+  later attachment-insert failure left it flagged with no attachment rows,
+  which `MessageThreadPane`'s SUCCESSFUL-BUT-EMPTY branch reads as "the rows
+  have not committed YET" and offers a one-shot retry for. That reading is
+  correct for the two-statement commit race it was written for and wrong for
+  this failure, which is permanent — so the retry could never succeed and the
+  bubble stayed dead for the rest of the session, while the sender had been
+  told the photo was delivered. Found as G-08 in the Wave 0 messages audit
+  (`audit/M00-MANIFEST.md`), the highest-severity item in it; open issue #1825
+  ("Message image attachments render as nothing — two independent user
+  reports") is the user-visible form.
+- Verification: `golf_messages_delete` and `golf_messages_update_v2` are each
+  `sender_id = auth.uid()`, read from production `pg_policies`, so both
+  compensations are permitted for the sender under RLS. The bucket
+  `golf-attachments` is private and `golf_attachments_owner_delete` is
+  `owner = auth.uid()`, so the sender may remove their own uploads.
+- Note: the fall-through rather than an early return is load-bearing. The
+  message really was delivered, so returning at the compensation point would
+  have suppressed the recipient's push/email for a message they can see. A
+  test pins it.

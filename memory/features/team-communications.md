@@ -55,8 +55,12 @@ These surfaces are operationally important because they touch files, notificatio
 Message send
   -> optional client-side attachment upload to Supabase Storage
   -> sendGolfMessageWithAttachments()
-  -> INSERT golf_messages
-  -> INSERT golf_message_attachments
+  -> INSERT golf_messages            (commits FIRST, has_attachments: true)
+  -> INSERT golf_message_attachments (separate statement, may fail alone)
+       on failure (2026-09-07, G-08): remove the orphaned storage objects,
+       then either delete the message (no text survived -> success: false, the
+       composer keeps the draft) or clear has_attachments and CONTINUE to the
+       timestamp update and fan-out, returning attachmentsFailed: true
   -> update participant last_read_at
   -> Supabase Realtime pushes to participants
 
@@ -158,6 +162,26 @@ keeps rows on screen when `error && conversations.length > 0`. Before
 2026-08-27 that query's failure was logged and then fell through, so a user
 whose team-chat read was denied saw an empty inbox with no error — the exact
 masquerade P257 exists to stop.
+
+## Attachment send is two statements, and that shapes two behaviours
+
+`golf_messages` and `golf_message_attachments` are inserted separately, so a
+message can exist for a window — or permanently — without its attachment rows.
+Two different readers handle the two cases, and confusing them is easy:
+
+- **Transient (the commit race).** A recipient's fetch lands between the two
+  commits and legitimately reads zero attachment rows with no error.
+  `MessageThreadPane`'s SUCCESSFUL-BUT-EMPTY branch treats this as unresolved
+  and offers a retry, which usually closes the race. Correct, and deliberate.
+- **Permanent (the insert failed).** Since 2026-09-07 the action no longer
+  leaves this state reachable: it compensates and clears `has_attachments`, so
+  a flagged-but-empty row now means only the race above. Before that fix the
+  two were indistinguishable to the reader, the retry could never succeed, and
+  the sender had been told the send worked (G-08).
+
+Consequence for future work: **do not "simplify" the compensation into an early
+return.** A message whose text survived really was delivered, so it must still
+reach the fan-out; a test pins this.
 
 ## Known Risk Areas
 

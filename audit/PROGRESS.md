@@ -31,7 +31,7 @@ it is the owner's, through `db-apply`.
 ---
 
 ## W1 — Data and correctness. No schema change, highest user impact
-- [ ] **G-08** failed attachment insert reports SUCCESS to the sender
+- [x] **G-08** failed attachment insert reports SUCCESS to the sender
       (`message-attachments.ts:157`). Open issue #1825 is this symptom.
 - [ ] **G-19** failed sends erase the message instead of retaining it [cross-lane confirmed]
 - [ ] **G-21** attachment send fails OPEN
