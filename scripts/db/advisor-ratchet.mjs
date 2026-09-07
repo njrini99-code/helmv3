@@ -100,10 +100,6 @@ async function main() {
 
   const securityCounts = tallyByClass(security);
   const performanceCounts = tallyByClass(performance);
-  const current = {
-    security: securityCounts,
-    performance: performanceCounts,
-  };
   const totalCurrent = Object.values(securityCounts).reduce((a, b) => a + b, 0) +
     Object.values(performanceCounts).reduce((a, b) => a + b, 0);
 
