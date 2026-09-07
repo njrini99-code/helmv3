@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1238 | 0 | 431 | 579 |
-| `UNKNOWN` | 113 | 12 | 46 | 150 |
+| `UNKNOWN` | 113 | 12 | 46 | 151 |
 
 ## Files
 
@@ -254,7 +254,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/security-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/shipping.md` | current | - | - | yes | 23 | 6 | 1 |
+| `.claude/rules/shipping.md` | current | - | - | yes | 22 | 6 | 1 |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 14 | 10 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 5 | 3 | - |
@@ -611,7 +611,7 @@ them would bury everything above.
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 26 | 7 |
-| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 11 | 3 |
+| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 13 | 4 |
 | `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 2 | 6 | - |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | 1 | 4 | - |
 | `docs/observability/SENTRY_SNAPSHOTS.md` | current | - | - | - | 1 | 4 | - |
@@ -620,7 +620,7 @@ them would bury everything above.
 | `docs/observability/SUPABASE_CERTIFICATION.md` | current | - | - | - | 1 | 21 | 4 |
 | `docs/observability/SUPABASE_COVERAGE_MATRIX.md` | current | - | - | - | 2 | 2 | - |
 | `docs/observability/SUPABASE_DIAGNOSTICS.md` | current | - | - | yes | 2 | 17 | 1 |
-| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | yes | - | yes | 7 | 4 | - |
+| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | yes | - | yes | 7 | 3 | - |
 | `docs/observability/SUPABASE_OPERATING_MODEL.md` | current | - | - | - | 3 | 13 | - |
 | `docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md` | current | yes | - | yes | 3 | 14 | - |
 | `docs/observability/SUPABASE_RUNBOOKS.md` | current | - | - | - | 3 | 7 | 1 |
@@ -674,7 +674,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 18 | 33 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 18 | 34 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
