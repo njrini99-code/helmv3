@@ -1,0 +1,5 @@
+{
+  "$comment": "knowledge:bench ratchet. feature_recall may only rise, wrong_feature_rate may only fall. Update only when a real registry or gold-set change moves these numbers in the right direction — never to paper over a regression.",
+  "feature_recall": 0.7666666666666667,
+  "wrong_feature_rate": 0.23333333333333334
+}

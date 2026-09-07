@@ -1,5 +1,14 @@
 # Repo Map for Agents
 
+Status: SUPERSEDED — superseded by `docs/generated/HELM_FEATURE_MAP.md`.
+Feature routing now goes through `memory/registry.yml`,
+`docs/generated/HELM_FEATURE_MAP.md`, and `npm run knowledge:context` (see
+`AGENTS.md`, `CLAUDE.md`). This file is scheduled to move to the docs attic
+(`docs-attic-2026-09`) once the tree-move PR lands; until then its
+route-atlas/idiom/trap content below is still the best structural reference,
+but treat its counts and anchors as unverified per the staleness warning
+already in this file.
+
 Structural map of helmv3: route atlas, canonical idioms (with file:line
 anchors), known traps, and a pre-code checklist. This is a map of *shape and
 convention*, not of feature behavior — for feature behavior use

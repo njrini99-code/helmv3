@@ -25,7 +25,7 @@ is a second thing to keep true.
 **Feature Awareness System** · active · criticality high · owner platform
 
 - **Behaviour:** `docs/ai-system/helmv3-ai-codebase-intelligence.md`
-- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 2 more in the registry
+- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 9 more in the registry
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
 - **Incidents:** `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md`, `memory/incidents/feature_awareness_system/INC-2026-08-29-disk-exhaustion-from-six-worktrees.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-worktree-removed-without-owner-consent.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-zsh-history-modifier-broke-pushes.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md`
 - **Repair units:** none in the queue
@@ -69,7 +69,7 @@ is a second thing to keep true.
 **BaseballHelm (recruiting + team management + Lift Lab)** · active · criticality high · owner product
 
 - **Behaviour:** `memory/context/baseballhelm-features.md`
-- **Code:** `src/app/baseball/**`, `src/components/baseball/**`, `src/app/api/baseball/**`, `src/app/baseball/**/actions/**`, `src/lib/baseball/**`, `src/lib/recruiting/**` … and 3 more in the registry
+- **Code:** `src/app/baseball/**`, `src/components/baseball/**`, `src/app/api/baseball/**`, `src/app/baseball/**/actions/**`, `src/lib/baseball/**`, `src/lib/recruiting/**` … and 5 more in the registry
 - **Telemetry:** `baseball_academics` (baseballhelm, low), `baseball_announcements` (baseballhelm, low), `baseball_auth` (baseballhelm, med), `baseball_calendar` (baseballhelm, med), `baseball_camps` (baseballhelm, low), `baseball_classes` (baseballhelm, low), `baseball_coach_command_center` (baseballhelm, low), `baseball_coachhelm` (baseballhelm, high), `baseball_command_center` (baseballhelm, high), `baseball_compare` (baseballhelm, low), `baseball_decision_room` (baseballhelm, low), `baseball_demo_access` (baseballhelm, med), `baseball_demo_tracking` (baseballhelm, low), `baseball_dev_plans` (baseballhelm, low), `baseball_discover` (baseballhelm, low), `baseball_documents` (baseballhelm, low), `baseball_games` (baseballhelm, high), `baseball_import` (baseballhelm, high), `baseball_insights` (baseballhelm, low), `baseball_interests` (baseballhelm, low), `baseball_lift_onboarding` (baseballhelm, low), `baseball_lifting` (baseballhelm, high), `baseball_lineups` (baseballhelm, low), `baseball_messages` (baseballhelm, high), `baseball_notes` (baseballhelm, low), `baseball_notifications` (baseballhelm, low), `baseball_onboarding` (baseballhelm, med), `baseball_philosophy` (baseballhelm, low), `baseball_player_actions` (baseballhelm, low), `baseball_player_peek` (baseballhelm, low), `baseball_player_today` (baseballhelm, high), `baseball_postgame` (baseballhelm, low), `baseball_practice` (baseballhelm, high), `baseball_profile` (baseballhelm, low), `baseball_recruiting` (baseballhelm, low), `baseball_recruiting_philosophy` (baseballhelm, low), `baseball_roster` (baseballhelm, low), `baseball_scout_packet` (baseballhelm, low), `baseball_settings` (baseballhelm, med), `baseball_signals` (baseballhelm, high), `baseball_staff` (baseballhelm, low), `baseball_stats` (baseballhelm, high), `baseball_tasks` (baseballhelm, low), `baseball_teams` (baseballhelm, low), `baseball_timeline` (baseballhelm, low), `baseball_travel` (baseballhelm, low), `baseball_video` (baseballhelm, low), `baseball_watchlist` (baseballhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 14 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 32 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`
 - **Repair units:** none in the queue
@@ -91,7 +91,7 @@ is a second thing to keep true.
 **CRM Outreach (NCAA cold email)** · active · criticality medium · owner founder
 
 - **Behaviour:** `memory/features/crm_outreach.md`
-- **Code:** `src/app/golf/admin/crm/**`, `src/app/api/crm/**`, `src/app/api/admin/crm/**`, `src/app/api/webhooks/resend/**`, `src/app/api/webhooks/resend-inbound/**`, `src/app/api/cron/process-sequences/**` … and 8 more in the registry
+- **Code:** `src/app/golf/admin/crm/**`, `src/app/api/crm/**`, `src/app/api/admin/crm/**`, `src/app/api/webhooks/resend/**`, `src/app/api/webhooks/resend-inbound/**`, `src/app/api/cron/process-sequences/**` … and 9 more in the registry
 - **Telemetry:** `crm_recruiting_pipeline` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -113,7 +113,7 @@ is a second thing to keep true.
 **Shot Tracking** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/shot-tracking.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/new/**`, `src/app/golf/(dashboard)/dashboard/rounds/continue/**`, `src/app/golf/(dashboard)/dashboard/rounds/recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**` … and 17 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/new/**`, `src/app/golf/(dashboard)/dashboard/rounds/continue/**`, `src/app/golf/(dashboard)/dashboard/rounds/recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**` … and 24 more in the registry
 - **Telemetry:** none — covered by `golf_round_lifecycle`. Shot entry is instrumented as part of round_tracking; no separate FeatureKey exists. High criticality with no key of its own is a real observability limit, recorded here rather than hidden by inventing one.
 - **Incidents:** `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md`, `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md`, `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md`, `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md`
 - **Repair units:** `confirmed-snapshot-recovery-prompt-2026-08-22` (verified_in_production)
@@ -124,7 +124,7 @@ is a second thing to keep true.
 **Stats And Analytics** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/stats-analytics.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 14 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 25 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -135,7 +135,7 @@ is a second thing to keep true.
 **Calendar And Events** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/calendar-events.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/components/golf/calendar/**`, `src/components/fairway/pages/calendar/**`, `src/app/api/calendar/**`, `src/app/golf/actions/attendance.ts`, `src/app/golf/actions/calendar-feeds.ts` … and 10 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/components/golf/calendar/**`, `src/components/fairway/pages/calendar/**`, `src/app/api/calendar/**`, `src/app/golf/actions/attendance.ts`, `src/app/golf/actions/calendar-feeds.ts` … and 12 more in the registry
 - **Telemetry:** `calendar_events` (golfhelm, high), `academics_classes` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -146,7 +146,7 @@ is a second thing to keep true.
 **Coach Intelligence Triage** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/coach-intelligence-triage.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/alerts/**`, `src/app/golf/(dashboard)/dashboard/patterns/**`, `src/app/golf/(dashboard)/dashboard/insights/**`, `src/app/golf/(dashboard)/dashboard/intelligence/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**` … and 31 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/alerts/**`, `src/app/golf/(dashboard)/dashboard/patterns/**`, `src/app/golf/(dashboard)/dashboard/insights/**`, `src/app/golf/(dashboard)/dashboard/intelligence/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**` … and 32 more in the registry
 - **Telemetry:** `alerts_system` (coachhelm, med), `patterns_dashboard` (coachhelm, med), `intelligence_dashboard` (coachhelm, med), `coaching_intelligence_settings` (coachhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -168,7 +168,7 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 17 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 19 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -190,7 +190,7 @@ is a second thing to keep true.
 **Roster And Team** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/roster-team.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/components/golf/roster/**`, `src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx`, `src/app/api/golf/players/**`, `src/components/fairway/pages/roster/**` … and 11 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/components/golf/roster/**`, `src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx`, `src/app/api/golf/players/**`, `src/components/fairway/pages/roster/**` … and 13 more in the registry
 - **Telemetry:** `roster_management` (golfhelm, med), `team_info` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -223,7 +223,7 @@ is a second thing to keep true.
 **Settings And Preferences** · active · criticality medium · owner product
 
 - **Behaviour:** `memory/features/settings-preferences.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/components/golf/settings/**`, `src/components/golf/coachhelm/settings/**`, `src/components/fairway/pages/settings/**`, `src/app/golf/actions/v3/notification-prefs.ts`, `src/app/golf/actions/coaching-philosophy.ts` … and 7 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/components/golf/settings/**`, `src/components/golf/coachhelm/settings/**`, `src/components/fairway/pages/settings/**`, `src/app/golf/actions/v3/notification-prefs.ts`, `src/app/golf/actions/coaching-philosophy.ts` … and 8 more in the registry
 - **Telemetry:** `settings` (golfhelm, low), `whats_new` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -245,7 +245,7 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 53 more in the registry
+- **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 57 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
 - **Incidents:** `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`, `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
@@ -322,7 +322,7 @@ is a second thing to keep true.
 **Team Access Control And RLS** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/team-access-control.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/join/**`, `src/app/golf/admin/**`, `src/components/golf/settings/**` … and 17 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/join/**`, `src/app/golf/admin/**`, `src/components/golf/settings/**` … and 25 more in the registry
 - **Telemetry:** none. Cross-cutting authorization enforced in RLS policies and action guards rather than on a screen. It has no surface of its own to instrument; a failure here shows up as a denial inside whichever feature the user was in.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

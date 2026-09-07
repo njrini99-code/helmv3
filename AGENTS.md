@@ -1,22 +1,10 @@
 <!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 # AGENTS.md
 ## Repo map
-`docs/REPO_MAP.md` is the structural map: resolved route atlas per product,
-canonical idioms (action wrappers, toast, data access, design tokens, nav
-registries, error boundaries) each with a file:line anchor, known traps,
-and a before-you-write-code checklist. Read it before adding a route, an
-action wrapper/toast/data-access call, or a design-token consumer.
+Route through `memory/registry.yml` (the router) and `docs/generated/HELM_FEATURE_MAP.md` (generated navigation over it); `npm run knowledge:map -- --files <paths...>` finds the feature(s), `knowledge:context -- --files <paths...> --task "<task>"` builds the context pack. `docs/REPO_MAP.md` is superseded by the feature map — its route atlas and idiom/trap checklist are hand-verified, not generated; trust a live grep over its counts and anchors.
 
 ## Feature awareness
-- `memory/registry.yml` is the feature routing table. Map impacted files
-  through it before changing or reviewing mapped feature code, and read
-  the mapped `memory/features/*.md` doc first. `npm run knowledge:map --
-  --files <paths...>` finds impacted features; `npm run knowledge:context
-  -- --files <paths...> --task "<task>"` builds a context pack for larger
-  changes or PR reviews.
-- If a feature is missing from the registry, say so and add the mapping or
-  mark the gap explicitly. Don't silently change business behavior without
-  updating the relevant `memory/features/*` doc, or explaining why not.
+Map impacted files through the registry (above) before changing or reviewing mapped feature code, and read the mapped `memory/features/*.md` doc first. Missing from the registry? Say so and add the mapping, or mark the gap explicitly — never silently change behavior without updating the relevant `memory/features/*` doc.
 
 ## GolfHelm Engineering OS
 GolfHelm and GolfHelm-facing CoachHelm work operates through
@@ -108,3 +96,10 @@ door supplies `--no-track`, the mutation-budget check, and the
 - Never treat an agent memory store or cache as more authoritative than
   the current repo/database, and never deploy/promote/rollback Vercel
   production unless explicitly asked.
+
+## Front door
+CLAUDE.md + AGENTS.md + always-on rules load every session: **≤ 10,000
+tokens** combined (bytes ÷ 4, `knowledge:front-door-check` in `docs:check`)
+— new task detail goes in a path-scoped `.claude/rules/*.md` or `memory/`
+doc. `docs/generated/ENTRY_POINTS.md` lists repo-local commands/agents/
+skills (not account-wide plugin ones); `knowledge:entry-points` regenerates it.

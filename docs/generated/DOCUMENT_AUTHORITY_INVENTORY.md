@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 87 | 0 | 4 | 3 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 31 |
 | `REFERENCE` | 52 | 15 | 19 | 75 |
-| `GENERATED_TRUTH` | 25 | 3 | 7 | 38 |
+| `GENERATED_TRUTH` | 24 | 3 | 7 | 38 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 15 |
 | `RUNBOOK` | 5 | 2 | 1 | 6 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 11 |
@@ -65,7 +65,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 11 | 2 |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 5 | 6 | 1 |
-| `AGENTS.md` | current | yes | - | yes | 0 | 14 | - |
+| `AGENTS.md` | current | yes | - | yes | 0 | 17 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 8 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 3 | 3 |
 | `README.md` | current | - | - | yes | 0 | 4 | 1 |
@@ -265,10 +265,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 15 | 10 | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 7 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 48 | 21 |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 2 | 208 | - |
+| `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 1 | 0 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 4 | 208 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 0 | 134 | 13 |
@@ -532,7 +531,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
-| `docs/REPO_MAP.md` | current | - | - | yes | 4 | 40 | 4 |
+| `docs/REPO_MAP.md` | superseded | - | - | yes | 4 | 41 | 4 |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 3 | 16 | 9 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 6 | 19 | 9 |
