@@ -122,13 +122,13 @@ select pg_size_pretty(pg_total_relation_size('helm_debug.trace_runs')) as runs_s
   actually pruning.
 
 **Both `supabase/migrations/HELD.md` and this cron route's own header
-comment describe `20260825200811`/`20260826010000` as not-yet-applied to
-production.** That was true when written and is not true now — production
-evidence says both are live and have been for about a week. This PR does not
-edit `HELD.md` (shared surface, not owned by this track) but the owner should
-correct those two rows; leaving them stale means a future reader trusts a
-"not applied" claim that is actively wrong, which is exactly the failure
-mode `.claude/rules/shipping.md` §1 warns about.
+comment described `20260825200811`/`20260826010000` as not-yet-applied to
+production.** That was true when written and was not true by the time this
+was measured — production evidence said both were live. **Corrected
+2026-09-06:** `HELD.md`'s row for these two files now reads "APPLIED
+2026-08-26 — R3 — hold discharged"; the stale claim this section flagged is
+resolved. Left in place as the record of the drift, per `.claude/rules/
+shipping.md`'s staleness-marker convention.
 
 **Isolation is real, not just documented:**
 `has_schema_privilege('service_role','helm_debug','USAGE')` → **false**. Even

@@ -3538,7 +3538,7 @@
         "id": "vercel_cron:/api/cron/ingest-gmail-replies",
         "kind": "vercel_cron",
         "path": "/api/cron/ingest-gmail-replies",
-        "schedule": "*/30 * * * *"
+        "schedule": "20 * * * *"
       },
       {
         "id": "vercel_cron:/api/cron/integrity-check",
@@ -3574,7 +3574,7 @@
         "id": "vercel_cron:/api/cron/task-reminders",
         "kind": "vercel_cron",
         "path": "/api/cron/task-reminders",
-        "schedule": "0 * * * *"
+        "schedule": "5 * * * *"
       },
       {
         "id": "vercel_cron:/api/cron/v3/causality-attribute",
@@ -6098,7 +6098,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 261
+          "line": 263
         }
       ]
     },
@@ -6110,7 +6110,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 185
+          "line": 187
         }
       ]
     },
@@ -6158,7 +6158,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-observability-prune/route.ts",
-          "line": 83
+          "line": 85
         }
       ]
     },
@@ -6182,7 +6182,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
-          "line": 138
+          "line": 139
         }
       ]
     },
@@ -6400,7 +6400,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 286
+          "line": 288
         }
       ]
     },
@@ -6412,7 +6412,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 205
+          "line": 207
         }
       ]
     },
@@ -6424,7 +6424,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 382
+          "line": 384
         }
       ]
     },
@@ -6436,7 +6436,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
-          "line": 212
+          "line": 213
         }
       ]
     },

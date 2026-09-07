@@ -190,6 +190,29 @@ describe('GET /api/cron/log-retention', () => {
     expect(new Set(touched).size).toBe(touched.length);
   });
 
+  it('purges admin_analytics_events older than 180d with its own counter, separate from `deleted`', async () => {
+    mocks.rows.set(
+      'admin_analytics_events|',
+      Array.from({ length: 250 }, (_, i) => `analytics-${i}`),
+    );
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    const body = (await res.json()) as { deleted: number; deletedAnalyticsEvents: number };
+
+    expect(res.status).toBe(200);
+    expect(body.deletedAnalyticsEvents).toBe(250);
+    // Own counter, not folded into the combined `deleted` total for the
+    // other tables (which is 0 here since no admin_events/error_logs rows
+    // were seeded).
+    expect(body.deleted).toBe(0);
+    expect(mocks.rows.get('admin_analytics_events|')).toHaveLength(0);
+    const touched = mocks.deleteBatches
+      .filter((b) => b.table === 'admin_analytics_events')
+      .flatMap((b) => b.ids);
+    expect(new Set(touched).size).toBe(touched.length);
+  });
+
   it('flattens a clean resolution pass into top-level scalars, undegraded', async () => {
     autoResolveMock.mockResolvedValue({
       resolvedRelease: 2,
