@@ -514,3 +514,35 @@
   header longer to listen to.
 - G-29 is now complete: G-29a (typography), G-29b (photo framing), G-29c (this),
   day separators closed by G-50a, and pagination deferred to G-17 as recorded.
+
+## G-49a — the bubble measure cap is absolute, not a percentage of the pane
+`src/components/fairway/pages/messages/MessageThreadPane.tsx`
+
+- G-50b applied `max-w-[288px]` and deliberately KEPT `sm:max-w-[70%]`, writing in
+  its own comment that every artboard is a 390px phone scene and supplies no
+  desktop authority. That reasoning was right on the evidence it had. G-49's F13
+  is the evidence it lacked: "The repo constrains bubble width by percentage
+  only, with no absolute cap... on the desktop 720px-capped panel a bubble can
+  reach ~475px — well past the readable measure §8.3 is protecting."
+- The decisive quote is the plan's own, via `audit/M03B-thread.md:94`: "D08
+  annotates a **288px maximum text measure**... constrained by available row
+  width." A maximum narrowed by row width is a CEILING. A percentage cap cannot
+  express one — it is a function of the container, which is the variable the
+  rule exists to protect against.
+- Tailwind's `sm:` is min-width 640px and the pane is `max-w-[720px]`, so the
+  override was not a desktop refinement on top of the cap: above 640px it was the
+  only rule in effect, and 288px never applied anywhere it was measurable.
+- NOT a correction to G-50b. G-50b named the desktop case as unresolved in the
+  comment it shipped; G-49 resolved it. Nothing about the 288-vs-268 derivation
+  changes, and the bubbleWidth suite's assertions about it all still pass.
+- A test assertion was re-anchored, not weakened. `bubbleWidth.test.ts` asserted
+  `sm:max-w-[70%]` was PRESENT — it encoded the decision, not the derivation. It
+  now asserts its absence and says in the test body which finding superseded it,
+  so the reasoning is not lost. Same treatment as the G-26 metadata suite in G-50b.
+- One assertion I wrote and then deleted, recorded because the deletion is the
+  honest part: a "characters per line" block claiming 504px busts the 45-75
+  character band. At the conventional 0.5em advance it computes to 67 characters,
+  which is inside the band — so the arithmetic did not support the claim, and the
+  comment I had written in the component saying "roughly 85 characters" was wrong.
+  Removed both. The finding stands on the maximum being exceeded, which needs no
+  invented constant.

@@ -267,3 +267,20 @@ Three tests cover the primitive rather than the caller, because the change to
 still defaults to `ring-canvas` so no existing caller moved, and that it reaches
 BOTH the avatar rims and the overflow chip — missing either leaves one visibly
 mismatched circle in the stack.
+
+## G-49a — MessageThreadPane.measureCap.test.ts
+6 tests, 2 failing against the pre-fix component (`carries NO responsive width
+override on that column`, `caps by no percentage anywhere in the thread`),
+verified by restoring the file from HEAD and re-running.
+
+Measures both sides: the cap is parsed out of `audit/reference/Bubbles.dc.html`'s
+`.bub` rule, the pane width out of `FairwayMessages.tsx`'s `max-w-[Npx]`, and the
+arithmetic that makes the override a defect is computed from the two — so the
+suite fails if either side moves. The class list is extracted from the one
+element that carries the cap rather than searched for across the file, so a
+`sm:max-w-` reintroduced anywhere on that column fails even if some other
+element legitimately has one.
+
+`bubbleWidth.test.ts`'s last assertion is re-anchored: it asserted the override
+was present, which encoded G-50b's decision rather than its derivation. It now
+asserts the absence and cites G-49 in the test body.

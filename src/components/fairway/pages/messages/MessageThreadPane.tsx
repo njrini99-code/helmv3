@@ -1195,12 +1195,21 @@ export function MessageThreadPane({
                       an outgoing row's. One rule, one derivation, zero magic
                       numbers — 268 is written nowhere.
 
-                      The `sm:` cap stays a percentage on purpose. Every artboard
-                      is a 390px phone scene, so 288px is what the design
-                      actually specifies; the pane is `max-w-[720px]` on desktop,
-                      where a flat 288px would be a 216px narrowing the artboards
-                      never asked for. The rule is applied where it was stated. */}
-                  <div className={cn('group relative flex min-w-0 max-w-[288px] flex-col gap-1 sm:max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                      G-49 — and the cap binds at EVERY width. G-50b left the
+                      `sm:max-w-[70%]` override in place, saying in this comment
+                      that the artboards are 390px phone scenes and supply no
+                      desktop authority. G-49/F13 is that authority: "on the
+                      desktop 720px-capped panel a bubble can reach ~475px — well
+                      past the readable measure §8.3 is protecting." The `sm:`
+                      breakpoint is 640px, so on the 720px pane the percentage
+                      won and 288px never applied at all: 70% of 720 is 504px.
+                      `audit/M03B-thread.md:94` quotes the plan — "D08 annotates
+                      a 288px maximum text measure... constrained by available
+                      row width" — and a maximum narrowed by row width is a
+                      ceiling, not a phone-scene number. There is nothing to
+                      invent here: deleting the override is what makes the
+                      stated rule apply. */}
+                  <div className={cn('group relative flex min-w-0 max-w-[288px] flex-col gap-1', isOwn ? 'items-end' : 'items-start')}>
                     {/* Sender name — GROUPS ONLY, once per group.
                         Redundant in a 1:1 (the header already names them) and
                         it was `text-eyebrow` in tertiary ink, which is the

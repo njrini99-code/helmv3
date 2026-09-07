@@ -127,6 +127,8 @@ it is the owner's, through `db-apply`.
   - [x] **day separators** — closed by G-50a. M03B's F8 IS that finding; nothing further is owed here
   - [ ] **pagination past the newest-200 fetch** — OUT OF LEASE for this file. The `.limit(200)` with no cursor lives in `use-golf-messages.ts`; M03B:56 says so explicitly and it agrees with G-17. Deferred to **G-17**, not dropped
 - [ ] **G-49** absolute measure cap and the depth system
+  - [x] **G-49a** the 288px cap binds at every width — `sm:max-w-[70%]` removed. F13 supplied the desktop authority G-50b's own comment said was missing: the plan annotates 288px as a **maximum text measure** "constrained by available row width" (`audit/M03B-thread.md:94`), and `sm:` is 640px, so on the `max-w-[720px]` pane the percentage (504px) was the only rule in effect. The G-50b suite's assertion that the override was present is re-anchored, not deleted — it now asserts its absence and cites why. 6 tests, 2 failing pre-fix
+  - [ ] **G-49b** the depth system — bubbles and canvas draw flat where the artboard gives every surface a shadow
 
 ## W5 — Composer (only after W3)
 - [ ] **G-20** two of six composer states do not exist

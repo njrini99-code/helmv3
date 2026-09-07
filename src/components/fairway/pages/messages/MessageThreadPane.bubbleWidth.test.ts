@@ -97,9 +97,15 @@ describe('G-50b — group-incoming is derived, not numbered', () => {
     expect(between).not.toContain('max-w-');
   });
 
-  it('leaves the desktop cap a percentage — the artboards are phone scenes', () => {
-    // Every artboard is 390px wide; the pane is max-w-[720px] on desktop, where
-    // a flat 288px would narrow bubbles by 216px on no authority at all.
-    expect(code).toContain('sm:max-w-[70%]');
+  it('SUPERSEDED by G-49 — the cap now binds at every width', () => {
+    // This suite originally asserted `sm:max-w-[70%]` was present: G-50b read
+    // the artboards as 390px phone scenes carrying no desktop authority. G-49's
+    // F13 supplied it — 288px is a "maximum text measure... constrained by
+    // available row width" (audit/M03B-thread.md:94), a ceiling rather than a
+    // phone-only number, and `sm:` (640px) meant the percentage was the ONLY
+    // rule in effect on the 720px pane. The override is gone; the derivation
+    // this suite exists to protect is unchanged, and the cap's own assertions
+    // above still hold. MeasureCap.test.ts owns the width question now.
+    expect(code).not.toContain('sm:max-w-[70%]');
   });
 });
