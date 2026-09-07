@@ -36,9 +36,12 @@ Nothing anywhere in the repo records that the deliberate application ever happen
 exactly the "Applied ≠ recorded" trap `.claude/rules/database.md` documents — and that rule
 notes `schema_migrations` has already been wrong in this project.
 
-**The repo cannot answer this question.** Resolving it needs one read against production
-`pg_policies`. I did not run it: the Supabase MCP requires an OAuth flow that only the owner
-can complete, and starting one unasked is not mine to do. Say the word and I will walk it.
+**Status: `UNVERIFIABLE-LOCALLY` by owner decision (2026-09-07).** The credential needed to
+answer this is deliberately not available in a developer checkout. Full reasoning, the
+re-labelling of all four affected findings, and one UNCONFIRMED caveat that could turn this
+from "deferred" into "never checked anywhere": see `audit/00-EVIDENCE-POLICY.md`.
+
+This is no longer an open ask. Do not request the credential again.
 
 Until then treat the guard as **status unknown**, not as present. M01 additionally found
 three tables shipped 2026-09-04 (`golf_message_reactions`, `golf_message_mentions`,
@@ -308,9 +311,9 @@ If those are the live policies, a coach opening the roster gets `null` for every
 indicator that silently never fires — the same "looks like data, isn't" class this audit
 keeps finding, but in a feature nobody was auditing.
 
-**Status is `inferred`, not observed**, and it is blocked by the same thing as G-38: no
-production read. The `pg_policies` query already drafted for G-38 answers this too — add
-`tablename='users'` and it is one query for both.
+**Status is `inferred`, not observed**, and `UNVERIFIABLE-LOCALLY` for the same reason as
+G-38 (see `audit/00-EVIDENCE-POLICY.md`). The query drafted there answers this too: add
+`tablename='users'`, one query for both.
 
 **This is outside the messaging scope and should not be absorbed into it.** Referring it to
 the owner as its own item; the messaging write phase must not quietly adopt a roster fix.
@@ -633,6 +636,10 @@ M03A F07, minus the mute half corrected in G-02.
   grouping. Needs a date-boundary fixture to confirm.
 
 ---
+
+## Evidence availability
+See `audit/00-EVIDENCE-POLICY.md` — which findings are `UNVERIFIABLE-LOCALLY` and why, the
+settled credential decision, and where lane reports must be written.
 
 ## Standing constraint for the write phase (owner, 2026-09-07)
 
