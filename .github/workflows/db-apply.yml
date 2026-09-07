@@ -1,0 +1,174 @@
+# db-apply — the one-click production apply for a single migration file.
+#
+# Runs scripts/db/apply.mjs (the sanctioned apply path, see
+# docs/operations/APPLY_PATH.md) inside GitHub Actions under the repo's
+# SUPABASE_ACCESS_TOKEN, so the owner never types the command by hand and
+# no agent session holds production credentials. Manual trigger only; it
+# never runs on push or merge — merging a migration does not apply it.
+#
+# Gates, in order, every one printed PASS/FAIL:
+#   1. checkout is `main` (the workflow refuses any other ref)
+#   2. the named file exists and is reachable from origin/main
+#   3. the file is not HOLD in supabase/migrations/HELD.md (or an override
+#      anchor + reason was given deliberately)
+#   4. the production ledger does not already carry the version
+#   5. SWEEP GUARD: `supabase db push` applies EVERY pending migration, not
+#      just the named one. The pending set is listed; if it contains anything
+#      but the named file the run stops unless `allow_sweep` is ticked.
+#   6. dry-run plan printed; with mode=apply the push runs, the ledger is
+#      re-read, and the file's `-- VERIFY:` queries must each return a row.
+name: db-apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration:
+        description: 'Migration filename under supabase/migrations/ (e.g. 20260906140000_helm_jobs_pgmq_queues.sql)'
+        required: true
+        type: string
+      mode:
+        description: 'dry-run prints the plan and stops; apply pushes to production'
+        required: true
+        type: choice
+        default: dry-run
+        options: [dry-run, apply]
+      allow_sweep:
+        description: 'Allow the push to include OTHER pending migrations besides the named one (read the pending list first)'
+        required: false
+        type: boolean
+        default: false
+      held_override:
+        description: 'HELD.md row anchor, only to apply a file still marked HOLD (leave blank normally)'
+        required: false
+        type: string
+        default: ''
+      reason:
+        description: 'Required with held_override: why the hold is being overridden'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# Never two applies at once; never cancel one in flight.
+concurrency:
+  group: db-apply-production
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: ${{ inputs.mode }} ${{ inputs.migration }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MIGRATION: ${{ inputs.migration }}
+      MODE: ${{ inputs.mode }}
+      ALLOW_SWEEP: ${{ inputs.allow_sweep }}
+      HELD_OVERRIDE: ${{ inputs.held_override }}
+      HELD_REASON: ${{ inputs.reason }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Refuse any ref but main
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::db-apply only runs from main (got ${GITHUB_REF}). Merge first."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Required secrets present
+        run: |
+          set -euo pipefail
+          missing=0
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_ID SUPABASE_DB_PASSWORD; do
+            if [ -z "${!v:-}" ]; then echo "::error::repo secret $v is not set"; missing=1; fi
+          done
+          [ "$missing" = 0 ]
+          echo "PASS secrets present (values never printed)"
+
+      - name: Validate the filename
+        run: |
+          set -euo pipefail
+          case "$MIGRATION" in
+            */*|*..*) echo "::error::pass a bare filename, not a path"; exit 1 ;;
+          esac
+          if ! [[ "$MIGRATION" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]]; then
+            echo "::error::'$MIGRATION' is not a <14-digit version>_<name>.sql migration filename"; exit 1
+          fi
+          test -f "supabase/migrations/$MIGRATION" || { echo "::error::supabase/migrations/$MIGRATION does not exist on main"; exit 1; }
+          echo "PASS supabase/migrations/$MIGRATION exists on main"
+
+      - name: Link the production project
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD" > link.log 2>&1 \
+            || { sed -E 's/(password|token)[^ ]*/\1 [redacted]/Ig' link.log; exit 1; }
+          echo "PASS linked to project (ref redacted)"
+
+      - name: Sweep guard — list every migration production is missing
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/supabase migration list --linked --password "$SUPABASE_DB_PASSWORD" > migration-list.txt 2>&1
+          # Rows look like: "   <local> | <remote> | <time>"; a pending row has an empty Remote column.
+          pending="$(awk -F'|' '/^[[:space:]]*[0-9]{14}[[:space:]]*\|/ { l=$1; r=$2; gsub(/[[:space:]]/,"",l); gsub(/[[:space:]]/,"",r); if (r=="") print l }' migration-list.txt || true)"
+          want="${MIGRATION%%_*}"
+          echo "Pending on production (db push applies ALL of these, in order):"
+          if [ -z "$pending" ]; then echo "  (none)"; else echo "$pending" | awk '{ print "  " $0 }'; fi
+          {
+            echo "### Pending migrations on production"
+            if [ -z "$pending" ]; then echo "_none_"; else echo '```'; echo "$pending"; echo '```'; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if ! echo "$pending" | grep -qx "$want"; then
+            echo "::error::version $want is not pending — already applied, or not a migration the ledger knows. Stopping."
+            exit 1
+          fi
+          others="$(echo "$pending" | grep -vx "$want" || true)"
+          if [ -n "$others" ] && [ "$ALLOW_SWEEP" != "true" ]; then
+            echo "::error::the push would ALSO apply: ${others//$'\n'/ }. Re-run with allow_sweep ticked only if every one of those is intended."
+            exit 1
+          fi
+          echo "PASS sweep guard"
+
+      - name: apply.mjs — pre-checks, ledger, PITR marker, dry-run plan
+        run: |
+          set -euo pipefail
+          args=("supabase/migrations/$MIGRATION")
+          if [ -n "$HELD_OVERRIDE" ]; then
+            [ -n "$HELD_REASON" ] || { echo "::error::held_override needs a reason"; exit 1; }
+            args+=(--held-override "$HELD_OVERRIDE" --reason "$HELD_REASON")
+          fi
+          node scripts/db/apply.mjs "${args[@]}" | tee dry-run.txt
+          { echo "### Dry run"; echo '```'; cat dry-run.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: apply.mjs --apply (push, re-read ledger, run VERIFY queries)
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          args=("supabase/migrations/$MIGRATION" --apply)
+          if [ -n "$HELD_OVERRIDE" ]; then
+            args+=(--held-override "$HELD_OVERRIDE" --reason "$HELD_REASON")
+          fi
+          node scripts/db/apply.mjs "${args[@]}" | tee apply.txt
+          { echo "### Apply"; echo '```'; cat apply.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Reminder
+        if: ${{ inputs.mode == 'apply' && success() }}
+        run: |
+          echo "Applied. Next: mark the HELD.md row APPLIED and run 'npm run db:types' in a PR so src/lib/types/database.ts matches production."
