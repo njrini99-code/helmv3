@@ -1,5 +1,41 @@
 # Test ledger — team_communications
 
+## 2026-09-07 — G-55 separator and action order
+
+- SHA: 70844b57b.
+- Added `src/components/fairway/pages/messages/MessageThreadPane.actionOrder.test.ts`
+  (12 tests). Verified to fail (4 of 12) against the pre-fix component.
+- The 8 that pass pre-fix are not filler: they assert the SOURCES, and they
+  are what makes the correction to the finding auditable. Three parse both
+  artboards' action lists and prove there are two orders rather than three —
+  same set, same tail, one leading swap. Three compare the separator colour
+  out of `Actions.dc.html` against `--fw-color-border-subtle` out of
+  `design-tokens.css`, assert `Reactions.dc.html` differs (so the tie is
+  visible), and check the Tailwind bridge maps `border-subtle` to that same
+  token. One pins that an incoming message still draws no action row at all.
+- The 4 that fail pre-fix are the fix: the separator's position on the mobile
+  row, its position on the desktop hover row, its 6px inline margin derived
+  from the artboard's own `margin: 6px 12px`, and that both rules are painted
+  with the token class rather than an arbitrary value.
+- ORDER IS ASSERTED BEHAVIOURALLY — rendered DOM, real children, real order —
+  not by regex over a 1500-line component. Order is one of the few things
+  jsdom models faithfully, so a source-reading test would have been the
+  weaker choice here.
+- ANCHORED AWAY FROM WHAT IT DOES NOT OWN: the mobile-row assertion filters
+  `Close` out of the row description instead of pinning its index. Pinning it
+  would mean a correct G-56 fix arrives as a failure in a suite that has no
+  opinion about where Close belongs — and someone edits an assertion to let a
+  fix through. Same re-anchoring the `keyboard-inset` suite needed under
+  G-47.
+- Found by the first run, not assumed: own-ness is
+  `sender_id === userId || sender_id === currentUserId`
+  (`MessageThreadPane.tsx:1007`), so BOTH identities must move for a message
+  to be incoming. Changing only `currentUserId` left the row rendering.
+- Not covered: the rule's rendered contrast against the row's background
+  (jsdom computes no colour), and the `h-4`/`h-5` rule heights, which are
+  matched to the two icon sizes rather than derived from a source. Both
+  belong to the W8 rendered-fidelity pass.
+
 ## 2026-09-07 — G-08 partial-failure guarantees
 
 - SHA: fabfae3e5.

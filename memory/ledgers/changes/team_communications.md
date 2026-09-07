@@ -1,5 +1,50 @@
 # Change ledger — team_communications
 
+## 2026-09-07 — the message actions get the separator that gives Delete distance (G-55)
+
+- SHA: 70844b57b.
+- Change: both action rows in `MessageThreadPane.tsx` gained a 1px rule
+  between the reversible actions and Delete — the mobile long-press row
+  (Copy, Edit, — Delete, Close) and the desktop hover row (Edit, — Delete).
+  `bg-border-subtle`, `w-px`, `mx-1.5`, `aria-hidden`.
+- Correction to the finding: `M00-MANIFEST.md` calls G-55 "three sources,
+  three orders". There are two. `Reactions.dc.html` and §12.4's prose agree
+  exactly — Reply, Copy, Edit, — separator — Delete — and `Actions.dc.html`
+  differs from them by ONE swap, leading with Copy. Same set, same tail.
+  `audit/DECISIONS.md:31` already records this. The consequence is that the
+  decided RELATIVE order of Copy/Edit/Delete was what the code already
+  shipped, so the implementable delta was never the order: it was the
+  separator, which is the part that carries the meaning, and which neither
+  row had.
+- Why the token, not a literal: `Actions.dc.html:52` paints the rule
+  `oklch(0.862 0.013 82 / 0.95)`, byte-identical to
+  `--fw-color-border-subtle` (`design-tokens.css:147`). Fourth free token
+  application this audit has found, after G-32 (rail), G-49b (bubbles) and
+  G-47 (dock). The two artboards DISAGREE on this colour —
+  `Reactions.dc.html:88` uses the glass bottom edge,
+  `oklch(0.32 0.045 68 / 0.12)` — and AGENTS.md's authority order settles it
+  without a preference having to be invented: the one that matches a token
+  wins. The suite asserts the disagreement rather than hiding it, so the tie
+  is re-examined if either artboard moves.
+- Geometry: the artboards' `margin: 6px 12px` is 6px ACROSS the gap the rule
+  opens and 12px along its length. These rows run the other way, so the 6px
+  becomes the inline margin — `mx-1.5`. A vertical rule rather than a
+  horizontal one for the same reason; turning the row into the artboards'
+  labelled vertical list is G-56's job, not this finding's.
+- Reply is absent by DEFERRAL, not disagreement. The affordance is G-20c and
+  is not built; `golf_messages.reply_to_id` and its FK already exist. A test
+  demanding the slot would be asserting a plan.
+- Known limit, recorded rather than hidden: `Close` still trails Delete, so
+  it inherits the past-the-separator position without being destructive. It
+  is a sheet dismissal with no slot in either artboard's list, and G-56
+  replaces this row with a real labelled sheet and a scrim — which is where
+  the dismissal stops needing a slot at all. A second separator to fence it
+  off would be geometry no source asks for.
+- Not changed: Delete's `variant="danger"` (both artboards colour it
+  `oklch(0.505 0.19 27)`; the separator is additional distance, not a
+  substitute), and the rule that incoming messages get no Edit/Delete —
+  G-42 is the finding that gives them an action surface of their own.
+
 ## 2026-09-07 — a failed attachment insert stops reporting success (G-08)
 
 - SHA: fabfae3e5.
