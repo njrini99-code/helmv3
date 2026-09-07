@@ -230,6 +230,7 @@ android/keystore.properties
 # scattered across the top level.
 .dev-screenshots/
 .dev-assets/
+frames/
 
 # session/tool artifacts (added 2026-08-15)
 .ultracode/

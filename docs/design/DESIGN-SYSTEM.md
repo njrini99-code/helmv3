@@ -20,6 +20,7 @@
 ## Color Palette
 
 ### Primary Brand — Helm Green (`primary-*` in Tailwind)
+
 | Token | Hex | Usage |
 |-------|-----|-------|
 | primary-50 | #f0fdf4 | Lightest tint, subtle backgrounds |
@@ -38,6 +39,7 @@ W0 token unification — `primary-*` is now the single canonical brand
 green. Don't reintroduce an OKLCH brand scale.
 
 ### Warm Neutrals (NOT cool grays) — `warm-*`
+
 | Token | Hex | Usage |
 |-------|-----|-------|
 | warm-50 | #fafaf9 | Lightest neutral |
@@ -64,6 +66,7 @@ Shifted (Apr 2026 California-modern brief) from pure off-white
 | cream-400 | #CFC8B8 | Sand inset, subtle borders (glass borders derive from this) |
 
 ### Semantic Colors
+
 | Token | Hex | Usage |
 |-------|-----|-------|
 | success | #16A34A | Positive states (same value as primary-600) |
@@ -88,6 +91,7 @@ derived tints. Use the `.glass-subtle` / `.glass-standard` /
 from `src/styles/tokens.css`) rather than assembling glass by hand.
 
 ### Glass Backgrounds
+
 | Level | Value | Usage |
 |-------|-------|-------|
 | Subtle (`.glass-subtle`) | rgba(247, 245, 242, 0.62) | Large surfaces, filter panels |
@@ -95,6 +99,7 @@ from `src/styles/tokens.css`) rather than assembling glass by hand.
 | Prominent (`.glass-prominent`) | rgba(251, 250, 247, 0.92) | Nav, modals, overlays |
 
 ### Glass Borders (cream-400 derived — sand inset, not a white hairline)
+
 | Level | Value |
 |-------|-------|
 | Subtle | rgba(207, 200, 184, 0.40) |
@@ -102,6 +107,7 @@ from `src/styles/tokens.css`) rather than assembling glass by hand.
 | Prominent | rgba(207, 200, 184, 0.55) |
 
 ### Glass Blur Values
+
 | Level | `.glass-*` CSS class (tokens.css) | `backdrop-blur-glass-*` Tailwind utility |
 |-------|-----------------------------------|-------------------------------------------|
 | Subtle | 12px | 12px |
@@ -142,6 +148,7 @@ this doc's older versions to the cream values above.
   to `var(--font-serif)` (Playfair Display) → Georgia → serif.
 
 ### Canonical 9-Step Type Scale (current — use these, not the legacy list below)
+
 | Token | Size / line-height | Usage |
 |-------|---------------------|-------|
 | text-display | 40px / 48px | Hero text |
@@ -168,6 +175,7 @@ but are **not** the canonical scale for new work: `micro` (10px),
 (`large-title`…`caption-2`) for native-feeling mobile surfaces.
 
 ### Weights
+
 | Token | Value |
 |-------|-------|
 | normal | 400 |
@@ -176,6 +184,7 @@ but are **not** the canonical scale for new work: `micro` (10px),
 | bold | 700 |
 
 ### Letter Spacing
+
 | Token | Value | Usage |
 |-------|-------|-------|
 | tightest | -0.03em | Display text |
@@ -221,6 +230,7 @@ Canonical scale (W0) — reconciled the prior conflict between
 ## Shadow / Elevation System
 
 ### Core Elevation
+
 | Token | Value | Usage |
 |-------|-------|-------|
 | sm | 0 1px 2px rgba(0,0,0,0.04) | Subtle |
@@ -230,6 +240,7 @@ Canonical scale (W0) — reconciled the prior conflict between
 | xl | 0 20px 40px rgba(0,0,0,0.1) | Extra large |
 
 ### Glass Shadows
+
 | Token | Value |
 |-------|-------|
 | glass | 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6) |
@@ -240,6 +251,7 @@ value itself — not a background fill — so it's not a `bg-white`
 violation.)
 
 ### Interactive
+
 | Token | Value |
 |-------|-------|
 | card | 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) |
@@ -247,6 +259,7 @@ violation.)
 | focus | 0 0 0 3px rgba(22,163,74,0.1) |
 
 ### Glow
+
 | Token | Value |
 |-------|-------|
 | glow-green | 0 0 20px rgba(22,163,74,0.3) |
@@ -257,6 +270,7 @@ violation.)
 ## Animation / Motion
 
 ### Timing
+
 | Token | Value |
 |-------|-------|
 | fast | 150ms |
@@ -264,6 +278,7 @@ violation.)
 | slow | 300ms |
 
 ### Easing
+
 | Token | Value |
 |-------|-------|
 | default | cubic-bezier(0.4, 0, 0.2, 1) |

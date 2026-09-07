@@ -28,7 +28,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 9 | 9 |
-| `AGENT_SKILL` | 86 | 0 | 4 | 2 |
+| `AGENT_SKILL` | 86 | 0 | 4 | 3 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 31 |
 | `REFERENCE` | 52 | 15 | 19 | 75 |
 | `GENERATED_TRUTH` | 22 | 3 | 7 | 38 |
@@ -40,9 +40,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 8 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 85 |
 | `INCIDENT` | 28 | 15 | 2 | 3 |
-| `ADR` | 5 | 0 | 3 | 3 |
-| `INDEX` | 19 | 1 | 7 | 27 |
-| `UNKNOWN` | 87 | 12 | 39 | 143 |
+| `ADR` | 5 | 0 | 3 | 1 |
+| `INDEX` | 18 | 1 | 7 | 27 |
+| `UNKNOWN` | 88 | 12 | 39 | 143 |
 
 ## Files
 
@@ -107,7 +107,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/modern-saas-ui/references/landing-pages.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/modern-saas-ui/references/trends-and-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/modern-saas-ui/references/ui-kits.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/skills/pencil-golfhelm/SKILL.md` | current | - | - | - | 0 | 0 | - |
+| `.claude/skills/pencil-golfhelm/SKILL.md` | current | - | - | - | 0 | 2 | 1 |
 | `.claude/skills/pencil-golfhelm/references/ad-vibe-guide.md` | current | - | - | - | 1 | 0 | - |
 | `.claude/skills/pencil-golfhelm/references/component-map.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/pencil-golfhelm/references/creative-specs.md` | current | - | - | - | 0 | 0 | - |
@@ -486,15 +486,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/decisions/ADR-2026-08-30-sandbox-filesystem-allowwrite.md` | current | - | - | yes | 0 | 3 | - |
 | `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` | current | - | - | - | 5 | 3 | - |
 | `memory/decisions/ADR-2026-09-05-control-plane-reset.md` | current | - | - | yes | 3 | 9 | 1 |
-| `memory/decisions/ADR-2026-09-06-demo-seed-scope.md` | current | - | - | - | 0 | 5 | 2 |
+| `memory/decisions/ADR-2026-09-06-demo-seed-scope.md` | current | - | - | - | 0 | 3 | - |
 
 ### `INDEX`
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.circleci/README.md` | current | - | - | - | 0 | 0 | - |
-| `datadog/README.md` | current | - | - | - | 0 | 3 | - |
-| `docs/README.md` | current | - | - | yes | 3 | 32 | 15 |
+| `docs/README.md` | current | - | - | yes | 4 | 32 | 15 |
 | `docs/db/drafts/README.md` | current | - | - | - | 0 | 1 | 1 |
 | `e2e/README.md` | current | - | - | yes | 0 | 10 | 4 |
 | `ios/App/CapApp-SPM/README.md` | current | - | - | - | 0 | 0 | - |
@@ -520,7 +519,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | 0 | 1 | 1 |
 | `.github/branch-protection.md` | current | - | - | - | 5 | 5 | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
-| `design/DESIGN-SYSTEM.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 27 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
 | `docs/CI_RUNBOOK.md` | current | - | - | yes | 7 | 12 | 1 |
@@ -540,9 +538,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/legacy-backfill-runbook.md` | current | - | - | yes | 0 | 10 | - |
 | `docs/baseball/stats-architecture.md` | current | - | - | yes | 1 | 16 | 3 |
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 3 | 9 | 3 |
+| `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | 1 | 3 | 1 |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | 0 | 0 | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
+| `docs/observability/DATADOG.md` | current | - | - | - | 0 | 3 | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 29 | 8 |
 | `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 13 | 3 |

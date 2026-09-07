@@ -1995,7 +1995,7 @@ integrations:
   datadog:
     docs: docs/OBSERVABILITY.md
     code:
-      - datadog/**
+      - docs/observability/DATADOG.md
       - src/instrumentation*.ts
     criticality: medium
 
