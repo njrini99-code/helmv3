@@ -227,3 +227,41 @@
   direction — `ci.yml`'s declarative-schema step checks migrations→schemas, and
   the drift check's golf invariant did not name these two, so neither would
   have caught it. Deleting or breaking the migration now fails CI.
+
+## 2026-09-07 — the composer's last legacy-palette child (G-46)
+
+- `src/components/golf/messages/AttachmentPreview.tsx` renders inside every
+  composer attachment state and was still painting from `warm-*`, `cream-*`,
+  `red-*`, `primary-*` and `purple-*` — every one banned by
+  `.claude/rules/design-system.md`. It is now on Fairway tokens, and off the
+  raw-Tailwind radii the Fairway path forbids (`rounded-lg` → `rounded-fw-md`).
+- This is a prerequisite, not a tidy-up: composer fidelity cannot be reached
+  while one of the composer's children paints from a retired palette.
+- Three mappings were judgement rather than substitution, and the reasoning is
+  in the file's own docstring so the next person does not re-litigate it: the
+  purple audio tile now matches the document tile beside it (purple is in no
+  Fairway scale, and the icon already tells them apart); the red/blue/green
+  PDF-DOC-XLS labels are all `text-text-secondary` (no blue token exists,
+  `red-*` is banned outright, and the word itself is the signal); the video
+  scrim keeps `bg-black/20`, which is not in the banned set and is more honest
+  than a surface token over arbitrary user media.
+- Alpha modifiers on `fw-*` utilities compile — `tailwind.config.ts` bridges
+  them through `color-mix()` rather than channel triplets — so `bg-surface/85`
+  and `bg-fw-danger-bg/90` render. The same expressions against a raw `var()`
+  token would have emitted no rule at all, which is the 2026-07-24 audit's
+  286-site failure mode.
+- DELIBERATELY UNCHANGED: the remove control stays `IconButton` from
+  `@/components/ui/button` at `w-5 h-5`. `MessageComposer.tsx` — the Fairway
+  file that renders this one — imports its own `Button` from that same legacy
+  module, so it is the local idiom, not drift.
+- New finding **G-60** [med]: that control is a 20px target and WCAG 2.2
+  SC 2.5.8 wants 24px. Recorded against W5/G-47, which owns composer geometry.
+  Fairway's `IconButton` is not the fix — its smallest size is 36px, 44px on a
+  coarse pointer, which at `-top-1 -right-1` on an 80px tile overhangs into the
+  neighbouring tile's `gap-2`. The fix is a hit-area expansion, not a bigger
+  badge.
+- §19.3 lease: G-46's own text notes this file sits under no lease row and asks
+  for one before the write phase. Single-agent execution collapses that — there
+  is no concurrent worker to conflict with — so the row was not added rather
+  than inventing lease bookkeeping for a lane of one. Stated here because the
+  finding asked, and silence would have looked like an oversight.

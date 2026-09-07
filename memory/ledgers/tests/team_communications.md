@@ -101,3 +101,19 @@
   twice. Verified: those 4 fail when the wiring is removed.
 - The "keeps the previous number" case is the one that matters most — a failed
   recompute degrading to 0 would render as "you are caught up".
+
+## 2026-09-07 — AttachmentPreview token migration (G-46)
+
+`src/components/golf/messages/AttachmentPreview.tokens.test.ts` — 10 tests,
+8 failing against the pre-fix file.
+
+Asserted on the source. The classes are strings in JSX with no runtime
+behaviour to observe: rendering and reading `className` would assert the same
+strings through three more layers, and would not reach the error, uploading,
+audio and document branches without four fixtures built to prove a lint fact.
+
+It exists because no gate could see this. ESLint does not catch a banned
+palette name, and the Review Gate's blocking rules are about RLS, auth and
+table names — which is why the finding stayed open as long as it did. The
+suite also pins the two deliberate non-changes (the `bg-black/20` scrim and
+the legacy `IconButton` import), so a future reader does not "fix" them.

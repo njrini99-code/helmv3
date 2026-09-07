@@ -76,7 +76,19 @@ it is the owner's, through `db-apply`.
       rebuild — the schemas→migrations direction nothing was checking.
 
 ## W3 — Design-system prerequisites (blocks W5)
-- [ ] **G-46** migrate `AttachmentPreview.tsx` off legacy classes onto Fairway
+- [x] **G-46** migrate `AttachmentPreview.tsx` off legacy classes onto Fairway.
+      `warm-*`, `cream-*`, `red-*`, `primary-*` and `purple-*` all gone, plus the raw-Tailwind
+      radii the Fairway path forbids. Three mappings were judgement, not substitution: the
+      purple audio tile now matches the document tile beside it (no purple exists in the
+      scale, and the icon already differentiates); the red/blue/green PDF-DOC-XLS labels are
+      all `text-text-secondary` (no blue token, `red-*` banned, and the word is the signal);
+      the video scrim keeps `bg-black/20` deliberately. The remove control stays on
+      `@/components/ui/button` — `MessageComposer.tsx`, the Fairway file that renders this
+      one, imports its `Button` from the same module, so that IS the local idiom.
+      §19.3 lease: this file was under no lease row. Single-agent execution collapses the
+      question — no concurrent worker to conflict with — so the row was not added rather than
+      inventing lease bookkeeping for a lane of one. 10 tests, 8 failing pre-fix.
+      New finding **G-60** [med] below.
 - [ ] **G-48** bubble radii use `fw-lg` (28px); the artboard's dominant 20px is byte-identical
       to `--fw-radius-card`. Only 6px and 12px genuinely lack tokens
 - [ ] **G-32** bind artboard values to the existing unused tokens; six unmapped values go to
@@ -135,3 +147,11 @@ None is blocked by anything above; each is its own piece of work.
 | **G-41** DM creation race | Needs a unique constraint ⇒ migration ⇒ owner |
 | **G-03..G-07** inbox states (elevation, filter row, offline, drafts, stale cue) | Depend on G-04's finding that the visible "Team" control is a different feature; sequenced after the thread work |
 | **G-10 / G-11 / G-12 / G-17 / G-25 / G-28 / G-34..G-37 / G-43** | Lower severity or dependent on a deferred item above |
+
+## NEW findings from the write phase
+Found while doing something else, recorded rather than silently absorbed.
+
+| Finding | What |
+|---|---|
+| **G-59** [low] | `src/lib/admin/data/activity.ts:395,423` reads `is_team_channel` for golf where 403/437 read `is_team_chat` for baseball. Latent today only because `title` is coalesced first (`audit/M01-TEAM-FLAGS.md`) |
+| **G-60** [med] | `AttachmentPreview.tsx`'s remove button is a 20px target — WCAG 2.2 SC 2.5.8 requires 24px. Belongs to W5/G-47, which owns composer geometry; G-46 was a palette migration and changing a control size under it would be a different change wearing G-46's name. Note that Fairway's own `IconButton` does not fix it either: its smallest size is 36px (44px on a coarse pointer), which at `-top-1 -right-1` on an 80px tile overhangs into the next tile's `gap-2`. The fix is a hit-area expansion, not a bigger badge |
