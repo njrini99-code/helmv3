@@ -74,7 +74,57 @@ const GROUP_WINDOW_MINUTES = 5;
  * starting on a bubble never fires it, short enough that it does not feel like
  * the app is ignoring you.
  */
-const LONG_PRESS_MS = 450;
+/**
+ * How long the hold must last before the actions open.
+ *
+ * 500ms because this is an Apple app first: it ships as a Capacitor WKWebView
+ * (`capacitor.config.ts`, `@capacitor/ios`), so it sits on a phone where every
+ * other long press — Messages, Mail, Safari — is a
+ * `UILongPressGestureRecognizer` at its default `minimumPressDuration`. A hold
+ * that fires early is not a nicety: it means a menu appearing under a thumb
+ * that had not finished asking for one, on the surface where the user's timing
+ * is most trained.
+ *
+ * G-42 changed this from 450, which predated the audit and was 50ms eager of
+ * the platform. Owner's call, made explicitly for the App Store submission —
+ * the finding recorded the delta rather than retuning it, which is the right
+ * default for a design value, and the owner overrode that default.
+ */
+const LONG_PRESS_MS = 500;
+/**
+ * Touch slop — how far a finger may wander during a hold before the gesture
+ * stops being a hold.
+ *
+ * G-42. The handler used to cancel on ANY `pointermove`, and a finger resting
+ * on glass never produces zero of them: a real 450ms hold emits a stream of
+ * sub-pixel jitter events, every one of which killed the timer.
+ *
+ * THE AUTHORITY HERE IS UIKIT, not the web. This ships as a Capacitor app
+ * (`capacitor.config.ts`, `@capacitor/ios`), so the surface is a WKWebView on a
+ * phone whose every other long press — Messages, Mail, Safari itself — is a
+ * `UILongPressGestureRecognizer`. Matching what the hand is already calibrated
+ * to is the point; a bespoke number would feel wrong without being nameable.
+ * `allowableMovement` is the property this mirrors, and 10 is the figure the
+ * platform is documented at. NOT VERIFIED against a primary source in this
+ * session — developer.apple.com renders its docs client-side and returned an
+ * empty page — so it is written here as the convention it is, not as a quoted
+ * constant. Corroborated from the other side: Android's
+ * `ViewConfiguration.getScaledTouchSlop()` is ~8dp and the general web band is
+ * 6–10px, and this ships to `@capacitor/android` too.
+ *
+ * 10 is also the forgiving end of that band, which is the right end here: the
+ * gesture this must lose to is a SCROLL, and a scroll clears 10px immediately.
+ *
+ * This was pre-existing, but G-42 is what makes it matter: the gesture is now
+ * on every message, and on an incoming message it is the ONLY action surface a
+ * touch device has. A menu that opens only when you hold perfectly still is not
+ * an action surface.
+ *
+ * `LONG_PRESS_MS` moved to the platform's 500ms alongside this — see its own
+ * comment. Duration and slop are the two halves of the same recognizer, and
+ * they now both name UIKit's.
+ */
+const LONG_PRESS_SLOP_PX = 10;
 
 /**
  * Minutes between two ISO timestamps. `created_at` is nullable on the row type,
@@ -448,18 +498,45 @@ export function MessageThreadPane({
    * happens to start on a bubble never opens the menu.
    */
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressOriginRef = React.useRef<{ x: number; y: number } | null>(null);
   const cancelLongPress = React.useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
+    longPressOriginRef.current = null;
   }, []);
   React.useEffect(() => cancelLongPress, [cancelLongPress]);
 
+  /**
+   * G-42 — Escape closes the action row.
+   *
+   * Not scope creep: F8 is "desktop has no non-touch path to message actions",
+   * and a menu a keyboard cannot leave is not a path. Right-click now opens
+   * this row on a viewport where the only visible way out is a Close button
+   * the pointer has to travel to, and Escape-to-dismiss is the convention this
+   * design system already states (`.claude/rules/design-system.md` — Escape
+   * closes popup-then-dialog, one level per keypress).
+   *
+   * The SCRIM and outside-click dismissal are deliberately not here: G-56 is
+   * the finding that the row has no scrim and dismisses only by grip-drag, and
+   * it owns the surface's whole dismissal model. This closes the keyboard hole
+   * G-42 itself opened, and nothing more.
+   */
+  React.useEffect(() => {
+    if (!mobileActionsId) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onSetMobileActions(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileActionsId, onSetMobileActions]);
+
   const longPressHandlers = React.useCallback(
     (messageId: string) => ({
-      onPointerDown: () => {
+      onPointerDown: (e: React.PointerEvent) => {
         cancelLongPress();
+        longPressOriginRef.current = { x: e.clientX, y: e.clientY };
         longPressTimerRef.current = setTimeout(() => {
           // The detent tick, so the menu opening is felt as well as seen.
           fwHaptic('selection');
@@ -467,11 +544,44 @@ export function MessageThreadPane({
         }, LONG_PRESS_MS);
       },
       onPointerUp: cancelLongPress,
-      onPointerMove: cancelLongPress,
+      // Only a move PAST THE SLOP cancels — see LONG_PRESS_SLOP_PX. Compared on
+      // squared distance so the hot path does no square root.
+      onPointerMove: (e: React.PointerEvent) => {
+        const origin = longPressOriginRef.current;
+        if (!origin) return;
+        const dx = e.clientX - origin.x;
+        const dy = e.clientY - origin.y;
+        if (dx * dx + dy * dy > LONG_PRESS_SLOP_PX * LONG_PRESS_SLOP_PX) cancelLongPress();
+      },
       onPointerCancel: cancelLongPress,
       onPointerLeave: cancelLongPress,
-      // Suppress the native callout so iOS does not race our menu with its own.
-      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+      /**
+       * G-42 — SUBSTITUTE, don't just suppress.
+       *
+       * This used to be `e.preventDefault()` and nothing else, under a comment
+       * saying it kept iOS from racing our menu with its own. THAT COMMENT WAS
+       * WRONG, and the correction matters because it moves the work: iOS Safari
+       * has not fired `contextmenu` on a long press since iOS 13, so this
+       * handler never reached the callout at all. `-webkit-touch-callout: none`
+       * on the bubble is what does, and G-42 had to extend it to incoming
+       * messages for the same reason it extended the gesture.
+       *
+       * What `preventDefault` genuinely protects is ANDROID CHROME, which does
+       * fire `contextmenu` on a long press and would otherwise open its native
+       * menu over ours, and the desktop right-click. On desktop the old handler
+       * removed the one native path to message actions and put nothing in its
+       * place — `audit/M03D-overlays.md:89` records exactly that, and §12.2
+       * says not to make a long press the only path to reply or copy.
+       *
+       * Opening the same row the long-press opens is the substitution, and it
+       * is idempotent with the timer: on Android both set the same id, so the
+       * later event re-opens what is already open.
+       */
+      onContextMenu: (e: React.MouseEvent) => {
+        e.preventDefault();
+        cancelLongPress();
+        onSetMobileActions(messageId);
+      },
     }),
     [cancelLongPress, onSetMobileActions],
   );
@@ -1224,10 +1334,22 @@ export function MessageThreadPane({
                       </span>
                     )}
 
-                    {/* Own-message controls (desktop hover / mobile tap row) */}
-                    {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
+                    {/* Message controls (desktop hover / tap row).
+                        G-42 — the GATE moved. This whole block used to be
+                        `isOwn && …`; now only the hover row below is, because
+                        Edit and Delete are the own-only pair. The tap row is
+                        everyone's. */}
+                    {editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
                       <>
-                        <div className="absolute right-full top-1/2 mr-1 hidden -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 lg:flex">
+                        {isOwn && (
+                        /* G-42 — `focus-within:opacity-100` is the keyboard
+                           path. `opacity-0` leaves these buttons focusable
+                           (unlike `hidden` or `visibility`), so Tab already
+                           reached them — it just landed on something invisible,
+                           which is §15.3's definition of the problem rather
+                           than a fix for it. Now the row shows itself to
+                           whoever focused it. */
+                        <div className="absolute right-full top-1/2 mr-1 hidden -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 lg:flex">
                           <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => onStartEdit(msg.id, msg.content)}>
                             <Pencil size={14} aria-hidden="true" />
                           </IconButton>
@@ -1240,6 +1362,7 @@ export function MessageThreadPane({
                             <Trash2 size={14} aria-hidden="true" />
                           </IconButton>
                         </div>
+                        )}
                         {/* No persistent kebab. The actions appear on long-press
                             (see longPressHandlers) and otherwise cost nothing.
                             Copy is included because taking over long-press takes
@@ -1263,11 +1386,26 @@ export function MessageThreadPane({
                             changed is the separator — which is the part that
                             carries the meaning. */}
                         {mobileActionsId === msg.id && (
-                          <div className="relative mt-0.5 flex items-center lg:hidden">
+                          /* G-42 — `lg:hidden` REMOVED. It was the other half
+                             of the desktop gap: right-click suppressed the
+                             native menu, and the only thing that could have
+                             replaced it refused to render above 1024px. The
+                             hover row is not a substitute — it carries Edit and
+                             Delete only, and only on your own messages, so a
+                             desktop reader had no Copy anywhere. */
+                          <div className="relative mt-0.5 flex items-center">
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
                               <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
                                 <Copy size={18} aria-hidden="true" />
                               </IconButton>
+                              {/* G-42 — Edit and Delete are the own-only pair,
+                                  and the separator goes with them: with nothing
+                                  destructive in the row there is nothing for it
+                                  to fence off. §12.4 asks for exactly this
+                                  omission and no more, which is why Copy stays
+                                  and Close stays. */}
+                              {isOwn && (
+                              <>
                               <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
                                 <Pencil size={18} aria-hidden="true" />
                               </IconButton>
@@ -1301,6 +1439,8 @@ export function MessageThreadPane({
                               <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => { onDeleteClick(msg.id); onSetMobileActions(null); }}>
                                 <Trash2 size={18} aria-hidden="true" />
                               </IconButton>
+                              </>
+                              )}
                               <IconButton variant="ghost" size="sm" aria-label="Close" onClick={() => onSetMobileActions(null)}>
                                 <X size={16} aria-hidden="true" />
                               </IconButton>
@@ -1368,8 +1508,16 @@ export function MessageThreadPane({
                       </div>
                     ) : (
                       // Bubble — normal mode. own = accent tint, other = sunken matte.
+                      //
+                      // G-42 — the long-press spread below is UNCONDITIONAL. It
+                      // used to be `isOwn ? longPressHandlers(msg.id) : {}`,
+                      // which is a stronger omission than §12.4 asks for: the
+                      // plan says incoming messages drop EDIT AND DELETE, and
+                      // this dropped the whole menu, Copy included. An incoming
+                      // message was the one thing in the thread you could not
+                      // copy.
                       <div
-                        {...(isOwn ? longPressHandlers(msg.id) : {})}
+                        {...longPressHandlers(msg.id)}
                         className={cn(
                           // G-29b — §8.6: "the image is the message object,
                           // with a caption below; it is not an image nested
@@ -1380,11 +1528,21 @@ export function MessageThreadPane({
                           // 10px foot; 5px is not on the 4px spacing scale, and
                           // 1px on a frame is render noise, so `p-1 pb-2.5`.
                           isPhotoMessage ? 'p-1 pb-2.5' : 'px-4 py-2.5',
-                          // Own bubbles opt out of the iOS text-selection callout
-                          // because long-press is now the actions gesture; Copy
-                          // in that menu replaces what selection provided.
-                          // Incoming messages keep native selection untouched.
-                          isOwn && 'select-none [-webkit-touch-callout:none]',
+                          // Long-press is the actions gesture, so the bubble
+                          // opts out of the iOS text-selection callout; Copy in
+                          // that menu replaces what selection provided.
+                          //
+                          // G-42 — this was `isOwn && …` and had to stop being,
+                          // because the long-press spread stopped being. THIS
+                          // pair of properties is what actually suppresses the
+                          // native callout on iOS — `onContextMenu` does not,
+                          // since iOS Safari has not fired `contextmenu` on a
+                          // long press since iOS 13. Attaching the gesture to
+                          // incoming messages without extending the suppression
+                          // would have raced our menu against the native
+                          // callout on exactly the messages the finding was
+                          // about, which is worse than the gap it closed.
+                          'select-none [-webkit-touch-callout:none]',
                           isOwn
                             ? 'bg-accent-650 text-text-on-accent'
                             : 'bg-surface-sunken text-text-primary',

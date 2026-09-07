@@ -297,10 +297,12 @@ describe('G-55 — the rendered action rows', () => {
     }
   });
 
-  it('draws no action row at all on a message the user did not send', () => {
-    // Unchanged from the plan, and worth pinning while this row is being
-    // reshaped: incoming messages omit Edit/Delete. G-42 is the finding that
-    // gives them an action surface of their own.
+  it('draws no separator on an incoming message, because nothing there is destructive', () => {
+    // §12.4: incoming messages omit Edit and Delete. G-42 gave them the rest
+    // of the row — Copy and Close — so this is no longer "no row at all"; it
+    // is "no destructive half", which is what the separator exists to fence
+    // and therefore what this suite owns. The row's own contents are asserted
+    // in MessageThreadPane.incomingActions.test.ts.
     const { container } = render(
       createElement(
         MessageThreadPane,
@@ -311,6 +313,16 @@ describe('G-55 — the rendered action rows', () => {
         baseProps({ userId: 'player-2', currentUserId: 'player-2', mobileActionsId: OWN_MESSAGE_ID }),
       ),
     );
+    // PINNED BY WHAT IS THERE, not only by what is not. Asserting two nulls
+    // alone would pass for two stacked reasons — the tap row could lose its
+    // separator OR the own-only hover row (which carries one of its own) could
+    // stop rendering — and it would keep passing if a separator leaked into an
+    // incoming row while Delete happened to be absent.
+    const copy = container.querySelector('[aria-label="Copy message"]');
+    expect(copy, 'G-42 gives an incoming message Copy and Close').not.toBeNull();
+    const row = copy!.parentElement!;
+    expect(describeRow(row)).toEqual(['Copy message', 'Close']);
+
     expect(container.querySelector('[aria-label="Delete message"]')).toBeNull();
     expect(container.querySelector('[aria-hidden="true"][class*="w-px"]')).toBeNull();
   });
