@@ -144,13 +144,34 @@ describe('buildPredictionVerdict', () => {
       'Your next-round prediction fills in with more tracked rounds. Top focus: putting.',
     );
   });
-  it('reads the prediction + normalized 0..1 confidence + top focus', () => {
-    expect(buildPredictionVerdict(74.2, 0.68, 'Putting')).toBe(
-      'Predicted to shoot 74.2 at 68% confidence. Top focus: putting.',
+  it('states the interval and attributes the percentage to it, not to the point estimate', () => {
+    expect(buildPredictionVerdict(74.2, 0.68, 'Putting', { low: 72, high: 77 })).toBe(
+      'Predicted 72.0\u201377.0 (68% of predictions like this land in that range). Top focus: putting.',
     );
   });
   it('accepts a 0..100 confidence unchanged', () => {
-    expect(buildPredictionVerdict(74.2, 68, null)).toBe('Predicted to shoot 74.2 at 68% confidence.');
+    expect(buildPredictionVerdict(74.2, 68, null, { low: 72, high: 77 })).toBe(
+      'Predicted 72.0\u201377.0 (68% of predictions like this land in that range).',
+    );
+  });
+  it('falls back to a track-record framing when no interval is available', () => {
+    expect(buildPredictionVerdict(74.2, 0.68, 'Putting')).toBe(
+      'Predicted to shoot 74.2 \u2014 predictions like this have been accurate about 68% of the time. Top focus: putting.',
+    );
+  });
+  it('never states a bare confidence next to the point estimate', () => {
+    for (const sentence of [
+      buildPredictionVerdict(74.2, 0.68, null, { low: 72, high: 77 }),
+      buildPredictionVerdict(74.2, 0.68, null),
+    ]) {
+      expect(sentence).not.toMatch(/at \d+% confidence/);
+    }
+  });
+  it('drops the confidence clause entirely when confidence is unknown', () => {
+    expect(buildPredictionVerdict(74.2, null, null, { low: 72, high: 77 })).toBe(
+      'Predicted 72.0\u201377.0.',
+    );
+    expect(buildPredictionVerdict(74.2, null, null)).toBe('Predicted to shoot 74.2.');
   });
 });
 

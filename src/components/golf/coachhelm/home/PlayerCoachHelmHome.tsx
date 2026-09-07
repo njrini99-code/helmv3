@@ -289,6 +289,10 @@ export function PlayerCoachHelmHome({
         data.prediction?.predictedValue,
         data.prediction?.calibratedConfidence ?? data.prediction?.confidence,
         priorities[0]?.title ?? null,
+        {
+          low: data.prediction?.predictedRangeLow,
+          high: data.prediction?.predictedRangeHigh,
+        },
       ),
     [data.prediction, priorities],
   );
