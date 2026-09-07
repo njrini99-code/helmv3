@@ -79,6 +79,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const DEFAULT_GOLD_SET = 'scripts/knowledge/bench/gold-set.v1.json';
 const REPORT_MD = 'docs/generated/RETRIEVAL_BENCH.md';
 const REPORT_JSON = 'docs/generated/retrieval-bench.json';
+const BENCH_BASELINE = 'retrieval-bench-baseline.json';
 
 // Same three-way staleness detector check-authority.mjs's retired() uses,
 // reproduced rather than imported because that script is a standalone CLI,
@@ -339,7 +340,7 @@ function renderReport(goldSet, perTask, aggregate) {
   lines.push('## Reading these numbers');
   lines.push('');
   lines.push(
-    'This is a first run against an 11-task gold set — read every number above as directional, per K.7\'s own instruction, not a release gate. Two findings worth acting on rather than averaging away:',
+    `This is scored against a ${aggregate.task_count}-task gold set — read every number above as directional, per K.7's own instruction, not a release gate. Findings worth acting on rather than averaging away:`,
   );
   lines.push('');
   lines.push(
@@ -349,14 +350,17 @@ function renderReport(goldSet, perTask, aggregate) {
     '- `src/lib/golf/qualifier-lifecycle.ts` maps only to `golf_round_lifecycle`, not `qualifiers`, even though it is the fix location for a qualifiers-feature incident (`INC-2026-08-22-end-date-closed-qualifier-early`) — another real gap, not an artifact.',
   );
   lines.push(
-    "- Most of the wrong-feature rate traces to one cause: `team_access_control`'s registered `db` glob is `supabase/migrations/*.sql` — every migration file, unconditionally — so any migration-file seed picks it up regardless of content. That is a defensible design (RLS/grants touch most migrations, and team_access_control is explicitly this repo's cross-cutting authorization feature), not obviously a bug, but it does mean `wrong_feature_rate` on a migration-seeded task should be read alongside which feature was flagged, not as a flat score.",
+    "- Fixed 2026-09-06 (Phase 5 registry glob lint): `team_access_control`'s `db` glob used to be `supabase/migrations/*.sql` — every migration file, unconditionally — so any migration-file seed picked it up regardless of content. It was replaced with per-feature migration-name patterns (each migration reclassified onto the feature whose tables it touches) plus a narrower `team_access_control`-specific set, dropping the wrong-feature rate this bench measures.",
   );
   lines.push('');
   return lines.join('\n');
 }
 
 async function main() {
-  const goldSetPath = process.argv[2] ?? DEFAULT_GOLD_SET;
+  const args = process.argv.slice(2);
+  const checkMode = args.includes('--check');
+  const positional = args.filter((a) => !a.startsWith('--'));
+  const goldSetPath = positional[0] ?? DEFAULT_GOLD_SET;
   const goldSet = JSON.parse(readFileSync(resolve(ROOT, goldSetPath), 'utf8'));
 
   const registry = await loadRegistry(ROOT);
@@ -395,11 +399,63 @@ async function main() {
   }
 
   const aggregate = aggregateScores(perTask);
+  const jsonBody = JSON.stringify({ goldSet: { schema_version: goldSet.schema_version, frozen_at: goldSet.frozen_at, frozen_against_commit: goldSet.frozen_against_commit }, perTask, aggregate }, null, 2) + '\n';
+  const mdBody = renderReport(goldSet, perTask, aggregate) + '\n';
+
+  if (args.includes('--update-baseline')) {
+    writeFileSync(resolve(ROOT, BENCH_BASELINE), `${JSON.stringify({
+      $comment: 'knowledge:bench ratchet. feature_recall may only rise, ' +
+        'wrong_feature_rate may only fall. Update only when a real registry ' +
+        'or gold-set change moves these numbers in the right direction — ' +
+        'never to paper over a regression.',
+      feature_recall: aggregate.feature_recall,
+      wrong_feature_rate: aggregate.wrong_feature_rate,
+    }, null, 2)}\n`);
+    console.log(`Baseline written: feature_recall=${pct(aggregate.feature_recall)} wrong_feature_rate=${pct(aggregate.wrong_feature_rate)}`);
+    return;
+  }
+
+  if (checkMode) {
+    const onDiskMd = existsSync(resolve(ROOT, REPORT_MD)) ? readFileSync(resolve(ROOT, REPORT_MD), 'utf8') : null;
+    const onDiskJson = existsSync(resolve(ROOT, REPORT_JSON)) ? readFileSync(resolve(ROOT, REPORT_JSON), 'utf8') : null;
+    if (onDiskMd !== mdBody || onDiskJson !== jsonBody) {
+      console.error(`❌ ${REPORT_MD} / ${REPORT_JSON} are stale. Run \`npm run knowledge:bench\` and commit the result.`);
+      process.exit(1);
+    }
+
+    let baseline = null;
+    try {
+      baseline = JSON.parse(readFileSync(resolve(ROOT, BENCH_BASELINE), 'utf8'));
+    } catch {
+      console.error(`❌ ${BENCH_BASELINE} is missing. Run \`node scripts/knowledge/bench.mjs --update-baseline\` to create it.`);
+      process.exit(1);
+    }
+
+    let regressed = false;
+    if (aggregate.feature_recall < baseline.feature_recall) {
+      console.error(`❌ feature_recall dropped: ${pct(baseline.feature_recall)} → ${pct(aggregate.feature_recall)} (may only rise).`);
+      regressed = true;
+    }
+    if (aggregate.wrong_feature_rate > baseline.wrong_feature_rate) {
+      console.error(`❌ wrong_feature_rate rose: ${pct(baseline.wrong_feature_rate)} → ${pct(aggregate.wrong_feature_rate)} (may only fall).`);
+      regressed = true;
+    }
+    if (regressed) process.exit(1);
+
+    if (aggregate.feature_recall > baseline.feature_recall || aggregate.wrong_feature_rate < baseline.wrong_feature_rate) {
+      console.log(
+        `knowledge:bench: improved (feature_recall=${pct(aggregate.feature_recall)}, wrong_feature_rate=${pct(aggregate.wrong_feature_rate)}) — ` +
+        'run `node scripts/knowledge/bench.mjs --update-baseline` to lock in the gains.',
+      );
+    }
+    console.log(`✅ knowledge:bench ratchet holds. feature_recall=${pct(aggregate.feature_recall)} wrong_feature_rate=${pct(aggregate.wrong_feature_rate)}`);
+    return;
+  }
 
   const reportDir = resolve(ROOT, 'docs/generated');
   if (!existsSync(reportDir)) mkdirSync(reportDir, { recursive: true });
-  writeFileSync(resolve(ROOT, REPORT_JSON), JSON.stringify({ goldSet: { schema_version: goldSet.schema_version, frozen_at: goldSet.frozen_at, frozen_against_commit: goldSet.frozen_against_commit }, perTask, aggregate }, null, 2) + '\n');
-  writeFileSync(resolve(ROOT, REPORT_MD), renderReport(goldSet, perTask, aggregate) + '\n');
+  writeFileSync(resolve(ROOT, REPORT_JSON), jsonBody);
+  writeFileSync(resolve(ROOT, REPORT_MD), mdBody);
 
   console.log(`knowledge:bench: scored ${aggregate.task_count} tasks. feature_recall=${pct(aggregate.feature_recall)} wrong_feature_rate=${pct(aggregate.wrong_feature_rate)} gold_file_recall=${pct(aggregate.gold_file_recall)}`);
   console.log(`Wrote ${REPORT_MD} and ${REPORT_JSON}`);

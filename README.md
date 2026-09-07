@@ -30,16 +30,23 @@ schema references, and code patterns before you touch anything.
 
 For the full documentation map, see [`docs/README.md`](docs/README.md).
 
-**Git hooks:** run `npm run hooks:install` once, from the **canonical
-checkout**. It points `core.hooksPath` at the tracked `scripts/git-hooks/`
-directory instead of the untracked, unreviewable `.git/hooks/`. Today that's
-one `pre-commit` hook: regenerate `src/lib/types/database.ts` when a
-migration is staged, and run `gitleaks protect --staged` if `gitleaks` is on
-PATH (skipped, not failed, if it isn't — CI's Review Gate still runs it).
+**Git hooks:** `npm install` wires these automatically (the `prepare`
+lifecycle script, `scripts/setup-hooks.mjs`); run `npm run hooks:install` to
+do it by hand. It points `core.hooksPath` at the tracked `.githooks/`
+directory instead of the untracked, unreviewable `.git/hooks/`. Two hooks
+live there today: `pre-commit` (regenerate `src/lib/types/database.ts` when
+a migration is staged, and run `gitleaks protect --staged` if `gitleaks` is
+on PATH) and `pre-push` (typecheck, eslint, the lint ratchet, sqlfluff,
+gitleaks, markdownlint, and generated-docs freshness — each scoped to only
+the files the push actually changes; see "Before you push" in
+[`docs/CI_RUNBOOK.md`](docs/CI_RUNBOOK.md)); a missing local tool is skipped,
+not failed, when CI's Review Gate still covers it.
 **`core.hooksPath` lives in the SHARED git config** (`.git/config` at the
-common dir), not per-worktree — running this from a task worktree changes
-hook behavior for the canonical checkout and every other worktree too, so
-run it once, from canonical, not from an agent's task worktree.
+common dir), not per-worktree — `setup-hooks.mjs` writes the *relative*
+value `.githooks`, which git resolves against each working tree's own top
+level, so one shared config entry still runs each worktree's own checked-out
+hooks rather than pinning every worktree to whichever checkout last ran
+`npm install`.
 
 ## Common commands
 

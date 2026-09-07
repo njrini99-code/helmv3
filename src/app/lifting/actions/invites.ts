@@ -35,6 +35,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerException } from '@/lib/server-error-logger';
 import { renderLiftingInviteEmail } from '@/lib/email/lifting-invite-template';
+import { gateCustomerEmail } from '@/lib/email/outbound-gate';
 import type {
   HelmLiftingCoachInviteRow,
   HelmLiftingInviteStatus,
@@ -224,6 +225,18 @@ async function sendInviteEmail(params: {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     // Dev / preview without key: skip silently (logged as info).
+    return;
+  }
+
+  // Outbound customer-email kill switch (owner decision, 2026-09-06). The
+  // invite record itself is still written by the caller — only the email
+  // leg is suppressed. See memory/features/email_outbound.md.
+  const gate = gateCustomerEmail({
+    kind: 'lifting_invite',
+    recipientCount: 1,
+    source: 'lifting/actions/invites.sendInviteEmail',
+  });
+  if (!gate.allowed) {
     return;
   }
 
@@ -633,3 +646,12 @@ export async function acceptLiftingInvite(
   revalidatePath('/lifting/dashboard');
   return { success: true };
 }
+
+// ---------------------------------------------------------------------------
+// Test surface — exported for unit tests only (mirrors the pattern in
+// src/lib/notifications/email.ts's __testables). Production code should call
+// the exported actions above.
+// ---------------------------------------------------------------------------
+export const __testables = {
+  sendInviteEmail,
+};

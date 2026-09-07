@@ -614,7 +614,14 @@ async function sendReminderToRecipient(
       : Promise.resolve({ success: true as const }),
   ]);
 
-  return pushResult.success && emailResult.success;
+  // A deliberately suppressed email (outbound customer-email kill switch,
+  // src/lib/email/outbound-gate.ts) must not read as a send FAILURE here —
+  // this function's boolean return marks the reminder "sent" so it is never
+  // retried; retrying is pointless (the switch's answer never changes
+  // hour to hour) and would otherwise re-fire the push notification on
+  // every hourly tick for as long as the switch stays off.
+  const emailOk = emailResult.success || emailResult.error === 'customer_email_disabled';
+  return pushResult.success && emailOk;
 }
 
 /**

@@ -43,8 +43,33 @@ permissions:
   contents: read
 
 jobs:
+  # Reusable workflow (2026-09-06) — see .github/workflows/detect-changes.yml.
+  # Same shared detector ci.yml, feature-awareness.yml and
+  # migration-lockdown.yml call. `code` (that workflow's javascript/TS-ish
+  # path set) stands in for this job's former `javascript-typescript`
+  # output — no separate output name exists for it any more, since
+  # ci.yml's `code` filter already covers the same class of file and the
+  # two never need to disagree (a broader match here only means an
+  # occasional extra scan, never a missed one). `actions` and `python` are
+  # unchanged, lifted verbatim into the shared workflow.
+  #
+  # Called UNCONDITIONALLY now (no job-level `if:`) — the shape that used to
+  # need `if: github.event_name == 'pull_request'` at the job level lives
+  # inside detect-changes.yml's own steps instead, which is why `analyze`
+  # below can drop its old "changes.result != success" skip branch down to
+  # just "detect-changes existing at all", covered by `!cancelled()` as
+  # before.
+  detect-changes:
+    name: Detect changes
+    uses: ./.github/workflows/detect-changes.yml
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: detect-changes
+    # Runs even when `detect-changes` failed (fail open to a real scan on a
+    # PR rather than silently skipping) — only a cancelled workflow run
+    # should also cancel this job.
+    if: ${{ !cancelled() }}
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
@@ -91,7 +116,38 @@ jobs:
       # - name: Setup runtime (example)
       #   uses: actions/setup-example@v1
 
+      - name: Decide whether this leg needs a real scan
+        id: should-scan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGES_RESULT: ${{ needs.detect-changes.result }}
+          LANGUAGE_CHANGED: >-
+            ${{ matrix.language == 'javascript-typescript' && needs.detect-changes.outputs.code || needs.detect-changes.outputs[matrix.language] }}
+        run: |
+          set -eu
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "reason=non-PR event ($EVENT_NAME) always gets a full scan" >> "$GITHUB_OUTPUT"
+          elif [ "$CHANGES_RESULT" != "success" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "reason=path filter did not succeed (result: $CHANGES_RESULT) — failing open to a real scan" >> "$GITHUB_OUTPUT"
+          elif [ "$LANGUAGE_CHANGED" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "reason=${{ matrix.language }} paths changed" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "reason=no ${{ matrix.language }} paths changed in this PR" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip notice
+        if: steps.should-scan.outputs.run != 'true'
+        env:
+          REASON: ${{ steps.should-scan.outputs.reason }}
+        run: |
+          echo "Skipping CodeQL scan for ${{ matrix.language }} - $REASON."
+
       - name: Initialize CodeQL
+        if: steps.should-scan.outputs.run == 'true'
         uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81  # v4.37.3
         with:
           languages: ${{ matrix.language }}
@@ -112,6 +168,7 @@ jobs:
           queries: security-extended
 
       - name: Perform CodeQL Analysis
+        if: steps.should-scan.outputs.run == 'true'
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81  # v4.37.3
         with:
           category: "/language:${{matrix.language}}"

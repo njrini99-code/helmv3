@@ -120,7 +120,7 @@ than guessing.
 | `coachhelm-insight-lifecycle` | `0 4 * * *` (daily) | `api-cron-coachhelm-insight-lifecycle` | UNKNOWN — likely insight expiry/archival. |
 | `coachhelm-roster-sweep` | `0 2 * * *` (daily) | `api-cron-coachhelm-roster-sweep` | CONFIRMED: reads roster rows and reports per-player outcomes — a silent stop means roster-driven CoachHelm state drifts unnoticed. |
 | `event-reminders` | `0 * * * *` (hourly) | `api-cron-event-reminders` | CONFIRMED: calendar event RSVP reminders, including push notifications — a silent stop means players/coaches stop getting event reminders with no signal anywhere. |
-| `task-reminders` | `0 * * * *` (hourly) | `api-cron-task-reminders` | CONFIRMED: task due-date reminders, including push — same silent-stop risk as `event-reminders`. |
+| `task-reminders` | `5 * * * *` (hourly) | `api-cron-task-reminders` | CONFIRMED: task due-date reminders, including push — same silent-stop risk as `event-reminders`. Moved off `0 * * * *` 2026-09-06 (cron consolidation) to stop colliding with `event-reminders`. |
 | `v3-standing-refresh` | `20 2 * * *` (daily) | `api-cron-v3-standing-refresh` | UNKNOWN — likely CoachHelm v3 standing/ranking recompute. |
 | `v3-genome-nightly` | `40 2 * * *` (daily) | `api-cron-v3-genome-nightly` | CONFIRMED, and already happened: reported `completed` 47 times across six weeks while writing nothing (`golf_player_genome` frozen) — a job that did nothing was indistinguishable from a job that did everything until `extractOutcomeMetadata`'s whitelist-vocabulary bug was fixed separately. |
 | `v3-causality-attribute` | `0 3 * * *` (daily) | `api-cron-v3-causality-attribute` | UNKNOWN. |
@@ -130,7 +130,7 @@ than guessing.
 | `log-retention` | `30 7 * * *` (daily) | `api-cron-log-retention` | Heaviest-instrumented route read this pass. Also runs `selfheal-close` as a sub-step (see §4) — Self-Heal's Close stage heartbeat rides on this job actually firing. |
 | `admin-digest` | `0 11 * * *` (daily) | `api-cron-admin-digest` | CONFIRMED: builds and sends the daily "Cup of Helm" ops email — a silent stop means the owner's one daily digest of shipped PRs, Sentry issues, and deploy freshness never arrives, with nothing else surfacing that absence (the digest IS the alerting mechanism for several OTHER signals). |
 | `refresh-engagement` | `10 */4 * * *` (every 4h) | `api-cron-refresh-engagement` | UNKNOWN. |
-| `ingest-gmail-replies` | `*/30 * * * *` (every 30 min) | `api-cron-ingest-gmail-replies` | Best-covered of this table for the "degraded but still running" case (its own self-throttled daily alert on degraded auth state) — the pure "never invoked at all" case is exactly what this monitor now adds. |
+| `ingest-gmail-replies` | `20 * * * *` (hourly) | `api-cron-ingest-gmail-replies` | Best-covered of this table for the "degraded but still running" case (its own self-throttled daily alert on degraded auth state) — the pure "never invoked at all" case is exactly what this monitor now adds. Relaxed from `*/30 * * * *` 2026-09-06 (cron consolidation) — dedupe is by `message_id`, so the polling cadence never affected correctness. |
 | `helm-debug-prune` | `30 4 * * *` (daily) | `api-cron-helm-debug-prune` | UNKNOWN, but name suggests `helm_debug`/Flight Recorder retention cleanup — a silent stop would eventually degrade Flight Recorder correlation (`SENTRY_PHASE_A_FINDINGS.md` §(g)) via unbounded table growth, not an immediate user-facing break. |
 | `reliability-triage` | `0 */3 * * *` (every 3h) | `api-cron-reliability-triage` | UNKNOWN specifics; likely feeds the admin reliability dashboard directly — a silent stop would make that dashboard stale without saying so. |
 
@@ -142,7 +142,7 @@ fallback `monitorConfig` described in §2 — never no config at all.
 | `jobType` | What it actually is |
 | --- | --- |
 | `selfheal-close` | A sub-step INSIDE `log-retention`'s single invocation (`runAutoResolve` in that route), not itself Vercel-scheduled — it is Self-Heal's Close-stage heartbeat, deliberately reported separately from `log-retention`'s own success so retention succeeding is never read as evidence about Close. |
-| `v3-weekly-coach-email` | Not yet in `vercel.json` — the route's own header comment says "Schedule: configured in vercel.json (operational follow-up)", i.e. scheduling it is a known open item, not an oversight this deliverable should silently paper over. |
+| `v3-weekly-coach-email` | Deliberately NOT in `vercel.json` — owner decision 2026-09-06: all customer outbound email is off (see `memory/features/email_outbound.md` and `config/routines.yml`'s `v3-weekly-coach-email` row, `status: intentionally-unscheduled`). Would use `0 14 * * 0` if re-enabled. |
 | `v3-genome-backfill-oneshot` | A deliberate one-shot manual backfill ("Used once after the schema lands to seed the vector for everyone") — accepted trade-off: Cron Monitors assume recurrence, so this job's monitor will eventually read "missed" once the fallback interval elapses after its one real run, and that is left as-is rather than adding more special-casing for a monitor nobody is expected to watch closely. `background_job_logs` (recordJobRun's own row) remains the primary record of whether it ran. |
 | `v3-ingest-sync` | Not in `vercel.json`; no comment stating why. Flagged as an open question, same as Phase A left it — not resolved by this deliverable. |
 

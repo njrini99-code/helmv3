@@ -4,8 +4,11 @@
 CircleCI owns the things GitHub Actions does poorly:
 
 - **Weekly heavy jobs**: Knip dead-code, Stryker mutation tests on
-  CoachHelm V2, full-repo sqlfluff, npm audit, Squawk migration safety,
-  Janitor entropy report (advisory — never fails, never edits source).
+  CoachHelm V2, full-repo sqlfluff, npm audit, Squawk migration safety
+  (advisory full-history sweep — `|| true`, never blocks; the per-PR,
+  blocking Squawk gate scoped to just the migrations a PR adds lives in
+  `.github/workflows/ci.yml`'s `supabase` job, D2), Janitor entropy report
+  (advisory — never fails, never edits source).
 - **iOS Capacitor compile**: builds on M-series macOS runners (~2×
   faster, ~⅓ the cost of GitHub Actions' `macos-13`). Catches
   Xcode/Capacitor breakage before TestFlight.
@@ -39,10 +42,10 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
    Docs: https://circleci.com/docs/scheduled-pipelines/
 
 4. **Project settings → Environment Variables**:
-   - **For Lighthouse CI** (lighthouse-preview job):
-     - `VERCEL_TOKEN` — from https://vercel.com/account/tokens
-     - `VERCEL_PROJECT_ID` — from `.vercel/project.json` or Vercel dashboard
-     - `VERCEL_TEAM_ID` — only if the project lives under a team scope
+   - `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` / `VERCEL_TEAM_ID` are NOT needed —
+     they were reserved for a planned `lighthouse-preview` job that
+     `config.yml` has never defined (see "What runs when" below). Don't add
+     them speculatively.
    - **For Promptfoo evals** (weekly job):
      - `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` — the job no-ops
        cleanly if neither is set.

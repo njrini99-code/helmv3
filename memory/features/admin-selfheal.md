@@ -38,7 +38,7 @@ previously also ran as a launchd agent on the owner's Mac
 duplicate-effort risk (two separately-billed agent sessions per day, each
 capable of opening a PR against the same backlog, with no cross-runner
 concurrency control). The launchd agent and its supporting scripts were all
-removed in the same change that closed that duplication — `scripts/run-selfheal-repair.mjs` no longer exists, `scripts/lib/selfheal-repair-runner.mjs` no longer exists, `scripts/selfheal-repair-install.sh` no longer exists, `scripts/selfheal-repair-doctor.mjs` no longer exists, and `config/launchd/**` no longer exists.
+removed in the same change that closed that duplication — scripts/run-selfheal-repair.mjs no longer exists, scripts/lib/selfheal-repair-runner.mjs no longer exists, scripts/selfheal-repair-install.sh no longer exists, scripts/selfheal-repair-doctor.mjs no longer exists, and `config/launchd/**` no longer exists.
 The plist is archived outside the repo, in
 `~/.claude/backups/reset-2026-09-05` on the
 owner's machine, for anyone who needs to see exactly what ran before.
@@ -195,9 +195,9 @@ owner's machine, for anyone who needs to see exactly what ran before.
   earns its attention row, and a third list is the split this read model
   exists to remove.
 - **Historical: the Repair stage used to run as a launchd agent on the
-  owner's Mac, retired 2026-09-05.** `config/launchd/com.helm.bridge-rca-repair.plist`,
-  its outer bounded-runner (`scripts/run-selfheal-repair.mjs`,
-  `scripts/lib/selfheal-repair-runner.mjs`), and its install/doctor tooling
+  owner's Mac, retired 2026-09-05.** config/launchd/com.helm.bridge-rca-repair.plist,
+  its outer bounded-runner (scripts/run-selfheal-repair.mjs,
+  scripts/lib/selfheal-repair-runner.mjs), and its install/doctor tooling
   (`npm run selfheal:repair:install`/`:doctor`) are gone from the repo — the
   plist is archived outside it, in `~/.claude/backups/reset-2026-09-05` on
   the owner's machine. They existed to solve problems specific to running an

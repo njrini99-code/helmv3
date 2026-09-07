@@ -1,5 +1,7 @@
 # CoachHelm + Stats + Round Review Redesign — "Spine & Stage"
 
+Status: active
+
 **Date:** 2026-07-19 · **Status:** Approved (mockup v2 sign-off by Nick) · **Branch:** `redesign/fairway-spine-stage`
 
 Interactive mockup (visual source of truth for all measurements/colors):

@@ -13,10 +13,11 @@
  * src/lib/admin/database/tables.ts, so a threshold tuned later applies
  * retroactively to already-stored history instead of only to future rows.
  *
- * Both RPCs are HELD (20260903191100_helm_debug_db_table_samples.sql, not
- * applied to production) — degrades to a 200 no-op while unapplied, same
- * isMigrationNotAppliedError pattern as every other collector in this
- * series.
+ * Both RPCs (20260903191100_helm_debug_db_table_samples.sql) were applied
+ * to production 2026-09-03 (see supabase/migrations/HELD.md) — the 200
+ * no-op fallback remains only for a fresh local stack without the
+ * migration, same isMigrationNotAppliedError pattern as every other
+ * collector in this series.
  *
  * Auth: requireCronAuth. Schedule: hourly, `7 * * * *` (vercel.json) — the
  * ':07' offset keeps this off the exact top of every hour other daily/
@@ -28,6 +29,7 @@ import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { computeTableSampleDelta, type TableCurrentSnapshot, type TablePriorSnapshot } from '@/lib/observability/supabase/table-health';
+import { flattenAnalysisSnapshot, type AnalysisSnapshotRaw } from '@/lib/observability/supabase/db-analysis';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -177,10 +179,48 @@ export async function GET(req: NextRequest) {
       throw new Error(`record_db_table_samples failed: ${describeError(writeResult.error)}`);
     }
 
+    // D5 task 2: index-advisor suggestions, unused indexes, bloat,
+    // seq-scan ratios, connections and locks — folded into this existing
+    // hourly cron rather than a new schedule, per the brief's
+    // "prefer extending db-table-health" instruction.
+    let analysisResult: { skipped?: string; rowsWritten?: number } = {};
+    try {
+      const analysisSampledAt = new Date().toISOString();
+      const analysisSnapshot = (await admin.rpc('helm_debug_db_analysis_snapshot' as never, {} as never)) as {
+        data: AnalysisSnapshotRaw | null;
+        error: MaybePostgrestError;
+      };
+
+      if (analysisSnapshot.error) {
+        analysisResult = isMigrationNotAppliedError(analysisSnapshot.error)
+          ? { skipped: 'migration-not-applied' }
+          : { skipped: `snapshot-failed: ${describeError(analysisSnapshot.error)}` };
+      } else if (analysisSnapshot.data) {
+        const analysisRows = flattenAnalysisSnapshot(analysisSnapshot.data);
+        const analysisWrite = (await admin.rpc('record_db_analysis_sample' as never, {
+          p_sampled_at: analysisSampledAt,
+          p_rows: analysisRows,
+        } as never)) as { data: number | null; error: MaybePostgrestError };
+
+        if (analysisWrite.error) {
+          analysisResult = isMigrationNotAppliedError(analysisWrite.error)
+            ? { skipped: 'migration-not-applied' }
+            : { skipped: `write-failed: ${describeError(analysisWrite.error)}` };
+        } else {
+          analysisResult = { rowsWritten: analysisWrite.data ?? 0 };
+        }
+      }
+    } catch (err) {
+      // Analysis capture is additive to the existing table-health delta
+      // engine — a failure here must never fail the whole cron run.
+      analysisResult = { skipped: `unexpected: ${describeError(err)}` };
+    }
+
     return NextResponse.json({
       ok: true,
       rowsWritten: writeResult.data,
       relationsObserved: current.length,
+      analysis: analysisResult,
     });
   });
 }

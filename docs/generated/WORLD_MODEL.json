@@ -86,6 +86,13 @@
         "status": "active"
       },
       {
+        "id": "email_outbound",
+        "name": "Outbound Customer Email (kill switch)",
+        "criticality": "high",
+        "owner": "founder",
+        "status": "active"
+      },
+      {
         "id": "feature_awareness_system",
         "name": "Feature Awareness System",
         "criticality": "high",
@@ -357,6 +364,11 @@
       {
         "id": "routes:src/app/api/cron/refresh-engagement/**",
         "pattern": "src/app/api/cron/refresh-engagement/**",
+        "category": "routes"
+      },
+      {
+        "id": "routes:src/app/api/cron/v3/weekly-coach-email/**",
+        "pattern": "src/app/api/cron/v3/weekly-coach-email/**",
         "category": "routes"
       },
       {
@@ -1389,9 +1401,24 @@
         "id": "actions:src/app/golf/admin/crm/components/resend/actions.ts",
         "pattern": "src/app/golf/admin/crm/components/resend/actions.ts",
         "category": "actions"
+      },
+      {
+        "id": "actions:src/app/lifting/actions/invites.ts",
+        "pattern": "src/app/lifting/actions/invites.ts",
+        "category": "actions"
       }
     ],
     "services": [
+      {
+        "id": "services:.claude/rules/**",
+        "pattern": ".claude/rules/**",
+        "category": "services"
+      },
+      {
+        "id": "services:.claude/settings.json",
+        "pattern": ".claude/settings.json",
+        "category": "services"
+      },
       {
         "id": "services:.devin/wiki.json",
         "pattern": ".devin/wiki.json",
@@ -1400,6 +1427,11 @@
       {
         "id": "services:.github/workflows/feature-awareness.yml",
         "pattern": ".github/workflows/feature-awareness.yml",
+        "category": "services"
+      },
+      {
+        "id": "services:.vercelignore",
+        "pattern": ".vercelignore",
         "category": "services"
       },
       {
@@ -1415,6 +1447,11 @@
       {
         "id": "services:config/feature-flags.yml",
         "pattern": "config/feature-flags.yml",
+        "category": "services"
+      },
+      {
+        "id": "services:config/open-pr-dispositions.json",
+        "pattern": "config/open-pr-dispositions.json",
         "category": "services"
       },
       {
@@ -1458,6 +1495,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/deploy-prod.sh",
+        "pattern": "scripts/deploy-prod.sh",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/flags/**",
         "pattern": "scripts/flags/**",
         "category": "services"
@@ -1473,6 +1515,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/new-worktree.sh",
+        "pattern": "scripts/new-worktree.sh",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/release-intel/**",
         "pattern": "scripts/release-intel/**",
         "category": "services"
@@ -1480,6 +1527,11 @@
       {
         "id": "services:scripts/repo-doctor/checks/db-observability.mjs",
         "pattern": "scripts/repo-doctor/checks/db-observability.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/worktree-lifecycle.mjs",
+        "pattern": "scripts/worktree-lifecycle.mjs",
         "category": "services"
       },
       {
@@ -1578,6 +1630,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/auth/send-password-reset.ts",
+        "pattern": "src/lib/auth/send-password-reset.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/baseball/**",
         "pattern": "src/lib/baseball/**",
         "category": "services"
@@ -1628,6 +1685,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/coachhelm/v3/foundation/email.ts",
+        "pattern": "src/lib/coachhelm/v3/foundation/email.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/coachhelm/v3/foundation/generator-toggles.ts",
         "pattern": "src/lib/coachhelm/v3/foundation/generator-toggles.ts",
         "category": "services"
@@ -1653,6 +1715,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/email/**",
+        "pattern": "src/lib/email/**",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/fairway/haptics.ts",
         "pattern": "src/lib/fairway/haptics.ts",
         "category": "services"
@@ -1675,6 +1742,11 @@
       {
         "id": "services:src/lib/native/**",
         "pattern": "src/lib/native/**",
+        "category": "services"
+      },
+      {
+        "id": "services:src/lib/notifications/email.ts",
+        "pattern": "src/lib/notifications/email.ts",
         "category": "services"
       },
       {
@@ -1825,6 +1897,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+        "pattern": "src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
         "pattern": "src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts",
         "category": "tests"
@@ -1862,6 +1939,16 @@
       {
         "id": "tests:src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts",
         "pattern": "src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/coachhelm/v3/foundation/__tests__/email.test.ts",
+        "pattern": "src/lib/coachhelm/v3/foundation/__tests__/email.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/email/__tests__/outbound-gate.test.ts",
+        "pattern": "src/lib/email/__tests__/outbound-gate.test.ts",
         "category": "tests"
       },
       {
@@ -2588,11 +2675,13 @@
           "supabase/migrations/20260903180000_helm_debug_db_error_events.sql",
           "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql",
           "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql",
+          "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql",
           "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql",
+          "supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql",
+          "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql",
           "supabase/migrations/20260825200811_helm_flight_recorder.sql",
           "supabase/migrations/20260903150000_helm_debug_agent_runs.sql",
-          "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql",
-          "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+          "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
         ]
       },
       {
@@ -2792,12 +2881,6 @@
         "definedIn": [
           "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
         ]
-      },
-      {
-        "id": "public",
-        "definedIn": [
-          "supabase/migrations/20260527000000_prod_public_baseline.sql"
-        ]
       }
     ],
     "rpcs": [
@@ -2883,7 +2966,7 @@
       },
       {
         "id": "calculate_round_strokes_gained",
-        "definedIn": "supabase/migrations/20260608120000_charge_penalties_in_sg.sql"
+        "definedIn": "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
       },
       {
         "id": "can_insert_baseball_team_member",
@@ -2915,7 +2998,7 @@
       },
       {
         "id": "get_active_sessions",
-        "definedIn": "supabase/migrations/20260710010000_get_active_sessions_per_user_filter.sql"
+        "definedIn": "supabase/migrations/20260701130000_bridge_rpcs_sessions_resolve.sql"
       },
       {
         "id": "get_admin_analytics_rollup",
@@ -2952,10 +3035,6 @@
       {
         "id": "get_audit_log_recent",
         "definedIn": "supabase/migrations/20260704063000_liftlab_rls_split_and_audit_log_gate.sql"
-      },
-      {
-        "id": "get_baseball_conversations_with_details",
-        "definedIn": "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql"
       },
       {
         "id": "get_baseball_public_player_stats",
@@ -3012,10 +3091,6 @@
       {
         "id": "get_platform_health_stats",
         "definedIn": "supabase/migrations/20260708020000_gate_admin_telemetry_rpcs_pii.sql"
-      },
-      {
-        "id": "get_player_stats_summary",
-        "definedIn": "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql"
       },
       {
         "id": "get_qualifier_leaderboard",
@@ -3090,6 +3165,10 @@
         "definedIn": "supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql"
       },
       {
+        "id": "helm_debug_db_analysis_snapshot",
+        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
+      },
+      {
         "id": "helm_debug_db_health_snapshot",
         "definedIn": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
       },
@@ -3103,7 +3182,7 @@
       },
       {
         "id": "helm_debug_finalize_trace",
-        "definedIn": "supabase/migrations/20260902170000_blind_check_ignores_postgres_layer.sql"
+        "definedIn": "supabase/migrations/20260901140000_trace_cannot_claim_success_while_blind.sql"
       },
       {
         "id": "helm_debug_get_agent_run",
@@ -3127,7 +3206,11 @@
       },
       {
         "id": "helm_debug_prune_observability",
-        "definedIn": "supabase/migrations/20260903191300_helm_debug_observability_retention_v2.sql"
+        "definedIn": "supabase/migrations/20260906120200_helm_debug_observability_retention_v3.sql"
+      },
+      {
+        "id": "helm_debug_read_db_analysis_samples",
+        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
       },
       {
         "id": "helm_debug_read_db_error_events",
@@ -3150,6 +3233,10 @@
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
       },
       {
+        "id": "helm_debug_read_db_statement_samples",
+        "definedIn": "supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql"
+      },
+      {
         "id": "helm_debug_read_db_table_health",
         "definedIn": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
       },
@@ -3160,6 +3247,10 @@
       {
         "id": "helm_debug_read_observability_sizes",
         "definedIn": "supabase/migrations/20260903191300_helm_debug_observability_retention_v2.sql"
+      },
+      {
+        "id": "helm_debug_read_statement_alert_state",
+        "definedIn": "supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql"
       },
       {
         "id": "helm_debug_record_agent_run",
@@ -3175,7 +3266,7 @@
       },
       {
         "id": "helm_debug_stat_statements_snapshot",
-        "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+        "definedIn": "supabase/migrations/20260906115900_helm_debug_stat_statements_snapshot_min_exec.sql"
       },
       {
         "id": "helm_lifting_accept_invite",
@@ -3279,7 +3370,7 @@
       },
       {
         "id": "recalculate_round_strokes_gained",
-        "definedIn": "supabase/migrations/20260608120000_charge_penalties_in_sg.sql"
+        "definedIn": "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
       },
       {
         "id": "recalculate_team_baseball_season_stats",
@@ -3287,15 +3378,19 @@
       },
       {
         "id": "reclassify_golf_round",
-        "definedIn": "supabase/migrations/20260831180000_reclassify_into_a_completed_qualifier.sql"
+        "definedIn": "supabase/migrations/20260827060000_scope_reclassify_qualifier_to_round_team.sql"
       },
       {
         "id": "recompute_golf_round_totals",
-        "definedIn": "supabase/migrations/20260708141000_gate_secdef_ownership_and_redemption.sql"
+        "definedIn": "supabase/migrations/20260606190000_fix_fairway_denominator.sql"
       },
       {
         "id": "recompute_team_sg",
         "definedIn": "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
+      },
+      {
+        "id": "record_db_analysis_sample",
+        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
       },
       {
         "id": "record_db_error_event",
@@ -3316,6 +3411,10 @@
       {
         "id": "record_db_stat_snapshot",
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
+      },
+      {
+        "id": "record_db_statement_samples",
+        "definedIn": "supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql"
       },
       {
         "id": "record_db_table_samples",
@@ -3339,7 +3438,7 @@
       },
       {
         "id": "release_baseball_team_invitation_redemption",
-        "definedIn": "supabase/migrations/20260708141000_gate_secdef_ownership_and_redemption.sql"
+        "definedIn": "supabase/migrations/20260630180200_baseball_team_invitation_redeem_rpc.sql"
       },
       {
         "id": "resolve_admin_event",
@@ -3359,7 +3458,7 @@
       },
       {
         "id": "run_integrity_checks",
-        "definedIn": "supabase/migrations/20260901120000_integrity_completed_round_zero_scored_holes.sql"
+        "definedIn": "supabase/migrations/20260704130000_integrity_check_admin_readability_tripwire.sql"
       },
       {
         "id": "save_baseball_full_box_score",
@@ -3375,7 +3474,7 @@
       },
       {
         "id": "sg_baseline_scale",
-        "definedIn": "supabase/migrations/20260622130000_pga_lpga_only_sg_baselines.sql"
+        "definedIn": "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
       },
       {
         "id": "sg_expected_strokes",
@@ -3399,7 +3498,7 @@
       },
       {
         "id": "try_redeem_baseball_team_invitation",
-        "definedIn": "supabase/migrations/20260708141000_gate_secdef_ownership_and_redemption.sql"
+        "definedIn": "supabase/migrations/20260630180200_baseball_team_invitation_redeem_rpc.sql"
       },
       {
         "id": "unresolve_admin_event",
@@ -3416,14 +3515,6 @@
       {
         "id": "update_player_stats_complete",
         "definedIn": "supabase/migrations/20260610040000_stats_population_updown_and_trigger_columns.sql"
-      },
-      {
-        "id": "update_user_last_seen",
-        "definedIn": "supabase/migrations/20260708021000_gate_ungated_definer_rpcs.sql"
-      },
-      {
-        "id": "user_conversation_ids",
-        "definedIn": "supabase/migrations/20260803120100_bind_definer_rpcs_to_session.sql"
       },
       {
         "id": "user_has_pending_join_request_to_coach_team",
@@ -3538,7 +3629,7 @@
         "id": "vercel_cron:/api/cron/ingest-gmail-replies",
         "kind": "vercel_cron",
         "path": "/api/cron/ingest-gmail-replies",
-        "schedule": "*/30 * * * *"
+        "schedule": "20 * * * *"
       },
       {
         "id": "vercel_cron:/api/cron/integrity-check",
@@ -3574,7 +3665,7 @@
         "id": "vercel_cron:/api/cron/task-reminders",
         "kind": "vercel_cron",
         "path": "/api/cron/task-reminders",
-        "schedule": "0 * * * *"
+        "schedule": "5 * * * *"
       },
       {
         "id": "vercel_cron:/api/cron/v3/causality-attribute",
@@ -3605,6 +3696,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/v3/standing-refresh",
         "schedule": "20 2 * * *"
+      },
+      {
+        "id": "vercel_cron:/api/jobs/consume",
+        "kind": "vercel_cron",
+        "path": "/api/jobs/consume",
+        "schedule": "*/1 * * * *"
       }
     ],
     "invariants": [
@@ -5741,6 +5838,28 @@
     },
     {
       "source": "admin_platform",
+      "target": "billing_customers",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260715120000_billing_invoices_stripe.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "billing_invoices",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260715120000_billing_invoices_stripe.sql"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "coachhelm_ai",
       "kind": "feature_relation",
       "evidence": [
@@ -6098,7 +6217,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 261
+          "line": 263
         }
       ]
     },
@@ -6110,7 +6229,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 185
+          "line": 187
         }
       ]
     },
@@ -6158,7 +6277,19 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-observability-prune/route.ts",
-          "line": 83
+          "line": 85
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "helm_debug_read_statement_alert_state",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/db-stat-delta/route.ts",
+          "line": 262
         }
       ]
     },
@@ -6182,7 +6313,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
-          "line": 138
+          "line": 147
         }
       ]
     },
@@ -6341,6 +6472,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/data/helm-jobs.ts",
+          "line": 13
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/job-log.ts",
           "line": 5
         },
@@ -6400,7 +6536,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 286
+          "line": 288
         }
       ]
     },
@@ -6412,7 +6548,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 205
+          "line": 207
         }
       ]
     },
@@ -6424,7 +6560,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-health-sampler/route.ts",
-          "line": 382
+          "line": 384
         }
       ]
     },
@@ -6436,7 +6572,19 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
-          "line": 212
+          "line": 221
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "record_db_statement_samples",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/api/cron/db-stat-delta/route.ts",
+          "line": 292
         }
       ]
     },
@@ -7951,16 +8099,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/auth/send-password-reset.ts",
-          "line": 4
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/auth/send-password-reset.ts",
-          "line": 6
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/supabase/__tests__/expect-rows.test.ts",
           "line": 21
         },
@@ -8087,6 +8225,18 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/demo-access.ts",
           "line": 14
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/auth.ts",
+          "line": 23
         }
       ]
     },
@@ -8604,11 +8754,6 @@
           "kind": "import_graph",
           "path": "src/app/baseball/actions/auth.ts",
           "line": 20
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/baseball/actions/auth.ts",
-          "line": 25
         },
         {
           "kind": "import_graph",
@@ -10974,6 +11119,18 @@
     },
     {
       "source": "baseball_core",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/baseball/actions/auth.ts",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
       "target": "find_baseball_player_by_email_for_roster",
       "kind": "feature_rpc",
       "evidence": [
@@ -10981,6 +11138,160 @@
           "kind": "rpc_call",
           "path": "src/app/baseball/actions/roster.ts",
           "line": 663
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_athletes",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_availability_statuses",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_bodyweight_entries",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_coach_assignments",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_coach_invites",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_coaches",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_days",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_exercise_substitutions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_exercises",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_group_audit",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260704120000_helm_lifting_group_audit.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_group_members",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_groups",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_import_rows",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_import_runs",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
         }
       ]
     },
@@ -10998,6 +11309,182 @@
     },
     {
       "source": "baseball_core",
+      "target": "helm_lifting_maxes",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_nutrition_plan_assignments",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_nutrition_plans",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_org_viewers",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_prescriptions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_program_assignments",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_programs",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_prs",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_readiness_checkins",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_sections",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_session_exercises",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_sessions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_set_results",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_soreness_check_requests",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_soreness_check_schedules",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_soreness_maps",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
       "target": "helm_lifting_sync_org_athletes",
       "kind": "feature_rpc",
       "evidence": [
@@ -11010,6 +11497,39 @@
           "kind": "rpc_call",
           "path": "src/app/baseball/actions/lifting-v11.ts",
           "line": 191
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_weeks",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_weight_checkin_requests",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+        }
+      ]
+    },
+    {
+      "source": "baseball_core",
+      "target": "helm_lifting_weight_checkin_schedules",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
         }
       ]
     },
@@ -14072,6 +14592,163 @@
       ]
     },
     {
+      "source": "email_outbound",
+      "target": "actions:src/app/lifting/actions/invites.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/lifting/actions/invites.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "admin_platform",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/send-password-reset.ts",
+          "line": 4
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/send-password-reset.ts",
+          "line": 6
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/email/__tests__/outbound-gate.test.ts",
+          "line": 9
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/email/outbound-gate.ts",
+          "line": 24
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/notifications/email.ts",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "auth_onboarding_join",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/lifting/actions/invites.ts",
+          "line": 34
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/lifting/actions/invites.ts",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "routes:src/app/api/cron/v3/weekly-coach-email/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/api/cron/v3/weekly-coach-email/**"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/auth/send-password-reset.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/auth/send-password-reset.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/coachhelm/v3/foundation/email.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/coachhelm/v3/foundation/email.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/email/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/email/**"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "services:src/lib/notifications/email.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/notifications/email.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "tests:src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "tests:src/lib/coachhelm/v3/foundation/__tests__/email.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/coachhelm/v3/foundation/__tests__/email.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
+      "target": "tests:src/lib/email/__tests__/outbound-gate.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/email/__tests__/outbound-gate.test.ts"
+        }
+      ]
+    },
+    {
       "source": "feature_awareness_system",
       "target": "admin_incidents",
       "kind": "feature_relation",
@@ -14121,6 +14798,30 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:.claude/rules/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".claude/rules/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:.claude/settings.json",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".claude/settings.json"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:.devin/wiki.json",
       "kind": "feature_service",
       "evidence": [
@@ -14145,6 +14846,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:.vercelignore",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".vercelignore"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:AGENTS.md",
       "kind": "feature_service",
       "evidence": [
@@ -14164,6 +14877,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "CLAUDE.md"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:config/open-pr-dispositions.json",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "config/open-pr-dispositions.json"
         }
       ]
     },
@@ -14205,6 +14930,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:scripts/deploy-prod.sh",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/deploy-prod.sh"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:scripts/knowledge/**",
       "kind": "feature_service",
       "evidence": [
@@ -14212,6 +14949,30 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/knowledge/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/new-worktree.sh",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/new-worktree.sh"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/worktree-lifecycle.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/worktree-lifecycle.mjs"
         }
       ]
     },
@@ -14293,11 +15054,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 40
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 41
         },
         {
@@ -14309,6 +15065,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
           "line": 43
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 44
         },
         {
           "kind": "import_graph",
@@ -14462,17 +15223,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 24
+          "line": 25
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 45
+          "line": 46
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 51
+          "line": 52
         },
         {
           "kind": "import_graph",
@@ -14564,7 +15325,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 29
+          "line": 30
         }
       ]
     },
@@ -14684,14 +15445,75 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "golf_course_edit_history",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_course_tee_edit_history",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_course_tee_holes",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_course_tees",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_demo_sessions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_team_saved_courses",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "observability_sentry",
       "kind": "feature_relation",
       "evidence": [
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
-          "line": 31
-        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
@@ -14705,7 +15527,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 57
+          "line": 34
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 58
         },
         {
           "kind": "import_graph",
@@ -14864,7 +15691,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7197
+          "line": 7226
         }
       ]
     },
@@ -14912,7 +15739,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 30
+          "line": 31
         },
         {
           "kind": "import_graph",
@@ -14939,12 +15766,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2322
+          "line": 2323
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2556
+          "line": 2557
         }
       ]
     },
@@ -15413,12 +16240,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 244
+          "line": 268
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 247
+          "line": 271
         },
         {
           "kind": "import_graph",
@@ -15449,6 +16276,21 @@
           "kind": "import_graph",
           "path": "src/lib/admin/database/alerts.ts",
           "line": 62
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 10
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 11
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 12
         },
         {
           "kind": "import_graph",
@@ -15567,6 +16409,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/database/statements.ts",
+          "line": 11
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/statements.ts",
+          "line": 12
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/database/tables.ts",
           "line": 16
         },
@@ -15652,7 +16504,31 @@
         },
         {
           "kind": "migration_schema",
+          "path": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
           "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql"
+        },
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_analysis_samples",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/analysis.ts",
+          "line": 92
         }
       ]
     },
@@ -15733,6 +16609,18 @@
           "kind": "rpc_call",
           "path": "src/lib/admin/database/performance.ts",
           "line": 105
+        }
+      ]
+    },
+    {
+      "source": "observability_supabase",
+      "target": "helm_debug_read_db_statement_samples",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/database/statements.ts",
+          "line": 92
         }
       ]
     },
@@ -16640,6 +17528,18 @@
     },
     {
       "source": "player_coachhelm_development",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/notifications/dispatch.ts",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -17477,6 +18377,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/fairway/pages/qualifiers/**"
+        }
+      ]
+    },
+    {
+      "source": "qualifiers",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/qualifying/player-notify.ts",
+          "line": 20
         }
       ]
     },
@@ -18559,34 +19471,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
         }
       ]
     },
@@ -18994,18 +19878,6 @@
     },
     {
       "source": "stats_analytics",
-      "target": "get_player_stats_summary",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/cache/golf-stats-calculator.ts",
-          "line": 189
-        }
-      ]
-    },
-    {
-      "source": "stats_analytics",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -19347,17 +20219,6 @@
     },
     {
       "source": "team_access_control",
-      "target": "admin_error_resolutions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260827031754_admin_error_resolutions.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
       "target": "api:src/app/api/admin/**",
       "kind": "feature_api",
       "evidence": [
@@ -19382,655 +20243,6 @@
     },
     {
       "source": "team_access_control",
-      "target": "baseball_actions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000092_baseball_signals_and_actions.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_ai_audit",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000450_baseball_ai_audit_log.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_availability_statuses",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_baserunning_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_batted_ball_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_bodyweight_entries",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_catching_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_class_conflicts",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000221_baseball_video_links_and_class_conflicts.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_coach_notes",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000900_baseball_coach_notes.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_coach_player_notes",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000230_baseball_signal_action_materialization.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_decision_log",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000310_baseball_decision_log.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_demo_sessions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260630220000_create_baseball_demo_sessions.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_event_acknowledgements",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000040_baseball_timeline_and_acks.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_exercises",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000061_baseball_lifting_performance.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_fielding_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_import_field_mappings",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_import_runs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000020_baseball_import_lineage.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_import_sources",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000090_baseball_settings_os.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_integration_configs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000090_baseball_settings_os.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_legacy_backfill_manifest",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260715141727_baseball_legacy_stats_backfill.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_assignments",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000061_baseball_lifting_performance.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_days",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_exercise_substitutions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_exercises",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_import_rows",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_import_runs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_prescriptions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_program_assignments",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_programs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_results",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000061_baseball_lifting_performance.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_sections",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_session_exercises",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_sessions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_set_results",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_lift_weeks",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_meeting_items",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000230_baseball_signal_action_materialization.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_pitch_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_plate_appearances",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_player_daily_contracts",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000220_baseball_player_passport_and_daily_contract.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_player_development_metrics",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_player_external_ids",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000020_baseball_import_lineage.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_player_passport_settings",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000220_baseball_player_passport_and_daily_contract.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_player_passport_share_tokens",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000420_baseball_passport_scout_packet_share_tokens.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_player_timeline_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000040_baseball_timeline_and_acks.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_postgame_review_items",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000093_baseball_postgame_reviews.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_postgame_reviews",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000093_baseball_postgame_reviews.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_practice_attendance",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000060_baseball_practices.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_practice_block_objectives",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000094_baseball_practice_effectiveness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_practice_blocks",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000060_baseball_practices.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_practice_effectiveness_reviews",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000094_baseball_practice_effectiveness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_practice_lineup_slots",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000200_baseball_practice_deepening.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_practice_scrimmages",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000200_baseball_practice_deepening.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_practices",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000060_baseball_practices.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_program_settings",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000090_baseball_settings_os.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_readiness_checkins",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000061_baseball_lifting_performance.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_seasons",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000095_baseball_team_and_season_settings.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_settings_audit_log",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000090_baseball_settings_os.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_signals",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000092_baseball_signals_and_actions.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_soreness_maps",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
       "target": "baseball_staff_audit_events",
       "kind": "feature_table",
       "evidence": [
@@ -20048,160 +20260,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260624000030_baseball_staff_capabilities.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_stat_facts",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_stat_sources",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_stat_visual_views",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000083_baseball_stat_visual_views.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_strength_group_audit",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000440_baseball_strength_group_audit.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_strength_group_members",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_strength_groups",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_strength_maxes",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_strength_prs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_swing_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_timeline_event_acks",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000430_baseball_timeline_event_acks.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_video_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "baseball_workload_events",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "billing_customers",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260715120000_billing_invoices_stripe.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "billing_invoices",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260715120000_billing_invoices_stripe.sql"
         }
       ]
     },
@@ -20255,182 +20313,6 @@
     },
     {
       "source": "team_access_control",
-      "target": "crm_stage_transitions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260720150000_crm_stage_tracking.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "crm_unmatched_inbound",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260724000000_crm_inbound_signal_capture.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_coachhelm_action_runs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_course_edit_history",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_course_tee_edit_history",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_course_tee_holes",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_course_tees",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_demo_sessions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_insight_action",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260621160000_insight_event_ledger.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_insight_exposure",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260621160000_insight_event_ledger.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_insight_outcome",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260621160000_insight_event_ledger.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_message_mentions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260904120000_golf_messages_reply_to.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_message_reactions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260904103000_golf_message_reactions.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_message_responses",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_qualifier_round_courses",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260621231000_qualifier_round_courses.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_recruit_documents",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260614020000_recruit_documents.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
       "target": "golf_staff_invite_codes",
       "kind": "feature_table",
       "evidence": [
@@ -20448,430 +20330,6 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260819030000_golf_staff_invite_single_use.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "golf_team_saved_courses",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_debug",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903150000_helm_debug_agent_runs.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180000_helm_debug_db_error_events.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180100_helm_debug_db_health_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191000_helm_debug_db_lock_incidents.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191100_helm_debug_db_table_samples.sql"
-        },
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_athletes",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_availability_statuses",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_bodyweight_entries",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_coach_assignments",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_coach_invites",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_coaches",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_days",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_exercise_substitutions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_exercises",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_group_audit",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260704120000_helm_lifting_group_audit.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_group_members",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_groups",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_import_rows",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_import_runs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_maxes",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_nutrition_plan_assignments",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_nutrition_plans",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_org_viewers",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_prescriptions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_program_assignments",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_programs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_prs",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_readiness_checkins",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_sections",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_session_exercises",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_sessions",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_set_results",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_soreness_check_requests",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_soreness_check_schedules",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_soreness_maps",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_weeks",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_weight_checkin_requests",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "helm_lifting_weight_checkin_schedules",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
-        }
-      ]
-    },
-    {
-      "source": "team_access_control",
-      "target": "public",
-      "kind": "feature_table",
-      "evidence": [
-        {
-          "kind": "migration_schema",
-          "path": "supabase/migrations/20260527000000_prod_public_baseline.sql"
         }
       ]
     },
@@ -21589,7 +21047,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
-          "line": 16
+          "line": 17
         }
       ]
     },
@@ -21730,6 +21188,23 @@
     },
     {
       "source": "team_operations",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/task-reminders.ts",
+          "line": 13
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/task-reminders.ts",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
       "target": "golf_recruit_documents",
       "kind": "feature_table",
       "evidence": [
@@ -21757,12 +21232,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
-          "line": 15
+          "line": 16
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/task-reminders.ts",
-          "line": 17
+          "line": 18
         },
         {
           "kind": "import_graph",

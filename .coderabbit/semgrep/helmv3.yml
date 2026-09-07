@@ -290,7 +290,9 @@ rules:
       why the elevation is needed. Last resort: inline
       `-- nosemgrep: helmv3-security-definer-without-search-path`.
     patterns:
-      - pattern-regex: "(?i)security\\s+definer"
+      # Only match SECURITY DEFINER on a code line, not inside a `--` comment
+      # (a comment that merely mentions the phrase used to trip this rule).
+      - pattern-regex: "(?im)^(?![ \\t]*--)[^\\n]*security\\s+definer"
       - pattern-not-regex: "(?is)security\\s+definer[\\s\\S]{0,8000}set\\s+search_path"
       - pattern-not-regex: "(?is)alter\\s+function[\\s\\S]{0,2000}set\\s+search_path"
       - pattern-not-regex: "(?is)alter\\s+function[\\s'\\s%]*set\\s+search_path"

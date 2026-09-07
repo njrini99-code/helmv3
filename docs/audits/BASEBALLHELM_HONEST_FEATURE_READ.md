@@ -1,5 +1,7 @@
 # BaseballHelm — The Honest Feature Read
 
+Status: active
+
 **Date:** 2026-07-01
 **Scope:** All 118 audited features across Pressbox (coach team-ops), War Room (coach recruiting), Passport (player development), auth, public, and admin surfaces.
 **Method:** Per-feature code-path traces (route → read-model → server action → table → RLS), no flattery applied. A plausible-looking UI over a stubbed or mismatched data path is HALF-BUILT, not SHIPPED.

@@ -86,15 +86,23 @@ describe('new-worktree.sh refuses rather than half-creating', () => {
   });
 });
 
-describe('a new workspace starts undisposable', () => {
-  // The half of the ownership problem the OPEN-PR gate cannot reach: before a
-  // PR exists there is no row to key intent on, and a five-minute-old worktree
-  // is clean, pushed and lsof-silent — every signal the old rule read as
-  // "disposable". So the marker starts at KEEP and releasing it is a positive
-  // act. Asserted at the SOURCE because creating a real worktree here would
-  // spend the mutation budget scripts/lib/create-workspace.mjs itself
-  // enforces (default 3 as of the "one workspace door" change — see
-  // docs/operations/WORKSPACES.md).
+describe('a new workspace defaults to parkable, --keep opts out', () => {
+  // REVISED 2026-09-06 (worktree hygiene reset, PR #1863's aftermath): the
+  // ownership problem this section used to solve — before a PR exists there
+  // is no row to key intent on, and a five-minute-old worktree is clean,
+  // pushed and lsof-silent, every signal the old rule read as "disposable" —
+  // is now solved the other way. Every branch this door creates is
+  // agent/<task>, so the door itself declares PARK_IF_REPRODUCIBLE by
+  // default; `--keep` is the positive act that opts a worktree OUT, for the
+  // rare case that should sit around. This does not reopen the #1681 shape:
+  // classifyWorktree's dirty/live-process/OPEN-PR-owner-intent gates still
+  // run before a PARK_IF_REPRODUCIBLE checkout is ever touched — parkPolicy
+  // only says a checkout MAY be asked, never that removing it is safe.
+  //
+  // Asserted at the SOURCE because creating a real worktree here would spend
+  // the mutation budget scripts/lib/create-workspace.mjs itself enforces
+  // (default 3 — see docs/operations/WORKSPACES.md); scripts/__tests__/
+  // create-workspace.test.ts covers the real-worktree case end to end.
   //
   // The marker is written by scripts/lib/create-workspace.mjs, not
   // scripts/new-worktree.sh directly — that file is now a thin CLI wrapper
@@ -107,15 +115,15 @@ describe('a new workspace starts undisposable', () => {
     return module.slice(open, module.indexOf('};', open));
   })();
 
-  it('scripts/lib/create-workspace.mjs writes parkPolicy: KEEP into the marker', () => {
-    expect(emitted).toMatch(/parkPolicy:\s*'KEEP'/);
+  it('scripts/lib/create-workspace.mjs writes parkPolicy from the keep flag, defaulting to PARK_IF_REPRODUCIBLE', () => {
+    expect(emitted).toMatch(/parkPolicy:\s*keep \? 'KEEP' : 'PARK_IF_REPRODUCIBLE'/);
   });
 
-  it('it never EMITS PARK_IF_REPRODUCIBLE at creation', () => {
-    // Scoped to the heredoc on purpose: the comment above it names the value a
-    // human must type to release a checkout, and that is the point of the
-    // comment. A whole-file match would forbid explaining the mechanism.
-    expect(emitted).not.toMatch(/PARK_IF_REPRODUCIBLE/);
+  it('the CLI exposes --keep to force KEEP', () => {
+    const cli = readFileSync(resolve(REPO, 'scripts/lib/create-workspace.mjs'), 'utf-8');
+    expect(cli).toMatch(/--keep/);
+    const shell = readFileSync(resolve(REPO, 'scripts/new-worktree.sh'), 'utf-8');
+    expect(shell).toMatch(/--keep/);
   });
 
   it('the lifecycle tool refuses anything the marker has not released', () => {
@@ -137,9 +145,11 @@ describe('worktree retirement carries a standing grant', () => {
     // time. Without this recorded, the next session asks again and the leak
     // resumes.
     const agents = readFileSync(resolve(REPO, 'AGENTS.md'), 'utf-8');
-    expect(agents).toMatch(/STANDING OWNER AUTHORIZATION/);
-    expect(agents).toContain('scripts/worktree-lifecycle.mjs --retire');
-    expect(agents).toMatch(/same step that merges its PR/i);
+    expect(agents).toMatch(/STANDING OWNER[\s\S]{0,20}AUTHORIZATION/);
+    // REVISED 2026-09-06: the two-command `gh pr merge && ... --retire` form
+    // is now one command — see scripts/pr-land.mjs and docs/CI_RUNBOOK.md.
+    expect(agents).toContain('npm run pr:land -- <n>');
+    expect(agents).toMatch(/runs `--retire`/i);
   });
 
   it('the tool itself says so, for a reader who never opens AGENTS.md', () => {

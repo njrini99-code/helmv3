@@ -1,7 +1,7 @@
 // =============================================================================
 // src/lib/baseball/__tests__/nav-player-rail.test.ts
 //
-// Owner directive, wave W3 (docs/audits/PRODUCTION_READINESS_MISSION_2026-07-09.md):
+// Owner directive, wave W3 (https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/PRODUCTION_READINESS_MISSION_2026-07-09.md):
 // the baseball PLAYER rail caps at ~8 destinations. It previously rendered 9
 // (7 primary "My Baseball" + exposureNoun + Settings, both in the secondary
 // "More" section). The fix moved Settings OUT of the rail sections and INTO

@@ -268,7 +268,7 @@ them would have broken those routes, not the dead one.
   path (`withBridgeLogging`, `src/lib/inngest/functions.ts`) gets the same
   check-in treatment through its own call site, not through `recordJobRun`.
   (The launchd Repair script and its own Sentry check-in helper —
-  `scripts/lib/sentry-cron-checkin.mjs` no longer exists — were removed 2026-09-05
+  scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05
   along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;
   Repair now runs as `.github/workflows/selfheal-repair.yml`, which reports
   through a `background_job_logs` heartbeat step, not a Sentry Cron Monitor.)

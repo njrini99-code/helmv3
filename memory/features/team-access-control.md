@@ -29,7 +29,9 @@ This feature is foundational: most GolfHelm features depend on it, and many revi
 
 ### Database And Tests
 
-- `supabase/migrations/*.sql`
+- `supabase/migrations/*.sql` — applied history, never hand-edited
+- `supabase/schemas/**` — declarative current shape (Database Plan D2); see
+  `docs/operations/DECLARATIVE_SCHEMA.md` for the edit → `db diff -f` → PR flow
 - `supabase/tests/rls/*.sql`
 - `src/test/lib/auth/**`
 - `src/test/lib/cron/auth.test.ts`

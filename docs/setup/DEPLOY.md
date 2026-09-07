@@ -98,7 +98,7 @@ Redirect URLs:
 ### Run the Production SQL
 
 Go to Supabase → SQL Editor and run:
-`supabase/production-setup.sql`
+supabase/production-setup.sql
 
 ---
 

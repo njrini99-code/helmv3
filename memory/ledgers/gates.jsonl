@@ -1,0 +1,7 @@
+{"ts":1788745278940,"gate":"npm run docs:path-drift","waitMs":0,"runMs":117,"slots":2}
+{"ts":1788745279083,"gate":"npm run docs:schema-drift","waitMs":0,"runMs":145,"slots":2}
+{"ts":1788745279259,"gate":"npm run knowledge:check","waitMs":0,"runMs":640,"slots":2}
+{"ts":1788745279925,"gate":"npm run docs:check","waitMs":0,"runMs":788,"slots":2}
+{"ts":1788745280738,"gate":"npm run docs:rules-current","waitMs":0,"runMs":102,"slots":2}
+{"ts":1788745280867,"gate":"npm run markdown:ratchet","waitMs":0,"runMs":5059,"slots":2}
+{"ts":1788751375087,"gate":"test:business","waitMs":1,"runMs":3156,"slots":2}

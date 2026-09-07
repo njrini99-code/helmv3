@@ -184,6 +184,7 @@ describe('task-reminders.ts — email_task_reminders preference gate', () => {
     checkSuperAdminAccessMock.mockResolvedValue({ allowed: false, reason: 'unauthenticated' });
     getUserNotificationPreferencesMock.mockImplementation(async () => DEFAULT_NOTIFICATION_PREFERENCES);
     vi.stubEnv('RESEND_API_KEY', 'test-resend-key');
+    vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'true');
     global.fetch = vi.fn().mockResolvedValue({ ok: true, text: async () => '' } as Response);
   });
 
@@ -232,6 +233,7 @@ describe('task-reminders.ts — processReminders authorization gate', () => {
     checkSuperAdminAccessMock.mockResolvedValue({ allowed: false, reason: 'forbidden' });
     getUserNotificationPreferencesMock.mockClear();
     vi.stubEnv('RESEND_API_KEY', 'test-resend-key');
+    vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'true');
     global.fetch = vi.fn().mockResolvedValue({ ok: true, text: async () => '' } as Response);
   });
 
@@ -267,6 +269,48 @@ describe('task-reminders.ts — processReminders authorization gate', () => {
     // No super-admin probe: the live client is itself the proof of an
     // in-process caller, so the cron never needs a user session.
     expect(checkSuperAdminAccessMock).not.toHaveBeenCalled();
+    expect(results.sent).toBe(1);
+    expect(results.failed).toBe(0);
+  });
+});
+
+describe('task-reminders.ts — outbound customer-email kill switch', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    getUserNotificationPreferencesMock.mockClear();
+    checkSuperAdminAccessMock.mockClear();
+    checkSuperAdminAccessMock.mockResolvedValue({ allowed: false, reason: 'unauthenticated' });
+    getUserNotificationPreferencesMock.mockImplementation(async () => DEFAULT_NOTIFICATION_PREFERENCES);
+    vi.stubEnv('RESEND_API_KEY', 'test-resend-key');
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: async () => '' } as Response);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('does NOT call Resend when HELM_CUSTOMER_EMAIL_ENABLED is unset, even for an opted-in recipient', async () => {
+    vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', '');
+
+    const { processReminders } = await import('@/app/golf/actions/task-reminders');
+    const results = await processReminders(buildClient());
+
+    expect(global.fetch).not.toHaveBeenCalled();
+    // The in-app notification path is untouched — the reminder still processes.
+    expect(results.sent).toBe(1);
+    expect(results.failed).toBe(0);
+  });
+
+  it('DOES call Resend when HELM_CUSTOMER_EMAIL_ENABLED is exactly "true"', async () => {
+    vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'true');
+
+    const { processReminders } = await import('@/app/golf/actions/task-reminders');
+    const results = await processReminders(buildClient());
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(results.sent).toBe(1);
     expect(results.failed).toBe(0);
   });

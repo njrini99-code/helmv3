@@ -1,7 +1,7 @@
 <!--
 STATUS: STALE
 DATE: 2026-07-10
-SUPERSEDED BY / WHY: Generated 2026-02-21 — long predates docs/audits/BASEBALLHELM_CANONICAL_SPEC.md and docs/audits/DB_FORENSIC_AUDIT_2026-07-08.md, which cover identical ground with current data.
+SUPERSEDED BY / WHY: Generated 2026-02-21 — long predates docs/audits/BASEBALLHELM_CANONICAL_SPEC.md and https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/DB_FORENSIC_AUDIT_2026-07-08.md, which cover identical ground with current data.
 KEPT FOR HISTORY -- do not delete this file.
 -->
 

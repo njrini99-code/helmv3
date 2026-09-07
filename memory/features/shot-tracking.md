@@ -353,7 +353,7 @@ the hole index the checkpoint started on.
 - `src/app/golf/actions/golf.ts`
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/shot-analytics.ts`
-- `src/hooks/golf/use-auto-save-round.ts` no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
+- src/hooks/golf/use-auto-save-round.ts no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
 - `src/lib/offline/sync-engine.ts`
 - `src/lib/utils/emergency-save.ts` — synchronous device snapshot, keyed by
   round id (or `new_<playerId>` before one exists)
@@ -901,7 +901,7 @@ scroll range that scroll needed. See ios-native-shell.md.
 - `memory/context/golfhelm-features.md`
 - `docs/features/SHOT_TRACKING_DATA_FLOW.md`
 - `docs/features/SHOT_TRACKING_VERIFICATION.md`
-- `docs/ROUND_REVIEW_ACCURACY_REPORT.md`
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md`
 
 ## iOS shell chrome (updated 2026-08-26)
 

@@ -16,7 +16,16 @@
 # delegates to.
 #
 # Usage:
-#   scripts/new-worktree.sh <task-name> [--base <ref>] [--install]
+#   scripts/new-worktree.sh <task-name> [--base <ref>] [--install] [--keep]
+#
+# --keep stamps .helm/workspace.json's parkPolicy as KEEP instead of the
+# default PARK_IF_REPRODUCIBLE. Every worktree this door makes lives on an
+# agent/<task> branch, and as of 2026-09-06 the default is
+# PARK_IF_REPRODUCIBLE precisely so cleanup is cheap enough it always
+# happens; pass --keep for a worktree that should sit around regardless.
+# Either way, scripts/worktree-lifecycle.mjs's own dirty/unpushed/live-
+# process/open-PR refusals remain the actual safety net — parkPolicy only
+# says a checkout MAY be asked, never that removing it is safe.
 #
 # Example:
 #   scripts/new-worktree.sh postgrest-error-detail
@@ -26,6 +35,7 @@ set -euo pipefail
 
 BASE="origin/main"
 INSTALL=0
+KEEP=0
 TASK=""
 
 while [ $# -gt 0 ]; do
@@ -33,7 +43,8 @@ while [ $# -gt 0 ]; do
     --base) BASE="$2"; shift 2 ;;
     --install) INSTALL=1; shift ;;
     --no-install) INSTALL=0; shift ;;   # accepted, and still the default
-    -h|--help) sed -n '18,24p' "$0"; exit 0 ;;
+    --keep) KEEP=1; shift ;;
+    -h|--help) sed -n '18,29p' "$0"; exit 0 ;;
     -*) echo "unknown flag: $1" >&2; exit 2 ;;
     *) TASK="$1"; shift ;;
   esac
@@ -50,6 +61,9 @@ REPO="$(git -C "$HERE" rev-parse --show-toplevel)"
 ARGS=(--name "$TASK" --base "$BASE" --repo "$REPO" --summary)
 if [ "$INSTALL" -eq 1 ]; then
   ARGS+=(--install)
+fi
+if [ "$KEEP" -eq 1 ]; then
+  ARGS+=(--keep)
 fi
 
 # HELM_WORKTREE_HOME, HELM_MAX_MUTATION_WORKTREES, HELM_DISK_RESERVE_GIB (or

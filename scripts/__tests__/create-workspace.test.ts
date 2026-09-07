@@ -118,12 +118,15 @@ describe('createWorkspace — refusals', () => {
     expect(git(['branch', '--list', 'agent/second'], seed)).toBe('');
   });
 
-  it('allows exactly the default budget of 3, and refuses the 4th', async () => {
+  it('allows exactly the default budget of 6, and refuses the 7th', async () => {
     await createWorkspace({ name: 'b1', repo: seed, home });
     await createWorkspace({ name: 'b2', repo: seed, home });
-    const r3 = await createWorkspace({ name: 'b3', repo: seed, home });
-    expect(existsSync(r3.path)).toBe(true);
-    await expect(createWorkspace({ name: 'b4', repo: seed, home })).rejects.toMatchObject({
+    await createWorkspace({ name: 'b3', repo: seed, home });
+    await createWorkspace({ name: 'b4', repo: seed, home });
+    await createWorkspace({ name: 'b5', repo: seed, home });
+    const r6 = await createWorkspace({ name: 'b6', repo: seed, home });
+    expect(existsSync(r6.path)).toBe(true);
+    await expect(createWorkspace({ name: 'b7', repo: seed, home })).rejects.toMatchObject({
       code: 'BUDGET_EXCEEDED',
     });
   });
@@ -136,7 +139,7 @@ describe('createWorkspace — what it writes', () => {
     expect(result.branch).toBe('agent/shape');
   });
 
-  it('writes the marker with the right fields', async () => {
+  it('writes the marker with the right fields, defaulting parkPolicy to PARK_IF_REPRODUCIBLE', async () => {
     const result = await createWorkspace({ name: 'marked', repo: seed, home, base: 'origin/main' });
     const marker = JSON.parse(readFileSync(join(result.path, '.helm/workspace.json'), 'utf-8'));
     expect(marker).toMatchObject({
@@ -147,11 +150,17 @@ describe('createWorkspace — what it writes', () => {
       environment: 'local',
       supabase: 'local',
       productionWrites: false,
-      parkPolicy: 'KEEP',
+      parkPolicy: 'PARK_IF_REPRODUCIBLE',
       createdBy: 'create-workspace.mjs',
     });
     expect(typeof marker.createdAt).toBe('string');
     expect(Number.isNaN(new Date(marker.createdAt).getTime())).toBe(false);
+  });
+
+  it('stamps parkPolicy: KEEP when { keep: true } is passed', async () => {
+    const result = await createWorkspace({ name: 'kept', repo: seed, home, keep: true });
+    const marker = JSON.parse(readFileSync(join(result.path, '.helm/workspace.json'), 'utf-8'));
+    expect(marker.parkPolicy).toBe('KEEP');
   });
 
   it('symlinks node_modules to the source repo by default', async () => {

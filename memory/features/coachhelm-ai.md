@@ -147,7 +147,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `useReducedMotion()` in this codebase should go through
   `useReducedMotionGuard()` from `@/lib/coachhelm/v3/motion`. (STU, source:
   `coachhelm-stats-hooks-310-false-positive.md` dated 2026-07-30, updated
-  2026-08-19; verified 2026-09-05 that `src/lib/coachhelm/v3/motion` exists.)
+  2026-08-19; verified 2026-09-05 that src/lib/coachhelm/v3/motion exists.)
 
 ## Tests To Prefer
 

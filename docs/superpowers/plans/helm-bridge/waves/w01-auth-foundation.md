@@ -1,5 +1,7 @@
 # W1: Auth Foundation — allowlist, `requireSuperAdmin()`, middleware, `/admin` shell
 
+Status: active
+
 **Goal:** Stand up the three-layer Nick-only gate (middleware → shared `requireSuperAdmin()` → `is_super_admin()` RLS) and the gated, native-hidden `/admin` route group with a placeholder page.
 
 **Depends-on:** W0 (trigger fix merged; single admin row confirmed; Nick's `auth.users.id` recorded).

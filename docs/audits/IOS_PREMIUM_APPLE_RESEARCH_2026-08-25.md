@@ -1,5 +1,7 @@
 # GolfHelm iOS Premium Update — Apple Research Digest
 
+Status: active
+
 **Research date:** 2026-08-25 · **Toolchain:** Xcode 26.6 (17F113) / iOS 26.5 SDK / Capacitor 8 WKWebView shell · **Target:** App Store submission tonight
 
 Confidence markers used throughout: **[Apple-primary]** = read directly off a developer.apple.com/apple.com page. **[secondary/press]** = TechCrunch/MacRumors/etc., not Apple. **[forum]** = Apple Developer Forums, community-sourced, not documentation. Unmarked = Apple-primary by default.

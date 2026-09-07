@@ -1,5 +1,7 @@
 # W12: Deploys & Infra Tab + Deploy Markers
 
+Status: active
+
 **Goal:** Ship `/admin/deploys` (deployments table, currently-deployed build card, conditional release-health strip, web-vitals mini panel) and write `admin_events` deploy-marker rows so every chart can overlay releases even before the Vercel token exists.
 
 **Depends-on:** W3 (`vercel-api.ts`, `sentry-api.ts`), W4 (panels).

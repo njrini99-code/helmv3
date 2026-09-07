@@ -119,6 +119,43 @@ describe('worktree classification — refusals first', () => {
     expect(classifyWorktree({ ...clean, remoteSha: SHA_B }).verdict).toBe(UNKNOWN_REMOTE);
   });
 
+  // PR #1863: `gh pr merge --delete-branch` removes the remote branch AT THE
+  // MOMENT the checkout becomes safe to park, so "no upstream" and "just
+  // merged" are indistinguishable from upstream alone. A MERGED PR whose head
+  // OID matches the local tip exactly is stronger proof than a remote ref —
+  // GitHub is attesting this exact tree reached main.
+  it('PARKS a no-upstream checkout when its PR MERGED with tip === PR head exactly', () => {
+    const v = classifyWorktree({
+      ...clean,
+      upstream: null,
+      remoteSha: null,
+      prState: 'MERGED',
+      prNumber: 1863,
+      prHeadSha: SHA_A,
+    });
+    expect(v.verdict).toBe(PARKABLE);
+    expect(v.reason).toMatch(/PR #1863 MERGED/);
+  });
+
+  it('still refuses UNKNOWN_REMOTE for a no-upstream tip with no matching MERGED PR', () => {
+    // No PR facts at all — the ordinary unpushed-work case.
+    expect(
+      classifyWorktree({ ...clean, upstream: null, remoteSha: null }).verdict,
+    ).toBe(UNKNOWN_REMOTE);
+    // MERGED, but the local tip has since diverged from the PR head — the
+    // exact-match requirement, not "a PR merged at some point".
+    expect(
+      classifyWorktree({
+        ...clean,
+        upstream: null,
+        remoteSha: null,
+        prState: 'MERGED',
+        prNumber: 1863,
+        prHeadSha: SHA_B,
+      }).verdict,
+    ).toBe(UNKNOWN_REMOTE);
+  });
+
   it('PARKS a clean, idle, fully-pushed worktree when no PR claims it', () => {
     // This assertion used to end "— regardless of PR state", and that sentence
     // was the #1681 defect written as a guarantee. It is now scoped: with no PR

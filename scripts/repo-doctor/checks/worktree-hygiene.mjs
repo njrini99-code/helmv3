@@ -37,14 +37,26 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { canonicalRootOf } from '../../../.claude/hooks/lib/workspace-identity.mjs';
 import { git } from '../lib/exec.mjs';
 import { check, Status } from '../result.mjs';
+import { inspectWorkspaces } from '../../check-mutation-budget.mjs';
+import { mutationBudgetDecision, DEFAULT_MUTATION_BUDGET } from '../../lib/worktree-lifecycle.mjs';
 
 export const meta = { id: 'worktree', title: 'Worktree hygiene' };
 
 const NEXT_WARN_BYTES = 4 * 1024 * 1024 * 1024; // 4 GiB
+
+// Made cleanup cheap enough it always happens (2026-09-06, after PR #1863
+// needed three manual steps to land). Two of the three checks below are hard
+// FAILs, not WARNs, on purpose: a merged-and-forgotten checkout or an
+// over-budget branch/worktree count is not a nudge, it is the exact leak
+// AGENTS.md's mutation budget and worktree-lifecycle.mjs exist to close, and
+// a WARN here is exactly the kind of "reported but never acted on" residue
+// this whole reset targets.
+const STALE_MERGED_PR_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_LOCAL_BRANCHES = 25;
 
 /** `du -sk <dir>` in KiB, or null when the directory is absent/unreadable. */
 function dirKib(dir) {
@@ -64,6 +76,44 @@ function ghPrOpenForBranch(branch, cwd) {
   if (r.status !== 0 || r.error) return null; // gh unavailable/unauthenticated/network-blocked
   const n = Number.parseInt((r.stdout ?? '').trim(), 10);
   return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * Every PR (any state) ever opened against `branch`, or null when `gh`
+ * itself could not be asked. An empty array is a real answer ("no PR"), not
+ * "unavailable" — the same distinction worktree-lifecycle.mjs's prFor()
+ * draws between FAILED and NONE.
+ */
+function ghPrHistoryForBranch(branch, cwd) {
+  const r = spawnSync(
+    'gh',
+    ['pr', 'list', '--head', branch, '--state', 'all', '--json', 'number,state,mergedAt'],
+    { encoding: 'utf-8', cwd, timeout: 10000 },
+  );
+  if (r.status !== 0 || r.error) return null;
+  try {
+    const parsed = JSON.parse((r.stdout ?? '').trim() || '[]');
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function worktreeBranches(canonicalRoot) {
+  const r = git(canonicalRoot, ['worktree', 'list', '--porcelain']);
+  if (!r.ok) return null;
+  const out = [];
+  let cur = null;
+  for (const line of r.value.split('\n')) {
+    if (line.startsWith('worktree ')) {
+      if (cur) out.push(cur);
+      cur = { path: line.slice('worktree '.length), branch: null };
+    } else if (line.startsWith('branch refs/heads/') && cur) {
+      cur.branch = line.slice('branch refs/heads/'.length);
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
 }
 
 export async function run(ctx) {
@@ -121,6 +171,87 @@ export async function run(ctx) {
           evidence: oversized,
         }),
   );
+
+  // --- stale merged PRs: a worktree whose branch's PR MERGED >24h ago and
+  // was never cleaned up. `npm run pr:land` / worktrees:retire exist
+  // precisely so this never accumulates; a hit here means the manual path
+  // was used and cleanup skipped, not that the tooling failed.
+  {
+    const branches = worktreeBranches(canonicalRoot);
+    if (branches === null) {
+      out.push(check('worktree.stale-merged-pr', Status.UNKNOWN, 'could not list worktrees (git worktree list failed)'));
+    } else {
+      const now = ctx.now ? new Date(ctx.now).getTime() : Date.now();
+      const stale = [];
+      let ghFailed = false;
+      for (const w of branches) {
+        if (!w.branch || resolve(w.path) === resolve(canonicalRoot)) continue;
+        const history = ghPrHistoryForBranch(w.branch, canonicalRoot);
+        if (history === null) {
+          ghFailed = true;
+          continue;
+        }
+        const merged = history.find((p) => String(p.state).toUpperCase() === 'MERGED' && p.mergedAt);
+        if (!merged) continue;
+        const mergedAtMs = Date.parse(merged.mergedAt);
+        if (!Number.isFinite(mergedAtMs)) continue;
+        const ageMs = now - mergedAtMs;
+        if (ageMs > STALE_MERGED_PR_MS) {
+          stale.push({ path: w.path, branch: w.branch, prNumber: merged.number, mergedAt: merged.mergedAt, ageHours: Math.round(ageMs / 3_600_000) });
+        }
+      }
+      if (stale.length > 0) {
+        out.push(check('worktree.stale-merged-pr', Status.FAIL,
+          `${stale.length} worktree(s) sit on a branch whose PR merged over 24h ago and was never retired`, {
+            evidence: stale,
+            fix: 'npm run pr:land -- <n>  (or: node scripts/worktree-lifecycle.mjs --retire)',
+          }));
+      } else if (ghFailed) {
+        out.push(check('worktree.stale-merged-pr', Status.LOCAL_ONLY, 'could not confirm every branch\'s PR state (gh unavailable) — not a control failure'));
+      } else {
+        out.push(check('worktree.stale-merged-pr', Status.PASS, 'no worktree sits on a >24h-stale merged PR'));
+      }
+    }
+  }
+
+  // --- local branch count ---
+  {
+    const r = git(canonicalRoot, ['for-each-ref', '--format=%(refname:short)', 'refs/heads']);
+    if (!r.ok) {
+      out.push(check('worktree.branch-count', Status.UNKNOWN, 'could not list local branches', { detail: r.error }));
+    } else {
+      const branches = r.value.split('\n').filter(Boolean);
+      out.push(
+        branches.length > MAX_LOCAL_BRANCHES
+          ? check('worktree.branch-count', Status.FAIL, `${branches.length} local branches exceed the ${MAX_LOCAL_BRANCHES}-branch ceiling`, {
+              count: branches.length,
+              ceiling: MAX_LOCAL_BRANCHES,
+              fix: 'npm run worktrees:retire  (or npm run pr:land -- <n> per merged PR)',
+            })
+          : check('worktree.branch-count', Status.PASS, `${branches.length} local branches (ceiling ${MAX_LOCAL_BRANCHES})`),
+      );
+    }
+  }
+
+  // --- worktree count vs the mutation budget ---
+  {
+    const budget = Number(process.env.HELM_MAX_MUTATION_WORKTREES ?? DEFAULT_MUTATION_BUDGET);
+    const spaces = inspectWorkspaces(canonicalRoot, canonicalRoot);
+    const decision = mutationBudgetDecision(spaces, budget);
+    const ceiling = budget + 1;
+    out.push(
+      decision.used > ceiling
+        ? check('worktree.budget-exceeded', Status.FAIL,
+            `${decision.used} mutation worktree(s) in use, exceeding budget(${budget})+1=${ceiling}`, {
+              used: decision.used,
+              budget,
+              ceiling,
+              evidence: decision.blocking,
+              fix: 'npm run worktrees:park  (or npm run pr:land -- <n> per merged PR)',
+            })
+        : check('worktree.budget-exceeded', Status.PASS, `${decision.used} mutation worktree(s) in use (budget ${budget}, ceiling ${ceiling})`),
+    );
+  }
 
   return out;
 }

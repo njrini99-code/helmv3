@@ -7,7 +7,7 @@
 > in the same change.
 
 Companion docs:
-- `docs/audits/BASEBALLHELM_STALE_SURFACE_AUDIT_2026-06-25.md` — the original
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_STALE_SURFACE_AUDIT_2026-06-25.md` — the original
   audit that enumerated the 13 empty tables this contract closes.
 - `scripts/seed-baseball-demo.ts` — Phase 1 (org/team/coach/roster + core
   surfaces).

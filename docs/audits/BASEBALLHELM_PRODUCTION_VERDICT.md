@@ -1,5 +1,7 @@
 # BaseballHelm — Production Verdict
 
+Status: active
+
 > This file is reissued, not rewritten. The 2026-06-25 verdict below is kept
 > verbatim as history. Read the 2026-07-15 section first — it is the current
 > status.

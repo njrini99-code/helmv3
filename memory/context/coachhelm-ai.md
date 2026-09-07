@@ -35,13 +35,13 @@ has imported any of them since. "Legacy, still active" is close to the most
 expensive sentence a doc can carry about deleted code: it invites a session to
 go looking for the file, fail, and then reconstruct it.
 
-- `src/lib/coachhelm/insight-engine.ts` — was removed 2026-02-23 (`54d461f8b`)
-- `src/lib/coachhelm/round-review-generator.ts` — was removed 2026-02-23 (`54d461f8b`)
-- `src/lib/coachhelm/summary-generator.ts` — was removed 2026-02-23 (`54d461f8b`)
-- `src/lib/coachhelm/pattern-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
-- `src/lib/coachhelm/highlight-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
-- `src/lib/coachhelm/area-detector.ts` — was removed 2026-02-23 (`54d461f8b`)
-- `src/lib/coachhelm/insights/putting.ts` — was removed 2026-03-09 (`8ca5989a3`)
+- src/lib/coachhelm/insight-engine.ts — was removed 2026-02-23 (`54d461f8b`)
+- src/lib/coachhelm/round-review-generator.ts — was removed 2026-02-23 (`54d461f8b`)
+- src/lib/coachhelm/summary-generator.ts — was removed 2026-02-23 (`54d461f8b`)
+- src/lib/coachhelm/pattern-detector.ts — was removed 2026-02-23 (`54d461f8b`)
+- src/lib/coachhelm/highlight-detector.ts — was removed 2026-02-23 (`54d461f8b`)
+- src/lib/coachhelm/area-detector.ts — was removed 2026-02-23 (`54d461f8b`)
+- src/lib/coachhelm/insights/putting.ts — was removed 2026-03-09 (`8ca5989a3`)
 
 V2 and V3 below are the entire live surface. One module from this group
 survives because it moved rather than died:

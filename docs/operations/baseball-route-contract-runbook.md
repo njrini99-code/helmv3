@@ -10,7 +10,7 @@ This is the operations doc for the BaseballHelm route/shell contract:
 - **Report generator:** `scripts/baseball/generate-route-coverage-report.ts`
   (`npm run baseball:route-coverage`)
 - **Generated artifact:**
-  `docs/operations/generated/route-coverage-report.json`
+  `docs/operations/generated/route-coverage-findings.json`
 
 The test and the generator both call `analyzeRouteContract()` — the rules for
 "what counts as a gap" live in exactly one place. This doc explains what each
@@ -85,7 +85,7 @@ the relevant bucket is promoted to hard-gated (see below).
 npm run baseball:route-coverage
 ```
 
-Writes `docs/operations/generated/route-coverage-report.json` with per-bucket
+Writes `docs/operations/generated/route-coverage-findings.json` with per-bucket
 gap lists + counts, the alias manifest, the dynamic-route sample registry, and
 a `generatedAt` timestamp. Safe to run anytime; it never mutates app code.
 

@@ -262,12 +262,22 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
     {
       claim: 'A recursive rm outside the project is refused',
       resolve: () => {
+        // Deliberately NOT "any Bash-matched blocking hook exists" — that
+        // check was written when no Bash-matched hook existed at all, so it
+        // was dead code that happened to render the honest answer. Once
+        // guard-git.mjs/guard-sql.mjs/guard-config-change.mjs joined as real
+        // Bash-matched PreToolUse hooks (2026-09-07), the same loose check
+        // would have reported CONFIGURED for a claim none of them actually
+        // resolve: none names `rm` as a command it refuses on its own terms
+        // (guard-config-change.mjs only treats `rm` as one signal among
+        // several that a Bash command touches a GUARDED CONFIG PATH, not as
+        // a general recursive-rm refusal). Same lesson as the SQL claim
+        // above: a matcher existing is not evidence for an unrelated claim.
         const denyHits = denyMatch((r) => /\brm\b/.test(r));
-        const hookHits = blockingHooks.filter((h) => /Bash/.test(h.matcher));
-        if (!denyHits.length && !hookHits.length) {
+        if (!denyHits.length) {
           return { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };
         }
-        return { mechanism: [...denyHits, ...hookHits.map((h) => basename(h.script ?? '?'))].join(', '), where: '.claude/settings.json', observed: 'CONFIGURED' };
+        return { mechanism: denyHits.join(', '), where: '.claude/settings.json → permissions.deny', observed: 'CONFIGURED' };
       },
     },
     {

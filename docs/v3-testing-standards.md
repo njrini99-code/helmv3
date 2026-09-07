@@ -41,7 +41,7 @@ Each composer (`composeRoundReview`, `composeHeroNarrative`, `composeCoachChat`)
 2. **Regenerate-once** — first response fails verification → composer regenerates → second response passes → returned. Mock the LLM call boundary.
 3. **Fallback to template** — second response also fails → composer returns the deterministic template result with `fallback_to_template = true` recorded in `golf_coachhelm_llm_calls`.
 4. **Budget exhaustion** — coach over budget → `coach_chat` and `round_review` continue (per priority), `hero_narrative` falls back. Test the priority ordering explicitly.
-5. **Prompt-snapshot** — every composer ships with a frozen prompt-snapshot test under `src/test/llm/snapshots/`. Editing the prompt must update the snapshot in the same PR. Drift between prompt and snapshot fails CI.
+5. **Prompt-snapshot** — every composer ships with a frozen prompt-snapshot test under src/test/llm/snapshots/. Editing the prompt must update the snapshot in the same PR. Drift between prompt and snapshot fails CI.
 
 LLM tests never call the real API. The model boundary is mocked via the `compose()` wrapper.
 
@@ -195,9 +195,10 @@ Each prompt eval should cover:
 
 ## Lighthouse (Core Web Vitals)
 
-`lighthouserc.cjs` config + CircleCI `lighthouse-preview` job runs against
-the Vercel preview URL on every push (auth + landing routes — dashboard
-routes require seeded login fixtures). Asserts:
+`lighthouserc.cjs` config defines the budget below, run manually via
+`npm run lighthouse` (`lhci autorun`). No CI job runs it: `.circleci/config.yml`
+has never defined a `lighthouse-preview` job, and there is no Vercel preview
+URL for it to target (non-main branches don't build). Asserts:
 
 - **Hard errors** (block deploy via CI): a11y < 0.95, CLS > 0.1
 - **Warnings** (surface only): perf < 0.8, best-practices < 0.9, SEO < 0.9,

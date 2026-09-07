@@ -7,11 +7,14 @@ name: Feature Awareness
 #
 # Gated on code-relevant paths (added 2026-09-05): the report only makes
 # sense for a diff that touches feature code — a docs-only or CI-config PR
-# has nothing for memory/registry.yml to map. `detect-changes` below copies
-# ci.yml's own classification (same fail-closed rule: any inability to
-# classify, or any non-pull_request event such as workflow_dispatch,
-# resolves to code=true) so this workflow and ci.yml never disagree about
-# what counts as "docs-only".
+# has nothing for memory/registry.yml to map. `detect-changes` below calls
+# the same shared .github/workflows/detect-changes.yml every other
+# path-gated workflow in this repo calls (2026-09-06) and reads its
+# `mapped_feature_code` output (this job's own `code` concept, renamed to
+# avoid colliding with the shared workflow's differently-scoped `code`
+# output) — same fail-closed rule as before: any inability to classify, or
+# any non-pull_request event such as workflow_dispatch, resolves to
+# mapped_feature_code=true.
 
 on:
   pull_request:
@@ -26,53 +29,21 @@ permissions:
   contents: read
 
 jobs:
+  # Reusable workflow (2026-09-06) — see .github/workflows/detect-changes.yml.
+  # This job used to run its own hand-rolled git-diff classifier (not
+  # dorny/paths-filter, since "every changed file is docs/markdown" isn't an
+  # include-list shape); that logic moved into the shared workflow verbatim
+  # as its `docs_only`/`mapped_feature_code` outputs — renamed from this
+  # job's own `code` output to avoid colliding with ci.yml's differently-
+  # scoped `code` output, since both are now produced by the same call.
   detect-changes:
-    name: Detect code-relevant paths
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      code: ${{ steps.classify.outputs.code }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Classify changed paths (fail closed to code=true)
-        id: classify
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -uo pipefail
-          # Non-PR events (workflow_dispatch) always run the full report.
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "non-PR event -> full report"; exit 0
-          fi
-          # FAIL CLOSED, same rule as ci.yml's detect-changes: any inability
-          # to classify the diff resolves to code=true.
-          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "missing base/head sha -> code (fail closed)"; exit 0
-          fi
-          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "git diff failed -> code (fail closed)"; exit 0
-          fi
-          if [ -z "$changed" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "empty diff -> code (fail closed)"; exit 0
-          fi
-          # docs-only = EVERY changed file is under docs/ or ends in .md.
-          nondoc="$(echo "$changed" | grep -cvE '^docs/|\.md$' || true)"
-          if [ "${nondoc:-1}" -gt 0 ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "code-relevant paths changed ($nondoc) -> full report"
-          else
-            echo "code=false" >> "$GITHUB_OUTPUT"; echo "docs/markdown-only diff -> report skips"
-          fi
-          echo "--- changed files ---"; echo "$changed"
+    name: Detect changes
+    uses: ./.github/workflows/detect-changes.yml
 
   report:
     name: Build context pack
     needs: detect-changes
-    if: needs.detect-changes.outputs.code == 'true'
+    if: needs.detect-changes.outputs.mapped_feature_code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

@@ -25,7 +25,8 @@ export type AdminEventType =
   | 'security'        // Security events (failed logins, etc.)
   | 'system'          // System events (deployments, maintenance)
   | 'subscription'    // Subscription/billing events
-  | 'api';            // API events
+  | 'api'             // API events
+  | 'email.suppressed'; // Customer email suppressed by the outbound gate (src/lib/email/outbound-gate.ts)
 
 export type AdminEventSeverity = 'info' | 'warning' | 'error' | 'critical';
 
@@ -324,6 +325,30 @@ export async function logSecurityEvent(
     metadata,
     userId,
     source: 'auth',
+  });
+}
+
+/**
+ * Log one suppressed-customer-email event (src/lib/email/outbound-gate.ts).
+ * No address fields — kind/source/recipientCount only, so this table never
+ * accumulates recipient PII while the outbound gate is closed.
+ */
+export async function logEmailSuppressed(params: {
+  kind: string;
+  source: string;
+  recipientCount: number;
+  collapsedCount?: number;
+}): Promise<string | null> {
+  return logAdminEvent({
+    eventType: 'email.suppressed',
+    title: `Customer email suppressed (${params.kind})`,
+    severity: 'info',
+    source: params.source,
+    metadata: {
+      kind: params.kind,
+      recipientCount: params.recipientCount,
+      ...(params.collapsedCount ? { collapsedCount: params.collapsedCount } : {}),
+    },
   });
 }
 

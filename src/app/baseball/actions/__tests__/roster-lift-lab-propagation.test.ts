@@ -2,7 +2,7 @@
 // src/app/baseball/actions/__tests__/roster-lift-lab-propagation.test.ts
 //
 // Team D — roster deactivation must propagate to Lift Lab
-// (docs/baseballhelm-overnight/ISSUE_LEDGER.md #9).
+// (https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/baseballhelm-overnight/ISSUE_LEDGER.md #9).
 //
 // Removing/declining a baseball player left their helm_lifting_athletes row
 // (linked via sport_player_id = baseball_players.id, scoped to

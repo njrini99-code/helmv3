@@ -49,7 +49,7 @@ failing loudly and refusing before allocating anything:
 
 1. normalise `name` (slashes → dashes; empty refused)
 2. refuse if the path or the branch `agent/<name>` already exists
-3. **mutation budget** — `HELM_MAX_MUTATION_WORKTREES`, default **3**
+3. **mutation budget** — `HELM_MAX_MUTATION_WORKTREES`, default **6**
    (`DEFAULT_MUTATION_BUDGET` in `scripts/lib/worktree-lifecycle.mjs`),
    reusing the same `inspectWorkspaces` / `mutationBudgetDecision` classifier
    `scripts/check-mutation-budget.mjs` always used
@@ -61,9 +61,10 @@ failing loudly and refusing before allocating anything:
 6. `git worktree add --no-track <path> -b agent/<name> <base>` — `--no-track`
    is load-bearing: without it the new branch inherits `base` as its
    upstream, and a bare `git push` later targets that ref instead of its own
-7. writes `.helm/workspace.json` — `kind: task`, `parkPolicy: KEEP`,
-   `createdBy: "create-workspace.mjs"`, plus `task`/`branch`/`base`/
-   `environment`/`supabase`/`productionWrites`/`createdAt`
+7. writes `.helm/workspace.json` — `kind: task`, `parkPolicy:
+   PARK_IF_REPRODUCIBLE` by default (`KEEP` only with `--keep`, since
+   2026-09-06), `createdBy: "create-workspace.mjs"`, plus `task`/`branch`/
+   `base`/`environment`/`supabase`/`productionWrites`/`createdAt`
 8. **dependencies**: symlinks `node_modules` from the canonical checkout by
    default; `install: true` runs a real, isolated `npm ci` via
    `scripts/ensure-worktree-deps.mjs` instead
@@ -104,22 +105,25 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<from `supabase status -o env` if the local
 `SUPABASE_SERVICE_ROLE_KEY` is **deliberately absent**. A task workspace gets
 no production write capability — see AGENTS.md's "Helm agent canonicality".
 
-## The budget moved from 1 to 3, and two docs are now stale by exactly that amount
+## The budget: 1, then 3, now 6
 
-`DEFAULT_MUTATION_BUDGET` changed because the harness's own isolation paths
-now count against it too: a session doing one task worktree plus two isolated
-subagent checks is normal parallel work, and a budget sized for a single
-human session would refuse it. `AGENTS.md` and `.claude/rules/autonomy.md`
-both still say **"one mutation workspace at a time"** / "defaults to 1" —
-those lines need this correction in their own PR:
+`DEFAULT_MUTATION_BUDGET` first rose 1 → 3 because the harness's own
+isolation paths count against it too: a session doing one task worktree plus
+two isolated subagent checks is normal parallel work, and a budget sized for
+a single human session would refuse it.
 
-```text
-"One mutation workspace at a time." (AGENTS.md, autonomy.md)
-  -> "Up to three mutation workspaces at a time." — HELM_MAX_MUTATION_WORKTREES
-     defaults to 3 (scripts/lib/worktree-lifecycle.mjs), because a subagent
-     with isolation: "worktree" now goes through the same door as a human
-     running scripts/new-worktree.sh and therefore consumes the same budget.
-```
+It rose again, 3 → 6, as part of the tree/routing/speed reorg
+(2026-09-06), once `scripts/serialize.mjs` started recording real wait times
+per gate into `memory/ledgers/gates.jsonl` (`npm run gates:report` prints the
+median and p95 wait per gate) instead of the budget being a guess. `repo:doctor`'s
+`worktree.budget-exceeded` check reads the same `DEFAULT_MUTATION_BUDGET`
+constant, so it fails above budget(6)+1=7 mutation worktrees without any
+separate number to keep in sync.
+
+`AGENTS.md`'s "Helm agent canonicality" section states this number in prose
+(`HELM_MAX_MUTATION_WORKTREES (default 3)` as of this writing) — that line is
+now stale by exactly this amount and needs the matching correction to 6 in
+the PR that owns `AGENTS.md`.
 
 ## Budget, parking, retirement
 
@@ -134,6 +138,31 @@ npm run worktrees:retire   # park + delete branches proven merged (exact OID)
 See `scripts/lib/worktree-lifecycle.mjs` for the classifier and AGENTS.md's
 "Helm agent canonicality" section for the ownership rules (`parkPolicy`, open
 PR dispositions) that gate what an agent may do without asking.
+
+## Gate timing ledger
+
+`scripts/serialize.mjs` already queued the heavy gates (`typecheck`, `test*`,
+`build`) behind a machine-wide slot count (`HELM_GATE_SLOTS`, default 2). It
+now also appends one row per gate run to `memory/ledgers/gates.jsonl`:
+
+```json
+{"ts": 1788745092620, "gate": "typecheck", "waitMs": 0, "runMs": 18000, "slots": 2}
+```
+
+`gate` is the npm lifecycle name (`typecheck`, `test`, `build`, …) when run
+via `npm run <script>`, falling back to the wrapped command line for a direct
+invocation. `waitMs` is time spent queued for a slot before the gate started;
+`runMs` is the gate's own wall time; `slots` is `HELM_GATE_SLOTS` at the time.
+The file is tracked (not gitignored) and self-trims to the last 30 days on
+every append — `recordGateTiming()` in `scripts/serialize.mjs` never throws,
+so a ledger write failure can never turn a passing gate into a failing one.
+
+`npm run gates:report` (`scripts/gates-report.mjs`) reads the ledger and
+prints, per gate name, the run count and the median and p95 wait and run
+time, sorted by p95 wait descending — the gate most often stuck behind the
+slot queue sorts first. This is the instrument behind the budget's 3 → 6
+move above: a rising median wait is the signal to raise `HELM_GATE_SLOTS` or
+the worktree budget, rather than guessing.
 
 ## repo:doctor — what changed, and what it will report on this machine today
 
@@ -161,7 +190,7 @@ around. Two fixes, pick per worktree:
 - **stamp it** — `.claude/hooks/stamp-workspace.mjs` does this automatically
   at SessionStart for whichever worktree is ACTIVE in that session (it cannot
   reach an idle one it isn't running from); or write the marker by hand:
-  `{"kind":"task","parkPolicy":"KEEP","createdBy":"manual"}` into
+  `{"kind":"task","parkPolicy":"PARK_IF_REPRODUCIBLE","createdBy":"manual"}` into
   `<worktree>/.helm/workspace.json`. For the **canonical checkout itself**
   (the WARN case, not FAIL), the equivalent is
   `{"kind":"canonical"}` written into `.helm/workspace.json` at the repo
@@ -216,7 +245,7 @@ change that if the harness contract grows an install flag).
 
 ### Known interaction: harness exit-cleanup vs. this repo's own refusals
 
-`parkPolicy: KEEP` in the marker is **this repo's own convention** — read by
+`parkPolicy` in the marker is **this repo's own convention** — read by
 `scripts/lib/worktree-lifecycle.mjs`, not by the harness. Per the harness's
 own worktree-lifecycle docs, an interactive `--worktree` session's exit
 prompt, if the caller chooses to remove, "deletes the worktree directory and
