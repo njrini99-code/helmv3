@@ -14,11 +14,26 @@
  *   1. Masthead — ViewHeader-shaped: eyebrow + Fraunces title + description +
  *      the promoted action cluster. Both dashboards render a ViewHeader here,
  *      so this part IS a safe shape-match for either role.
- *   2. KPI row  — a neutral 2/4-up MetricCard `loading` grid. Both dashboards
+ *   2. Schedule band — a day-strip + reserved day panel standing in for the
+ *      schedule block BOTH roles render before their KPI row (player:
+ *      DayScheduleSwipe; coach: TodayPanel). This region used to be absent,
+ *      so the skeleton put KPI directly under the masthead while both real
+ *      layouts put a schedule there — every single load paid a structural
+ *      swap, on the one region the two roles actually agree about. The 132px
+ *      body height is DayScheduleSwipe's own reserved min-height, so the real
+ *      card lands on these pixels rather than near them.
+ *   3. KPI row  — a neutral 2/4-up MetricCard `loading` grid. Both dashboards
  *      render exactly four MetricCard tiles in their KPI row (coach: Scoring
  *      Avg / GIR % / Putts / Roster; player: Scoring avg / GIR / Putts /
  *      Handicap) — same tile COUNT and shape either way.
- *   3. Two balanced content columns — a generic pair of matte Panel groups
+ *
+ *      KNOWN, ACCEPTED SWAP: a player with zero rounds played renders no KPI
+ *      grid at all (FairwayPlayerDashboard's cold-start branch), so for that
+ *      one account state these four shells are never fulfilled. The skeleton
+ *      cannot tell — role AND round count are both server-resolved after this
+ *      renders — and dropping the grid would trade one account state's swap
+ *      for every other account's. Keeping it is the deliberate choice.
+ *   4. Two balanced content columns — a generic pair of matte Panel groups
  *      (one "chart/list" block + one row-list block per column) standing in
  *      for whatever the resolved role actually renders below the KPI row
  *      (coach: Today / Recent Rounds / Action Items / Team region; player:
@@ -45,9 +60,16 @@
 import { Skeleton, MetricCard } from '@/components/fairway';
 
 /** A matte Fairway Surface-shaped block (border elevation, rounded-card). */
-function Panel({ className, children }: { className?: string; children?: React.ReactNode }) {
+function Panel({
+  className,
+  children,
+  ...rest
+}: { className?: string; children?: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`rounded-card border border-border-subtle bg-surface ${className ?? ''}`}>
+    <div
+      {...rest}
+      className={`rounded-card border border-border-subtle bg-surface ${className ?? ''}`}
+    >
       {children}
     </div>
   );
@@ -96,8 +118,37 @@ export function FairwayDashboardSkeleton() {
         </div>
       </div>
 
-      {/* ── 2 · KPI row — neutral 2/4-up MetricCard shells; both roles render
-          exactly four tiles here (see file doc) ──────────────────────────── */}
+      {/* ── 2 · Schedule band — the first region both roles agree on. Player
+          mounts DayScheduleSwipe, coach mounts TodayPanel; both sit ABOVE the
+          KPI row, so the placeholder has to as well or first paint reshuffles
+          on handoff. Day-chip strip + a body reserved at DayScheduleSwipe's
+          own min-h-[132px] (~2 event rows). ──────────────────────────────── */}
+      <Panel aria-hidden="true" className="flex flex-col gap-4 p-4 md:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-3.5 w-20" />
+        </div>
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 flex-1 rounded-fw-sm" />
+          ))}
+        </div>
+        <div className="flex min-h-[132px] flex-col gap-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 rounded-fw-md bg-surface-sunken px-3 py-3">
+              <Skeleton circle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="flex flex-1 flex-col gap-1.5">
+                <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${68 - i * 16}%` }} />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      {/* ── 3 · KPI row — neutral 2/4-up MetricCard shells; both roles render
+          exactly four tiles here (see file doc, including the documented
+          cold-start-player exception) ────────────────────────────────────── */}
       <div aria-hidden="true" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard label="" value={0} loading />
         <MetricCard label="" value={0} loading />
@@ -105,7 +156,7 @@ export function FairwayDashboardSkeleton() {
         <MetricCard label="" value={0} loading />
       </div>
 
-      {/* ── 3 · Two balanced content columns — generic, role-agnostic panel
+      {/* ── 4 · Two balanced content columns — generic, role-agnostic panel
           groups (see file doc for why this isn't a coach- or player-specific
           section mirror) ──────────────────────────────────────────────────── */}
       <div aria-hidden="true" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
