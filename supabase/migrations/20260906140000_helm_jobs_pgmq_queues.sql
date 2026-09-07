@@ -33,7 +33,8 @@
 --
 -- QUEUES
 -- ------
--- coachhelm_analysis  — round analysis (src/lib/coachhelm/v2/post-round-trigger.ts)
+-- coachhelm_analysis  — round analysis
+--   (src/lib/coachhelm/v2/post-round-trigger.ts)
 -- email_send          — src/lib/notifications/email.ts (routes through the
 --                        same HELM_CUSTOMER_EMAIL_ENABLED gate a direct send
 --                        does — see src/lib/email/outbound-gate.ts once

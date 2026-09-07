@@ -24,7 +24,8 @@
 --    extension if not exists pg_net;` run by a role with privilege).
 -- 2. Store the cron secret in Vault — NEVER as a literal in this file or in
 --    any SQL history:
---      select vault.create_secret('<the current CRON_SECRET value>', 'helm_jobs_cron_secret');
+--      select vault.create_secret(
+--        '<the current CRON_SECRET value>', 'helm_jobs_cron_secret');
 --    Rotate by calling `vault.update_secret` with the new value; this
 --    migration reads the secret by NAME at call time, never by value.
 -- 3. Confirm the deployed URL for /api/jobs/consume (production domain).
@@ -111,5 +112,6 @@ end $$;
 -- select cron.schedule(
 --   'helm-jobs-consume',
 --   '* * * * *',
---   $$select public.helm_jobs_pg_cron_consume_tick('https://<production-domain>/api/jobs/consume');$$
+--   $$select public.helm_jobs_pg_cron_consume_tick(
+--        'https://<production-domain>/api/jobs/consume');$$
 -- );
