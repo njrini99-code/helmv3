@@ -43,66 +43,32 @@ permissions:
   contents: read
 
 jobs:
-  # Path-gates the three required `Analyze (...)` legs below WITHOUT touching
-  # their job/check-run names (branch protection matches by name — see
-  # .github/branch-protection.md) and without a workflow-level `paths:`
-  # filter (that would make the workflow not start at all for a docs-only
-  # PR, leaving the three required contexts "Expected" forever — the exact
-  # failure branch-protection.md already documents for `block-historical-edits`
-  # and Smoke checks). Instead the workflow always triggers, this job always
-  # runs, and each Analyze leg below skips its actual scan (still reporting
-  # `success`) when nothing in its language's path set changed.
+  # Reusable workflow (2026-09-06) — see .github/workflows/detect-changes.yml.
+  # Same shared detector ci.yml, feature-awareness.yml and
+  # migration-lockdown.yml call. `code` (that workflow's javascript/TS-ish
+  # path set) stands in for this job's former `javascript-typescript`
+  # output — no separate output name exists for it any more, since
+  # ci.yml's `code` filter already covers the same class of file and the
+  # two never need to disagree (a broader match here only means an
+  # occasional extra scan, never a missed one). `actions` and `python` are
+  # unchanged, lifted verbatim into the shared workflow.
   #
-  # Only gates `pull_request` — push/merge_group/schedule always get a full
-  # scan (schedule in particular exists specifically to catch drift a
-  # per-PR path filter would miss). If this job itself fails or is skipped
-  # for any reason on a PR, each Analyze leg below fails OPEN to a real scan
-  # rather than silently skipping.
-  changes:
-    name: Detect changed paths
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    outputs:
-      actions: ${{ steps.filter.outputs.actions }}
-      javascript-typescript: ${{ steps.filter.outputs.javascript-typescript }}
-      python: ${{ steps.filter.outputs.python }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Filter changed paths
-        id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
-        with:
-          filters: |
-            actions:
-              - '.github/**'
-            javascript-typescript:
-              - 'src/**'
-              - 'scripts/**'
-              - 'e2e/**'
-              - '*.ts'
-              - '*.tsx'
-              - '*.mjs'
-              - '*.js'
-              - 'package*.json'
-              - 'tsconfig*.json'
-            python:
-              - '**/*.py'
-              - 'requirements*.txt'
-              - 'pyproject.toml'
+  # Called UNCONDITIONALLY now (no job-level `if:`) — the shape that used to
+  # need `if: github.event_name == 'pull_request'` at the job level lives
+  # inside detect-changes.yml's own steps instead, which is why `analyze`
+  # below can drop its old "changes.result != success" skip branch down to
+  # just "detect-changes existing at all", covered by `!cancelled()` as
+  # before.
+  detect-changes:
+    name: Detect changes
+    uses: ./.github/workflows/detect-changes.yml
 
   analyze:
     name: Analyze (${{ matrix.language }})
-    needs: changes
-    # Runs even when `changes` was skipped (non-PR events) or failed (fail
-    # open to a real scan on a PR rather than silently skipping) — only a
-    # cancelled workflow run should also cancel this job.
+    needs: detect-changes
+    # Runs even when `detect-changes` failed (fail open to a real scan on a
+    # PR rather than silently skipping) — only a cancelled workflow run
+    # should also cancel this job.
     if: ${{ !cancelled() }}
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
@@ -154,8 +120,9 @@ jobs:
         id: should-scan
         env:
           EVENT_NAME: ${{ github.event_name }}
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          LANGUAGE_CHANGED: ${{ needs.changes.outputs[matrix.language] }}
+          CHANGES_RESULT: ${{ needs.detect-changes.result }}
+          LANGUAGE_CHANGED: >-
+            ${{ matrix.language == 'javascript-typescript' && needs.detect-changes.outputs.code || needs.detect-changes.outputs[matrix.language] }}
         run: |
           set -eu
           if [ "$EVENT_NAME" != "pull_request" ]; then

@@ -60,6 +60,40 @@ name: CI
 # measured 2026-09-02 the tree is 3.7 GB, a restore of that size costs about
 # what the install does, and it would evict the Next build cache from the
 # repository's 10 GB cache budget within a few runs.
+#
+# --- 2026-09-06 UPDATE: shared detector, build-once, fast-first ordering ----
+#
+# `detect-changes` is now a call into .github/workflows/detect-changes.yml —
+# the same reusable workflow codeql.yml, feature-awareness.yml and
+# migration-lockdown.yml call, replacing four independent copies of
+# dorny/paths-filter (or, for feature-awareness, a hand-rolled git-diff
+# classifier) with one. Its `code` output is unchanged in meaning and path
+# list from the job it replaced.
+#
+# `next-build` now uploads its `.next` directory (minus `.next/cache`) as
+# artifact `next-build-${{ github.sha }}`, 1-day retention. Two ADVISORY jobs
+# that used to be separate workflows now live here and consume that artifact
+# instead of rebuilding: `pr-smoke-a11y` ("Playwright PR smoke (a11y)",
+# formerly pr-smoke.yml) and `sentry-snapshot-capture` ("Capture + upload
+# Sentry snapshots", formerly sentry-snapshots.yml). Both `needs: next-build`
+# and are gated by `detect-changes`'s `frontend`/`e2e` outputs — neither is in
+# `CI aggregate`'s `needs`, and each keeps its test/capture step
+# `continue-on-error` so a failure there cannot block a merge, matching the
+# advisory status those two workflows always had. playwright.yml (the
+# manual/main full suite) is unaffected; it downloads the same artifact when
+# one exists for its SHA and falls back to building only when it doesn't.
+#
+# FAST-FIRST ORDERING: `next-build`, the three `unit-tests` shards,
+# `unit-tests-timezone`, and `supabase` (Supabase lint + RLS tests) now also
+# `needs: [typecheck, lint]` in addition to `detect-changes` — a typecheck or
+# lint failure stops all four heavy jobs before they start spending runner
+# minutes on a PR that was already going to be rejected. `CI aggregate`'s
+# `if:` did not need to change: `typecheck` and `lint` are themselves in its
+# `needs:` list, so their own `failure`/`cancelled` result already fails the
+# aggregate directly — a heavy job skipping as a SIDE EFFECT of a failed
+# typecheck/lint never needs its own detection, and the existing
+# `code=='true' && skipped` clause still exists purely for the
+# path-gating skip case it was written for.
 # -----------------------------------------------------------------------------
 
 on:
@@ -97,80 +131,15 @@ env:
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
+  # Reusable workflow — see .github/workflows/detect-changes.yml. Same
+  # pattern codeql.yml/feature-awareness.yml/migration-lockdown.yml now all
+  # call: one dorny/paths-filter, one job, outputs read by `if:`/`needs:`
+  # below. The job id stays `detect-changes` here (unchanged from before this
+  # became a reusable workflow) so nothing downstream needed to change its
+  # `needs:`/`if:` references — only `code` is consumed in this file.
   detect-changes:
-    # Same pattern codeql.yml's `changes`/`analyze` jobs already use:
-    # dorny/paths-filter decides an output, a later job's `if:` reads it, and
-    # nothing here renames a job or a check — every required context still
-    # reports under the name branch protection expects. Only `pull_request`
-    # is filtered; push/merge_group always classify as code=true below so a
-    # merge to main always gets the full suite.
-    name: Detect code-relevant paths
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      code: ${{ steps.classify.outputs.code }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      # Only meaningful on `pull_request` — dorny/paths-filter diffs the PR's
-      # base against its head. `continue-on-error` so a filter failure falls
-      # through to the fail-closed branch in "Classify" below rather than
-      # failing this job outright.
-      - name: Filter changed paths
-        id: filter
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
-        with:
-          filters: |
-            code:
-              - 'src/**'
-              - 'supabase/**'
-              - 'e2e/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'next.config.*'
-              - 'tsconfig*.json'
-              - 'vitest.config.ts'
-              - 'eslint.config.mjs'
-              - 'tailwind.config.*'
-              - 'postcss.config.*'
-              - 'middleware.ts'
-              - 'scripts/**/*.ts'
-              - 'scripts/**/*.mjs'
-              - '.github/workflows/ci.yml'
-
-      # Combines the filter's verdict with two fail-closed branches. Heavy
-      # jobs gated on `code` (Next build, the unit-test shards, Supabase lint
-      # + RLS) exist to catch a build/test/schema break — an unclassifiable
-      # diff must not skip them.
-      - name: Classify (fail closed to code=true)
-        id: classify
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          FILTER_OUTCOME: ${{ steps.filter.outcome }}
-          FILTER_CODE: ${{ steps.filter.outputs.code }}
-        run: |
-          set -uo pipefail
-          # Non-PR events (push to main, merge_group) always run the full suite.
-          if [ "$EVENT_NAME" != "pull_request" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "non-PR event -> full suite"; exit 0
-          fi
-          # FAIL CLOSED (e3's criterion): any inability to classify the diff
-          # resolves to code=true. A misclassified docs PR wastes one suite; a
-          # misclassified code PR ships ungated — so uncertainty must be code.
-          if [ "$FILTER_OUTCOME" != "success" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "paths-filter did not succeed ($FILTER_OUTCOME) -> code (fail closed)"; exit 0
-          fi
-          if [ "$FILTER_CODE" = "true" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "code-relevant paths changed -> full suite"
-          else
-            echo "code=false" >> "$GITHUB_OUTPUT"; echo "no code-relevant paths changed -> heavy jobs skip"
-          fi
+    name: Detect changes
+    uses: ./.github/workflows/detect-changes.yml
 
   # ---------------------------------------------------------------------------
   # Every repo-wide check that finishes in seconds, behind ONE install.
@@ -699,7 +668,9 @@ jobs:
 
   unit-tests:
     name: Unit tests
-    needs: detect-changes
+    # Fast-first (2026-09-06): also needs typecheck/lint so a failure there
+    # stops this job before it spends runner minutes — see the header note.
+    needs: [detect-changes, typecheck, lint]
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -785,7 +756,9 @@ jobs:
     # jobs — a no-op today (push events always classify as code=true) but
     # kept explicit so a future change to that classification does not have
     # to remember this job too.
-    needs: detect-changes
+    #
+    # Fast-first (2026-09-06): also needs typecheck/lint — see header note.
+    needs: [detect-changes, typecheck, lint]
     if: github.event_name == 'push' && needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -822,7 +795,8 @@ jobs:
 
   next-build:
     name: Next build
-    needs: detect-changes
+    # Fast-first (2026-09-06): also needs typecheck/lint — see header note.
+    needs: [detect-changes, typecheck, lint]
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -871,9 +845,25 @@ jobs:
           path: .next/cache
           key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
 
+      # BUILD ONCE (2026-09-06). `.next/cache` is excluded — that's the
+      # webpack incremental cache restored/saved above, not needed by anyone
+      # consuming this artifact, and it would bloat the upload for nothing.
+      # 1-day retention: this artifact only needs to outlive the same run's
+      # `pr-smoke-a11y` / `sentry-snapshot-capture` jobs below, and a manual
+      # playwright.yml dispatch against the same commit shortly after.
+      - name: Upload Next build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: next-build-${{ github.sha }}
+          path: |
+            .next
+            !.next/cache
+          retention-days: 1
+
   supabase:
     name: Supabase lint + RLS tests
-    needs: detect-changes
+    # Fast-first (2026-09-06): also needs typecheck/lint — see header note.
+    needs: [detect-changes, typecheck, lint]
     if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -995,6 +985,263 @@ jobs:
       - name: Stop local Supabase stack
         if: always()
         run: supabase stop || true
+
+  # ---------------------------------------------------------------------------
+  # BUILD ONCE (2026-09-06): the two jobs below used to be entire separate
+  # workflows (pr-smoke.yml, sentry-snapshots.yml), each running its own
+  # `npm ci` + `next build` on the SAME commit `next-build` above already
+  # built. Both now `needs: next-build` and download that artifact instead —
+  # they still `npm ci` (node_modules isn't part of the artifact, and
+  # `next start` needs the `next` binary + every runtime dependency), but
+  # skip the ~8-9 minute build. `next.config.*` and `public/` are read
+  # straight from the checkout at runtime same as any `next start`; only the
+  # COMPILED OUTPUT under `.next` is what the artifact supplies.
+  #
+  # ADVISORY, unchanged from before: neither job is in `CI aggregate`'s
+  # `needs:` below, and each keeps step-level `continue-on-error` on its
+  # test/capture step (not job-level) so the check still reports its own
+  # honest pass/fail while being structurally incapable of blocking a merge.
+  # Job/check NAMES are unchanged from the workflows they replace, per
+  # docs/CI_RUNBOOK.md's table.
+  #
+  # Both also require `needs.detect-changes.outputs.code == 'true'` (not just
+  # frontend/e2e) — there is no `next-build` artifact at all on a PR the
+  # detector classified as `code=false`, so a job that only touches
+  # `public/**` (in `frontend`'s path list but not `code`'s) will report
+  # SKIPPED here rather than running its own build the way pr-smoke.yml used
+  # to. That is a real, narrow behavior change from before; noted rather than
+  # hidden — see the PR that introduced this comment for the tradeoff.
+  # ---------------------------------------------------------------------------
+  pr-smoke-a11y:
+    name: Playwright PR smoke (a11y)
+    needs: [detect-changes, next-build]
+    if: >-
+      needs.detect-changes.outputs.code == 'true' &&
+      needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Next build artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: next-build-${{ github.sha }}
+          path: .next
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Same shared-server rationale as before (pr-smoke.yml's original
+      # comment): one `next start` shared via PLAYWRIGHT_BASE_URL by both
+      # test steps below avoids a second `playwright test` invocation racing
+      # port 3000 right after the first one's own webServer tears down.
+      # `next start` (production server against the DOWNLOADED build)
+      # replaces the old `npm run dev` — this job now exercises the same
+      # artifact the rest of CI already validated, not a fresh dev compile.
+      - name: Start production server (from downloaded build)
+        run: |
+          set -euo pipefail
+          npm run start > /tmp/next-start.log 2>&1 &
+          echo $! > /tmp/next-start.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 -o /dev/null; then
+              echo "Server ready after ${i} attempt(s)."
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/next-start.pid)" 2>/dev/null; then
+              echo "::error::next start process died during startup"
+              cat /tmp/next-start.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::next start did not become ready within 120s"
+          cat /tmp/next-start.log
+          exit 1
+
+      - name: Run public accessibility smoke
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npx playwright test e2e/accessibility.spec.ts --project=chromium --reporter=line
+
+      # Blocking within this advisory job (pure layout-geometry assertions,
+      # no a11y-debt exemptions) — same as pr-smoke.yml's original.
+      - name: Run public mobile viewport checks
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npx playwright test --project=mobile-public --reporter=line
+
+      - name: Stop production server
+        if: always()
+        run: kill "$(cat /tmp/next-start.pid)" 2>/dev/null || true
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: pr-smoke-playwright-report
+          path: playwright-report/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  sentry-snapshot-capture:
+    name: Capture + upload Sentry snapshots
+    needs: [detect-changes, next-build]
+    if: >-
+      needs.detect-changes.outputs.code == 'true' &&
+      needs.detect-changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GOLFHELM_PLAYER_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      GOLFHELM_PLAYER_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+      E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+      SENTRY_SNAPSHOTS: "1"
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # `if:` cannot read `secrets.*` directly, so this is a STEP inside the
+      # job rather than a separate gate job (2026-09-06: folding the old
+      # "Check Sentry snapshot prerequisites" job into a step here is exactly
+      # the check-row collapse this change is for — every later step in this
+      # job gates on `steps.token.outputs.enabled` instead).
+      - name: Check for SENTRY_AUTH_TOKEN
+        id: token
+        env:
+          TOKEN_SET: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$TOKEN_SET" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SENTRY_AUTH_TOKEN is not set — Sentry snapshot capture and upload are skipped. See docs/observability/SENTRY_SNAPSHOTS.md OWNER ACTION."
+          fi
+
+      - name: Setup Node
+        if: steps.token.outputs.enabled == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.token.outputs.enabled == 'true'
+        run: npm ci
+
+      - name: Download Next build artifact
+        if: steps.token.outputs.enabled == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: next-build-${{ github.sha }}
+          path: .next
+
+      - name: Cache Playwright browsers
+        if: steps.token.outputs.enabled == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        if: steps.token.outputs.enabled == 'true'
+        run: npx playwright install --with-deps chromium
+
+      # No manual `next start` here: playwright.config.ts's own `webServer`
+      # already runs `npm run start` in CI when PLAYWRIGHT_BASE_URL is unset
+      # (unchanged from sentry-snapshots.yml's original — it never manually
+      # started a server either). It now serves the DOWNLOADED artifact
+      # instead of a build made in this job.
+      - name: Capture Sentry snapshot screenshots
+        if: steps.token.outputs.enabled == 'true'
+        continue-on-error: true
+        id: capture
+        run: |
+          npx playwright test \
+            --project=chromium \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/sentry-snapshots.spec.ts \
+            e2e/sentry-snapshots-baseball.spec.ts
+
+      - name: Count captured images
+        id: count
+        if: steps.token.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          dir="test-results/sentry-snapshots"
+          if [ -d "$dir" ]; then
+            count=$(find "$dir" -name '*.png' | wc -l | tr -d ' ')
+          else
+            count=0
+          fi
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Captured $count image(s) in $dir"
+
+      - name: Upload snapshots to Sentry
+        if: steps.token.outputs.enabled == 'true' && steps.count.outputs.count != '0'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN }}
+          SENTRY_ORG: helm-xs
+          SENTRY_PROJECT: javascript-nextjs
+        run: |
+          npx --yes @sentry/cli@3.7.0 snapshots upload test-results/sentry-snapshots \
+            --app-id helm-web \
+            --project javascript-nextjs
+
+      - name: No images captured
+        if: steps.token.outputs.enabled == 'true' && steps.count.outputs.count == '0'
+        run: |
+          echo "::warning::Sentry snapshots: 0 images captured — nothing uploaded. Check the Playwright report artifact below for the cause (likely a login failure)."
+
+      - name: Upload Playwright report (debugging)
+        if: always() && steps.token.outputs.enabled == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: sentry-snapshots-playwright-report-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/sentry-snapshots/
+          retention-days: 7
+          if-no-files-found: warn
 
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
@@ -1184,6 +1431,9 @@ jobs:
     # plane, Bridge env drift, Edge functions (Deno), Business contracts,
     # Route Hygiene P0/P1, Import-cycle ratchet. `lint` carries ESLint plus the
     # ratchets. Nothing left this gate; it got fewer job names.
+    # `pr-smoke-a11y` and `sentry-snapshot-capture` (2026-09-06, folded in
+    # from pr-smoke.yml/sentry-snapshots.yml) are deliberately NOT in this
+    # list — both were, and remain, advisory-only.
     needs:
       - detect-changes
       - static-checks

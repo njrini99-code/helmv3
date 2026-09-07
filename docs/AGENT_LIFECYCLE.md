@@ -562,8 +562,8 @@ covers the shapes someone thought to write down.
 
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| `playwright.yml` | PR + push | `smoke` on PRs, full `e2e` on main |
-| `pr-smoke.yml` | PR | a11y smoke, path-filtered |
+| `playwright.yml` | manual | full `e2e` suite; reuses ci.yml build artifact |
+| `detect-changes.yml` | called, not triggered | shared changed-path detector |
 | `codeql.yml` | PR + schedule | three `Analyze (…)` matrix jobs |
 | `feature-awareness.yml` | PR | builds the context pack |
 | `migration-lockdown.yml` | PR | blocks edits to historical migrations |
@@ -573,6 +573,10 @@ covers the shapes someone thought to write down.
 | `baseball-readiness-matrix.yml` | PR + push | advisory only |
 | `visual-audit.yml` | manual | screenshot sweep |
 | `claude-code.yml` | issue comment | guarded PR agent |
+
+`pr-smoke.yml` and `sentry-snapshots.yml` are gone — their jobs now live
+inside `ci.yml` (`pr-smoke-a11y`, `sentry-snapshot-capture`), consuming
+`ci.yml`'s own build artifact instead of running a separate build.
 
 ### The skipped-need trap
 
