@@ -1882,6 +1882,7 @@ features:
         - src/lib/auth/**
       db:
         - supabase/migrations/*.sql
+        - supabase/schemas/**
         - supabase/tests/rls/*.sql
       tests:
         - src/test/lib/auth/**

@@ -775,6 +775,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          # D2 declarative-schema and squawk gates below diff this PR's
+          # migration files against the base branch; a shallow (default)
+          # checkout doesn't have the base commit to diff against.
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -789,6 +793,35 @@ jobs:
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
         with:
           version: 2.114.0
+
+      # Squawk lints only the migration files this PR adds — pinned version,
+      # scoped to the PR diff (see docs/CI_RUNBOOK.md / .circleci/README.md:
+      # the weekly CircleCI squawk job stays as an advisory full-history
+      # sweep; this is the per-PR blocking gate for NEW migrations).
+      - name: Lint new migrations with squawk
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          base="${base:-origin/main}"
+          new_migrations="$(git diff --name-only --diff-filter=A "${base}...HEAD" -- supabase/migrations/ | grep -v 'HELD\.md$' || true)"
+          if [ -z "$new_migrations" ]; then
+            echo "No new migration files in this PR."
+            exit 0
+          fi
+          echo "$new_migrations"
+          # Same tool + pin as the weekly CircleCI job (.circleci/config.yml
+          # squawk-migrations), but this run is per-PR, scoped to only the
+          # migrations this PR adds, and blocking (no `|| true`) — the
+          # weekly job stays in place as the full-history advisory sweep
+          # (see .circleci/README.md).
+          npm install --no-save squawk-cli@1.5.1
+          # Default rule set includes disallowed-lock (exclusive locks),
+          # require-concurrent-index-creation, and changing-column-type —
+          # the three families task 4 calls out. No --exclude on purpose.
+          echo "$new_migrations" | xargs npx squawk-cli
+
+      - name: "Declarative schema: new migrations reflected in supabase/schemas"
+        run: bash scripts/db/check-new-migrations-in-schema.sh "${{ github.event.pull_request.base.sha }}"
 
       - name: Start local Supabase stack
         run: supabase start

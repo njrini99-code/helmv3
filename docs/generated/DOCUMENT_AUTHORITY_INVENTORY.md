@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 21 | 1 | 7 | 28 |
 | `ARCHIVE` | 1238 | 0 | 431 | 579 |
-| `UNKNOWN` | 113 | 12 | 46 | 150 |
+| `UNKNOWN` | 114 | 12 | 47 | 151 |
 
 ## Files
 
@@ -57,7 +57,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
-| `.claude/rules/database-review.md` | current | - | - | yes | 2 | 3 | - |
+| `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
 | `.claude/rules/database.md` | current | - | - | - | 3 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | 1 |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
@@ -192,7 +192,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 11 | 1 |
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 53 | 2 |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | 1 |
-| `memory/features/team-access-control.md` | current | yes | - | - | 1 | 16 | - |
+| `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
 | `memory/features/team-communications.md` | current | yes | - | - | 2 | 11 | - |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 17 | - |
 
@@ -549,7 +549,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.circleci/README.md` | current | - | - | - | 0 | 0 | - |
+| `.circleci/README.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/workflows/README.md` | current | - | - | - | 0 | 0 | - |
 | `datadog/README.md` | current | - | - | - | 0 | 3 | - |
 | `docs/README.md` | current | - | - | yes | 3 | 34 | 16 |
@@ -644,11 +644,12 @@ them would bury everything above.
 | `docs/operations/2026-05-27-v3-w35-diagnosis.md` | current | - | - | - | 2 | 5 | - |
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | 1 |
 | `docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md` | current | - | - | - | 0 | 3 | - |
-| `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | 1 | 8 | 2 |
+| `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | 2 | 8 | 2 |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | 3 | 30 | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 7 | 61 | 6 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | 1 |
 | `docs/operations/COST_CONTROLS.md` | current | - | - | - | 4 | 7 | - |
+| `docs/operations/DECLARATIVE_SCHEMA.md` | current | - | - | yes | 2 | 11 | 1 |
 | `docs/operations/GATES.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/GITHUB_LABELS_AND_PROJECT_SETUP.md` | current | - | - | yes | 1 | 1 | - |
 | `docs/operations/GIT_ACTIVITY_TIMELINE.md` | current | - | - | - | 3 | 0 | - |
@@ -661,7 +662,7 @@ them would bury everything above.
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | 4 | 4 | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 1 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 4 | 1 | - |
-| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 2 | 12 | - |
+| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 3 | 12 | - |
 | `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 13 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | 1 |
@@ -688,7 +689,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 20 | 34 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 21 | 34 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |

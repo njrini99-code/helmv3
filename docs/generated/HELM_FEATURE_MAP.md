@@ -322,7 +322,7 @@ is a second thing to keep true.
 **Team Access Control And RLS** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/team-access-control.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/join/**`, `src/app/golf/admin/**`, `src/components/golf/settings/**` … and 16 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/join/**`, `src/app/golf/admin/**`, `src/components/golf/settings/**` … and 17 more in the registry
 - **Telemetry:** none. Cross-cutting authorization enforced in RLS policies and action guards rather than on a screen. It has no surface of its own to instrument; a failure here shows up as a denial inside whichever feature the user was in.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
