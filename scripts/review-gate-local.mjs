@@ -14,7 +14,7 @@
  * Exit 1 if any step fails. `npm run gates:review`.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { load as yamlLoad } from 'js-yaml';
 
 const args = process.argv.slice(2);
