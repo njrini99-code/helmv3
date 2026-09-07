@@ -90,6 +90,46 @@ function sqlFromToolInput(toolInput) {
 
 const SQL_TOOL_RE = /__(execute_sql|apply_migration)$/;
 
+/**
+ * True when a Bash command names the LOCAL Supabase stack and nothing remote.
+ *
+ * The local stack is a throwaway container an agent recreates with
+ * `supabase start`; a DROP against 127.0.0.1:54322 is ordinary local
+ * verification, not the shared production database this hook exists for. The
+ * rule that matters is "not production", not "never".
+ *
+ * Deliberately literal and fail-closed: a target arriving through a shell
+ * variable (`psql "$DB" ...`) is NOT exempt, because this cannot see what the
+ * variable holds, and any remote marker anywhere in the command re-arms the
+ * guard even when a local one is also present.
+ */
+/**
+ * The command with every heredoc BODY removed, leaving the commands themselves.
+ *
+ * Whether this is a database command is decided out here, because a heredoc
+ * body is content, not an invocation: writing a file, a test fixture or a note
+ * that happens to contain `psql` and `drop table` is not running one, and
+ * refusing it is the keyword-matching failure this repo has paid for twice.
+ *
+ * The SCAN for destructive SQL still runs over the whole command, so
+ * `psql "$DB" <<EOF ... drop table ... EOF` — where the heredoc really is the
+ * statement — is still refused. Only the "is this a database command at all"
+ * question is asked outside the body.
+ */
+export function outsideHeredocBodies(command) {
+  return String(command || '').replace(
+    /<<-?\s*'?"?([A-Za-z_][A-Za-z0-9_]*)'?"?[\s\S]*?\n\s*\1\b/g,
+    '<<HEREDOC',
+  );
+}
+
+export function targetsLocalStack(command) {
+  const cmd = String(command || '');
+  const remote = /--linked\b|\.supabase\.co\b|db\.[a-z0-9]{20}\b|--project-ref\b/i.test(cmd);
+  if (remote) return false;
+  return /\b127\.0\.0\.1\b|\blocalhost\b|--local\b|:54322\b/.test(cmd);
+}
+
 export function main(input) {
   const toolName = input?.tool_name || '';
   const toolInput = input?.tool_input || {};
@@ -100,7 +140,9 @@ export function main(input) {
     sqlText = sqlFromToolInput(toolInput);
   } else if (toolName === 'Bash') {
     const command = String(toolInput.command || '');
-    if (/\bpsql\b/.test(command) || /\bsupabase\s+db\b/.test(command)) {
+    if (targetsLocalStack(command)) return { block: false };
+    const invocation = outsideHeredocBodies(command);
+    if (/\bpsql\b/.test(invocation) || /\bsupabase\s+db\b/.test(invocation)) {
       sqlText = command;
     }
   }
