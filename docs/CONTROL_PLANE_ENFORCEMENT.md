@@ -51,7 +51,7 @@ asserted here — see `.claude/rules/database.md`.
 | PostToolUse | `Read\|Bash` | `.claude/hooks/record-context-load.mjs` | yes | no — records/reports only |
 | PostToolUse | `Write\|Edit\|MultiEdit` | `.claude/hooks/record-session-touch.mjs` | yes | no — records/reports only |
 | PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
-| Stop | `(all tools)` | `.claude/hooks/stop-verify.sh` | yes | not a tool call — refuses turn-end once per tree state (`{"decision":"block"}`) |
+| Stop | `(all tools)` | `.claude/hooks/stop-verify.sh` | yes | not a tool call — refuses turn-end once per tree state per session (`{"decision":"block"}`). A tree state is HEAD + tracked changes + untracked SOURCE paths; `memory/ledgers/` and untracked non-source files are excluded from that identity, so running the gates does not re-arm the gate that demanded them |
 | Stop | `(all tools)` | `.claude/hooks/require-gates.mjs` | yes | no — records/reports only |
 
 6 hooks can refuse a tool call.

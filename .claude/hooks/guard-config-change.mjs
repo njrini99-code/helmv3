@@ -93,7 +93,7 @@ const WORD = "[^\\s;|&()<>]+";
 // SOURCE (`cp .mcp.json /tmp/x`), which is rare and has an obvious workaround,
 // while never under-blocking a real write.
 const FILE_ARG_CMD_RE = new RegExp(
-  '\\b(?:sed\\s+-i(?:\\s+(?![-\\s])' + WORD + ')?|perl\\s+-i\\S*|patch|git\\s+apply|cp|mv|rm|truncate|install)\\b([^;|&]*)',
+  '\\b(sed\\s+-i(?:\\s+(?![-\\s])' + WORD + ')?|perl\\s+-i\\S*|patch|git\\s+apply|cp|mv|rm|truncate|install)\\b([^;|&]*)',
   'g',
 );
 
@@ -123,9 +123,19 @@ export function writeTargets(command) {
   }
 
   for (const m of cmd.matchAll(FILE_ARG_CMD_RE)) {
-    for (const arg of String(m[1] || '').trim().split(/\s+/)) {
-      if (arg && !arg.startsWith('-')) targets.push(arg);
-    }
+    const verb = String(m[1] || '').trim().replace(/\s+/g, ' ');
+    const args = String(m[2] || '')
+      .trim()
+      .split(/\s+/)
+      .filter((a) => a && !a.startsWith('-'));
+
+    // `cp` and `install` READ every operand but the last and WRITE only the
+    // last. Counting a source operand as a write refused `cp <config> /tmp/x`
+    // — copying a guarded file OUT, which mutates nothing and is how you look
+    // at one. `mv` is genuinely different: it removes its source, so both
+    // ends of a move stay targets.
+    const copyLike = verb === 'cp' || verb === 'install';
+    for (const arg of copyLike ? args.slice(-1) : args) targets.push(arg);
   }
 
   return targets.filter(Boolean);

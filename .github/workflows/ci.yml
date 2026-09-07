@@ -851,6 +851,13 @@ jobs:
       # 1-day retention: this artifact only needs to outlive the same run's
       # `pr-smoke-a11y` / `sentry-snapshot-capture` jobs below, and a manual
       # playwright.yml dispatch against the same commit shortly after.
+      # `include-hidden-files` and `if-no-files-found` are BOTH load-bearing
+      # here. `.next` is dot-prefixed, and upload-artifact skips hidden paths
+      # by default — so this step logged "No files were found with the
+      # provided path", uploaded nothing, and still SUCCEEDED. Both consumers
+      # below then failed on download, every run, for as long as the
+      # build-once wiring existed. `error` turns the next silent miss into a
+      # failed step instead of two mystery red checks a job away.
       - name: Upload Next build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
@@ -858,13 +865,7 @@ jobs:
           path: |
             .next
             !.next/cache
-          # `.next` is a dot-directory and upload-artifact defaults
-          # include-hidden-files to false, so the upload matched nothing and
-          # warned instead of failing. Every consumer then died on
-          # "Artifact not found for name: next-build-<sha>".
           include-hidden-files: true
-          # And a silent empty upload is what let that survive: fail the build
-          # job instead of handing the downstream jobs a missing artifact.
           if-no-files-found: error
           retention-days: 1
 

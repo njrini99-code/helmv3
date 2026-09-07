@@ -82,7 +82,9 @@ function stopRefusalOf(rel) {
   if (!rel) return null;
   try {
     const src = readFileSync(resolve(ROOT, rel), 'utf-8');
-    return /decision"?\s*:\s*"?block/.test(src) ? 'not a tool call — refuses turn-end once per tree state (`{"decision":"block"}`)' : null;
+    return /decision"?\s*:\s*"?block/.test(src)
+      ? 'not a tool call — refuses turn-end once per tree state per session (`{"decision":"block"}`). A tree state is HEAD + tracked changes + untracked SOURCE paths; `memory/ledgers/` and untracked non-source files are excluded from that identity, so running the gates does not re-arm the gate that demanded them'
+      : null;
   } catch {
     return null;
   }
