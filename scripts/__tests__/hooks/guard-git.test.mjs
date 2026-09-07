@@ -110,6 +110,18 @@ describe('guard-git pure logic', () => {
     expect(evaluateCommand('vercel deploy')).toBeNull();
   });
 
+  it('does not misread an unrelated -f elsewhere in a compound command as a force-push flag', () => {
+    // Regression: FORCE_FLAG_RE used to be tested against the whole command
+    // string, so `git push origin agent/foo && rm -f x.txt` was refused as
+    // a force push even though `-f` belongs to the unrelated `rm`.
+    expect(evaluateCommand('git push origin agent/foo && rm -f x.txt', 'agent/foo')).toBeNull();
+    expect(evaluateCommand('git push origin agent/foo; rm -f x.txt', 'agent/foo')).toBeNull();
+  });
+
+  it('still blocks a genuine force flag placed after a compound separator', () => {
+    expect(evaluateCommand('echo hi && git push -f origin agent/foo')).toMatch(/force/);
+  });
+
   it('targetRefOf extracts the explicit ref', () => {
     expect(targetRefOf('git push origin agent/foo')).toBe('agent/foo');
     expect(targetRefOf('git push origin HEAD:main')).toBe('main');

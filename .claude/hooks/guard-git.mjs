@@ -68,6 +68,19 @@ function currentBranch(cwd) {
 const FORCE_PUSH_RE = /\bgit\s+push\b/;
 const FORCE_FLAG_RE = /(--force\b|--force-with-lease\b|(^|\s)-f(\s|$))/;
 const LEASE_RE = /--force-with-lease\b/;
+
+/**
+ * The `git push ...` clause of a compound command, stopping at the next
+ * shell separator (&&, ||, ;, |, or newline). Flags are tested against this
+ * clause only — testing the whole command let an unrelated `-f` elsewhere
+ * in a compound command (e.g. `git push origin foo && rm -f x`) be
+ * misread as a force-push flag.
+ */
+export function pushClauseOf(command) {
+  const cmd = String(command || '');
+  const m = cmd.match(/\bgit\s+push\b[^\n;|&]*/);
+  return m ? m[0] : '';
+}
 const WORKTREE_ADD_RE = /\bgit\s+worktree\s+add\b/;
 const WORKTREE_REMOVE_RE = /\bgit\s+worktree\s+remove\b/;
 const CHECKOUT_B_RE = /\bgit\s+checkout\s+-b\b/;
@@ -101,8 +114,10 @@ export function targetRefOf(command) {
 export function evaluateCommand(command, branch) {
   const cmd = String(command || '');
 
-  if (FORCE_PUSH_RE.test(cmd) && FORCE_FLAG_RE.test(cmd)) {
-    const hasLease = LEASE_RE.test(cmd);
+  const pushClause = pushClauseOf(cmd);
+
+  if (FORCE_PUSH_RE.test(cmd) && FORCE_FLAG_RE.test(pushClause)) {
+    const hasLease = LEASE_RE.test(pushClause);
     const target = targetRefOf(cmd);
     const targetIsMain = !target || target === 'main';
     if (!(hasLease && !targetIsMain)) {
@@ -110,7 +125,7 @@ export function evaluateCommand(command, branch) {
     }
   }
 
-  if (FORCE_PUSH_RE.test(cmd) && !FORCE_FLAG_RE.test(cmd)) {
+  if (FORCE_PUSH_RE.test(cmd) && !FORCE_FLAG_RE.test(pushClause)) {
     const target = targetRefOf(cmd);
     if (target === 'main' && branch && branch !== 'main') {
       return `git push targeting main from branch '${branch}' is blocked — land via npm run pr:land`;
