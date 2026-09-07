@@ -13,3 +13,6 @@
 {"ts":1788768325447,"gate":"test","waitMs":1,"runMs":329547,"slots":2}
 {"ts":1788768662643,"gate":"build","waitMs":0,"runMs":89472,"slots":2}
 {"ts":1788768758918,"gate":"build","waitMs":0,"runMs":378423,"slots":2}
+{"ts":1788769351459,"gate":"typecheck","waitMs":0,"runMs":62552,"slots":2}
+{"ts":1788769439988,"gate":"test","waitMs":1,"runMs":328725,"slots":2}
+{"ts":1788769773777,"gate":"build","waitMs":0,"runMs":116733,"slots":2}
