@@ -134,8 +134,8 @@ run is built on, applied to the checker itself.
 | --- | --- | --- |
 | `memory/context/golfhelm-features.md` | Gen-1 corpus; every feature it covers has a `features/` doc | `memory/registry.yml` → `memory/features/*.md` |
 | `docs/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md` | its own header has read SUPERSEDED since 2026-07-10 | `memory/incidents/**` |
-| `docs/ROUND_REVIEW_ACCURACY_REPORT.md` | 2026-02 point-in-time report | `memory/incidents/**` |
-| `docs/superpowers/plans/2026-05-28-ai-codebase-intelligence.md` | completed-wave plan | `docs/ai-system/helmv3-ai-codebase-intelligence.md` |
+| `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md` | 2026-02 point-in-time report | `memory/incidents/**` |
+| `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-05/superpowers/plans/2026-05-28-ai-codebase-intelligence.md` | completed-wave plan | `docs/ai-system/helmv3-ai-codebase-intelligence.md` |
 | `FEATURE_COVERAGE.md` | a spec is not a registry | `feature-registry.ts` + `memory/registry.yml` |
 | `.coachhelm-fix-progress.md` | its eight pending items are landed; V2 path superseded by V3 | `release-queue.yml` + `memory/incidents/**` |
 
@@ -186,7 +186,7 @@ fine".
 | `WORKTREE_PARK_NO_PR_OWNERSHIP` | gap | a worktree carries an ownership marker independent of its PR |
 | `crm_recruiting_pipeline` | feature-awareness gap | a current-state doc is written from the code and the feature is registered |
 | PR #1681 reconciliation | **blocked** | that PR merges; its disposition row records what must reach feature memory and the incident system |
-| `docs/baseballhelm-overnight/DATABASE_STATUS.md` | **RESOLVED 2026-08-30** | This row said "two items marked NOT FIXED". There was **one** such marker, plus one separately-declared deliberate gap — a count written into prose, wrong, in the run whose thesis is that stale counts read as current forever. Both are now classified: the marker was **already fixed** (re-verified against live `pg_policies`, and the section under it already carried an "✅ APPLIED" block), and the recruiting-discoverability gap is a **recorded product decision**, step (6) of `PRODUCT_MODULES.recruiting.restore`. |
+| `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/baseballhelm-overnight/DATABASE_STATUS.md` | **RESOLVED 2026-08-30** | This row said "two items marked NOT FIXED". There was **one** such marker, plus one separately-declared deliberate gap — a count written into prose, wrong, in the run whose thesis is that stale counts read as current forever. Both are now classified: the marker was **already fixed** (re-verified against live `pg_policies`, and the section under it already carried an "✅ APPLIED" block), and the recruiting-discoverability gap is a **recorded product decision**, step (6) of `PRODUCT_MODULES.recruiting.restore`. |
 
 ## Deliberately not done
 

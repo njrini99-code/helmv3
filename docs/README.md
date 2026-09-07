@@ -73,7 +73,7 @@ For orientation before diving into a specific doc cluster, read (in rough order)
 - **`docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`** — source of truth for what BaseballHelm
   should be.
 - **`memory/incidents/`** — confirmed product defects, one file per incident, per
-  feature. This entry used to point at `docs/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md`
+  feature. This entry used to point at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md`
   as the ledger "driving the current clean-slate work"; that file's own header
   reads `STATUS: SUPERSEDED` and has since 2026-07-10. Both dated issue ledgers
   under `docs/audits/` are historical audits now — current defects flow through

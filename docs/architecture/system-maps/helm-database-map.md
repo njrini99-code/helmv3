@@ -143,7 +143,7 @@ Advisor references: [security-definer view](https://supabase.com/docs/guides/dat
 - Local `20260715120000_billing_invoices_stripe.sql` has not been applied to live; no billing table is in live generated types.
 - Live migration ledger count was 507 versus 256 local migration files. The repository drift audit documents restamped/systemic history differences.
 
-**Evidence:** [src/lib/types/database.ts](https://github.com/njrini99-code/helmv3/blob/887218526e4ee98f013a30378105fe012af88307/src/lib/types/database.ts); [docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md](https://github.com/njrini99-code/helmv3/blob/887218526e4ee98f013a30378105fe012af88307/docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md); [supabase/migrations/20260715120000_billing_invoices_stripe.sql](https://github.com/njrini99-code/helmv3/blob/887218526e4ee98f013a30378105fe012af88307/supabase/migrations/20260715120000_billing_invoices_stripe.sql).
+**Evidence:** [src/lib/types/database.ts](https://github.com/njrini99-code/helmv3/blob/887218526e4ee98f013a30378105fe012af88307/src/lib/types/database.ts); [https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md](https://github.com/njrini99-code/helmv3/blob/887218526e4ee98f013a30378105fe012af88307/https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md); [supabase/migrations/20260715120000_billing_invoices_stripe.sql](https://github.com/njrini99-code/helmv3/blob/887218526e4ee98f013a30378105fe012af88307/supabase/migrations/20260715120000_billing_invoices_stripe.sql).
 
 ## Data-integrity risks
 
