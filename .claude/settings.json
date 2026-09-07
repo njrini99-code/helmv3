@@ -46,7 +46,6 @@
       "WebSearch",
       "Bash(gh api:*)",
       "Bash(gh run rerun:*)",
-      "Bash(gh pr merge:*)",
       "Bash(supabase:*)",
       "Bash(docker:*)",
       "Bash(npm run:*)",
