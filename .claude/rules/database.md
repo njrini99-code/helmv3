@@ -32,16 +32,17 @@ rather than working from memory — use the plugin-namespaced skill names.
 
 ## Migrations are additive
 One shared production database serves Golf, Baseball and Lift Lab, no
-staging copy. **Destructive SQL is UNENFORCED.** `DROP TABLE`, `TRUNCATE`
-and unqualified `DELETE FROM` are stopped by nothing on either the
-file-write path or the MCP `execute_sql` path — the only wired
-`PreToolUse` hook compares two absolute paths and does not look at SQL
-content. `docs/CONTROL_PLANE_ENFORCEMENT.md` and `npm run
-control-plane:verify` (`user-global/no-stale-hook-claim`, which reads
-`~/.claude/settings.json`'s autoMode block) are the live authority on
-whether that claim has drifted. What actually protects the database is
-that a destructive change is the owner's to make by hand, where the blast
-radius is visible — a convention, not a mechanism.
+staging copy. `guard-sql.mjs` (`PreToolUse`) refuses `DROP TABLE`/`SCHEMA`,
+`TRUNCATE`, a WHERE-less `DELETE FROM`, and `ALTER ... DROP COLUMN`
+reaching a Supabase MCP `execute_sql`/`apply_migration` call or a Bash
+`psql`/`supabase db` command — text matching, not a parser: a runtime-built
+statement it can't see whole may slip past, and `GRANT`/`ALTER ROLE`/
+`DROP FUNCTION` are deliberately out of scope.
+`docs/CONTROL_PLANE_ENFORCEMENT.md` and `npm run control-plane:verify`
+(`user-global/no-stale-hook-claim`, reading `~/.claude/settings.json`'s
+autoMode block) are the live authority on drift. Beyond the hook, a
+destructive change is still the owner's to make by hand — a convention,
+not a mechanism.
 
 ## Grants: anon is the unauthenticated role
 Never `GRANT ... TO anon` or `TO PUBLIC` — anyone holding the publishable
@@ -60,8 +61,7 @@ verify against `pg_class.relacl` rather than assuming.
 ## The two silent-wrong-answer traps
 **PostgREST caps every request at 1,000 rows.** `.limit(2000)` does not
 raise the cap — it returns 1,000 and looks complete. Paginate via
-`fetchAllRows`/`fetchAllRowsResult` for anything over rounds, shots, or
-holes.
+`fetchAllRows`/`fetchAllRowsResult` for anything over rounds, shots, or holes.
 
 **PostgREST filters travel in the URL.** An `.in('id', ids)` list costs
 ~39 bytes per uuid and the edge rejects the request past ~22.8 KB (~585

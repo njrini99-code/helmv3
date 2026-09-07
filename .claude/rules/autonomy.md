@@ -36,10 +36,12 @@ two readings need different deliverables. Cost and "this is a big change"
 are not reasons to ask.
 
 ### What actually makes this safe
-`permissions.deny` and the one wired `PreToolUse` hook
-(`guard-canonical-write.mjs`, refusing `Write`/`Edit`/`MultiEdit` into the
-canonical checkout) are real and survive `bypassPermissions`. Nothing else
-is enforced — no hook covers force push, destructive SQL, recursive `rm`,
-or Bash-driven writes. `docs/CONTROL_PLANE_ENFORCEMENT.md` is the live
-source of truth for what is actually blocked; check it before believing an
-enforcement claim, including this one.
+`permissions.deny` and the wired `PreToolUse` hooks survive `bypassPermissions`:
+`guard-canonical-write.mjs` (canonical Write/Edit/MultiEdit), `guard-git.mjs`
+(dangerous Bash git/gh/vercel commands), `guard-sql.mjs` (destructive SQL
+text), `guard-config-change.mjs` (a config-surface change without
+`HELM_CONFIG_EDIT=1`) — none is a shell or SQL parser, and no hook covers
+Bash-driven writes into the canonical checkout or a recursive `rm`.
+`docs/CONTROL_PLANE_ENFORCEMENT.md` is the live source of truth for what is
+actually blocked; check it before believing an enforcement claim, including
+this one.
