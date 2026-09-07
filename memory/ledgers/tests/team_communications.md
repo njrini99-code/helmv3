@@ -451,3 +451,45 @@ them pass pre-fix for an accidental reason worth writing down: with the old
 inline `maxHeight: '120px'` the value is a finite constant, so the "NaN cannot
 poison the max" and "content-box adds no padding" checks read as satisfied.
 They guard the new computation, not the old constant, and are honest about it.
+
+## 2026-09-07 — G-47 MessageComposer.geometry.test.tsx
+
+18 tests, 11 failing pre-fix. Four of them measure BOTH SOURCE FILES rather
+than the component: the artboard's `.slab` declarations parsed out of
+`Composer.dc.html` against the `--fw-*` values parsed out of
+`design-tokens.css`. Those four pass before and after by design — they are the
+EVIDENCE for the finding (the artboard was drawn from these tokens), and they
+fail the moment either file moves, which is the only way to notice that the
+dock has stopped being a token application.
+
+Token lookup takes the FIRST occurrence in file order, because every name
+repeats in the dark block — the same de-duping the G-49b bubble-depth suite
+needed.
+
+One assertion passes pre-fix for an accidental reason, recorded rather than
+hidden: "bottom-aligns once the field has grown" is satisfied by the old
+hardcoded `items-end`. Its partner, "centres its controls at rest", is the one
+that fails, and the pair together is what pins the behaviour.
+
+The footer assertion is scoped to the FORM's own class list, not the whole
+file: `bg-surface-sunken` is still correct further down on the send button's
+disabled fill, and a whole-file ban would have outlawed a token that has
+nothing to do with this finding.
+
+### G-47 — a neighbouring test re-anchored, not weakened
+
+`keyboard-inset.test.ts`'s composer assertion pinned `[.keyboard-open_&]:pb-4`
+byte-for-byte. That is a pixel step it does not own: G-47 moved the composer's
+gutter from `pb-4` to `pb-3` to match the artboard's dock, and a test about the
+iOS keyboard failed over a change that had nothing to do with the keyboard.
+
+Re-anchored on the property it DOES own — the keyboard-open override replaces
+the resting pad with a plain one, dropping the `env(safe-area-inset-bottom)`
+term, because the keyboard already covers the home indicator and paying for it
+twice is the "I can't see what I'm typing" bug (Shenandoah, 2026-09-01/02). It
+now also asserts the resting pad still CARRIES that term, so the override is a
+real drop rather than two classes that happen to agree.
+
+Proven stronger, not weaker, against both defect shapes: with the override
+deleted it fails, and with the override present but still paying the safe-area
+term it also fails. The original assertion caught only the first.

@@ -854,3 +854,53 @@
   `message` alone would keep a cap measured against type no longer rendering.
 - `minHeight: '40px'` is deliberately UNCHANGED. §9.4 is about growth; the
   control's resting height is composer geometry and belongs to G-47.
+
+## 2026-09-07 — G-47 composer geometry, from the artboard's numbers
+
+- Change: five deltas, one finding. (1) A raised outer glass DOCK now wraps
+  the writing track — the `<form>` is only the safe-area gutter. (2) The send
+  control is a full circle. (3) It draws 40px at every width with a 44px tap
+  target as an invisible overlay. (4) The track centres at rest and
+  bottom-aligns once the field has grown. (5) The placeholder names the
+  recipient.
+- THE DOCK IS A FREE TOKEN APPLICATION, and that is the finding rather than a
+  convenience — the third time this audit has found it (G-32 on the rail,
+  G-49b on the bubbles). `Composer.dc.html:18-20`'s `.slab` is byte-identical
+  to the Fairway glass material: `rgb(244 232 210 / 0.74)` IS `--fw-glass-bg`,
+  `blur(22px)` IS `--fw-blur-glass`, `saturate(190%)` IS `--fw-glass-saturate`,
+  `1.75rem` IS `--fw-radius-lg` (whose own comment reads "glass bars"), and
+  the two drop layers `0 2px 4px oklch(0.18 0.01 60 / 0.06), 0 12px 32px
+  oklch(0.18 0.01 60 / 0.10)` ARE `--fw-shadow-pop`, to the byte. The
+  artboard's inset specular `rgb(255 248 233 / 0.6)` against
+  `--fw-glass-highlight`'s `rgb(255 249 235 / 0.55)` is two channel units and
+  0.05 alpha — absorbed as render noise, not raised as a variant request.
+- `.fw-glass-regular` deliberately NOT reused. It is the same material, but it
+  declares itself "LOCAL to the group", is emitted only by the Fairway overlay
+  primitives, and composes `--fw-shadow-raise` (0 18px 44px / 0.15) where the
+  artboard uses `--fw-shadow-pop` (0 12px 32px / 0.10). Reaching for the class
+  would have taken a depth step the artboard did not draw — a popover floating
+  above the page rather than a dock resting on it.
+- Arbitrary-value syntax (`[background:var(--fw-glass-bg)]`) because the
+  `--fw-glass-*` family has NO Tailwind bridge: `backdrop-blur-glass` is 16px,
+  from the older cream-derived scale, not the token's 22px.
+  `CourseDetailDrawer.tsx:301` is the local idiom for exactly this.
+- The send button's two corrections are separate. `rounded-fw-md` (14px) made
+  the focal action a rounded square where `--fw-radius-full`'s own comment
+  reserves the pill axis for "primary CTAs". And mobile drew 44px VISIBLE,
+  which inverts §9.1's own split — it asks for a 40px circle inside a 44px hit
+  area, and the code grew the circle instead of the tap zone. The fix puts the
+  hit area in an `after:-inset-0.5` overlay: 40 + 2 + 2 = 44 exactly, and not
+  one drawn pixel moves.
+- Alignment is MEASURED, not counted. `isGrown` compares the resized height
+  against one line's worth of the same box G-22 computes; whether text wraps
+  depends on the width, so a character count would be wrong at some widths.
+- The recipient name reads the SAME source as the thread header
+  (`MessageThreadPane.tsx:838`), so the two cannot name different people. A
+  1:1 uses the first name, matching what the artboard writes; a group keeps
+  its title whole, because clipping "Varsity Team Chat" at the first space
+  would invent a person. Undefined falls back to the generic string rather
+  than rendering "Message undefined".
+- OUT OF SCOPE deliberately, and stated so nobody reads silence as agreement:
+  the artboard's `.track` gradient fill, `.send-on` gradient and `.send-off`
+  `oklch(0.963 0.021 84)` are not among G-47's five bullets. The track keeps
+  `bg-surface` and the disabled send keeps `bg-surface-sunken`.

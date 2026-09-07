@@ -742,6 +742,24 @@ export function FairwayMessages() {
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}
+                    /* G-47 — the field names who is about to hear you
+                     * ("Message Cole", `Composer.dc.html:45`), which is the
+                     * one thing the composer can tell you that the header
+                     * cannot once it has scrolled away.
+                     *
+                     * Same source the thread header reads
+                     * (`MessageThreadPane.tsx:838`), so the two cannot name
+                     * different people. A 1:1 uses the FIRST name, matching
+                     * what the artboard writes; a group keeps its title whole,
+                     * because a group's name is not a person's and clipping it
+                     * at the first space would invent one. Undefined either
+                     * way falls back to the generic placeholder rather than
+                     * rendering "Message undefined". */
+                    recipientName={
+                      selectedConversation.is_group
+                        ? selectedConversation.title || undefined
+                        : selectedConversation.other_participant?.name?.split(' ')[0] || undefined
+                    }
                   />
                 ) : null}
               </MessageThreadPane>

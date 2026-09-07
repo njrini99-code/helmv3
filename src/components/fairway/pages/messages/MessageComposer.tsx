@@ -5,7 +5,8 @@
  * Fairway · messages · MessageComposer — the "what's-next" composer track
  * ----------------------------------------------------------------------------
  * The WHAT'S-NEXT section of the two-pane inbox: a sunken matte composer track
- * (mirrors AskThreadPane's `border-t bg-surface-sunken` composer slot). It is a
+ * (G-47: a raised glass DOCK holding an inset writing track — it was one
+ * flush `border-t bg-surface-sunken` footer). It is a
  * pure PRESENTATION re-skin of the legacy `MessageInput` — the behavior is
  * PRESERVED byte-for-byte in intent:
  *   • auto-resize textarea (grows to five MEASURED lines — G-22)
@@ -115,9 +116,24 @@ export interface MessageComposerProps {
   ) => Promise<boolean>;
   /** Throttled typing broadcast (the unchanged useGolfMessages.sendTypingStatus). */
   onTyping?: (isTyping: boolean) => void;
+  /**
+   * Who this thread is with (G-47). The artboard writes "Message Cole", not a
+   * generic instruction — the field says who is about to hear you, which is
+   * the one thing a composer can tell you that the thread above it cannot
+   * once it has scrolled.
+   *
+   * Optional, and the fallback is the old generic string: a caller that has
+   * no name to give must not render "Message undefined".
+   */
+  recipientName?: string;
 }
 
-export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: MessageComposerProps) {
+export function MessageComposer({
+  onSend,
+  onSendWithAttachments,
+  onTyping,
+  recipientName,
+}: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -180,6 +196,18 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
    */
   const sendAbortRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
+  /**
+   * Whether the field has outgrown one line (G-47).
+   *
+   * The track was hardcoded `items-end`, which on a single-line composer
+   * pushes the clip and send controls to the bottom of a row they are the
+   * full height of — visually a hair low against a centred caret. The
+   * artboard bottom-aligns only once the field has grown
+   * (`Composer.dc.html:56` adds `align-items: flex-end` on the GROWN state
+   * only); at rest everything is centred. Measured, not guessed at from the
+   * character count, because whether the text wraps depends on the width.
+   */
+  const [isGrown, setIsGrown] = useState(false);
   const compositionClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Enter-to-send is a HARDWARE-KEYBOARD affordance, and treating it as
@@ -214,7 +242,11 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     el.style.height = 'auto';
     const max = maxHeightForLines(el, MAX_VISIBLE_LINES);
     el.style.maxHeight = `${max}px`;
-    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+    const next = Math.min(el.scrollHeight, max);
+    el.style.height = `${next}px`;
+    // One line's worth of box is the resting height. Anything above it means
+    // the text has wrapped, which is when the artboard bottom-aligns.
+    setIsGrown(next > maxHeightForLines(el, 1) + 0.5);
   }, []);
 
   useEffect(() => {
@@ -513,11 +545,56 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
-    // Sunken matte composer track — mirrors AskThreadPane's composer slot.
+    /* G-47 — the two-layer construction §9.1 and the artboard both specify.
+     *
+     * The <form> is now only the safe-area gutter; the DOCK is the element
+     * inside it. Before this the form WAS the composer — `border-t
+     * border-border-subtle bg-surface-sunken`, one flush edge-to-edge footer
+     * with no radius, no translucency and no shadow — so the "raised outer
+     * dock + inset writing track" pair the plan describes existed as a single
+     * layer (M03C F13).
+     *
+     * EVERY VALUE BELOW IS A TOKEN, and that is the finding rather than a
+     * convenience. `Composer.dc.html:18-20`'s `.slab` is byte-identical to
+     * the Fairway glass material: `rgb(244 232 210 / 0.74)` IS
+     * `--fw-glass-bg`, `blur(22px)` IS `--fw-blur-glass`, `saturate(190%)` IS
+     * `--fw-glass-saturate`, `1.75rem` IS `--fw-radius-lg` (whose own comment
+     * reads "glass bars"), and the two drop layers `0 2px 4px
+     * oklch(0.18 0.01 60 / 0.06), 0 12px 32px oklch(0.18 0.01 60 / 0.10)` ARE
+     * `--fw-shadow-pop`, to the byte. The artboard's third shadow, an
+     * `inset 0 1px 0 rgb(255 248 233 / 0.6)` specular, is
+     * `--fw-glass-highlight` at `rgb(255 249 235 / 0.55)` — two channel units
+     * and 0.05 of alpha apart, absorbed as render noise. Same free win G-32
+     * found on the rail and G-49b on the bubbles: the artboard was drawn from
+     * these tokens.
+     *
+     * NOT `.fw-glass-regular`, deliberately. It is the same material, but it
+     * declares itself "LOCAL to the group" and is emitted only by the Fairway
+     * overlay primitives, and it composes `--fw-shadow-raise`
+     * (0 18px 44px / 0.15) where the artboard uses `--fw-shadow-pop`
+     * (0 12px 32px / 0.10) — a visibly heavier float, right for a popover
+     * above the page and wrong for a dock resting on it. Reusing the class
+     * would have meant taking a depth step the artboard did not draw.
+     *
+     * Arbitrary-value syntax because the `--fw-glass-*` family has no Tailwind
+     * bridge (`backdrop-blur-glass` is 16px, an older, different scale).
+     * `CourseDetailDrawer.tsx:301` establishes
+     * `[background:var(--fw-glass-bg-strong)]` as the local idiom for exactly
+     * this case. */
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border-subtle bg-surface-sunken p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-4 lg:pb-4"
+      className="px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 [.keyboard-open_&]:pb-3 lg:pb-3"
     >
+      <div
+        className={cn(
+          // `.slab`: padding 12px 12px 14px 12px, radius 1.75rem — exact.
+          'rounded-fw-lg p-3 pb-3.5',
+          '[background:var(--fw-glass-bg)]',
+          '[-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
+          '[backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
+          '[box-shadow:inset_0_1px_0_var(--fw-glass-highlight),var(--fw-shadow-pop)]',
+        )}
+      >
       {/* G-20a — the "Didn't send" banner, ABOVE the track, which is where
           `Composer.dc.html:140-149` draws it. Below the track (where the G-21
           refusal used to whisper in secondary ink) it read as a footnote to a
@@ -571,7 +648,16 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
 
       <div
         className={cn(
-          'flex items-end gap-2 rounded-fw-lg p-1.5',
+          // G-47 — `.track`: gap 8px (`gap-2`, exact), radius 1.75rem
+          // (`rounded-fw-lg`, exact — M03C already confirmed this one), and
+          // `padding: 5px 5px 5px 12px`. `p-1.5` is 6px, 1px over on three
+          // sides and absorbed; the 12px opening on the left is `pl-3` and
+          // exact, because that gutter is what stops the clip icon sitting on
+          // the track's edge.
+          'flex gap-2 rounded-fw-lg p-1.5 pl-3',
+          // Centred at rest, bottom-aligned once the text wraps — the
+          // artboard adds `align-items: flex-end` on the GROWN state only.
+          isGrown ? 'items-end' : 'items-center',
           'border border-border-subtle bg-surface',
           'transition-colors duration-200',
           'focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-border-focus/30',
@@ -591,7 +677,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           onKeyDown={handleKeyDown}
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
-          placeholder="Type a message…"
+          placeholder={recipientName ? `Message ${recipientName}` : 'Type a message…'}
           rows={1}
           maxLength={MESSAGE_MAX}
           className={cn(
@@ -622,7 +708,22 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'flex h-11 w-11 min-h-0 flex-shrink-0 items-center justify-center rounded-fw-md p-0 md:h-10 md:w-10',
+            // G-47 — a 40px CIRCLE at every width, with a 44px tap target
+            // around it.
+            //
+            // Two separate corrections. `rounded-fw-md` (14px) made the focal
+            // action a rounded square; the artboard's `.send` is
+            // `border-radius: 9999px`, which is what `--fw-radius-full`'s own
+            // token comment reserves for "primary CTAs".
+            //
+            // And the mobile size was 44px VISIBLE (`h-11 w-11`), which
+            // inverts §9.1's own split: it asks for a 40px circle with a 44px
+            // hit area, and the code grew the circle instead of the tap zone.
+            // The `after:` overlay is the tap zone — `-inset-0.5` is 2px on
+            // each side, so 40 + 4 = 44 exactly, invisible, and it does not
+            // move a single pixel of what is drawn.
+            'relative flex h-10 w-10 min-h-0 flex-shrink-0 items-center justify-center rounded-full p-0',
+            'after:absolute after:-inset-0.5 after:rounded-full after:content-[\'\']',
             'outline-none transition-all duration-200',
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
             'active:scale-95 motion-reduce:active:scale-100',
@@ -664,8 +765,9 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
               {charsLeft}
             </span>
           )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </form>
   );
 }
