@@ -33,7 +33,7 @@ human has to remember to invalidate them.
 
 | Service | Authority | Scope | Source | Runtime evidence |
 | --- | --- | --- | --- | --- |
-| Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read_only=true | .mcp.json (this repo) | **FAILED** — 2026-09-01 — 2026-09-01: absent from the session tool inventory entirely — not exposed, and not listed among the servers awaiting OAuth either (2026-08-29 it exposed ONLY authenticate/complete_authentication). Still the sanctioned route: its grant requests exclusively :read scopes (organizations, projects, database, analytics, secrets, edge_functions, environment, storage), connector-enforced read-only. Re-recorded under the fingerprint that now includes the ./node_modules/.bin and npx spellings of `config push` / `db reset`. |
+| Supabase | `mcp__supabase__*` | project-scoped: qmnssrrolpinvwjjnufo, read_only=true | .mcp.json (this repo) | **STALE** — observed 2026-09-01 under config 7a677da5aeb057cd; config is now 353b3f061d1f2bf6 |
 | Sentry | `mcp__claude_ai_Sentry__*` | org helm-xs | account connector | **EXERCISED** — 2026-08-29 — find_organizations -> org helm-xs (us.sentry.io). 2026-09-01: no tool carries this display-name prefix in the session inventory; the same connector answers as mcp__7524981b-0003-40de-9f86-c5275420784a__* (see that row). The 2026-08-29 PASS was made under this spelling. |
 | Vercel | `mcp__claude_ai_Vercel__*` | account | account connector | **NOT_EXERCISED** — 2026-09-01 — 2026-09-01: NO tool with this display-name prefix exists in the session inventory; the account connector is exposed as mcp__fba2ada3-c190-4053-b91a-3e81f5296483__* (next row). The 2026-08-29 PASS (full tool surface: list_projects, list_deployments, get_runtime_logs) was under this spelling. deploy_to_vercel stays denied under this name in case the spelling returns. |
 | GitHub | `gh CLI (gh api)` | repo njrini99-code/helmv3 | scripts/worktree-lifecycle.mjs | **EXERCISED** — 2026-08-29 — exercised three ways: MERGED #1676 -> head 7843291b2; OPEN #1659 -> head 03a13075d; feat/ask-nav-and-opening -> NONE. A failed lookup classifies UNKNOWN_PR, never NONE (#1668). Capability is fingerprintable after all: the authenticated account id, the repository id and the OAuth scope set (X-Oauth-Scopes response header) are all stable and carry no secret material. Recorded 2026-08-30; control-plane:verify re-measures them live and reports drift. |
@@ -42,10 +42,10 @@ human has to remember to invalidate them.
 
 | Namespace | Service | Disposition | Configured | Connected | Exposed | Allowed | Exercised |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `mcp__supabase__*` | Supabase | AUTHORITY | yes | no | no | yes | FAILED |
-| `mcp__claude_ai_Supabase__*` | Supabase | TEMPORARY_FALLBACK | yes | unknown (name not present) | no (not under this name) | partial (10 mutators denied) | NOT_EXERCISED |
-| `mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__*` | Supabase | TEMPORARY_FALLBACK_UUID_SPELLING | yes (account connector, no file in this repo) | yes | yes | partial (10 mutators denied) | EXERCISED |
-| `mcp__plugin_supabase_supabase__*` | Supabase | PHANTOM_REMOVED | no | no | no | DENIED (server-level) | FAILED |
+| `mcp__supabase__*` | Supabase | AUTHORITY | yes | no | no | yes | STALE |
+| `mcp__claude_ai_Supabase__*` | Supabase | TEMPORARY_FALLBACK | yes | unknown (name not present) | no (not under this name) | partial (10 mutators denied) | STALE |
+| `mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__*` | Supabase | TEMPORARY_FALLBACK_UUID_SPELLING | yes (account connector, no file in this repo) | yes | yes | partial (10 mutators denied) | STALE |
+| `mcp__plugin_supabase_supabase__*` | Supabase | PHANTOM_REMOVED | no | no | no | DENIED (server-level) | STALE |
 | `mcp__claude_ai_Sentry__*` | Sentry | AUTHORITY | yes | yes | yes | yes | EXERCISED |
 | `mcp__plugin_sentry_sentry__*` | Sentry | REDUNDANT_DENIED | yes | yes (pre-deny) | yes (pre-deny) | DENIED (server-level) | DENIED_BY_POLICY |
 | `mcp__7524981b-0003-40de-9f86-c5275420784a__*` | Sentry | AUTHORITY_UUID_SPELLING | yes (account connector, no file in this repo) | yes | yes | yes | EXERCISED |
@@ -101,7 +101,7 @@ When a fingerprint changes, every EXERCISED claim under it becomes STALE.
 
 | Service | Fingerprint | Drift detectable? |
 | --- | --- | --- |
-| Supabase | `7a677da5aeb057cd` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
+| Supabase | `353b3f061d1f2bf6` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Sentry | `e1d6b5e512b23087` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | Vercel | `5b174c1ef5d936bb` | yes — derived from the allow/deny/ask rules and `.mcp.json` entries naming this service |
 | GitHub | `ungoverned:87544794` | **NO** — no allow/deny/ask rule or `.mcp.json` entry in this repo governs it, so there is nothing here to fingerprint |

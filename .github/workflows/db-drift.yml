@@ -23,9 +23,12 @@ on:
     - cron: '0 7 * * *'
   workflow_dispatch:
 
-# Read-only guard; no write scope needed anywhere.
+# Read-only against the DATABASE (only SELECTs ever cross the wire). `issues:
+# write` is needed only to open/update the alert issue on failure — nothing
+# here writes to the repo's code or touches a PR.
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: db-drift-production
@@ -60,3 +63,53 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: npm run db:drift:check
+
+      # D4 second check (db-tooling-drift): object-level drift between the
+      # ledger and the live catalog — a version can be "applied" on both
+      # sides while the table/function/policy it claims to create is
+      # missing. Same read-only transport, same secrets, no new credential.
+      - name: Check ledger objects against the live catalog
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: npm run db:ledger-vs-catalog
+
+      # Alert the owner within the hour of a failure above, instead of
+      # waiting for someone to notice a red scheduled run. Two channels,
+      # both owner-only, never customer mail:
+      #   1. a GitHub issue, opened once and then commented on for repeat
+      #      failures rather than duplicated every day
+      #   2. one email through the SAME ops-digest transport/env-vars as
+      #      src/lib/admin/digest/transport.ts (OPS_DIGEST_RESEND_API_KEY,
+      #      OPS_DIGEST_TO) — skipped without failing the workflow if those
+      #      secrets are not configured in this repo's Actions, in which
+      #      case the issue is the alert of record.
+      - name: Open or update the db-drift alert issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh label create db-drift --description "Automated production database drift/advisor alerts" --color B60205 --force >/dev/null 2>&1 || true
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --label db-drift --state open --json number --jq '.[0].number // empty')"
+          body="A scheduled Database drift check step failed.
+
+          Run: ${RUN_URL}
+
+          See the failed step's log for which invariant (schema, or ledger-vs-catalog) tripped."
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "Database drift check failing" --label db-drift --body "$body"
+          fi
+
+      - name: Email the owner
+        if: failure()
+        env:
+          OPS_DIGEST_RESEND_API_KEY: ${{ secrets.OPS_DIGEST_RESEND_API_KEY }}
+          OPS_DIGEST_TO: ${{ secrets.OPS_DIGEST_TO }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          node scripts/db/notify-drift.mjs "Database drift check failing" "A scheduled Database drift check step failed. Run: ${RUN_URL}"
