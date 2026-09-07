@@ -16,8 +16,8 @@ confirms it, and sharpens two counts.
 
 | Artboard value | Token | Where |
 |---|---|---|
-| `inset 0 1px 0 oklch(1 0 0 / 0.55), 0 1px 2px …/0.05, 0 4px 10px …/0.06` | `--fw-shadow-card`, byte-identical | unread conversation row |
-| `border-radius: 0.875rem` | `--fw-radius-md` → `rounded-fw-md` | conversation rows — already correct, verified not changed |
+| `inset 0 1px 0 oklch(1 0 0 / 0.55), 0 1px 2px …/0.05, 0 4px 10px …/0.06` | `--fw-shadow-card`, byte-identical | unread conversation row — **measurement kept, application WITHDRAWN**, see below |
+| `border-radius: 0.875rem` | `--fw-radius-md` → `rounded-fw-md` | conversation rows — **withdrawn with it**; the rows carry no radius now |
 | `border-radius: 0.625rem` | `--fw-radius-sm` → `rounded-fw-sm` | search well — already correct |
 | the page wash | `--fw-gradient-canvas` → `bg-canvas-gradient` | 4 page-shell sites (M03A F11) |
 | `1.25rem` bubble corner | `--fw-radius-card` → `rounded-card` | thread bubbles (G-48) |
@@ -28,6 +28,29 @@ utility name resolves to a legacy cool-grey value in `tailwind.config.ts`
 the repo's idiom is the arbitrary-property escape
 `[box-shadow:var(--fw-shadow-card)]`, used at roughly eight sites. Bridging it
 as `shadow-fw-card` would be a reasonable A03 request in its own right.
+
+## WITHDRAWN — the unread conversation row no longer has a card face
+
+The conversation row's card is gone, so the two requests attached to it are
+withdrawn: the unread row's `--fw-shadow-card` application, its
+`rounded-fw-md`, and the conversation-row share of unmapped value #1. The rows
+are a `divide-y divide-border-subtle` list now — uniform padding, no radius, no
+per-row shadow, unread carried by a `bg-surface` fill plus weight and badge.
+
+The reason is measured, not aesthetic, and it is recorded in full in
+`memory/ledgers/changes/team_communications.md` (2026-09-07). In short: the
+artboard is a specimen that never stacks two flat rows, so it cannot show that
+a card on unread rows only makes the list's PERCEIVED rhythm uniform when the
+unread rows happen to alternate with read ones. With six real conversations at
+390×844 the box gap was a constant 6px while the eye read 6px between two
+carded rows and 30px between two flat ones, on rows that were themselves 80px
+against 72px. `DECISIONS.md` G-50b governs — take the rule, not the specimens.
+
+What is NOT withdrawn is the measurement in the table above. The artboard's
+unread-row shadow really is byte-identical to `--fw-shadow-card`, and that
+remains the reason `shadow-card` (a legacy cool-grey, no relation) must never
+be substituted for the token anywhere on this surface. The `shadow-fw-card`
+bridging request stands on its own and is unaffected.
 
 ## The unmapped values: five at W3, eight after W4
 
@@ -40,7 +63,7 @@ second stop" are one request, not two.
 
 | # | Value | Nearest existing token | Why it cannot be mapped | Seen |
 |---|---|---|---|---|
-| 1 | `linear-gradient(180deg, oklch(0.989 0.013 87) 0%, oklch(0.980 0.017 86) 100%)` | `--fw-color-surface` (`oklch(0.984 0.016 86)`) sits *between* the two stops | a flat colour cannot express a two-stop face | 7 places — 5 in `Main`, 2 in `Composer` (the manifest says four; measured, it is seven) |
+| 1 | `linear-gradient(180deg, oklch(0.989 0.013 87) 0%, oklch(0.980 0.017 86) 100%)` | `--fw-color-surface` (`oklch(0.984 0.016 86)`) sits *between* the two stops | a flat colour cannot express a two-stop face | 7 places — 5 in `Main`, 2 in `Composer` (the manifest says four; measured, it is seven). **PARTLY WITHDRAWN**: the 3 conversation-row occurrences no longer have a surface to land on, see below. The composer's 2 and the remaining `Main` uses still want it |
 | 2 | `oklch(0.526 0.128 149.8)` — the green gradient's second stop | `--fw-color-accent-650` = `oklch(0.540 0.132 149.7)`; near, not equal | first stop IS `--fw-color-accent-600` exactly, so only the second needs a name | composer send button + pinned-rail pill |
 | 3 | `oklch(0.505 0.19 27)` — failure-banner red | between `--fw-color-danger` (`0.586 0.222 27`) and `--fw-color-danger-ink` (`0.44 0.16 25`) | genuinely a third step on that ramp | composer failure state |
 | 4 | `0.375rem` (6px) — bubble tail | below `--fw-radius-sm` (10px) | the fw ramp has no step under 10px | every bubble tail |

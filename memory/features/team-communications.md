@@ -206,6 +206,34 @@ Two consequences worth carrying:
   `participant_count` instead. `is_team_channel` would be worse there, not
   better: it is true for a small minority of real team chats.
 
+## The conversation rail is one list on one cadence (2026-09-07)
+
+The rail's rows are a divided list, not a stack of cards, and the rule is
+load-bearing rather than cosmetic: **every row occupies an identical box**.
+Same padding, no radius, no per-row shadow, no inter-row gap — rows are
+separated by a `divide-y divide-border-subtle` hairline, which costs no
+vertical space. Unread is carried by a `bg-surface` tint plus the heavier name
+weight and the count badge — `surface` and not an accent tint, because the row
+already spends accent on the Badge, the group glyph and the timestamp, and
+tinting the row accent as well makes the badge and glyph disappear into their
+own background. Desktop selection is a leading accent rule
+painted as an inset shadow.
+
+Why it is written down rather than left to taste: giving unread its own
+elevated card makes the list's PERCEIVED rhythm depend on which rows happen to
+be unread. Measured at 390x844 with six conversations, the box gap was a
+uniform 6px but the eye read 6px between two carded rows (it lands on the card
+edges) and 30px between two flat rows (no edge, so it measures text-to-text
+across 12 + 6 + 12), with an 80px row against a 72px one on top of that. The
+approved artboard specifies the card and cannot show this, because it never
+stacks two flat rows; `DECISIONS.md` G-50b — take the rule, not the specimens
+— is the authority for shipping the rule instead. The same treatment is
+`FairwayQualifierLeaderboard`'s, and the rail's docstring forbids the
+alternative ("never a card-in-card").
+
+Anything that reintroduces a per-row box — a radius, a shadow, a gap, a
+taller unread row — brings the uneven cadence back.
+
 ## The conversation rail's last message is a preview, not a message
 
 `last_message` on `GolfConversationWithMeta` is typed
@@ -256,8 +284,8 @@ fills the gap with `'Golf Coach'` / `'Golf Player'`.
   re-runs `npm run db:types`; leaving it here would exempt a real object from
   the drift check.
   `golf_group_membership_management` is not a database object at all — it is
-  the pgTAP suite's filename (`supabase/tests/rls/golf_group_membership_-
-  management.sql`), which happens to start with `golf_`.
+  the pgTAP suite's own filename, which happens to start with `golf_`:
+  `supabase/tests/rls/golf_group_membership_management.sql`.
 -->
 
 ## Group membership management, and why it needed a policy change

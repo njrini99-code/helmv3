@@ -33,6 +33,6 @@
   re-runs `npm run db:types`; leaving it here would exempt a real object from
   the drift check.
   `golf_group_membership_management` is not a database object at all — it is
-  the pgTAP suite's filename (`supabase/tests/rls/golf_group_membership_-
-  management.sql`), which happens to start with `golf_`.
+  the pgTAP suite's own filename, which happens to start with `golf_`:
+  `supabase/tests/rls/golf_group_membership_management.sql`.
 -->

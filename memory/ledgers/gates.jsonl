@@ -143,3 +143,20 @@
 {"ts":1788810957813,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":758,"slots":2}
 {"ts":1788811191129,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":791,"slots":2}
 {"ts":1788811270847,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":750,"slots":2}
+{"ts":1788811360366,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":747,"slots":2}
+{"ts":1788811422513,"gate":"build","waitMs":1,"runMs":131397,"slots":2}
+{"ts":1788812021900,"gate":"typecheck","waitMs":1,"runMs":61525,"slots":2}
+{"ts":1788812202095,"gate":"typecheck","waitMs":0,"runMs":5755,"slots":2}
+{"ts":1788812250260,"gate":"test:run","waitMs":1,"runMs":344922,"slots":2}
+{"ts":1788812595922,"gate":"build","waitMs":0,"runMs":126414,"slots":2}
+{"ts":1788812864178,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":7016,"slots":2}
+{"ts":1788813259987,"gate":"build","waitMs":1,"runMs":175431,"slots":2}
+{"ts":1788813490031,"gate":"typecheck","waitMs":0,"runMs":62290,"slots":2}
+{"ts":1788813698055,"gate":"build","waitMs":0,"runMs":160626,"slots":2}
+{"ts":1788813861111,"gate":"build","waitMs":1,"runMs":135234,"slots":2}
+{"ts":1788813573586,"gate":"test","waitMs":0,"runMs":424976,"slots":2}
+{"ts":1788814630460,"gate":"build","waitMs":0,"runMs":103551,"slots":2}
+{"ts":1788814835536,"gate":"typecheck:fast","waitMs":1,"runMs":6234,"slots":2}
+{"ts":1788814850006,"gate":"build","waitMs":0,"runMs":93626,"slots":2}
+{"ts":1788815065150,"gate":"typecheck","waitMs":0,"runMs":60874,"slots":2}
+{"ts":1788815147676,"gate":"test","waitMs":0,"runMs":350012,"slots":2}

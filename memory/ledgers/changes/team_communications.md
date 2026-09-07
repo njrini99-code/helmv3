@@ -9,9 +9,71 @@
   re-runs `npm run db:types`; leaving it here would exempt a real object from
   the drift check.
   `golf_group_membership_management` is not a database object at all — it is
-  the pgTAP suite's filename (`supabase/tests/rls/golf_group_membership_-
-  management.sql`), which happens to start with `golf_`.
+  the pgTAP suite's own filename, which happens to start with `golf_`:
+  `supabase/tests/rls/golf_group_membership_management.sql`.
 -->
+
+## 2026-09-07 — the conversations list runs on one cadence; G-32 partly reversed
+
+- SHA: pending (this commit).
+- Change: `src/components/fairway/pages/messages/MessageConversationRail.tsx` —
+  the three conversation lists become `divide-y divide-border-subtle` instead
+  of `flex flex-col gap-1.5`; every row gets identical `p-3` and loses its
+  radius; unread stops being an elevated card and becomes a `bg-surface`
+  tint alongside the weight and badge it already had; desktop selection is
+  marked by a 3px leading accent rule painted as an inset shadow rather than a
+  ring that needed a radius to read. Section labels sit 8px above their first
+  row, sections 16px apart, on every section.
+- THIS PARTLY REVERSES G-32, and the reversal is the point of the entry.
+  G-32 read the artboard correctly: `Main.dc.html` labels its unread row "a
+  cream card lifting off the champagne" and that row's box-shadow is
+  byte-identical to `--fw-shadow-card`, which the rail was not using. The
+  diagnosis (read and unread were indistinguishable) was also correct.
+- What the artboard cannot show is what the treatment does to a real inbox.
+  It is a specimen: its TODAY section runs card / flat / card and its EARLIER
+  section holds exactly one row, so two flat rows never sit next to each
+  other in it. With six real conversations at 390x844 the failure is
+  measurable. Box gaps were a uniform 6px. PERCEIVED gaps were not: between
+  two carded rows the eye lands on the card edges and reads 6px; between two
+  flat rows there is no edge, so it reads text-to-text — 12px padding + 6px
+  gap + 12px padding = 30px, five times larger. Rows measured 80px carded
+  against 72px flat on top of that, and the row/label rhythm added a third
+  and fourth interval. Five competing cadences in one list.
+- The authority for departing from the artboard is DECISIONS.md G-50b, "take
+  the rule, not the specimens", which this audit already applied once. The
+  rule the artboard states is that unread reads stronger than read. The repo
+  ships that rule in a dense list without touching the box —
+  `FairwayQualifierLeaderboard.tsx:369-383` marks its leader row
+  `bg-accent-50/60` inside a `divide-y divide-border-subtle` list — and the
+  rail's own docstring independently forbids the alternative of carding every
+  row ("the rows stay a dense, scannable list, never a card-in-card").
+- The STRUCTURE is borrowed from the leaderboard, not the colour. Its accent
+  tint was tried here first and had to be rejected on measurement: this row
+  already spends accent three times — the unread Badge and the group glyph are
+  both `bg-accent-50`, the timestamp is `text-accent-700` — so an accent row
+  fill put the badge and the glyph on a background of their own family and the
+  count read as a bare floating number. `bg-surface` (0.984) against the canvas
+  (0.953) is the same lightness step the search well uses inverted, and it
+  leaves accent meaning exactly one thing on the row: unread.
+- `bg-surface` here is NOT the `bg-surface` of the 2026-09-05 entry further
+  down this file. Same token, different object: that one was a flat CARD face
+  carrying `--fw-shadow-card` and `rounded-fw-md`, an approximation of the
+  artboard's two-stop cream. This one is a flat BAND in a divided list with no
+  shadow and no radius at all.
+- The A03 request for the artboard's exact two-stop unread gradient is
+  WITHDRAWN for the conversation row, and `audit/A03-VARIANT-REQUESTS.md`
+  records the withdrawal at source (its "Applied in this PR" table and entry
+  #1). The composer's occurrences of the same value are untouched and still
+  want it. The card face it was for no longer exists on this surface, so
+  the unmapped pair is not needed; the shadow token match G-32 measured stays
+  recorded because it is still the reason `shadow-card` (a legacy cool-grey,
+  not the Fairway token) must never be substituted here.
+- Tests: `MessageConversationRail.unreadLift.test.ts` is re-anchored, not
+  deleted — the G-49a precedent. It now asserts the lift's ABSENCE and cites
+  the measurement, asserts the divided-list treatment and the tint, and pins
+  the leaderboard idiom it borrows so that if that surface changes, this
+  justification is re-examined with it. Its artboard-vs-token measurement is
+  kept unchanged.
 
 ## 2026-09-07 — group membership: add, remove, leave (owner request, mid-run)
 

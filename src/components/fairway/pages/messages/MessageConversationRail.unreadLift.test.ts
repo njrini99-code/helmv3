@@ -2,14 +2,33 @@
  * G-32 — the artboard's values mostly already have tokens; the page just
  * wasn't using them.
  *
- * The headline one: the unread conversation row. `Main.dc.html` labels it in
- * its own markup — "unread row: cream card lifting off the champagne" — and
- * its box-shadow is byte-identical to `--fw-shadow-card`. The rail drew it
- * flat.
+ * The headline one WAS the unread conversation row. `Main.dc.html` labels it
+ * in its own markup — "unread row: cream card lifting off the champagne" —
+ * and its box-shadow is byte-identical to `--fw-shadow-card`. The rail drew
+ * it flat, and G-32 gave it the card.
  *
- * Measured on both sides here rather than asserted as a literal, for the
- * reason the bubble-radius suite gives: a hardcoded shadow string would keep
- * passing if the token were retuned or a new artboard landed.
+ * THAT PART IS NOW REVERSED, and this suite is re-anchored rather than
+ * deleted (the G-49a precedent: assert the absence and cite why).
+ *
+ * G-32's diagnosis was right — read and unread were indistinguishable — and
+ * the shadow was a free exact-token match. What the artboard could not show
+ * is what the treatment does to a real inbox: it is a specimen, and it never
+ * stacks two flat rows consecutively. Measured at 390x844 with six
+ * conversations, box gaps were a uniform 6px but PERCEIVED gaps were not.
+ * Card-to-card the eye lands on the card edges and reads 6px. Flat-to-flat
+ * there is no edge, so it reads text-to-text: 12px padding + 6px gap + 12px
+ * padding = 30px, five times larger. Rows measured 80px carded against 72px
+ * flat on top of that. Five competing cadences in one list.
+ *
+ * DECISIONS.md G-50b governs: take the rule, not the specimens. The rule is
+ * "unread reads stronger than read", and the repo already ships that rule in
+ * a dense list without touching the box — `FairwayQualifierLeaderboard.tsx`
+ * tints its leader row `bg-accent-50/60` inside a `divide-y` list. So unread
+ * is now a fill; the geometry is uniform; a hairline carries the separation.
+ *
+ * The artboard measurement below is KEPT, because the fact it records is
+ * still true and still the reason `shadow-card` must never be substituted for
+ * the token anywhere on this surface.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -67,8 +86,56 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
     expect(flat(String(shadow))).toBe(shadowToken('card'));
   });
 
-  it('the rail applies that token to the unread row', () => {
-    expect(rail).toContain("!isSelected && hasUnread && 'bg-surface [box-shadow:var(--fw-shadow-card)]'");
+  it('the rail no longer lifts the unread row off the list', () => {
+    // The reversal, pinned. A per-row shadow or radius reintroduces the two
+    // box sizes and the 6px-vs-30px perceived cadence this surface was
+    // rebuilt to remove.
+    expect(railCode).not.toContain('var(--fw-shadow-card)');
+    expect(railCode).not.toMatch(/rounded-fw-md border-0 p-3/);
+  });
+
+  it('expresses unread as a fill inside a divided list instead', () => {
+    expect(railCode).toContain("!isSelected && hasUnread && 'bg-surface'");
+    // Deliberately NOT the leaderboard's accent tint. This row already spends
+    // accent three times (unread Badge, group glyph, timestamp), and tinting
+    // it accent as well made the badge and glyph disappear into their own
+    // background. The structure is borrowed; the colour is not.
+    expect(railCode).not.toContain("hasUnread && 'bg-accent");
+    // Every conversation list on this surface is divided, not gapped: the
+    // hairline is what separates rows now, and it costs no vertical space, so
+    // one cadence survives regardless of which rows are unread.
+    expect(railCode).not.toContain('flex flex-col gap-1.5');
+    const lists = railCode.match(/<ul className="divide-y divide-border-subtle">/g) ?? [];
+    expect(lists.length).toBe(3);
+  });
+
+  it('gives every row the same box, whatever its state', () => {
+    // The three things that made rows differ, each pinned with its measured
+    // reason. Any one of them coming back reintroduces two row heights or two
+    // perceived cadences.
+    //
+    // 1. Radius. Button's base is `rounded-full`; without an explicit
+    //    override the unread tint paints as a pill and the divider run gets
+    //    rounded ends.
+    expect(railCode).toContain('rounded-none border-0 p-3');
+    // 2. Row height. The avatar is 48px and the row is pinned to it, so the
+    //    text block can never decide the height.
+    expect(railCode).toContain('<div className="flex h-12 items-center gap-3">');
+    // 3. The badge's line box. `text-[11px]` sets only a font-size, so the
+    //    badge inherited the row's 24px line-height and rendered 28px against
+    //    its own 20px `min-h-5` — 8px straight into the row height, which is
+    //    exactly the 80-vs-72 that was measured.
+    expect(railCode).toContain("className=\"flex-shrink-0 leading-none\"");
+  });
+
+  it('is the same treatment the repo already ships for a marked row', () => {
+    // Not invented here. If the leaderboard's idiom changes, this surface's
+    // justification changes with it and someone should look at both.
+    const leaderboard = read(
+      'src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx',
+    );
+    expect(leaderboard).toContain('divide-y divide-border-subtle');
+    expect(leaderboard).toContain("'bg-accent-50/60'");
   });
 
   it('does NOT use `shadow-card`, which is a different value entirely', () => {
@@ -85,11 +152,16 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
 
   it('selection still wins over the unread face', () => {
     // Both paint a background. If the unread branch were unconditional, an
-    // open unread thread would render as a lifted card instead of a selected
-    // row, and the two states would be indistinguishable.
-    const idx = rail.indexOf('!isSelected && hasUnread');
-    const after = rail.slice(idx, idx + 260);
-    expect(after).toContain("isSelected\n          ? 'bg-surface-sunken/90");
+    // open unread thread would render tinted instead of selected and the two
+    // states would be indistinguishable.
+    const idx = railCode.indexOf('!isSelected && hasUnread');
+    expect(idx).toBeGreaterThan(-1);
+    const after = railCode.slice(idx, idx + 320);
+    expect(after).toContain('isSelected');
+    expect(after).toContain('bg-surface-sunken');
+    // The selected marker is a leading accent rule painted as an inset
+    // shadow, so it adds no width and shifts no text in a flush list.
+    expect(after).toContain('inset_3px_0_0_0_var(--fw-color-accent-500)');
   });
 });
 

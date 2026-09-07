@@ -326,7 +326,7 @@ is a second thing to keep true.
 - **Telemetry:** none. Cross-cutting authorization enforced in RLS policies and action guards rather than on a screen. It has no surface of its own to instrument; a failure here shows up as a denial inside whichever feature the user was in.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/team_access_control.md`
 
 ## `ios_native_shell`
 

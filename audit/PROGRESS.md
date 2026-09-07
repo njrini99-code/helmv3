@@ -323,7 +323,35 @@ it is the owner's, through `db-apply`.
     Messages/Announcements strip is `FairwayHubSubNav`, rendered at shell level for
     every golf hub; folding the page's actions into it would put a cross-surface
     component in a messages-scoped PR.
-- [ ] Confirm G-26 is actually fixed in a real browser, not just in jsdom
+- [x] Confirm G-26 is actually fixed in a real browser, not just in jsdom
+  - Measured at 390x844 with a real thread open, not asserted from the class
+    list. All four outgoing bubbles right-align to the same edge (x=374) at
+    four different widths (277 / 176 / 288 / 207), and each bubble's metadata
+    renders BELOW its body rather than beside it. That is the pair G-26
+    described; both hold live.
+- [x] Rebuild the conversations list on ONE cadence (the visual complaint)
+  - The list read as uneven with real data and the reason was measurable, not
+    a matter of taste. Box gaps were a uniform 6px; PERCEIVED gaps were not.
+    Card-to-card the eye lands on the card edges and reads 6px; flat-to-flat
+    there is no edge, so it reads text-to-text -- 12px padding + 6px gap +
+    12px padding = 30px, five times larger. Rows were 80px carded against
+    72px flat on top of that, and five section headers printed for six rows.
+  - Sections collapsed to the artboard's set (Unread / Today / Earlier),
+    every row given identical padding, the inter-row gap replaced with a
+    `divide-y divide-border-subtle` hairline, and unread re-expressed as a
+    tint plus weight plus badge instead of an elevated card.
+  - This partly REVERSES G-32, which is recorded as a correction rather than
+    quietly dropped (`memory/ledgers/changes/team_communications.md`). G-32's
+    diagnosis was right and its shadow was an exact token match; what the
+    artboard could not show is that it is a specimen which never stacks two
+    flat rows, so the fix produced the uneven cadence with real data.
+    DECISIONS.md G-50b governs: take the rule, not the specimens. The repo
+    already ships the rule in a dense list -- `FairwayQualifierLeaderboard`
+    tints its leader row inside a divided list.
+  - `MessageConversationRail.unreadLift.test.ts` is re-anchored, not deleted
+    (the G-49a precedent): it now asserts the absence of the lift, the
+    presence of the divided-list treatment, and that the leaderboard idiom it
+    cites still exists.
 
 ---
 
@@ -355,4 +383,5 @@ Found while doing something else, recorded rather than silently absorbed.
 |---|---|
 | **G-59** [low] | `src/lib/admin/data/activity.ts:395,423` reads `is_team_channel` for golf where 403/437 read `is_team_chat` for baseball. Latent today only because `title` is coalesced first (`audit/M01-TEAM-FLAGS.md`) |
 | **G-60** [med] | `AttachmentPreview.tsx`'s remove button is a 20px target — WCAG 2.2 SC 2.5.8 requires 24px. Belongs to W5/G-47, which owns composer geometry; G-46 was a palette migration and changing a control size under it would be a different change wearing G-46's name. Note that Fairway's own `IconButton` does not fix it either: its smallest size is 36px (44px on a coarse pointer), which at `-top-1 -right-1` on an 80px tile overhangs into the next tile's `gap-2`. The fix is a hit-area expansion, not a bigger badge |
+| **G-62** [high] | On a phone the thread header, INCLUDING Back, was clipped behind `FairwayHubSubNav`. `useImmersiveSurface` hid the shell top bar and the bottom nav but not the hub sub-nav strip (39px + border, `position: sticky`), while the immersive surface below sized itself against the full viewport. Measured at 390x844: the contact-name row was 0px tall at scrollTop 0 and Back was unreachable on every conversation. FIXED -- one rule in `globals.css`, keyed on the same `data-fw-immersive` attribute inside the same phone-only media block, with `FairwayMessages.immersive.test.ts` pinning the data-slot |
 | **G-61** [med] | `src/lib/storage/attachments.ts` passed `contentType` to `.upload()` under a comment saying it stops the SDK inferring `application/octet-stream` for an iOS camera capture. `uploadOrUpdate` (`@supabase/storage-js/dist/index.mjs:615-641`) never reads that option for a Blob body — and a `File` is a Blob. FIXED under W5 (the bytes now carry the resolved type); latent rather than confirmed live |

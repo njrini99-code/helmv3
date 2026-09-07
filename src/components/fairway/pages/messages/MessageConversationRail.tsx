@@ -161,47 +161,99 @@ function ConversationRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-fw-md border-0 px-3 py-2.5 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
+        // `p-3` — the artboard's row padding is a literal 12px on all four
+        // sides (`Main.dc.html:66,82`), not the 12/10 the asymmetric
+        // `px-3 py-2.5` produced. It is now UNIFORM: every row, read or
+        // unread, selected or not, occupies exactly the same box. See the
+        // divided-list note on the `<ul>` below for the measurement that
+        // forced this.
+        // `rounded-none` is load-bearing, not tidying: Button's base is
+        // `rounded-full`, which the removed `rounded-fw-md` used to override.
+        // Dropping the radius without replacing it painted the unread tint as
+        // a pill, and would round the ends of the divider run.
+        'group block h-auto min-h-0 w-full items-stretch justify-start rounded-none border-0 p-3 text-left font-normal outline-none transition-colors [transition-duration:200ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
-        'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        // G-32: the artboard's unread row is "a cream card lifting off the
-        // champagne" — its box-shadow is byte-identical to `--fw-shadow-card`.
-        // Written as the arbitrary-property escape, which is this repo's
-        // idiom for that token (~8 sites), because `shadow-card` is a TRAP:
-        // that utility name resolves to a legacy cool-grey value in
-        // tailwind.config.ts, not to the Fairway token.
+        'focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+        // Unread is a FILL, not a raised card. G-32 read the artboard right —
+        // its unread row is "a cream card lifting off the champagne" with a
+        // shadow byte-identical to `--fw-shadow-card` — but the artboard is a
+        // specimen and never stacks two flat rows in a row, so it cannot show
+        // what that treatment does to a real inbox. Measured at 390×844 with
+        // six conversations: box gaps were a uniform 6px, but PERCEIVED gaps
+        // were not. Card-to-card the eye lands on the card edges and reads
+        // 6px; flat-to-flat there is no edge, so it reads text-to-text —
+        // 12px padding + 6px gap + 12px padding = 30px, five times larger.
+        // Rows measured 80px carded against 72px flat on top of that. Five
+        // competing cadences in one list; the user called it uneven twice.
         //
-        // `bg-surface` is the face. The artboard paints a two-stop cream
-        // gradient there; that gradient is one of the six values with no
-        // token, and it goes to A03 as a variant request rather than being
-        // hardcoded here (§14.2). `--fw-color-surface` sits between its two
-        // stops, so the flat card cream is the honest approximation until the
-        // token exists — a shadow with no face would just be a floating halo.
-        !isSelected && hasUnread && 'bg-surface [box-shadow:var(--fw-shadow-card)]',
+        // DECISIONS.md G-50b is the governing precedent: take the rule, not
+        // the specimens. The rule the artboard states is "unread reads
+        // stronger than read". The repo already ships that rule in a dense
+        // list without touching the box — `FairwayQualifierLeaderboard.tsx`
+        // marks its leader row `bg-accent-50/60` inside a `divide-y` list.
+        // Tint + weight + badge carry the state; the geometry never moves.
+        // The rail's own docstring independently forbids the alternative:
+        // rows stay a dense, scannable list, never a card-in-card.
+        //
+        // The tint is `bg-surface`, NOT the leaderboard's accent. Its
+        // structure is borrowed, not its colour, because this row already
+        // spends accent three times — the unread Badge and the group glyph
+        // are both `bg-accent-50` and the timestamp is `text-accent-700`.
+        // Tinting the row accent too made the badge and the glyph vanish
+        // into their own background (measured: badge fill and row fill both
+        // resolved to the accent-50 family), which reads as a bare floating
+        // number. `surface` (0.984) against the canvas (0.953) is the same
+        // lightness step the search well uses inverted, and it leaves accent
+        // meaning exactly one thing on this row: unread.
+        !isSelected && hasUnread && 'bg-surface',
+        // Selection is desktop-only (see `activeId`). An inset ring needs a
+        // radius to read, and these rows no longer have one, so the marker is
+        // a 3px accent rule down the leading edge over the sunken fill —
+        // painted as a shadow so it costs no layout and shifts no text.
         isSelected
-          ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60'
+          ? 'bg-surface-sunken [box-shadow:inset_3px_0_0_0_var(--fw-color-accent-500)]'
           : 'hover:bg-surface-sunken/60',
       )}
     >
-      <div className="flex items-start gap-3">
+      {/* `h-12` — the avatar's own height, and the row's. Without it the text
+          block decides, and the text block is 8px taller whenever a badge is
+          present, so unread rows measured 80px against read rows' 72px. The
+          badge now sits in a line box the size of the preview text (see
+          `leading-none` below), which is what actually equalises them; this
+          pins the result so a future taller child cannot reintroduce the
+          two heights silently. */}
+      <div className="flex h-12 items-center gap-3">
+        {/* 48px, not 40px. `Main.dc.html:69,83,93` draws every row avatar at a
+            literal 46px; M03A F02 logged the 6px gap on `size="md"`. `lg` is
+            the existing step nearest it (48px) — the remaining 2px is absorbed
+            the way G-29c/G-50b absorbed theirs, and recorded in A03, rather
+            than forking a one-off size onto the shared Avatar. The undersized
+            avatar was a large part of why the rows read as weightless. */}
         {isGroup ? (
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
-            <Users size={18} aria-hidden="true" />
+          <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+            <Users size={21} aria-hidden="true" />
           </span>
         ) : (
           <Avatar
             name={conv.other_participant?.name || 'User'}
             src={conv.other_participant?.avatar}
-            size="md"
+            size="lg"
           />
         )}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
+            {/* 15px, and the two weights are not the same. `Main.dc.html:72`
+                sets the unread name at weight 600, `:85` the read name at 500 —
+                a real hierarchy the shipped rows flattened by giving both
+                `font-medium` at 13px. Small type in one weight is most of what
+                "the lines aren't defined" describes. */}
             <span
               className={cn(
-                'truncate font-fw-sans text-body-sm',
-                hasUnread || isSelected ? 'font-medium text-text-primary' : 'font-medium text-text-secondary',
+                'truncate font-fw-sans text-body',
+                hasUnread || isSelected
+                  ? 'font-semibold text-text-primary'
+                  : 'font-medium text-text-secondary',
               )}
             >
               {displayName}
@@ -220,10 +272,14 @@ function ConversationRow({
           </div>
 
           <div className="mt-1 flex items-center justify-between gap-2">
+            {/* 13px/20px — `text-body-sm` matches `Main.dc.html:73,86` exactly.
+                `text-eyebrow` is 11px with 0.06em tracking, a LABEL role; it
+                was rendering the message preview, the row's actual content, at
+                label size. */}
             <p
               className={cn(
-                'min-w-0 flex-1 truncate font-fw-sans text-eyebrow leading-relaxed',
-                hasUnread ? 'text-text-primary' : 'text-text-tertiary',
+                'min-w-0 flex-1 truncate font-fw-sans text-body-sm',
+                hasUnread ? 'text-text-secondary' : 'text-text-tertiary',
               )}
             >
               {conv.last_message?.content
@@ -233,7 +289,13 @@ function ConversationRow({
             {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
                 dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
             {hasUnread ? (
-              <Badge tone="accent" size="sm" numeric className="flex-shrink-0">
+              // `leading-none`: `text-[11px]` sets only a font-size, so the
+              // badge inherited the row's 24px line-height and rendered 28px
+              // tall against its own `min-h-5` (20px) — 8px that went
+              // straight into the row height. Local to this instance; the
+              // shared Badge is used at 28px elsewhere and is not this PR's
+              // to retune.
+              <Badge tone="accent" size="sm" numeric className="flex-shrink-0 leading-none">
                 {conv.unread_count > 9 ? '9+' : conv.unread_count}
               </Badge>
             ) : null}
@@ -529,7 +591,7 @@ export function MessageConversationRail({
             Something went wrong searching your messages. Check your connection and try again.
           </InlineNotice>
         ) : searchResults.length > 0 ? (
-          <ul className="flex flex-col gap-1">
+          <ul className="divide-y divide-border-subtle">
             {searchResults.map((result) => (
               <li key={result.messageId}>
                 <SearchResultRow
@@ -548,13 +610,13 @@ export function MessageConversationRail({
           />
         )
       ) : (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {unread.length > 0 ? (
           <div>
-            <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
+            <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
               Unread
             </p>
-            <ul className="flex flex-col gap-1">
+            <ul className="divide-y divide-border-subtle">
               {unread.map((conv, i) => (
                 <li
                   key={conv.id}
@@ -577,10 +639,10 @@ export function MessageConversationRail({
           if (group.length === 0) return null;
           return (
             <div key={key}>
-              <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+              <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
                 {label}
               </p>
-              <ul className="flex flex-col gap-1">
+              <ul className="divide-y divide-border-subtle">
                 {group.map((conv, i) => (
                   <li
                     key={conv.id}
