@@ -4,8 +4,9 @@
 -- info/warning rows older than 90d and error/critical rows older than 13mo
 -- in a batched-delete style, and now ALSO purges admin_analytics_events
 -- older than 180d (added in the same PR). The pg_cron job
--- `purge-admin-event-telemetry` (20260703043000_admin_events_retention_pg_cron.sql)
--- ran a blanket 180-day DELETE on BOTH tables with no severity awareness and
+-- `purge-admin-event-telemetry`
+-- (20260703043000_admin_events_retention_pg_cron.sql) ran a blanket 180-day
+-- DELETE on BOTH tables with no severity awareness and
 -- no counter surfaced anywhere application code can read — two owners of one
 -- policy, silently disagreeing on window length for admin_events (90d/13mo
 -- vs 180d).
