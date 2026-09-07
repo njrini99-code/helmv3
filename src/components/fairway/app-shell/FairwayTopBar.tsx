@@ -53,7 +53,8 @@
 import { forwardRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { IconSearch } from '@/components/icons';
-import { Button } from '@/components/ui/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { useLargeTitle } from './LargeTitleContext';
 import type { Breadcrumb, ShellLinkComponent } from './types';
 
@@ -283,10 +284,13 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
         <div className="ml-auto hidden min-w-0 flex-1 items-center justify-end gap-3 md:flex md:flex-none md:basis-[340px] xl:col-start-2 xl:ml-0 xl:w-[340px] xl:basis-auto xl:justify-self-center">
           {searchSlot ??
             (onSearchOpen && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onSearchOpen}
+              <PressTarget
+                onClick={() => {
+                  // PressTarget carries no haptic of its own, so the search
+                  // tap fires its own — every other chrome tap buzzes.
+                  fwHaptic('light');
+                  onSearchOpen();
+                }}
                 aria-label="Open command menu"
                 aria-keyshortcuts="Meta+K Control+K"
                 data-layout-region="center"
@@ -294,6 +298,9 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
                   'group flex h-10 min-h-0 w-full max-w-[340px] items-center justify-start gap-2.5 rounded-fw-sm px-3',
                   'bg-surface-sunken/80 text-text-tertiary',
                   'border border-border-subtle',
+                  // The bar's ground is `bg-surface`, not canvas — retarget
+                  // PressTarget's ring offset so the gap matches the bar.
+                  'focus-visible:ring-offset-surface',
                   'transition-[color,background-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
                   'hover:bg-surface-sunken hover:text-text-secondary hover:shadow-soft active:translate-y-[0.5px]',
                 )}
@@ -308,7 +315,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
                 >
                   ⌘K
                 </kbd>
-              </Button>
+              </PressTarget>
             ))}
         </div>
 

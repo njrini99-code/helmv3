@@ -189,3 +189,48 @@ caused mis-taps, which is worse than 42px.
 
 The finding's own fix is "require only NEW usage to prefer lucide-react, no
 blanket migration". Recorded in `.claude/rules/design-system.md`. No code moved.
+
+## Phase 1b — app shell off the legacy button (`FairwayBottomNav`, `FairwayTopBar`, `FairwaySidebar`, `MoreSheetFooter`)
+
+**Target chosen: `PressTarget`, not Fairway `Button`.** Fairway `Button`'s
+non-`asChild` branch renders `<span>{children}</span>`. Three of these four
+call sites pass multiple children into their own `flex`/`flex-col`
+composition — `FairwayBottomNav`'s More column is icon + label +
+`NavPendingDot` stacked vertically. Routing them through `Button` would
+collapse that column into one inline span on every screen. `PressTarget`'s
+own docblock names this exact case, and every visual property at these four
+sites was already supplied by the caller's `className` anyway: the legacy
+`Button` was doing nothing but satisfying `helm/no-raw-button`.
+
+**Haptics preserved per site, not normalised.** The legacy button defaults
+`haptic` to `'light'`; `PressTarget` fires none. So:
+
+| Site | Legacy prop | Now |
+|---|---|---|
+| `FairwayBottomNav` More | `haptic="light"` | explicit `fwHaptic('light')` |
+| `FairwayTopBar` search | *(none → defaulted to light)* | explicit `fwHaptic('light')` |
+| `FairwaySidebar` collapse | *(none → defaulted to light)* | explicit `fwHaptic('light')` |
+| `MoreSheetFooter` sign-out | `haptic="none"` | nothing — the flow fires its own before `signOut()` |
+
+The two middle rows are the ones worth knowing about: they buzz today only
+because of a default nobody wrote down, so a silent swap would have removed
+a behaviour no diff mentioned.
+
+**Focus-ring grounds corrected.** `PressTarget` hardcodes `ring-offset-2
+ring-offset-canvas`. None of the three grounds is canvas: the bottom-nav
+column is flush (now `ring-offset-0`, keeping its `ring-inset`), the top bar
+is `bg-surface` (now `ring-offset-surface`), the sidebar chevron sits on the
+dark rail (now `ring-offset-nav-surface`, which was previously drawing a
+cream halo on a dark ground).
+
+**Accepted visual change: the ripple is gone.** The legacy button injects a
+ripple `<span>` on every press; `PressTarget` does not. That removes a
+Material-language flourish from the bottom nav, top bar and sidebar. It is
+the right direction for Fairway, but it is a real change to the chrome on
+every screen and wants a look on a device.
+
+**Not cleared by this pass.** Seven non-test Fairway files still import the
+legacy button (`data-table`, `EventWhenFields`, `FairwayCalendarMemberRail`,
+`FairwayEventEditor`, `FairwayMonthGrid`, `MessageComposer`,
+`FairwayNewRoundEntry`). Those are label-bearing buttons, so they are
+`Button` swaps, not `PressTarget` swaps — a different and larger change.

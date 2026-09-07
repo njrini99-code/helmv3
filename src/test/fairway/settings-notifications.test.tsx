@@ -4,16 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const setCategoryChannelMock = vi.fn();
 const setQuietModeMock = vi.fn();
-const toastErrorMock = vi.fn();
+const toastDangerMock = vi.fn();
 
 vi.mock('@/app/golf/actions/v3/notification-prefs', () => ({
   setCategoryChannel: setCategoryChannelMock,
   setQuietMode: setQuietModeMock,
 }));
 
-vi.mock('@/components/ui/sonner', () => ({
-  toast: {
-    error: toastErrorMock,
+vi.mock('@/components/fairway/feedback/ToastStack', () => ({
+  fairwayToast: {
+    danger: toastDangerMock,
+    success: vi.fn(),
   },
 }));
 
@@ -60,7 +61,7 @@ describe('FairwaySettingsNotifications', () => {
     setCategoryChannelMock.mockClear();
     setQuietModeMock.mockResolvedValue({ ok: true });
     setQuietModeMock.mockClear();
-    toastErrorMock.mockClear();
+    toastDangerMock.mockClear();
   });
 
   it('hides the coach-only weekly digest category from the player matrix', async () => {
@@ -87,7 +88,7 @@ describe('FairwaySettingsNotifications', () => {
     fireEvent.click(pushToggle);
 
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith('No player profile');
+      expect(toastDangerMock).toHaveBeenCalledWith('No player profile');
     });
     expect(pushToggle).toHaveAttribute('aria-pressed', 'false');
   });

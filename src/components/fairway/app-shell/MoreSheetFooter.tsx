@@ -18,7 +18,7 @@
 
 import { cn } from '@/lib/utils';
 import { IconSettings, IconLogout } from '@/components/icons';
-import { Button } from '@/components/ui/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import type { ShellLinkComponent } from './types';
 
 export interface MoreSheetFooterProps {
@@ -35,9 +35,9 @@ const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
   </a>
 );
 
-// `min-h-[44px]` on BOTH rows — the Settings <Link> and Sign-out <Button> (the
-// latter would otherwise get a different floor from <Button>'s own default
-// sizing) — so the two footer rows share one touch-target height (iOS HIG).
+// `min-h-[44px]` on BOTH rows — the Settings <Link> and the Sign-out
+// <PressTarget> (which is unstyled, so the floor has to come from here) —
+// so the two footer rows share one touch-target height (iOS HIG).
 const rowBase = cn(
   'flex min-h-[44px] items-center gap-2 rounded-fw-md px-3 py-2 font-fw-sans text-body-sm font-medium',
   'transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
@@ -74,10 +74,10 @@ export function MoreSheetFooter({
         />
         Settings
       </Link>
-      <Button
-        type="button"
-        variant="ghost"
-        haptic="none"
+      {/* No haptic: the sign-out flow fires its own before signOut(), which
+          is why nothing is fired here. PressTarget carries no haptic of its
+          own, so the row stays correct with nothing added. */}
+      <PressTarget
         onClick={onSignOut}
         disabled={signingOut}
         className={cn(
@@ -88,7 +88,7 @@ export function MoreSheetFooter({
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0" />
         {signingOut ? 'Signing out…' : 'Sign out'}
-      </Button>
+      </PressTarget>
     </>
   );
 }

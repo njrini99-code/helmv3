@@ -26,7 +26,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
-import { Button } from '@/components/ui/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
 
 /**
@@ -323,21 +324,27 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
     >
       {/* Collapse affordance (desktop only) */}
       {!isMobile && onToggleCollapsed && (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onToggleCollapsed}
+        <PressTarget
+          onClick={() => {
+            // PressTarget carries no haptic of its own, so the chevron fires
+            // its own — every other chrome tap buzzes.
+            fwHaptic('light');
+            onToggleCollapsed();
+          }}
           aria-label={isCollapsed ? 'Expand navigation' : 'Collapse navigation'}
           className={cn(
             'absolute -right-3 top-7 z-10 flex h-6 w-6 min-h-0 items-center justify-center p-0',
             'rounded-full bg-nav-surface text-nav-text-dim ring-1 ring-white/10',
+            // The chevron sits on the dark rail, not canvas — retarget
+            // PressTarget's ring offset so the gap isn't a cream halo.
+            'focus-visible:ring-offset-nav-surface',
             'shadow-soft transition-colors [transition-duration:var(--fw-dur-fast)]',
             'hover:bg-nav-surface hover:text-nav-text',
             'active:translate-y-[0.5px]',
           )}
         >
           {isCollapsed ? <IconChevronRight size={14} aria-hidden /> : <IconChevronLeft size={14} aria-hidden />}
-        </Button>
+        </PressTarget>
       )}
 
       {/* Brand */}
