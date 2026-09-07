@@ -25,14 +25,14 @@
  *
  * Auth: Vercel Cron sends Authorization: Bearer ${CRON_SECRET}.
  *
- * Schedule: deliberately NOT registered in vercel.json. Owner decision
- * 2026-09-06: all customer outbound email is off (see
- * memory/features/email_outbound.md — pending, name only; if that doc has
- * not landed yet in your checkout, treat this as the sole record of the
- * decision). If/when customer email is re-enabled, the schedule to use is
- * `0 14 * * 0` (Sundays 14:00 UTC) — see config/routines.yml for the
- * registry entry. The route itself doesn't enforce a day-of-week — that's
- * the schedule's job — so it can still be triggered manually for testing.
+ * Schedule: deliberately NOT registered in vercel.json (verified
+ * 2026-09-06). Owner decision 2026-09-06: player/coach outbound email is off
+ * behind HELM_CUSTOMER_EMAIL_ENABLED (src/lib/email/outbound-gate.ts; see
+ * memory/features/email_outbound.md). If/when customer email is re-enabled,
+ * the schedule to use is `0 14 * * 0` (Sundays 14:00 UTC) — see
+ * config/routines.yml for the registry entry. The route itself doesn't
+ * enforce a day-of-week — that's the schedule's job — so it can still be
+ * triggered manually for testing.
  */
 
 import { NextResponse, type NextRequest } from 'next/server';

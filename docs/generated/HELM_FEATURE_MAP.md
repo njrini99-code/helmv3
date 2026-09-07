@@ -306,6 +306,17 @@ is a second thing to keep true.
 - **Repair units:** none in the queue
 - **History:** no ledger yet
 
+## `email_outbound`
+
+**Outbound Customer Email (kill switch)** · active · criticality high · owner founder
+
+- **Behaviour:** `memory/features/email_outbound.md`
+- **Code:** `src/app/api/cron/v3/weekly-coach-email/**`, `src/app/lifting/actions/invites.ts`, `src/lib/notifications/email.ts`, `src/lib/auth/send-password-reset.ts`, `src/lib/coachhelm/v3/foundation/email.ts`, `src/lib/email/**` … and 3 more in the registry
+- **Telemetry:** none. The gate itself is not wrapped/feature-tagged — it writes its own admin_events row (event_type: 'email.suppressed') directly via src/lib/admin-logger.ts, not through the Bridge withFeature path.
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** no ledger yet
+
 ## `team_access_control`
 
 **Team Access Control And RLS** · active · criticality high · owner platform

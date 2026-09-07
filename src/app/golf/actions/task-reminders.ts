@@ -11,6 +11,7 @@ import {
   isWebPushAvailable,
 } from '@/lib/coachhelm/v3/foundation/push';
 import { getUserNotificationPreferences } from '@/lib/notifications/email';
+import { gateCustomerEmail } from '@/lib/email/outbound-gate';
 import { describeError } from '@/lib/utils/describe-error';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { checkSuperAdminAccess } from '@/lib/admin/require-super-admin';
@@ -837,6 +838,15 @@ async function sendEmailNotification(task: GolfTask, client?: TaskReminderClient
   }
 
   if (recipients.length === 0) {
+    return;
+  }
+
+  const gate = gateCustomerEmail({
+    kind: 'task_reminder',
+    recipientCount: recipients.length,
+    source: 'golf/actions/task-reminders.sendEmailNotification',
+  });
+  if (!gate.allowed) {
     return;
   }
 
