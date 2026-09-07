@@ -1231,6 +1231,11 @@ export function MessageThreadPane({
                           <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => onStartEdit(msg.id, msg.content)}>
                             <Pencil size={14} aria-hidden="true" />
                           </IconButton>
+                          {/* G-55 — the separator before Delete, on desktop too.
+                              Same reason it exists on the sheet: the one
+                              irreversible action must not sit flush against the
+                              reversible ones. */}
+                          <span aria-hidden="true" className="mx-1.5 h-4 w-px flex-shrink-0 bg-border-subtle" />
                           <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => onDeleteClick(msg.id)}>
                             <Trash2 size={14} aria-hidden="true" />
                           </IconButton>
@@ -1239,7 +1244,24 @@ export function MessageThreadPane({
                             (see longPressHandlers) and otherwise cost nothing.
                             Copy is included because taking over long-press takes
                             over the gesture iOS uses to select text — without it
-                            the message would become uncopyable. */}
+                            the message would become uncopyable.
+
+                            G-55 — order is FROZEN in `audit/DECISIONS.md`:
+                            Reply, Copy, Edit, — separator — Delete. The
+                            manifest called it "three sources, three orders";
+                            the decision corrects that. `Reactions.dc.html`
+                            (Reply, Copy, Edit, — Delete) and §12.4's prose
+                            agree exactly, and only `Actions.dc.html` leads
+                            with Copy, so the majority and the plan's own
+                            words say the same thing.
+
+                            REPLY IS ABSENT, and that is a deferral rather than
+                            a disagreement: the reply affordance is G-20c,
+                            deferred with its four pieces named in PROGRESS.md.
+                            Copy / Edit / Delete already sat in the decided
+                            relative order, so what this finding actually
+                            changed is the separator — which is the part that
+                            carries the meaning. */}
                         {mobileActionsId === msg.id && (
                           <div className="relative mt-0.5 flex items-center lg:hidden">
                             <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
@@ -1249,6 +1271,33 @@ export function MessageThreadPane({
                               <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
                                 <Pencil size={18} aria-hidden="true" />
                               </IconButton>
+                              {/* The separator both artboards draw before
+                                  Delete. `Actions.dc.html:52`'s
+                                  `oklch(0.862 0.013 82 / 0.95)` is
+                                  `--fw-color-border-subtle` to the byte, so
+                                  this is a token, not a copied literal.
+                                  (`Reactions.dc.html:88` uses the glass bottom
+                                  edge instead; the two artboards disagree and
+                                  the one that matches a token wins — the
+                                  authority order in AGENTS.md settles it
+                                  without needing a preference.)
+                                  KNOWN LIMIT: Close still sits to the RIGHT of
+                                  Delete, so it inherits the "past the
+                                  separator" position without being
+                                  destructive. It is a sheet dismissal rather
+                                  than a message action and has no slot in
+                                  either artboard's list; G-56 replaces this
+                                  row with a real labelled sheet and a scrim,
+                                  which is where the dismissal stops needing a
+                                  slot at all. Adding a second separator to
+                                  fence it off here would be inventing
+                                  geometry no source asks for.
+                                  A vertical rule rather than a horizontal one
+                                  because this row is horizontal; the artboards'
+                                  list is vertical, and turning this into a
+                                  labelled sheet is G-56's job, not this
+                                  finding's. */}
+                              <span aria-hidden="true" className="mx-1.5 h-5 w-px flex-shrink-0 bg-border-subtle" />
                               <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => { onDeleteClick(msg.id); onSetMobileActions(null); }}>
                                 <Trash2 size={18} aria-hidden="true" />
                               </IconButton>
