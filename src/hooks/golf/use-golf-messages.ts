@@ -8,6 +8,7 @@ import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 /** Pause before the single transport-failure retry of a message send. */
 const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
@@ -65,6 +66,31 @@ export interface GolfConversationWithMeta {
   is_group?: boolean;
   title?: string | null;
   participant_count?: number;
+  /**
+   * G-33 / D-03a — who is in this group, and who made it.
+   *
+   * Both facts existed one step upstream and were dropped by the transform, so
+   * every group conversation reached the UI having lost them:
+   *
+   * - `participant_ids` is returned by `get_golf_conversations_with_details`
+   *   itself (`participant_ids uuid[]`, baseline migration :2810) and was set
+   *   to a literal `[]` on the supplemental team-chat path. The RPC-origin
+   *   rows always carried real ids; nothing downstream could see either.
+   * - `creator_id` is `c.created_by AS creator_id` in the same function
+   *   (:2820) AND is set on the supplemental push, so it is present on BOTH
+   *   paths — this corrects G-34's reading, which inferred the RPC branch
+   *   never populates it. D-03a's Admin pill reads exactly this column;
+   *   `golf_conversation_participants` has no role column of any kind, and
+   *   `users.role = 'admin'` means *platform* super-admin, which would badge
+   *   the wrong account in both directions (§24.5).
+   *
+   * Optional rather than required because a row that predates a refetch, or
+   * one built by a test fixture, must be able to say "I don't know" — the
+   * member list and the pill render from real data or not at all, never from
+   * a placeholder.
+   */
+  participant_ids?: string[];
+  creator_id?: string | null;
 }
 
 // Extended message type with read receipt info
@@ -1098,11 +1124,34 @@ export function useGolfConversations() {
         const teamChatIds = teamChats.map(c => c.id);
 
         const [participantCounts, userParticipantData] = await Promise.all([
-          // Participant counts for all group chats
-          supabase
-            .from('golf_conversation_participants')
-            .select('conversation_id')
-            .in('conversation_id', teamChatIds),
+          // Every participant row for these group chats.
+          //
+          // G-33 — this now supplies IDENTITY, not just a count, so it is
+          // paginated. As a count the PostgREST 1000-row cap degraded quietly
+          // (a big team channel under-counted); as the source of the member
+          // list it would silently truncate WHO is in the group, which is the
+          // class of defect this audit exists to remove. `.limit(2000)` does
+          // not raise the cap — `fetchAllRowsResult` ranges through it and
+          // preserves the `{ data, error }` shape the callers below read.
+          fetchAllRowsResult<{ conversation_id: string; user_id: string }>(
+            (from, to) =>
+              supabase
+                .from('golf_conversation_participants')
+                .select('conversation_id, user_id')
+                .in('conversation_id', teamChatIds)
+                // Stable order on the primary key — the helper's own contract.
+                // Ranging an unordered query lets page boundaries drift, which
+                // duplicates some rows and drops others.
+                .order('id', { ascending: true })
+                .range(from, to),
+            undefined,
+            {
+              table: 'golf_conversation_participants',
+              action: 'fetch-team-chat-participants',
+              sport: 'golf',
+              userId,
+            },
+          ),
           // User's last_read_at for all group chats
           supabase
             .from('golf_conversation_participants')
@@ -1111,11 +1160,20 @@ export function useGolfConversations() {
             .eq('user_id', userId),
         ]);
 
-        // Build lookup maps
-        const countByConv = new Map<string, number>();
+        // Build lookup maps.
+        //
+        // G-33 — the ids and the count come off the SAME rows now, so the
+        // header's "N members" and the details sheet's member list cannot
+        // disagree with each other. They used to be two separate facts: a
+        // count from here and a hardcoded empty array below.
+        const idsByConv = new Map<string, string[]>();
         (participantCounts.data || []).forEach(p => {
-          countByConv.set(p.conversation_id, (countByConv.get(p.conversation_id) || 0) + 1);
+          const ids = idsByConv.get(p.conversation_id);
+          if (ids) ids.push(p.user_id);
+          else idsByConv.set(p.conversation_id, [p.user_id]);
         });
+        const countByConv = new Map<string, number>();
+        idsByConv.forEach((ids, cid) => countByConv.set(cid, ids.length));
 
         const lastReadByConv = new Map<string, string | null>();
         (userParticipantData.data || []).forEach(p => {
@@ -1189,7 +1247,17 @@ export function useGolfConversations() {
             last_message_at: lastMsg?.created_at || null,
             last_message_sender_id: lastMsg?.sender_id || null,
             unread_count: unreadCount,
-            participant_ids: [],
+            // G-33 — was a literal `[]` here, for every group, forever. The
+            // ids were one query away and that query was already being run;
+            // it just asked for `conversation_id` alone.
+            participant_ids: idsByConv.get(conv.id) ?? [],
+            // Still empty, and deliberately: NOTHING on the golf side reads
+            // `participant_names` (the RPC declares it, the DM path resolves
+            // its one name through `coachByUserId`/`playerByUserId` at
+            // transform time, and the group path resolves every name the same
+            // way). Filling it here would be a second, independently-staleable
+            // copy of names the transform already has. `participant_ids` is
+            // the identity carried forward; names are looked up from it.
             participant_names: [],
             is_group: true,
             title: conv.title,
@@ -1411,6 +1479,11 @@ export function useGolfConversations() {
           is_group: true,
           title: conv.title,
           participant_count: conv.participant_count || conv.participant_ids?.length || 0,
+          // G-33 / D-03a — forward, do not re-derive. Both fields are already
+          // on `conv` for RPC-origin rows and are set on the supplemental push
+          // below; the transform was simply not copying them out.
+          participant_ids: conv.participant_ids ?? [],
+          creator_id: conv.creator_id ?? null,
         } as GolfConversationWithMeta;
       }
 

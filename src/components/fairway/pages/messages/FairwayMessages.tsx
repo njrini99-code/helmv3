@@ -68,6 +68,7 @@ import { EmptyState } from '@/components/fairway/feedback';
 
 import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
+import { GroupDetailsSheet, type GroupMember } from './GroupDetailsSheet';
 import { MessageComposer } from './MessageComposer';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
@@ -132,13 +133,17 @@ export function FairwayMessages() {
   const [isEditSaving, setIsEditSaving] = React.useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
   const [mobileActionsId, setMobileActionsId] = React.useState<string | null>(null);
+  // G-30 — the details sheet the header's new info control opens. Page-level
+  // state, like every other overlay on this surface: the thread pane owns the
+  // trigger, this file owns what the trigger opens.
+  const [showGroupDetails, setShowGroupDetails] = React.useState(false);
 
   // ── Group participant name map: user_id → { name, avatar } (Bug fix #1) ─────
   // For group conversations, each incoming bubble's sender_id is resolved to a
   // real name + avatar by fetching golf_conversation_participants → coaches/players.
   // Mirrors the legacy fetchGroupParticipants / groupParticipants pattern.
   const [groupParticipants, setGroupParticipants] = React.useState<
-    Map<string, { name: string; avatar: string | null }>
+    Map<string, GroupMember>
   >(new Map());
 
   const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
@@ -160,14 +165,20 @@ export function FairwayMessages() {
 
     const userIds = participants.map(p => p.user_id);
 
+    // D-03a — `title` and `graduation_year` are the member row's subtitle, and
+    // they are the ONLY two new columns this whole wave asks for. Both are
+    // confirmed-live and both nullable, which is why the derivation below
+    // renders NO subtitle when either is missing rather than a placeholder:
+    // "Golf Coach" under a coach's name is the category restating itself, and
+    // the artboard's rows carry a real fact or nothing.
     const [{ data: coaches, error: coachesError }, { data: players, error: playersError }] = await Promise.all([
       supabase
         .from('golf_coaches')
-        .select('user_id, full_name, avatar_url')
+        .select('user_id, full_name, avatar_url, title')
         .in('user_id', userIds),
       supabase
         .from('golf_players')
-        .select('user_id, first_name, last_name, avatar_url')
+        .select('user_id, first_name, last_name, avatar_url, graduation_year')
         .in('user_id', userIds),
     ]);
 
@@ -179,16 +190,31 @@ export function FairwayMessages() {
       );
     }
 
-    const map = new Map<string, { name: string; avatar: string | null }>();
+    const map = new Map<string, GroupMember>();
     (coaches ?? []).forEach(c => {
       if (c.user_id) {
-        map.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
+        map.set(c.user_id, {
+          id: c.user_id,
+          name: c.full_name ?? 'Coach',
+          avatar: c.avatar_url ?? null,
+          // `|| undefined`, not `?? undefined` — an empty-string title is as
+          // absent as a null one, and an empty <span> would still draw the
+          // row's second line.
+          subtitle: c.title || undefined,
+          type: 'coach',
+        });
       }
     });
     (players ?? []).forEach(p => {
       if (p.user_id) {
         const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player';
-        map.set(p.user_id, { name, avatar: p.avatar_url ?? null });
+        map.set(p.user_id, {
+          id: p.user_id,
+          name,
+          avatar: p.avatar_url ?? null,
+          subtitle: p.graduation_year ? `Class of ${p.graduation_year}` : undefined,
+          type: 'player',
+        });
       }
     });
     setGroupParticipants(map);
@@ -714,6 +740,7 @@ export function FairwayMessages() {
                 onRetryMessage={retryMessage}
                 onDiscardFailedMessage={discardFailedMessage}
                 groupParticipants={groupParticipants}
+                onOpenGroupDetails={() => setShowGroupDetails(true)}
                 scrollToMessageId={pendingScrollMessageId}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}
                 className="flex-1 min-h-0"
@@ -776,6 +803,31 @@ export function FairwayMessages() {
         currentUserRole={userRole || 'player'}
         teamId={teamId}
       />
+
+      {/* ── Group details (G-33 · D-03a · G-30 · G-57) ─────────────────────
+          Mounted only for a selected GROUP, so a DM cannot open it even if the
+          state were somehow set. `groupParticipants` is the same map the
+          thread header and every incoming bubble already read — one fetch
+          serves all three, so the sheet's member list can never disagree with
+          the names on the messages above it.
+
+          `participant_count` is passed separately and deliberately: it counts
+          participant ROWS, while the map counts members whose coach/player row
+          resolved. Handing the sheet both lets it say "9 members" honestly
+          while listing the 8 it can name, instead of silently reporting the
+          smaller number as the truth. */}
+      {selectedConversation?.is_group && (
+        <GroupDetailsSheet
+          open={showGroupDetails}
+          onOpenChange={setShowGroupDetails}
+          title={selectedConversation.title || 'Group'}
+          createdAt={selectedConversation.created_at}
+          creatorId={selectedConversation.creator_id}
+          currentUserId={currentUserId || userId}
+          memberCount={selectedConversation.participant_count}
+          members={Array.from(groupParticipants.values())}
+        />
+      )}
 
       {userRole === 'coach' && teamId && (
         <FairwayTeamBroadcastSheet

@@ -149,11 +149,55 @@ it is the owner's, through `db-apply`.
 - [x] **G-56 / M03D F17** the action surface is a labelled bottom sheet. G-56 itself is a RECORD of a self-correction — M03D first read the overlays as scrim-tap-to-dismiss, then found neither artboard contains a dim overlay div at all — and the manifest keeps it because the original "would have driven a wrong build". F17 is the buildable half, severity **high** and carrying no G-number of its own: both artboards draw a vertical list of full-width labelled rows and the code drew an icon-only horizontal strip with an X, which is a different interaction pattern, not a styling delta — a bare glyph can be recognised, not read. **What the artboard evidence does and does not settle:** an artboard is a picture, so "no overlay div" is strong evidence about the COMPOSITION and weak evidence about the INTERACTION, because a static mock draws a scrim and a dimmed sibling identically. The composition comes from the artboard; the dismissal comes from the shared `Sheet`, which AGENTS.md's authority order puts above prose — scrim included. **Fifth free token application, and the closest yet:** `Sheet`'s bottom variant is `rounded-t-fw-lg` + `border-t border-border-subtle`, and the artboard's panel is `border-radius: 1.75rem 1.75rem 0 0` + `border-top: 1px solid oklch(0.862 0.013 82 / 0.95)` — byte-identical, both; the row radius is `--fw-radius-md`, whose own comment reads "list rows"; the grip is the 2px near-match M03D measured and is the primitive's to change. **A SEVENTH free token application the first pass missed and a test caught:** the artboard's 16px/500 label was written off as unmapped and filed as an A03 request, because the Fairway ramp brackets it (`body` 15, `body-lg` 17). `tailwind.config.ts` also carries an **iOS TYPE SCALE — Apple HIG (San Francisco)** whose `callout` is exactly 16px, under a comment naming mobile/native surfaces as its use. The artboard is drawing an iOS action sheet and this ships as a Capacitor WKWebView, so that is the token — and `text-callout` had **zero uses in the repo**. Nothing is owed to A03. The X close row is gone (no artboard counterpart; grip/scrim/Escape dismiss), the G-55 rule is horizontal now so BOTH of the artboard's `margin: 6px 12px` numbers are pinned rather than one, and Delete keeps IconButton's ink-on-transparent danger rather than drifting to Button's tinted chip, which on a full-width row is a red band no artboard draws. **Desktop is capped, not designed.** `SIDE_CLASS.bottom` is `inset-x-0`, so the sheet would have been a full-width band across a 1440px monitor — a phone control stretched. `sm:max-w-sm sm:mx-auto` caps the measure; the leading edge keeps the variant's `rounded-t-fw-lg` (rounding all four would be wrong for a bottom-anchored panel AND would trip G-48's guard). A pointer-anchored context menu is the idiomatic desktop control and was NOT built: every artboard here is a 390×844 phone scene and supplies no desktop authority — the same gap G-50b recorded on bubble width, which G-49/F13 later resolved from the plan's own words. There is no equivalent sentence for this one, so nothing was invented. **Two style asterisks, stated rather than glossed:** `text-callout` belongs to the iOS HIG scale, which `design-system.md` never names — token-backed and endorsed by its own config comment for mobile/native surfaces, but not a Fairway ramp role; and `h-[52px]` is arbitrary because the spacing scale is enumerated and stops at 12/16 with no 13, following this file's own `max-w-[288px]` idiom. A raw `<button>` was caught by `helm/no-raw-button` and is now the `Button` primitive with the geometry merged over the variant. 18 tests, 6 failing pre-fix; the G-55 and G-42 suites are RE-ANCHORED onto the sheet, not weakened — each keeps the property it owns, and G-55's rule assertion got STRONGER (both artboard margins, not one)
 
 ## W7 — Group details
-- [ ] **G-33** group member lists are hardcoded empty
-- [ ] **D-03a** member rows: role-dependent subtitle + Admin pill from `created_by`, and
-      **no presence dot** (`DECISIONS.md`)
-- [ ] **G-30** thread header has no slot to hang group details from
-- [ ] **G-57** group thread header delta (pairs with G-30 and G-33 — one job)
+- [x] **G-33 / D-03a / G-30 / G-57** — one change, four findings, because they were one
+      gap: a surface with no entry point, no data source and no component. Built as
+      `GroupDetailsSheet.tsx` (new — `ConversationDetailsSheet.tsx` is cited all through
+      the audit corpus and exists nowhere under `src/`; it lived on unmerged branches,
+      so nothing was ported) plus a trailing info control in the thread header.
+      **G-57 was already 2/3 shipped and this is recorded, not re-claimed:** G-29c put
+      the member stack and the live "N members" subtitle in that header, so the only
+      remaining delta was the trailing control — which is G-30. Building it closes both.
+      **G-33's two halves are different problems.** The *inbox-list* arrays
+      (`use-golf-messages.ts`, `participant_ids: []`) fed the rail; the *details sheet*
+      needed member rows. Both are fixed, and the ids cost nothing: the participant
+      query that produced the count already ran, and asked for `conversation_id` alone —
+      it now asks for `user_id` too, and the count is derived from the same rows, so the
+      header's "N members" and the sheet's list cannot disagree. That query is now
+      **paginated and stably ordered**, because as a count the PostgREST 1000-row cap
+      degraded quietly and as the source of *who is in the group* it would silently drop
+      members. The transform also stopped dropping `creator_id` and `participant_ids` —
+      both were on the row one step upstream and neither reached the UI on **either**
+      origin path. **Correction to G-34, verified against the function definition:** it
+      reads as though the RPC branch never populates `creator_id`; the baseline
+      migration's `get_golf_conversations_with_details` selects `c.created_by AS
+      creator_id` (`20260527000000_prod_public_baseline.sql:2820`), so RPC-origin rows
+      always carried it. The transform was the only thing losing it. **D-03a shipped
+      exactly as frozen**: subtitle is `golf_coaches.title` for a coach and
+      `Class of {golf_players.graduation_year}` for a player — two columns added to a
+      join that already ran — with **no subtitle at all** when either is missing rather
+      than the DM path's `'Golf Coach'` / `'Golf Player'` placeholder, which is why the
+      rows do NOT reuse `GolfConversationParticipant` (its `subtitle` is required).
+      Admin pill reads `created_by` and nothing else; **no presence dot** (D-01a/G-51 —
+      production `users` RLS cannot resolve a teammate's state, so it would imply a fact
+      nobody can check). **Absent by deferral, not disagreement:** the artboard's
+      Mute / Search / Files tiles, the "Add" link, shared files and "Leave group" —
+      Mute is G-02 and waits on G-58's migration being *applied*, and the other four have
+      no capability anywhere in the messages tree; a control that does nothing scores as
+      coverage and reads as a bug. Pinned by tests so a later pass adding one has to mean
+      it. **Ninth free token application, and three of them come from the iOS ramp on a
+      measurement, not a preference:** the artboard's `.sub` is 12px at weight 400 —
+      `caption-1` exactly, where the canonical `caption` is the same 12px but forces
+      500; `.nm` is 15px/21px, where `subhead`'s 1.35 leads to 20.25 and canonical
+      `body` to a flat 24; the title is 20px/600, which is `title-3` on both. `.hd` and
+      the row radius are the canonical `eyebrow` and `--fw-radius-md` ("list rows") byte
+      for byte. **Desktop is capped, not designed** — `sm:max-w-sm sm:mx-auto`, the same
+      disposition as G-56, because every artboard here is a 390×844 phone scene.
+      **Two orderings that are choices, stated rather than hidden:** the artboard's
+      first row is the viewer *who is also the creator*, so it does not discriminate —
+      viewer-first is chosen because it holds for every member of every group, where
+      creator-first would reorder the list under you per group; and the "created by"
+      clause drops **whole** when the creator cannot be named, rather than printing a
+      placeholder. 45 tests, 12 failing pre-fix.
 
 ## W8 — Rendered fidelity review (M05 / D-02)
 - [ ] Serve the app against the local stack and compare against `reference/*.dc.html`
@@ -178,6 +222,7 @@ None is blocked by anything above; each is its own piece of work.
 | **G-51** remove the dead roster presence dot | Referral — outside the messages tree, different lease |
 | **G-52** messaging presence | Policy problem (RLS), not a build |
 | **G-41** DM creation race | Needs a unique constraint ⇒ migration ⇒ owner |
+| **M03D F18** reactions tray (`Reactions.dc.html`) [high] | Named here because a high-severity finding with no checklist row makes "the plan is complete" untrue. It is NOT a re-skin: the five-emoji vocabulary, per-emoji counts and viewer-own-reaction state (G-35) are a contract that has to be specified against the unused `golf_message_reactions` table first, and the tray's entry point is the same long-press row G-42/G-56 just rebuilt. Its own piece of work, not a tail on this one |
 | **G-03..G-07** inbox states (elevation, filter row, offline, drafts, stale cue) | Depend on G-04's finding that the visible "Team" control is a different feature; sequenced after the thread work |
 | **G-10 / G-11 / G-12 / G-17 / G-25 / G-28 / G-34..G-37 / G-43** | Lower severity or dependent on a deferred item above |
 

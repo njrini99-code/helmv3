@@ -219,6 +219,34 @@ Keep it narrow. The type IS the enforcement: widening it back to a row type is
 what would let a consumer key on a fabricated id again, and `npm run typecheck`
 is the check that catches it.
 
+## Group membership: two facts, one query, and a role that does not exist
+
+A group conversation's member list and its "N members" count come off the SAME
+`golf_conversation_participants` rows, deliberately — they used to be two
+independent facts (a count from the participant query, a hardcoded `[]` for the
+ids) and could disagree. That query is paginated (`fetchAllRowsResult`, ordered
+on `id`): it supplies identity now, not just a cardinality, so the PostgREST
+1000-row cap would drop MEMBERS rather than merely under-count.
+
+`creator_id` and `participant_ids` reach the UI on both origin paths. The RPC
+selects `c.created_by AS creator_id` itself; the supplemental team-chat path
+sets it from `conv.created_by`. What used to lose them was the transform's
+`is_group` branch, which did not copy them onto `GolfConversationWithMeta`.
+
+**There is no participant role column.** `golf_conversation_participants` has
+`conversation_id, id, joined_at, last_read_at, muted_until, notification_level,
+user_id` and nothing else. The Admin badge on a member row is
+`golf_conversations.created_by` — a true fact about the row, read-only by
+construction, with no schema to write a promotion to. `users.role = 'admin'` is
+a PLATFORM super-admin flag and must never be used here: it would badge a Helm
+staff account as a group admin and the actual creator as nothing.
+
+A member row's subtitle is role-dependent — `golf_coaches.title` for a coach,
+`Class of {golf_players.graduation_year}` for a player — and renders **nothing**
+when the column is empty. That is why `GroupMember` is its own type rather than
+`GolfConversationParticipant`, whose `subtitle` is required and whose DM path
+fills the gap with `'Golf Coach'` / `'Golf Player'`.
+
 ## Known Risk Areas
 
 - Announcement inline tasks can drift from task completion state if tasks and assignment tables are not read consistently.

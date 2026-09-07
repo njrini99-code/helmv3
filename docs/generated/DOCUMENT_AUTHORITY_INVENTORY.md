@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 55 | 6 | 29 | 22 |
+| `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 22 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 35 | 0 | 6 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -376,7 +376,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/M03C-composer.md` | current | - | - | yes | 0 | 20 | - |
 | `audit/M03D-overlays.md` | current | - | - | yes | 0 | 16 | 2 |
 | `audit/M04-media.md` | current | - | - | - | 0 | 21 | - |
-| `audit/PROGRESS.md` | current | - | - | - | 0 | 4 | - |
+| `audit/PROGRESS.md` | current | - | - | yes | 0 | 4 | - |
 | `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 3 | 0 | - |
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 8 | 19 | 6 |
 | `docs/SECURITY_AUDIT.md` | current | yes | - | - | 4 | 13 | - |

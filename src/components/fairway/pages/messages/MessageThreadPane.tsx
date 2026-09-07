@@ -30,7 +30,7 @@
 
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
@@ -43,6 +43,7 @@ import type {
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar, AvatarGroup } from '@/components/fairway/controls/avatar';
+import type { GroupMember } from './GroupDetailsSheet';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
@@ -330,7 +331,18 @@ export interface MessageThreadPaneProps {
    * the legacy fetchGroupParticipants pattern.  Undefined (or empty Map) on
    * 1:1 conversations — the component falls back to other_participant for those.
    */
-  groupParticipants?: Map<string, { name: string; avatar: string | null }>;
+  groupParticipants?: Map<string, GroupMember>;
+
+  /**
+   * G-30 / G-57 — open the group details sheet.
+   *
+   * The header had no trailing slot at all, which is why `GroupDetails.dc.html`
+   * had no entry point: not "a sheet that needs rebuilding" but a sheet nothing
+   * could open. This is the slot. Optional, and the control renders only when a
+   * handler is supplied, so a caller with no details surface (a test harness,
+   * or a DM-only embedding) gets the header it had before, byte for byte.
+   */
+  onOpenGroupDetails?: () => void;
 
   /**
    * P259: a message id to scroll to once the thread loads (set when the user
@@ -553,6 +565,7 @@ export function MessageThreadPane({
   onRetryMessage,
   onDiscardFailedMessage,
   groupParticipants,
+  onOpenGroupDetails,
   scrollToMessageId,
   onScrolledToMessage,
   children,
@@ -1156,6 +1169,31 @@ export function MessageThreadPane({
             <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
           ) : null}
         </div>
+        {/* G-30 — the trailing info control, and with it the LAST of G-57's
+            three header deltas. The other two are already shipped: G-29c put
+            the member stack and the live "N members" subtitle here, so G-57 is
+            fully explained by G-30 alone and this closes both.
+
+            `shrink-0` matters. The title column above is `min-w-0 flex-1`, so
+            without it a long group name would compress the button instead of
+            truncating itself, and the control would change size with the
+            title. Rendered only for groups (a DM has no membership to show)
+            and only when a handler exists, so the header is unchanged for any
+            caller that has no details surface.
+
+            IconButton `md` is 44px — the DoD touch target, and the same size
+            the back button on the other end of this bar already reserves. */}
+        {isGroup && onOpenGroupDetails ? (
+          <IconButton
+            variant="ghost"
+            size="md"
+            aria-label="Group details"
+            onClick={onOpenGroupDetails}
+            className="-mr-1 shrink-0"
+          >
+            <Info aria-hidden="true" />
+          </IconButton>
+        ) : null}
       </header>
 
       {/* Thread scroll region — a MATTE well (bg-surface) so the conversation
