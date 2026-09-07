@@ -22,6 +22,7 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run lint:*)",
       "Bash(npm run docs:check:*)",
+      "Bash(npm run db:apply -- *)",
       "Bash(npx tsc --noEmit:*)",
       "Bash(npx vitest run:*)",
       "Bash(rg:*)",
@@ -63,6 +64,7 @@
       "Bash(./node_modules/.bin/supabase functions list:*)"
     ],
     "deny": [
+      "Bash(npm run db:apply -- *--apply*)",
       "Bash(supabase config push:*)",
       "Bash(supabase db reset:*)",
       "Bash(vercel alias set:*)",

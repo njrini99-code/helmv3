@@ -1,0 +1,7 @@
+-- prod-sample-seed.sql — GENERATED FILE. Do not hand-edit.
+--
+-- Regenerate with: npm run db:seed:refresh (scripts/db/seed-from-prod.mjs)
+--
+-- Placeholder until the first run: no rows, so a fresh `supabase db reset`
+-- on a brand-new checkout still succeeds (this file is one of
+-- [db.seed].sql_paths in supabase/config.toml and must always exist).

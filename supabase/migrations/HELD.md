@@ -17,6 +17,15 @@ dead end, because there is nowhere the answer could have been written down.
 
 There is now. If you decide not to apply a migration, add a row. One line.
 
+`npm run db:apply` (`scripts/db/apply.mjs`) is the ONLY sanctioned path from a
+merged migration file to production — see
+`docs/operations/APPLY_PATH.md`. This file is the register for anything that
+cannot use it: a migration held back on purpose, one applied by a route other
+than `db:apply` (and later reconciled here), or one whose status needs a
+recorded reason. `db:apply` itself refuses to proceed past a file marked
+**HOLD**/**OBSOLETE** here unless `--held-override <row anchor> --reason
+"..."` is passed explicitly.
+
 This is not a substitute for `public.audit_log` (which exists, has the right
 schema, and has never been written to) — that covers privileged *runtime*
 actions. This covers a decision that leaves no runtime trace at all.

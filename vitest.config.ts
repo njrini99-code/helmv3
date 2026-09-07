@@ -453,6 +453,10 @@ export default defineConfig({
             // guard rot, not code drift. Lists repaired, both now green.
             'scripts/__tests__/admin-tables-mobile.test.mjs',
             'scripts/__tests__/no-arbitrary-text-px-fairway-pages.test.mjs',
+            // D3, Helm Database Plan (2026-09-06): a new migration that
+            // mutates data/DDL without a -- ROLLBACK:/-- VERIFY: header pair
+            // must fail the PR, not just be caught by a human reviewer.
+            'scripts/__tests__/check-migration-headers.test.mjs',
           ],
           exclude: ['node_modules', '.next', 'archive'],
           // Generous on purpose: this project is I/O bound by design. The runner
