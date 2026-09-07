@@ -57,7 +57,7 @@ zero drift for four straight weeks before this guard is considered settled.
 
 ## Why this exists, and why it doesn't use `schema_migrations`
 
-`docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md` found that local
+`https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md` found that local
 migration filenames and the versions actually recorded in
 `supabase_migrations.schema_migrations` are systemically mismatched for
 almost every migration since 2026-05-26 (same migration, same name,
@@ -137,7 +137,7 @@ not just a boolean.
 
 ## Related docs
 
-- `docs/audits/SUPABASE_DRIFT_REPORT_2026-07-03.md` — the read-only
+- `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/SUPABASE_DRIFT_REPORT_2026-07-03.md` — the read-only
   verification pass this guard operationalizes.
 - `docs/operations/2026-07-03-p0-service-role-key-rotation-runbook.md` —
   separate P0 secret-hygiene finding from the same stabilization pass.

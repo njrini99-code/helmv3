@@ -953,7 +953,7 @@ Confirmed still anon-granted as of the newest migrations in this repo (grepped e
 `get_my_coach_id()`, `get_my_player_id()`, `is_baseball_team_coach(uuid)`,
 `is_baseball_team_member_v2(uuid)`, `is_baseball_team_player(uuid)`,
 `get_baseball_conversations_with_details(uuid)`, `get_my_baseball_conversation_ids()`.
-This matches `docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md` Wave 2's flagged item
+This matches `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md` Wave 2's flagged item
 ("8 baseball SECURITY DEFINER RPCs callable by anon") — a sibling hardening migration,
 `supabase/migrations/20260630170248_harden_baseball_phase1_rls_rollup.sql`, DID revoke anon on
 a different set (the 0050-file helpers: `get_my_baseball_player_id`, `is_baseball_team_staff`,
@@ -1005,7 +1005,7 @@ current (118 of the 119 confirmed `baseball_*` tables), but is still missing
 file as exhaustive for new work.
 
 **G8 — Migration-file presence in this repo is not proof a table/policy is live in prod; verify against `information_schema`.**
-Two contradictory signals exist in the docs for the same week: `docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md`
+Two contradictory signals exist in the docs for the same week: `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md`
 (morning of 2026-06-25) states "59 pending migrations not applied to prod DB — all tables
 gated," while `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` (same day, later) reports prod
 already had "118 baseball + 26 lifting tables" applied via an out-of-band session that predated

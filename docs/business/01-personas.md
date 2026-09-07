@@ -113,7 +113,7 @@ For baseball, coach *typing* is richer at the program level (College/HS/JUCO/Sho
 
 ## 6. Baseball personas (stable high-level framing only)
 
-BaseballHelm covers college baseball recruiting + team management, structurally paralleling GolfHelm's coach/player split but is under active rebuild (`fairway_baseballhelm_migration_deferred` memory; see `docs/fairway-baseballhelm-migration-plan.md` and `docs/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md`). This doc intentionally does **not** describe current BaseballHelm table shapes, routes, or RLS specifics — treat any such detail as subject to change and verify against `memory/registry.yml` / the codebase at implementation time, not against this doc.
+BaseballHelm covers college baseball recruiting + team management, structurally paralleling GolfHelm's coach/player split but is under active rebuild (`fairway_baseballhelm_migration_deferred` memory; see `docs/fairway-baseballhelm-migration-plan.md` and `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_LIFTLAB_GAP_MAP_2026-06-25.md`). This doc intentionally does **not** describe current BaseballHelm table shapes, routes, or RLS specifics — treat any such detail as subject to change and verify against `memory/registry.yml` / the codebase at implementation time, not against this doc.
 
 At a stable, product-framing level:
 

@@ -5,7 +5,7 @@
  * attention", with a 30-day activity/error EKG and four triage sorts — had
  * exactly ONE inbound link: a text-xs back-arrow three levels deep.
  * `/admin/billing` had zero, repo-wide. Both had been recorded as "no static
- * nav link found" in docs/qa/helm-route-inventory.md and stayed that way,
+ * nav link found" in https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/qa/helm-route-inventory.md and stayed that way,
  * because nothing failed when a route was added without a nav entry.
  *
  * ADMIN_NAV is the single array behind the rail, ⌘K, the More sheet, the

@@ -103,7 +103,7 @@ for (const row of mapRows) {
 // ---------------------------------------------------------------------------
 const registry = yaml.load(readFileSync(P('memory/registry.yml'), 'utf-8'));
 // path -> every place that routes to it. A Map keyed by path with a single
-// value hid a second route: docs/ROUND_REVIEW_ACCURACY_REPORT.md was reachable
+// value hid a second route: https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07/ROUND_REVIEW_ACCURACY_REPORT.md was reachable
 // from both golf_round_lifecycle.docs.flows and stats_analytics.docs.incidents,
 // and only the last one written was reported — so fixing the reported one left
 // the other in place and the checker still failed, pointing at what looked like

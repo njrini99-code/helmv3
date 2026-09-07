@@ -37,7 +37,7 @@ owner's screenshots are the ones those four waves did not reach.
 **There is also already a Mobile Doctrine** — 11 numbered rules distilled from a
 prior nine-reviewer audit. Live code cites it as `docs/MOBILE_DOCTRINE.md`
 (`src/app/golf/(dashboard)/dashboard/template.tsx:6`), but the file was archived
-to `docs/archive/2026-07-devibe/MOBILE_DOCTRINE.md` and that path now resolves
+to `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-07-devibe/MOBILE_DOCTRINE.md` and that path now resolves
 to nothing. **Finding: doc-path drift on the repo's own standing design law.**
 This work builds to those rules rather than inventing a parallel system.
 
