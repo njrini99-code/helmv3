@@ -6234,7 +6234,11 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
+<<<<<<< HEAD
           "line": 139
+=======
+          "line": 146
+>>>>>>> 20713e30e (db(D5): Database tab — statement capture, index advice, bloat, coverage, drift, slow-statement Sentry issues)
         }
       ]
     },
@@ -6488,7 +6492,11 @@
         {
           "kind": "rpc_call",
           "path": "src/app/api/cron/db-stat-delta/route.ts",
+<<<<<<< HEAD
           "line": 213
+=======
+          "line": 220
+>>>>>>> 20713e30e (db(D5): Database tab — statement capture, index advice, bloat, coverage, drift, slow-statement Sentry issues)
         }
       ]
     },
@@ -15631,12 +15639,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 244
+          "line": 268
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 247
+          "line": 271
         },
         {
           "kind": "import_graph",

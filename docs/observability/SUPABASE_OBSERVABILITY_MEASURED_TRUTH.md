@@ -248,6 +248,19 @@ Trace Explorer extension and replay fixtures (§56–61), alert policy/paging
 (§49–55). These stay NOT VERIFIED in this PR's acceptance section, not
 silently absent.
 
+## 7a. D5 — Database Tab additions (statement capture, index advice, bloat, coverage)
+
+Four new HELD migrations, four new `helm_debug` tables/state rows
+(`db_statement_samples`, `db_statement_alert_state`, `db_analysis_samples`,
+plus an additive `min_exec_ms` field on the already-applied
+`helm_debug_stat_statements_snapshot`), extending the existing `db-stat-delta`
+(15 min) and `db-table-health` (hourly) crons rather than adding a new
+schedule. Full detail — what each Bridge section reads, retention,
+fail-open behaviour, Sentry paging, and named gaps (Drift's fallback path,
+"top by mean" being a re-sort of the existing Top-K-by-total snapshot, the
+untested-policies finding being script-only) — is in
+`docs/observability/DATABASE_TAB.md`, not duplicated here.
+
 ## 8. Incremental recurring cost
 
 **$0.** No log drain, no new vendor, no paid Sentry feature. New Vercel cron

@@ -29,6 +29,7 @@ import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { computeTableSampleDelta, type TableCurrentSnapshot, type TablePriorSnapshot } from '@/lib/observability/supabase/table-health';
+import { flattenAnalysisSnapshot, type AnalysisSnapshotRaw } from '@/lib/observability/supabase/db-analysis';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -178,10 +179,48 @@ export async function GET(req: NextRequest) {
       throw new Error(`record_db_table_samples failed: ${describeError(writeResult.error)}`);
     }
 
+    // D5 task 2: index-advisor suggestions, unused indexes, bloat,
+    // seq-scan ratios, connections and locks — folded into this existing
+    // hourly cron rather than a new schedule, per the brief's
+    // "prefer extending db-table-health" instruction.
+    let analysisResult: { skipped?: string; rowsWritten?: number } = {};
+    try {
+      const analysisSampledAt = new Date().toISOString();
+      const analysisSnapshot = (await admin.rpc('helm_debug_db_analysis_snapshot' as never, {} as never)) as {
+        data: AnalysisSnapshotRaw | null;
+        error: MaybePostgrestError;
+      };
+
+      if (analysisSnapshot.error) {
+        analysisResult = isMigrationNotAppliedError(analysisSnapshot.error)
+          ? { skipped: 'migration-not-applied' }
+          : { skipped: `snapshot-failed: ${describeError(analysisSnapshot.error)}` };
+      } else if (analysisSnapshot.data) {
+        const analysisRows = flattenAnalysisSnapshot(analysisSnapshot.data);
+        const analysisWrite = (await admin.rpc('record_db_analysis_sample' as never, {
+          p_sampled_at: analysisSampledAt,
+          p_rows: analysisRows,
+        } as never)) as { data: number | null; error: MaybePostgrestError };
+
+        if (analysisWrite.error) {
+          analysisResult = isMigrationNotAppliedError(analysisWrite.error)
+            ? { skipped: 'migration-not-applied' }
+            : { skipped: `write-failed: ${describeError(analysisWrite.error)}` };
+        } else {
+          analysisResult = { rowsWritten: analysisWrite.data ?? 0 };
+        }
+      }
+    } catch (err) {
+      // Analysis capture is additive to the existing table-health delta
+      // engine — a failure here must never fail the whole cron run.
+      analysisResult = { skipped: `unexpected: ${describeError(err)}` };
+    }
+
     return NextResponse.json({
       ok: true,
       rowsWritten: writeResult.data,
       relationsObserved: current.length,
+      analysis: analysisResult,
     });
   });
 }

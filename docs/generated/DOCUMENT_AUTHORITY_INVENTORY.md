@@ -43,7 +43,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 4 | 0 | 3 | 1 |
 | `INDEX` | 20 | 1 | 7 | 28 |
 | `ARCHIVE` | 1238 | 0 | 431 | 579 |
-| `UNKNOWN` | 113 | 12 | 46 | 150 |
+| `UNKNOWN` | 114 | 12 | 46 | 151 |
 
 ## Files
 
@@ -182,7 +182,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 30 | 2 |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 12 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
-| `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 40 | 1 |
+| `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | 1 |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 28 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | 1 |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 3 | 14 | - |
@@ -621,6 +621,7 @@ them would bury everything above.
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | 0 | 0 | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 0 | 3 | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | 0 | 1 | - |
+| `docs/observability/DATABASE_TAB.md` | current | - | - | - | 3 | 9 | 1 |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 3 | 16 | 2 |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 | 29 | 7 |
 | `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 | 13 | 3 |
@@ -632,7 +633,7 @@ them would bury everything above.
 | `docs/observability/SUPABASE_CERTIFICATION.md` | current | - | - | - | 1 | 21 | 4 |
 | `docs/observability/SUPABASE_COVERAGE_MATRIX.md` | current | - | - | - | 2 | 2 | - |
 | `docs/observability/SUPABASE_DIAGNOSTICS.md` | current | - | - | yes | 2 | 17 | 1 |
-| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | yes | - | yes | 7 | 3 | - |
+| `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` | current | yes | - | yes | 7 | 4 | - |
 | `docs/observability/SUPABASE_OPERATING_MODEL.md` | current | - | - | - | 3 | 13 | - |
 | `docs/observability/SUPABASE_PLATFORM_OBSERVABILITY.md` | current | yes | - | yes | 3 | 14 | - |
 | `docs/observability/SUPABASE_RUNBOOKS.md` | current | - | - | - | 3 | 7 | 1 |
@@ -686,7 +687,7 @@ them would bury everything above.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 2 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 19 | 34 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 20 | 37 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |

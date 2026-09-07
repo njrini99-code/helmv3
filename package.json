@@ -27,6 +27,7 @@
     "contract:resolve": "node scripts/contracts/resolve.mjs",
     "db:drift:check": "node scripts/db/check-supabase-drift.mjs",
     "db:ledger-drift": "node scripts/db/migration-ledger-drift.mjs",
+    "db:rls-coverage": "node scripts/db/rls-coverage.mjs",
     "db:types": "bash scripts/gen-db-types.sh",
     "db:types:check": "npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '❌ Types are out of date. Run npm run db:types and commit changes.' && exit 1)",
     "dev": "next dev",
