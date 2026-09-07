@@ -1,5 +1,51 @@
 # Test ledger — team_communications
 
+## 2026-09-07 — G-56 action sheet, and two suites re-anchored
+
+- SHA: 0a6f67aef.
+- Added `src/components/fairway/pages/messages/MessageThreadPane.actionSheet.test.ts`
+  (18 tests). Verified to fail (6 of 18) against the pre-fix component.
+- THE ASSERTION THAT EARNED ITS KEEP BY FAILING: "the 16px label has no token,
+  which is why it is an A03 request". It went red, and the reason was that a
+  second type scale exists in the same config — Apple's HIG block, `callout` at
+  16px. The test now records BOTH scales and the reason the iOS one is right
+  here. This is the argument for writing "no X exists" as an assertion at all:
+  it is the claim an A03 request rests on and the one most likely to be wrong.
+- Source-side guarantees (parsed from the artboards, so they fail if a source
+  moves): both artboards draw a bottom sheet with a 38x4 grip; NEITHER contains
+  a scrim overlay, and the receded-background opacities are 0.32 / 0.34; neither
+  renders a Close control; the row geometry is a repeated RULE (four identical
+  rows), not one specimen.
+- Token-side guarantees, measured on both sides: the panel radius IS
+  `--fw-radius-lg`; the panel border IS `--fw-color-border-subtle`; the row
+  radius IS `--fw-radius-md` and its comment says "list rows"; the artboard's
+  Delete red matches NEITHER `--fw-color-danger` nor `--fw-color-danger-ink`,
+  and the token file's own "all three failed as text" measurement is why the
+  token wins anyway.
+- Render-side guarantees: the panel is the shared Sheet's; the grip is present;
+  the rows are LABELLED (the whole of F17 — this is the assertion that fails if
+  anyone reverts to the icon strip); the row geometry matches values parsed from
+  the artboard rather than typed in; there is exactly ONE sheet for a
+  two-message thread; and `onOpenChange(false)` clears the id, which is the one
+  assertion covering every dismissal path the primitive owns including the two
+  jsdom cannot simulate.
+- One PRESERVATION assertion passes pre-fix on purpose: Delete's ink-not-chip
+  treatment. `button.tsx` has two danger variants and the strip already used the
+  right one; what this pins is that the rewrite did not drift to the other.
+- RE-ANCHORED, NOT WEAKENED. The G-55 and G-42 suites addressed the old strip's
+  DOM. Each keeps the property it owns and now reads the document rather than
+  the render container, because the Sheet renders as a fixed panel outside it:
+  * G-55's rule assertion got STRONGER — the sheet's rule is horizontal like the
+    artboard's, so both `margin: 6px 12px` numbers are pinned instead of one.
+  * G-55's row assertion no longer needs its Close filter, because Close is gone.
+  * G-42's "no `lg:hidden`" became "does not gate the action surface on viewport
+    width", asserted on the panel and on the whole responsive prefix, so a
+    `lg:invisible` or `max-lg:flex` would fail too.
+- Not covered: that the sheet is VISIBLE at any particular width (jsdom applies
+  no Tailwind, so `sm:max-w-sm` is only a string to it), the grip-drag and
+  scrim-tap dismissals themselves, and the rendered look of the capped desktop
+  measure. All three belong to the W8 rendered-fidelity pass.
+
 ## 2026-09-07 — G-42 incoming actions and the desktop path
 
 - SHA: fa83dbf42.

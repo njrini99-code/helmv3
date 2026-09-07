@@ -1,5 +1,63 @@
 # Change ledger — team_communications
 
+## 2026-09-07 — the message actions become a labelled bottom sheet (G-56 / M03D F17)
+
+- SHA: 0a6f67aef.
+- Change: `MessageThreadPane.tsx`. The per-message icon strip is gone. ONE
+  shared `Sheet` renders at pane level, driven by `mobileActionsId`, holding
+  full-width labelled rows — Copy always, Edit / rule / Delete when the message
+  is the reader's own. The X close row is removed. A new file-local `ActionRow`
+  builds on the `Button` primitive.
+- Why: F17, severity high. Both artboards draw a vertical list of labelled rows
+  (21px icon, 16px/500 label, 52px, 2px gaps, a rule before Delete, no close
+  row) and the code drew an icon-only horizontal strip. F17's own words: that
+  is a different interaction pattern, not a styling delta. A bare glyph can be
+  recognised, not read. F17 carried NO G-number — it was picked up here rather
+  than left unbuilt on a technicality, and G-56 is its nearest owner.
+- WHAT G-56 ITSELF IS: a record of a self-correction. M03D first read these
+  overlays as scrim-tap-to-dismiss, then found neither artboard contains a dim
+  overlay div at all; the model is drag-via-grip over a reduced-opacity
+  background (`Actions.dc.html:24` 0.32, `Reactions.dc.html:36` 0.34). The
+  manifest keeps it because the original "would have driven a wrong build".
+- HOW THAT EVIDENCE WAS WEIGHTED, which is the judgement call in this change:
+  an artboard is a picture. "No overlay div" is strong evidence about the
+  COMPOSITION and weak evidence about the INTERACTION, because a static mock
+  draws a scrim and a dimmed sibling identically. So the composition is taken
+  from the artboard and the dismissal from the shared `Sheet` — which AGENTS.md's
+  authority order puts above prose and `design-system.md` names as the ONE
+  slide-over — scrim included. Recorded rather than glossed, because a future
+  reader comparing the artboard to the shipped surface will see a scrim the
+  artboard does not have.
+- FREE TOKEN APPLICATIONS, fifth and seventh of this audit:
+  * `Sheet`'s bottom variant is `rounded-t-fw-lg` + `border-t border-border-subtle`;
+    the artboard panel is `border-radius: 1.75rem 1.75rem 0 0` +
+    `border-top: 1px solid oklch(0.862 0.013 82 / 0.95)`. Byte-identical, both.
+    Row radius is `--fw-radius-md`, whose own comment reads "list rows".
+  * The 16px/500 label was FIRST written off as unmapped and filed as an A03
+    request, because the Fairway ramp brackets it (`body` 15, `body-lg` 17). The
+    suite's "no token exists" assertion failed. `tailwind.config.ts` also
+    carries an iOS TYPE SCALE — Apple HIG block whose `callout` is exactly 16px,
+    under a comment naming mobile/native surfaces as its use. The artboard draws
+    an iOS action sheet and this ships as a Capacitor WKWebView, so that is the
+    token. `text-callout` had ZERO uses in the repo. NOTHING is owed to A03, and
+    the A03 entry that was nearly written would have been wrong.
+- Delete keeps IconButton's ink-on-transparent danger (`button.tsx:255-257`)
+  rather than drifting to Button's tinted chip (`:108-112`), which on a
+  full-width row is a red BAND neither artboard draws.
+- `helm/no-raw-button` caught a raw `<button>` and was right: the rows are the
+  `Button` primitive with the geometry merged over the variant by tailwind-merge.
+- DESKTOP IS CAPPED, NOT DESIGNED. `SIDE_CLASS.bottom` is `inset-x-0`, so this
+  would have been a full-width band across a 1440px monitor. `sm:max-w-sm
+  sm:mx-auto` caps the measure; the panel stays bottom-anchored so the leading
+  edge keeps its `rounded-t-fw-lg`. A pointer-anchored context menu is the
+  idiomatic desktop control and was NOT built — every artboard here is a 390x844
+  phone scene and supplies no desktop authority, the same gap G-50b recorded on
+  bubble width. There is no plan sentence to resolve it, so nothing was invented.
+- Two style asterisks, stated rather than glossed: `text-callout` belongs to the
+  iOS scale, which `design-system.md` never names; and `h-[52px]` is arbitrary
+  because the spacing scale is enumerated and has no 13, following this file's
+  own `max-w-[288px]` idiom.
+
 ## 2026-09-07 — incoming messages get an action surface, and desktop gets a path (G-42)
 
 - SHA: fa83dbf42.
