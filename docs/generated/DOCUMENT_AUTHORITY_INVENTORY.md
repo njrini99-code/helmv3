@@ -41,7 +41,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 85 |
 | `INCIDENT` | 28 | 15 | 2 | 3 |
 | `ADR` | 4 | 0 | 3 | 1 |
-| `INDEX` | 20 | 1 | 7 | 28 |
+| `INDEX` | 21 | 1 | 7 | 28 |
 | `ARCHIVE` | 1238 | 0 | 431 | 579 |
 | `UNKNOWN` | 113 | 12 | 46 | 150 |
 
@@ -549,6 +549,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.circleci/README.md` | current | - | - | - | 0 | 0 | - |
+| `.claude/workflows/README.md` | current | - | - | - | 0 | 0 | - |
 | `datadog/README.md` | current | - | - | - | 0 | 3 | - |
 | `docs/README.md` | current | - | - | yes | 3 | 34 | 16 |
 | `docs/db/drafts/README.md` | current | - | - | - | 0 | 1 | 1 |
