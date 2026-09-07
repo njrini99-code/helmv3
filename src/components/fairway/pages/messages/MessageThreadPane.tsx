@@ -34,6 +34,7 @@ import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Us
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { isGroupConversation } from './conversation-kind';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
   GolfConversationWithMeta,
@@ -90,6 +91,92 @@ const GROUP_WINDOW_MINUTES = 5;
  * the finding recorded the delta rather than retuning it, which is the right
  * default for a design value, and the owner overrode that default.
  */
+/**
+ * One row of the action sheet — the shape both artboards draw.
+ *
+ * `Actions.dc.html:40` states it: 52px tall, `padding: 0 12px`, a 14px gap, a
+ * 21px icon and a 16px/500 label, on a `0.875rem` radius. The radius is
+ * `--fw-radius-md`, whose own comment in `design-tokens.css` reads "list rows".
+ *
+ * THE LABEL SIZE IS A TOKEN, AND FINDING IT CORRECTED THIS COMMENT. The first
+ * pass wrote 16px off as unmapped — the Fairway ramp brackets it, `body` at
+ * 15px and `body-lg` at 17px — and filed it as an A03 request. The suite's
+ * "no token exists" assertion failed, which is the whole reason that assertion
+ * is worth writing: `tailwind.config.ts` also carries an **iOS TYPE SCALE —
+ * Apple HIG (San Francisco)**, whose `callout` is exactly 16px, under a comment
+ * that reads "Use these on mobile/native surfaces for authentic iOS feel".
+ *
+ * That is precisely this surface. The artboard's 16px is Apple's Callout size
+ * because the artboard is drawing an iOS action sheet, and this app is a
+ * Capacitor WKWebView. `text-callout` had ZERO uses in the repo before this —
+ * a dormant token that was the right answer the entire time, which makes this
+ * the seventh free token application of the audit.
+ *
+ * Only the weight is ours: the token declares 400 and the artboard 500, so
+ * `font-medium` rides along. Nothing is requested from A03.
+ */
+function ActionRow({
+  icon,
+  label,
+  onClick,
+  destructive,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    // `Button`, not a raw `<button>` — `helm/no-raw-button` is a lint gate and
+    // it is right: the primitive carries the focus ring, the disabled and busy
+    // states, and the >=44px touch floor. Only the geometry is overridden, and
+    // `cn`'s tailwind-merge lets the later utilities win over the variant's.
+    <Button
+      type="button"
+      variant="ghost"
+      onClick={onClick}
+      aria-label={`${label} message`}
+      className={cn(
+        // 52px is `Actions.dc.html:40`'s stated row height and is NOT on this
+        // repo's spacing scale — `tailwind.config.ts:419` enumerates it and
+        // stops at 12/16, with no 13. The bracket escape is the same idiom
+        // G-50b's `max-w-[288px]` uses two hundred lines down, for the same
+        // reason: an artboard number with no scale step.
+        // `justify-start` because the variant centres, and the artboard's rows
+        // are left-aligned with the icon leading.
+        'flex h-[52px] w-full items-center justify-start gap-3.5 rounded-fw-md px-3 text-left',
+        'font-fw-sans text-callout font-medium',
+        'transition-colors duration-150',
+        // DESTRUCTIVE IS INK ON A PLAIN ROW. `controls/button.tsx` has two
+        // danger variants and they differ exactly here: Button's (`:108-112`)
+        // is `bg-fw-danger-bg text-fw-danger-ink`, a tinted chip, and
+        // IconButton's (`:255-257`) is `bg-transparent text-fw-danger-ink
+        // hover:bg-fw-danger-bg`. This row reproduces the SECOND, which is
+        // also what the icon strip it replaces already used — so the
+        // destructive treatment is carried across unchanged rather than
+        // reinvented. Spelled out because reaching for the obvious
+        // `<Button variant="danger">` on a full-width row would paint a red
+        // BAND, which neither artboard draws: both put a red label on the
+        // sheet's own background.
+        //
+        // `--fw-color-danger-ink` rather than `--fw-color-danger` because
+        // `design-tokens.css:182-188` measured exactly this: the three status
+        // colours "all failed as text", danger at 4.01:1, and the ink
+        // counterparts exist for copy. The artboard's own
+        // `oklch(0.505 0.19 27)` matches NEITHER and is A03 request #9 — same
+        // hue, sitting between the two, and taking it literally would repeat
+        // the mistake `:150-165` already corrected once.
+        destructive
+          ? 'text-fw-danger-ink hover:bg-fw-danger-bg active:bg-fw-danger-bg'
+          : 'text-text-primary hover:bg-surface-sunken active:bg-surface-sunken',
+      )}
+    >
+      <span className="flex-shrink-0">{icon}</span>
+      <span>{label}</span>
+    </Button>
+  );
+}
+
 const LONG_PRESS_MS = 500;
 /**
  * Touch slop — how far a finger may wander during a hold before the gesture
@@ -497,6 +584,21 @@ export function MessageThreadPane({
    * permanent pixels. The timer is cancelled by movement, so a scroll that
    * happens to start on a bubble never opens the menu.
    */
+  /**
+   * Own-ness, extracted so the sheet and the per-message row cannot drift.
+   * The two ids are BOTH checked — see the render path's `isOwn`; changing
+   * only one leaves a message own, which a test of this file found the hard
+   * way.
+   */
+  const isOwnMessage = React.useCallback(
+    (m: MessageWithReadStatus) => m.sender_id === userId || m.sender_id === currentUserId,
+    [userId, currentUserId],
+  );
+  const actionsMessage = React.useMemo(
+    () => (mobileActionsId ? messages.find((m) => m.id === mobileActionsId) ?? null : null),
+    [mobileActionsId, messages],
+  );
+
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressOriginRef = React.useRef<{ x: number; y: number } | null>(null);
   const cancelLongPress = React.useCallback(() => {
@@ -509,19 +611,12 @@ export function MessageThreadPane({
   React.useEffect(() => cancelLongPress, [cancelLongPress]);
 
   /**
-   * G-42 — Escape closes the action row.
-   *
-   * Not scope creep: F8 is "desktop has no non-touch path to message actions",
-   * and a menu a keyboard cannot leave is not a path. Right-click now opens
-   * this row on a viewport where the only visible way out is a Close button
-   * the pointer has to travel to, and Escape-to-dismiss is the convention this
-   * design system already states (`.claude/rules/design-system.md` — Escape
-   * closes popup-then-dialog, one level per keypress).
-   *
-   * The SCRIM and outside-click dismissal are deliberately not here: G-56 is
-   * the finding that the row has no scrim and dismisses only by grip-drag, and
-   * it owns the surface's whole dismissal model. This closes the keyboard hole
-   * G-42 itself opened, and nothing more.
+   * G-42 — Escape closes the action row. G-56 moved the row into the shared
+   * `Sheet`, which brings its own Escape handling, and this stays anyway: the
+   * sheet renders in a portal and owns focus only once its content has it, and
+   * this listener is what makes the key work from the instant the row opens.
+   * Both paths call the same setter with the same value, so a doubled press is
+   * idempotent rather than a second dismissal.
    */
   React.useEffect(() => {
     if (!mobileActionsId) return;
@@ -1385,68 +1480,6 @@ export function MessageThreadPane({
                             relative order, so what this finding actually
                             changed is the separator — which is the part that
                             carries the meaning. */}
-                        {mobileActionsId === msg.id && (
-                          /* G-42 — `lg:hidden` REMOVED. It was the other half
-                             of the desktop gap: right-click suppressed the
-                             native menu, and the only thing that could have
-                             replaced it refused to render above 1024px. The
-                             hover row is not a substitute — it carries Edit and
-                             Delete only, and only on your own messages, so a
-                             desktop reader had no Copy anywhere. */
-                          <div className="relative mt-0.5 flex items-center">
-                            <Inset padding="none" className="flex items-center gap-1 px-1 py-0.5">
-                              <IconButton variant="ghost" size="sm" aria-label="Copy message" onClick={() => { void navigator.clipboard?.writeText(decodeMessageContent(msg.content)); onSetMobileActions(null); }}>
-                                <Copy size={18} aria-hidden="true" />
-                              </IconButton>
-                              {/* G-42 — Edit and Delete are the own-only pair,
-                                  and the separator goes with them: with nothing
-                                  destructive in the row there is nothing for it
-                                  to fence off. §12.4 asks for exactly this
-                                  omission and no more, which is why Copy stays
-                                  and Close stays. */}
-                              {isOwn && (
-                              <>
-                              <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => { onStartEdit(msg.id, msg.content); onSetMobileActions(null); }}>
-                                <Pencil size={18} aria-hidden="true" />
-                              </IconButton>
-                              {/* The separator both artboards draw before
-                                  Delete. `Actions.dc.html:52`'s
-                                  `oklch(0.862 0.013 82 / 0.95)` is
-                                  `--fw-color-border-subtle` to the byte, so
-                                  this is a token, not a copied literal.
-                                  (`Reactions.dc.html:88` uses the glass bottom
-                                  edge instead; the two artboards disagree and
-                                  the one that matches a token wins — the
-                                  authority order in AGENTS.md settles it
-                                  without needing a preference.)
-                                  KNOWN LIMIT: Close still sits to the RIGHT of
-                                  Delete, so it inherits the "past the
-                                  separator" position without being
-                                  destructive. It is a sheet dismissal rather
-                                  than a message action and has no slot in
-                                  either artboard's list; G-56 replaces this
-                                  row with a real labelled sheet and a scrim,
-                                  which is where the dismissal stops needing a
-                                  slot at all. Adding a second separator to
-                                  fence it off here would be inventing
-                                  geometry no source asks for.
-                                  A vertical rule rather than a horizontal one
-                                  because this row is horizontal; the artboards'
-                                  list is vertical, and turning this into a
-                                  labelled sheet is G-56's job, not this
-                                  finding's. */}
-                              <span aria-hidden="true" className="mx-1.5 h-5 w-px flex-shrink-0 bg-border-subtle" />
-                              <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => { onDeleteClick(msg.id); onSetMobileActions(null); }}>
-                                <Trash2 size={18} aria-hidden="true" />
-                              </IconButton>
-                              </>
-                              )}
-                              <IconButton variant="ghost" size="sm" aria-label="Close" onClick={() => onSetMobileActions(null)}>
-                                <X size={16} aria-hidden="true" />
-                              </IconButton>
-                            </Inset>
-                          </div>
-                        )}
                       </>
                     )}
 
@@ -1771,6 +1804,113 @@ export function MessageThreadPane({
           </div>
         )}
       </div>
+
+      {/* G-56 / M03D F17 — THE ACTION SURFACE IS A LABELLED BOTTOM SHEET.
+          `Actions.dc.html:36-56` and `Reactions.dc.html:71-92` both draw a
+          vertical list of full-width rows: a 21px icon, a 16px/500 text label,
+          52px tall, stacked with a 2px gap, a rule before Delete, and NO close
+          row. The code drew an icon-only horizontal strip with an X. F17 calls
+          that a different interaction pattern rather than a styling delta, and
+          it is right: a bare glyph cannot be read, only recognised.
+
+          G-56 itself is the record of a self-correction — M03D first read these
+          overlays as scrim-tap-to-dismiss, then found that neither artboard
+          contains a dim overlay div at all, and the model is drag-via-grip over
+          a reduced-opacity background (`Actions.dc.html:24` opacity 0.32,
+          `Reactions.dc.html:36` 0.34). WHAT THAT EVIDENCE DOES AND DOES NOT
+          SAY: an artboard is a picture. "No overlay div" is strong evidence
+          about the composition and weak evidence about the interaction, because
+          a static mock draws a scrim and a dimmed sibling identically. So the
+          composition is taken from the artboard — and the shared `Sheet`, which
+          AGENTS.md's authority order puts above prose and which
+          `design-system.md` names as the ONE slide-over, brings its own scrim.
+          The X had no artboard counterpart and is gone; the grip is real now
+          rather than absent.
+
+          THE SHEET IS THE ARTBOARD, ALREADY. This is the fifth free token
+          application of the audit, after G-32, G-49b, G-47 and G-55, and the
+          closest one yet — `Sheet`'s bottom variant is `rounded-t-fw-lg`
+          (`--fw-radius-lg`, 1.75rem) with `border-t border-border-subtle`
+          (`oklch(0.862 0.013 82 / 0.95)`), and the artboard's panel is
+          `border-radius: 1.75rem 1.75rem 0 0` with
+          `border-top: 1px solid oklch(0.862 0.013 82 / 0.95)`. Byte-identical,
+          both. Its grip is `h-1.5 w-10` against the artboard's 4×38px — the
+          2px near-match M03D measured, and the shared primitive's to change,
+          not this surface's. The row radius is `--fw-radius-md`, whose own
+          comment reads "list rows".
+
+          ONE row lives here, not one per message: the artboards draw a single
+          sheet over the thread, and the id says which message it is for. */}
+      {actionsMessage && (
+        <Sheet
+          open
+          onOpenChange={(next) => { if (!next) onSetMobileActions(null); }}
+          side="bottom"
+          title="Message actions"
+          hideTitle
+          hideClose
+          // DESKTOP. `SIDE_CLASS.bottom` is `inset-x-0`, so without this the
+          // sheet is a full-width band across a 1440px monitor — a phone
+          // control stretched, which is how it would read.
+          //
+          // Every artboard in this audit is a 390x844 phone scene, so NONE of
+          // them supplies a desktop answer; that is the same gap G-50b's
+          // comment recorded about bubble width, and it was resolved there by
+          // the plan's own words rather than by inventing one. There is no
+          // equivalent sentence here, so nothing is invented: the surface stays
+          // ONE sheet with one code path, and only its measure is capped so it
+          // reads as a centred card above `sm`. A pointer-anchored context menu
+          // would be the idiomatic desktop control and is exactly the kind of
+          // unsourced design this audit does not add on its own.
+          // Measure only — the leading edge keeps the `rounded-t-fw-lg` the
+          // variant already gives it, and the sheet stays bottom-anchored, so
+          // rounding all four corners would be wrong AND would trip G-48's
+          // guard against this radius appearing on a bubble.
+          className="sm:mx-auto sm:max-w-sm"
+        >
+          <div className="flex flex-col gap-0.5 px-3 pb-3">
+            <ActionRow
+              icon={<Copy size={21} aria-hidden="true" />}
+              label="Copy"
+              onClick={() => {
+                void navigator.clipboard?.writeText(decodeMessageContent(actionsMessage.content));
+                onSetMobileActions(null);
+              }}
+            />
+            {/* §12.4 — Edit and Delete are the own-only pair, and the G-55
+                separator travels with them: with nothing destructive in the
+                sheet there is nothing for it to fence off. G-42 is why Copy
+                sits outside this branch. Reply is G-20c's, deferred. */}
+            {isOwnMessage(actionsMessage) && (
+              <>
+                <ActionRow
+                  icon={<Pencil size={21} aria-hidden="true" />}
+                  label="Edit"
+                  onClick={() => {
+                    onStartEdit(actionsMessage.id, actionsMessage.content);
+                    onSetMobileActions(null);
+                  }}
+                />
+                {/* G-55, now in the orientation both artboards actually draw
+                    it: a horizontal rule at the artboard's own `margin: 6px
+                    12px`. The vertical rule the icon strip carried was a
+                    rotation of this, and the rotation is what goes away with
+                    the strip. */}
+                <div aria-hidden="true" className="mx-3 my-1.5 h-px bg-border-subtle" />
+                <ActionRow
+                  icon={<Trash2 size={21} aria-hidden="true" />}
+                  label="Delete"
+                  destructive
+                  onClick={() => {
+                    onDeleteClick(actionsMessage.id);
+                    onSetMobileActions(null);
+                  }}
+                />
+              </>
+            )}
+          </div>
+        </Sheet>
+      )}
 
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children
           so FairwayMessages owns the send wiring to the unchanged hooks. */}

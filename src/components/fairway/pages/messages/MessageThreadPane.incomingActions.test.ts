@@ -226,26 +226,24 @@ describe('G-42 — an incoming message can be acted on', () => {
     expect(onSetMobileActions).not.toHaveBeenCalled();
   });
 
-  it('gives the row Copy and Close, and withholds only Edit and Delete', () => {
-    const { container } = render(
-      createElement(MessageThreadPane, baseProps(false, { mobileActionsId: MESSAGE_ID })),
-    );
-    const copy = container.querySelector('[aria-label="Copy message"]');
+  it('gives the sheet Copy, and withholds only Edit and Delete', () => {
+    render(createElement(MessageThreadPane, baseProps(false, { mobileActionsId: MESSAGE_ID })));
+    // G-56 moved the actions into the shared `Sheet`, a fixed panel outside the
+    // render container, and removed the Close row — it had no counterpart in
+    // either artboard, and the sheet dismisses by grip, scrim and Escape.
+    const copy = document.body.querySelector('[aria-label="Copy message"]');
     expect(copy, 'an incoming message must be copyable').not.toBeNull();
 
-    expect(labelsIn(copy!.parentElement!)).toEqual(['Copy message', 'Close']);
+    expect(labelsIn(copy!.parentElement!)).toEqual(['Copy message']);
   });
 
-  it('leaves the own-message row exactly as G-55 left it', () => {
-    const { container } = render(
-      createElement(MessageThreadPane, baseProps(true, { mobileActionsId: MESSAGE_ID })),
-    );
-    const copy = container.querySelector('[aria-label="Copy message"]');
+  it('keeps the own-message sheet in G-55\u2019s decided order', () => {
+    render(createElement(MessageThreadPane, baseProps(true, { mobileActionsId: MESSAGE_ID })));
+    const copy = document.body.querySelector('[aria-label="Copy message"]');
     expect(labelsIn(copy!.parentElement!)).toEqual([
       'Copy message',
       'Edit message',
       'Delete message',
-      'Close',
     ]);
   });
 
@@ -305,14 +303,19 @@ describe('G-42 — desktop has a path to the actions', () => {
     expect(onSetMobileActions).toHaveBeenCalledWith(MESSAGE_ID);
   });
 
-  it('no longer hides the action row above the lg breakpoint', () => {
-    // The other half of F8: the only thing that could substitute for the
-    // native menu refused to render on the viewport that had lost it.
-    const { container } = render(
-      createElement(MessageThreadPane, baseProps(false, { mobileActionsId: MESSAGE_ID })),
-    );
-    const row = container.querySelector('[aria-label="Copy message"]')!.parentElement!.parentElement!;
-    expect(row.className).not.toContain('lg:hidden');
+  it('does not gate the action surface on viewport width', () => {
+    // The other half of F8: the only thing that could substitute for the native
+    // menu refused to render on the viewport that had lost it. G-42 deleted the
+    // `lg:hidden`; G-56 replaced the row with a `Sheet`, which has no
+    // breakpoint gate of its own. The property is the same one either way, so
+    // it is re-anchored rather than dropped — asserted on the panel that now
+    // owns it, and on the whole responsive prefix rather than one class, so a
+    // `lg:invisible` or `max-lg:flex` would fail too.
+    render(createElement(MessageThreadPane, baseProps(false, { mobileActionsId: MESSAGE_ID })));
+    const panel = document.body.querySelector('[aria-label="Copy message"]')!
+      .parentElement!.parentElement!;
+    expect(panel.className, 'expected the Sheet panel').toContain('rounded-t-fw-lg');
+    expect(panel.className).not.toMatch(/(^|\s)(lg:|max-lg:)/);
   });
 
   it('closes the row on Escape, because a menu a keyboard cannot leave is not a path', () => {

@@ -109,3 +109,13 @@
 {"ts":1788802032008,"gate":"typecheck","waitMs":413959,"runMs":14778,"slots":2}
 {"ts":1788802080934,"gate":"test","waitMs":2,"runMs":408899,"slots":2}
 {"ts":1788802489995,"gate":"build","waitMs":1,"runMs":68406,"slots":2}
+{"ts":1788802652343,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":6053,"slots":2}
+{"ts":1788802733938,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":758,"slots":2}
+{"ts":1788803411383,"gate":"typecheck","waitMs":0,"runMs":59750,"slots":2}
+{"ts":1788803580820,"gate":"typecheck","waitMs":0,"runMs":7135,"slots":2}
+{"ts":1788803491901,"gate":"test","waitMs":0,"runMs":508451,"slots":2}
+{"ts":1788804000676,"gate":"build","waitMs":0,"runMs":182343,"slots":2}
+{"ts":1788803615755,"gate":"test","waitMs":0,"runMs":569152,"slots":2}
+{"ts":1788804184474,"gate":"typecheck","waitMs":358455,"runMs":78688,"slots":2}
+{"ts":1788804289144,"gate":"test","waitMs":0,"runMs":351129,"slots":2}
+{"ts":1788804640553,"gate":"build","waitMs":0,"runMs":86805,"slots":2}

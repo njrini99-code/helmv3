@@ -190,7 +190,12 @@ function describeRow(row: Element): string[] {
   return Array.from(row.children).map((child) => {
     const label = child.getAttribute('aria-label');
     if (label) return label;
-    if (child.getAttribute('aria-hidden') === 'true' && child.className.includes('w-px')) {
+    // A hairline in either orientation: `w-px` on the horizontal hover row,
+    // `h-px` in the vertical sheet G-56 moved the actions into.
+    if (
+      child.getAttribute('aria-hidden') === 'true' &&
+      (child.className.includes('w-px') || child.className.includes('h-px'))
+    ) {
       return 'separator';
     }
     return child.tagName.toLowerCase();
@@ -206,12 +211,13 @@ describe('G-55 — the rendered action rows', () => {
     HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
   });
 
-  it('separates Delete from the reversible actions on the long-press row', () => {
-    const { container } = render(
-      createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })),
-    );
-    const copy = container.querySelector('[aria-label="Copy message"]');
-    expect(copy, 'expected the long-press row to be open').not.toBeNull();
+  it('separates Delete from the reversible actions in the action sheet', () => {
+    render(createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })));
+    // G-56 moved the actions into the shared `Sheet`, which renders as a fixed
+    // panel rather than inside the render container — so this reads the
+    // document, not `container`. The property is unchanged.
+    const copy = document.body.querySelector('[aria-label="Copy message"]');
+    expect(copy, 'expected the action sheet to be open').not.toBeNull();
     // ANCHORED ON THE PROPERTY THIS FINDING OWNS: the rule sits between the
     // reversible actions and Delete. Close is filtered out deliberately — it
     // is a sheet dismissal with no slot in either artboard, it currently
@@ -219,9 +225,11 @@ describe('G-55 — the rendered action rows', () => {
     // becomes a real labelled sheet. Pinning its index here would mean a
     // correct G-56 fix arrives as a failure in a suite that has no opinion
     // about it, and someone edits an assertion to let a fix through.
-    const row = describeRow(copy!.parentElement!);
-    expect(row).toContain('Close');
-    expect(row.filter((entry) => entry !== 'Close')).toEqual([
+    // G-56 removed the Close row — it had no counterpart in either artboard,
+    // and the sheet dismisses by grip-drag, scrim and Escape. So the filter
+    // that used to keep this suite out of G-56's business is no longer needed:
+    // every entry in this row is one G-55 owns.
+    expect(describeRow(copy!.parentElement!)).toEqual([
       'Copy message',
       'Edit message',
       'separator',
@@ -241,42 +249,37 @@ describe('G-55 — the rendered action rows', () => {
     expect(describeRow(row)).toEqual(['Edit message', 'separator', 'Delete message']);
   });
 
-  it('gives the rule the artboard\u2019s 6px of air, turned with the row', () => {
-    // `margin: 6px 12px` on a HORIZONTAL rule is 6px across the gap it opens
-    // and 12px along its length. This row runs the other way, so the 6px is
-    // the inline margin here — `mx-1.5`. Parsed rather than asserted, so the
+  it('gives the rule BOTH of the artboard\u2019s margins, now that it runs the same way', () => {
+    // Under G-55 this could only check one number. The sheet's rule is
+    // horizontal like the artboard's, so `margin: 6px 12px` maps directly:
+    // 6px across the gap it opens, 12px along its length. Both parsed, so the
     // derivation fails if the artboard is respaced.
     const margin = actionsArtboard.match(/<div style="height: 1px; margin: (\d+)px (\d+)px;/);
     expect(margin?.[1], 'expected the artboard rule to state a margin').toBeDefined();
     const across = Number(margin?.[1]);
-    expect(across).toBe(6);
+    const along = Number(margin?.[2]);
+    expect([across, along]).toEqual([6, 12]);
 
-    const { container } = render(
-      createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })),
-    );
-    const rules = Array.from(
-      container.querySelectorAll('[aria-hidden="true"][class*="w-px"]'),
-    );
-    expect(rules.length).toBe(2);
+    render(createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })));
+    const rule = document.body.querySelector('[aria-hidden="true"][class*="h-px"]');
+    expect(rule, 'expected the sheet to draw a horizontal rule').not.toBeNull();
     // Tailwind's spacing scale is 0.25rem per step at a 16px root.
-    const step = `mx-${across / 4}`;
-    for (const rule of rules) {
-      expect(rule.className).toContain(step);
-    }
+    expect(rule!.className).toContain(`my-${across / 4}`);
+    expect(rule!.className).toContain(`mx-${along / 4}`);
   });
 
   it('paints both separators with the token, not a literal', () => {
-    const { container } = render(
-      createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })),
-    );
+    render(createElement(MessageThreadPane, baseProps({ mobileActionsId: OWN_MESSAGE_ID })));
+    // Two rules, in two orientations: the desktop hover row's vertical one and
+    // the sheet's horizontal one.
     const rules = Array.from(
-      container.querySelectorAll('[aria-hidden="true"][class*="w-px"]'),
-    );
+      document.body.querySelectorAll('[aria-hidden="true"][class*="-px"]'),
+    ).filter((el) => el.className.includes('w-px') || el.className.includes('h-px'));
     expect(rules.length).toBe(2);
     for (const rule of rules) {
       expect(rule.className).toContain('bg-border-subtle');
       // A hairline, and only a hairline — the artboards' rule is 1px.
-      expect(rule.className).toContain('w-px');
+      expect(rule.className).toMatch(/\b[wh]-px\b/);
       expect(rule.className).not.toMatch(/\bbg-\[/);
     }
   });
@@ -303,25 +306,25 @@ describe('G-55 — the rendered action rows', () => {
     // is "no destructive half", which is what the separator exists to fence
     // and therefore what this suite owns. The row's own contents are asserted
     // in MessageThreadPane.incomingActions.test.ts.
-    const { container } = render(
+    render(
       createElement(
         MessageThreadPane,
-        // Own-ness is `sender_id === userId || sender_id === currentUserId`
-        // (line 1007), so BOTH identities have to move for the message to be
-        // incoming. Setting only one leaves it own and the row still renders —
-        // which is what the first run of this test found.
+        // Own-ness is `sender_id === userId || sender_id === currentUserId`,
+        // so BOTH identities have to move for the message to be incoming.
+        // Setting only one leaves it own and the row still renders — which is
+        // what the first run of this test found.
         baseProps({ userId: 'player-2', currentUserId: 'player-2', mobileActionsId: OWN_MESSAGE_ID }),
       ),
     );
+    const container = document.body;
     // PINNED BY WHAT IS THERE, not only by what is not. Asserting two nulls
     // alone would pass for two stacked reasons — the tap row could lose its
     // separator OR the own-only hover row (which carries one of its own) could
     // stop rendering — and it would keep passing if a separator leaked into an
     // incoming row while Delete happened to be absent.
     const copy = container.querySelector('[aria-label="Copy message"]');
-    expect(copy, 'G-42 gives an incoming message Copy and Close').not.toBeNull();
-    const row = copy!.parentElement!;
-    expect(describeRow(row)).toEqual(['Copy message', 'Close']);
+    expect(copy, 'G-42 gives an incoming message a Copy row').not.toBeNull();
+    expect(describeRow(copy!.parentElement!)).toEqual(['Copy message']);
 
     expect(container.querySelector('[aria-label="Delete message"]')).toBeNull();
     expect(container.querySelector('[aria-hidden="true"][class*="w-px"]')).toBeNull();
