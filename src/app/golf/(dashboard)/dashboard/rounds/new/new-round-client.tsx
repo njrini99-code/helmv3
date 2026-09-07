@@ -267,6 +267,16 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const lastAutoSaveWarningRef = useRef(0); // Timestamp to throttle warning toasts
   const savedRoundIdRef = useRef<string | null>(null);
   const [isStartingRound, setIsStartingRound] = useState(false);
+  // Whether the pre-submit localStorage snapshot actually landed. Drives the
+  // submit overlay's failure copy — see FairwayRoundSubmitOverlay.
+  const [submitLocallyPersisted, setSubmitLocallyPersisted] = useState(false);
+  // Quick-pick start intent, handed to an effect so it runs after the setup
+  // state it depends on has committed. See handleQuickPickConfirm.
+  const [pendingQuickStart, setPendingQuickStart] = useState<{
+    initialHoles: Hole[];
+    configs: SavedCourseHoleConfig[];
+  } | null>(null);
+  const quickStartRunningRef = useRef(false);
   // Optimistic locking: tracks the last server-side updated_at for conflict detection
   const lastServerUpdatedAtRef = useRef<string | undefined>(undefined);
   // B2: set once polling proves the server moved past this device's own
@@ -1013,12 +1023,20 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     // Update last_played_at on the saved course (fire-and-forget)
     touchSavedCourse(course.id).catch(() => { /* ignore */ });
 
-    // Advance straight into the round flow. We mirror the gating logic
-    // from handleSetupSubmit so behavior stays identical.
-    const hasValidYardages = course.holeConfigs?.some(h => h.yardage > 0) ?? false;
-    if (course.holeConfigs && course.holeConfigs.length > 0 && hasValidYardages) {
-      const targetCount = course.holesPerRound === 9 ? 9 : 18;
-      const configs: SavedCourseHoleConfig[] = course.holeConfigs.slice(0, targetCount);
+    // Advance into the round flow. We mirror the gating logic from
+    // handleSetupSubmit so behavior stays identical.
+    //
+    // The yardage gate is `every`, not `some`. A saved course that recorded a
+    // yardage for hole 1 and nothing else used to satisfy `some`, skip the
+    // configuration step, and drop the player into tracking with seventeen
+    // holes at 0 yards — every distance-derived stat on that round is then
+    // computed against a zero. Skipping config is only safe when the whole
+    // card is actually populated; a partial card belongs in 'holes'.
+    const targetCount = course.holesPerRound === 9 ? 9 : 18;
+    const configs: SavedCourseHoleConfig[] = course.holeConfigs?.slice(0, targetCount) ?? [];
+    const hasValidYardages =
+      configs.length === targetCount && configs.every(h => h.yardage > 0);
+    if (configs.length > 0 && hasValidYardages) {
       const initialHoles: Hole[] = configs.map((h, idx) => ({
         number: idx + 1,
         par: h.par,
@@ -1027,12 +1045,26 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       }));
       setHoles(initialHoles);
       setCompletedHoleStats([]);
-      setStep('tracking');
+      // Do NOT jump to 'tracking' here. Every other route into tracking runs
+      // validateBeforeStart + persistRoundStart first; this one used to skip
+      // both, so a quick-picked round existed only in local component state —
+      // no golf_rounds row, no savedRoundId, no emergency-save checkpoint. A
+      // reload, a crash, or a backgrounded tab lost the entire round silently.
+      //
+      // It cannot call persistRoundStart inline: that callback reads
+      // setupData through its closure, and the setSetupData above has not
+      // committed yet, so an inline call would persist the PREVIOUS course.
+      // Record the intent instead and let the effect below run it once the
+      // state it depends on has actually landed.
+      setIsStartingRound(true);
+      setPendingQuickStart({ initialHoles, configs });
     } else {
       // No usable hole configs — go to the configuration step with what we have
       setStep('holes');
     }
   }, []);
+
+
 
   /**
    * Start from the Cloud Course Library tee picker: populate the setup form +
@@ -1308,6 +1340,46 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       return false;
     }
   }, [playerId, selectedQualifierId, selectedRoundNumber, setupData]);
+
+  /**
+   * Deferred half of the quick-pick start. Runs one tick after
+   * `handleQuickPickConfirm` so `validateBeforeStart` and `persistRoundStart`
+   * both observe the freshly-populated setup state rather than the previous
+   * course's. On either failure the player stays on 'setup' with the same
+   * error banner the manual path shows — never a phantom untracked round.
+   */
+  useEffect(() => {
+    // Re-entry is guarded by a ref rather than a cleanup flag on purpose.
+    // Clearing `pendingQuickStart` is itself a dep change, so a cleanup-based
+    // `cancelled` flag would be tripped by this effect's own state update and
+    // would swallow the success path — the round would persist server-side
+    // while the player sat on a spinner that never advanced. The ref keeps a
+    // second start from racing without cancelling the first.
+    if (!pendingQuickStart || quickStartRunningRef.current) return;
+    quickStartRunningRef.current = true;
+    const { initialHoles, configs } = pendingQuickStart;
+    void (async () => {
+      try {
+        const validationError = validateBeforeStart();
+        if (validationError) {
+          setError(validationError);
+          setStep('setup');
+          return;
+        }
+        const persisted = await persistRoundStart(initialHoles, configs);
+        if (!persisted) {
+          // persistRoundStart has already set a specific error message.
+          setStep('setup');
+          return;
+        }
+        setStep('tracking');
+      } finally {
+        quickStartRunningRef.current = false;
+        setIsStartingRound(false);
+        setPendingQuickStart(null);
+      }
+    })();
+  }, [pendingQuickStart, validateBeforeStart, persistRoundStart]);
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2016,8 +2088,13 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     try {
       const recoverySetupData = buildRecoverySetupData();
 
-      // Save pre-submit snapshot to localStorage as insurance
-      emergencySave({
+      // Save pre-submit snapshot to localStorage as insurance. Its boolean
+      // result is the ONLY evidence of whether that insurance actually
+      // exists, and the failure overlay promises the player it does — so
+      // record it instead of discarding it. A full-storage or private-mode
+      // device returns false here, and that is exactly the case where telling
+      // the player their round is safe would be false reassurance.
+      const locallyPersisted = emergencySave({
         playerId,
         roundId: savedRoundIdRef.current,
         timestamp: Date.now(),
@@ -2028,6 +2105,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         currentHoleIndex: holes.length - 1,
         holesPerRound,
       });
+      setSubmitLocallyPersisted(locallyPersisted);
 
       // Wait for any in-flight background save to complete before submitting
       // to prevent concurrent writes that can corrupt the round
@@ -2756,6 +2834,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         courseName={setupData.courseName}
         error={error || undefined}
         completedRoundId={completedRoundId ?? undefined}
+        isLocallyPersisted={submitLocallyPersisted}
         onGoBack={() => {
           setError('');
           setQualifierClosed(false);

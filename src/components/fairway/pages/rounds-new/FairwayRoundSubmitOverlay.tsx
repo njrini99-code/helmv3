@@ -29,6 +29,13 @@ import { Button } from '@/components/fairway/controls/button';
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/**
+ * How long the success panel holds before navigating — long enough for the
+ * score reveal to register, short enough that it is not a wait. Not a proxy
+ * for any background work; see the success effect below.
+ */
+const SUCCESS_REVEAL_MS = 700;
+
 interface FairwayRoundSubmitOverlayProps {
   isVisible: boolean;
   totalScore: number;
@@ -49,6 +56,16 @@ interface FairwayRoundSubmitOverlayProps {
    */
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  /**
+   * Whether the pre-submit local snapshot actually landed. The failure panel
+   * used to promise "Your round data is saved and won't be lost" no matter
+   * what — including the case where the localStorage write ITSELF failed (a
+   * full-storage device, a private-mode quota, a serialization throw), which
+   * is precisely the case where the round IS at risk. Only the caller knows:
+   * `emergencySave` returns a boolean and every call site had been discarding
+   * it. Undefined means "not reported", which is treated as not-reassuring.
+   */
+  isLocallyPersisted?: boolean;
 }
 
 export function FairwayRoundSubmitOverlay({
@@ -64,15 +81,15 @@ export function FairwayRoundSubmitOverlay({
   onDiscard,
   secondaryActionLabel,
   onSecondaryAction,
+  isLocallyPersisted,
 }: FairwayRoundSubmitOverlayProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const [showSafetyEscape, setShowSafetyEscape] = useState(false);
   const [showSuccessEscape, setShowSuccessEscape] = useState(false);
-  const [successCountdown, setSuccessCountdown] = useState(3);
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const successEscapeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const successNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasNavigatedRef = useRef(false);
 
   // Focus management: this is a blocking full-screen overlay with zero prior
@@ -109,36 +126,40 @@ export function FairwayRoundSubmitOverlay({
     };
   }, [isSubmitting]);
 
-  // Success: countdown then auto-navigate
+  // Success: let the score reveal land, then navigate.
+  //
+  // This used to be a 3-second ticking countdown captioned "Loading your round
+  // review in 3s…". Nothing was loading. The round was already committed by
+  // the time `isSuccess` flipped, and the timer was a fixed delay wired to no
+  // signal at all — it did not reflect the CoachHelm analysis job (which is
+  // real, durable-queued, and tracked on golf_rounds.coachhelm_analyzed_at /
+  // coachhelm_failed_at), so a slow or failed analysis looked identical to a
+  // healthy one while the player was made to wait three seconds regardless.
+  //
+  // The honest version: hold only long enough for the score-reveal animation
+  // to read, then go. Reduced motion skips the hold entirely. Analysis state
+  // belongs on the round-review destination, which can actually observe it.
   useEffect(() => {
     if (!isSuccess) {
-      setSuccessCountdown(3);
       setShowSuccessEscape(false);
       hasNavigatedRef.current = false;
-      if (countdownRef.current) clearInterval(countdownRef.current);
+      if (successNavTimerRef.current) clearTimeout(successNavTimerRef.current);
       if (successEscapeTimerRef.current) clearTimeout(successEscapeTimerRef.current);
       return;
     }
-    setSuccessCountdown(3);
-    countdownRef.current = setInterval(() => {
-      setSuccessCountdown((prev) => {
-        if (prev <= 1) {
-          if (countdownRef.current) clearInterval(countdownRef.current);
-          navigateToRound();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    successNavTimerRef.current = setTimeout(
+      () => navigateToRound(),
+      prefersReducedMotion ? 0 : SUCCESS_REVEAL_MS,
+    );
     // Safety: if navigation hangs, show escape after 8s
     successEscapeTimerRef.current = setTimeout(() => {
       setShowSuccessEscape(true);
     }, 8000);
     return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
+      if (successNavTimerRef.current) clearTimeout(successNavTimerRef.current);
       if (successEscapeTimerRef.current) clearTimeout(successEscapeTimerRef.current);
     };
-  }, [isSuccess, navigateToRound]);
+  }, [isSuccess, navigateToRound, prefersReducedMotion]);
 
   // Reset navigation flag when overlay hides
   useEffect(() => {
@@ -301,7 +322,7 @@ export function FairwayRoundSubmitOverlay({
                   className="p-5 text-center"
                 >
                   <p className="mb-4 font-fw-sans text-body-sm text-text-tertiary">
-                    Loading your round review{successCountdown > 0 ? ` in ${successCountdown}s` : ''}…
+                    Round saved. Opening your review…
                   </p>
                   <Button
                     variant="primary"
@@ -363,9 +384,16 @@ export function FairwayRoundSubmitOverlay({
               </div>
               <h3 id="fw-round-submit-error-title" className="mb-2 font-fw-display text-h3 font-semibold text-text-primary">Submission failed</h3>
               <p className="mb-1 font-fw-sans text-body-sm text-text-secondary">{error}</p>
-              <p className="mb-6 font-fw-sans text-caption text-text-tertiary">
-                Your round data is saved and won&apos;t be lost.
-              </p>
+              {isLocallyPersisted === true ? (
+                <p className="mb-6 font-fw-sans text-caption text-text-tertiary">
+                  Your round data is saved on this device and won&apos;t be lost.
+                </p>
+              ) : (
+                <p className="mb-6 font-fw-sans text-caption text-fw-warning-ink">
+                  This device could not save a local backup, so don&apos;t close this
+                  screen — retry, or use Save &amp; exit, before navigating away.
+                </p>
+              )}
 
               <div className="flex flex-col gap-3">
                 {onRetry && (
@@ -442,7 +470,7 @@ export function FairwayRoundSubmitOverlay({
 
               <h2 id="fw-round-submit-loading-title" className="mb-1 font-fw-display text-h3 font-semibold text-text-primary">Submitting round</h2>
               <p className="mb-1 font-fw-sans text-body-sm text-text-tertiary">{courseName}</p>
-              <p className="font-fw-sans text-caption text-text-secondary">Calculating your statistics…</p>
+              <p className="font-fw-sans text-caption text-text-secondary">Saving your scorecard…</p>
 
               <AnimatePresence>
                 {showSafetyEscape && (
