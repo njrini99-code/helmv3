@@ -339,3 +339,37 @@
   colours are exact token matches. D-03a says member rows carry no presence
   dot and G-51 is a standing referral to remove the dead roster one. Mapping a
   value the design has decided against would be tidy and wrong.
+
+## 2026-09-07 — the day chip floats on glass (G-50a)
+
+- `MessageThreadPane.tsx`'s day separator was a flex row with two `h-px flex-1`
+  hairlines binding the label into the list. `Thread.dc.html:51` carries an
+  authored comment — "the day chip FLOATS over the thread on glass, not inline
+  in it" — and DECISIONS.md takes that over `Group.dc.html`'s unannotated
+  inline bordered pill, on the rule that a stated intent beats a variant that
+  does not say why it looks that way.
+- STATIC, not sticky. The decision is presentation — float-over vs. sit-inline.
+  Pinning the chip while its day scrolls would turn a boundary label into a
+  running current-day indicator: new behaviour nobody asked for, and it would
+  pre-empt G-29, still open in the same wave.
+- The row now contributes no layout height (`relative h-0`) and the chip is
+  absolutely centred over the boundary, `pointer-events-none`, on the canonical
+  `z-raised` tier rather than the artboard's ad-hoc `z-index: 2`.
+  `role="separator"` is carried across — the a11y semantics are the part a
+  visual change quietly loses.
+- Four tokens that already existed and had never been used in messaging did the
+  whole job: `--fw-glass-bg` is byte-identical to the artboard's `.glass`
+  background, `--fw-blur-glass` to its `22px`, `--fw-glass-saturate` to its
+  `190%`, and `--fw-shadow-pop` to the two shadow layers under the specular.
+  The ink is `--fw-color-text-secondary`, an exact match. Referenced through
+  the arbitrary-property escape — never `bg-glass` / `backdrop-blur-glass`,
+  which are the LEGACY cream-100 utilities the design-system rule bans and are
+  unrelated to the `--fw-glass-*` tokens.
+- ONE value absorbed rather than requested: the inset specular is
+  `rgb(255 248 233 / 0.6)` against the token's `/ 0.5` — same channels, one
+  tenth of alpha on a 1px rim over glass. Recorded in `A03-VARIANT-REQUESTS.md`
+  so the call is findable; the token is used and the literal is not hardcoded.
+- The glass licence is this chip and nothing else. DECISIONS.md bounds it
+  explicitly, and the file header's own ban — no `bg-white`/`backdrop-blur` on
+  BUBBLES — still stands. Both hold at once, and a test pins that the file has
+  exactly one `backdrop-filter` site (plus its `-webkit-` pair).

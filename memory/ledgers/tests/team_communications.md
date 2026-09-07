@@ -155,3 +155,23 @@ Both negative assertions needed comment-stripped sources: the rail's own
 comment warns that `shadow-card` is a trap and the shell's docstring still
 describes a `bg-canvas` page, so a whole-file search found each defect inside
 the comment warning against it. It did, on the first run.
+
+## 2026-09-07 — floating day chip (G-50a)
+
+`MessageThreadPane.dayChip.test.ts` — 11 tests, **6 failing against the
+pre-fix component**, verified by checking out HEAD's version and re-running.
+
+Measured on both sides, the idiom this audit has settled on: each token
+assertion reads the artboard's literal out of `audit/reference/Thread.dc.html`
+AND the declaration out of `src/styles/design-tokens.css`, then compares them —
+so the suite fails if either side moves. A hardcoded expected string would only
+have pinned the component.
+
+Beyond the token comparisons it pins the two things most likely to regress
+silently: that the hairlines are gone and the row contributes no height (if
+someone reinstates an in-flow row the chip is inline again and G-50a reverts
+with nothing red), and that `role="separator"` survived the conversion. It also
+pins that the glass licence stays bounded to this one element by counting
+`backdrop-filter` sites in the file, and that the banned legacy `glass-*`
+utilities are not what is being referenced. Source assertions read a
+comment-stripped copy, so the fix's own docstring cannot satisfy a check.

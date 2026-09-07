@@ -65,6 +65,22 @@ uses `linear-gradient(90deg, oklch(0.567 0.142 149.6), oklch(0.648 0.149 149.6))
   needing both a migration and the D-03 product call. Recorded so the values do
   not have to be re-measured when G-01 lands.
 
+## Absorbed rather than requested (G-50a)
+
+The day chip's inset specular is `rgb(255 248 233 / 0.6)`. `--fw-glass-border`
+is `rgb(255 248 233 / 0.5)` — the same channels, one tenth of alpha apart on a
+1px rim over glass. That is below the threshold at which the difference is a
+design value rather than render noise, and it is the same call this audit made
+for the 4px width spread. **The token is used; the 0.6 literal is not
+requested and is not hardcoded.** Recorded here so the choice is findable
+rather than invisible, which is the whole point of this document.
+
+Everything else in the chip mapped exactly: `--fw-glass-bg` is byte-identical
+to the artboard's `.glass` background, `--fw-blur-glass` to its `22px`,
+`--fw-glass-saturate` to its `190%`, `--fw-shadow-pop` to the two layers under
+the specular, and `--fw-color-text-secondary` to its ink. Four tokens that
+existed and had never been used in messaging.
+
 ## Not requested
 
 The presence dot in `Main.dc.html` (`oklch(0.648 0.149 149.6)` on a

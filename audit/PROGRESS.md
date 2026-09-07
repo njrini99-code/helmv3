@@ -118,7 +118,7 @@ it is the owner's, through `db-apply`.
 - [x] **G-26** the headline defect: metadata is a sibling flex item of the message column
       (`MessageThreadPane.tsx:1046-1270`), so any message with a timestamp sits left of its
       group-mates. jsdom cannot see this — verify in W8
-- [ ] **G-50a** day chip → floating glass chip (`DECISIONS.md`)
+- [x] **G-50a** day chip → floating glass chip (`DECISIONS.md`) — static, not sticky; four unused `--fw-glass-*`/`--fw-shadow-pop` tokens matched the artboard exactly; 11 tests, 6 failing pre-fix
 - [ ] **G-50b** bubble max-width → 288px base, group-incoming derived from the avatar gutter
 - [ ] **G-29** thread typography, photo layout, day separators
 - [ ] **G-49** absolute measure cap and the depth system

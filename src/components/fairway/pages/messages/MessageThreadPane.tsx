@@ -1027,12 +1027,47 @@ export function MessageThreadPane({
                   </div>
                 )}
                 {startsDay && (
-                  <div className="flex items-center gap-3 pb-1 pt-2" role="separator">
-                    <span className="h-px flex-1 bg-border-subtle" />
-                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                  // G-50a — the day chip FLOATS over the thread on glass rather
+                  // than sitting inline in it. That is `Thread.dc.html`'s own
+                  // authored comment, and DECISIONS.md takes it over
+                  // `Group.dc.html`'s unannotated inline bordered pill: a stated
+                  // intent beats a variant that does not say why it looks that
+                  // way. So the two hairlines are gone — they were what bound
+                  // the label into the list — and the row contributes no height.
+                  //
+                  // STATIC, not sticky. The decision is presentation (float-over
+                  // vs. sit-inline); pinning the chip while scrolling would turn
+                  // a boundary label into a running current-day indicator, which
+                  // is new behaviour nobody asked for and which overlaps G-29's
+                  // still-open day-separator work.
+                  //
+                  // The glass licence is this chip and nothing else. DECISIONS.md
+                  // bounds it — "does not license glass on any larger surface" —
+                  // and the ban this file's own header states, no
+                  // bg-white/backdrop-blur on BUBBLES, still stands.
+                  //
+                  // Every value is a token that already existed and was unused
+                  // here: --fw-glass-bg is byte-identical to the artboard's
+                  // `.glass` background, --fw-blur-glass to its 22px, and
+                  // --fw-glass-saturate to its 190%. The chip's shadow is an
+                  // inset specular over --fw-shadow-pop, whose two layers match
+                  // the artboard exactly. Referenced through the arbitrary-
+                  // property escape, never `bg-glass` / `backdrop-blur-glass` —
+                  // those are the LEGACY cream-100 utilities the design-system
+                  // rule bans, unrelated to the --fw-glass-* tokens.
+                  <div className="pointer-events-none relative z-raised h-0" role="separator">
+                    <span
+                      className={cn(
+                        'absolute -top-3 left-0 right-0 mx-auto flex w-fit items-center rounded-full px-3.5 py-1.5',
+                        'font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.06em] text-text-secondary',
+                        '[background:var(--fw-glass-bg)]',
+                        '[backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
+                        '[-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
+                        '[box-shadow:inset_0_1px_0_var(--fw-glass-border),var(--fw-shadow-pop)]',
+                      )}
+                    >
                       {formatDaySeparator(msg.created_at)}
                     </span>
-                    <span className="h-px flex-1 bg-border-subtle" />
                   </div>
                 )}
                 <m.div
