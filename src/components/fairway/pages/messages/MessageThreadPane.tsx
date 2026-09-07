@@ -253,7 +253,7 @@ function ReadReceipt({ isRead }: { isRead?: boolean }) {
 /** Typing indicator — three dim dots on a matte Inset (NOT a glass bubble). */
 function TypingIndicator() {
   return (
-    <Inset padding="none" className="inline-flex rounded-fw-lg rounded-bl-sm px-4 py-3">
+    <Inset padding="none" className="inline-flex rounded-card rounded-bl-sm px-4 py-3">
       {/* An opacity wave, not a bounce. `animate-bounce` threw the dots a
           third of their own height on a spring curve — energetic, and the
           wrong register for "someone is composing a sentence". Three dots
@@ -1159,7 +1159,7 @@ export function MessageThreadPane({
 
                     {/* Bubble — edit mode */}
                     {editingMessageId === msg.id ? (
-                      <div className="w-full rounded-fw-lg border border-accent-200 bg-accent-50 px-3 py-2">
+                      <div className="w-full rounded-card border border-accent-200 bg-accent-50 px-3 py-2">
                         <Textarea
                           value={editContent}
                           onChange={(e) => onEditContentChange(e.target.value)}
@@ -1213,9 +1213,9 @@ export function MessageThreadPane({
                           // G-19: a failed send stays legible but visibly not
                           // delivered — muted, never removed.
                           (msg as MessageWithReadStatus).sendFailed && 'opacity-60',
-                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-br-sm' : 'rounded-fw-lg rounded-bl-sm'),
-                          isFirstInGroup && !isLastInGroup && 'rounded-fw-lg',
-                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-fw-lg rounded-tr-md rounded-br-sm' : 'rounded-fw-lg rounded-tl-md rounded-bl-sm'),
+                          isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-br-sm' : 'rounded-card rounded-bl-sm'),
+                          isFirstInGroup && !isLastInGroup && 'rounded-card',
+                          !isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-card rounded-tr-md rounded-br-sm' : 'rounded-card rounded-tl-md rounded-bl-sm'),
                           !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
                         )}
                       >

@@ -117,3 +117,20 @@ palette name, and the Review Gate's blocking rules are about RLS, auth and
 table names — which is why the finding stayed open as long as it did. The
 suite also pins the two deliberate non-changes (the `bg-black/20` scrim and
 the legacy `IconButton` import), so a future reader does not "fix" them.
+
+## 2026-09-07 — bubble radius (G-48)
+
+`src/components/fairway/pages/messages/MessageThreadPane.bubbleRadius.test.ts`
+— 6 tests, 3 failing against the pre-fix file.
+
+The measurement IS the test. Three of the six read `--fw-radius-card` out of
+`design-tokens.css` and the dominant corner out of
+`audit/reference/Bubbles.dc.html` and compare them here, rather than asserting
+a hardcoded "20px" — so the suite fails if the ramp is retuned OR if a new
+artboard lands with a different bubble. A literal would have kept passing
+through both. Those three pass against the pre-fix file too, which is correct:
+they assert a fact about the design, not about the code.
+
+The remaining three pin the code, including the two deliberate non-changes (the
+6px and 12px corners that belong to A03), so a later reader does not "finish"
+the swap by inventing radius steps.

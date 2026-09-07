@@ -265,3 +265,30 @@
   is no concurrent worker to conflict with — so the row was not added rather
   than inventing lease bookkeeping for a lane of one. Stated here because the
   finding asked, and silence would have looked like an oversight.
+
+## 2026-09-07 — the bubble was one radius step too round (G-48)
+
+- The finding as first written said the artboard's bubble radii match no
+  `--fw-radius-*` token, citing the ramp as sm/md/lg = 10/14/28px. That reading
+  skips `--fw-radius-card`. Measured from both primary sources rather than from
+  either summary: `audit/reference/Bubbles.dc.html`'s dominant bubble corner is
+  `1.25rem`, byte-identical to `--fw-radius-card`, whose own comment calls it
+  "THE card radius". So this was a token MISUSE, not a missing token, and the
+  fix is a class swap rather than a new scale.
+- `rounded-fw-lg` → `rounded-card` at all five sites in
+  `MessageThreadPane.tsx`: the three bubble corner cases, plus the typing
+  indicator (which copies the incoming-bubble shorthand) and the edit box
+  (which replaces a bubble in place). Leaving either of the last two behind
+  would have made the swap read as an inconsistency rather than a correction.
+- UNCHANGED, deliberately: the 6px tail (`rounded-br-sm` / `rounded-bl-sm`) and
+  the 12px grouped inner corners. Both fall below `--fw-radius-sm` (10px), so
+  the fw ramp has no step for either, and §19.3 routes exactly those two values
+  to A03 as variant requests — messaging proposes changes to shared primitives,
+  it does not fork them.
+- Correction to the manifest, which calls the target class `rounded-fw-card`:
+  that class is defined nowhere in `tailwind.config.ts`. The name is
+  `rounded-card`. Related referral, found while checking: `rounded-fw-card` IS
+  used once in the tree, at `src/components/golf/courses/CourseCard.tsx:152`,
+  where it therefore emits no rule at all and the card renders with square
+  corners. One site, outside the messages tree and another feature's lease —
+  recorded, not fixed.

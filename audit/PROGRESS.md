@@ -89,8 +89,17 @@ it is the owner's, through `db-apply`.
       question — no concurrent worker to conflict with — so the row was not added rather than
       inventing lease bookkeeping for a lane of one. 10 tests, 8 failing pre-fix.
       New finding **G-60** [med] below.
-- [ ] **G-48** bubble radii use `fw-lg` (28px); the artboard's dominant 20px is byte-identical
-      to `--fw-radius-card`. Only 6px and 12px genuinely lack tokens
+- [x] **G-48** bubble radii use `fw-lg` (28px); the artboard's dominant 20px is byte-identical
+      to `--fw-radius-card`. Only 6px and 12px genuinely lack tokens.
+      `rounded-fw-lg` → `rounded-card` at all five sites in `MessageThreadPane.tsx` — the three
+      bubble corner cases plus the typing indicator (which copies the incoming-bubble shorthand)
+      and the edit box (which replaces a bubble in place); leaving either behind would have made
+      the swap read as an inconsistency rather than a correction. The 6px tail and 12px grouped
+      inner corners stay untouched: both fall below `--fw-radius-sm` (10px), so the fw ramp has
+      no step, and §19.3 sends exactly those to A03 rather than letting messaging fork a shared
+      primitive. Correction to the manifest: the class is `rounded-card`, not `rounded-fw-card`
+      — the latter is defined nowhere in `tailwind.config.ts`. 6 tests, 3 failing pre-fix; the
+      other 3 measure the artboard against the token file, so they fail if either side moves.
 - [ ] **G-32** bind artboard values to the existing unused tokens; six unmapped values go to
       A03 as variant requests, never hardcoded
 
