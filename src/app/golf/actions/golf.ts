@@ -14,6 +14,7 @@ import {
   evaluateAndPersistFocusAreas,
 } from '@/lib/golf/progress-drivers';
 import { inngest, isInngestConfigured } from '@/lib/inngest/client';
+import { enqueueJob, isHelmQueueEnabled } from '@/lib/jobs/enqueue';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -2903,6 +2904,34 @@ async function submitGolfRoundComprehensiveImpl(
       // the exact direct call below — byte-for-byte identical to today's
       // behavior. Never silently stop analyzing rounds because keys are
       // absent; that would be strictly worse than the status quo.
+      // Database Plan D6: the pgmq queue, when HELM_QUEUE_ENABLED=true and
+      // the facade migration is applied, is the preferred durable path —
+      // Postgres-native, no external provider credentials to rotate or
+      // expire. It is checked BEFORE Inngest so a fully-migrated deployment
+      // never pays for both. `enqueueJob` fails open (queue disabled,
+      // facade not yet applied, or a transient error) by returning
+      // `{ queued: false }`, in which case this falls through to the
+      // Inngest branch below exactly as it did before this queue existed.
+      if (isHelmQueueEnabled()) {
+        const enqueueResult = await enqueueJob(
+          'coachhelm_analysis',
+          { roundId: backgroundRoundId, playerId: backgroundPlayerId },
+          { dedupeKey: `round:${backgroundRoundId}:analysis` },
+        );
+        if (enqueueResult.queued) {
+          await flightRecorder.complete('post.coachhelm', {
+            metadata: { handed_off_to: 'helm_jobs_queue', msg_id: enqueueResult.msgId },
+          });
+          return;
+        }
+      }
+
+      // DEPRECATED PATH (Database Plan D6): Inngest remains the fallback
+      // durable layer while the pgmq queue proves itself in production.
+      // Once the queue has run clean for a week and the safety-net cron has
+      // been retired (see config/routines.yml and
+      // docs/operations/JOBS_QUEUE.md), this branch — and the Inngest
+      // event/function pair it sends to — is the next thing to remove.
       if (isInngestConfigured()) {
         try {
           await inngest.send({

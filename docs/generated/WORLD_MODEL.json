@@ -2648,6 +2648,12 @@
         ]
       },
       {
+        "id": "helm_jobs",
+        "definedIn": [
+          "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+        ]
+      },
+      {
         "id": "helm_lifting_athletes",
         "definedIn": [
           "supabase/migrations/20260625000000_helm_lifting_identity.sql"
@@ -3230,6 +3236,38 @@
         "definedIn": "supabase/migrations/20260903180200_helm_debug_db_stat_deltas.sql"
       },
       {
+        "id": "helm_jobs_ack",
+        "definedIn": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+      },
+      {
+        "id": "helm_jobs_depth",
+        "definedIn": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+      },
+      {
+        "id": "helm_jobs_enqueue",
+        "definedIn": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+      },
+      {
+        "id": "helm_jobs_fail",
+        "definedIn": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+      },
+      {
+        "id": "helm_jobs_list_dead_letters",
+        "definedIn": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+      },
+      {
+        "id": "helm_jobs_pg_cron_consume_tick",
+        "definedIn": "supabase/migrations/20260906141000_helm_jobs_pg_cron_consume_variant.sql"
+      },
+      {
+        "id": "helm_jobs_read_batch",
+        "definedIn": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+      },
+      {
+        "id": "helm_jobs_requeue_dead_letter",
+        "definedIn": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
+      },
+      {
         "id": "helm_lifting_accept_invite",
         "definedIn": "supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql"
       },
@@ -3657,6 +3695,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/v3/standing-refresh",
         "schedule": "20 2 * * *"
+      },
+      {
+        "id": "vercel_cron:/api/jobs/consume",
+        "kind": "vercel_cron",
+        "path": "/api/jobs/consume",
+        "schedule": "*/1 * * * *"
       }
     ],
     "invariants": [
@@ -6240,6 +6284,42 @@
     },
     {
       "source": "admin_platform",
+      "target": "helm_jobs_depth",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/data/helm-jobs.ts",
+          "line": 66
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "helm_jobs_list_dead_letters",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/admin/data/helm-jobs.ts",
+          "line": 75
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "helm_jobs_requeue_dead_letter",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/app/admin/jobs/helm-jobs-actions.ts",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "helm_lifting_group_audit",
       "kind": "feature_table",
       "evidence": [
@@ -6390,6 +6470,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/schedule-bridge-write.test.ts",
           "line": 16
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/data/helm-jobs.ts",
+          "line": 13
         },
         {
           "kind": "import_graph",
@@ -14511,11 +14596,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 40
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 41
         },
         {
@@ -14527,6 +14607,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
           "line": 43
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 44
         },
         {
           "kind": "import_graph",
@@ -14680,17 +14765,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 24
+          "line": 25
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 45
+          "line": 46
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 51
+          "line": 52
         },
         {
           "kind": "import_graph",
@@ -14782,7 +14867,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 29
+          "line": 30
         }
       ]
     },
@@ -14908,11 +14993,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 31
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "line": 32
         },
         {
@@ -14923,7 +15003,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 57
+          "line": 34
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/golf.ts",
+          "line": 58
         },
         {
           "kind": "import_graph",
@@ -15082,7 +15167,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7197
+          "line": 7226
         }
       ]
     },
@@ -15130,7 +15215,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 30
+          "line": 31
         },
         {
           "kind": "import_graph",
@@ -15157,12 +15242,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2322
+          "line": 2323
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2556
+          "line": 2557
         }
       ]
     },
@@ -20740,6 +20825,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260903191400_helm_debug_db_platform_samples.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_access_control",
+      "target": "helm_jobs",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql"
         }
       ]
     },

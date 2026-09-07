@@ -16,6 +16,8 @@ import { StateChip } from '../_components/Row';
 import { LocalTime } from '../_components/LocalTime';
 import { buildJobWaterfall } from '@/lib/admin/triage/job-waterfall';
 import { JobExecutionWaterfall } from '@/components/admin/triage/JobExecutionWaterfall';
+import { fetchHelmJobsQueueStatus } from '@/lib/admin/data/helm-jobs';
+import { HelmJobsQueuePanel } from './HelmJobsQueuePanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -618,9 +620,12 @@ function SelfHealLoop({ stages, status }: { stages: SelfHealStageRow[]; status: 
 
 async function JobsBody() {
   const tab = await fetchJobsTab();
+  const helmJobsStatus = await fetchHelmJobsQueueStatus();
 
   return (
     <div className="space-y-6">
+      <HelmJobsQueuePanel status={helmJobsStatus} />
+
       <Surface padding="sm">
         <KeyPanelRule />
         <SectionLabel>Self-healing loop — error to diagnosis to repair to closure</SectionLabel>

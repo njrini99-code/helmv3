@@ -10,6 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { gateCustomerEmail } from '@/lib/email/outbound-gate';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
+import { enqueueJob, isHelmQueueEnabled } from '@/lib/jobs/enqueue';
 
 // Resend client - lazy loaded
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -897,9 +898,45 @@ export const __testables = {
 };
 
 /**
- * Send an email notification
+ * Send an email notification.
+ *
+ * Database Plan D6: when `HELM_QUEUE_ENABLED=true` and the pgmq facade
+ * migration is applied, this enqueues the send onto the `email_send` queue
+ * instead of sending inline, so a torn-down function instance no longer
+ * silently loses the notification — the consumer route
+ * (`src/app/api/jobs/consume`) retries it with backoff. `enqueueJob` fails
+ * open: if the queue is off or the facade isn't there yet, this falls
+ * through to the exact inline path below, unchanged. The consumer calls
+ * `sendEmailNotificationDirect` (below), never this function, so a queued
+ * send is never re-enqueued.
  */
 export async function sendEmailNotification(
+  type: NotificationType,
+  recipientId: string,
+  recipientEmail: string,
+  data: Record<string, unknown>
+): Promise<{ success: boolean; error?: string }> {
+  if (isHelmQueueEnabled()) {
+    const result = await enqueueJob(
+      'email_send',
+      { type, recipientId, recipientEmail, data },
+    );
+    if (result.queued) {
+      return { success: true };
+    }
+    // fails open — fall through to the inline send below.
+  }
+  return sendEmailNotificationDirect(type, recipientId, recipientEmail, data);
+}
+
+/**
+ * The real work of sending an email. Called directly by
+ * `sendEmailNotification` when the queue is off/unavailable, and by the
+ * jobs-consume route's `email_send` handler when a queued message is
+ * processed. Never call this from a new call site expecting queue
+ * durability — use `sendEmailNotification`.
+ */
+export async function sendEmailNotificationDirect(
   type: NotificationType,
   recipientId: string,
   recipientEmail: string,
