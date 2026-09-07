@@ -180,6 +180,26 @@ export function collectDenies(settings) {
 }
 
 /**
+ * True when a hook script actually works out where the canonical checkout is.
+ *
+ * A hook that never resolves the canonical root cannot be refusing a write for
+ * landing inside it, whatever else it refuses. Read from disk rather than kept
+ * as a list here, so deleting the check inside a hook shows up as a downgraded
+ * verdict instead of a stale name in this file. A script that cannot be read
+ * counts as not resolving it.
+ */
+function resolvesCanonicalRoot(rel) {
+  if (!rel) return false;
+  const abs = resolve(ROOT, rel);
+  if (!existsSync(abs)) return false;
+  try {
+    return /canonicalRoot|CANONICAL_ROOT/.test(readFileSync(abs, 'utf-8'));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Claims this repo's prose has historically made about irreversible actions,
  * each resolved against live configuration rather than restated.
  *
@@ -209,7 +229,15 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
     {
       claim: 'A write into the canonical checkout via Bash is refused',
       resolve: () => {
-        const hits = matcherCovers(/Bash/);
+        // Matching `Bash` is not the mechanism this claim names. The hooks on
+        // Bash refuse specific command shapes — git/gh/vercel, destructive SQL,
+        // a write whose target is a config surface — and none of them asks
+        // where the bytes land, so listing them here reported WIRED for a
+        // boundary that a redirect, `cp` or a formatter walks straight through.
+        // A hook counts only if it actually resolves the canonical root, the
+        // same narrowing the destructive-SQL claim below defends. It fails
+        // toward under-claiming, which is the safe direction for this file.
+        const hits = matcherCovers(/Bash/).filter((h) => resolvesCanonicalRoot(h.script));
         return hits.length
           ? {
               mechanism: hits.map((h) => `${h.event} hook \`${basename(h.script ?? '?')}\``).join(', '),
@@ -219,7 +247,8 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
           : {
               mechanism: 'NONE',
               where: '—',
-              observed: 'UNENFORCED — no PreToolUse matcher includes Bash',
+              observed:
+                'UNENFORCED — no hook on Bash resolves the canonical root; the Bash-matched hooks refuse command shapes, not writes by destination',
             };
       },
     },
