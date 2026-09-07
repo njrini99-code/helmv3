@@ -127,21 +127,29 @@
 -- (coach_id); golf_players(user_id); golf_coaches(user_id).
 --
 -- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
--- VERIFY:  where n.nspname = 'public' and p.proname = 'golf_user_on_conversation_team' and p.prosecdef;
+-- VERIFY:  where n.nspname = 'public' and p.prosecdef
+-- VERIFY:    and p.proname = 'golf_user_on_conversation_team';
 -- VERIFY: select 1 from pg_policy p join pg_class c on c.oid = p.polrelid
--- VERIFY:  where c.relname = 'golf_conversation_participants' and p.polname = 'golf_participants_delete'
--- VERIFY:    and pg_get_expr(p.polqual, p.polrelid) like '%golf_conversation_created_by_me%';
+-- VERIFY:  where c.relname = 'golf_conversation_participants'
+-- VERIFY:    and p.polname = 'golf_participants_delete'
+-- VERIFY:    and pg_get_expr(p.polqual, p.polrelid)
+-- VERIFY:        like '%golf_conversation_created_by_me%';
 -- VERIFY: select 1 from pg_policy p join pg_class c on c.oid = p.polrelid
--- VERIFY:  where c.relname = 'golf_conversation_participants' and p.polname = 'golf_participants_insert_v2'
--- VERIFY:    and pg_get_expr(p.polwithcheck, p.polrelid) like '%golf_user_on_conversation_team%';
+-- VERIFY:  where c.relname = 'golf_conversation_participants'
+-- VERIFY:    and p.polname = 'golf_participants_insert_v2'
+-- VERIFY:    and pg_get_expr(p.polwithcheck, p.polrelid)
+-- VERIFY:        like '%golf_user_on_conversation_team%';
 --
 -- ROLLBACK: re-create golf_participants_insert_v2 from its 20260819070000 shape
--- ROLLBACK: (branches 1 and 2 only) and golf_participants_delete from the baseline
+-- ROLLBACK: (branches 1 and 2 only) and golf_participants_delete from the
+-- ROLLBACK: baseline
 -- ROLLBACK: (`USING (user_id = auth.uid())`), THEN, and only then:
--- ROLLBACK:   drop function if exists public.golf_user_on_conversation_team(uuid, uuid);
+-- ROLLBACK:   drop function if exists
+-- ROLLBACK:     public.golf_user_on_conversation_team(uuid, uuid);
 -- ROLLBACK: Order matters: while either new branch is still live, dropping the
 -- ROLLBACK: function first makes the INSERT policy ERROR rather than deny. Any
--- ROLLBACK: membership row added while this was live simply remains — nothing in
+-- ROLLBACK: membership row added while this was live simply remains —
+-- ROLLBACK: nothing in
 -- ROLLBACK: the schema depends on how a participant got there.
 --
 -- --- VERIFIED (the pre-flight read to run before applying) ------------------
@@ -150,7 +158,8 @@
 --          pg_get_expr(polwithcheck, polrelid) as check_expr
 --     from pg_policy p join pg_class c on c.oid = p.polrelid
 --    where c.relname = 'golf_conversation_participants'
---      and polname in ('golf_participants_delete', 'golf_participants_insert_v2');
+--      and polname in ('golf_participants_delete',
+--                      'golf_participants_insert_v2');
 --
 -- Expected BEFORE: golf_participants_delete is `user_id = auth.uid()` alone,
 -- and golf_participants_insert_v2 has exactly two branches. If either already
@@ -234,7 +243,8 @@ $$;
 
 comment on function public.golf_user_on_conversation_team(uuid, uuid) is
 'Is the NAMED user (p_user_id, not the caller) an active player or a coach on '
-'the team that owns this conversation? SECURITY DEFINER so the participant '
+'the team that owns this conversation? It runs with definer rights (see the '
+'search_path pinned above) so the participant '
 'INSERT policy can ask about a user whose roster rows the caller may not be '
 'able to read. Reads only; grants no access.';
 
