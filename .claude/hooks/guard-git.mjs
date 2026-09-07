@@ -111,8 +111,33 @@ export function targetRefOf(command) {
  * Evaluate a Bash command string. `branch` is the current branch (from git,
  * best-effort, may be null). Returns a block reason, or null to allow.
  */
+/**
+ * Replace every quoted span and heredoc body with a single opaque word, so the
+ * matchers below see COMMANDS and not prose. Until 2026-09-07 they matched raw
+ * text, so
+ *
+ *     echo "never run git push --force on main"
+ *     grep -rn "git push --force" docs/
+ *     git commit -m "docs: explain why git reset --hard is banned"
+ *
+ * were refused: a string that merely NAMES a dangerous command is not that
+ * command. This is the same keyword-matching failure this repo deleted a whole
+ * Bash guard for; it survived here inside the quoting.
+ *
+ * A placeholder (not deletion) keeps argument arity intact, so
+ * `git push origin "$b"` still parses as a push with a target ref.
+ */
+export function maskQuoted(command) {
+  let s = String(command || '');
+  // Heredoc bodies first — they can contain unbalanced quotes.
+  s = s.replace(/<<-?\s*'?"?([A-Za-z_][A-Za-z0-9_]*)'?"?[\s\S]*?\n\s*\1\b/g, '<<Q');
+  s = s.replace(/'[^']*'/g, 'Q');
+  s = s.replace(/"(?:[^"\\]|\\.)*"/g, 'Q');
+  return s;
+}
+
 export function evaluateCommand(command, branch) {
-  const cmd = String(command || '');
+  const cmd = maskQuoted(command);
 
   const pushClause = pushClauseOf(cmd);
 
