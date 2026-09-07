@@ -213,6 +213,52 @@ function fingerprintByPostgresCode(event: Sentry.ErrorEvent): Sentry.ErrorEvent 
   };
 }
 
+/**
+ * Supabase auth-key rejection as a grouping key.
+ *
+ * On 2026-09-06 21:27-21:43 UTC the owner disabled Supabase legacy API keys
+ * while Vercel still held a legacy key, and production threw "Legacy API
+ * keys are disabled" (and the sibling "Invalid API key") from at least four
+ * unrelated call paths — POST /golf/login, recordDeployMarker, the presence
+ * heartbeat RPC, and a bridge_write_failed follow-on — each with its own
+ * message wrapper, so Sentry split one root cause into four-plus separate
+ * issues. The presence heartbeat wraps its message as `msg=...` rather than
+ * surfacing the Supabase text directly, so this checks the full exception
+ * value / event message text rather than requiring an exact match.
+ *
+ * Same shape as fingerprintByPostgresCode: only applies when no deliberate
+ * fingerprint already exists, keeps `{{ default }}` as a secondary axis, and
+ * tags the event so the two failure modes stay distinguishable in counts.
+ * The permanent fix (rotating Vercel's key) is the owner's; this only keeps
+ * every occurrence of the same root cause in one issue while it's live.
+ */
+function fingerprintSupabaseKeyError(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+  if (event.fingerprint) return event; // never override a deliberate one
+  const haystacks: string[] = [];
+  for (const value of event.exception?.values ?? []) {
+    if (typeof value.value === 'string') haystacks.push(value.value);
+  }
+  if (typeof event.message === 'string') haystacks.push(event.message);
+  const text = haystacks.join(' ');
+  if (!text) return event;
+
+  if (/legacy api keys are disabled/i.test(text)) {
+    return {
+      ...event,
+      tags: { ...event.tags, supabase_key_error: 'legacy_disabled' },
+      fingerprint: ['{{ default }}', 'supabase:legacy-keys-disabled'],
+    };
+  }
+  if (/invalid api key/i.test(text)) {
+    return {
+      ...event,
+      tags: { ...event.tags, supabase_key_error: 'invalid' },
+      fingerprint: ['{{ default }}', 'supabase:invalid-api-key'],
+    };
+  }
+  return event;
+}
+
 const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   if (event.request) {
     delete event.request.cookies;
@@ -253,9 +299,13 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   // telemetry; the pair identifies a person and where they were.
   //
   // Applied last, so it also covers anything the tagging above introduced.
-  // Postgres-code fingerprinting runs on the redacted event, so grouping never
-  // depends on a value that was about to be scrubbed.
-  return fingerprintByPostgresCode(redactEventPii(event));
+  // Postgres-code and Supabase-key-error fingerprinting both run on the
+  // redacted event, so grouping never depends on a value that was about to
+  // be scrubbed. Supabase-key runs first: it bails immediately when the text
+  // doesn't match, and fingerprintByPostgresCode's own "never override a
+  // deliberate fingerprint" guard means whichever rule matches first wins —
+  // the two are not expected to co-occur on the same event.
+  return fingerprintByPostgresCode(fingerprintSupabaseKeyError(redactEventPii(event)));
 };
 
 export async function register() {

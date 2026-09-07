@@ -330,3 +330,14 @@ run creates the base build from scratch — that is what the workflow does
 on every push to `main` regardless of whether a local seed ever ran (see
 §1, "Why a base build needs `push: main` too"). No manual step is needed to
 make that happen.
+
+---
+
+## 11. Earning its keep
+
+Advisory only (§5, §8) — runs Playwright against production per PR and per
+push to `main`. As of 2026-09-06, no regression has been caught on record.
+Revisit 2026-10-06: if the log by then still shows zero real catches, weigh
+the ~10-15 min per-run cost against the signal actually delivered before
+deciding whether to keep it, tighten the screen list, or retire it. No
+workflow changes made as part of this note.
