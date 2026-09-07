@@ -988,9 +988,16 @@ export async function sendEmailNotificationDirect(
       return { success: false, error: error.message };
     }
 
-    // Note: In-app notifications are handled by the golf_calendar_notifications table
-    // (written at the call site in golf.ts, messages.ts, announcements.ts, etc.)
-    // The generic `notifications` table is not read by any golf UI, so we skip it.
+    // In-app delivery is deliberately NOT done here. It is written by the
+    // caller (golf_calendar_notifications at the call site, and the generic
+    // `notifications` table via notifications/in-app.ts) precisely so it does
+    // not inherit this function's email gating — an event must still reach the
+    // bell when customer email is switched off.
+    //
+    // The generic `notifications` table IS read by golf UI, contrary to what
+    // this comment used to say: getUnifiedNotifications and
+    // getNotificationsUnreadCount (app/golf/actions/unified-notifications.ts)
+    // drive NotificationBell and the badge context from it.
 
     return { success: true };
   } catch (error) {
