@@ -1915,8 +1915,12 @@
   }
 
   /* ===== Z-INDEX SCALE ===== */
+  /* The popover escape tier — see --fw-z-popover-escape in design-tokens.css
+     for why a value above --fw-z-modal exists at all. The class name is kept
+     (it is on date-picker, Select's positioner and their tests); only the
+     number's source moved. */
   .z-dropdown {
-    z-index: 1000;
+    z-index: var(--fw-z-popover-escape);
   }
 
   .z-sticky {

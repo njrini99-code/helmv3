@@ -35,19 +35,59 @@ import { fwDisabled, fwFocusRing, fwPress, fwTransition } from './_internal';
 export type FwButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type FwButtonSize = 'sm' | 'md' | 'lg';
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonBaseProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> {
   variant?: FwButtonVariant;
   size?: FwButtonSize;
-  /** Busy state: shows an inline spinner, keeps the label, sets aria-busy and blocks clicks. */
-  busy?: boolean;
   /** Make the button stretch to its container width. */
   fullWidth?: boolean;
+  /**
+   * DROPPED UNDER `asChild`. A Slot takes exactly one child, so there is
+   * nowhere to inject an icon span and the prop renders nothing at all. This is
+   * NOT type-restricted, because 37 call sites across golf and baseball
+   * currently pass an icon to an asChild Button — making it a compile error
+   * would be correct, but fixing those sites means 37 buttons start showing an
+   * icon they do not show today, which is a visual change across two sports
+   * that wants a look before it lands. See premium-audit/DISPOSITIONS.md.
+   */
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
-  /** Render styling onto the child element (e.g. a Link) instead of a <button>. */
-  asChild?: boolean;
   children: ReactNode;
 }
+
+/**
+ * `asChild` is a real capability boundary, and the type now says so for the two
+ * props where saying so costs nothing.
+ *
+ * Under `asChild` the component renders a Slot: the consumer owns the inner
+ * element, so `busy` (the spinner only renders in the non-asChild branch) and
+ * `disabled` (the prop spread skips disabled/type entirely under asChild) are
+ * accepted and then dropped in silence. Typing them `never` on the asChild
+ * branch makes each a compile error instead. No call site combines them today,
+ * so this closes the hole without moving a single consumer.
+ *
+ * The fix at a call site, if one ever needs it, is to put the state on the
+ * child where it belongs: `<Button asChild><Link aria-disabled>…</Link></Button>`.
+ *
+ * NOT fixed here, deliberately:
+ *   leftIcon/rightIcon are dropped the same way but are NOT restricted — see
+ *     the note on those props above.
+ *   An asChild Button still fires no haptic, because `onClick` is forwarded
+ *     straight to the child and wrapping it would change the consumer's event
+ *     identity. Separate change.
+ */
+export type ButtonProps =
+  | (ButtonBaseProps & {
+      asChild?: false;
+      /** Busy state: shows an inline spinner, keeps the label, sets aria-busy and blocks clicks. */
+      busy?: boolean;
+      disabled?: boolean;
+    })
+  | (ButtonBaseProps & {
+      /** Render styling onto the child element (e.g. a Link) instead of a <button>. */
+      asChild: true;
+      busy?: never;
+      disabled?: never;
+    });
 
 const base = cn(
   'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap',

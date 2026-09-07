@@ -54,7 +54,17 @@ export interface SpineProps {
   children?: ReactNode;          // escape hatch for surface-specific rows
 }
 
-export interface StageView { key: string; node: ReactNode }
+export interface StageView {
+  key: string;
+  node: ReactNode;
+  /**
+   * Human label for this stage, announced to assistive tech on a stage swap
+   * ("Now viewing Putting"). Optional: StageRouter falls back to a humanised
+   * form of `key`, so an existing consumer that passes none still announces
+   * something readable rather than nothing.
+   */
+  label?: string;
+}
 export interface StageRouterProps {
   /** search param name, e.g. "area" (stats) or "view" (coachhelm) */
   param: string;

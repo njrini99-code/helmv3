@@ -14,6 +14,7 @@ import noRawInput from "./eslint-rules/no-raw-input.mjs";
 import noArbitraryTextPx from "./eslint-rules/no-arbitrary-text-px.mjs";
 import noBannedColor from "./eslint-rules/no-banned-color.mjs";
 import noArbitraryRadius from "./eslint-rules/no-arbitrary-radius.mjs";
+import noDuplicateRadiusInFairway from "./eslint-rules/no-duplicate-radius-in-fairway.mjs";
 import noArbitraryBgWhite from "./eslint-rules/no-arbitrary-bg-white.mjs";
 import noUncheckedSupabaseError from "./eslint-rules/no-unchecked-supabase-error.mjs";
 import noEmptyCollectionOnError from "./eslint-rules/no-empty-collection-on-error.mjs";
@@ -138,6 +139,7 @@ export default tseslint.config(
           "no-arbitrary-text-px": noArbitraryTextPx,
           "no-banned-color": noBannedColor,
           "no-arbitrary-radius": noArbitraryRadius,
+          "no-duplicate-radius-in-fairway": noDuplicateRadiusInFairway,
           "no-arbitrary-bg-white": noArbitraryBgWhite,
           "no-unchecked-supabase-error": noUncheckedSupabaseError,
           "no-empty-collection-on-error": noEmptyCollectionOnError,
@@ -166,6 +168,7 @@ export default tseslint.config(
       "helm/no-arbitrary-text-px": "warn",
       "helm/no-banned-color": "warn",
       "helm/no-arbitrary-radius": "warn",
+      "helm/no-duplicate-radius-in-fairway": "warn",
       "helm/no-arbitrary-bg-white": "warn",
 
       // 2026-08-07 code-red: a failed Supabase read must not render as an

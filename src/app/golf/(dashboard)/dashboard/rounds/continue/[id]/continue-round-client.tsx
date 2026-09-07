@@ -32,7 +32,7 @@ import { updateRoundType } from '@/app/golf/actions/round-type';
 
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 import { Skeleton } from '@/components/fairway';
@@ -127,7 +127,6 @@ export default function ContinueRoundClient({
   serverDataTimestamp,
 }: ContinueRoundClientProps) {
   const router = useRouter();
-  const { showToast } = useToast();
   // After a re-create (recreateMissingRound below) the URL still names the
   // dead id until router.replace lands. Every save in that window must target
   // the row that now exists, or each one re-creates again and the player ends
@@ -314,9 +313,9 @@ export default function ContinueRoundClient({
     setRoundConflictBlocked(true);
     setError(message);
     if (!alreadyBlocked) {
-      showToast(message, 'error');
+      fairwayToast.danger(message);
     }
-  }, [showToast]);
+  }, []);
 
   /**
    * `knownCurrentUpdatedAt` lets a caller that already fetched the server's
@@ -382,8 +381,8 @@ export default function ContinueRoundClient({
     const now = Date.now();
     if (now - lastAutoSaveWarningRef.current < 60_000) return;
     lastAutoSaveWarningRef.current = now;
-    showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
-  }, [showToast]);
+    fairwayToast.warning('Auto-save is having trouble. Your data is cached locally.');
+  }, []);
 
   // C5: `emergencySave` fires this at most once per session when the
   // synchronous localStorage backup has failed (full or unavailable) even
@@ -393,14 +392,11 @@ export default function ContinueRoundClient({
   // about the FAST path being down.
   useEffect(() => {
     const handleEmergencySaveDegraded = () => {
-      showToast(
-        'This device could not save a quick local backup of your shots. They are still being saved to a slower backup and to the server.',
-        'warning',
-      );
+      fairwayToast.warning('This device could not save a quick local backup of your shots. They are still being saved to a slower backup and to the server.');
     };
     window.addEventListener(EMERGENCY_SAVE_DEGRADED_EVENT, handleEmergencySaveDegraded);
     return () => window.removeEventListener(EMERGENCY_SAVE_DEGRADED_EVENT, handleEmergencySaveDegraded);
-  }, [showToast]);
+  }, []);
 
   const persistFailedSubmission = useCallback(async (
     allHoleStats: HoleStats[],
@@ -1328,7 +1324,7 @@ export default function ContinueRoundClient({
         isSubmittingRef.current = false;
         setSubmitting(false);
         setError('');
-        showToast('Round saved on this device. Opening recovery flow.', 'warning');
+        fairwayToast.warning('Round saved on this device. Opening recovery flow.');
         startTransition(() => {
           router.push('/golf/dashboard/rounds/recover?from=submit');
         });
@@ -1366,13 +1362,13 @@ export default function ContinueRoundClient({
     try {
       const result = await updateRoundType({ roundId, roundType: 'practice' });
       if (!result.success) {
-        showToast(result.error || 'Could not change this round to practice. Please try again.', 'error');
+        fairwayToast.danger(result.error || 'Could not change this round to practice. Please try again.');
         return;
       }
-      showToast('Saved as a practice round. Reloading…', 'success');
+      fairwayToast.success('Saved as a practice round. Reloading…');
       window.location.reload();
     } catch {
-      showToast('Could not change this round to practice. Please try again.', 'error');
+      fairwayToast.danger('Could not change this round to practice. Please try again.');
     } finally {
       setReclassifying(false);
     }
@@ -1401,7 +1397,7 @@ export default function ContinueRoundClient({
     // B2: a user-initiated "Save & Exit" must not be the write that overwrites
     // another device's newer holes, either.
     if (roundConflictBlockedRef.current) {
-      showToast(ROUND_CONFLICT_RELOAD_MESSAGE, 'error');
+      fairwayToast.danger(ROUND_CONFLICT_RELOAD_MESSAGE);
       return;
     }
     try {
@@ -1435,7 +1431,7 @@ export default function ContinueRoundClient({
         // B6: one helper turns every remaining round-write failure —
         // including hole_invalid's bare-key-plus-message shape — into a
         // player sentence, instead of a raw signal key reaching the toast.
-        showToast(describeRoundWriteResult(result), 'error');
+        fairwayToast.danger(describeRoundWriteResult(result));
         return;
       }
 
@@ -1447,7 +1443,7 @@ export default function ContinueRoundClient({
       roundExitedSafelyRef.current = true;
       router.push('/golf/dashboard/rounds');
     } catch {
-      showToast('Failed to save round. Please try again.', 'error');
+      fairwayToast.danger('Failed to save round. Please try again.');
     }
   };
 
@@ -1473,7 +1469,7 @@ export default function ContinueRoundClient({
         // failure, and the next line clears the local recovery snapshot
         // irreversibly, so "Please try again" is the wrong steer for the first
         // case. The other two callers of this action already do this.
-        showToast?.(result.error || 'Failed to delete round. Please try again.', 'error');
+        fairwayToast.danger(result.error || 'Failed to delete round. Please try again.');
         return;
       }
         clearEmergencySave(roundId, playerId);
@@ -1485,7 +1481,7 @@ export default function ContinueRoundClient({
       router.push('/golf/dashboard/rounds');
     } catch {
       roundDiscardedRef.current = false;
-      showToast?.('Failed to delete round. Please try again.', 'error');
+      fairwayToast.danger('Failed to delete round. Please try again.');
     }
   };
 

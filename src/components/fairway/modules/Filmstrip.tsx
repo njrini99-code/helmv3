@@ -53,7 +53,7 @@ const HoleShotPath = dynamic(
   () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((mod) => mod.HoleShotPath),
   {
     ssr: false,
-    loading: () => <Skeleton className="h-28 w-7 rounded-2xl md:h-32 md:w-8" />,
+    loading: () => <Skeleton className="h-28 w-7 rounded-card md:h-32 md:w-8" />,
   },
 );
 

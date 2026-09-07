@@ -117,7 +117,7 @@ export function FairwayPlayerProfile({
           {/* Avatar */}
           <div className="flex-shrink-0">
             <span
-              className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl font-fw-display text-h2 font-semibold ring-1 ring-border-subtle sm:h-24 sm:w-24"
+              className="grid h-20 w-20 place-items-center overflow-hidden rounded-card font-fw-display text-h2 font-semibold ring-1 ring-border-subtle sm:h-24 sm:w-24"
               style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
               {player.avatar_url ? (
@@ -235,7 +235,7 @@ function PlayerSurfaceLink({
     <Link
       href={href}
       className={cn(
-        'group flex items-center gap-3 rounded-2xl border border-border-subtle bg-surface px-4 py-3',
+        'group flex items-center gap-3 rounded-card border border-border-subtle bg-surface px-4 py-3',
         'transition-colors hover:bg-surface-sunken',
         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       )}

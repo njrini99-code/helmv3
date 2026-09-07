@@ -38,7 +38,7 @@ export function FairwayCoachCardSkeleton() {
       <div className="p-5 md:p-6">
         <div className="flex items-start gap-4">
           {/* Avatar (68–76px rounded square) */}
-          <Skeleton className="h-[68px] w-[68px] flex-shrink-0 rounded-2xl md:h-[76px] md:w-[76px]" />
+          <Skeleton className="h-[68px] w-[68px] flex-shrink-0 rounded-card md:h-[76px] md:w-[76px]" />
           {/* Name + year + status/intent chips */}
           <div className="min-w-0 flex-1 pt-0.5">
             <div className="flex items-center gap-2">

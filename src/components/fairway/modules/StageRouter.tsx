@@ -103,6 +103,13 @@ export function useStage(): StageContextValue {
  * StageRouter
  * ──────────────────────────────────────────────────────────────────────── */
 
+/** "short-game" -> "Short game". Used only for the AT status string. */
+function stageLabel(view: { key: string; label?: string }): string {
+  if (view.label) return view.label;
+  const words = view.key.replace(/[-_]+/g, ' ').trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : view.key;
+}
+
 export function StageRouter({ param, homeKey, views }: StageRouterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -163,7 +170,24 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
 
   return (
     <StageContext.Provider value={contextValue}>
-      <div data-slot="stage" className="relative min-h-[320px]" aria-live="polite">
+      {/*
+       * No aria-live on this wrapper.
+       *
+       * It used to carry aria-live="polite" around the ENTIRE swappable
+       * region, so every stage change read the whole panel's rendered text to
+       * a screen reader — drill breakdowns, bento cells, task lists — and any
+       * later re-render inside that panel that changed visible text (a metric
+       * refreshing, a retry landing) could re-announce it. That is the
+       * whole-page live region the accessibility contract specifically warns
+       * against, and it was redundant: the effect above already moves focus
+       * to the new view on every activeKey change, which is the correct and
+       * narrower navigation cue. The short status string below announces
+       * WHICH stage without dragging its contents along.
+       */}
+      <div data-slot="stage" className="relative min-h-[320px]">
+        <span role="status" className="sr-only">
+          {activeView ? `Now viewing ${stageLabel(activeView)}` : ''}
+        </span>
         {activeView ? (
           <div
             key={activeView.key}

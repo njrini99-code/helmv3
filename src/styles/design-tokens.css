@@ -259,6 +259,11 @@
   --fw-ease-glide:  cubic-bezier(0.16, 1, 0.3, 1);      /* cinematic settle — hero/route/sheet */
   --fw-ease-emph:   cubic-bezier(0.32, 0.72, 0, 1);     /* Apple "emphasized" — glass morph/overlay */
   --fw-ease-spring: cubic-bezier(0.34, 1.3, 0.5, 1);    /* soft tactile pop — tap/toggle (gentle) */
+  --fw-dur-press:    60ms;  /* :active settle ONLY — the tactile snap. A press
+                               that takes 180ms to reach its pressed state does
+                               not read as touch; the RELEASE still rides
+                               --fw-dur-fast so it eases back rather than
+                               snapping twice. */
   --fw-dur-fast:    180ms;  /* hover / color / tap */
   --fw-dur-base:    280ms;  /* default UI reveal / crossfade */
   --fw-dur-medium:  380ms;  /* popover / disclosure */
@@ -284,6 +289,15 @@
      which is what those components already use. ---- */
   --fw-z-base: 0; --fw-z-sticky: 10; --fw-z-nav: 20; --fw-z-dropdown: 30;
   --fw-z-overlay: 40; --fw-z-modal: 50; --fw-z-toast: 60; --fw-z-command: 70;
+  /* Escape tier. A popover opened FROM inside a modal has to paint above that
+     modal, and no tier below can express that: --fw-z-dropdown (30) is below
+     --fw-z-modal (50) by design, because a dropdown that is not inside a modal
+     belongs under one. date-picker and Select both hit this and both escaped to
+     a hard-coded 1000 in `.z-dropdown` (globals.css), which was a real tier
+     doing real work while being written down nowhere. It is written down here
+     now, and globals.css reads this token rather than repeating the number.
+     Same value as before — this names it, it does not move it. */
+  --fw-z-popover-escape: 1000;
 
   /* ---- Liquid Glass tokens — WARM CHAMPAGNE CREAM, not white. The tint is the
           actual material color you see through the blur, so it must read cream
