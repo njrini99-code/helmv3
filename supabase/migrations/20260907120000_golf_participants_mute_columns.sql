@@ -33,7 +33,8 @@
 --     muted_until         timestamptz NULL      (no default)
 --   pg_constraint
 --     golf_participants_notification_level_check
---       CHECK ((notification_level = ANY (ARRAY['all'::text, 'mentions'::text, 'muted'::text])))
+--       CHECK ((notification_level = ANY
+--                (ARRAY['all'::text, 'mentions'::text, 'muted'::text])))
 --
 -- so in production every branch is skipped and the table is untouched. The
 -- column order below matches production's ordinal positions
@@ -71,10 +72,10 @@
 -- in production, where they hold real rows.
 
 ALTER TABLE "public"."golf_conversation_participants"
-  ADD COLUMN IF NOT EXISTS "notification_level" "text" DEFAULT 'all'::"text" NOT NULL;
+ADD COLUMN IF NOT EXISTS "notification_level" text DEFAULT 'all'::text NOT NULL;
 
 ALTER TABLE "public"."golf_conversation_participants"
-  ADD COLUMN IF NOT EXISTS "muted_until" timestamp with time zone;
+ADD COLUMN IF NOT EXISTS "muted_until" timestamp with time zone;
 
 DO $$
 BEGIN
