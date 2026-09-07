@@ -58,7 +58,7 @@ async function sendGolfMessageWithAttachmentsImpl(
   conversationId: string,
   content: string,
   attachments: AttachmentUploadData[]
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+): Promise<{ success: boolean; messageId?: string; error?: string; attachmentsFailed?: boolean }> {
   try {
     const supabase = await createClient();
 
@@ -84,6 +84,10 @@ async function sendGolfMessageWithAttachmentsImpl(
 
     // Determine if message has attachments
     const hasAttachments = attachments && attachments.length > 0;
+    // Set when the attachment rows fail but the message text survives, so the
+    // send still completes (timestamp, fan-out) and the sender is told the
+    // truth at the end rather than the caller getting a bare success.
+    let attachmentsFailed = false;
 
     // Insert the message
     const { data: message, error: messageError } = await supabase
@@ -123,8 +127,53 @@ async function sendGolfMessageWithAttachmentsImpl(
 
       if (attachmentError) {
         await logServerError(`[Attachments] Failed to insert attachments: ${describeError(attachmentError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
-        // Message was sent but attachments failed - log but don't fail completely
-        // The message is already in the DB, we could try to clean up but that risks data loss
+
+        // COMPENSATE, don't swallow. The `golf_messages` row already committed
+        // with `has_attachments: true`, and leaving it that way is what strands
+        // the bubble permanently: the reader treats "flagged, but no attachment
+        // rows" as the rows not having committed YET (see MessageThreadPane's
+        // SUCCESSFUL-BUT-EMPTY branch) and offers a retry. That reasoning is
+        // correct for the commit race it was written for and wrong here — this
+        // failure is permanent, so the retry can never succeed and the bubble
+        // stays dead for the rest of the session. Returning success on top of
+        // that told the sender their photo had been delivered.
+        //
+        // Both compensations below are permitted for the sender by RLS:
+        // golf_messages_update_v2 and golf_messages_delete are each
+        // `sender_id = auth.uid()`.
+        const storagePaths = attachments.map((att) => att.storagePath).filter(Boolean);
+        if (storagePaths.length > 0) {
+          // These objects were uploaded client-side and nothing references them
+          // now. The uploader owns them (golf_attachments_owner_delete), and
+          // this action runs as that same user.
+          const { error: cleanupError } = await supabase.storage
+            .from('golf-attachments')
+            .remove(storagePaths);
+          if (cleanupError) {
+            await logServerError(`[Attachments] Failed to clean up orphaned objects: ${describeError(cleanupError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
+          }
+        }
+
+        const trimmedContent = content?.trim() ?? '';
+        if (!trimmedContent) {
+          // Nothing survives — no text, no attachments. An empty bubble is
+          // worse than no bubble, so remove it and report the failure, which
+          // lets the composer retain the draft for a real retry.
+          await supabase.from('golf_messages').delete().eq('id', message.id);
+          return { success: false, error: 'Attachments could not be saved. Nothing was sent.' };
+        }
+
+        // The text is real and already delivered. Downgrade the row to
+        // text-only so it renders as what it actually is, then fall through:
+        // the conversation timestamp and the recipient fan-out below still
+        // owe this message, and returning here would deliver it silently.
+        // buildAttachmentPreview prefers the text, so the notification body is
+        // already correct for a message that no longer has attachments.
+        await supabase
+          .from('golf_messages')
+          .update({ has_attachments: false }) // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI
+          .eq('id', message.id);
+        attachmentsFailed = true;
       }
     }
 
@@ -153,6 +202,15 @@ async function sendGolfMessageWithAttachmentsImpl(
       await notifyGolfMessageRecipients(conversationId, user.id, fanoutPreview);
     });
 
+    if (attachmentsFailed) {
+      return {
+        success: true,
+        messageId: message.id,
+        attachmentsFailed: true,
+        error: 'Your message was sent, but the attachments could not be saved.',
+      };
+    }
+
     return { success: true, messageId: message.id };
   } catch (err) {
     await logServerError(`[Attachments] Unexpected error: ${describeError(err)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
@@ -173,7 +231,7 @@ export async function sendGolfMessageWithAttachments(
   conversationId: string,
   content: string,
   attachments: AttachmentUploadData[]
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+): Promise<{ success: boolean; messageId?: string; error?: string; attachmentsFailed?: boolean }> {
   return observedSendGolfMessageWithAttachments(conversationId, content, attachments);
 }
 
