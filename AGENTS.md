@@ -58,9 +58,9 @@ door supplies `--no-track`, the mutation-budget check, and the
 - **Concurrency**: one active session may work in canonical directly.
   Additional concurrent sessions each take their own worktree via
   `scripts/new-worktree.sh <task>` (`~/worktrees/helmv3/<task>`,
-  `agent/<task>` branch, `--no-track`, OUTSIDE the repo). It does not
-  install dependencies — run `node scripts/ensure-worktree-deps.mjs <dir>`
-  when a command needs them. `--no-track` matters: branching from a
+  `agent/<task>` branch, `--no-track`, OUTSIDE the repo). It symlinks the
+  canonical `node_modules`; pass `--install` when a task changes the
+  lockfile. `--no-track` matters: branching from a
   remote-tracking ref without it lets `agent/foo` auto-track `origin/main`,
   so a bare push from it targets main; `--keep` overrides the default
   `parkPolicy` (see Lifecycle below).

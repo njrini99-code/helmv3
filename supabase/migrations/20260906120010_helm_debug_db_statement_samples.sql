@@ -31,6 +31,12 @@
 --
 -- ROLLBACK: drop the four functions, then both tables.
 
+-- VERIFY: select 1 where to_regclass('helm_debug.db_statement_samples') is not null -- noqa: LT05
+-- VERIFY: select 1 where to_regclass('helm_debug.db_statement_alert_state') is not null -- noqa: LT05
+-- VERIFY: select 1 from pg_proc where proname='record_db_statement_samples'
+-- VERIFY: select 1 from pg_proc where proname='helm_debug_read_db_statement_samples' -- noqa: LT05
+-- VERIFY: select 1 from pg_proc where proname='helm_debug_read_statement_alert_state' -- noqa: LT05
+
 create schema if not exists helm_debug;
 
 create table if not exists helm_debug.db_statement_samples (

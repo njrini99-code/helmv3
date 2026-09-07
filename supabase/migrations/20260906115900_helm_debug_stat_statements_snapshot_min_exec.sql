@@ -17,6 +17,29 @@
 -- 20260903190000_helm_debug_stat_snapshot_extensions_search_path.sql (minus
 -- this field).
 
+-- VERIFY: select 1 from pg_proc where proname='helm_debug_stat_statements_snapshot' and prosrc like '%min_exec%' -- noqa: LT05
+
+-- Pre-flight fingerprint (2026-09-07): the body below was written against the
+-- live function, whose `md5(pg_get_functiondef(oid))` was
+-- 33caa7a5d7e734366e8e461ba27d3291.
+-- If production has drifted since, refuse rather than silently overwrite
+-- the drift; re-read the live body, update this file, and re-apply.
+do $$
+declare
+  v_fp text;
+begin
+  select md5(pg_get_functiondef(p.oid)) into v_fp
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'helm_debug_stat_statements_snapshot'
+    and p.pronargs = 1;
+  if v_fp is not null and v_fp <> '33caa7a5d7e734366e8e461ba27d3291' then
+    raise exception 'fingerprint mismatch for helm_debug_stat_statements_snapshot: live=% expected=33caa7a5d7e734366e8e461ba27d3291',
+      v_fp;
+  end if;
+end $$;
+
 create or replace function public.helm_debug_stat_statements_snapshot(
     p_limit integer default 50
 )

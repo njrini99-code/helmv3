@@ -57,6 +57,12 @@
 --           -- safe: no other migration references any of the above, and this
 --           -- file defines no triggers on any existing table.
 
+-- VERIFY: select 1 where to_regclass('helm_debug.agent_runs') is not null
+-- VERIFY: select 1 from pg_proc where proname='helm_debug_record_agent_run'
+-- VERIFY: select 1 from pg_proc where proname='helm_debug_list_agent_runs'
+-- VERIFY: select 1 from pg_proc where proname='helm_debug_get_agent_run'
+-- VERIFY: select 1 from pg_proc where proname='agent_run_safe_payload'
+
 create table if not exists helm_debug.agent_runs (
     id uuid primary key default gen_random_uuid(),
     run_id uuid not null unique,
@@ -98,6 +104,7 @@ create table if not exists helm_debug.agent_runs (
     check (confidence is null or (confidence >= 0 and confidence <= 1)),
     started_at timestamptz not null default clock_timestamp(),
     finished_at timestamptz,
+    -- squawk-ignore prefer-bigint-over-int
     duration_ms integer check (duration_ms is null or duration_ms >= 0),
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default clock_timestamp(),

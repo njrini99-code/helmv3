@@ -86,6 +86,16 @@
 -- file names none; CI's fresh local stack failed at this statement with
 -- `schema "pgmq" does not exist`. Create it first (no-op on hosted Supabase
 -- where the dashboard toggle already made it).
+-- VERIFY: select 1 from pg_extension where extname='pgmq'
+-- VERIFY: select 1 from pgmq.meta where queue_name='coachhelm_analysis'
+-- VERIFY: select 1 from pgmq.meta where queue_name='email_send'
+-- VERIFY: select 1 from pgmq.meta where queue_name='push_send'
+-- VERIFY: select 1 from pg_class where oid=to_regclass('helm_jobs.dead_letters') and relrowsecurity -- noqa: LT05
+-- VERIFY: select 1 from pg_class where oid=to_regclass('helm_jobs.dedupe_keys') and relrowsecurity -- noqa: LT05
+-- VERIFY: select 1 from pg_proc where proname='helm_jobs_enqueue'
+-- VERIFY: select 1 from pg_proc where proname='helm_jobs_read_batch'
+-- VERIFY: select 1 from pg_proc where proname='helm_jobs_fail'
+
 create schema if not exists pgmq;
 create extension if not exists pgmq schema pgmq;
 
@@ -133,6 +143,9 @@ on helm_jobs.dead_letters (queue, failed_at desc);
 -- accidentally grants a table privilege to `authenticated` still cannot
 -- read a row here without a matching policy.
 alter table if exists helm_jobs.dead_letters enable row level security;
+-- Same structural line of defense for the dedupe ledger: service_role only,
+-- zero policies, RLS on so an accidental future grant still reads nothing.
+alter table if exists helm_jobs.dedupe_keys enable row level security;
 
 revoke all on all tables in schema helm_jobs from public;
 revoke all on all sequences in schema helm_jobs from public;

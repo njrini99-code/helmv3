@@ -44,9 +44,13 @@ describe('parseHeldMigrations', () => {
     const { join } = await import('node:path');
     const md = await readFile(join(process.cwd(), 'supabase/migrations/HELD.md'), 'utf-8');
     const rows = parseHeldMigrations(md);
-    // At minimum the two long-standing HOLD rows plus this PR's own new row.
-    expect(rows.length).toBeGreaterThanOrEqual(3);
-    expect(rows.map((r) => r.migrationFile)).toContain('20260903150000_helm_debug_agent_runs.sql');
+    // The register always carries at least the deploy-ordered purge row and
+    // the optional pg_cron consumer variant; naming a file that a later PR
+    // may discharge to READY is what made this guard brittle before.
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(rows.map((r) => r.migrationFile)).toContain(
+      '20260906120000_narrow_admin_event_purge_pg_cron.sql',
+    );
     for (const row of rows) {
       expect(row.status.toUpperCase().startsWith('HOLD')).toBe(true);
     }

@@ -26,9 +26,24 @@
 -- reconciliation did not find (e.g. Supabase's PostgREST tolerating unknown
 -- keys under this project's specific config).
 
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_timeline_event_acks') and attname='user_id' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_timeline_event_acks') and attname='acknowledged_at' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_indexes where indexname='baseball_timeline_event_acks_user_id_idx' -- noqa: LT05
+
+-- FK on a small table; the validation scan is milliseconds.
 ALTER TABLE public.baseball_timeline_event_acks
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users (id),
 ADD COLUMN IF NOT EXISTS acknowledged_at timestamptz;
+
+-- user_id is a foreign key to auth.users; an unindexed FK column makes
+-- every auth.users delete scan this table and trips the Supabase
+-- performance advisor (unindexed_foreign_keys). Small table, plain
+-- CREATE INDEX (not CONCURRENTLY, which cannot run inside the
+-- transaction db push wraps each file in).
+-- squawk-ignore require-concurrent-index-creation
+CREATE INDEX IF NOT EXISTS baseball_timeline_event_acks_user_id_idx
+ON public.baseball_timeline_event_acks (user_id);
 
 COMMENT ON COLUMN public.baseball_timeline_event_acks.user_id IS
 'Duplicate of acked_by under the newer naming the read path/type file uses. '

@@ -246,7 +246,6 @@
     "20260826010000_helm_debug_retention.sql",
     "20260827031754_admin_error_resolutions.sql",
     "20260902160000_postgres_checkpoints_reach_trace_steps.sql",
-    "20260903150000_helm_debug_agent_runs.sql",
     "20260903180000_helm_debug_db_error_events.sql",
     "20260903180100_helm_debug_db_health_samples.sql",
     "20260903180200_helm_debug_db_stat_deltas.sql",

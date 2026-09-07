@@ -105,7 +105,7 @@ function checkNotHeld(fileBasename, heldOverride, reason) {
     return step('HELD.md check', true, 'HELD.md not found — nothing to check against');
   }
   const heldText = readFileSync(HELD_PATH, 'utf-8');
-  const rowRe = new RegExp('\\|\\s*`?' + fileBasename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`?[^|]*\\|\\s*\\*\\*(HOLD|OBSOLETE)\\*\\*', 'i');
+  const rowRe = new RegExp('\\|\\s*`?' + fileBasename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`?[^|]*\\|\\s*\\*\\*(HOLD|OBSOLETE)\\b', 'i');
   const isHeld = rowRe.test(heldText);
 
   if (!isHeld) {

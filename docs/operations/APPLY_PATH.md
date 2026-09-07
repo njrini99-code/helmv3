@@ -41,6 +41,20 @@ refuses to proceed on the first FAIL.
 9. **Verify** — the same `-- VERIFY:` queries, run again independently, plus
    whatever the migration's own header calls for.
 
+## One-click apply — the `db-apply` GitHub workflow
+
+`.github/workflows/db-apply.yml` (`Actions → db-apply → Run workflow`) runs
+steps 7–9 above on a GitHub runner under the repo's `SUPABASE_ACCESS_TOKEN`,
+`SUPABASE_PROJECT_ID` and `SUPABASE_DB_PASSWORD` secrets, so nobody types a
+password into a terminal. Inputs: `migration` (file basename), `mode`
+(`dry-run`, the default, or `apply`), `allow_sweep`, `held_override` +
+`reason`. It refuses any ref other than `main`, links the CLI, and before
+`apply` parses `supabase migration list --linked`: if more than the named
+file is pending it stops unless `allow_sweep` is set, because `db push`
+applies EVERY pending file, not just the one named. The run summary carries
+the ledger before/after, the dry-run plan, and each `-- VERIFY:` result.
+Agents cannot dispatch it — it is the owner's button.
+
 ## HOLD / OBSOLETE
 
 `supabase/migrations/HELD.md` is the register for anything that can't take

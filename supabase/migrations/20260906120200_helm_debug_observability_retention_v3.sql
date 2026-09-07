@@ -23,6 +23,30 @@
 -- ROLLBACK: CREATE OR REPLACE back to v2's body
 -- (20260903191300_helm_debug_observability_retention_v2.sql).
 
+-- VERIFY: select 1 from pg_proc where proname='helm_debug_prune_observability' and pronargs=4 and prosrc like '%db_analysis_samples%' -- noqa: LT05
+-- VERIFY: select 1 from (select count(*) n from pg_proc where proname='helm_debug_prune_observability') s where n=1 -- noqa: LT05
+
+-- Pre-flight fingerprint (2026-09-07): the body below was written against the
+-- live function, whose `md5(pg_get_functiondef(oid))` was
+-- c052245123c75e1b61c6d7930a85ed16.
+-- If production has drifted since, refuse rather than silently overwrite
+-- the drift; re-read the live body, update this file, and re-apply.
+do $$
+declare
+  v_fp text;
+begin
+  select md5(pg_get_functiondef(p.oid)) into v_fp
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'helm_debug_prune_observability'
+    and p.pronargs = 4;
+  if v_fp is not null and v_fp <> 'c052245123c75e1b61c6d7930a85ed16' then
+    raise exception 'fingerprint mismatch for helm_debug_prune_observability: live=% expected=c052245123c75e1b61c6d7930a85ed16',
+      v_fp;
+  end if;
+end $$;
+
 create or replace function public.helm_debug_prune_observability(
     p_error_events_retention_days integer default 30,
     p_health_samples_retention_days integer default 30,

@@ -19,8 +19,8 @@ Pick one mode before dispatching more than one agent:
 - **Serialize** — agent 1 commits, then agent 2 starts.
 - **Give each its own worktree** — `scripts/new-worktree.sh <task>` is the
   only supported door (`~/worktrees/helmv3/<task>`, `agent/<task>` branch,
-  `--no-track`). It does not install dependencies; run
-  `node scripts/ensure-worktree-deps.mjs <dir>` when a command needs them.
+  `--no-track`). It symlinks the canonical `node_modules`; pass `--install`
+  for a task that changes the lockfile or tests against one that might differ.
   Never `.worktrees/` inside the repo — `find`/`grep` still see it.
 - `git add <explicit paths>`, never `git add -A`, in either mode. Confirm
   the branch before editing: `git rev-parse --abbrev-ref HEAD`.

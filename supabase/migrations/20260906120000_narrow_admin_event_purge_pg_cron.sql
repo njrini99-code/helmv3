@@ -20,14 +20,26 @@
 -- (log-retention's 13-month forensic window for those is intentionally
 -- longer than any floor this job should apply).
 --
--- Idempotent: cron.schedule upserts by job name, so re-running this file is
--- safe. Wrapped in a DO block so a missing job (e.g. a fresh project, or one
--- where task 20260703043000 was never applied) does not error — cron.alter_job
--- errors if the jobid does not resolve, so this checks cron.job first and
--- falls back to cron.schedule (which creates-or-replaces by name) either way.
+-- Idempotent: cron.schedule(name, ...) creates-or-replaces by job name, so
+-- re-running this file is safe and a project that never ran 20260703043000
+-- simply gets the job created. There is deliberately NO cron.job lookup and
+-- no cron.alter_job call (alter_job errors on an unresolvable jobid); the DO
+-- block exists only to PERFORM the schedule call.
 --
--- STATUS: HOLD — see supabase/migrations/HELD.md. Not applied by this PR;
--- the owner applies by hand and stamps the ledger.
+-- APPLY ORDER: apply only AFTER the log-retention route change (PR #1885,
+-- src/app/api/cron/log-retention/route.ts) is live in production via
+-- scripts/deploy-prod.sh. Until that deploy, this file removes the only
+-- purge admin_analytics_events has. Pushing does not deploy.
+--
+-- STATUS: HOLD — see supabase/migrations/HELD.md. Applied by the owner via
+-- the db-apply workflow (held_override) after the deploy above.
+--
+-- ROLLBACK: re-run the cron.schedule body from
+-- 20260703043000_admin_events_retention_pg_cron.sql (two-table 180d purge),
+-- or `select cron.unschedule('purge-admin-event-telemetry')` to drop the
+-- backstop entirely and leave log-retention as the sole owner.
+-- VERIFY: select 1 from cron.job where jobname='purge-admin-event-telemetry' and command not like '%admin_analytics_events%' and command like '%severity IN%' -- noqa: LT05
+
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 DO $$

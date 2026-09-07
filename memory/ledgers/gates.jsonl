@@ -5,3 +5,7 @@
 {"ts":1788745280738,"gate":"npm run docs:rules-current","waitMs":0,"runMs":102,"slots":2}
 {"ts":1788745280867,"gate":"npm run markdown:ratchet","waitMs":0,"runMs":5059,"slots":2}
 {"ts":1788751375087,"gate":"test:business","waitMs":1,"runMs":3156,"slots":2}
+{"ts":1788758187326,"gate":"typecheck","waitMs":1,"runMs":65509,"slots":2}
+{"ts":1788758274837,"gate":"test","waitMs":0,"runMs":339908,"slots":2}
+{"ts":1788758649286,"gate":"typecheck","waitMs":0,"runMs":65835,"slots":2}
+{"ts":1788758721153,"gate":"typecheck","waitMs":0,"runMs":57752,"slots":2}

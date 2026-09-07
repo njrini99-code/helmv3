@@ -61,6 +61,10 @@
 -- Owner step, not run by this file in practice (see step 1 above) — the
 -- IF NOT EXISTS guard makes re-running this line after a dashboard enable a
 -- safe no-op either way.
+-- VERIFY: select 1 from pg_extension where extname='pgaudit'
+-- VERIFY: select 1 from pg_db_role_setting s join pg_roles r on r.oid=s.setrole where r.rolname='postgres' and 'pgaudit.log=ddl, role'=any(s.setconfig) -- noqa: LT05
+-- VERIFY: select 1 where position('pgaudit' in current_setting('shared_preload_libraries'))>0 -- noqa: LT05
+
 create extension if not exists pgaudit schema extensions;
 
 -- Session/database-level default. `ddl` covers CREATE/ALTER/DROP/etc.;
@@ -68,6 +72,23 @@ create extension if not exists pgaudit schema extensions;
 -- changes. Deliberately excludes `read`, `write`, `function`, `misc` — see
 -- header. Set at the `postgres` role level (not a global ALTER SYSTEM,
 -- which this migration cannot issue safely inside a normal transaction on
--- managed Postgres) so it applies to every connection authenticating as
--- that role, which on Supabase includes the pooled application roles.
+-- managed Postgres). SCOPE: a role-level GUC applies only to sessions that
+-- authenticate AS `postgres` — migrations, the dashboard SQL editor, the
+-- CLI, and this repo's db-apply workflow. It does NOT cover the pooled
+-- application roles (`authenticator`/`anon`/`authenticated`/
+-- `service_role`), which is the intended scope: this audits schema and
+-- role DDL, not application traffic. Widening it later means `alter role`
+-- for each of those roles, one migration each.
+--
+-- GATE: pgaudit only logs when it is preloaded. Refuse to set a GUC that
+-- would silently do nothing.
+do $$
+declare
+  v_libs text := current_setting('shared_preload_libraries', true);
+begin
+  if coalesce(position('pgaudit' in v_libs), 0) = 0 then
+    raise exception 'pgaudit is not in shared_preload_libraries (%); enable it from the dashboard and confirm the restart first', coalesce(v_libs, '<null>');
+  end if;
+end $$;
+
 alter role postgres set pgaudit.log = 'ddl, role';

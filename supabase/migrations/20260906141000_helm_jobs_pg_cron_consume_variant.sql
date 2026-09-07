@@ -49,6 +49,8 @@
 -- select cron.unschedule('helm-jobs-consume'); -- if scheduled
 -- drop function public.helm_jobs_pg_cron_consume_tick();
 
+-- VERIFY: select 1 from pg_proc where proname='helm_jobs_pg_cron_consume_tick'
+
 create or replace function public.helm_jobs_pg_cron_consume_tick(
     p_target_url text
 )
