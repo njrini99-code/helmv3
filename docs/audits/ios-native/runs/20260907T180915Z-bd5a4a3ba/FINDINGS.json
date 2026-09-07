@@ -1,0 +1,310 @@
+[
+  {
+    "id": "F-A11Y-NATIVE-01",
+    "shortTitle": "No web content reaches iOS UI automation; the VoiceOver consequence is untested",
+    "userImpact": "Two independent iOS automation query paths see nothing inside the WebView. On a coach dashboard visibly showing a title, a greeting, three sheet CTAs and a bottom nav, the runtime tree holds 18 elements - all full-screen unlabelled containers - and zero interaction targets, and no on-screen string resolves by text predicate. What this costs USERS is not yet established: it is proven only that this harness cannot see the app.",
+    "category": "accessibility",
+    "priority": "P1",
+    "status": "CONFIRMED",
+    "confidence": "high that this automation harness sees zero targets; the VoiceOver consequence is UNTESTED. Both paths used (AXe snapshot-ui and wait-for-ui text predicates) sit in the same accessibility API family. XCUITest - the path Maestro and Xcode UI tests use - was NOT exercised and can behave differently on WKWebView.",
+    "journeyIds": [
+      "J03",
+      "J11"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "ios/App/App/GolfBridgeViewController.swift",
+      "capacitor.config.ts"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10) Release, simulator",
+    "webDeployment": "https://www.helmsportslabs.com (revision unverified)",
+    "reproductionSteps": [
+      "Build Release for an iOS 26.5 simulator and launch com.helmsportslabs.golfhelm.",
+      "Let the coach dashboard settle (~9s). Screenshot to confirm the screen is full of text and controls.",
+      "PATH 1: xcodebuildmcp ui-automation snapshot-ui --simulator-id <udid>. Observe 18 elements, 0 likely targets, 1 scroll area.",
+      "PATH 2: xcodebuildmcp ui-automation wait-for-ui --simulator-id <udid> --predicate textContains --text Dashboard (also Sign, Players, Schedule). All four time out.",
+      "CONTROL: launch com.apple.Preferences. snapshot-ui returns 14 labelled tappable targets, and wait-for-ui --text General resolves. Both paths work against native UI.",
+      "Repeat the GolfHelm snapshot with ApplicationAccessibilityEnabled=true. Result unchanged.",
+      "NOT RUN: Xcode Accessibility Inspector, XCUITest, and VoiceOver on a device. Each could still see content these paths do not."
+    ],
+    "expectedBehavior": "A WKWebView is normally expected to project its web content into the iOS accessibility tree so that buttons and links appear as native elements with labels. Whether that projection is on-demand - materialised only when a real assistive client attaches - is precisely what is unresolved here.",
+    "observedBehavior": "Zero web content is projected to either query path. The tree stops at the WebView's own container views. The 18-element, all-role-'other', stops-at-the-container shape is equally consistent with 'remote tree never requested' and with 'content suppressed'; nothing collected distinguishes them.",
+    "evidencePaths": [
+      "native/snapshot-dashboard.txt",
+      "native/cold-03.0s.png",
+      "native/probe-state.png",
+      "native/waitforui-probe.txt"
+    ],
+    "rootCauseStatus": "UNKNOWN",
+    "rootCauseExplanation": "Not isolated. There is no accessibility-related code anywhere in the Swift shell (grep over ios/App/App/*.swift returns nothing), so this is not an explicit opt-out in Helm's code. Candidate causes, none tested: (1) WKWebView's remote accessibility tree is built lazily and may only populate once an assistive client attaches, which the AXe path may never trigger - this is the leading candidate and would make the finding a testability problem, not a user problem; (2) a Capacitor/WebView configuration suppresses it; (3) something upstream in the OS version. Determining which changes the severity by an order of magnitude.",
+    "existingContract": "memory/features/ios-native-shell.md describes the native surface; accessibility is not part of any stated contract today.",
+    "historicalFindingReferences": [
+      "IOS_PREMIUM_NATIVE_AUDIT_2026-08-25 P1-12 (no native XCTest/XCUITest infrastructure exists) - related but not the same claim"
+    ],
+    "proposedSmallestFix": "None yet - this is a bounded reproduction experiment, not a patch. Attach Xcode's Accessibility Inspector to the running simulator app and record whether it enumerates web content. If it does, the finding collapses to 'UI automation cannot select elements' (a testability problem, P2). If it does not, VoiceOver genuinely cannot drive the app and this is the most severe finding in the audit.",
+    "filesLikelyToChange": [],
+    "regressionTest": "Once the cause is known: a native snapshot assertion that the bottom-nav tabs appear as labelled targets.",
+    "verificationLayers": [
+      "native simulator, two automation paths (done)",
+      "Xcode Accessibility Inspector (REQUIRED, not run)",
+      "XCUITest query path (not run)",
+      "physical device + VoiceOver (REQUIRED, not run)"
+    ],
+    "nativeBinaryRequired": "unknown until root cause is isolated",
+    "backwardCompatibilityRequirement": "n/a",
+    "effortClass": "investigation first, then unknown",
+    "rollbackApproach": "n/a"
+  },
+  {
+    "id": "F-CONTRAST-01",
+    "shortTitle": "RETRACTED - Sign in button contrast failure was a measurement artifact",
+    "status": "RETRACTED",
+    "priority": "none",
+    "category": "accessibility",
+    "userImpact": "None. This finding was wrong and is kept only so the record shows it was withdrawn rather than quietly deleted.",
+    "whatWasClaimed": "That the Sign in button label sat at 3.52:1 in light and 3.61:1 in dark, below the 4.5:1 AA minimum, with measured colours #e6f2ea on #318f53 and #e8f3ec on #2f8e51.",
+    "whyItWasWrong": "axe-core ran before the login form finished its entrance transition. Mid-transition the button is partially transparent, so the colours sampled were composites of the real button blended toward the cream page ground - #e6f2ea is white blended toward cream, #318f53 is #15803d blended toward cream. Neither colour appears in any frame a user ever sees. document.fonts.ready, which the spec awaited, does not wait on CSS transitions.",
+    "correctedMeasurement": "With the entrance transition settled, the Sign in label is #ffffff on #15803d = 5.02:1 at 15px/600, identical in light and dark. That passes WCAG AA for normal text. Measured directly via getComputedStyle in WebKit at iPhone 13 geometry, independent of axe.",
+    "residualOpenItem": "axe now reports color-contrast as INCOMPLETE for 12 nodes on this page - background gradients and image-bearing ancestors it cannot sample. Incomplete is not a pass. Those 12 are unmeasured, not cleared, and a manual check of the gradient headings remains outstanding.",
+    "correctionEvidence": [
+      "webkit/results.json (entrance-settle + axe-results attachments, all three projects)"
+    ],
+    "processFix": "playwright/native-audit/login-audit.spec.ts now waits for the submit button's whole ancestor chain to reach opacity 1 and an identity transform before calling axe, attaches the settle outcome as evidence, and fails loudly if settling never happens."
+  },
+  {
+    "id": "F-KBD-AUTOFOCUS-01",
+    "shortTitle": "autoFocus is pointer-gated in six components and ungated at most other sites",
+    "userImpact": "Opening one of these sheets or modals on an iPhone throws the software keyboard up immediately, covering much of the sheet before the user has decided to type. The codebase already knows the right answer - autoFocus={finePointer} - it just is not applied consistently.",
+    "category": "keyboard",
+    "priority": "P2",
+    "status": "CONFIRMED",
+    "confidence": "high in source; the per-surface visual consequence is not yet captured on each screen",
+    "journeyIds": [
+      "J04",
+      "J05",
+      "J10"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "src/components/fairway/pages/messages/MessageThreadPane.tsx",
+      "src/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection.tsx",
+      "src/app/golf/(dashboard)/dashboard/my-development/LogProgressButton.tsx",
+      "src/components/fairway/pages/travel/FairwayExpenseSummary.tsx",
+      "src/app/golf/(auth)/signup/page.tsx",
+      "src/app/golf/(auth)/forgot-password/page.tsx",
+      "src/app/golf/(auth)/reset-password/page.tsx",
+      "src/app/golf/join/page.tsx"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10)",
+    "webDeployment": "https://www.helmsportslabs.com",
+    "reproductionSteps": [
+      "grep -rn 'autoFocus' src/app/golf src/components/fairway src/components/golf src/components/auth",
+      "Compare against the six sites that read autoFocus={finePointer}, where finePointer = useMediaQuery('(pointer: fine)').",
+      "On the simulator, open any ungated surface and observe the keyboard rise unprompted."
+    ],
+    "expectedBehavior": "A coarse-pointer device does not raise the keyboard until the user taps a field.",
+    "observedBehavior": "Six components gate autoFocus on a fine pointer. The remaining autoFocus sites in the golf/fairway tree are ungated; the ones confirmed by reading each site are listed in sourceLocations. A raw grep count is not quoted here because it mixes in sites gated on unrelated conditions (autoFocus={scope === 'this'}) and a non-JSX autoFocus: true inside a date-picker options object.",
+    "evidencePaths": [
+      "static/hig-scoped.json (web/auto-focus, 36 scoped hits)"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "There is no shared hook. useMediaQuery('(pointer: fine)') is re-declared inline in six separate components, so the pattern spreads only by copy-paste and every new surface starts ungated by default.",
+    "existingContract": "memory/features/ios-native-shell.md documents the --keyboard-height / body.keyboard-open contract, which handles the keyboard once it is up. It says nothing about whether it should come up.",
+    "historicalFindingReferences": [],
+    "proposedSmallestFix": "Extract useFinePointer() into src/hooks, point the six existing sites at it, then convert the ungated sites case by case. Some are correct as they stand - a dedicated 'add a note' page arguably should focus - so this is a per-site decision, not a sweep.",
+    "filesLikelyToChange": [
+      "src/hooks/use-fine-pointer.ts (new)",
+      "the 6 existing finePointer sites",
+      "the ungated sites judged wrong"
+    ],
+    "regressionTest": "An ESLint rule forbidding bare autoFocus under src/app/golf and src/components/fairway, with the finePointer form as the allowed spelling.",
+    "verificationLayers": [
+      "source (done)",
+      "native simulator per surface (not run)",
+      "physical device (recommended)"
+    ],
+    "nativeBinaryRequired": "no",
+    "backwardCompatibilityRequirement": "None.",
+    "effortClass": "medium - the hook is trivial, the 22 judgement calls are the work",
+    "rollbackApproach": "Per-site revert; each change is independent."
+  },
+  {
+    "id": "F-BRAND-01",
+    "shortTitle": "Two different brand marks in the first three seconds",
+    "userImpact": "The splash shows the ship's-wheel Helm mark; the login screen that replaces it shows a golf-ball-in-wheel mark. A new user sees two logos before they have typed anything.",
+    "category": "identity",
+    "priority": "P3",
+    "status": "CONFIRMED",
+    "confidence": "high - captured in consecutive frames of the same cold launch",
+    "journeyIds": [
+      "J01"
+    ],
+    "rolesAffected": [
+      "coach",
+      "player"
+    ],
+    "sourceLocations": [
+      "ios/App/App/Assets.xcassets/Splash.imageset",
+      "src/app/golf/(auth)/login/page.tsx"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10)",
+    "webDeployment": "https://www.helmsportslabs.com/golf/login",
+    "reproductionSteps": [
+      "Cold launch and compare native/cold-02.5s.png against the login frame."
+    ],
+    "expectedBehavior": "One deliberate story, whatever it is.",
+    "observedBehavior": "Company mark then product mark, ~0.5s apart.",
+    "evidencePaths": [
+      "native/cold-02.5s.png",
+      "native/coldlaunch-t1s.png"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "The splash is a native asset carrying the parent-company mark; the login page is web and carries the product mark.",
+    "existingContract": "none",
+    "historicalFindingReferences": [
+      "IOS_PREMIUM_NATIVE_AUDIT_2026-08-25 F-BRAND-01 - unchanged, still open, and still an owner decision rather than a defect"
+    ],
+    "proposedSmallestFix": "Owner decision, not an engineering one. Company-mark-then-product-mark is a defensible story; it just needs to be a chosen one.",
+    "filesLikelyToChange": [],
+    "regressionTest": "n/a",
+    "verificationLayers": [
+      "native simulator (done)"
+    ],
+    "nativeBinaryRequired": "yes, if the splash asset changes",
+    "backwardCompatibilityRequirement": "n/a",
+    "effortClass": "small",
+    "rollbackApproach": "Asset revert."
+  },
+  {
+    "id": "F-PLIST-IPAD-01",
+    "shortTitle": "Dead iPad orientation block still ships in the binary",
+    "userImpact": "None for users. It is inventory noise in a submitted binary.",
+    "category": "hygiene",
+    "priority": "P3",
+    "status": "CONFIRMED",
+    "confidence": "high - read out of the compiled Info.plist, not the source",
+    "journeyIds": [],
+    "rolesAffected": [],
+    "sourceLocations": [
+      "ios/App/App/Info.plist"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10)",
+    "webDeployment": "n/a",
+    "reproductionSteps": [
+      "PlistBuddy -c 'Print :UISupportedInterfaceOrientations~ipad' on the built app."
+    ],
+    "expectedBehavior": "An iPhone-only app (TARGETED_DEVICE_FAMILY = 1) carries no ~ipad orientation keys.",
+    "observedBehavior": "The ~ipad array still lists all four orientations while the iPhone array is correctly portrait-only.",
+    "evidencePaths": [
+      "logs/xcodebuild.stdout.log"
+    ],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Capacitor template leftover; never removed when the app was locked to iPhone.",
+    "existingContract": "none",
+    "historicalFindingReferences": [
+      "IOS_PREMIUM_NATIVE_AUDIT_2026-08-25 P2-item: 'inert ~ipad block is dead weight' - still true"
+    ],
+    "proposedSmallestFix": "Delete the ~ipad key from Info.plist.",
+    "filesLikelyToChange": [
+      "ios/App/App/Info.plist"
+    ],
+    "regressionTest": "n/a",
+    "verificationLayers": [
+      "compiled binary (done)"
+    ],
+    "nativeBinaryRequired": "yes",
+    "backwardCompatibilityRequirement": "n/a",
+    "effortClass": "trivial",
+    "rollbackApproach": "Re-add the key."
+  },
+  {
+    "id": "F-ORIENT-01",
+    "shortTitle": "Portrait lock - previously reported, now verified fixed",
+    "userImpact": "n/a",
+    "category": "regression-check",
+    "priority": "P3",
+    "status": "VERIFIED_FIXED",
+    "confidence": "high",
+    "journeyIds": [
+      "J01"
+    ],
+    "rolesAffected": [],
+    "sourceLocations": [
+      "ios/App/App/Info.plist"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10)",
+    "webDeployment": "n/a",
+    "reproductionSteps": [
+      "PlistBuddy -c 'Print :UISupportedInterfaceOrientations' on the built app."
+    ],
+    "expectedBehavior": "Portrait only, per the 2026-08-25 decision to restrict intentionally.",
+    "observedBehavior": "Exactly one entry: UIInterfaceOrientationPortrait.",
+    "evidencePaths": [],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Fixed on 2026-08-25 and confirmed here against the compiled 2.0(10) binary rather than the source.",
+    "existingContract": "memory/features/ios-native-shell.md: 'portrait-only iPhone (Info.plist, intentional restriction 2026-08-26)'",
+    "historicalFindingReferences": [
+      "IOS_PREMIUM_NATIVE_AUDIT_2026-08-25 F-ORIENT-01"
+    ],
+    "proposedSmallestFix": "none",
+    "filesLikelyToChange": [],
+    "regressionTest": "n/a",
+    "verificationLayers": [
+      "compiled binary (done)"
+    ],
+    "nativeBinaryRequired": "no",
+    "backwardCompatibilityRequirement": "n/a",
+    "effortClass": "none",
+    "rollbackApproach": "n/a"
+  },
+  {
+    "id": "F-ICON-01",
+    "shortTitle": "Dark and Tinted icon variants - previously reported, now verified fixed",
+    "userImpact": "n/a",
+    "category": "regression-check",
+    "priority": "P3",
+    "status": "VERIFIED_FIXED",
+    "confidence": "high",
+    "journeyIds": [],
+    "rolesAffected": [],
+    "sourceLocations": [
+      "ios/App/App/Assets.xcassets/AppIcon.appiconset"
+    ],
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "nativeBuild": "2.0 (10)",
+    "webDeployment": "n/a",
+    "reproductionSteps": [
+      "assetutil --info on the compiled Assets.car; grep for UIAppearanceDark and ISAppearanceTintable."
+    ],
+    "expectedBehavior": "Both variants present in the compiled asset catalog.",
+    "observedBehavior": "UIAppearanceDark present, ISAppearanceTintable present.",
+    "evidencePaths": [],
+    "rootCauseStatus": "PROVEN",
+    "rootCauseExplanation": "Added 2026-08-25; confirmed here in the compiled catalog rather than the source Contents.json.",
+    "existingContract": "memory/features/ios-native-shell.md: 'app icon with Default/Dark/Tinted variants'",
+    "historicalFindingReferences": [
+      "IOS_PREMIUM_NATIVE_AUDIT_2026-08-25 F-ICON-01"
+    ],
+    "proposedSmallestFix": "none - owner visual approval was still listed as pending in the prior audit and this run does not change that",
+    "filesLikelyToChange": [],
+    "regressionTest": "n/a",
+    "verificationLayers": [
+      "compiled binary (done)"
+    ],
+    "nativeBinaryRequired": "no",
+    "backwardCompatibilityRequirement": "n/a",
+    "effortClass": "none",
+    "rollbackApproach": "n/a"
+  }
+]

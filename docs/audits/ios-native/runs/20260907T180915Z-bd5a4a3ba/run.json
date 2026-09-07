@@ -1,0 +1,59 @@
+{
+  "runId": "20260907T180915Z-bd5a4a3ba",
+  "startedAt": "2026-09-07T18:09:15Z",
+  "finishedAt": null,
+  "checkoutCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+  "checkoutBranch": "agent/ios-native-experience-audit",
+  "dirtyAtStart": false,
+  "native": {
+    "bundleId": "com.helmsportslabs.golfhelm",
+    "version": "2.0",
+    "build": "10",
+    "sourceCommit": "bd5a4a3ba20d50e28f0502c0a50a6f5dcad1a8f1",
+    "configuration": "Release",
+    "productName": "Helm Sports Labs.app"
+  },
+  "web": {
+    "origin": "https://www.helmsportslabs.com",
+    "deployedCommit": null,
+    "deploymentId": null,
+    "note": "Not verified. capacitor.config.ts pins the shell to production; the session-start hook reported 18 commits merged to main but not in production, so the running web revision is older than checkoutCommit by an unknown amount."
+  },
+  "backend": {
+    "environment": "production",
+    "identityVerified": true,
+    "how": "capacitor.config.ts server.url is hardcoded to https://www.helmsportslabs.com/golf/dashboard; no local or preview origin was used."
+  },
+  "device": {
+    "kind": "simulator",
+    "model": "iPhone 17",
+    "udid": "B23894E0-B862-44E2-844E-ACFD7531670C",
+    "osVersion": "iOS 26.5"
+  },
+  "settings": {
+    "appearance": "light (system default); WebKit lane also ran dark + reduced-motion",
+    "textSize": "default",
+    "reducedMotion": "browser lane only",
+    "locale": "en-US",
+    "orientation": "portrait (binary is portrait-locked)",
+    "network": "unthrottled host wifi"
+  },
+  "account": {
+    "role": "coach",
+    "fixtureAlias": "pre-existing simulator session, Demo University Golf",
+    "note": "No credential was typed by the agent. The simulator's WKWebView data store already held an authenticated session from prior owner work."
+  },
+  "tools": {
+    "hig-doctor": "2.0.3",
+    "xcodebuildmcp": "2.7.0",
+    "skills": "1.5.24",
+    "playwright": "1.62.1 (repo-pinned) + WebKit 26.5 / v2336",
+    "maestro": "not installed - see REPORT.md",
+    "emilkowalski/skills": "not cloned - see REPORT.md",
+    "Cap-go/capgo-skills": "not cloned - see REPORT.md",
+    "xcodebuild": "26.6 (17F113)",
+    "macOS": "26.3 (25D125)"
+  },
+  "authorization": { "mutationsAllowed": false },
+  "status": "INCOMPLETE"
+}

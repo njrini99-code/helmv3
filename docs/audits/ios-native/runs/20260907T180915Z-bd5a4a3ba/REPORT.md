@@ -1,0 +1,231 @@
+# Helm iOS Native Experience Audit
+
+## Verdict and evidence limits
+
+**INCOMPLETE**, deliberately. Static review, WebKit browser evidence and native
+simulator evidence were all collected. Every physical-device check is unrun —
+no iPhone was available — and roughly half the journey matrix is blocked
+because the shell is hardcoded to production and this run had read-only
+authorization.
+
+Two confirmed P1 findings, one of which is a confirmed *symptom* with an
+unproven cause. Two previously-reported findings verified fixed against the
+compiled binary rather than the source. Nothing here required a redesign, and
+none is proposed.
+
+The honest one-line answer to "what makes it feel like a website in a phone":
+this run did not get far enough to answer that. What it did find is that the
+app is invisible to iOS's own accessibility layer, which is a more concrete
+problem than the one that was asked about.
+
+## Exact shell, web, backend, and device identities
+
+| | |
+|---|---|
+| Checkout | `agent/ios-native-experience-audit` @ `bd5a4a3ba20d`, clean |
+| Binary | `com.helmsportslabs.golfhelm` **2.0 (10)**, Release, simulator |
+| Build product | `Helm Sports Labs.app` — *not* `App.app` |
+| Web revision | **unknown** — see below |
+| Backend | production. There is no staging copy |
+| Device | iPhone 17 simulator, iOS 26.5, portrait |
+| Account | coach, "Demo University Golf", session already present on the simulator |
+
+The web revision is genuinely unknown and it matters. `capacitor.config.ts`
+pins the shell to `https://www.helmsportslabs.com/golf/dashboard`, and 18
+commits are merged to `main` but not shipped. So the binary is built from
+`bd5a4a3ba20d` while the UI it renders is some older revision. Web-layer
+findings here describe **what is live**, which is the right target for an
+experience audit but is not what is in `main`.
+
+No credential was typed. The simulator's WebView data store already held an
+authenticated session from earlier owner work, which is itself consistent with
+the documented contract that the launch-time cache clear touches disk and memory
+caches only and never cookies.
+
+## Five highest-impact findings
+
+**1. F-A11Y-NATIVE-01 (P1) — iOS UI automation cannot see anything inside the
+WebView.** A coach dashboard visibly showing a title, a greeting, three sheet
+CTAs and a bottom nav produces a runtime accessibility tree of 18 elements, all
+full-screen unlabelled containers, with **zero interaction targets** — and no
+on-screen string ("Dashboard", "Sign", "Players", "Schedule") resolves by text
+predicate either. Two independent query paths, same answer. The control makes it
+solid: the same harness against Apple's Settings app returns fourteen labelled
+tappable targets and resolves "General" by text. Enabling accessibility on the
+simulator changes nothing, and there is no accessibility code anywhere in the
+Swift shell to explain it.
+
+**What is proven is narrower than it sounds, and the distinction carries the
+whole finding.** Both paths used sit in the same accessibility API family.
+XCUITest — the path Xcode UI tests and Maestro drive, and the one that normally
+*does* surface buttons and links inside a Capacitor WebView — was not exercised.
+Neither was VoiceOver. So the claim this run supports is: *this automation
+harness sees zero targets inside GolfHelm.* Whether VoiceOver sees them is
+**open**, and the observed shape (18 elements, all role `other`, stopping at the
+WebView container) is the textbook signature of a remote accessibility tree that
+was never *requested* — WKWebView builds it lazily for an attaching assistive
+client — at least as much as it is a signature of content being suppressed.
+
+If Xcode's Accessibility Inspector can see the web content, this is a testability
+problem: nothing can be automated, but users are fine. If the Inspector sees what
+the harness saw, VoiceOver cannot drive GolfHelm at all. Those are two very
+different products, and nothing collected this run distinguishes them. Resolving
+it is the first item in the plan and it needs a person at a Mac with the
+Inspector open.
+
+**2. F-CONTRAST-01 — RETRACTED. It was a measurement artifact, not a defect.**
+An earlier pass of this audit reported the Sign in label at 3.52:1 light /
+3.61:1 dark, below the 4.5:1 AA minimum. That was wrong. axe-core had run before
+the login form finished its entrance transition, so it sampled a
+partially-transparent button composited against the cream page — colours that
+appear in no frame a user ever sees. Settled and measured directly, the label is
+`#ffffff` on `#15803d` = **5.02:1**, which passes. The spec now waits for the
+entrance transition to settle before calling axe, records whether settling
+happened, and fails loudly if it did not; `await document.fonts.ready`, which it
+relied on before, does not wait on CSS transitions.
+
+One real item survives the retraction: axe now reports color-contrast
+**incomplete** for twelve nodes on this page — gradient backgrounds and
+image-bearing ancestors it cannot sample. Incomplete is not a pass. Those nodes
+are unmeasured, and checking the gradient headings by hand is still outstanding.
+
+**3. F-KBD-AUTOFOCUS-01 (P2) — autofocus is gated in six components and ungated
+at most other sites.** The codebase already knows the right answer:
+`autoFocus={finePointer}`, where `finePointer` is `useMediaQuery('(pointer: fine)')`.
+It just is not shared — the hook is re-declared inline in six components, so the
+pattern only spreads by copy-paste and every new surface starts ungated. On a
+phone the ungated ones throw the keyboard up over half the sheet before the user
+has decided to type. Messages, coach notes, log-progress, expenses and three
+auth pages are among them.
+
+**4. F-BRAND-01 (P3) — two brand marks in three seconds.** The splash carries
+the ship's-wheel company mark; the login screen 0.5s later carries the
+golf-ball-in-wheel product mark. Reported in August, unchanged, and still an
+owner decision rather than a defect.
+
+**5. F-PLIST-IPAD-01 (P3) — a dead `~ipad` orientation block still ships.**
+The iPhone array is correctly portrait-only; the `~ipad` array still lists all
+four orientations in an app whose device family is iPhone-only.
+
+## What already works and must not be rebuilt
+
+Verified this run **against the compiled binary**, not the source:
+
+- **Portrait lock** — exactly one entry in `UISupportedInterfaceOrientations`.
+  F-ORIENT-01 from August is fixed.
+- **Dark and Tinted app icon variants** — `UIAppearanceDark` and
+  `ISAppearanceTintable` are both present in the compiled `Assets.car`.
+  F-ICON-01 from August is fixed.
+- **Splash and hide-on-ready** — the cream splash holds for ~2.4s and gives way
+  to real content at t+2.8s. No stuck splash, no white flash, no error state.
+- **Session durability across reinstall** — the authenticated session survived
+  installing a freshly built binary over the existing one.
+
+Confirmed present in source and deliberately not re-litigated, because the
+August audit already verified them and nothing this run contradicts them: the
+semantic haptic grammar and its preference gate, the push park-then-flush state
+machine, the status-bar theme sync, the WKWebView cache scoping, associated
+domains, the bottom-nav/MoreNavSheet system, `fairway/overlays/Sheet.tsx`, and
+the four-tier round-durability stack.
+
+## Journey coverage: passed, failed, blocked, not run
+
+Full table in `COVERAGE.md`. Summary: **1 passed** (cold launch), **1 pass** (signed-out login render and its axe scan, after the entrance-settle
+fix; twelve contrast nodes remain unmeasurable by axe), **2 partial**, **4 blocked**, **5 not run**.
+
+Nothing behind the login was exercised. That is the single largest gap and it is
+an authorization gap, not an effort gap.
+
+## Confirmed defects
+
+F-KBD-AUTOFOCUS-01, F-BRAND-01, F-PLIST-IPAD-01, and the *symptom* of
+F-A11Y-NATIVE-01. F-CONTRAST-01 is **retracted** — see above. See `FINDINGS.json` for reproduction steps,
+evidence paths, and the separate `rootCauseStatus` on each.
+
+## Suspected issues needing targeted reproduction
+
+**A login flash on first launch after install.** On the very first launch, the
+signed-out login screen appeared — keyboard already up — before the app reached
+the dashboard. On every subsequent launch it went splash → dashboard directly.
+The plausible mechanism is that server-side middleware bounced to `/golf/login`
+before the client-side session restore completed. This was observed **once, by
+accident**, during a measurement run whose timing was later found to be invalid.
+It is a hypothesis. It is written down because it is worth ten minutes to
+reproduce, not because it is a finding.
+
+## Accepted design tradeoffs and dismissed scanner findings
+
+HIG Doctor reported 959 concerns across 3258 files. Filtered to the surface the
+iPhone shell can actually render, 344 remain — the rest are in `landing/`,
+`tools/`, `public/` and BaseballHelm.
+
+Of the 195 scoped `web/svg-without-a11y` findings marked *critical*, **128 are
+false positives by construction**: they are in `src/components/icons/index.tsx`,
+where each icon spreads `{...p}` and callers pass `aria-hidden` at the usage
+site, which the scanner cannot see. A sampled call site among the remaining 67
+sits inside a link that already carries an `aria-label`, so the unlabelled child
+is inert. **One scoped rule produced a real finding** — `web/auto-focus`. A
+scanner's "critical" is not a Helm P0, and 959 is not a defect count.
+
+## Physical-device observations
+
+None. No device was available. `DEVICE-CHECKS.md` lists the fifteen checks that
+remain, ordered so that the one which changes this audit's verdict is first.
+
+## Performance observations and measurement method
+
+Cold launch on the simulator: flat splash to ~t+2.6s, first paint t+2.8s, full
+paint t+3.0s, settled t+5.2s. Method: launch and screenshot capture inside a
+single process, 0.2s intervals, change detected by frame-size delta.
+
+This is a simulator on host wifi against production, cache-cleared at launch but
+DNS and TLS warm, **n=2**. It is a baseline for comparing future runs on the
+same setup and nothing more. §9's own rule is 30 comparable trials before a p95
+is worth stating, and this is not a device number.
+
+A first attempt at this measurement was discarded outright: the sleep targets
+were computed against a timestamp captured in a previous shell invocation, so
+every screenshot in the series fired at once and showed the same frame. The
+`coldlaunch-t*.png` files are kept in the evidence directory marked invalid.
+
+## Dependency and automation limitations
+
+**Maestro was not installed, deliberately.** Its documented pilot flow asserts
+on the login placeholder text being visible in the native accessibility tree.
+F-A11Y-NATIVE-01 establishes that tree is empty, so the pilot could not have
+passed. Installing a second JDK and a Homebrew tap to discover that would have
+been waste. Once T1 answers why the tree is empty, this decision should be
+revisited — not before.
+
+**The two skill repositories were not cloned.** The audit reached its findings
+through the scanner, the simulator, the accessibility harness and the WebKit
+lane. Adding review guidance would have produced opinions, and this run was
+short of evidence rather than short of opinions.
+
+**No XCTest/XCUITest target exists**, so `performAccessibilityAudit` was not and
+could not be run. That remains true from the August audit.
+
+## Recommended implementation order
+
+1. **T1** — isolate the accessibility cause. An experiment, not a patch. Nothing
+   else about accessibility should be touched until it answers.
+2. **T2** — measure the twelve contrast nodes axe cannot sample. Measurement
+   only; no token changes until a real number exists.
+3. **T3** — extract `useFinePointer()`, then decide the ungated sites one by
+   one, then add the lint rule that stops the next one.
+4. **T4** — delete the `~ipad` block whenever a binary is next built.
+
+Full task shapes, non-goals and rollbacks in `IMPLEMENTATION-PLAN.md`.
+
+## Files created or changed by this audit
+
+`playwright/native-audit.config.ts`, `playwright/native-audit/login-audit.spec.ts`,
+`docs/audits/ios-native/README.md`, and this run directory. No application
+source, native configuration, CI, migration, or production setting was modified.
+No deploy, promote, upload or merge occurred.
+
+## Evidence index
+
+`EVIDENCE-INDEX.md`. Raw evidence is outside the repository at
+`~/Library/Logs/HelmNativeAudit/` and is not committed — it contains captures of
+an authenticated production account.
