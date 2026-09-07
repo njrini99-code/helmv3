@@ -1,0 +1,299 @@
+#!/bin/bash
+# .githooks/pre-push — local pre-push gate.
+#
+# Owner's problem: none of the checks that actually fail PRs run locally —
+# every failure is first seen on GitHub ~20 minutes later. This runs the
+# cheap, file-scoped subset of those checks (typecheck, eslint, the lint
+# ratchet, sqlfluff, gitleaks, markdownlint, generated-docs freshness,
+# docs:rules-current) against ONLY the files this push actually changes, in
+# seconds, using tools already in the repo. No new services.
+#
+# Wired via `core.hooksPath .githooks`, set by scripts/setup-hooks.mjs (the
+# `prepare` npm lifecycle script) or by hand with `npm run hooks:install`.
+#
+# Skip for a single push:  HELM_SKIP_PREPUSH=1 git push
+#
+# --- The stdin contract ------------------------------------------------
+# git pre-push hooks receive, on stdin, one line per ref being pushed:
+#   <local ref> SP <local sha1> SP <remote ref> SP <remote sha1>
+# and two positional args: $1 remote name, $2 remote URL (both unused here).
+# ALL of stdin must be read before running anything else that might itself
+# read stdin (a subprocess with no explicit `< /dev/null` would eat the
+# remaining ref lines and this hook would silently see only the first).
+
+set -uo pipefail
+
+if [ "${HELM_SKIP_PREPUSH:-0}" = "1" ]; then
+  echo "########################################################################"
+  echo "# HELM_SKIP_PREPUSH=1 — pre-push gate SKIPPED. GitHub is your only check. #"
+  echo "########################################################################"
+  exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$REPO_ROOT" || exit 1
+
+ZERO_SHA="0000000000000000000000000000000000000000"
+HOOK_START=$(date +%s)
+
+# --- 1. Slurp stdin fully before running anything else ------------------
+STDIN_LINES=()
+while IFS= read -r line; do
+  [ -n "$line" ] && STDIN_LINES+=("$line")
+done
+
+if [ "${#STDIN_LINES[@]}" -eq 0 ]; then
+  echo "pre-push: no ref updates on stdin — nothing to check."
+  exit 0
+fi
+
+# --- 2. Resolve one diff range per pushed ref, then union the changed ---
+#        files across all of them. Deleting a remote ref (local sha all
+#        zero) contributes nothing. A brand-new remote ref (remote sha all
+#        zero, or a sha this clone has never fetched) diffs from its
+#        merge-base with origin/main instead of from the zero sha.
+RANGES=()
+CHANGED_FILES_RAW=""
+for line in "${STDIN_LINES[@]}"; do
+  read -r local_ref local_sha _remote_ref remote_sha <<<"$line"
+
+  if [ "$local_sha" = "$ZERO_SHA" ]; then
+    continue # deleting the remote ref
+  fi
+
+  base=""
+  if [ "$remote_sha" != "$ZERO_SHA" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    base="$remote_sha"
+  else
+    base="$(git merge-base origin/main "$local_sha" 2>/dev/null || true)"
+    if [ -z "$base" ]; then
+      base="$(git rev-list --max-parents=0 "$local_sha" 2>/dev/null | tail -1)"
+    fi
+  fi
+
+  if [ -z "$base" ]; then
+    echo "pre-push: could not resolve a diff base for $local_ref — skipping its scope."
+    continue
+  fi
+
+  RANGES+=("${base}..${local_sha}")
+  files="$(git diff --diff-filter=ACMR --name-only "$base" "$local_sha" -- 2>/dev/null)"
+  CHANGED_FILES_RAW="${CHANGED_FILES_RAW}${files}
+"
+done
+
+# Dedup into a real array. (Not `mapfile` — that needs bash 4+, and macOS
+# ships bash 3.2 at /bin/bash, which is exactly what a shebang-invoked git
+# hook runs under regardless of what's newer on PATH.)
+CHANGED_FILES=()
+while IFS= read -r f; do
+  [ -n "$f" ] && CHANGED_FILES+=("$f")
+done < <(printf '%s\n' "$CHANGED_FILES_RAW" | sed '/^$/d' | sort -u)
+
+if [ "${#CHANGED_FILES[@]}" -eq 0 ]; then
+  echo "pre-push: no changed files resolved in the pushed range — nothing to check."
+  exit 0
+fi
+
+echo "pre-push: ${#CHANGED_FILES[@]} changed file(s) across ${#RANGES[@]} pushed range(s)."
+
+FAILED=0
+
+# Print a step's timing and capture non-zero exit without aborting the rest
+# of the hook (each step reports its own pass/fail; the hook fails at the
+# end if any step failed, so one early failure doesn't hide a later one).
+run_step() {
+  local name="$1"
+  shift
+  local start end dur status out
+  start=$(date +%s)
+  out="$("$@" 2>&1)"
+  status=$?
+  end=$(date +%s)
+  dur=$((end - start))
+  if [ $status -ne 0 ]; then
+    echo "✗ ${name} FAILED (${dur}s)"
+    echo "$out"
+    FAILED=1
+  else
+    echo "✓ ${name} OK (${dur}s)"
+  fi
+  return $status
+}
+
+# Same timing/printing as run_step, but NEVER fails the push — for a raw
+# per-file lint whose only gate anywhere in this repo (CI included) is a
+# full-repo ratchet against a baseline, because the backlog of pre-existing
+# violations is large (7,659 SQL, 34,576 Markdown at last count) and
+# grandfathered on purpose. Failing the push over a pre-existing violation
+# in a file a push merely touches would make this hook stricter than CI
+# itself and block pushes for reasons that were never a real gate.
+run_step_informational() {
+  local name="$1"
+  shift
+  local start end dur status out
+  start=$(date +%s)
+  out="$("$@" 2>&1)"
+  status=$?
+  end=$(date +%s)
+  dur=$((end - start))
+  if [ $status -ne 0 ]; then
+    echo "… ${name} found findings (${dur}s, informational — the ratchet below is what gates)"
+    echo "$out"
+  else
+    echo "✓ ${name} OK (${dur}s)"
+  fi
+}
+
+matches() {
+  # matches <regex> <files...> — true (0) if any file matches.
+  local regex="$1"
+  shift
+  printf '%s\n' "$@" | grep -Eq "$regex"
+}
+
+filtered() {
+  # filtered <regex> <files...> — print the subset matching regex.
+  local regex="$1"
+  shift
+  printf '%s\n' "$@" | grep -E "$regex" || true
+}
+
+# --- 3. typecheck:fast (tsgo), falling back to tsc if tsgo is missing ---
+#        Routed through scripts/serialize.mjs (HELM_GATE_NOWAIT=1: never
+#        wait behind another gate, just run) so a full project-wide
+#        typecheck never stacks memory with a heavy gate already running in
+#        a sibling worktree — serialize.mjs measured one `tsc --noEmit` at
+#        ~2.85 GB. Never pass changed FILES to tsgo/tsc: that makes it
+#        ignore tsconfig.json's compiler options entirely, silently, so the
+#        run stays project-wide — this only gates the DECISION to run it on
+#        whether a .ts/.tsx file changed.
+if matches '\.tsx?$' "${CHANGED_FILES[@]}"; then
+  TSGO_BIN="$REPO_ROOT/node_modules/.bin/tsgo"
+  TSC_BIN="$REPO_ROOT/node_modules/.bin/tsc"
+  if command -v tsgo >/dev/null 2>&1; then
+    run_step "typecheck:fast (tsgo)" env HELM_GATE_NOWAIT=1 node scripts/serialize.mjs -- tsgo --noEmit -p tsconfig.json
+  elif [ -x "$TSGO_BIN" ]; then
+    run_step "typecheck:fast (tsgo)" env HELM_GATE_NOWAIT=1 node scripts/serialize.mjs -- "$TSGO_BIN" --noEmit -p tsconfig.json
+  elif [ -x "$TSC_BIN" ]; then
+    echo "pre-push: tsgo not found — falling back to tsc (slower, heavier)."
+    run_step "typecheck (tsc fallback)" env HELM_GATE_NOWAIT=1 node scripts/serialize.mjs -- "$TSC_BIN" --noEmit
+  else
+    echo "pre-push: neither tsgo nor tsc found — install with 'npm ci'. Skipping typecheck."
+  fi
+else
+  echo "pre-push: no .ts/.tsx changes — skipping typecheck."
+fi
+
+# --- 4. eslint on the changed .ts/.tsx/.mjs files only -------------------
+LINT_FILES=()
+while IFS= read -r f; do
+  [ -n "$f" ] && [ -f "$f" ] && LINT_FILES+=("$f")
+done < <(filtered '\.(ts|tsx|mjs)$' "${CHANGED_FILES[@]}")
+
+if [ "${#LINT_FILES[@]}" -gt 0 ]; then
+  ESLINT_BIN="$REPO_ROOT/node_modules/.bin/eslint"
+  if [ -x "$ESLINT_BIN" ]; then
+    # No --max-warnings here: the ratchet counts existing warnings
+    # (no-unused-vars included) — this step must SHOW them, not fail on
+    # them. eslint itself only exits non-zero on an error-severity finding.
+    run_step "eslint (changed files)" "$ESLINT_BIN" "${LINT_FILES[@]}"
+  else
+    echo "pre-push: eslint not found under node_modules/.bin — run 'npm ci'. Skipping."
+  fi
+else
+  echo "pre-push: no changed .ts/.tsx/.mjs files — skipping eslint."
+fi
+
+# --- 5. lint:ratchet — full run, only when src/ or scripts/ changed -----
+if matches '^(src|scripts)/' "${CHANGED_FILES[@]}"; then
+  echo "pre-push: src/ or scripts/ changed — running the full lint ratchet (~1 min)..."
+  run_step "lint:ratchet" node scripts/lint-ratchet.mjs
+else
+  echo "pre-push: no src/ or scripts/ changes — skipping the lint ratchet."
+fi
+
+# --- 6. sqlfluff on changed migrations ------------------------------------
+SQL_FILES=()
+while IFS= read -r f; do
+  [ -n "$f" ] && [ -f "$f" ] && SQL_FILES+=("$f")
+done < <(filtered '^supabase/migrations/.*\.sql$' "${CHANGED_FILES[@]}")
+
+if [ "${#SQL_FILES[@]}" -gt 0 ]; then
+  if command -v sqlfluff >/dev/null 2>&1; then
+    run_step_informational "sqlfluff (changed migrations)" sqlfluff lint --dialect postgres --rules core "${SQL_FILES[@]}"
+  else
+    echo "pre-push: sqlfluff not installed — skipping. Install with 'pip install sqlfluff' (CI's Review Gate still runs it)."
+  fi
+else
+  echo "pre-push: no changed supabase/migrations/*.sql — skipping sqlfluff."
+fi
+
+# --- 7. gitleaks over the pushed range(s) --------------------------------
+if command -v gitleaks >/dev/null 2>&1; then
+  GITLEAKS_CONFIG="$REPO_ROOT/.gitleaks.toml"
+  for range in "${RANGES[@]}"; do
+    if [ -f "$GITLEAKS_CONFIG" ]; then
+      run_step "gitleaks ($range)" gitleaks git --log-opts="$range" --config "$GITLEAKS_CONFIG" --no-banner
+    else
+      run_step "gitleaks ($range)" gitleaks git --log-opts="$range" --no-banner
+    fi
+  done
+else
+  echo "pre-push: gitleaks not installed — skipping. Install with 'brew install gitleaks' (CI's Review Gate still runs it)."
+fi
+
+# --- 8. markdownlint-cli2 on changed .md, then the full ratchet ---------
+MD_FILES=()
+while IFS= read -r f; do
+  [ -n "$f" ] && [ -f "$f" ] && MD_FILES+=("$f")
+done < <(filtered '\.md$' "${CHANGED_FILES[@]}")
+
+if [ "${#MD_FILES[@]}" -gt 0 ]; then
+  MDLINT_BIN="$REPO_ROOT/node_modules/.bin/markdownlint-cli2"
+  if [ -x "$MDLINT_BIN" ]; then
+    run_step_informational "markdownlint-cli2 (changed files)" "$MDLINT_BIN" "${MD_FILES[@]}"
+  else
+    echo "pre-push: markdownlint-cli2 not found under node_modules/.bin — run 'npm ci'. Skipping."
+  fi
+  run_step "markdown:ratchet" node scripts/markdown-lint-ratchet.mjs
+else
+  echo "pre-push: no changed .md files — skipping markdownlint."
+fi
+
+# --- 9. generated docs — fail the push if regenerating produces a diff --
+if matches '\.md$|^memory/registry\.yml$|^supabase/migrations/.*\.sql$' "${CHANGED_FILES[@]}"; then
+  echo "pre-push: docs/registry/migration changes — regenerating docs/generated/ to check for drift..."
+  GEN_OUT="$(npm run --silent knowledge:doc-inventory && npm run --silent knowledge:world-model && npm run --silent knowledge:feature-map && npm run --silent knowledge:entry-points 2>&1)"
+  GEN_STATUS=$?
+  if [ $GEN_STATUS -ne 0 ]; then
+    echo "✗ generated docs FAILED to regenerate"
+    echo "$GEN_OUT"
+    FAILED=1
+  elif ! git diff --quiet -- docs/generated/; then
+    echo "✗ generated docs were stale — regenerated; commit docs/generated and push again"
+    git diff --stat -- docs/generated/
+    FAILED=1
+  else
+    echo "✓ generated docs OK (already current)"
+  fi
+else
+  echo "pre-push: no docs/registry/migration changes — skipping generated-docs regen."
+fi
+
+# --- 10. docs:rules-current on rules/CLAUDE.md/AGENTS.md changes --------
+if matches '^\.claude/rules/.*\.md$|^CLAUDE\.md$|^AGENTS\.md$' "${CHANGED_FILES[@]}"; then
+  run_step "docs:rules-current" npm run --silent docs:rules-current
+else
+  echo "pre-push: no rules/CLAUDE.md/AGENTS.md changes — skipping docs:rules-current."
+fi
+
+TOTAL=$(( $(date +%s) - HOOK_START ))
+echo "pre-push: total ${TOTAL}s."
+
+if [ "$FAILED" -ne 0 ]; then
+  echo "pre-push: one or more checks FAILED — push aborted. Fix the above, or HELM_SKIP_PREPUSH=1 to bypass once."
+  exit 1
+fi
+
+exit 0

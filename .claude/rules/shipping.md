@@ -36,6 +36,9 @@ for cause); the structural fix is `sandbox.filesystem`, disabled, owner's call.
   worktrees{,:park,:retire}`. A deleted branch is tagged `archive/<branch>` first.
 - `autoMemoryEnabled` is `false`, in `.claude/settings.json`; `memory/` is
   the only memory this repo uses.
+- `npm install` wires a `pre-push` hook (`.githooks/`, `scripts/setup-hooks.mjs`
+  via `prepare`) that runs the cheap checks scoped to changed files; see
+  `docs/CI_RUNBOOK.md`'s "Before you push".
 
 ### Bash
 
