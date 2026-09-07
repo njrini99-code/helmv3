@@ -407,3 +407,28 @@ Two source assertions, on a comment-stripped read, guard the regression rather
 than the defect: no `onProgress(10)`/`onProgress(90)`/"simulate progress" may
 return, and every reported number must derive from `event.loaded /
 event.total` behind an `event.lengthComputable` guard.
+
+## G-24 — attachments.cancelUpload.test.ts + MessageComposer.cancelUpload.test.tsx
+
+15 tests across two files, 12 failing pre-fix. Split the way the change is: the
+transport suite drives a fake `XMLHttpRequest` and asserts the request is
+aborted, that a cancel does not fall through to the transport that cannot be
+cancelled, that an already-aborted signal never opens a request, that the
+result does not wear the `Upload failed:` wording every real fault carries, and
+that the abort listener is gone after a normal completion — a later `abort()`
+from a composer cleaning up must touch nothing.
+
+The composer suite drives the real component tree with a fake send that hands
+back the signal it was given. It asserts the label changes ("Remove range.jpg"
+staged, "Cancel upload of range.jpg" mid-transfer — a screen-reader user has no
+progress bar to infer that from), that the signal is actually aborted, that no
+alert appears, that the draft survives, and that the files the user did NOT
+cancel come back staged rather than stuck mid-bar.
+
+Two of the eight are regression guards rather than defect tests: removing a
+file BEFORE a send must abort nothing, and a genuine failure must still raise
+the banner — including on the send immediately after a cancelled one, which is
+what proves the suppression flag is per-send and not sticky.
+
+Pre-fix, four transport tests fail by timing out rather than asserting: without
+a signal the upload never settles. That is a real failure, not a hang.

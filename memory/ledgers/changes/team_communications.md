@@ -787,3 +787,43 @@
   no transfer signal, and the shimmer overlay at 0% already reads as "working".
   Recorded here rather than hidden: the fallback also cannot be cancelled,
   which G-24 inherits.
+
+## G-24 — the X on an uploading tile is a cancel
+
+- Change: an `AbortSignal` runs the length of an attachment send.
+  `uploadAttachment` and `putWithProgress` take one and call `xhr.abort()`;
+  `useMessageAttachments` threads one signal through every parallel upload and
+  reports `cancelled` rather than a failure; `FairwayMessages` forwards it and
+  suppresses the toast and the `logError` for a cancel; `MessageComposer` owns
+  the controller and aborts it when a tile that is mid-transfer is removed;
+  `AttachmentPreview` names the control "Cancel upload of <file>" while that
+  file is uploading.
+- The control already existed and was misleading. `AttachmentPreview`'s remove
+  button renders in every state, so mid-upload it took the tile off screen
+  while the bytes kept going — the file finished uploading and the send carried
+  it anyway, because the handler holds its own captured array. A user could
+  remove a photo and still send it.
+- G-09b is what made this reachable. The transport is an `XMLHttpRequest`
+  because `upload.onprogress` is the only browser upload signal without a
+  streaming body — and the same object is the one with an `abort()`. The
+  manifest predicted exactly this ("one change closes both") and it held.
+- A cancel is not a fault, and the code says so in four places: no fallback to
+  the uncancellable transport, no `console.error`, no `logError`, no toast. It
+  is also not the "Didn't send" banner (G-20a) — announcing a failure to the
+  person who caused it is noise. `cancelledByUserRef` is what scopes that
+  suppression; it is reset at the start of every send, so a cancel cannot
+  silence the NEXT attempt's real failure.
+- One signal for the whole send, not one per file, because the message is the
+  unit: `sendGolfMessageWithAttachments` takes all the attachments at once and
+  a message cannot be committed with some of them. Cancelling therefore
+  abandons the send, deletes whatever finished uploading before the signal
+  fired (a new `cleanup-cancelled-attachments` path, sharing the orphan
+  removal the message-failure branch already had), and hands the draft and the
+  remaining files back to the composer.
+- The fallback stays uncancellable and this is stated rather than hidden:
+  `.upload()` takes no signal in this SDK version, so a cancel is honoured only
+  if it lands before the fallback starts. That check is there, and it is the
+  whole of what can be honoured.
+- The side effects in `handleRemoveAttachment` moved out of the
+  `setPendingAttachments` updater. Revoking an object URL and aborting a
+  transfer must happen once, and React may call an updater more than once.

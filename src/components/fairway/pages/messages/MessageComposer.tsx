@@ -66,6 +66,7 @@ export interface MessageComposerProps {
     content: string,
     attachments: PendingAttachment[],
     onProgress?: (attachmentId: string, progress: number) => void,
+    signal?: AbortSignal,
   ) => Promise<boolean>;
   /** Throttled typing broadcast (the unchanged useGolfMessages.sendTypingStatus). */
   onTyping?: (isTyping: boolean) => void;
@@ -121,6 +122,19 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
    * and Enter-to-send coexist.
    */
   const isComposingRef = useRef(false);
+  /**
+   * The in-flight attachment send, and whether the user is the one who ended
+   * it (G-24).
+   *
+   * One controller for the whole send, because the message is the unit: a
+   * message cannot be committed with some of its attachments, so stopping one
+   * upload abandons the send and hands the draft back. `cancelledByUser` is
+   * what keeps the "Couldn't send" banner off the screen afterwards — the
+   * failure branch cannot otherwise tell a refusal from a deliberate stop, and
+   * announcing a failure to the person who caused it is noise.
+   */
+  const sendAbortRef = useRef<AbortController | null>(null);
+  const cancelledByUserRef = useRef(false);
   const compositionClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Enter-to-send is a HARDWARE-KEYBOARD affordance, and treating it as
@@ -226,13 +240,23 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   };
 
   const handleRemoveAttachment = (id: string) => {
-    setPendingAttachments(prev => {
-      const removed = prev.find(a => a.id === id);
-      if (removed?.previewUrl) {
-        URL.revokeObjectURL(removed.previewUrl);
-      }
-      return prev.filter(a => a.id !== id);
-    });
+    // Read from the rendered state rather than inside the updater: the two
+    // effects below (revoking an object URL, aborting a transfer) must happen
+    // once, and React is free to call an updater more than once.
+    const removed = pendingAttachments.find(a => a.id === id);
+    if (removed?.previewUrl) {
+      URL.revokeObjectURL(removed.previewUrl);
+    }
+    // G-24 — the X on a tile that is mid-transfer is a CANCEL, and used to be
+    // a lie: it took the tile off screen while the bytes kept going, so the
+    // file finished uploading, the send carried it anyway (the handler holds
+    // its own captured array), and the user got a message containing a photo
+    // they had just removed.
+    if (removed?.status === 'uploading') {
+      cancelledByUserRef.current = true;
+      sendAbortRef.current?.abort();
+    }
+    setPendingAttachments(prev => prev.filter(a => a.id !== id));
   };
 
   /**
@@ -298,6 +322,9 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
 
     setSending(true);
     setSendError(null);
+    cancelledByUserRef.current = false;
+    const abortController = new AbortController();
+    sendAbortRef.current = abortController;
 
     // Capture EXACTLY what is being sent, before the round trip. The textarea
     // stays enabled while a send is in flight — deliberately, so a slow network
@@ -331,7 +358,12 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       setPendingAttachments(prev =>
         prev.map(a => ({ ...a, status: 'uploading' as const, uploadProgress: 0 })),
       );
-      success = await onSendWithAttachments(sentRaw.trim(), pendingAttachments, reportProgress);
+      success = await onSendWithAttachments(
+        sentRaw.trim(),
+        pendingAttachments,
+        reportProgress,
+        abortController.signal,
+      );
     } else {
       success = await onSend(sentRaw.trim());
     }
@@ -354,7 +386,13 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       // path, so a toast that fades is the message's only trace: the banner is
       // what makes the failure recoverable instead of merely announced. The
       // draft and the staged files stay exactly where they are.
-      setSendError({ text: 'Couldn’t send — check your connection.', retryable: true });
+      // …but not when the user is the one who stopped it (G-24). They pressed
+      // the control; the draft and the remaining files are back in front of
+      // them; a banner reporting a failure here would be announcing their own
+      // decision back at them.
+      if (!cancelledByUserRef.current) {
+        setSendError({ text: 'Couldn’t send — check your connection.', retryable: true });
+      }
     } else {
       // G-20a — the text path failed, and `useGolfMessages` already put the
       // message in the thread as a muted bubble with its own Retry (G-19). If
@@ -363,6 +401,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
       // it; the field lets go of it.
       setMessage(dropSent(sentRaw));
     }
+    sendAbortRef.current = null;
     setSending(false);
   };
 

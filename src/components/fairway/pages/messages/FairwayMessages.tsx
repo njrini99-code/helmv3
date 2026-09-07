@@ -391,6 +391,7 @@ export function FairwayMessages() {
     content: string,
     attachments: PendingAttachment[],
     onProgress?: (attachmentId: string, progress: number) => void,
+    signal?: AbortSignal,
   ) => {
     if (!selectedConversationId) return false;
     try {
@@ -399,7 +400,15 @@ export function FairwayMessages() {
         content,
         attachments,
         onProgress,
+        signal,
       });
+      if (result.cancelled) {
+        // G-24 — the user stopped it. No toast, because they already know:
+        // they pressed the control that did it, and the composer has put the
+        // draft back in front of them. No logError either — a cancel is not an
+        // incident, and reporting one as `high` would bury real ones.
+        return false;
+      }
       if (!result.success) {
         showToast(result.error || 'Failed to send message', 'error');
         logError(

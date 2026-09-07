@@ -203,7 +203,14 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
           'hover:bg-fw-danger',
           'focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-fw-danger'
         )}
-        aria-label={`Remove ${file.name}`}
+        /* G-24 — the same X, two jobs. Staged, it removes a file; mid-upload
+         * it stops a transfer that is already moving bytes, which is the
+         * artboard's cancel affordance (`Composer.dc.html:108-110`). The label
+         * has to say which, because a screen-reader user gets no progress bar
+         * to infer it from. */
+        aria-label={
+          status === 'uploading' ? `Cancel upload of ${file.name}` : `Remove ${file.name}`
+        }
       >
         <IconX size={12} />
       </IconButton>

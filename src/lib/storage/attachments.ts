@@ -83,6 +83,12 @@ interface UploadResult {
   thumbnailUrl?: string;
   metadata?: AttachmentMetadata;
   error?: string;
+  /**
+   * The user stopped this upload (G-24). Distinct from `!success` alone,
+   * because a cancel is not a fault: nothing should be logged as an error,
+   * retried on the other transport, or reported as a failed send.
+   */
+  cancelled?: boolean;
 }
 
 export interface PendingAttachment {
@@ -234,6 +240,8 @@ interface TransportOutcome {
   /** 0 for a transport failure — no response was read. */
   status: number;
   error?: string;
+  /** The request was aborted deliberately (G-24), not lost. */
+  cancelled?: boolean;
 }
 
 /**
@@ -255,9 +263,21 @@ function putWithProgress(
   file: File,
   contentType: string,
   onProgress?: (progress: number) => void,
+  signal?: AbortSignal,
 ): Promise<TransportOutcome> {
   return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve({ success: false, status: 0, cancelled: true, error: 'Upload cancelled' });
+      return;
+    }
+
     const xhr = new XMLHttpRequest();
+    const abortTransfer = () => xhr.abort();
+    const settle = (outcome: TransportOutcome) => {
+      signal?.removeEventListener('abort', abortTransfer);
+      resolve(outcome);
+    };
+    signal?.addEventListener('abort', abortTransfer, { once: true });
     xhr.open('PUT', signedUrl, true);
     xhr.setRequestHeader('content-type', contentType);
     xhr.setRequestHeader('cache-control', `max-age=${CACHE_CONTROL_SECONDS}`);
@@ -279,13 +299,17 @@ function putWithProgress(
     };
 
     xhr.onload = () =>
-      resolve({
+      settle({
         success: xhr.status >= 200 && xhr.status < 300,
         status: xhr.status,
         error: xhr.responseText || undefined,
       });
-    xhr.onerror = () => resolve({ success: false, status: 0, error: 'Network error during upload' });
-    xhr.ontimeout = () => resolve({ success: false, status: 0, error: 'Upload timed out' });
+    xhr.onerror = () => settle({ success: false, status: 0, error: 'Network error during upload' });
+    xhr.ontimeout = () => settle({ success: false, status: 0, error: 'Upload timed out' });
+    // The bytes stop leaving the device the moment this fires — which is the
+    // whole point of G-24, and the reason the transport is an XHR at all.
+    xhr.onabort = () =>
+      settle({ success: false, status: 0, cancelled: true, error: 'Upload cancelled' });
 
     xhr.send(file);
   });
@@ -317,7 +341,8 @@ async function uploadBytes(
   file: File,
   contentType: string,
   onProgress?: (progress: number) => void,
-): Promise<{ success: boolean; error?: string }> {
+  signal?: AbortSignal,
+): Promise<{ success: boolean; error?: string; cancelled?: boolean }> {
   if (typeof XMLHttpRequest !== 'undefined') {
     const { data: signed, error: signError } = await supabase.storage
       .from(STORAGE_BUCKET)
@@ -329,8 +354,13 @@ async function uploadBytes(
         describeError(signError),
       );
     } else {
-      const put = await putWithProgress(signed.signedUrl, file, contentType, onProgress);
+      const put = await putWithProgress(signed.signedUrl, file, contentType, onProgress, signal);
       if (put.success) return { success: true };
+
+      // A cancel is the user's answer, and the loudest one available. It must
+      // not fall through to a transport that cannot be cancelled — that would
+      // restart from byte zero the upload they just stopped.
+      if (put.cancelled) return { success: false, cancelled: true, error: 'Upload cancelled' };
 
       if (put.status >= 400 && put.status < 500) {
         return { success: false, error: put.error || `Upload rejected (${put.status})` };
@@ -342,6 +372,12 @@ async function uploadBytes(
       );
     }
   }
+
+  // `.upload()` exposes no abort signal in this SDK version, so the fallback
+  // is uncancellable once it starts. Checking here is the whole of what can be
+  // honoured: a cancel that arrives before it begins is respected; one that
+  // arrives during it is not.
+  if (signal?.aborted) return { success: false, cancelled: true, error: 'Upload cancelled' };
 
   const { error: uploadError } = await supabase.storage
     .from(STORAGE_BUCKET)
@@ -367,9 +403,14 @@ export async function uploadAttachment(
   file: File,
   conversationId: string,
   messageId: string,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  signal?: AbortSignal
 ): Promise<UploadResult> {
   const supabase = createClient();
+
+  if (signal?.aborted) {
+    return { success: false, cancelled: true, error: 'Upload cancelled' };
+  }
 
   // Validate file
   const validation = validateFile(file);
@@ -461,7 +502,13 @@ export async function uploadAttachment(
     typedFile,
     resolvedMimeType,
     onProgress,
+    signal,
   );
+
+  if (transfer.cancelled) {
+    // Not an error: nothing is logged and nothing is dressed up as a failure.
+    return { success: false, cancelled: true, error: 'Upload cancelled' };
+  }
 
   if (!transfer.success) {
     console.error('[Attachments] Upload error:', transfer.error);
