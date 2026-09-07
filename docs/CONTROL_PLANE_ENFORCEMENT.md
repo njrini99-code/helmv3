@@ -51,9 +51,9 @@ Exactly one hook can refuse a tool call: `guard-canonical-write.mjs` under match
 
 | Kind | Count |
 | --- | --- |
-| `permissions.deny` total | 166 |
+| `permissions.deny` total | 167 |
 | …covering `mcp__` | 144 |
-| …covering `Bash(` | 15 |
+| …covering `Bash(` | 16 |
 | …other | 7 |
 
 Deny rules fire even under `bypassPermissions`, and a project-scope

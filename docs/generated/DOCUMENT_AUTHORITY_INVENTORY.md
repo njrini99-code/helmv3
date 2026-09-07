@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 28 | 15 | 2 | 3 |
 | `ADR` | 5 | 0 | 3 | 1 |
 | `INDEX` | 19 | 1 | 7 | 27 |
-| `UNKNOWN` | 89 | 12 | 40 | 144 |
+| `UNKNOWN` | 91 | 12 | 40 | 145 |
 
 ## Files
 
@@ -57,7 +57,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
-| `.claude/rules/database.md` | current | - | - | - | 3 | 5 | - |
+| `.claude/rules/database.md` | current | - | - | - | 4 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | 1 |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
@@ -289,7 +289,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 3 | 7 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 11 | 7 |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 5 | 2 |
-| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 17 | - |
+| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 17 | 17 | - |
 | `memory/templates/ui-contract.md` | current | - | - | - | 0 | 0 | - |
 
 ### `RUNBOOK`
@@ -567,16 +567,18 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | 1 |
 | `docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md` | current | - | - | - | 0 | 3 | - |
 | `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | 2 | 7 | 2 |
+| `docs/operations/APPLY_PATH.md` | current | - | - | - | 1 | 7 | 1 |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | 3 | 30 | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 | 59 | 6 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | 1 |
 | `docs/operations/COST_CONTROLS.md` | current | - | - | - | 3 | 7 | - |
-| `docs/operations/DECLARATIVE_SCHEMA.md` | current | - | - | yes | 2 | 11 | 1 |
+| `docs/operations/DECLARATIVE_SCHEMA.md` | current | - | - | yes | 3 | 11 | 1 |
 | `docs/operations/GATES.md` | current | - | - | - | 0 | 1 | - |
 | `docs/operations/GITHUB_LABELS_AND_PROJECT_SETUP.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/operations/GIT_ACTIVITY_TIMELINE.md` | current | - | - | - | 2 | 0 | - |
 | `docs/operations/HELM_MISSION_CONTROL_OS.md` | current | - | - | yes | 4 | 9 | 2 |
 | `docs/operations/HULY_WORKSPACE_SETUP.md` | current | - | - | yes | 2 | 0 | - |
+| `docs/operations/LOCAL_DATABASE.md` | current | - | - | - | 0 | 5 | - |
 | `docs/operations/MISSION_CONTROL_NEXT_STEPS.md` | current | - | - | - | 0 | 0 | - |
 | `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | 2 | 0 | - |
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | 1 | 0 | - |
@@ -600,7 +602,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 1 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 21 | 34 | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | - | 22 | 36 | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 3 |
