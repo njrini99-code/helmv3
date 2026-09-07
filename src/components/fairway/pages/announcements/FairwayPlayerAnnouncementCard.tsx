@@ -44,7 +44,6 @@ import {
 } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { getPreviewUrl } from '@/app/golf/actions/documents';
-import { toast } from '@/components/ui/sonner';
 import { openExternalUrl } from '@/lib/utils/capacitor';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 
@@ -446,7 +445,7 @@ export function FairwayPlayerAnnouncementCard({
                                 if (res.data?.url) {
                                   void openExternalUrl(res.data.url);
                                 } else {
-                                  toast.error(
+                                  fairwayToast.danger(
                                     res.noContent
                                       ? 'That attachment has no stored file.'
                                       : 'Could not open that attachment.',

@@ -50,7 +50,7 @@ import { createClient } from '@/lib/supabase/client';
 
 import { fairwayScope } from '@/lib/redesign/flag';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { logError } from '@/lib/error-logging';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
@@ -71,7 +71,6 @@ import { MessageThreadPane } from './MessageThreadPane';
 import { MessageComposer } from './MessageComposer';
 
 export function FairwayMessages() {
-  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
   const playerIdFromUrl = searchParams.get('player');
@@ -217,7 +216,7 @@ export function FairwayMessages() {
       const playerUserId = await getPlayerUserId(playerIdFromUrl);
 
       if (!playerUserId) {
-        showToast('Could not find player', 'error');
+        fairwayToast.danger('Could not find player');
         setHandledPlayerParam(true);
         router.replace('/golf/dashboard/messages', { scroll: false });
         return;
@@ -239,10 +238,10 @@ export function FairwayMessages() {
             await refetch();
             setSelectedConversationId(result.conversationId);
             setMobileShowChat(true);
-            showToast('Conversation started', 'success');
+            fairwayToast.success('Conversation started');
           }
         } catch (err) {
-          showToast('Failed to start conversation', 'error');
+          fairwayToast.danger('Failed to start conversation');
           logError(
             err instanceof Error ? err : new Error('Failed to start conversation'),
             { component: 'FairwayMessages', action: 'handlePlayerParam', sport: 'shared' },
@@ -255,7 +254,7 @@ export function FairwayMessages() {
     };
 
     handlePlayerParam();
-  }, [conversations, conversationsLoading, playerIdFromUrl, handledPlayerParam, router, refetch, showToast, teamId]);
+  }, [conversations, conversationsLoading, playerIdFromUrl, handledPlayerParam, router, refetch, teamId]);
 
   // ── ?conversation= deep-link: pre-select the thread that fired a notification ─
   // P260. Runs once per param value: select the conversation if the user is a
@@ -316,9 +315,9 @@ export function FairwayMessages() {
       if (result.conversationId) {
         await refetch();
         handleSelectConversation(result.conversationId);
-        showToast('Conversation started', 'success');
+        fairwayToast.success('Conversation started');
       } else if ('error' in result) {
-        showToast(String(result.error) || 'Failed to start conversation', 'error');
+        fairwayToast.danger(String(result.error) || 'Failed to start conversation');
         logError(
           new Error(String(result.error) || 'Failed to start conversation'),
           { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
@@ -326,7 +325,7 @@ export function FairwayMessages() {
         );
       }
     } catch (err) {
-      showToast('Failed to start conversation', 'error');
+      fairwayToast.danger('Failed to start conversation');
       logError(
         err instanceof Error ? err : new Error('Failed to start conversation'),
         { component: 'FairwayMessages', action: 'handleNewConversation', sport: 'shared' },
@@ -339,7 +338,7 @@ export function FairwayMessages() {
   const handleTeamBroadcastCreated = async (conversationId: string) => {
     await refetch();
     handleSelectConversation(conversationId);
-    showToast('Team group created', 'success');
+    fairwayToast.success('Team group created');
   };
 
   // ── Send (UNCHANGED hook; realtime replaces the optimistic stub) ────────────
@@ -349,7 +348,7 @@ export function FairwayMessages() {
       await sendMessage(content);
       return true;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
+      fairwayToast.danger(error instanceof Error ? error.message : 'Failed to send message');
       logError(
         error instanceof Error ? error : new Error('Failed to send message'),
         { component: 'FairwayMessages', action: 'handleSendMessage', sport: 'shared' },
@@ -368,7 +367,7 @@ export function FairwayMessages() {
         attachments,
       });
       if (!result.success) {
-        showToast(result.error || 'Failed to send message', 'error');
+        fairwayToast.danger(result.error || 'Failed to send message');
         logError(
           new Error(result.error || 'Failed to send message with attachments'),
           { component: 'FairwayMessages', action: 'handleSendMessageWithAttachments', sport: 'shared' },
@@ -378,7 +377,7 @@ export function FairwayMessages() {
       }
       return true;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
+      fairwayToast.danger(error instanceof Error ? error.message : 'Failed to send message');
       logError(
         error instanceof Error ? error : new Error('Failed to send message with attachments'),
         { component: 'FairwayMessages', action: 'handleSendMessageWithAttachments', sport: 'shared' },
@@ -403,11 +402,11 @@ export function FairwayMessages() {
     setIsEditSaving(true);
     try {
       await editMessage(editingMessageId, editContent.trim());
-      showToast('Message updated', 'success');
+      fairwayToast.success('Message updated');
       setEditingMessageId(null);
       setEditContent('');
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to update message', 'error');
+      fairwayToast.danger(error instanceof Error ? error.message : 'Failed to update message');
       logError(
         error instanceof Error ? error : new Error('Failed to update message'),
         { component: 'FairwayMessages', action: 'handleSaveEdit', sport: 'shared' },
@@ -427,10 +426,10 @@ export function FairwayMessages() {
     if (!deleteConfirmId) return;
     try {
       await removeMessage(deleteConfirmId);
-      showToast('Message deleted', 'success');
+      fairwayToast.success('Message deleted');
       setDeleteConfirmId(null);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to delete message', 'error');
+      fairwayToast.danger(error instanceof Error ? error.message : 'Failed to delete message');
       logError(
         error instanceof Error ? error : new Error('Failed to delete message'),
         { component: 'FairwayMessages', action: 'handleConfirmDelete', sport: 'shared' },

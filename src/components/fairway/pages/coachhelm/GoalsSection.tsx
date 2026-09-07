@@ -49,7 +49,7 @@ import { Button } from '@/components/fairway/controls';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
 import { Sparkline } from '@/components/fairway/charts';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import {
@@ -123,7 +123,6 @@ export interface GoalsSectionProps {
 function SuggestionRow({ view }: { view: GoalSuggestionView }) {
   const { suggestion, display_label, unit } = view;
   const router = useRouter();
-  const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function runTransition(
@@ -134,13 +133,13 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
       try {
         const result = await fn();
         if (!result.ok) {
-          addToast({ type: 'error', title: result.error || 'Something went wrong' });
+          fairwayToast.danger(result.error || 'Something went wrong');
           return;
         }
-        addToast({ type: 'success', title: successTitle });
+        fairwayToast.success(successTitle);
         router.refresh();
       } catch {
-        addToast({ type: 'error', title: 'Something went wrong' });
+        fairwayToast.danger('Something went wrong');
       }
     });
   }
