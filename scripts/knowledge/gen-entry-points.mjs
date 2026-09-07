@@ -140,7 +140,8 @@ function main() {
   const entries = [...collectCommands(), ...collectAgents(), ...collectSkills()];
   const table = renderTable(entries);
   const updated = renderDoc(entries, table);
-  const current = existsSync(OUTPUT) ? readFileSync(OUTPUT, 'utf8') : null;
+  let current = null;
+  try { current = readFileSync(OUTPUT, 'utf8'); } catch (err) { if (!err || err.code !== 'ENOENT') throw err; }
 
   if (process.argv.includes('--check')) {
     if (updated !== current) {

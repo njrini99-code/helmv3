@@ -467,7 +467,9 @@ function runLifecycle() {
  * "Anchor SHA" gets `git rev-list --count <sha>..HEAD -- <pathspec>` run
  * for real; anything over 200 is flagged as a note, not a failure.
  */
-const REV_LIST_CMD_RE = /`git rev-list --count ([0-9a-f]{7,40})\.\.HEAD -- ((?:'[^']+'|"[^"]+"|\S+)(?:\s+(?:'[^']+'|"[^"]+"|\S+))*)`/;
+// Alternatives are disjoint (a bare token cannot start with a quote), so the
+// pattern cannot backtrack exponentially on repeated quote/whitespace runs.
+const REV_LIST_CMD_RE = /`git rev-list --count ([0-9a-f]{7,40})\.\.HEAD -- ((?:'[^']*'|"[^"]*"|[^\s'"`]+)(?:\s+(?:'[^']*'|"[^"]*"|[^\s'"`]+))*)`/;
 const ANCHOR_SHA_RE = /anchor sha[^`\n]{0,60}`([0-9a-f]{7,40})`/i;
 const STALENESS_THRESHOLD = 200;
 

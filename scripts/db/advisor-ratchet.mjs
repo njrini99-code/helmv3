@@ -29,7 +29,12 @@
  *
  * Exit 0: no class grew.  Exit 1: at least one class grew.  Exit 2: could not reach the API.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+
+/** Read + parse in one step (no check-then-use race); null when absent. */
+function readJsonIfPresent(path) {
+  try { return JSON.parse(readFileSync(path, 'utf-8')); } catch (err) { if (err && err.code === 'ENOENT') return null; throw err; }
+}
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -108,8 +113,8 @@ async function main() {
   console.log(`performance findings: ${Object.values(performanceCounts).reduce((a, b) => a + b, 0)}`);
 
   if (UPDATE) {
-    const header = existsSync(BASELINE_PATH)
-      ? JSON.parse(readFileSync(BASELINE_PATH, 'utf-8')).$note
+    const header = readJsonIfPresent(BASELINE_PATH)
+      ? readJsonIfPresent(BASELINE_PATH).$note
       : undefined;
     const out = {
       $note:
@@ -125,12 +130,11 @@ async function main() {
     process.exit(0);
   }
 
-  if (!existsSync(BASELINE_PATH)) {
+  const baseline = readJsonIfPresent(BASELINE_PATH);
+  if (baseline === null) {
     console.error('advisor-ratchet: no baseline. Run with --update to create one.');
     process.exit(1);
   }
-
-  const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'));
   const securityRegressions = findRegressions(securityCounts, baseline.security ?? {});
   const performanceRegressions = findRegressions(performanceCounts, baseline.performance ?? {});
   const regressions = [
