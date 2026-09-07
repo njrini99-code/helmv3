@@ -187,7 +187,6 @@ routines:
       a deliberately-off automation. `schedule` above is what would be used
       if/when customer email is re-enabled — Sundays 14:00 UTC, matching the
       route's own "designed to fire Sundays" comment — not a live cron.
-    verified: 2026-09-06
 
       Database Plan D6 (2026-09-06): added /api/jobs/consume (every minute,
       pgmq queue consumer — degrades to a 200 no-op until the owner applies
@@ -198,6 +197,7 @@ routines:
       docs/operations/JOBS_QUEUE.md); until then both remain active
       simultaneously by design, since the safety net is the only backstop
       while the queue is unproven.
+    verified: 2026-09-06
 
   - id: restore-rehearsal-quarterly
     trigger: owner-manual

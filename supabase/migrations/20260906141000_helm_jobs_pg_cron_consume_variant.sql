@@ -83,8 +83,14 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_jobs_pg_cron_consume_tick(text) from public, anon, authenticated;
-grant execute on function public.helm_jobs_pg_cron_consume_tick(text) to service_role;
+revoke execute on function public.helm_jobs_pg_cron_consume_tick(
+    text
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_jobs_pg_cron_consume_tick(
+    text
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_jobs_pg_cron_consume_tick(text)'::regprocedure;

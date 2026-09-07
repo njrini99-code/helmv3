@@ -274,7 +274,7 @@ begin
 end $$;
 
 -- No row-level policies — same reasoning as 20260903180000's tail comment:
--- these tables are reachable only through the SECURITY DEFINER facades
+-- these tables are reachable only through the definer facades above
 -- above, and `helm_debug` itself has no USAGE grant to anon/authenticated.
 
 -- Retention: 30 days, handled by

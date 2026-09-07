@@ -96,7 +96,9 @@ create schema if not exists helm_jobs;
 revoke all on schema helm_jobs from public;
 
 create table if not exists helm_jobs.dedupe_keys (
-    queue text not null check (queue in ('coachhelm_analysis', 'email_send', 'push_send')),
+    queue text not null check (
+        queue in ('coachhelm_analysis', 'email_send', 'push_send')
+    ),
     dedupe_key text not null,
     msg_id bigint,
     created_at timestamptz not null default clock_timestamp(),
@@ -105,7 +107,9 @@ create table if not exists helm_jobs.dedupe_keys (
 
 create table if not exists helm_jobs.dead_letters (
     id uuid primary key default gen_random_uuid(),
-    queue text not null check (queue in ('coachhelm_analysis', 'email_send', 'push_send')),
+    queue text not null check (
+        queue in ('coachhelm_analysis', 'email_send', 'push_send')
+    ),
     msg_id bigint,
     payload jsonb not null,
     error text,
@@ -172,8 +176,14 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_jobs_enqueue(text, jsonb, text) from public, anon, authenticated;
-grant execute on function public.helm_jobs_enqueue(text, jsonb, text) to service_role;
+revoke execute on function public.helm_jobs_enqueue(
+    text, jsonb, text
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_jobs_enqueue(
+    text, jsonb, text
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_jobs_enqueue(text, jsonb, text)'::regprocedure;
@@ -222,8 +232,14 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_jobs_read_batch(text, integer, integer) from public, anon, authenticated;
-grant execute on function public.helm_jobs_read_batch(text, integer, integer) to service_role;
+revoke execute on function public.helm_jobs_read_batch(
+    text, integer, integer
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_jobs_read_batch(
+    text, integer, integer
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_jobs_read_batch(text, integer, integer)'::regprocedure;
@@ -259,7 +275,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_jobs_ack(text, bigint) from public, anon, authenticated;
+revoke execute on function public.helm_jobs_ack(text, bigint) from public,
+anon,
+authenticated;
 grant execute on function public.helm_jobs_ack(text, bigint) to service_role;
 
 do $$
@@ -324,8 +342,14 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_jobs_fail(text, bigint, text) from public, anon, authenticated;
-grant execute on function public.helm_jobs_fail(text, bigint, text) to service_role;
+revoke execute on function public.helm_jobs_fail(
+    text, bigint, text
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_jobs_fail(
+    text, bigint, text
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_jobs_fail(text, bigint, text)'::regprocedure;
@@ -371,7 +395,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_jobs_depth() from public, anon, authenticated;
+revoke execute on function public.helm_jobs_depth() from public,
+anon,
+authenticated;
 grant execute on function public.helm_jobs_depth() to service_role;
 
 do $$
@@ -417,8 +443,14 @@ begin
 end;
 $$;
 
-revoke execute on function public.helm_jobs_requeue_dead_letter(uuid) from public, anon, authenticated;
-grant execute on function public.helm_jobs_requeue_dead_letter(uuid) to service_role;
+revoke execute on function public.helm_jobs_requeue_dead_letter(
+    uuid
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_jobs_requeue_dead_letter(
+    uuid
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_jobs_requeue_dead_letter(uuid)'::regprocedure;
@@ -462,8 +494,14 @@ as $$
     limit greatest(1, least(coalesce(p_limit, 50), 200));
 $$;
 
-revoke execute on function public.helm_jobs_list_dead_letters(text, integer) from public, anon, authenticated;
-grant execute on function public.helm_jobs_list_dead_letters(text, integer) to service_role;
+revoke execute on function public.helm_jobs_list_dead_letters(
+    text, integer
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_jobs_list_dead_letters(
+    text, integer
+) to service_role;
 
 do $$
 declare v_fn oid := 'public.helm_jobs_list_dead_letters(text, integer)'::regprocedure;
