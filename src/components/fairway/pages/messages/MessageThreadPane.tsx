@@ -1251,23 +1251,33 @@ export function MessageThreadPane({
                         ) : null}
                       </div>
                     )}
+                    {/* Time + read receipt (last of group, tabular-nums).
+                        G-26: this belongs INSIDE the message column, not beside
+                        it. The row above is `flex items-end gap-2`, so while
+                        this lived as a sibling of the column it was a third
+                        flex item competing for the same horizontal space —
+                        every message carrying a timestamp had its bubble pushed
+                        inward by the width of "4:31 PM" plus the gap, so it no
+                        longer lined up with its own group-mates. Nested here it
+                        stacks under the bubble and inherits the column's
+                        `items-end`/`items-start`, which is what the artboards
+                        draw. `pb-1` went with it; the row's `items-end` no
+                        longer needs compensating for. */}
+                    {showTime && editingMessageId !== msg.id && (
+                      <div className={cn('flex items-center gap-1.5', isOwn ? 'flex-row-reverse' : '')}>
+                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                          {formatTime(msg.created_at)}
+                        </span>
+                        {/* P264 no-data-lies: per-message "Read" is only honest in a
+                            1:1 thread. In a group the hook can only see ONE arbitrary
+                            other participant's last_read_at, so "Read" would imply the
+                            whole group has read when a single (random) member has.
+                            Suppress the receipt in groups rather than imply group-read
+                            off one member. */}
+                        {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
+                      </div>
+                    )}
                   </div>
-
-                  {/* Time + read receipt (last of group, tabular-nums) */}
-                  {showTime && editingMessageId !== msg.id && (
-                    <div className={cn('flex items-center gap-1.5 pb-1', isOwn ? 'flex-row-reverse' : '')}>
-                      <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                        {formatTime(msg.created_at)}
-                      </span>
-                      {/* P264 no-data-lies: per-message "Read" is only honest in a
-                          1:1 thread. In a group the hook can only see ONE arbitrary
-                          other participant's last_read_at, so "Read" would imply the
-                          whole group has read when a single (random) member has.
-                          Suppress the receipt in groups rather than imply group-read
-                          off one member. */}
-                      {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
-                    </div>
-                  )}
                 </m.div>
                 </React.Fragment>
               );
