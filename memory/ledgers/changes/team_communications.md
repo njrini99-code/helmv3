@@ -827,3 +827,30 @@
 - The side effects in `handleRemoveAttachment` moved out of the
   `setPendingAttachments` updater. Revoking an object URL and aborting a
   transfer must happen once, and React may call an updater more than once.
+
+## G-22 — five-line growth was a hardcoded 120px
+
+- Change: `MessageComposer` computes the cap from the textarea's own resolved
+  style — `line-height × 5`, plus vertical padding and border where
+  `box-sizing: border-box` puts them inside `height`. The `Math.min(
+  scrollHeight, 120)` clamp and the inline `maxHeight: '120px'` are gone; the
+  computed value is written to `style.maxHeight` so no CSS cap can quietly
+  take charge again.
+- The constant was not even five lines. At the composer's 24px line-height,
+  120px is five lines of CONTENT, and `py-2` spends 16px of it — about 4.3
+  visible lines at the default text size. Every step up from there (browser
+  zoom, OS text-size, iOS Dynamic Type) took another fraction away, which is
+  precisely the case §9.4 was written to protect. The fix is therefore 16px
+  taller at the default size and scales from there.
+- Two details the computation gets right on purpose. `line-height: normal`
+  computes to the STRING "normal", so `parseFloat` yields NaN — unguarded,
+  that NaN poisons the max and the field grows without limit; the fallback is
+  the ratio browsers use for `normal`, approximate because the platform
+  declined to resolve it. And padding counts only under `border-box`: adding
+  it under `content-box` would overshoot by exactly the padding, the same
+  class of error as the constant being replaced.
+- A `resize` listener re-measures. Text size changes without a keystroke — a
+  zoom, an OS setting, a webfont finishing its load — and the effect keyed on
+  `message` alone would keep a cap measured against type no longer rendering.
+- `minHeight: '40px'` is deliberately UNCHANGED. §9.4 is about growth; the
+  control's resting height is composer geometry and belongs to G-47.

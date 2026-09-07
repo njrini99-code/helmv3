@@ -8,7 +8,7 @@
  * (mirrors AskThreadPane's `border-t bg-surface-sunken` composer slot). It is a
  * pure PRESENTATION re-skin of the legacy `MessageInput` — the behavior is
  * PRESERVED byte-for-byte in intent:
- *   • auto-resize textarea (height clamps 40→120px on the message value)
+ *   • auto-resize textarea (grows to five MEASURED lines — G-22)
  *   • throttled typing broadcast (onTyping(true) + 2s stop timeout), cleared on
  *     unmount and before send (the exact legacy throttle contract)
  *   • Enter-to-send / Shift+Enter newline
@@ -23,7 +23,7 @@
  * classes — NOT `Surface as="button"` — so the focal action stays a real button.
  * ========================================================================== */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
@@ -38,6 +38,51 @@ import { useMediaQuery } from '@/hooks/use-media-query';
  *     counter matches the server constraint exactly. The counter only surfaces
  *     as the field nears its limit (Nielsen #5 error prevention). ─────────────── */
 const MESSAGE_MAX = 5000;
+
+/**
+ * How far the field grows before it scrolls (§9.4).
+ *
+ * Five LINES, computed from the element's own line-height at render — not a
+ * pixel constant. The old clamp was a hardcoded 120px, which is exactly five
+ * lines of 24px content and therefore about 4.3 lines once `py-2`'s 16px of
+ * padding is counted, at the default text size. Every step up from there — a
+ * browser zoom, an OS text-size setting, iOS Dynamic Type — took another
+ * fraction of a line away, which is the case §9.4 exists to protect.
+ */
+const MAX_VISIBLE_LINES = 5;
+
+/**
+ * The height at which the field should stop growing, in CSS pixels.
+ *
+ * Reads the resolved style rather than the class list, so it is correct
+ * whatever is actually painting: the `text-base` / `lg:text-body` switch, a
+ * user stylesheet, or a zoom level. Two details that are easy to get wrong:
+ *
+ *   • `line-height: normal` computes to the string "normal", not a number.
+ *     `parseFloat` gives NaN, and NaN silently poisons the max — the field
+ *     would then never stop growing. The fallback is the ratio browsers use
+ *     for `normal` on a Latin font, which is approximate on purpose: it is a
+ *     fallback for a value the platform declined to resolve.
+ *   • Padding and border count only under `border-box`, where `height`
+ *     includes them. Adding them under `content-box` would overshoot by
+ *     exactly the padding, which is the same class of mistake as the constant
+ *     this replaces.
+ */
+function maxHeightForLines(el: HTMLTextAreaElement, lines: number): number {
+  const cs = window.getComputedStyle(el);
+  const lineHeight = parseFloat(cs.lineHeight);
+  const resolvedLineHeight = Number.isFinite(lineHeight)
+    ? lineHeight
+    : parseFloat(cs.fontSize) * 1.2;
+  const box =
+    cs.boxSizing === 'border-box'
+      ? parseFloat(cs.paddingTop) +
+        parseFloat(cs.paddingBottom) +
+        parseFloat(cs.borderTopWidth) +
+        parseFloat(cs.borderBottomWidth)
+      : 0;
+  return resolvedLineHeight * lines + (Number.isFinite(box) ? box : 0);
+}
 /** Show the remaining-chars hint once the field is ≥90% of its max. */
 const COUNTER_THRESHOLD = 0.9;
 
@@ -156,13 +201,36 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
    */
   const isPointerFine = useMediaQuery('(pointer: fine)');
 
-  // Auto-resize textarea (PRESERVED: clamp 40→120px on the message value).
+  /**
+   * Auto-resize to at most five measured lines (G-22).
+   *
+   * `maxHeight` is written here rather than left in the inline style, because
+   * a CSS cap would clamp the field back down regardless of what this
+   * computes — the constant would still be in charge, just quieter.
+   */
+  const resizeToContent = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const max = maxHeightForLines(el, MAX_VISIBLE_LINES);
+    el.style.maxHeight = `${max}px`;
+    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+  }, []);
+
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-    }
-  }, [message]);
+    resizeToContent();
+  }, [message, resizeToContent]);
+
+  /**
+   * Text size can change without a keystroke — a browser zoom, an OS text-size
+   * setting, a font finishing its load. All of them fire a resize, and without
+   * this the field would keep a cap measured against type it is no longer
+   * rendering.
+   */
+  useEffect(() => {
+    window.addEventListener('resize', resizeToContent);
+    return () => window.removeEventListener('resize', resizeToContent);
+  }, [resizeToContent]);
 
   // Typing status — PRESERVED throttle contract: broadcast true on input, set a
   // 2s timeout to stop; broadcast false when the field is cleared.
@@ -539,7 +607,11 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
             'placeholder:text-text-tertiary focus:outline-none focus:ring-0',
             'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-transparent',
           )}
-          style={{ minHeight: '40px', maxHeight: '120px' }}
+          /* No `maxHeight` here — it is measured and written by
+           * `resizeToContent` (G-22). `minHeight` stays a constant: it is the
+           * control's resting height, which is composer geometry and belongs
+           * to G-47, not to the growth rule §9.4 is about. */
+          style={{ minHeight: '40px' }}
         />
 
         {/* GOTCHA §a: the send button is a NATIVE <button> with matte token

@@ -432,3 +432,22 @@ what proves the suppression flag is per-send and not sticky.
 
 Pre-fix, four transport tests fail by timing out rather than asserting: without
 a signal the upload never settles. That is a real failure, not a hang.
+
+## G-22 — MessageComposer.fiveLines.test.tsx
+
+10 tests, 7 failing pre-fix. Both sides measured: the cap the component writes
+is compared against the line-height parsed out of `tailwind.config.ts`'s
+`'body'` entry and the padding parsed out of the component's own class list, so
+the suite fails if the type scale moves, if `py-2` moves, or if the computation
+stops tracking either.
+
+jsdom applies no Tailwind, so the type the class list would produce is injected
+as longhand CSS — jsdom resolves those reliably where shorthands can surprise.
+That also makes the large-text case directly testable: at a 36px line-height
+the cap must be five of THOSE, which is the failure mode §9.4 names.
+
+Three assertions are regression guards rather than defect tests, and two of
+them pass pre-fix for an accidental reason worth writing down: with the old
+inline `maxHeight: '120px'` the value is a finite constant, so the "NaN cannot
+poison the max" and "content-box adds no padding" checks read as satisfied.
+They guard the new computation, not the old constant, and are honest about it.
