@@ -28,13 +28,31 @@ name: CI
 #                   surfaces under its own name (the reason `Control plane`
 #                   was once a dedicated job is preserved as a step).
 #   Lint            ESLint folded into the ratchet job; same aggregate pattern.
-#   TypeScript, Lint   now skip on docs-only PRs like the other heavy jobs —
-#                   a .md diff cannot change what tsc or eslint reports.
+#   Next build, Unit tests (3 shards), Supabase lint + RLS   skip when the
+#                   PR's diff touches nothing in `detect-changes`'s `code`
+#                   filter (src/**, supabase/**, e2e/**, package*.json,
+#                   next.config.*, tsconfig*.json, vitest.config.ts,
+#                   eslint.config.mjs, tailwind.config.*, postcss.config.*,
+#                   middleware.ts, scripts/**/*.{ts,mjs}, or this file
+#                   itself) — a docs-only or config-only PR that touches none
+#                   of these finishes without paying for a Next build, three
+#                   test shards, or a from-scratch Supabase stack. TypeScript,
+#                   Lint, and Static checks are NOT gated — they always run,
+#                   because a change to `memory/registry.yml`, a rule file,
+#                   or any other tracked path outside the `code` filter can
+#                   still be exactly what those three gates exist to check
+#                   (schema drift, path drift, the feature router, ESLint
+#                   rules that read config files, ratchets).
+#                   `CI aggregate` treats a SKIPPED gated job as passing only
+#                   when `detect-changes` classified the PR as `code=false` —
+#                   a skip on a code-relevant PR still fails the aggregate.
 #   Next build      restores its webpack cache on every run but SAVES it only
 #                   on push to main: the save step alone cost 99 s per PR run.
 #
 # PR job count here: 22 → 10 (detect, static, typecheck, lint, 3 unit shards,
-# build, supabase, aggregate). Installs per run: 15 → 8. The push-to-main-only
+# build, supabase, aggregate) on a code-relevant PR; detect, static,
+# typecheck, lint, aggregate (5) on a docs/config-only PR. Installs per run:
+# 15 → 8 (code PR) or 15 → 3 (docs/config-only PR). The push-to-main-only
 # jobs (shifted-timezone unit tests, BaseballHelm authenticated smoke) are
 # untouched.
 #
@@ -80,6 +98,12 @@ env:
 
 jobs:
   detect-changes:
+    # Same pattern codeql.yml's `changes`/`analyze` jobs already use:
+    # dorny/paths-filter decides an output, a later job's `if:` reads it, and
+    # nothing here renames a job or a check — every required context still
+    # reports under the name branch protection expects. Only `pull_request`
+    # is filtered; push/merge_group always classify as code=true below so a
+    # merge to main always gets the full suite.
     name: Detect code-relevant paths
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -91,43 +115,62 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Classify changed paths (fail closed to code=true)
+
+      # Only meaningful on `pull_request` — dorny/paths-filter diffs the PR's
+      # base against its head. `continue-on-error` so a filter failure falls
+      # through to the fail-closed branch in "Classify" below rather than
+      # failing this job outright.
+      - name: Filter changed paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'supabase/**'
+              - 'e2e/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'next.config.*'
+              - 'tsconfig*.json'
+              - 'vitest.config.ts'
+              - 'eslint.config.mjs'
+              - 'tailwind.config.*'
+              - 'postcss.config.*'
+              - 'middleware.ts'
+              - 'scripts/**/*.ts'
+              - 'scripts/**/*.mjs'
+              - '.github/workflows/ci.yml'
+
+      # Combines the filter's verdict with two fail-closed branches. Heavy
+      # jobs gated on `code` (Next build, the unit-test shards, Supabase lint
+      # + RLS) exist to catch a build/test/schema break — an unclassifiable
+      # diff must not skip them.
+      - name: Classify (fail closed to code=true)
         id: classify
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_OUTCOME: ${{ steps.filter.outcome }}
+          FILTER_CODE: ${{ steps.filter.outputs.code }}
         run: |
           set -uo pipefail
-          # Non-PR events (push to main) always run the full suite.
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          # Non-PR events (push to main, merge_group) always run the full suite.
+          if [ "$EVENT_NAME" != "pull_request" ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"; echo "non-PR event -> full suite"; exit 0
           fi
           # FAIL CLOSED (e3's criterion): any inability to classify the diff
           # resolves to code=true. A misclassified docs PR wastes one suite; a
           # misclassified code PR ships ungated — so uncertainty must be code.
-          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "missing base/head sha -> code (fail closed)"; exit 0
+          if [ "$FILTER_OUTCOME" != "success" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "paths-filter did not succeed ($FILTER_OUTCOME) -> code (fail closed)"; exit 0
           fi
-          if ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")"; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "git diff failed -> code (fail closed)"; exit 0
-          fi
-          if [ -z "$changed" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "empty diff -> code (fail closed)"; exit 0
-          fi
-          # docs-only = EVERY changed file is under docs/ or ends in .md. If ANY
-          # file is outside that set the whole PR is code. Deliberately NARROW:
-          # config (ci.yml, settings.json, package.json, migrations, *.yml) is
-          # NOT docs-only — it can break the build, so it runs the full suite.
-          # Count files that are NOT docs/markdown. Count-based (not grep -q)
-          # so the classification is identical on GNU and BSD grep and testable
-          # locally. Defaults to 1 (=> code) if the count is somehow empty.
-          nondoc="$(echo "$changed" | grep -cvE '^docs/|\.md$' || true)"
-          if [ "${nondoc:-1}" -gt 0 ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"; echo "code-relevant paths changed ($nondoc) -> full suite"
+          if [ "$FILTER_CODE" = "true" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "code-relevant paths changed -> full suite"
           else
-            echo "code=false" >> "$GITHUB_OUTPUT"; echo "docs/markdown-only diff -> heavy jobs skip"
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "no code-relevant paths changed -> heavy jobs skip"
           fi
-          echo "--- changed files ---"; echo "$changed"
 
   # ---------------------------------------------------------------------------
   # Every repo-wide check that finishes in seconds, behind ONE install.
@@ -489,10 +532,11 @@ jobs:
 
   typecheck:
     name: TypeScript
-    needs: detect-changes
-    # Docs-only PRs skip this: a .md diff cannot change what tsc reports. The
-    # aggregate still fails on a skip whenever the PR is classified as code.
-    if: needs.detect-changes.outputs.code == 'true'
+    # NOT gated on detect-changes: unlike the build/test/Supabase jobs below,
+    # a change outside the `code` path filter (a rule file, memory/registry.yml,
+    # config/*.yml) can still change what `tsc` reports through an ambient
+    # `.d.ts` or a tsconfig `include`/`paths` entry the filter doesn't track —
+    # so this always runs, every PR and every push.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -515,8 +559,11 @@ jobs:
 
   lint:
     name: Lint
-    needs: detect-changes
-    if: needs.detect-changes.outputs.code == 'true'
+    # NOT gated on detect-changes, for the same reason as `typecheck` above:
+    # ESLint reads config files (eslint.config.mjs is already in the `code`
+    # filter, but a rule referencing another tracked path is not guaranteed
+    # to be) and the ratchets in here read the whole tree, not just the diff.
+    # Always runs.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -688,7 +735,13 @@ jobs:
     # runs on push to main only; timezone regressions are caught post-merge
     # (with fast rollback) rather than pre-merge. Revert this `if` to restore the
     # pre-merge gate — see the CI-aggregate note about incident #1123.
-    if: github.event_name == 'push'
+    #
+    # Also gated on `detect-changes`'s `code` output, same as the other heavy
+    # jobs — a no-op today (push events always classify as code=true) but
+    # kept explicit so a future change to that classification does not have
+    # to remember this job too.
+    needs: detect-changes
+    if: github.event_name == 'push' && needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:

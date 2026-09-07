@@ -65,15 +65,16 @@ check the scanned-file count.
 `typecheck` (`tsc`) stays the CI gate — do not swap the gate for `tsgo`.
 
 ### CI shape
-Every GitHub Actions workflow that posts on a PR, one line each:
-`ci.yml` (typecheck, lint, vitest, build, RLS, doc gates → required
-`CI aggregate`); `review-gate.yml` (static analyzers → required
-`Review Gate aggregate`); `codeql.yml` (three required `Analyze (...)`
-legs plus GitHub's own non-required `CodeQL` status); `sentry-snapshots.yml`
-(visual diff, advisory); `feature-awareness.yml` (context pack, advisory,
-code paths only); `pr-smoke.yml` (a11y smoke, advisory, frontend paths);
-`migration-lockdown.yml` (`block-historical-edits`, reports on every PR);
-`claude-code.yml` (gated agent run). CircleCI runs the weekly heavy jobs and
-the branch-gated native compiles. `main` has `enforce_admins` on; take the
-required-checks list from GitHub and `docs/CONTROL_PLANE_ENFORCEMENT.md`,
-never from prose.
+Every GitHub Actions workflow relevant to a PR, one line each: `ci.yml` (a
+`dorny/paths-filter` `code` output gates `Next build`, the `Unit tests`
+shards, `Supabase lint + RLS tests`; `TypeScript`/`Lint`/`Static checks`
+never skip → required `CI aggregate`, passing a `skipped` gated job only
+when nothing code-relevant changed); `review-gate.yml` (→ required
+`Review Gate aggregate`); `codeql.yml` (three required `Analyze (...)` legs
++ non-required `CodeQL`); `sentry-snapshots.yml`/`pr-smoke.yml` (advisory,
+each `pull_request` trigger has its own `paths:` filter); `baseball-
+readiness-matrix.yml` (advisory; `push` to `main` + weekly `schedule`, no
+`pull_request`); `feature-awareness.yml` (advisory); `migration-lockdown.yml`
+(`block-historical-edits`, every PR); `claude-code.yml` (gated agent run).
+CircleCI: weekly heavy jobs + branch-gated native compiles. `main` has
+`enforce_admins` on; take required checks from GitHub, not prose.
