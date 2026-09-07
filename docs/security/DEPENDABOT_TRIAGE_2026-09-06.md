@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD018 MD060 -->
+
 # Dependabot alert triage — 2026-09-06
 
 Source: `gh api repos/njrini99-code/helmv3/dependabot/alerts?state=open --paginate`
