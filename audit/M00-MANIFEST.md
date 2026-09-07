@@ -253,6 +253,50 @@ title + two text buttons (Team, New message). Grep finds no bell anywhere in the
 surface or the shared `FairwayTopBar`. So this is not a duplicated-chrome case to
 de-duplicate — it is absent, and the badge count has no existing semantics to preserve.
 
+### G-45 — The artboard's focus glow contradicts a documented accessibility fix  [med] [coordinator-verified, DECISION-NEEDED]
+M03C's F14, and the evidence is stronger than the lane put it. The artboard's `.track-on`
+focus treatment is a two-layer soft glow built from `accent-500`. In
+`src/styles/design-tokens.css:152-165` the light theme deliberately does NOT use accent-500
+for focus, and the comment explains why at length: the shared `fwFocusRing` helper had already
+hard-coded accent-600 for this reason, but **175 call sites** reached for `ring-border-focus`
+directly and "every one of them was drawing a ring nobody with low vision could reliably
+find." Light theme therefore resolves `--fw-color-border-focus` to `accent-600` (`:165`).
+
+**The part the lane did not note: it is theme-dependent.** At `:512` the dark theme keeps
+accent-500 on purpose — there it is the *lighter* green and is what earns contrast against a
+dark ground; the comment says darkening it there "would make the ring harder to see, not
+easier." So the artboard's literal value is right in dark and wrong in light. This cannot be
+resolved by picking one color.
+
+Compounding it, the plan disagrees with its own artboard: §9.1 asks for a focus edge that is
+"crisp, not a wide blurry green glow", while the artboard draws exactly that glow. Three-way
+conflict — plan prose, artboard, and a documented WCAG fix. Owner decision; a UI lane must not
+settle it, and any resolution needs a contrast re-check per theme.
+
+### G-46 — `AttachmentPreview.tsx` is unmigrated legacy, and unleased  [med] [coordinator-verified]
+`src/components/golf/messages/AttachmentPreview.tsx` renders inside every composer attachment
+state and is still entirely legacy classes — `warm-700/600/500/400/200/100/50`, `red-600/500/50`,
+`primary-600/500`, `cream-*` — all banned by `.claude/rules/design-system.md`.
+
+Two things make this worse than one stale file. It sits under `src/components/golf/messages/**`,
+which the registry maps to this feature (`memory/registry.yml:1001`) but which **no §19.3 lease
+row covers** — every lease names `src/components/fairway/pages/messages/*`. And because it is
+reused inside states M03C owns, composer fidelity cannot be achieved without editing a file
+outside every current lease. Add it to a lease before the write phase, or the first UI worker
+to touch it violates §19.3 by necessity.
+
+### G-47 — Composer geometry: the numbers, now that the artboard supplies them  [med] [lane-asserted]
+- The outer raised "glass dock" (28px radius, translucent cream, backdrop-blur, three-part
+  shadow) **does not exist** — the code has one flush flat footer, not two layered surfaces.
+- Send button is a rounded square (`rounded-fw-md`, 14px); the artboard wants a full circle,
+  which is what `--fw-radius-full`'s own token comment says it is for ("primary CTAs").
+- Mobile send circle is 44px visible against the artboard's 40px — inverting §9.1's own
+  visible-40px / hit-area-44px split by enlarging the visible circle instead of the tap zone.
+- Track alignment is hardcoded `items-end`; the artboard bottom-aligns only once the field has
+  grown, staying centered at rest.
+- Placeholder is generic "Type a message…" where the artboard names the recipient
+  ("Message Cole") — upgraded to source-confirmed.
+
 ### G-32 — Most artboard values already map onto unused existing tokens  [info] [lane-asserted]
 The most useful thing M03A's artboard pass produced. Search well, unread-row shadow
 (byte-identical to `--fw-shadow-card`), unread/pinned radii, Pinned-rail and avatar-fallback
@@ -260,6 +304,13 @@ colors are **exact matches to tokens already in `design-tokens.css`, simply unus
 page**. Two values are genuinely unmapped and go to A03 per §14.2: a recurring two-stop cream
 gradient used in four places (one new token, not four) and the solid green gradient's second
 stop, near but not equal to `--fw-color-accent-650`.
+
+M03C's composer pass reached the same conclusion independently: surface, surface-sunken,
+border-subtle, text-tertiary/-primary/-on-accent, accent-500/600/700/750 and radius-lg are all
+byte-identical or near-identical matches to existing tokens. Its two unmapped values are the
+send-on gradient's second stop and the failure-banner red (between `--fw-color-danger` and
+`-danger-ink`). Across two lanes the pattern holds: the token file already contains nearly
+everything the design needs.
 
 This materially lowers the estimate for the visual lane: much of the gap is applying tokens
 that exist, not negotiating new ones. Related cheap win (M03A F11): the page uses flat
@@ -467,6 +518,9 @@ M03A F07, minus the mute half corrected in G-02.
   §24.6 requires comparing rendered components against the reference, and nothing has
   been rendered this phase. Either accept a source-level M05 with that limitation stated,
   or defer M05 to a phase where the app is actually running.
+- **D-05 Focus-ring color.** G-45 — a three-way conflict between §9.1's prose, the artboard's
+  accent-500 glow, and a documented 175-call-site WCAG fix that deliberately chose accent-600
+  for light and accent-500 for dark. Needs an owner call plus a per-theme contrast re-check.
 - **D-04 Branch reconciliation.** G-39 means the write phase starts by deciding what to take
   from `agent/messages-instant-entry` / `ci-fix-1833` (details sheet, reactions) rather than
   building from zero. That decision precedes any M03D implementation work, and the local-vs-
