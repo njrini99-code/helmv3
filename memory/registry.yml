@@ -52,6 +52,18 @@ features:
         - package.json
         - AGENTS.md
         - CLAUDE.md
+        # Agent-tooling artifacts named as fix locations in
+        # memory/incidents/feature_awareness_system/** but absent from this
+        # glob until the 2026-09 gold-set expansion (bench.mjs) surfaced
+        # them as zero-recall seed files — the router disagreeing with
+        # itself about what "agent tooling" covers.
+        - .claude/rules/**
+        - .claude/settings.json
+        - scripts/new-worktree.sh
+        - scripts/worktree-lifecycle.mjs
+        - scripts/deploy-prod.sh
+        - .vercelignore
+        - config/open-pr-dispositions.json
       db: []
       tests: []
     integrations:
@@ -348,6 +360,12 @@ features:
         - src/lib/recruiting/**
       db:
         - supabase/migrations/*baseball*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint) — Lift Lab (helm_lifting_*
+        # tables) bridges from baseball and has no dedicated registry
+        # feature of its own yet; filed here rather than left unowned.
+        - supabase/migrations/*helm_lifting*.sql
+        - supabase/migrations/*practice_blocks*.sql
       tests:
         - supabase/tests/rls/baseball_*.sql
         - e2e/baseball-*.spec.ts
@@ -404,6 +422,27 @@ features:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*round_review*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint) by topic — round lifecycle,
+        # course library, and their storage/RLS surface.
+        - supabase/migrations/*course_library*.sql
+        - supabase/migrations/*course_image*.sql
+        - supabase/migrations/*round_atomic*.sql
+        - supabase/migrations/*atomic_round*.sql
+        - supabase/migrations/*atomic_lifecycle*.sql
+        - supabase/migrations/*ingest_external_round*.sql
+        - supabase/migrations/*stranded_predictions*.sql
+        - supabase/migrations/*golf_demo_sessions*.sql
+        - supabase/migrations/*preserve_golf_history*.sql
+        - supabase/migrations/*preserve_started_round*.sql
+        - supabase/migrations/*single_flight*.sql
+        - supabase/migrations/*reclassify*.sql
+        - supabase/migrations/*round_stranding*.sql
+        - supabase/migrations/*round_recap*.sql
+        - supabase/migrations/*ncaa_division*.sql
+        - supabase/migrations/*integrity_completed_round*.sql
+        - supabase/migrations/*blind_check*.sql
+        - supabase/migrations/*golf_attachments*.sql
       tests:
         - src/app/golf/actions/__tests__/golf-schemas.test.ts
         - src/test/coachhelm/v2/post-round-trigger.test.ts
@@ -466,6 +505,9 @@ features:
         - src/lib/crm/**
       db:
         - supabase/migrations/*crm*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint) — CRM engagement tracking.
+        - supabase/migrations/*engagement*.sql
       tests: null
     integrations:
       - supabase
@@ -590,6 +632,16 @@ features:
         - supabase/migrations/*helm_flight_recorder*.sql
         - supabase/migrations/*helm_debug*.sql
         - supabase/migrations/*trace_*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint) — putt/proximity write-path and
+        # shot-detail RLS.
+        - supabase/migrations/*proximity*.sql
+        - supabase/migrations/*putt_make_pct*.sql
+        - supabase/migrations/*putt_band*.sql
+        - supabase/migrations/*fairway_denominator*.sql
+        - supabase/migrations/*shot_detail*.sql
+        - supabase/migrations/*shot_group*.sql
+        - supabase/migrations/*putt_break_direction*.sql
       tests:
         - e2e/golf-round.spec.ts
         - src/app/golf/actions/__tests__/golf-schemas.test.ts
@@ -653,6 +705,20 @@ features:
         - supabase/migrations/*stats*.sql
         - supabase/migrations/*strokes_gained*.sql
         - supabase/migrations/*putting*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint) — strokes-gained/cohort/standing
+        # calibration and seed data.
+        - supabase/migrations/*sg*.sql
+        - supabase/migrations/*strokes_impact*.sql
+        - supabase/migrations/*scoring*.sql
+        - supabase/migrations/*player_standing*.sql
+        - supabase/migrations/*standing_global*.sql
+        - supabase/migrations/*cohort*.sql
+        - supabase/migrations/*golf_metrics_seed*.sql
+        - supabase/migrations/*penalty*.sql
+        - supabase/migrations/*attribution_metric*.sql
+        - supabase/migrations/*pressure_gate*.sql
+        - supabase/migrations/*_standards.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
         - src/test/coachhelm/v2/**
@@ -718,6 +784,10 @@ features:
         - supabase/migrations/*calendar*.sql
         - supabase/migrations/*event*.sql
         - supabase/migrations/*attendance*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint).
+        - supabase/migrations/*player_classes*.sql
+        - supabase/migrations/*coach_today_schedule*.sql
       tests:
         - src/test/lib/calendar/**
         - src/test/api/calendar/**
@@ -800,6 +870,9 @@ features:
         - supabase/migrations/*pattern*.sql
         - supabase/migrations/*coach_philosophy*.sql
         - supabase/migrations/*effectiveness*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint).
+        - supabase/migrations/*causal_relationships*.sql
       tests:
         - src/test/golf/actions/coachhelm-analytics.test.ts
         - src/test/coachhelm/v2/**
@@ -953,6 +1026,10 @@ features:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql
         - supabase/migrations/*communication*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint).
+        - supabase/migrations/*conversation*.sql
+        - supabase/migrations/*chat_*.sql
       tests:
         - e2e/messages.spec.ts
         - src/app/golf/actions/unified-notifications-model.test.ts
@@ -1079,6 +1156,10 @@ features:
         - supabase/migrations/*roster*.sql
         - supabase/migrations/*team*.sql
         - supabase/migrations/*coach_staff*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint).
+        - supabase/migrations/*program_onboarding*.sql
+        - supabase/migrations/*organizations*.sql
       tests:
         - src/app/golf/actions/__tests__/dashboard-data.test.ts
     integrations:
@@ -1235,6 +1316,10 @@ features:
         - supabase/migrations/*settings*.sql
         - supabase/migrations/*notification*.sql
         - supabase/migrations/*coach_philosophy*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint) — avatar upload is a profile
+        # settings surface.
+        - supabase/migrations/*avatars*.sql
       tests:
         - src/test/coachhelm/v3/notifications.test.ts
     integrations:
@@ -1502,6 +1587,13 @@ features:
         - supabase/migrations/*admin*.sql
         - supabase/migrations/*crm*.sql
         - supabase/migrations/*audit*.sql
+        # Reclassified 2026-09-06 off team_access_control's retired blanket
+        # glob (Phase 5 registry glob lint) — Bridge/Engineering-OS infra
+        # and platform-wide feature-health/billing surfaces.
+        - supabase/migrations/*bridge_*.sql
+        - supabase/migrations/*integrity_checks*.sql
+        - supabase/migrations/*feature_health*.sql
+        - supabase/migrations/*billing*.sql
       tests:
         - src/test/lib/cron/auth.test.ts
         - src/test/api/cron/shared-auth.test.ts
@@ -1881,7 +1973,29 @@ features:
         - src/lib/supabase/**
         - src/lib/auth/**
       db:
-        - supabase/migrations/*.sql
+        # Replaced the blanket `supabase/migrations/*.sql` (2026-09-06,
+        # Phase 5 registry glob lint): it matched every one of 366
+        # migration files unconditionally, which is what
+        # scripts/knowledge/bench.mjs's wrong_feature_rate traced most of
+        # its wrong-feature hits to. These are the migrations that actually
+        # touch team/role/session/auth-guard surface; the rest were
+        # reclassified onto the feature whose tables they touch (see each
+        # feature's own `db:` list) or, where a migration is a genuinely
+        # cross-cutting security sweep touching no single feature's tables,
+        # onto `systems: supabase` below.
+        - supabase/migrations/*staff_invite*.sql
+        - supabase/migrations/*restrict_round_history*.sql
+        - supabase/migrations/*golf_coaches_scope*.sql
+        - supabase/migrations/*admin_allowlist*.sql
+        # *join*.sql, *auth*.sql and *user*.sql are auth_onboarding_join's
+        # existing db glob (below) and already cover join-code/request/
+        # dm-join/handle_new_user/rate_limits/revoke_user_sessions —
+        # intentionally NOT duplicated here so each stays a single owner.
+        - supabase/migrations/*team_invitation*.sql
+        - supabase/migrations/*is_team_staff_active*.sql
+        - supabase/migrations/*staff_capabilities*.sql
+        - supabase/migrations/*staff_roles_scope_audit*.sql
+        - supabase/migrations/*staff_display*.sql
         - supabase/tests/rls/*.sql
       tests:
         - src/test/lib/auth/**
@@ -1955,6 +2069,25 @@ systems:
     code:
       - src/lib/supabase/**
       - supabase/**
+    # Cross-cutting security/hardening migrations that touch no single
+    # feature's tables — grants, revokes, RPC-ownership hardening,
+    # dead-table graveyards. Added 2026-09-06 (Phase 5 registry glob lint)
+    # when retiring team_access_control's blanket `supabase/migrations/*.sql`
+    # left these 14 migrations with zero feature owner; per the plan, a
+    # migration maps to exactly one feature or here, never neither.
+    db:
+      - supabase/migrations/*prod_public_baseline*.sql
+      - supabase/migrations/*rpc_grant_hardening*.sql
+      - supabase/migrations/*service_role_statement_timeout*.sql
+      - supabase/migrations/*revoke_anon_grant_drift_log_tables*.sql
+      - supabase/migrations/*revoke_anon_secdef_rpc_drift_full*.sql
+      - supabase/migrations/*drop_duplicate_indexes_pin_search_paths*.sql
+      - supabase/migrations/*graveyard*.sql
+      - supabase/migrations/*gate_ungated_definer_rpcs*.sql
+      - supabase/migrations/*gate_secdef_ownership_and_redemption*.sql
+      - supabase/migrations/*rescope_service_policies_to_service_role*.sql
+      - supabase/migrations/*realtime_publication_add_subscribed_tables*.sql
+      - supabase/migrations/*bind_definer_rpcs_to_session*.sql
     criticality: high
   review_gate:
     docs: .github/branch-protection.md

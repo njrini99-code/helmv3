@@ -457,6 +457,17 @@ jobs:
         continue-on-error: true
         run: npm run check:cycles
 
+      # Retrieval bench (Phase 5): scores memory/registry.yml's routing
+      # against scripts/knowledge/bench/gold-set.v1.json and fails if
+      # docs/generated/RETRIEVAL_BENCH.md / retrieval-bench.json are stale,
+      # or if feature_recall drops / wrong_feature_rate rises versus
+      # retrieval-bench-baseline.json. The ratchet may only improve;
+      # `node scripts/knowledge/bench.mjs --update-baseline` locks in a gain.
+      - name: Retrieval bench ratchet
+        id: knowledge_bench
+        continue-on-error: true
+        run: npm run knowledge:bench:check
+
       # `steps` (the context) holds every step above that carries an `id`, with
       # the outcome BEFORE continue-on-error rewrote it. Anything other than
       # `success` — failure, cancelled, or skipped because `npm ci` died first —
