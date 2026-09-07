@@ -322,6 +322,42 @@ previously recorded: the mechanism exists and is reusable — what blocks it is 
 team-scoped SELECT policy on `public.users`, which is a security decision (who may see whose
 online state), not an infrastructure build. If presence is ever revived, it starts there.
 
+### G-54 — Recipient selection: one unified sheet vs. the code's two narrower ones  [high] [lane-asserted]
+M03D F16, now scored against an approved spec rather than a proposal. `NewMessage.dc.html` is
+a single sheet — chips, one search, a broadcast row, individually-toggleable player rows, and
+a count-driven CTA. The code splits this across two narrower sheets (`FairwayNewMessageSheet`
+for single-select DM, `FairwayTeamBroadcastSheet` for fixed-team broadcast) with no ad hoc
+multi-recipient group creation anywhere (G-39's earlier note). M-V40/M-V42/M-V43 re-scored.
+
+M03D flagged §11.1 itself as plan-drift: its "partial crop" claim is stale, so the `proposal`
+framing this manifest carried is retired. One inference — the singular CTA label — is
+correctly held as `risk`/`proposal`, not folded into the observed evidence.
+
+### G-55 — Action order: the artboards disagree with each other AND with §12.4  [med] [DECISION-NEEDED]
+`Actions.dc.html` and `Reactions.dc.html` order the action list differently, and neither
+matches §12.4's prose order exactly. Three sources, three orders. §3's decision-freeze has to
+settle it before implementation; a UI lane must not pick. Same class as G-50, and it is now
+the second place where the design source contradicts itself.
+
+### G-56 — The dismissal model was mis-stated, then corrected  [low] [lane-self-corrected]
+Worth recording because the original would have driven a wrong build. M03D first read the
+overlays as scrim-tap-to-dismiss; on self-review, **neither `Actions.dc.html` nor
+`Reactions.dc.html` contains a dim overlay div at all**. The real model is drag-via-grip plus
+a reduced-opacity background. Consequence: the extra X close button in current code has no
+artboard counterpart, but it is *not* "compensating for a missing scrim" — there was never a
+scrim. The grip itself is a 2px near-match (40x6px actual vs 38x4px target), not a mismatch.
+
+This does not soften G-42 or §12.1's focus-owner requirement: F18 confirms the
+floating-tray-over-dimmed-bubble composition is a real target that **neither tree implements**,
+though the branch's reaction-chip overlap and ordering are already close enough to preserve.
+
+### G-57 — Group thread header delta  [med] [advisory, M03B's lease]
+`Group.dc.html`'s header carries an avatar stack, a live member-count subtitle and a trailing
+info control; main's header has none of them. M03D flagged this advisory rather than claiming
+it, because `MessageThreadPane.tsx` is M03B's lease — correct lease discipline. It pairs
+directly with G-30 (no info-button slot exists) and G-33 (no member data to count), so all
+three are one job, spanning two leases.
+
 ### G-53 — Bell badge and recipient directory both already have correct contracts  [info] [lane-asserted]
 Two of the four artboard-driven questions M01 was asked came back clean:
 - **Masthead bell** — a correctly per-viewer contract already exists
@@ -629,6 +665,18 @@ Consequences for findings already in this manifest:
   requires, so the branch is a floor and not the target; and the local tip (`e3aec23153edf`)
   carries a commit its remote (`c65dd47b5b3ef`, == `ci-fix-1833`) does not, so the write
   phase must pick a tip explicitly before any merge.
+
+  **QUALIFIER ADDED AFTER THE DECISION (M03D Revision 2) — the owner should see this.**
+  When this decision was taken, the framing was that the details sheet and reactions are
+  "already built" on the branch. M03D has since produced a numeric element-by-element table:
+  the branch's `ConversationDetailsSheet.tsx` implements roughly **3 of ~11** distinct
+  `GroupDetails.dc.html` elements, at reduced fidelity. Missing entirely: the avatar stack,
+  creation metadata, all three action tiles, Add, Show-all, the shared-files preview, and
+  Leave group. Combined with G-25 (no conversation-scoped attachment query exists to feed
+  shared files) and G-33 (member lists are hardcoded `[]`), the branch is a **starting floor,
+  not a near-complete feature**. Reconciling is still the right call — it beats discarding a
+  working sheet plus its visual test — but it should be budgeted as "wire up an existing
+  shell", not "merge and polish". The decision stands; only the estimate changes.
 - **D-01 Presence dots and masthead bell badge — DECIDED: defer both.** Build the rest of
   the inbox without them. No presence infrastructure is to be added, and the bell badge's
   counting semantics stay undefined. G-31's masthead-shape finding still stands on its own
@@ -678,6 +726,7 @@ Consequences for findings already in this manifest:
   multi-recipient group-creation flow exists anywhere — only single-select DM
   (`FairwayNewMessageSheet.tsx`) and fixed-team broadcast (`FairwayTeamBroadcastSheet.tsx`).
 - §10.3 and §21's V20 row describe the unmerged branch, not `main` (G-39).
+- §11.1's "partial D10 crop" claim is stale (G-54).
 - M03D's lease recommendation: `FairwayTeamBroadcastSheet.tsx` joins M03D's lease;
   `conversation-kind.ts` needs an explicit shared-file lease (3+ consumers across lanes).
 - **Check-id collision, and it already cost a lane time.** §4's `V18`/`V19` are composer
