@@ -270,6 +270,25 @@ export function useGolfMessages(conversationId: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * G-13 — the conversation currently on screen, readable from inside an
+   * async closure that captured an OLDER one.
+   *
+   * `useGolfMessages(id)` takes the id as an ARGUMENT, not a React key, so
+   * switching conversations does not remount: there is one persistent hook
+   * instance owning one `messages` state. An in-flight fetch for conversation A
+   * therefore resolves into whatever thread is open by then, and wrote A's
+   * messages, loading and error into B's view. Recreating the `useCallback` on
+   * an id change does not help — a new callback identity cannot cancel a
+   * promise the old one already started, and both call the same setter.
+   *
+   * Assigned on every render so it is never stale, and compared after every
+   * await below: if the answer changed while we were waiting, the response
+   * belongs to a thread nobody is looking at and is dropped.
+   */
+  const liveConversationIdRef = useRef(conversationId);
+  liveConversationIdRef.current = conversationId;
+
   // Fetch other participant's last_read_at for read receipts
   const fetchOtherParticipantReadStatus = useCallback(async () => {
     const uid = currentUserIdRef.current;
@@ -293,6 +312,9 @@ export function useGolfMessages(conversationId: string) {
         'medium'
       );
     }
+
+    // G-13: dropped if the reader moved on while this was in flight.
+    if (liveConversationIdRef.current !== conversationId) return;
 
     if (participants) {
       const otherParticipant = participants.find(p => p.user_id !== uid);
@@ -351,10 +373,18 @@ export function useGolfMessages(conversationId: string) {
         },
         'medium'
       );
+      // G-13: an abandoned thread's failure must not surface as an error on
+      // the thread the user is actually reading.
+      if (liveConversationIdRef.current !== conversationId) return;
       setError(true);
       setLoading(false);
       return;
     }
+
+    // G-13: the whole reason this guard exists — this setter is shared, and
+    // an unguarded write here replaced the open thread's messages with a
+    // slower response belonging to a conversation the user already left.
+    if (liveConversationIdRef.current !== conversationId) return;
 
     setMessages(((data || []) as MessageWithReadStatus[]).reverse());
     setLoading(false);

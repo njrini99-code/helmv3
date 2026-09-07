@@ -61,6 +61,12 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  /**
+   * A refusal the user needs to see (G-21). Distinct from a failed send, which
+   * is reported on the message itself in the thread — this is the case where
+   * nothing was even attempted, so the thread has nothing to show.
+   */
+  const [sendError, setSendError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const attachmentIdCounter = useRef(0);
@@ -188,6 +194,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     }
 
     setSending(true);
+    setSendError(null);
 
     // Capture EXACTLY what is being sent, before the round trip. The textarea
     // stays enabled while a send is in flight — deliberately, so a slow network
@@ -195,7 +202,22 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
     const sentRaw = message;
 
     let success = false;
-    if (hasAttachments && onSendWithAttachments) {
+    if (hasAttachments) {
+      // G-21 — FAIL CLOSED. This used to be `if (hasAttachments &&
+      // onSendWithAttachments) { … } else { onSend(text) }`, so a missing
+      // handler fell through to the text-only path: the message went, the
+      // files were silently dropped, and the send reported success. §1.1 names
+      // silent attachment omission as the risk to design against, and a
+      // fallback that quietly delivers a lesser message is the worst shape for
+      // it — nothing on screen says the photo did not go.
+      //
+      // Latent rather than live: the production call site always passes the
+      // handler. Refusing costs nothing there and removes the failure mode.
+      if (!onSendWithAttachments) {
+        setSendError('Attachments can’t be sent from here. Your message was not sent.');
+        setSending(false);
+        return;
+      }
       success = await onSendWithAttachments(sentRaw.trim(), pendingAttachments);
     } else {
       success = await onSend(sentRaw.trim());
@@ -322,9 +344,13 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           vertical space a phone composer has, and on mobile the counter is
           usually the only occupant. `ml-auto` keeps the counter right-aligned
           once the hint beside it is gone. */}
-      {(isPointerFine || charsLeft) && (
+      {(isPointerFine || charsLeft || sendError) && (
         <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
-          {isPointerFine && (
+          {sendError ? (
+            <p className="font-fw-sans text-eyebrow text-text-secondary" role="alert">
+              {sendError}
+            </p>
+          ) : isPointerFine && (
             <p className="font-fw-sans text-eyebrow text-text-tertiary">
               Press Enter to send, Shift+Enter for a new line.
             </p>
