@@ -22,7 +22,7 @@
  * focus ring (WCAG 2.2 AA) and an honest numeric badge (rendered only when > 0).
  *
  * M1 (2026-07-10, docs/MOBILE_DOCTRINE.md Rule 6/10): a 5th column — a
- * `<Button>`, never a `<Link>` — renders when `onMoreOpen` is passed. It
+ * a `<PressTarget>`, never a `<Link>` — renders when `onMoreOpen` is passed. It
  * opens `MoreNavSheet`, the ONE overflow surface (the retired hamburger →
  * left-drawer round-trip). `moreActive` lights it exactly like a destination
  * tab when the CURRENT ROUTE is one of the sheet's overflow items;
@@ -35,7 +35,7 @@ import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
 import { IconLayoutGrid } from '@/components/icons';
-import { Button } from '@/components/ui/button';
+import { PressTarget } from '@/components/fairway/controls/press-target';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import type { FairwayIcon, NavItem, ShellLinkComponent } from './types';
 
@@ -235,24 +235,29 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
         })}
         {onMoreOpen && (
           <li className="min-w-0 flex-1">
-            <Button
-              type="button"
-              variant="ghost"
-              haptic="light"
+            <PressTarget
               aria-haspopup="dialog"
               aria-expanded={moreOpen ?? false}
               aria-label={moreLabel}
-              onClick={onMoreOpen}
+              onClick={() => {
+                // PressTarget carries no haptic of its own, so the More
+                // column fires its own and stays in step with its <Link>
+                // siblings above (which fire 'selection' on tap).
+                fwHaptic('light');
+                onMoreOpen();
+              }}
               className={cn(
                 // Full-height column ≥44px tall touch target — identical
                 // rhythm to a tab column above (it isn't a destination, but
                 // it must feel like one). `rounded-none` + zeroed padding
-                // cancel <Button>'s own defaults so the column stays flush
+                // cancel the shared button defaults so the column stays flush
                 // with its 4 <Link> siblings (no corner radius, no min-height
                 // floor fighting the shared 56px column height).
                 'group relative flex min-h-[56px] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-none px-1 py-1.5',
                 'outline-none transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
-                'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+                // ring-offset-0 cancels PressTarget's own `ring-offset-2` — this
+                // column is flush against the bar, so the ring must stay inset.
+                'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-offset-0 focus-visible:ring-border-focus',
                 'active:translate-y-[0.5px]',
                 'bg-transparent hover:bg-transparent',
                 moreActive ? 'text-accent-700' : 'text-text-tertiary hover:text-text-secondary',
@@ -284,7 +289,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
               >
                 {moreLabel}
               </span>
-            </Button>
+            </PressTarget>
           </li>
         )}
       </ul>
