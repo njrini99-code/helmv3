@@ -376,7 +376,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/M03C-composer.md` | current | - | - | yes | 0 | 20 | - |
 | `audit/M03D-overlays.md` | current | - | - | yes | 0 | 16 | 2 |
 | `audit/M04-media.md` | current | - | - | - | 0 | 21 | - |
-| `audit/PROGRESS.md` | current | - | - | - | 0 | 3 | - |
+| `audit/PROGRESS.md` | current | - | - | - | 0 | 4 | - |
 | `docs/BASEBALL_RLS_SECURITY_AUDIT.md` | current | - | - | - | 3 | 0 | - |
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 8 | 19 | 6 |
 | `docs/SECURITY_AUDIT.md` | current | yes | - | - | 4 | 13 | - |
