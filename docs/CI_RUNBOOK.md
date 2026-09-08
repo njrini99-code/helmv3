@@ -37,6 +37,28 @@ the static knowledge checks. `npm run knowledge:check` already runs registry
 globs, document-inventory, and feature-map validation, so these are kept as
 named stages inside that step rather than repeated standalone workflow steps.
 
+The `Lint` job parses `src` and `scripts` once through `scripts/lint-ci.mjs
+--scan`, enabling the three normally disabled audit rules. Separate named
+steps consume that report: standard ESLint still requires zero warnings/errors
+in `src/**/*.{ts,tsx}` (excluding the three audit rules); the generic ratchet
+counts regular warnings and `ERROR:` diagnostics across both directories;
+each audit counts only its own rule in `src`, retaining false-zero, slack,
+regression, baseline-update, and report-only coverage behavior.
+
+If an enabled audit rule consumes an `eslint-disable`, the producer rechecks
+only that affected file with the default rules to preserve unused-disable
+warnings in the hard lint and generic ratchet. It logs the number of affected
+files; ordinary runs need no second scan.
+
+The report lives in runner temporary storage and is bound to the checkout path,
+workflow run, attempt, and SHA. The producer removes any previous report before
+scanning and writes only after a valid complete-scope result. Exit 1 with valid
+ESLint JSON is diagnostic output; tooling failures, missing/empty/malformed
+reports, and mismatched run IDs fail the gate. The producer and every evaluator
+remain in the final aggregate. Standalone lint and audit commands still scan
+normally when `HELM_ESLINT_REPORT` is unset; the shared report is never cached or
+uploaded for reuse across jobs.
+
 ## 1. Status classification — hard gate vs. advisory
 
 **SIX** required contexts are enforced on `main` as of 2026-09-06 (`block-historical-edits`

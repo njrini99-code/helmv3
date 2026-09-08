@@ -64,8 +64,19 @@ features:
         - .mcp.json
         - .githooks/**
         - scripts/lib/create-workspace.mjs
+        - scripts/lib/shared-workspace-runtime.mjs
+        - .worktreeinclude
+        - scripts/lint-ci.mjs
+        - scripts/lib/lint-results.mjs
+        - scripts/__tests__/lint-results.test.mjs
+        - scripts/lint-ratchet.mjs
+        - scripts/supabase-error-audit.mjs
+        - scripts/fail-open-audit.mjs
+        - scripts/paginated-read-audit.mjs
+        - docs/operations/WORKSPACES.md
         - scripts/control-plane-verify.mjs
         - scripts/new-worktree.sh
+        - scripts/setup-hooks.mjs
         - scripts/worktree-lifecycle.mjs
         - scripts/deploy-prod.sh
         - .vercelignore

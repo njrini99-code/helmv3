@@ -25,32 +25,22 @@
  *   npm run audit:fail-open -- --update # re-baseline
  */
 
-import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadResults, sourceFile } from './lib/lint-results.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE_PATH = resolve(ROOT, '.fail-open-baseline.json');
 const RULE = 'helm/no-empty-collection-on-error';
 const UPDATE = process.argv.includes('--update');
 
-let raw = '';
-try {
-  raw = execFileSync(
-    'npx',
-    ['eslint', 'src', '--format', 'json', '--max-warnings', '999999', '--rule', `{"${RULE}":"warn"}`],
-    { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] },
-  );
-} catch (err) {
-  raw = (err.stdout || '').trim();
-}
-
 let results;
 try {
-  results = JSON.parse(raw);
-} catch {
-  console.error('fail-open-audit: could not parse ESLint JSON. Aborting rather than reporting a false 0.');
+  results = loadResults(ROOT, ['src', '--rule', JSON.stringify({ [RULE]: 'warn' })])
+    .filter((file) => sourceFile(ROOT, file));
+} catch (error) {
+  console.error('fail-open-audit: could not obtain ESLint results. Aborting rather than reporting a false 0.', error.message);
   process.exit(1);
 }
 

@@ -26,7 +26,10 @@ Prefer `scripts/new-worktree.sh <task>` for an isolated task. It creates an
 is capacity advice, not proof of active processes. Disk limits still apply;
 when storage is short, use the existing checkout for disjoint files instead
 of creating another copy. Run `node scripts/ensure-worktree-deps.mjs <dir>`
-only when dependencies differ or are unavailable.
+only when dependencies differ or are unavailable. Worktrees share canonical
+environment files, Claude local permissions, tool credentials, and Vercel
+project identity. Branch isolation separates source changes, not tool access.
+Runtime files remain ignored and linked; never print credential values.
 
 Stage explicit paths. Before pushing, inspect the upstream and push an
 explicit branch: `git push -u origin <branch>`. Do not force-push main or

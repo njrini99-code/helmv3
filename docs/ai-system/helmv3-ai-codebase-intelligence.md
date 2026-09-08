@@ -131,3 +131,8 @@ npm run knowledge:check -- --files src/lib/coachhelm/v3/llm/compose.ts memory/co
 ```
 
 The context pack is written to `/tmp/helmv3-context-pack.md` by default.
+
+Worktrees share canonical ignored environment files, Claude local preferences,
+and Vercel project identity through live links. The creator uses canonical MCP
+definitions, and never fabricates an empty local-only environment. Source
+branches remain independent; tool access and credentials are shared.

@@ -35,6 +35,7 @@ type Settings = {
 
 const settings: Settings = JSON.parse(readFileSync(SETTINGS, 'utf-8'));
 const deny = settings.permissions?.deny ?? [];
+const ask = settings.permissions?.ask ?? [];
 
 function hookRows() {
   const rows: Array<{ event: string; matcher: string; command: string }> = [];
@@ -120,12 +121,17 @@ describe('production Supabase operations remain explicitly approvable', () => {
     ];
     const missing = mutating
       .map((t) => `mcp__claude_ai_Supabase__${t}`)
-      .filter((r) => !settings.permissions.ask.includes(r));
+      .filter((r) => !ask.includes(r));
     expect(missing).toEqual([]);
   });
 
+  it('keeps account connector reads available', () => {
+    for (const tool of ['list_tables', 'list_migrations', 'get_advisors', 'execute_sql']) {
+      expect(deny).not.toContain(`mcp__claude_ai_Supabase__${tool}`);
+    }
+  });
+
   it('fallback connector namespaces are not permanently disabled', () => {
-    // Denied so the standing user-scope grant cannot activate on install.
     expect(deny).not.toContain('mcp__plugin_supabase_supabase');
   });
 });

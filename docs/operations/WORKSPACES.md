@@ -37,14 +37,21 @@ is copied. Use `--install` or `node scripts/ensure-worktree-deps.mjs <dir>`
 when the task's lockfile differs or dependencies are unavailable. Tests must
 use dependencies matching their checkout.
 
-The creator writes a fresh local `.env.local`, never copies production
-credentials, and never modifies canonical `.env.local`. It uses
-`http://127.0.0.1:54321` and the anon key from a running local Supabase stack.
-If that stack is absent, the key is empty with an explanatory comment.
-Starting an application or integration test then requires a working local
-stack and its actual key. `SUPABASE_SERVICE_ROLE_KEY` is absent. Authorized
-remote work can use a separately authenticated connector or explicit target;
-the marker is descriptive, not a tool authorization system.
+The creator links canonical ignored environment files (`.env`, `.env.local`,
+and environment-specific local files), `.vercel/project.json`, and
+`.claude/settings.local.json`. Updates to canonical credentials and tool
+preferences are visible through the links. It also takes `.mcp.json` from
+canonical so an older branch gets the current project tool definitions.
+Branch isolation applies to source changes, not runtime or tool access.
+The workspace launcher and Git hook installer resolve canonical tooling via
+Git's common directory, so old branches use the same creator and local hooks.
+
+If a canonical input is absent, it remains absent; no empty replacement or
+invented credential is generated. Runtime values are never printed. Existing
+custom files are preserved unless replacement is requested; the shared-runtime
+helper backs them up inside ignored `.helm/runtime-backups/` before linking.
+Claude also inherits canonical local permissions natively in current versions.
+Authentication remains owned by the installed tools and the user's account.
 
 ## Cleanup and diagnostics
 
@@ -82,5 +89,5 @@ npx vitest run --project unit scripts/__tests__/create-workspace.test.ts
 ```
 
 Fixtures cover existing-name refusals, advisory default counts, enforced
-explicit caps, disk reserve, marker contents, dependency links, local-only
-environment creation, and the hook's path-only stdout contract.
+explicit caps, disk reserve, marker contents, dependency links, shared runtime links and
+environment updates, and the hook's path-only stdout contract.

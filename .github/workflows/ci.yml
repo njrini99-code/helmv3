@@ -551,6 +551,8 @@ jobs:
     # Always runs.
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      HELM_ESLINT_REPORT_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -566,13 +568,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # `npm run lint` was its own job (35 s of eslint behind 82 s of install)
-      # until 2026-09-02. It is a step here now, first, and reports under the
-      # same name in the aggregate.
+      # Parse src + scripts once with the three opt-in audit rules enabled.
+      # Each named gate below evaluates this run's report with its own scope.
+      # Producer failure is included in the aggregate; consumers never rescan
+      # or fall back to a cached result when the report is missing/invalid.
+      - name: ESLint shared scan
+        id: eslint_scan
+        continue-on-error: true
+        run: |
+          export HELM_ESLINT_REPORT="$RUNNER_TEMP/helm-eslint.json"
+          printf 'HELM_ESLINT_REPORT=%s\n' "$HELM_ESLINT_REPORT" >> "$GITHUB_ENV"
+          node scripts/lint-ci.mjs --scan
+
       - name: ESLint
         id: eslint
         continue-on-error: true
-        run: npm run lint
+        run: node scripts/lint-ci.mjs
 
       # The ratchet steps below carry continue-on-error so that ONE
       # failure can't mask the others — on 2026-08-18 a stale Supabase

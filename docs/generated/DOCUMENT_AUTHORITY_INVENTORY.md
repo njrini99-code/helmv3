@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 40 | 78 |
+| `UNKNOWN` | 93 | 12 | 40 | 79 |
 
 ## Files
 
@@ -169,7 +169,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | - |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 14 | 162 | - |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 14 | 163 | - |
 | `memory/features/admin-reliability-collector.md` | current | yes | - | - | 6 | 28 | - |
 | `memory/features/admin-replay-lab.md` | current | yes | - | - | 1 | 10 | - |
 | `memory/features/admin-selfheal.md` | current | yes | - | - | 9 | 33 | - |
@@ -615,7 +615,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 1 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 4 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 3 | 11 | - |
-| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 6 | - |
+| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 7 | 1 |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 9 | 1 |

@@ -4,8 +4,8 @@
 // (.claude/hooks/worktree-create.mjs). Before this module a worktree could
 // also be made by a raw `git worktree add` or by the harness's own
 // ungoverned WorktreeCreate default, and neither got the mutation budget, the
-// disk reserve, the .helm/workspace.json marker, or the local-only
-// .env.local that scripts/new-worktree.sh always gave a human.
+// disk reserve, the .helm/workspace.json marker, or the shared
+// runtime inputs that scripts/new-worktree.sh always gave a human.
 //
 // These tests exercise the library function directly against a real,
 // disposable git repo — a bare origin plus a seed clone, same shape as
@@ -23,11 +23,13 @@ import {
   realpathSync,
   existsSync,
   lstatSync,
+  readdirSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { createWorkspace } from '../lib/create-workspace.mjs';
+import { shareWorkspaceRuntime } from '../lib/shared-workspace-runtime.mjs';
 
 const REPO = resolve(__dirname, '../..');
 const HOOK = resolve(REPO, '.claude/hooks/worktree-create.mjs');
@@ -62,7 +64,7 @@ beforeEach(() => {
   // (including the bare `node_modules` line that also catches a SYMLINK,
   // which the dir-only `node_modules/` pattern would miss) so a
   // clean-worktree assertion here means what it means in the real repo.
-  writeFileSync(join(seed, '.gitignore'), 'node_modules/\nnode_modules\n.env.local\n.env*.local\n.helm/\n');
+  writeFileSync(join(seed, '.gitignore'), 'node_modules/\nnode_modules\n.env\n.env.local\n.env*.local\n.helm/\n.vercel\n.claude/settings.local.json\n');
   mkdirSync(join(seed, 'node_modules'), { recursive: true });
   writeFileSync(join(seed, 'node_modules/marker.json'), '{}\n');
   writeFileSync(join(seed, '.node-version'), '22\n');
@@ -147,9 +149,9 @@ describe('createWorkspace — what it writes', () => {
       task: 'marked',
       branch: 'agent/marked',
       base: 'origin/main',
-      environment: 'local',
-      supabase: 'local',
-      productionWrites: false,
+      environment: 'shared-canonical',
+      supabase: 'shared-canonical',
+      runtimeSource: seed,
       parkPolicy: 'PARK_IF_REPRODUCIBLE',
       createdBy: 'create-workspace.mjs',
     });
@@ -176,13 +178,58 @@ describe('createWorkspace — what it writes', () => {
     expect(readFileSync(join(result.path, '.node-version'), 'utf-8')).toBe('22\n');
   });
 
-  it('writes .env.local pointed at the local stack, with no service-role key', async () => {
+  it('shares canonical environment through a live symlink without tracked credentials', async () => {
+    const canonicalEnv = join(seed, '.env.local');
+    writeFileSync(canonicalEnv, 'TEST_RUNTIME_VALUE=first\n');
     const result = await createWorkspace({ name: 'envtest', repo: seed, home });
-    const env = readFileSync(join(result.path, '.env.local'), 'utf-8');
-    expect(env).toContain('NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321');
-    expect(env).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY=\S/);
-    expect(env).not.toContain('SUPABASE_SERVICE_ROLE_KEY=');
-    expect(env).toContain('GENERATED for a task worktree');
+    const target = join(result.path, '.env.local');
+    expect(lstatSync(target).isSymbolicLink()).toBe(true);
+    expect(realpathSync(target)).toBe(canonicalEnv);
+    writeFileSync(canonicalEnv, 'TEST_RUNTIME_VALUE=updated\n');
+    expect(readFileSync(target, 'utf-8')).toBe('TEST_RUNTIME_VALUE=updated\n');
+    expect(git(['status', '--porcelain'], result.path)).toBe('');
+  });
+
+  it('does not fabricate an empty environment when canonical has none', async () => {
+    const result = await createWorkspace({ name: 'noenv', repo: seed, home });
+    expect(existsSync(join(result.path, '.env.local'))).toBe(false);
+    expect(result.runtime.unavailable).toContain('.env.local');
+  });
+
+  it('shares Vercel project identity and Claude local preferences', async () => {
+    mkdirSync(join(seed, '.vercel'));
+    mkdirSync(join(seed, '.claude'));
+    writeFileSync(join(seed, '.vercel/project.json'), '{"projectId":"test-project"}\n');
+    writeFileSync(join(seed, '.claude/settings.local.json'), '{"permissions":{"allow":["mcp__supabase"]}}\n');
+    const result = await createWorkspace({ name: 'tools', repo: seed, home });
+    expect(realpathSync(join(result.path, '.vercel/project.json'))).toBe(join(seed, '.vercel/project.json'));
+    expect(lstatSync(join(result.path, '.vercel')).isSymbolicLink()).toBe(false);
+    expect(realpathSync(join(result.path, '.claude/settings.local.json'))).toBe(join(seed, '.claude/settings.local.json'));
+    expect(git(['status', '--porcelain'], result.path)).toBe('');
+  });
+
+  it('preserves a custom environment unless replacement is requested, then backs it up', async () => {
+    const result = await createWorkspace({ name: 'existing', repo: seed, home });
+    writeFileSync(join(seed, '.env.local'), 'TEST_RUNTIME_VALUE=canonical\n');
+    writeFileSync(join(result.path, '.env.local'), 'TEST_RUNTIME_VALUE=custom\n');
+    const preserved = shareWorkspaceRuntime({ canonicalRoot: seed, workspaceRoot: result.path });
+    expect(preserved.preserved).toContain('.env.local');
+    expect(readFileSync(join(result.path, '.env.local'), 'utf-8')).toContain('custom');
+    const shared = shareWorkspaceRuntime({ canonicalRoot: seed, workspaceRoot: result.path, replaceExisting: true });
+    expect(shared.linked).toContain('.env.local');
+    expect(realpathSync(join(result.path, '.env.local'))).toBe(join(seed, '.env.local'));
+    const backups = readdirSync(join(result.path, '.helm/runtime-backups'));
+    expect(readFileSync(join(result.path, '.helm/runtime-backups', backups[0], '.env.local'), 'utf-8')).toContain('custom');
+  });
+
+  it('installing Git hooks from a worktree points all branches at canonical hooks', async () => {
+    const result = await createWorkspace({ name: 'hooks', repo: seed, home });
+    const installed = spawnSync('node', [resolve(REPO, 'scripts/setup-hooks.mjs')], {
+      cwd: result.path, encoding: 'utf-8', env: { ...process.env, CI: '' },
+    });
+    expect(installed.status).toBe(0);
+    expect(git(['config', '--get', 'core.hooksPath'], result.path)).toBe(join(seed, '.githooks'));
+    expect(git(['config', '--get', 'core.hooksPath'], seed)).toBe(join(seed, '.githooks'));
   });
 
   it('leaves the new worktree with a clean `git status --porcelain`', async () => {
