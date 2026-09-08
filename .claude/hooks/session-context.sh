@@ -173,7 +173,7 @@ fi
 # Branch policy is AGENTS.md canonicality: work on the currently checked-out
 # branch; never switch unless asked. A push to main ships nothing (vercel.json
 # deploymentEnabled all-false; production is an on-demand promote).
-if [ "$BRANCH" != "main" ]; then
+if [ "$BRANCH" != "main" ] && [ "$(pwd -P)" = "$CANON_ROOT" ]; then
   CTX="${CTX}
 - NOTE: the canonical checkout should rest on main. It is on '${BRANCH}';
   if that is not a task you are doing, say so before editing."

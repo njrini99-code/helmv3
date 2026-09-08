@@ -2,9 +2,8 @@
 # CLAUDE.md — Claude Code adapter
 @AGENTS.md
 
-AGENTS.md is the constitution and outranks this file. `.claude/rules/*.md`
-attach by path; `autonomy.md`, `shipping.md`, and `code-review-tooling.md`
-load every session.
+AGENTS.md owns operating policy. This file adds technical context only.
+Use path-scoped rules for the files you are changing.
 
 ## What this is
 Helm Sports Labs — multi-sport SaaS: BaseballHelm, GolfHelm (+ CoachHelm),
@@ -14,9 +13,9 @@ Lift Lab. Next.js App Router, TypeScript strict, Supabase, Tailwind.
     npm run knowledge:map -- --files <paths...>
     npm run knowledge:context -- --files <paths...> --task "<task>"
 
-`memory/registry.yml` routes a path to its feature doc; a governed edit made
-without it is DETECTED, not prevented, by the Stop gate.
-`docs/CONTROL_PLANE_ENFORCEMENT.md` is the live authority on what's enforced.
+`memory/registry.yml` routes a path to its feature doc. Context gaps are
+DETECTED, not prevented, by diagnostic tools; Stop reminders never require
+another full gate pass. `docs/CONTROL_PLANE_ENFORCEMENT.md` lists actual wiring.
 
 ## Trusting what you read
 Generated artifacts outrank prose: `src/lib/types/database.ts` (regen: `npm
@@ -37,8 +36,6 @@ one. `src/lib/golf/surface-registry.ts` is hand-maintained and canonical.
     npm run docs:check    # AUTOGEN inventory + drift + enforcement + rules-current
 
 ## How work moves
-Door → context → gates → land → retire: `scripts/new-worktree.sh`,
-`knowledge:map`/`context`, gates with exit codes, `/land` (never `gh pr
-merge`), `worktrees:retire` (never by hand). Commands: `/worktree /context
-/gates /status /land /held`. Deploy: `scripts/deploy-prod.sh` only, push
-never deploys. Agents: `helm-worker`, `helm-reader`. Loop: `.claude/skills/helm-process/SKILL.md`.
+Follow AGENTS.md. Use `/worktree`, `/context`, `/gates`, `/status`, and
+`/land` when they help the task. `helm-reader` inspects using inherited tools;
+`helm-worker` implements within the authorization of its assigned task.
