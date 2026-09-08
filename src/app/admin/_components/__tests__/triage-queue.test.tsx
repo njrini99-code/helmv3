@@ -20,6 +20,7 @@ vi.mock('next/link', () => ({
 
 const appItem: TriageItem = {
   key: 'app:fp-1', origin: 'app', title: 'savePartialRound failed', severity: 'error',
+  correlationMessage: 'savePartialRound failed',
   sport: 'golf', occurrences: 3, affectedUsers: 2,
   firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T02:00:00Z',
   permalink: null, eventIds: ['e1', 'e2', 'e3'], substatus: null,
@@ -35,6 +36,7 @@ const appItem: TriageItem = {
 };
 const sentryItem: TriageItem = {
   key: 'sentry:s1', origin: 'sentry', title: 'TypeError in rounds', severity: 'error',
+  correlationMessage: 'TypeError in rounds',
   sport: null, occurrences: 40, affectedUsers: 7,
   firstSeen: '2026-06-30T00:00:00Z', lastSeen: '2026-07-01T01:00:00Z',
   permalink: 'https://sentry.io/x', eventIds: [], substatus: 'regressed',

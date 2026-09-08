@@ -40,6 +40,7 @@ vi.mock('@/lib/admin/data/incident-feed', async (orig) => {
           key: `app:${FINGERPRINT}`,
           origin: 'app',
           title: 'permission denied for schema helm_private',
+          correlationMessage: 'permission denied for schema helm_private',
           severity: 'error',
           sport: 'golf',
           occurrences: 5,
