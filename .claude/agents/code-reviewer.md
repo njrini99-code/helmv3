@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Strict fresh-context review of a non-trivial change for correctness, regressions, missed files, and convention drift (Next.js + TypeScript + Supabase).
-tools: Read, Grep, Glob, Bash
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 model: sonnet
 ---
 

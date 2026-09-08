@@ -1,7 +1,7 @@
 ---
 name: db-migration-reviewer
 description: Review any Supabase/Postgres schema, RLS, auth-trigger, or migration change BEFORE it is applied. MANDATORY for DB changes — this is a Golf-shared production database.
-tools: Read, Grep, Glob, Bash
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 model: opus
 ---
 
