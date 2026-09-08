@@ -129,10 +129,30 @@ Coach checks attendance
   -> attendance action/component
   -> update checked_in and absence metadata
 
+Coach compares schedules
+  -> getScheduleWindow() (RLS-backed read only)
+  -> getUserBusyPeriodsWithStatus() for the coach and selected active roster members
+  -> verified free/busy snapshot; partial reads are never presented as free
+
 Calendar renders views
   -> month, week, day, mobile list/sheet
   -> conflict detection against classes and blocked time
 ```
+
+## Scheduling Workspace
+
+`src/app/golf/actions/scheduling.ts` is the single server boundary for the
+Fairway “Find a time” workspace. It requires a coach or player membership in
+the requested team; only a coach may request another player’s schedule. The
+returned snapshot carries only the team-local day, named busy intervals, and a
+per-person verification state. `CalendarSchedulingDialog` rechecks the exact
+choice immediately before returning it to the event editor, so a stale visual
+snapshot cannot be used as a confirmation.
+
+The workspace is read-only. Creating or editing an event remains in the
+existing event actions and reuses `checkScheduleConflicts`. A valid
+`golf_coach_blocked_time.recurrence_rule` is authoritative; writes keep its
+legacy `is_recurring` flag in sync for older consumers.
 
 ## Business Rules
 

@@ -1,26 +1,6 @@
 'use client';
 
-/**
- * ============================================================================
- * Fairway · Calendar · FairwayEventEditor — native create / edit event modal
- * ----------------------------------------------------------------------------
- * The Fairway re-skin of the legacy EventDetailModal (coach create + edit). ALL
- * the form logic is copied VERBATIM — formData shape (GolfEventFormData), the
- * edit-mode prefill, the debounced conflict check (checkScheduleConflicts), the
- * recurring-series detection + scope picker, attendee toggling, and the
- * onSave/onDelete contract are byte-for-byte the same. Only the presentation
- * changes: a centered Fairway ModalShell + native inputs styled with Fairway
- * tokens (the proven-safe pattern — no Base UI control rewrite), a colored-avatar
- * attendee picker (same tints as the member rail), and a Fairway conflict notice.
- *
- * Wiring lives in FairwayCalendar (handleSaveEvent / handleDeleteEvent), which
- * replicates PremiumCalendarClient's payload mapping and calls the EXACT same
- * server actions (createGolfEvent / updateGolfEvent / deleteGolfEvent +
- * createRecurringEvent / editRecurringEvent / deleteRecurringEvent). No writes
- * are reimplemented here; this component only gathers form data.
- *
- * Coach-only (create + edit). The player path stays the read-only Fairway drawer.
- * ========================================================================== */
+/** Event form with preserved drafts and explicit schedule verification. */
 
 import * as React from 'react';
 import {
@@ -39,6 +19,8 @@ import {
   Trash2,
   Check,
   Ban,
+  UserRound,
+  LoaderCircle,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -73,7 +55,6 @@ import {
   type RecurrenceEndMode,
 } from '@/components/golf/calendar/event-form-helpers';
 import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
-import { tintFor } from './FairwayCalendarMemberRail';
 import { localDayIso } from '@/lib/golf/local-day';
 
 interface TeamPlayer {
@@ -83,8 +64,27 @@ interface TeamPlayer {
   avatar_url?: string;
 }
 
+export interface FairwayEventTimeRequest {
+  date: string;
+  attendeeIds: string[];
+  startTime: string;
+  endTime: string;
+  endDate: string;
+  eventId?: string;
+}
+
+export interface FairwayEventSuggestedTime {
+  start: string;
+  end: string;
+  token: number;
+}
+
 export interface FairwayEventEditorProps {
   open: boolean;
+  /** Keep the draft mounted while the shared scheduling workspace is open. */
+  suspended?: boolean;
+  onFindTime?: (request: FairwayEventTimeRequest) => void;
+  suggestedTime?: FairwayEventSuggestedTime | null;
   onClose: () => void;
   /** null = create; an event = edit. */
   event: CalendarEvent | null;
@@ -274,11 +274,12 @@ export function shiftStartTime(form: GolfEventFormData, nextStart: string | null
 
 interface ConflictData {
   hasConflict: boolean;
+  partial?: boolean;
   conflicts: Array<{
     userId: string;
     userName: string;
     playerId?: string;
-    conflictingEvent: { id: string; title: string; type: 'event' | 'class' | 'blocked'; start: string; end: string };
+    conflictingEvent: { id?: string; title: string; type: 'event' | 'class' | 'blocked'; start: string; end: string };
   }>;
   suggestions: Array<{ start: Date; end: Date }>;
 }
@@ -320,11 +321,23 @@ function toDate(value: Date | string): Date {
 function normalizeConflictData(raw: WireConflictData): ConflictData {
   return {
     hasConflict: raw.hasConflict,
+    partial: raw.partial ?? false,
     conflicts: raw.conflicts ?? [],
     suggestions: (raw.suggestions ?? [])
       .map((s) => ({ start: toDate(s.start), end: toDate(s.end) }))
       .filter((s) => !Number.isNaN(s.start.getTime()) && !Number.isNaN(s.end.getTime())),
   };
+}
+
+function formatConflictInterval(startValue: string, endValue: string): string {
+  const start = new Date(startValue);
+  const end = new Date(endValue);
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 'Time unavailable';
+  const date = start.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const startTime = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const endTime = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const endDate = localDayIso(start) === localDayIso(end) ? '' : `${end.toLocaleDateString([], { month: 'short', day: 'numeric' })} · `;
+  return `${date} · ${startTime} – ${endDate}${endTime}`;
 }
 
 const DEFAULT_FORM: GolfEventFormData = {
@@ -352,6 +365,9 @@ const DEFAULT_FORM: GolfEventFormData = {
 
 export function FairwayEventEditor({
   open,
+  suspended = false,
+  onFindTime,
+  suggestedTime,
   onClose,
   event,
   isCoach,
@@ -362,25 +378,18 @@ export function FairwayEventEditor({
   isSaving,
   teamPlayers = [],
   currentUserId,
-  timezone,
 }: FairwayEventEditorProps) {
   const isCreating = !event;
   const availablePlayers = teamPlayers.filter((p) => p.id !== currentUserId);
 
 
-  const tzAbbrev = React.useMemo(() => {
-    if (!timezone) return null;
-    try {
-      const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' }).formatToParts(
-        new Date(),
-      );
-      return parts.find((p) => p.type === 'timeZoneName')?.value ?? null;
-    } catch {
-      return null;
-    }
-  }, [timezone]);
-
   const [formData, setFormData] = React.useState<GolfEventFormData>(DEFAULT_FORM);
+  const tzAbbrev = React.useMemo(() => {
+    const date = new Date(`${formData.startDate}T12:00:00`);
+    if (!Number.isFinite(date.getTime())) return null;
+    return new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+      .formatToParts(date).find((part) => part.type === 'timeZoneName')?.value ?? null;
+  }, [formData.startDate]);
   // Roster filter. Only surfaced above 8 players (see the search box below);
   // the state is unconditional so clearing it can't strand a stale filter.
   const [attendeeQuery, setAttendeeQuery] = React.useState('');
@@ -413,6 +422,10 @@ export function FairwayEventEditor({
     if (error) errorRef.current?.scrollIntoView({ block: 'nearest' });
   }, [error]);
   const [conflicts, setConflicts] = React.useState<ConflictData | null>(null);
+  const [conflictStatus, setConflictStatus] = React.useState<'idle' | 'checking' | 'ready' | 'error'>('idle');
+  const [conflictRetry, setConflictRetry] = React.useState(0);
+  const [showAllConflicts, setShowAllConflicts] = React.useState(false);
+  const lastSuggestionToken = React.useRef<number | null>(null);
   // Two DISTINCT destructive confirms, matching weight (a real ModalShell
   // confirm dialog with consequence copy — same pattern as Delete Task),
   // never a bare inline tap-to-confirm:
@@ -427,6 +440,7 @@ export function FairwayEventEditor({
   // against a null baseline, so a slow/failed fetch can't wipe attendees.
   const [existingAttendeeIds, setExistingAttendeeIds] = React.useState<string[] | null>(null);
   const [attendeeHydration, setAttendeeHydration] = React.useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [attendeeRetry, setAttendeeRetry] = React.useState(0);
 
   // Edit prefill / create reset — verbatim from the legacy modal.
   React.useEffect(() => {
@@ -456,6 +470,11 @@ export function FairwayEventEditor({
       // (the old toISOString prefill displayed UTC wall-time — audit #15).
       const rsvpDeadline = toDateTimeLocalValue(event.rsvp_deadline);
       const isAllDay = event.all_day ?? false;
+      // All-day values represent calendar dates, not viewer-local instants.
+      if (isAllDay) {
+        startDate = startDateTime.slice(0, 10) || getTodayDate();
+        endDate = endDateTime.slice(0, 10) || null;
+      }
       const prefilled: GolfEventFormData = {
         title: event.title || '',
         eventType: (event.event_type as EventType) || 'practice',
@@ -516,7 +535,7 @@ export function FairwayEventEditor({
         if (result.success && result.data) {
           const ids = result.data.summary.attendees.map((a) => a.playerId);
           setExistingAttendeeIds(ids);
-          setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+          setFormData((prev) => ({ ...prev, attendeeIds: Array.from(new Set([...ids, ...prev.attendeeIds])) }));
           // Hydration is not a coach edit. pristineRef was snapshotted when
           // the editor opened, before these ids arrived, so without
           // re-baselining, opening an event that HAS attendees and closing it
@@ -535,7 +554,7 @@ export function FairwayEventEditor({
     return () => {
       cancelled = true;
     };
-  }, [open, event, isCreating]);
+  }, [open, event, isCreating, attendeeRetry]);
 
   // Series-root edits: prefill the recurrence pattern from the stored rule so
   // the series can be extended (more occurrences / later end date) or
@@ -563,13 +582,25 @@ export function FairwayEventEditor({
   }, [isCreating, existingAttendeeIds, formData.attendeeIds]);
   const attendeeChangeSummary = attendeeChanges ? summarizeAttendeeChanges(attendeeChanges) : null;
 
-  // In edit mode only check conflicts for NEWLY added players — existing
-  // invitees already have this event in their schedule, so checking them
-  // would flag the event against itself.
-  const conflictCheckIds = React.useMemo(() => {
-    if (!isCreating && attendeeChanges) return attendeeChanges.addAttendeeIds;
-    return formData.attendeeIds;
-  }, [isCreating, formData.attendeeIds, attendeeChanges]);
+  // The excluded event ID prevents self-overlap; every selected person must
+  // be checked again when the event moves, including existing invitees.
+  const conflictCheckIds = formData.attendeeIds;
+
+  React.useEffect(() => {
+    if (!open || !suggestedTime || suggestedTime.token === lastSuggestionToken.current) return;
+    const start = new Date(suggestedTime.start);
+    const end = new Date(suggestedTime.end);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return;
+    lastSuggestionToken.current = suggestedTime.token;
+    setFormData((prev) => ({
+      ...prev,
+      startDate: localDayIso(start),
+      endDate: localDayIso(end),
+      startTime: start.toTimeString().slice(0, 5),
+      endTime: end.toTimeString().slice(0, 5),
+      allDay: false,
+    }));
+  }, [open, suggestedTime]);
 
   // Live human-readable summary of the pattern being built, e.g.
   // "Every 2 weeks on Mon, Wed, Fri until Aug 15, 2026".
@@ -579,52 +610,52 @@ export function FairwayEventEditor({
     return rule ? describeRecurrenceRule(rule) : null;
   }, [formData]);
 
-  // Debounced conflict check — verbatim contract (checkScheduleConflicts).
+  // Invalidate the previous result as soon as the proposal changes. Requests
+  // include all-day windows and an empty player list (the server adds You).
   React.useEffect(() => {
     let cancelled = false;
+    setConflicts(null);
+    setShowAllConflicts(false);
+    if (!open || event?.status === 'cancelled' || !formData.startDate ||
+        (!formData.allDay && (!formData.startTime || !formData.endTime))) {
+      setConflictStatus('idle');
+      return;
+    }
+    if (!isCreating && attendeeHydration !== 'loaded') {
+      setConflictStatus(attendeeHydration === 'error' ? 'error' : 'checking');
+      return;
+    }
+    setConflictStatus('checking');
     async function check() {
-      if (conflictCheckIds.length === 0 || !formData.startDate || formData.allDay) {
-        setConflicts(null);
-        return;
-      }
-      if (!formData.startTime || !formData.endTime) {
-        setConflicts(null);
-        return;
-      }
       try {
         const { checkScheduleConflicts } = await import('@/app/golf/actions/golf');
         const result = await checkScheduleConflicts(
           formData.startDate,
-          formData.startTime,
+          formData.allDay ? '00:00' : formData.startTime!,
           formData.endDate || formData.startDate,
-          formData.endTime,
+          formData.allDay ? '23:59' : formData.endTime!,
           conflictCheckIds,
-          undefined,
-          /**
-           * Anchor the proposed window to the coach's wall clock.
-           *
-           * The action's last parameter exists for exactly this (audit finding
-           * #7) and defaults to UTC when omitted — which this call site did.
-           * A coach in EDT picking 9:00 AM had the window compared as 09:00
-           * UTC, i.e. 5:00 AM their time, so conflicts were computed against a
-           * window four hours off the one on screen: real clashes missed, and
-           * clashes reported against a slot the coach never chose.
-           */
-          new Date().getTimezoneOffset(),
+          event?.id,
+          new Date(`${formData.startDate}T${formData.startTime || '00:00'}`).getTimezoneOffset(),
+          formData.allDay,
         );
-        if (!cancelled && result.success && result.data) {
+        if (cancelled) return;
+        if (result.success && result.data) {
           setConflicts(normalizeConflictData(result.data as WireConflictData));
+          setConflictStatus('ready');
+        } else {
+          setConflictStatus('error');
         }
       } catch {
-        /* conflict check failed — continue without warning */
+        if (!cancelled) setConflictStatus('error');
       }
     }
-    const t = setTimeout(check, 500);
+    const timer = setTimeout(check, 500);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
-  }, [conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
+  }, [open, isCreating, event?.id, event?.status, attendeeHydration, conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay, conflictRetry]);
 
   const isInSeries = !isCreating && Boolean(event && (event.parent_event_id || event.recurrence_rule));
   const [pendingScopeAction, setPendingScopeAction] = React.useState<null | 'edit' | 'delete'>(null);
@@ -791,19 +822,9 @@ export function FairwayEventEditor({
     const startDate = localDayIso(s.start);
     const startTime = s.start.toTimeString().slice(0, 5);
     const endTime = s.end.toTimeString().slice(0, 5);
-    setFormData((prev) => ({ ...prev, startDate: startDate || prev.startDate, startTime, endTime, allDay: false }));
+    setFormData((prev) => ({ ...prev, startDate: startDate || prev.startDate, endDate: localDayIso(s.end), startTime, endTime, allDay: false }));
     setConflicts(null);
   };
-
-  // Same robust first-letter extraction as FairwayCalendarMemberRail's
-  // `initials` (finding #85) — skips a "(Captain)"/"(C)" role-tag suffix and
-  // any other leading non-letter character instead of grabbing name[0] raw.
-  const firstLetter = (name: string | null | undefined): string => {
-    if (!name) return '';
-    const match = name.replace(/\(.*?\)/g, '').match(/\p{L}/u);
-    return match ? match[0] : '';
-  };
-  const initials = (p: TeamPlayer) => `${firstLetter(p.first_name)}${firstLetter(p.last_name)}`.toUpperCase() || '—';
 
   // Soft-cancelled events are read-only — the only offered action is
   // Restore (when wired). Re-cancelling is a no-op, so Delete is hidden too.
@@ -843,7 +864,7 @@ export function FairwayEventEditor({
    * closes immediately; a dirty one asks first.
    */
   function requestClose() {
-    if (isSaving) return;
+    if (isSaving || suspended) return;
     if (isDirty) {
       setConfirmDiscardOpen(true);
       return;
@@ -854,9 +875,9 @@ export function FairwayEventEditor({
   return (
     <>
     <ModalShell
-      open={open}
+      open={open && !suspended}
       onOpenChange={(o) => {
-        if (!o) requestClose();
+        if (!o && !suspended) requestClose();
       }}
       size="xl"
       title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
@@ -1095,6 +1116,77 @@ export function FairwayEventEditor({
                 onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
                 disabled={locked}
               />
+              {onFindTime ? (
+                <Button
+                  variant="secondary"
+                  size="md"
+                  disabled={locked || !formData.startDate || attendeesLoading || attendeeHydration === 'error'}
+                  leftIcon={<CalendarDays className="h-4 w-4" aria-hidden />}
+                  onClick={() => onFindTime({
+                    date: formData.startDate,
+                    endDate: formData.endDate || formData.startDate,
+                    startTime: formData.startTime || '09:00',
+                    endTime: formData.endTime || '11:00',
+                    attendeeIds: [...formData.attendeeIds],
+                    ...(event ? { eventId: event.id } : {}),
+                  })}
+                >
+                  Find a time
+                </Button>
+              ) : null}
+              {!isCancelled && conflictStatus !== 'idle' ? (
+                <div className={cn(
+                  'rounded-fw-md border p-3 font-fw-sans text-caption',
+                  conflicts?.hasConflict || conflicts?.partial || conflictStatus === 'error'
+                    ? 'border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink'
+                    : 'border-border-subtle bg-surface-sunken text-text-secondary',
+                )}>
+                  <p role="status" className="flex items-center gap-2 font-medium">
+                    {conflictStatus === 'checking' ? <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" aria-hidden /> :
+                      conflicts?.hasConflict || conflicts?.partial || conflictStatus === 'error'
+                        ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
+                    {conflictStatus === 'checking' ? 'Checking Helm schedules…' :
+                      conflictStatus === 'error' ? 'Schedules not verified. The check could not finish.' :
+                      conflicts?.partial ? 'Schedules partially checked. Some availability is not verified.' :
+                      conflicts?.hasConflict ? 'Schedule conflicts' : 'No conflicts found in checked Helm schedules.'}
+                  </p>
+                  {conflictStatus === 'error' || conflicts?.partial ? (
+                    <UiButton variant="ghost" type="button" onClick={() => {
+                      if (attendeeHydration === 'error') setAttendeeRetry((value) => value + 1);
+                      else setConflictRetry((value) => value + 1);
+                    }} className="mt-1 min-h-11 px-0 text-caption font-medium text-fw-warning-ink underline underline-offset-2">
+                      Check again
+                    </UiButton>
+                  ) : null}
+                  {conflicts && conflicts.conflicts.length > 0 ? (
+                    <>
+                      <p className="mt-2">{conflicts.conflicts.length} overlaps · {new Set(conflicts.conflicts.map((conflict) => conflict.userId)).size} people affected</p>
+                      <ul className="mt-2 flex flex-col gap-2">
+                        {(showAllConflicts ? conflicts.conflicts : conflicts.conflicts.slice(0, 4)).map((conflict, index) => (
+                          <li key={`${conflict.userId}-${index}`}>
+                            <p className="font-medium">{conflict.userName} — {conflict.conflictingEvent.title}</p>
+                            <p className="mt-0.5 tabular-nums">{formatConflictInterval(conflict.conflictingEvent.start, conflict.conflictingEvent.end)} · {conflict.conflictingEvent.type === 'class' ? 'Class' : conflict.conflictingEvent.type === 'blocked' ? 'Blocked time' : 'Event'}</p>
+                          </li>
+                        ))}
+                      </ul>
+                      {conflicts.conflicts.length > 4 ? (
+                        <UiButton variant="ghost" type="button" aria-expanded={showAllConflicts} onClick={() => setShowAllConflicts((value) => !value)} className="mt-1 min-h-11 px-0 text-caption font-medium text-fw-warning-ink underline underline-offset-2">
+                          {showAllConflicts ? 'Show fewer overlaps' : `Show all ${conflicts.conflicts.length} overlaps (4 shown)`}
+                        </UiButton>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {conflicts?.hasConflict && !conflicts.partial && conflicts.suggestions.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {conflicts.suggestions.slice(0, 3).map((slot, index) => (
+                        <UiButton key={index} variant="ghost" type="button" onClick={() => selectSuggestedTime(slot)} className="min-h-11 rounded-fw-sm border border-border-subtle bg-surface px-3 font-fw-mono text-caption tabular-nums text-text-secondary">
+                          Try {slot.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </UiButton>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </FormSection>
 
             {/* Location — one FormSection per field-group, same primitive as
@@ -1270,7 +1362,6 @@ export function FairwayEventEditor({
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {visiblePlayers.map((p) => {
                     const selected = formData.attendeeIds.includes(p.id);
-                    const tint = tintFor(p.id);
                     return (
                       <UiButton
                         key={p.id}
@@ -1289,12 +1380,11 @@ export function FairwayEventEditor({
                       >
                         <span
                           className="relative grid h-8 w-8 flex-shrink-0 place-items-center overflow-hidden rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle"
-                          style={p.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
                         >
                           {p.avatar_url ? (
                             <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
                           ) : (
-                            initials(p)
+                            <UserRound className="h-4 w-4 text-text-tertiary" aria-hidden />
                           )}
                           {selected ? (
                             <span className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent-500 ring-2 ring-surface">
@@ -1338,42 +1428,6 @@ export function FairwayEventEditor({
                   </p>
                 ) : null}
 
-                {/* Conflict notice */}
-                {conflicts?.hasConflict ? (
-                  <div className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
-                    <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-fw-warning-ink">
-                      <AlertTriangle className="h-3.5 w-3.5 text-fw-warning-ink" />
-                      Schedule conflict
-                    </p>
-                    <ul className="mt-1.5 flex flex-col gap-0.5">
-                      {conflicts.conflicts.slice(0, 4).map((c, i) => (
-                        <li key={`${c.userId}-${i}`} className="font-fw-sans text-caption text-fw-warning-ink">
-                          {c.userName} — {c.conflictingEvent.title}
-                          {c.conflictingEvent.type === 'class' ? (
-                            <span className="ml-1 text-fw-warning-ink/70">(class)</span>
-                          ) : c.conflictingEvent.type === 'blocked' ? (
-                            <span className="ml-1 text-fw-warning-ink/70">(blocked time)</span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                    {conflicts.suggestions.length > 0 ? (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {conflicts.suggestions.slice(0, 3).map((s, i) => (
-                          <UiButton
-                            key={i}
-                            variant="ghost"
-                            type="button"
-                            onClick={() => selectSuggestedTime(s)}
-                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
-                          >
-                            {s.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                          </UiButton>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
               </FormSection>
             )}
 
@@ -1413,7 +1467,7 @@ export function FairwayEventEditor({
                           'inline-flex items-center rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
                           'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                           active
-                            ? 'bg-accent-700 text-text-on-accent shadow-flat'
+                            ? 'bg-accent-650 text-text-on-accent shadow-flat'
                             : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                         )}
                       >

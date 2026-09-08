@@ -60,13 +60,14 @@ import {
   addMonths,
   isSameDay,
 } from 'date-fns';
-import { CalendarPlus, RefreshCw } from 'lucide-react';
+import { CalendarPlus, RefreshCw, ScanLine } from 'lucide-react';
 import { Segmented, Sheet, Button as FwButton, Skeleton, fairwayToast } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
 import { zonedMidnight, eventDaySpan } from '@/lib/calendar/timezone';
+import { wallClockInZone } from '@/lib/golf/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -81,6 +82,10 @@ import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 import { FairwayEventEditor } from './FairwayEventEditor';
+import type { FairwayEventTimeRequest, FairwayEventSuggestedTime } from './FairwayEventEditor';
+import { CalendarSchedulingDialog } from './CalendarSchedulingDialog';
+import { CalendarPersonDialog } from './CalendarPersonDialog';
+import type { ScheduleWindowRequest, ScheduleProposal } from '@/lib/calendar/scheduling-contracts';
 import { attributeClassEvents, isClassEvent, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 
 // Code-split: the ICS feed manager (legacy component, reused UNCHANGED) only
@@ -434,6 +439,24 @@ export function FairwayCalendar({
   // server actions. They throw on failure so the editor surfaces the error.
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editorEvent, setEditorEvent] = React.useState<CalendarEvent | null>(null);
+  const [schedulingRequest, setSchedulingRequest] = React.useState<ScheduleWindowRequest | null>(null);
+  const [personRequest, setPersonRequest] = React.useState<ScheduleWindowRequest | null>(null);
+  const [personId, setPersonId] = React.useState<string | null>(null);
+  const [personReturnRequest, setPersonReturnRequest] = React.useState<ScheduleWindowRequest | null>(null);
+  const [initialProposal, setInitialProposal] = React.useState<ScheduleProposal | undefined>();
+  const [suggestedTime, setSuggestedTime] = React.useState<FairwayEventSuggestedTime | null>(null);
+  const suggestionToken = React.useRef(0);
+  const openScheduling = (data?: FairwayEventTimeRequest) => {
+    if (!teamId) return;
+    const startDate = new Date(`${data?.date ?? format(focusDate, 'yyyy-MM-dd')}T12:00:00`);
+    const endDate = new Date(`${data?.endDate ?? data?.date ?? format(focusDate, 'yyyy-MM-dd')}T12:00:00`);
+    setInitialProposal(data ? {
+      start: wallClockInZone(startDate, data.startTime, teamTimezone).toISOString(),
+      end: wallClockInZone(endDate, data.endTime, teamTimezone).toISOString(),
+    } : undefined);
+    setSchedulingRequest({ teamId, date: data?.date ?? format(focusDate, 'yyyy-MM-dd'), participantIds: data?.attendeeIds ?? teamMembers.filter((person) => person.role !== 'coach' && person.id !== currentUserId && (selectedPlayerIds.length === 0 || selectedPlayerIds.includes(person.id))).map((person) => person.id), excludeEventId: data?.eventId });
+  };
+
   const [isSavingEvent, setIsSavingEvent] = React.useState(false);
 
   const openCreate = React.useCallback(() => {
@@ -827,8 +850,10 @@ export function FairwayCalendar({
 
   // ── Drawer plumbing — REUSES the existing getEventRSVP / getPlayerEventRSVP
   //    (lazy import, exactly as the legacy editorial drawer). ─────────────────
+  const drawerRequestRef = React.useRef(0);
   const openDrawerForEvent = React.useCallback(
     async (event: CalendarEvent) => {
+      const requestId = ++drawerRequestRef.current;
       setDrawerEvent(event);
       setDrawerOpen(true);
       setDrawerRsvpSummary(null);
@@ -837,7 +862,7 @@ export function FairwayCalendar({
         try {
           const { getEventRSVP } = await import('@/app/golf/actions/golf');
           const result = await getEventRSVP(event.id);
-          if (result.success && result.data?.summary) {
+          if (requestId === drawerRequestRef.current && result.success && result.data?.summary) {
             const s = result.data.summary;
             setDrawerRsvpSummary({
               accepted: s.accepted ?? 0,
@@ -1034,6 +1059,11 @@ export function FairwayCalendar({
         </FwButton>
       </div>
 
+      {teamId && isCoach ? <div className="flex items-center justify-between gap-3 rounded-fw-lg border border-border-subtle bg-surface px-4 py-3">
+        <div><p className="font-semibold text-text-primary">Find your next shared opening</p><p className="text-sm text-text-secondary">Compare your schedule with the team.</p></div>
+        <FwButton variant="secondary" leftIcon={<ScanLine className="h-4 w-4" />} onClick={() => openScheduling()}>Find a time</FwButton>
+      </div> : null}
+
       {/* ── Range-fetch affordances (loading + retryable error ≠ empty) ──────── */}
       {isLoadingRange ? (
         <div
@@ -1067,7 +1097,8 @@ export function FairwayCalendar({
           is shown for coaches across all lenses. */}
       {isCoach ? (
         <FairwayCalendarMemberRail
-          teamMembers={memberRailTeamMembers}
+          teamMembers={memberRailTeamMembers.filter((member) => member.role !== 'coach' || member.id === currentUserId)}
+          onOpenPerson={(id) => { if (teamId) { setPersonId(id); setPersonRequest({ teamId, date: format(focusDate, 'yyyy-MM-dd'), participantIds: id === currentUserId ? [] : [id] }); } }}
           selectedPlayerIds={selectedPlayerIds}
           onSelect={setSelectedPlayerIds}
         />
@@ -1179,7 +1210,8 @@ export function FairwayCalendar({
           setDrawerOpen(o);
           if (!o) {
             // Clear lazily so the drawer's exit animation finishes.
-            setTimeout(() => setDrawerEvent(null), 240);
+            const requestId = ++drawerRequestRef.current;
+            setTimeout(() => { if (requestId === drawerRequestRef.current) setDrawerEvent(null); }, 240);
           }
         }}
         isCoach={isCoach}
@@ -1201,6 +1233,9 @@ export function FairwayCalendar({
       {isCoach ? (
         <FairwayEventEditor
           open={editorOpen}
+          suspended={Boolean(schedulingRequest)}
+          onFindTime={teamId ? openScheduling : undefined}
+          suggestedTime={suggestedTime}
           onClose={() => setEditorOpen(false)}
           event={editorEvent}
           isCoach={isCoach}
@@ -1214,6 +1249,31 @@ export function FairwayCalendar({
           timezone={teamTimezone}
         />
       ) : null}
+
+      <CalendarPersonDialog request={personRequest} personId={personId} onClose={() => {
+        const returnRequest = personReturnRequest;
+        setPersonReturnRequest(null); setPersonRequest(null);
+        if (returnRequest) setSchedulingRequest(returnRequest);
+      }}
+        onDateChange={(date) => { if (personRequest) setPersonRequest({ ...personRequest, date }); }}
+        onCompare={() => { setSchedulingRequest(personReturnRequest ?? personRequest); setInitialProposal(undefined); setPersonReturnRequest(null); setPersonRequest(null); }}
+        onEvent={(id) => {
+          const event = events.find((candidate) => candidate.id === id);
+          if (event) {
+            setPersonReturnRequest(null);
+            setPersonRequest(null);
+            void openDrawerForEvent(event);
+          } else {
+            fairwayToast.info('Open the event’s date in your calendar to see its details.');
+          }
+        }} />
+      <CalendarSchedulingDialog request={schedulingRequest} initialProposal={initialProposal} onChange={setSchedulingRequest}
+        onOpenPerson={(id) => { if (!schedulingRequest) return; setPersonReturnRequest(schedulingRequest); setPersonId(id); setPersonRequest({ ...schedulingRequest, participantIds: id === currentUserId ? [] : [id] }); setSchedulingRequest(null); }}
+        onClose={() => setSchedulingRequest(null)} onChoose={(proposal) => {
+          setSuggestedTime({ ...proposal, token: ++suggestionToken.current });
+          setSchedulingRequest(null);
+          if (!editorOpen) { setEditorEvent(null); setEditorOpen(true); }
+        }} />
 
       {/* ── Subscribe / Add to phone (ICS feeds — reuses the legacy manager) ──── */}
       <FairwaySubscribeSheet

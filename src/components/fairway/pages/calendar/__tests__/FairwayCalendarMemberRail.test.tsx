@@ -69,6 +69,32 @@ describe('FairwayCalendarMemberRail — initials', () => {
   });
 });
 
+describe('FairwayCalendarMemberRail — person drill-in and comparison are separate', () => {
+  it('opens a person by default, then enters an explicit comparison mode', async () => {
+    const onOpenPerson = vi.fn();
+    const onSelect = vi.fn();
+    const roster = [member({ id: 'p1', first_name: 'Ava', last_name: 'Stone' })];
+    render(
+      <FairwayCalendarMemberRail
+        teamMembers={roster}
+        selectedPlayerIds={[]}
+        onOpenPerson={onOpenPerson}
+        onSelect={onSelect}
+      />,
+    );
+
+    const person = screen.getByRole('button', { name: 'Open Ava Stone\'s schedule' });
+    expect(person).not.toHaveAttribute('aria-pressed');
+    await userEvent.click(person);
+    expect(onOpenPerson).toHaveBeenCalledWith('p1');
+    expect(onSelect).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Compare' }));
+    await userEvent.click(screen.getByRole('button', { name: /View Ava Stone's schedule/ }));
+    expect(onSelect).toHaveBeenCalledWith(['p1']);
+  });
+});
+
 /**
  * The 8-member selection cap is enforced SILENTLY.
  *

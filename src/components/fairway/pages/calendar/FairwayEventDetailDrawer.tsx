@@ -1,30 +1,12 @@
 'use client';
 
-/**
- * ============================================================================
- * Fairway · Calendar · FairwayEventDetailDrawer
- * ----------------------------------------------------------------------------
- * The Fairway re-skin of the legacy `editorial/EventDetailDrawer` — a Fairway
- * Sheet (bottom, vaul-backed) for event detail. Tap a FairwayEventCard → this
- * opens. Pure SHELL re-skin: it does NOT own create/edit/delete (that stays in
- * the legacy EventDetailModal behind the grid). It only reads RSVP context and
- * lets the player respond via the EXISTING `respondToEvent` action (handed in
- * as `onRespond` from the orchestrator).
- *
- * Coach → read-only attendance summary as 4 Readouts (accepted / maybe / no /
- *   pending), tabular-nums, REAL counts. ZERO is rendered as 0 — never hidden.
- * Player → 3 Fairway Buttons (Going accent / Maybe warning / Decline danger)
- *   wired to the existing respondToEvent → updateRSVP write path.
- *
- * Token-only: Sheet (bg-elevated), Inset, Readout, Button, text-text-*, font-fw-*.
- * NO bg-white, NO serif, NO glass.
- * ========================================================================== */
+/** Event details with role-specific actions and persistent RSVP confirmation. */
 
 import * as React from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Check, X, MapPin, Clock, ExternalLink, Pencil, Lock, CalendarClock, Plane, ArrowRight } from 'lucide-react';
+import { Check, X, MapPin, Clock, ExternalLink, Pencil, Lock, CalendarClock, Plane, ArrowRight, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, Inset, Readout, Button, StatusPill, SkeletonCard } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
@@ -34,7 +16,6 @@ import { rsvpLockMessage } from '@/hooks/useRSVP';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { formatEventTime, formatEventDateLabel } from '@/lib/calendar/timezone';
 import { stripClassTag } from '@/lib/calendar/class-events';
-import { tintFor } from './FairwayCalendarMemberRail';
 
 // Coach-only roll-call panel — code-split so players never download it.
 const AttendancePanel = dynamic(
@@ -66,12 +47,11 @@ const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
 const RSVP_OPTIONS: Array<{
   value: RSVPStatus;
   label: string;
-  variant: 'primary' | 'secondary' | 'danger';
   icon?: React.ReactNode;
 }> = [
-  { value: 'accepted', label: 'Going', variant: 'primary', icon: <Check className="h-4 w-4" /> },
-  { value: 'tentative', label: 'Maybe', variant: 'secondary' },
-  { value: 'declined', label: 'Decline', variant: 'danger', icon: <X className="h-4 w-4" /> },
+  { value: 'accepted', label: 'Going', icon: <Check className="h-4 w-4" /> },
+  { value: 'tentative', label: 'Maybe' },
+  { value: 'declined', label: 'Decline', icon: <X className="h-4 w-4" /> },
 ];
 
 export interface FairwayEventDetailDrawerProps {
@@ -118,8 +98,14 @@ function mapsHref(location: string): string {
 function formatDateLine(event: CalendarEvent, timezone?: string | null): string {
   const start = event.start_time || event.start_date;
   if (!start) return '';
+  if (event.all_day) {
+    const startDay = format(new Date(`${start.slice(0, 10)}T12:00:00`), 'EEE, MMM d');
+    const end = event.end_time || event.end_date;
+    const endDay = end && end.slice(0, 10) !== start.slice(0, 10)
+      ? ` – ${format(new Date(`${end.slice(0, 10)}T12:00:00`), 'EEE, MMM d')}` : '';
+    return `${startDay}${endDay} · All day`;
+  }
   const datePart = formatEventDateLabel(start, timezone);
-  if (event.all_day) return `${datePart} · All day`;
   const startTime = formatEventTime(start, timezone);
   const end = event.end_time || event.end_date;
   if (!end || end === start) return `${datePart} · ${startTime}`;
@@ -139,6 +125,8 @@ export function FairwayEventDetailDrawer({
 }: FairwayEventDetailDrawerProps) {
   const [pendingStatus, setPendingStatus] = React.useState<RSVPStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [savedResponse, setSavedResponse] = React.useState<RSVPStatus | null>(null);
+  const responseRequest = React.useRef(0);
   // Calendar→travel cross-link (P440): the travel itinerary linked to this event,
   // looked up on open via the reverse join (golf_travel_itineraries.event_id).
   // null = no linked trip → the affordance stays hidden (honest).
@@ -147,23 +135,26 @@ export function FairwayEventDetailDrawer({
   >(null);
 
   React.useEffect(() => {
-    if (!open) {
-      setPendingStatus(null);
-      setError(null);
-    }
-  }, [open]);
+    responseRequest.current += 1;
+    setPendingStatus(null);
+    setSavedResponse(null);
+    setError(null);
+    return () => { responseRequest.current += 1; };
+  }, [open, event?.id]);
+
+  const eventId = event?.id;
 
   // Resolve the linked itinerary when the drawer opens for an event. Self-
   // contained (no orchestrator threading) + failure-silent — a lookup error or
   // unlinked event simply leaves `linkedTrip` null, so the link never asserts a
   // trip that isn't there.
   React.useEffect(() => {
-    if (!open || !event) {
+    if (!open || !eventId) {
       setLinkedTrip(null);
       return;
     }
     let cancelled = false;
-    const eventId = event.id;
+    setLinkedTrip(null);
     void (async () => {
       try {
         const res = await getItineraryForEvent(eventId);
@@ -175,7 +166,7 @@ export function FairwayEventDetailDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, event]);
+  }, [open, eventId]);
 
   // Standalone non-optional fallback — TYPE_META.other is `| undefined` under
   // noUncheckedIndexedAccess, so it can't guarantee a non-undefined `meta`.
@@ -192,7 +183,10 @@ export function FairwayEventDetailDrawer({
   const isCancelled = event?.status === 'cancelled';
   const requiresRsvp = event?.requires_rsvp === true;
   const startMs = event ? new Date(event.start_time || event.start_date).getTime() : NaN;
-  const hasStarted = Number.isFinite(startMs) && startMs <= nowMs;
+  // Match updateRSVP: all-day storage uses UTC midnight and remains open
+  // through its 24-hour grace window. Explicit deadlines still take effect.
+  const lockMs = event?.all_day ? startMs + 24 * 60 * 60 * 1000 : startMs;
+  const hasStarted = Number.isFinite(lockMs) && lockMs <= nowMs;
   const deadlineMs = event?.rsvp_deadline ? new Date(event.rsvp_deadline).getTime() : null;
   const deadlinePassed = deadlineMs !== null && deadlineMs < nowMs;
   const rsvpLocked = hasStarted || deadlinePassed || isCancelled;
@@ -204,22 +198,28 @@ export function FairwayEventDetailDrawer({
   // Deadline rendered in the VIEWER's local timezone (new Date parses the
   // stored timestamptz; format() prints local wall-time).
   const deadlineLabel =
-    deadlineMs !== null ? format(new Date(deadlineMs), "EEE, MMM d 'at' h:mm a") : null;
+    deadlineMs !== null && Number.isFinite(deadlineMs) ? format(new Date(deadlineMs), "EEE, MMM d 'at' h:mm a") : null;
 
+  const displayedResponse = savedResponse ?? rsvpStatus;
   const handleRespond = async (status: RSVPStatus) => {
-    if (!onRespond || !event) return;
+    if (!onRespond || !event || pendingStatus !== null) return;
+    const request = ++responseRequest.current;
     setPendingStatus(status);
     setError(null);
-    const result = await onRespond(event.id, status);
-    setPendingStatus(null);
-    if (!result.success) {
-      // Typed lock codes get specific copy; anything else falls back to the
-      // server's error string.
-      setError(rsvpLockMessage(result.code, result.error ?? 'Could not save your response.'));
-      return;
+    setSavedResponse(null);
+    try {
+      const result = await onRespond(event.id, status);
+      if (request !== responseRequest.current) return;
+      if (!result.success) {
+        setError(rsvpLockMessage(result.code, result.error ?? 'Could not save your response.'));
+        return;
+      }
+      setSavedResponse(status);
+    } catch {
+      if (request === responseRequest.current) setError('Could not save your response. Try again.');
+    } finally {
+      if (request === responseRequest.current) setPendingStatus(null);
     }
-    // Soft close — let the user register the new state for a beat.
-    setTimeout(() => onOpenChange(false), 240);
   };
 
   return (
@@ -267,7 +267,7 @@ export function FairwayEventDetailDrawer({
               longer waits at the very bottom of the drawer's content. */}
           {isCoach && onEdit ? (
             <Button
-              variant="secondary"
+              variant="primary"
               size="md"
               fullWidth
               leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
@@ -282,16 +282,7 @@ export function FairwayEventDetailDrawer({
               abbreviated to fit. */}
           {event.owner_label && event.owner_player_id ? (
             <div className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-3">
-              <span
-                aria-hidden
-                className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-bold"
-                style={{
-                  backgroundColor: tintFor(event.owner_player_id).bg,
-                  color: tintFor(event.owner_player_id).text,
-                }}
-              >
-                {event.owner_initials ?? '—'}
-              </span>
+              <UserRound className="h-5 w-5 shrink-0 text-text-tertiary" aria-hidden />
               <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
                 {event.owner_label}
               </span>
@@ -319,6 +310,73 @@ export function FairwayEventDetailDrawer({
               </span>
               <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
             </a>
+          ) : null}
+
+          {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent.
+              GATED: hidden for non-RSVP events; LOCKED (read-only) for past /
+              post-deadline / cancelled events (audit finding #16). */}
+          {!isCoach && onRespond && requiresRsvp ? (
+            rsvpLocked ? (
+              <div className="rounded-fw-md bg-surface-sunken px-4 py-3">
+                <p className="flex items-center gap-2 font-fw-sans text-body-sm font-medium text-text-secondary">
+                  <Lock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
+                  {lockReason}
+                </p>
+                <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
+                  Your response: {displayedResponse ? RSVP_STATUS_LABEL[displayedResponse] : '—'}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p className="mb-2.5 font-fw-sans text-body-sm font-medium text-text-secondary">
+                  Your response
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {RSVP_OPTIONS.map((opt) => {
+                    const isSelected = displayedResponse === opt.value;
+                    return (
+                      <Button
+                        key={opt.value}
+                        variant={opt.value === 'accepted' ? 'primary' : 'secondary'}
+                        size="md"
+                        fullWidth
+                        busy={pendingStatus === opt.value}
+                        disabled={pendingStatus !== null}
+                        aria-pressed={isSelected}
+                        className={isSelected ? 'ring-2 ring-border-focus ring-offset-2 ring-offset-canvas' : undefined}
+                        leftIcon={opt.icon}
+                        onClick={() => handleRespond(opt.value)}
+                      >
+                        {opt.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {savedResponse ? (
+                  <p role="status" className="mt-2.5 flex items-center gap-1.5 font-fw-sans text-body-sm text-accent-700">
+                    <Check className="h-4 w-4" aria-hidden />
+                    Response saved · {RSVP_STATUS_LABEL[savedResponse]}
+                  </p>
+                ) : null}
+                {deadlineLabel ? (
+                  <p className="mt-2.5 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+                    <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                    <span suppressHydrationWarning>Respond by {deadlineLabel}</span>
+                  </p>
+                ) : null}
+                {error ? (
+                  <p className="mt-2.5 font-fw-sans text-caption text-fw-danger-ink" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </div>
+            )
+          ) : !isCoach && !requiresRsvp ? (
+            // No response required — say so explicitly rather than leaving a
+            // silent gap where the RSVP section would otherwise sit.
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              No response needed for this event.
+            </p>
           ) : null}
 
           {/* Description. The `[class:<id>]` ownership marker is internal
@@ -359,8 +417,8 @@ export function FairwayEventDetailDrawer({
           {/* Coach attendance — 4 Readouts, tabular-nums, 0 rendered as 0. */}
           {isCoach && rsvpSummary ? (
             <div>
-              <p className="mb-2.5 font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
-                Attendance
+              <p className="mb-2.5 font-fw-sans text-body-sm font-medium text-text-secondary">
+                Responses · {rsvpSummary.total} invited
               </p>
               {/* 2-up on phone, 4-up from `sm`. Readout's label is
                   `uppercase tracking-[0.14em]`, so "ACCEPTED" / "PENDING"
@@ -399,65 +457,6 @@ export function FairwayEventDetailDrawer({
             <AttendancePanel eventId={event.id} teamId={event.team_id} canManage={isCoach} />
           ) : null}
 
-          {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent.
-              GATED: hidden for non-RSVP events; LOCKED (read-only) for past /
-              post-deadline / cancelled events (audit finding #16). */}
-          {!isCoach && onRespond && requiresRsvp ? (
-            rsvpLocked ? (
-              <div className="rounded-fw-md bg-surface-sunken px-4 py-3">
-                <p className="flex items-center gap-2 font-fw-sans text-body-sm font-medium text-text-secondary">
-                  <Lock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
-                  {lockReason}
-                </p>
-                <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
-                  Your response: {rsvpStatus ? RSVP_STATUS_LABEL[rsvpStatus] : '—'}
-                </p>
-              </div>
-            ) : (
-              <div>
-                <p className="mb-2.5 font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
-                  Your response
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {RSVP_OPTIONS.map((opt) => {
-                    const isSelected = rsvpStatus === opt.value;
-                    return (
-                      <Button
-                        key={opt.value}
-                        variant={isSelected ? opt.variant : 'secondary'}
-                        size="md"
-                        fullWidth
-                        busy={pendingStatus === opt.value}
-                        disabled={pendingStatus !== null}
-                        aria-pressed={isSelected}
-                        leftIcon={opt.icon}
-                        onClick={() => handleRespond(opt.value)}
-                      >
-                        {opt.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-                {deadlineLabel ? (
-                  <p className="mt-2.5 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
-                    <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
-                    <span suppressHydrationWarning>Respond by {deadlineLabel}</span>
-                  </p>
-                ) : null}
-                {error ? (
-                  <p className="mt-2.5 font-fw-sans text-caption text-fw-danger-ink" role="alert">
-                    {error}
-                  </p>
-                ) : null}
-              </div>
-            )
-          ) : !isCoach && !requiresRsvp ? (
-            // No response required — say so explicitly rather than leaving a
-            // silent gap where the RSVP section would otherwise sit.
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              No response needed for this event.
-            </p>
-          ) : null}
         </Sheet.Body>
       ) : null}
     </Sheet>

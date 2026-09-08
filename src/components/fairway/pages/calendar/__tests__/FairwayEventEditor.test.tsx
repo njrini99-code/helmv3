@@ -402,3 +402,101 @@ describe('FairwayEventEditor — invite grid name display', () => {
     expect(screen.queryByText('Coach (.')).not.toBeInTheDocument();
   });
 });
+
+describe('FairwayEventEditor — scheduling verification and draft handoff', () => {
+  it('checks the organizer even when no attendees are selected', async () => {
+    renderEditor({ event: null });
+    expect(screen.getByText('Checking Helm schedules…')).toBeInTheDocument();
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+    expect(checkScheduleConflicts.mock.calls[0]?.[4]).toEqual([]);
+    expect(await screen.findByText('No conflicts found in checked Helm schedules.')).toBeInTheDocument();
+  });
+
+  it('keeps partial availability unverified and does not offer unverified suggestions', async () => {
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: {
+      hasConflict: false, conflicts: [], partial: true,
+      suggestions: [{ start: '2026-06-15T14:00:00Z', end: '2026-06-15T15:00:00Z' }],
+    } });
+    renderEditor({ event: null });
+    expect(await screen.findByText('Schedules partially checked. Some availability is not verified.')).toBeInTheDocument();
+    expect(screen.queryByText(/No conflicts found/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Try / })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check again' })).toBeEnabled();
+  });
+
+  it.each(['rejected', 'unsuccessful'])('shows a retryable unverified state after a %s check', async (failure) => {
+    if (failure === 'rejected') checkScheduleConflicts.mockRejectedValue(new Error('offline'));
+    else checkScheduleConflicts.mockResolvedValue({ success: false, error: 'offline' });
+    renderEditor({ event: null });
+    expect(await screen.findByText('Schedules not verified. The check could not finish.')).toBeInTheDocument();
+    expect(screen.queryByText(/No conflicts found/)).not.toBeInTheDocument();
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: { hasConflict: false, conflicts: [] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+    expect(screen.getByText('Checking Helm schedules…')).toBeInTheDocument();
+    expect(await screen.findByText('No conflicts found in checked Helm schedules.')).toBeInTheDocument();
+  });
+
+  it('checks an all-day edit and excludes the same event for every existing attendee', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
+    renderEditor({ event: makeEvent({ all_day: true, start_date: '2026-06-15T00:00:00Z', end_date: '2026-06-15T00:00:00Z' }) });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+    expect(checkScheduleConflicts.mock.calls.at(-1)).toEqual([
+      '2026-06-15', '00:00', '2026-06-15', '23:59', ['p1', 'p2'], 'evt-1', expect.any(Number), true,
+    ]);
+  });
+
+  it('rechecks existing attendees after accepting a new interval without resetting the draft', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
+    const onFindTime = vi.fn();
+    const { rerender, props, onSave } = renderEditor({ onFindTime });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Draft practice' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'West range' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find a time' }));
+    expect(onFindTime).toHaveBeenCalledWith(expect.objectContaining({ attendeeIds: ['p1', 'p2'], eventId: 'evt-1' }));
+    rerender(<FairwayEventEditor {...props} suspended />);
+    expect(screen.queryByLabelText(/event title/i)).not.toBeInTheDocument();
+    const start = new Date(2026, 6, 20, 23, 30);
+    const end = new Date(2026, 6, 21, 1, 30);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 1 }} />);
+    expect(screen.getByLabelText(/event title/i)).toHaveValue('Draft practice');
+    expect(screen.getByRole('textbox', { name: 'Location' })).toHaveValue('West range');
+    expect(screen.getByText('Checking Helm schedules…')).toBeInTheDocument();
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenLastCalledWith(
+      '2026-07-20', '23:30', '2026-07-21', '01:30', ['p1', 'p2'], 'evt-1', start.getTimezoneOffset(), false,
+    ));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Draft practice', location: 'West range', attendeeIds: ['p1', 'p2'],
+      startDate: '2026-07-20', endDate: '2026-07-21', startTime: '23:30', endTime: '01:30',
+    })));
+  });
+
+  it('shows overlap names and times with an explicit count and expands every overlap', async () => {
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: {
+      hasConflict: true,
+      conflicts: Array.from({ length: 6 }, (_, index) => ({ userId: `u${index}`, userName: `Player ${index + 1}`, conflictingEvent: {
+        title: `Commitment ${index + 1}`, type: 'event', start: '2026-06-15T14:00:00Z', end: '2026-06-15T15:00:00Z',
+      } })), suggestions: [],
+    } });
+    renderEditor({ event: null });
+    expect(await screen.findByText('6 overlaps · 6 people affected')).toBeInTheDocument();
+    expect(screen.getByText('Player 1 — Commitment 1')).toBeInTheDocument();
+    expect(screen.getAllByText(/Jun 15.*Event/)).toHaveLength(4);
+    expect(screen.queryByText('Player 6 — Commitment 6')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show all 6 overlaps (4 shown)' }));
+    expect(screen.getByText('Player 6 — Commitment 6')).toBeInTheDocument();
+  });
+
+  it('discards an obsolete check when a new proposal is already checking', async () => {
+    let resolveOld!: (value: unknown) => void;
+    checkScheduleConflicts.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+    const { rerender, props } = renderEditor({ event: null });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalledOnce());
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: { hasConflict: false, conflicts: [], partial: true } });
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: '2026-07-20T14:00:00Z', end: '2026-07-20T15:00:00Z', token: 9 }} />);
+    resolveOld({ success: true, data: { hasConflict: false, conflicts: [], partial: false } });
+    expect(await screen.findByText('Schedules partially checked. Some availability is not verified.')).toBeInTheDocument();
+    expect(screen.queryByText(/No conflicts found/)).not.toBeInTheDocument();
+  });
+});

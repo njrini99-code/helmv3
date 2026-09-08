@@ -12,7 +12,12 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getUserBusyPeriods, periodsOverlap } from '@/lib/calendar/availability';
+import {
+  findCommonAvailability,
+  getUserBusyPeriods,
+  getUserBusyPeriodsWithStatus,
+  periodsOverlap,
+} from '@/lib/calendar/availability';
 import { checkEventConflicts } from '@/lib/calendar/conflicts';
 
 type Row = Record<string, unknown>;
@@ -517,6 +522,109 @@ describe('getUserBusyPeriods — unsynced classes expand within their term only'
     expect(busy[0]!.title).toBe('MATH 2415: Calculus III');
     expect(busy[0]!.eventId).toBe('ev-1');
   });
+
+  it('preserves overlapping source intervals and their event ids for conflict details', async () => {
+    const tables = baseTables();
+    tables.golf_events.push(
+      {
+        id: 'ev-one', team_id: 't1', title: 'Practice', status: 'confirmed',
+        start_time: '2026-06-10T18:00:00+00:00', end_time: '2026-06-10T20:00:00+00:00',
+        created_by: null, description: null,
+      },
+      {
+        id: 'ev-two', team_id: 't1', title: 'Film Session', status: 'confirmed',
+        start_time: '2026-06-10T19:00:00+00:00', end_time: '2026-06-10T21:00:00+00:00',
+        created_by: null, description: null,
+      },
+    );
+
+    const busy = await getUserBusyPeriods(
+      'u1',
+      new Date('2026-06-10T18:00:00Z'),
+      new Date('2026-06-10T22:00:00Z'),
+      createStubClient(tables),
+    );
+
+    expect(busy.map((period) => period.eventId)).toEqual(['ev-one', 'ev-two']);
+  });
+
+  it('applies an academic exclusion to a materialized class occurrence', async () => {
+    const tables = baseTables();
+    tables.golf_player_classes.push({ id: 'cls-excluded', player_id: 'p1', class_name: 'Biology' });
+    tables.golf_events.push({
+      id: 'ev-class', team_id: 't1', title: 'Biology', status: 'confirmed',
+      start_time: '2026-06-10T13:00:00+00:00', end_time: '2026-06-10T14:00:00+00:00',
+      created_by: null, description: '[class:cls-excluded]',
+    });
+    (tables as Record<string, Row[]>).golf_academic_exclusions = [
+      { player_id: 'p1', start_date: '2026-06-10', end_date: '2026-06-10' },
+    ];
+
+    const result = await getUserBusyPeriodsWithStatus(
+      'u1',
+      new Date('2026-06-10T12:00:00Z'),
+      new Date('2026-06-10T15:00:00Z'),
+      createStubClient(tables),
+    );
+
+    expect(result.periods).toEqual([]);
+    expect(result.partial).toBe(false);
+  });
+
+  it('applies an academic exclusion to an unsynced recurring class occurrence', async () => {
+    const tables = baseTables();
+    tables.golf_player_classes.push({
+      id: 'cls-unsynced', player_id: 'p1', class_name: 'Biology',
+      days: ['W'], start_time: '09:00', end_time: '10:00', semester: null,
+    });
+    (tables as Record<string, Row[]>).golf_academic_exclusions = [
+      { player_id: 'p1', start_date: '2026-06-10', end_date: '2026-06-10' },
+    ];
+
+    const result = await getUserBusyPeriodsWithStatus(
+      'u1',
+      new Date('2026-06-10T00:00:00Z'),
+      new Date('2026-06-11T00:00:00Z'),
+      createStubClient(tables),
+    );
+
+    expect(result.periods).toEqual([]);
+    expect(result.partial).toBe(false);
+  });
+
+  it('marks availability partial when academic exclusions cannot be read', async () => {
+    const tables = baseTables();
+    tables.golf_player_classes.push({
+      id: 'cls-unsynced', player_id: 'p1', class_name: 'Biology',
+      days: ['W'], start_time: '09:00', end_time: '10:00', semester: null,
+    });
+    (tables as Record<string, Row[]>).golf_academic_exclusions = [];
+    const original = createStubClient(tables);
+    const supabase = {
+      ...original,
+      from(table: string) {
+        if (table !== 'golf_academic_exclusions') return original.from(table);
+        return {
+          select: () => ({
+            eq: () => ({
+              lte: () => ({
+                gte: async () => ({ data: null, error: { message: 'timeout' } }),
+              }),
+            }),
+          }),
+        };
+      },
+    } as unknown as SupabaseClient;
+
+    const result = await getUserBusyPeriodsWithStatus(
+      'u1',
+      new Date('2026-06-10T00:00:00Z'),
+      new Date('2026-06-11T00:00:00Z'),
+      supabase,
+    );
+
+    expect(result.partial).toBe(true);
+  });
 });
 
 describe('checkEventConflicts — timed conflict across timezones', () => {
@@ -601,6 +709,100 @@ describe('checkEventConflicts — timed conflict across timezones', () => {
       expect(hour).toBeGreaterThanOrEqual(7);
       expect(hour).toBeLessThan(19);
     }
+  });
+
+  it('returns every overlapping source interval with its optional event id', async () => {
+    const tables = baseTables();
+    tables.golf_events.push(
+      {
+        id: 'e-one', team_id: 't1', title: 'Practice', status: 'scheduled',
+        start_time: '2026-06-10T18:00:00+00:00', end_time: '2026-06-10T19:30:00+00:00',
+        created_by: 'c1',
+      },
+      {
+        id: 'e-two', team_id: 't1', title: 'Film Session', status: 'scheduled',
+        start_time: '2026-06-10T19:00:00+00:00', end_time: '2026-06-10T20:30:00+00:00',
+        created_by: 'c1',
+      },
+    );
+
+    const result = await checkEventConflicts(
+      new Date('2026-06-10T18:30:00Z'),
+      new Date('2026-06-10T20:00:00Z'),
+      ['p1'],
+      createStubClient(tables),
+    );
+
+    expect(result.conflicts).toHaveLength(2);
+    expect(result.conflicts.map((conflict) => conflict.conflictingEvent.id)).toEqual(['e-one', 'e-two']);
+  });
+});
+
+describe('coach blocked time — zone, all-day, and recurrence semantics', () => {
+  function coachTables(): SeedTables {
+    const tables = baseTables();
+    tables.golf_coaches.push({ id: 'c1', user_id: 'u2', organization_id: 'org1' });
+    tables.golf_teams.push({ id: 't1', organization_id: 'org1' });
+    tables.golf_team_settings.push({ team_id: 't1', timezone: 'America/New_York' });
+    return tables;
+  }
+
+  it('treats a same-day all-day block as the full team-local day', async () => {
+    const tables = coachTables();
+    tables.golf_coach_blocked_time.push({
+      id: 'block-all-day', coach_id: 'c1', title: 'Travel', start_date: '2026-06-10', end_date: '2026-06-10',
+      start_time: null, end_time: null, all_day: true, is_recurring: false,
+    });
+
+    const busy = await getUserBusyPeriods(
+      'u2',
+      new Date('2026-06-10T18:00:00Z'),
+      new Date('2026-06-10T20:00:00Z'),
+      createStubClient(tables),
+    );
+
+    expect(busy).toHaveLength(1);
+    expect(busy[0]!.eventId).toBe('block-all-day');
+    expect(busy[0]!.start.toISOString()).toBe('2026-06-10T04:00:00.000Z');
+    expect(busy[0]!.end.toISOString()).toBe('2026-06-11T04:00:00.000Z');
+  });
+
+  it('expands recurring blocked time into a later occurrence', async () => {
+    const tables = coachTables();
+    tables.golf_coach_blocked_time.push({
+      id: 'block-recurring', coach_id: 'c1', title: 'Weekly travel', start_date: '2024-06-12', end_date: '2024-06-12',
+      // The current write path historically left this redundant flag false
+      // even when it saved a valid recurrence_rule. The rule must win.
+      start_time: null, end_time: null, all_day: true, is_recurring: false,
+      recurrence_rule: 'RRULE:FREQ=WEEKLY;INTERVAL=1',
+    });
+
+    const busy = await getUserBusyPeriods(
+      'u2',
+      new Date('2026-06-17T18:00:00Z'),
+      new Date('2026-06-17T20:00:00Z'),
+      createStubClient(tables),
+    );
+
+    expect(busy).toHaveLength(1);
+    expect(busy[0]!.eventId).toBe('block-recurring');
+    expect(busy[0]!.start.toISOString()).toBe('2026-06-17T04:00:00.000Z');
+  });
+});
+
+describe('findCommonAvailability — incomplete reads are fail-closed', () => {
+  it('returns no suggestions when any participant identity is missing', async () => {
+    const tables = baseTables();
+    const slots = await findCommonAvailability(
+      ['u1', 'missing-user'],
+      { start: new Date('2026-06-10T00:00:00Z'), end: new Date('2026-06-11T00:00:00Z') },
+      60,
+      { start: 7, end: 19 },
+      createStubClient(tables),
+      'America/New_York',
+    );
+
+    expect(slots).toEqual([]);
   });
 });
 

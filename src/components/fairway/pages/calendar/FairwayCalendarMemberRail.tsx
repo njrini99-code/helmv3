@@ -35,6 +35,7 @@ export interface FairwayCalendarMemberRailProps {
   teamMembers: TeamMember[];
   selectedPlayerIds: string[];
   onSelect: (ids: string[]) => void;
+  onOpenPerson?: (id: string) => void;
 }
 
 // First LETTER of a name field, skipping any parenthetical suffix (e.g. a
@@ -81,6 +82,7 @@ export function FairwayCalendarMemberRail({
   teamMembers,
   selectedPlayerIds,
   onSelect,
+  onOpenPerson,
 }: FairwayCalendarMemberRailProps) {
   // Scroll affordance (finding #123) — `scrollbar-hide` removes the native
   // scrollbar with NO other visual cue that the pill row continues past the
@@ -90,6 +92,10 @@ export function FairwayCalendarMemberRail({
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(false);
+  // A person tap and a comparison selection are different workflows. Keep
+  // person schedules as the default, then make the comparison state explicit
+  // so the same avatar never quietly does two unrelated things.
+  const [comparisonMode, setComparisonMode] = React.useState(false);
 
   const updateScrollAffordance = React.useCallback(() => {
     const el = scrollerRef.current;
@@ -117,6 +123,7 @@ export function FairwayCalendarMemberRail({
   // `isAllSelected` is "every roster member is in the overlay" — the state
   // ALL now produces — and drives the pill's own pressed/fill styling. They
   // are different states (empty vs. full), not two names for the same thing.
+  const selectingPeople = !onOpenPerson || comparisonMode;
   const noneSelected = selectedPlayerIds.length === 0;
   const isAllSelected = teamMembers.every((m) => selectedPlayerIds.includes(m.id));
 
@@ -136,8 +143,8 @@ export function FairwayCalendarMemberRail({
   // selection is already over the cap (only reachable via ALL), individual
   // toggles stay uncapped too, so deselecting one member and picking them
   // back doesn't get silently refused the way #1470 originally described.
-  const useInitialsOnlyColoring = selectedPlayerIds.length > MAX_SELECTION;
-  const atCap = selectedPlayerIds.length >= MAX_SELECTION && !useInitialsOnlyColoring;
+  const useInitialsOnlyColoring = selectingPeople && selectedPlayerIds.length > MAX_SELECTION;
+  const atCap = selectingPeople && selectedPlayerIds.length >= MAX_SELECTION && !useInitialsOnlyColoring;
 
   const toggle = (id: string) => {
     if (selectedPlayerIds.includes(id)) {
@@ -175,7 +182,7 @@ export function FairwayCalendarMemberRail({
         <div
           ref={scrollerRef}
           role="group"
-          aria-label="Filter calendar by team member"
+          aria-label={selectingPeople ? 'Compare team schedules' : 'Open a team member schedule'}
           className={cn(
             'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
             // Reserve the chevron's own 28px gutter, and only while that
@@ -197,27 +204,38 @@ export function FairwayCalendarMemberRail({
         <Button
           type="button"
           variant="ghost"
-          onClick={() => onSelect(isAllSelected ? [] : teamMembers.map((m) => m.id))}
-          aria-pressed={isAllSelected}
+          onClick={() => {
+            if (!selectingPeople) {
+              setComparisonMode(true);
+              return;
+            }
+            if (isAllSelected) {
+              onSelect([]);
+              if (onOpenPerson) setComparisonMode(false);
+              return;
+            }
+            onSelect(teamMembers.map((m) => m.id));
+          }}
+          aria-pressed={selectingPeople ? isAllSelected : undefined}
           haptic="none"
           className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
         >
           <span
             className={cn(
               'flex h-9 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
-              isAllSelected
+              selectingPeople && isAllSelected
                 ? 'bg-accent-650 text-text-on-accent shadow-flat'
                 : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
             )}
           >
-            All
+            {selectingPeople ? 'All' : 'Compare'}
           </span>
         </Button>
 
         <span aria-hidden className="h-6 w-px flex-shrink-0 bg-border-subtle" />
 
         {teamMembers.map((m) => {
-          const idx = selectedPlayerIds.indexOf(m.id);
+          const idx = selectingPeople ? selectedPlayerIds.indexOf(m.id) : -1;
           const selected = idx !== -1;
           // Past the cap (only reachable via ALL), the index-based palette
           // wraps and two different members would render the same color —
@@ -237,12 +255,14 @@ export function FairwayCalendarMemberRail({
               type="button"
               variant="ghost"
               haptic="none"
-              onClick={() => toggle(m.id)}
-              aria-pressed={selected}
-              aria-disabled={capped || undefined}
+              onClick={() => selectingPeople ? toggle(m.id) : onOpenPerson?.(m.id)}
+              aria-pressed={selectingPeople ? selected : undefined}
+              aria-disabled={selectingPeople && capped || undefined}
               aria-label={
-                selected
-                  ? `${fullName(m)} (viewing schedule)`
+                !selectingPeople
+                  ? `Open ${fullName(m)}'s schedule`
+                  : selected
+                  ? `${fullName(m)} (included in comparison)`
                   : capped
                     ? `${fullName(m)} — already viewing the maximum of ${MAX_SELECTION} players`
                     : `View ${fullName(m)}'s schedule`
@@ -301,7 +321,7 @@ export function FairwayCalendarMemberRail({
       </div>
 
       {/* Legend / clear */}
-      {!noneSelected ? (
+      {selectingPeople && !noneSelected ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
             Viewing
@@ -335,7 +355,10 @@ export function FairwayCalendarMemberRail({
             type="button"
             variant="ghost"
             haptic="none"
-            onClick={() => onSelect([])}
+            onClick={() => {
+              onSelect([]);
+              if (onOpenPerson) setComparisonMode(false);
+            }}
             className="ml-auto h-auto min-h-0 w-auto p-0 font-fw-sans text-caption font-medium text-accent-700 transition-colors hover:bg-transparent hover:text-fw-success-ink"
           >
             Clear

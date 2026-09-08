@@ -247,3 +247,57 @@ describe('FairwayEventDetailDrawer — linked travel itinerary (P440)', () => {
     expect(screen.queryByText(/View itinerary/i)).not.toBeInTheDocument();
   });
 });
+
+describe('FairwayEventDetailDrawer — all-day RSVP and response continuity', () => {
+  it('allows a response during the server all-day grace window', () => {
+    const start = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    renderDrawer({ event: makeEvent({ start_time: start, start_date: start, all_day: true, rsvp_deadline: null }) });
+    expect(screen.getByRole('button', { name: 'Going' })).toBeEnabled();
+    expect(screen.queryByText(/already started/)).not.toBeInTheDocument();
+  });
+
+  it('locks all-day responses when the grace window has elapsed', () => {
+    const start = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+    renderDrawer({ event: makeEvent({ start_time: start, start_date: start, all_day: true, rsvp_deadline: null }) });
+    expect(screen.queryByRole('button', { name: 'Going' })).not.toBeInTheDocument();
+    expect(screen.getByText(/already started/)).toBeInTheDocument();
+  });
+
+  it('honors an explicit all-day deadline before the grace window expires', () => {
+    const start = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    renderDrawer({ event: makeEvent({ start_time: start, start_date: start, all_day: true, rsvp_deadline: new Date(Date.now() - 60_000).toISOString() }) });
+    expect(screen.queryByRole('button', { name: 'Going' })).not.toBeInTheDocument();
+    expect(screen.getByText(/deadline has passed/)).toBeInTheDocument();
+  });
+
+  it('keeps a successful response visible until the player chooses to close', async () => {
+    const onOpenChange = vi.fn();
+    renderDrawer({ onOpenChange });
+    fireEvent.click(screen.getByRole('button', { name: 'Going' }));
+    expect(await screen.findByText('Response saved · Going')).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('allows retry after a thrown response request', async () => {
+    const onRespond = vi.fn().mockRejectedValue(new Error('offline'));
+    renderDrawer({ onRespond });
+    fireEvent.click(screen.getByRole('button', { name: 'Going' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not save your response. Try again.');
+    expect(screen.getByRole('button', { name: 'Going' })).toBeEnabled();
+  });
+
+  it('ignores a response belonging to the previously opened event', async () => {
+    let resolveResponse!: (result: RsvpRespondResult) => void;
+    const onRespond = vi.fn(() => new Promise<RsvpRespondResult>((resolve) => { resolveResponse = resolve; }));
+    const common = { open: true, isCoach: false, onOpenChange: vi.fn(), onRespond };
+    const { rerender } = render(<FairwayEventDetailDrawer {...common} event={makeEvent()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Going' }));
+    rerender(<FairwayEventDetailDrawer {...common} event={makeEvent({ id: 'evt-2', title: 'Next event' })} />);
+    resolveResponse({ success: false, error: 'Old event error' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Going' })).toBeEnabled());
+    expect(screen.queryByText('Old event error')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Response saved/)).not.toBeInTheDocument();
+  });
+});
