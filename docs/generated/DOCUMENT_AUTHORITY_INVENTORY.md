@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 22 |
+| `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 23 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -372,7 +372,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/M01-identity.md` | current | - | - | yes | 0 | 19 | - |
 | `audit/M02-state.md` | current | - | - | yes | 0 | 19 | - |
 | `audit/M03A-inbox.md` | current | - | - | yes | 0 | 15 | - |
-| `audit/M03B-thread.md` | current | - | - | yes | 0 | 6 | - |
+| `audit/M03B-thread.md` | current | - | - | yes | 0 | 6 | 1 |
 | `audit/M03C-composer.md` | current | - | - | yes | 0 | 20 | - |
 | `audit/M03D-overlays.md` | current | - | - | yes | 0 | 16 | 2 |
 | `audit/M04-media.md` | current | - | - | - | 0 | 21 | - |
