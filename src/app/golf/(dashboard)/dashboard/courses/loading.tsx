@@ -7,11 +7,24 @@ import { Skeleton } from '@/components/fairway/feedback';
  * Ground-truthed against `CourseLibraryClient.tsx`: a `max-w-6xl` (NOT
  * `max-w-[1280px]`) column with `pb-16` (not `pb-10`), a masthead, a SOLO
  * search input (`max-w-md` — there is no separate filter button beside it),
- * then a full-width "featured" hero card (`aspect-[16/9] sm:aspect-[21/9]`)
- * above a labeled "Your team's courses" section rendering the standard
- * `aspect-[3/2]` card grid. Previously this reserved a wider column, a
- * phantom filter button, and a flat 9-card grid with no hero — three
- * differences the eye catches at the exact moment the real page mounts.
+ * then a full-width "featured" hero card above a labeled "Your team's
+ * courses" section rendering the standard `aspect-[3/2]` card grid.
+ * Previously this reserved a wider column, a phantom filter button, and a
+ * flat 9-card grid with no hero — three differences the eye catches at the
+ * exact moment the real page mounts.
+ *
+ * Two more corrections against `CourseCard.tsx`'s real markup:
+ *  - The hero (`variant="featured"`, CourseCard.tsx:76) is
+ *    `aspect-[16/9] max-h-[340px] w-full sm:aspect-[21/9]` — the `max-h`
+ *    cap is deliberate (CourseCard.tsx:70-75: keeps the grid on-screen below
+ *    the fold), and without it this skeleton was ~120-150px taller than the
+ *    real hero on a typical desktop column, shifting the whole grid up when
+ *    real content mounts.
+ *  - The masthead's primary-action placeholder stood for a Fairway `Button`
+ *    (button.tsx:93-94: `base` includes `rounded-full` for every variant),
+ *    not a `rounded-fw-md` rectangle — matches the `rounded-full` convention
+ *    already used for the same CTA-skeleton shape in sibling routes (e.g.
+ *    `dashboard/recruiting/loading.tsx`, `dashboard/rounds/new/loading.tsx`).
  */
 export default function Loading() {
   return (
@@ -31,7 +44,7 @@ export default function Loading() {
             <Skeleton className="mt-2 h-7 w-44" />
             <Skeleton className="mt-1.5 h-3.5 w-40" />
           </div>
-          <Skeleton className="h-10 w-32 rounded-fw-md" />
+          <Skeleton className="h-10 w-32 rounded-full" />
         </div>
 
         {/* Search — solo input, no adjoining filter control */}
@@ -39,7 +52,7 @@ export default function Loading() {
 
         <div className="space-y-10">
           {/* Hero — the featured course card */}
-          <Skeleton className="aspect-[16/9] w-full rounded-fw-lg sm:aspect-[21/9]" />
+          <Skeleton className="aspect-[16/9] max-h-[340px] w-full rounded-fw-lg sm:aspect-[21/9]" />
 
           {/* "Your team's courses" section */}
           <section>

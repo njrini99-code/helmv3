@@ -24,10 +24,12 @@ function SectionSkeleton({
   );
 }
 
-/** One FormField's skeleton: visible label + control. */
+/** One FormField's skeleton: visible label + control. Default control is
+ *  `h-10 rounded-fw-sm` to match Input/TextArea/NumberField's shared `md`
+ *  recipe (styles.ts:34 `min-h-[2.5rem]`, styles.ts:47 `rounded-fw-sm`). */
 function FieldSkeleton({
   labelWidth,
-  controlHeight = 'h-11',
+  controlHeight = 'h-10',
 }: {
   labelWidth: string;
   controlHeight?: string;
@@ -35,7 +37,7 @@ function FieldSkeleton({
   return (
     <div className="flex flex-col gap-1.5">
       <Skeleton className={`h-3.5 ${labelWidth}`} />
-      <Skeleton className={`${controlHeight} w-full rounded-fw-md`} />
+      <Skeleton className={`${controlHeight} w-full rounded-fw-sm`} />
     </div>
   );
 }
@@ -90,10 +92,13 @@ export default function EditQualifierLoading() {
             <FieldSkeleton labelWidth="w-24" controlHeight="h-16" />
           </SectionSkeleton>
 
-          {/* Actions */}
+          {/* Actions: both buttons take Fairway Button's default `md` size
+              (FairwayEditQualifier.tsx:376,379 pass no `size`), which is a
+              flat 44px (`h-11`) regardless of variant — button.tsx:161
+              `md: 'min-h-[44px] …'`. */}
           <div className="flex items-center justify-between gap-3 pt-2">
-            <Skeleton className="h-9 w-16 rounded-full" />
-            <Skeleton className="h-10 w-[140px] rounded-full" />
+            <Skeleton className="h-11 w-16 rounded-full" />
+            <Skeleton className="h-11 w-[140px] rounded-full" />
           </div>
         </div>
       </div>
