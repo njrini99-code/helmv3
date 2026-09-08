@@ -28,8 +28,8 @@
  *   (e) Dry-run: print the exact SQL body that --apply would send.
  *   (f) With --apply: sends that one body via `supabase db query --linked
  *       --file`, re-reads the ledger, runs the migration's own `-- VERIFY:`
- *       queries (one SELECT per line, each must return >=1 row), and prints
- *       a recorded-vs-applied table.
+ *       queries (continuation lines joined until `;`, each query must return
+ *       >=1 row), and prints a recorded-vs-applied table.
  *
  * Why not `db push`: `supabase db push` applies EVERY pending migration, and
  * `--include-all=false` does not narrow that to one file — it only excludes
@@ -151,10 +151,20 @@ function checkGitState(fileBasename) {
   }
   ok = step('working tree is clean', clean) && ok;
 
+  // Scoped to the one path on purpose. The unscoped
+  // `git log origin/main --name-only --pretty=format:` this replaced emitted
+  // 2.28 MB against execFileSync's 1 MB default maxBuffer, so it threw
+  // ENOBUFS on every invocation and the catch turned that into a permanent
+  // FAIL — the check could not pass for any file, which is fail-closed but
+  // also means it verified nothing. Raising maxBuffer only moves the cliff;
+  // `rev-list -1 -- <path>` is bounded by one commit id regardless of repo
+  // size, and is correct under squash-merge (the add commit is on main).
   let inOriginMainLog = false;
   try {
-    const log = sh('git', ['log', 'origin/main', '--name-only', '--pretty=format:']);
-    inOriginMainLog = log.split('\n').some((l) => l.trim() === `supabase/migrations/${fileBasename}`);
+    const rev = sh('git', [
+      'rev-list', '-1', 'origin/main', '--', `supabase/migrations/${fileBasename}`,
+    ]);
+    inOriginMainLog = rev.trim() !== '';
   } catch {
     inOriginMainLog = false;
   }
@@ -163,14 +173,57 @@ function checkGitState(fileBasename) {
   return ok;
 }
 
+/**
+ * True when HELD.md's register marks `fileBasename` HOLD or OBSOLETE.
+ *
+ * Parses the table row by row rather than matching one regex across the whole
+ * document, because the register's real rows break both assumptions the old
+ * regex made:
+ *
+ *   - **Qualified statuses.** It required a literal `**HOLD**`, so
+ *     `**HOLD — R3, not yet reviewed**` did not match. Merged-but-held
+ *     migrations passed the gate for this reason alone.
+ *   - **Grouped rows.** A migration cell may list several files
+ *     (`A.sql + B.sql + C.sql`). The old pattern demanded a `|` immediately
+ *     before the basename, so only the first file in a group was ever seen.
+ *
+ * The status is anchored at the START of the status cell and allowed trailing
+ * qualifier text. Anchoring matters: rows like
+ * `**APPLIED 2026-09-03 — R3 — hold discharged**` contain the word "hold" and
+ * must NOT be treated as held — a substring search would block migrations
+ * whose hold was correctly discharged.
+ *
+ * Exported for the unit test; not part of the CLI surface.
+ */
+export function isHeldInRegister(heldText, fileBasename) {
+  for (const line of heldText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|')) continue;
+
+    const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|');
+    if (cells.length < 2) continue;
+
+    // The migration cell may name several files joined by `+`, each optionally
+    // wrapped in backticks. Compare whole tokens so one basename can never
+    // match as a substring of another.
+    const named = cells[0]
+      .split(/[+,]/)
+      .map((token) => token.replace(/`/g, '').trim())
+      .filter(Boolean);
+    if (!named.includes(fileBasename)) continue;
+
+    if (/^\*\*(HOLD|OBSOLETE)\b/i.test(cells[1].trim())) return true;
+  }
+  return false;
+}
+
 /** (b) Not HOLD in HELD.md, unless overridden with a reason. */
 function checkNotHeld(fileBasename, heldOverride, reason) {
   if (!existsSync(HELD_PATH)) {
     return step('HELD.md check', true, 'HELD.md not found — nothing to check against');
   }
   const heldText = readFileSync(HELD_PATH, 'utf-8');
-  const rowRe = new RegExp('\\|\\s*`?' + fileBasename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`?[^|]*\\|\\s*\\*\\*(HOLD|OBSOLETE)\\*\\*', 'i');
-  const isHeld = rowRe.test(heldText);
+  const isHeld = isHeldInRegister(heldText, fileBasename);
 
   if (!isHeld) {
     return step('not HOLD/OBSOLETE in HELD.md', true);
@@ -235,13 +288,50 @@ function printPlan(body) {
   return step('plan generated', true, `${body.split('\n').length} line(s)`);
 }
 
-/** Extract `-- VERIFY:` lines from the migration file header. */
-function extractVerifyQueries(fileText) {
-  return fileText
+/**
+ * Extract `-- VERIFY:` queries from the migration file header.
+ *
+ * Continuation lines are joined until a `;`, because migrations in this repo
+ * already write multi-line blocks:
+ *
+ *     -- VERIFY: select 1 from information_schema.columns
+ *     -- VERIFY:  where table_schema = 'public'
+ *     -- VERIFY:    and column_name = 'muted_until';
+ *
+ * One-line-one-query would run `where table_schema = 'public'` as a standalone
+ * statement (a syntax error) and, worse, run the bare
+ * `select 1 from information_schema.columns` as its own query — which returns
+ * rows for ANY database and so PASSES while asserting nothing.
+ *
+ * This mattered only in theory until the origin/main reachability check above
+ * was fixed: every apply died at preflight before reaching VERIFY. Now that it
+ * can get here, the bug is live, and VERIFY is the only partial-commit
+ * detector this path has (it runs even when the apply reports failure).
+ *
+ * A trailing fragment with no `;` is still returned rather than dropped, so a
+ * malformed block fails loudly instead of silently shrinking the check set.
+ *
+ * Exported for the unit test; not part of the CLI surface.
+ */
+export function extractVerifyQueries(fileText) {
+  const fragments = fileText
     .split('\n')
-    .filter((l) => /^--\s*VERIFY:/i.test(l.trim()))
+    .map((l) => l.trim())
+    .filter((l) => /^--\s*VERIFY:/i.test(l))
     .map((l) => l.replace(/^--\s*VERIFY:\s*/i, '').trim())
     .filter(Boolean);
+
+  const queries = [];
+  let buffer = '';
+  for (const fragment of fragments) {
+    buffer = buffer ? `${buffer} ${fragment}` : fragment;
+    if (buffer.endsWith(';')) {
+      queries.push(buffer);
+      buffer = '';
+    }
+  }
+  if (buffer) queries.push(buffer);
+  return queries;
 }
 
 function runVerifyQueries(queries) {
