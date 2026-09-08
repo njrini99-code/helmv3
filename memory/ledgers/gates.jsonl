@@ -182,3 +182,22 @@
 {"ts":1788822864445,"gate":"typecheck","waitMs":0,"runMs":68846,"slots":2}
 {"ts":1788822954765,"gate":"test:run","waitMs":0,"runMs":354334,"slots":2}
 {"ts":1788823363300,"gate":"build","waitMs":0,"runMs":109728,"slots":2}
+{"ts":1788823616293,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":18801,"slots":2}
+{"ts":1788828736852,"gate":"typecheck","waitMs":0,"runMs":81957,"slots":2}
+{"ts":1788828845635,"gate":"test","waitMs":1,"runMs":420958,"slots":2}
+{"ts":1788829555184,"gate":"typecheck","waitMs":1,"runMs":7495,"slots":2}
+{"ts":1788829592407,"gate":"test","waitMs":1,"runMs":490438,"slots":2}
+{"ts":1788830130010,"gate":"build","waitMs":2,"runMs":386838,"slots":2}
+{"ts":1788831161789,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":6779,"slots":2}
+{"ts":1788832622465,"gate":"test","waitMs":1,"runMs":146183,"slots":2}
+{"ts":1788832881948,"gate":"typecheck","waitMs":0,"runMs":58557,"slots":2}
+{"ts":1788832961255,"gate":"test","waitMs":0,"runMs":343526,"slots":2}
+{"ts":1788833750050,"gate":"typecheck","waitMs":1,"runMs":80689,"slots":2}
+{"ts":1788833855166,"gate":"test","waitMs":0,"runMs":469029,"slots":2}
+{"ts":1788834324349,"gate":"typecheck","waitMs":362258,"runMs":6156,"slots":2}
+{"ts":1788834424362,"gate":"test","waitMs":66081,"runMs":494418,"slots":2}
+{"ts":1788835295882,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":19165,"slots":2}
+{"ts":1788835495245,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":1850,"slots":2}
+{"ts":1788835859393,"gate":"/Users/ricknini/worktrees/helmv3/mobile-messages-audit/node_modules/.bin/tsgo --noEmit -p tsconfig.json","waitMs":0,"runMs":1748,"slots":2}
+{"ts":1788835972564,"gate":"typecheck","waitMs":0,"runMs":77627,"slots":2}
+{"ts":1788836078302,"gate":"test","waitMs":1,"runMs":495220,"slots":2}
