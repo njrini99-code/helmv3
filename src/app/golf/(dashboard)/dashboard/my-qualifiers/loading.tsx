@@ -47,8 +47,11 @@ export default function Loading() {
   );
 }
 
-/** Shape-matches MyQualifierCard: title + status pill, date/course meta, the
- *  3-up thru/total/to-par scorecard well, and the two action buttons. */
+/** Shape-matches MyQualifierCard (FairwayMyQualifiers.tsx:267-353): title +
+ *  status pill, date/course meta, the 3-up thru/total/to-par scorecard well,
+ *  and the two action buttons. Both actions render as real `Button`s
+ *  (button.tsx:94 `rounded-full` base), so their skeletons use `rounded-full`
+ *  too, not the rectangular `rounded-fw-md`. */
 function QualifierCardSkeleton() {
   return (
     <div className="flex h-full flex-col gap-4 rounded-card border border-border-subtle bg-surface p-6 [box-shadow:var(--fw-shadow-card)]">
@@ -79,8 +82,8 @@ function QualifierCardSkeleton() {
 
       {/* Actions */}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
-        <Skeleton className="h-8 w-44 rounded-fw-md" />
-        <Skeleton className="h-8 w-32 rounded-fw-md" />
+        <Skeleton className="h-8 w-44 rounded-full" />
+        <Skeleton className="h-8 w-32 rounded-full" />
       </div>
     </div>
   );

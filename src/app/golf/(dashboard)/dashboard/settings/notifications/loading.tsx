@@ -8,6 +8,12 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * masthead, the Quiet mode toggle row, and the per-category channel matrix
  * (a caption strip, the Update/Push/Email/In-app column header, and three
  * category groups of rows) in the same order the live page renders them.
+ * The category-group row counts (2/4/3) match `CATEGORY_GROUPS` in
+ * FairwaySettingsNotifications.tsx:62-75, and every toggle placeholder is
+ * sized `h-6 w-11 rounded-full` to match the one `Switch` track size
+ * (Switch.tsx:36, `h-6 w-11`) used identically for the Quiet-mode switch and
+ * every per-category channel cell there — the matrix cells are not a
+ * smaller control.
  */
 export default function NotificationSettingsLoading() {
   return (
@@ -77,9 +83,9 @@ export default function NotificationSettingsLoading() {
                       className="col-span-6 h-3.5"
                       style={{ width: `${70 - (i % 3) * 12}%` }}
                     />
-                    <Skeleton className="col-span-2 h-5 w-9 justify-self-center rounded-full" />
-                    <Skeleton className="col-span-2 h-5 w-9 justify-self-center rounded-full" />
-                    <Skeleton className="col-span-2 h-5 w-9 justify-self-center rounded-full" />
+                    <Skeleton className="col-span-2 h-6 w-11 justify-self-center rounded-full" />
+                    <Skeleton className="col-span-2 h-6 w-11 justify-self-center rounded-full" />
+                    <Skeleton className="col-span-2 h-6 w-11 justify-self-center rounded-full" />
                   </div>
                 ))}
               </div>

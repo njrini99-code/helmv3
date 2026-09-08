@@ -4,23 +4,34 @@ import { fairwayScope } from '@/lib/redesign/flag';
 /**
  * Route Suspense fallback for /golf/dashboard/rounds/[id]/review.
  *
- * Task 10 (2026-07-19) moved this route onto the Spine & Stage filmstrip —
- * `FilmstripReview` composes `ReviewHero` (a green score panel beside the
- * 18-hole `Filmstrip`, ONE hero unit — see ReviewHero.tsx: `grid-cols-1
- * sm:grid-cols-[264px_1fr]`, `rounded-fw-lg border border-accent-700
- * shadow-raise`) above the AI narrative. This fallback reproduces that exact
- * two-pane hero shape at the SAME `max-w-2xl` container the live page uses —
- * a left green-block placeholder (the real panel gradient, so the hero's
- * brand color never "pops in") beside a wide strip block reserving the
- * Filmstrip's own height (now the `HoleShotPath` strip band: `h-28 md:h-32`
- * cells plus the score labels beneath — ~9.5rem/11rem) — so the handoff
- * is a quiet fade, not a layout jump.
+ * The page is a CLIENT component (page.tsx has no server data fetching to
+ * suspend on), and it mounts with `loadingRound`/`loadingStoredReview` both
+ * starting `true`. So the instant this route boundary resolves and the page
+ * mounts, what actually paints is the page's OWN "Fairway loading surface"
+ * (P203/P216 — see page.tsx's `if (isLoading)` return, page.tsx:545-606),
+ * not the eventual FilmstripReview/ReviewHero content. This fallback
+ * reproduces THAT branch exactly: the same `max-w-6xl` container, the same
+ * ViewHeader silhouette (eyebrow + title + description + one Refresh
+ * action), then the same `mt-8 flex flex-col gap-6` status region with its
+ * TWO children — the centered card (icon/title/value stack, a 3-up
+ * mini-stat row, two stacked h-16 rows; page.tsx:573-595) and, immediately
+ * after it, the always-present status line (page.tsx:596-605's `<p>` —
+ * only its inner content branches on `isGenerating`, the element itself is
+ * unconditional while `isLoading`) — so the route fallback hands off to
+ * the page's own loading state with no shape change and no added/removed row.
+ *
+ * Previously this used a `max-w-2xl` two-pane "filmstrip hero" shape mirroring
+ * the LOADED FilmstripReview/ReviewHero — which is neither loading state the
+ * page actually renders. Both `isLoading` and the final content return use
+ * `max-w-6xl`; `max-w-2xl` only appears on the error/no-data branches. That
+ * mismatch meant every ordinary load narrowed from 6xl to 2xl and back,
+ * shifting the whole page horizontally twice per visit.
  */
 export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <div className="mx-auto w-full max-w-2xl px-5 py-8 md:px-8 md:py-10">
-        {/* Masthead — ViewHeader silhouette (eyebrow + title + description + action) */}
+      <div className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8 md:py-10">
+        {/* Masthead — ViewHeader silhouette (eyebrow + title + description + one action) */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-3 w-24" />
@@ -38,26 +49,38 @@ export default function Loading() {
         >
           <span className="sr-only">Loading review…</span>
 
-          {/* Filmstrip hero — left green-block placeholder + wide strip block */}
-          <div className="grid grid-cols-1 overflow-hidden rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise sm:grid-cols-[264px_1fr]">
-            <div className="bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-6" aria-hidden="true" />
-            <div className="bg-surface p-5 sm:p-6">
-              <Skeleton className="h-[9.5rem] w-full rounded-fw-sm md:h-[11rem]" />
-              <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
-                <Skeleton className="h-3.5 w-40" />
-              </div>
+          {/* The page's own isLoading card: icon + title + value stack,
+              3-up mini-stats, two stacked rows. */}
+          <div className="rounded-card border border-border-subtle bg-surface p-6">
+            <div className="flex flex-col items-center gap-3">
+              <Skeleton className="h-12 w-12 rounded-fw-md" />
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-9 w-20" />
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center gap-2 rounded-fw-md bg-surface-sunken p-3"
+                >
+                  <Skeleton className="h-6 w-10" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 flex flex-col gap-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-16 w-full rounded-fw-md" />
+              <Skeleton className="h-16 w-full rounded-fw-md" />
             </div>
           </div>
 
-          {/* AI narrative body */}
-          <div className="flex flex-col gap-3 rounded-card border border-border-subtle bg-surface p-6">
+          {/* The page's always-present status line below the card
+              (page.tsx:596-605) — only its text branches on isGenerating,
+              the row itself renders unconditionally while isLoading. */}
+          <div className="flex items-center justify-center gap-2">
             <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3.5 w-full" />
-            <Skeleton className="h-3.5 w-11/12" />
-            <Skeleton className="h-3.5 w-3/5" />
           </div>
-
-          <Skeleton className="mx-auto h-4 w-40" />
         </div>
       </div>
     </div>
