@@ -143,3 +143,24 @@ describe('New Round — one helper for round-write failures (B6)', () => {
     expect(handler).toMatch(/describeRoundWriteFailure\(result\.error\)/);
   });
 });
+
+describe('New Round — completion surfaces provide cold-chunk feedback (B10)', () => {
+  it('uses a fixed non-blocking loading status for cold chunks', () => {
+    const submitDynamic = slice('const FairwayRoundSubmitOverlay = dynamic(', 'const FairwayRoundSummarySheet = dynamic(');
+    const summaryDynamic = slice('const FairwayRoundSummarySheet = dynamic(', 'type Hole = RoundHole;');
+    expect(submitDynamic).toContain('loading: () => <RoundCompletionChunkLoading />');
+    expect(summaryDynamic).toContain('loading: () => <RoundCompletionChunkLoading />');
+    expect(source).toMatch(/role="status"[\s\S]*pointer-events-none fixed[\s\S]*Preparing your round/);
+  });
+
+  it('keeps the summary mounted while pending stats exist so close animations can finish', () => {
+    const summaryRender = slice('{pendingFinalStats && (', '{/* Submit Overlay');
+    expect(summaryRender).toContain('<FairwayRoundSummarySheet');
+    expect(summaryRender).toContain('open={showFinishConfirm}');
+    expect(summaryRender).toContain('if (!pendingFinalStats) return;');
+
+    const submitRender = source.slice(source.indexOf("{step === 'submitting' && ("));
+    expect(submitRender).toContain('<SubmitOverlay');
+    expect(submitRender).toContain('isVisible');
+  });
+});

@@ -219,3 +219,8 @@ Calendar renders views
 - `memory/context/golfhelm-database.md`
 - `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md`
 - `docs/PUSH_NOTIFICATION_AUDIT.md`
+
+Mobile calendar day cells retain a 44px width and scroll horizontally when the week cannot fit; the
+selected date stays visible after selection and resize. Phone hero padding and day-cell height are
+compact, with a matching route skeleton. The schedule card uses the same touch-sized day rail and
+keeps its date separate from the return-to-today action.

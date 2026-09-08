@@ -87,7 +87,7 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
       role="status"
       aria-live="polite"
       variants={revealVariants(reduced)}
-      initial="hidden"
+      initial={false}
       animate="visible"
       className={cn(
         'flex flex-col items-center justify-center text-center font-fw-sans',

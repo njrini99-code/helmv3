@@ -113,7 +113,7 @@ export function FairwayCalendarHero({
   return (
     // The ONE hero plinth — a warm matte Surface (bg-surface), shadow elevation
     // (border OR shadow, never both), generous hero padding.
-    <Surface elevation="shadow" padding="lg" className="bg-surface">
+    <Surface elevation="shadow" padding="none" className="bg-surface p-4 md:p-8">
       <div className="flex flex-col gap-5 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-6">
         {/* Title column — eyebrow + month + honest status line.
             md:min-w-[260px]: at tablet widths (810/844px — between md and lg)
@@ -138,7 +138,7 @@ export function FairwayCalendarHero({
               week") — it must wrap as a whole line (or not at all, given the
               min-width above), never split mid-phrase across 3-4 lines. */}
           {upcomingCount > 0 ? (
-            <p className="whitespace-nowrap font-fw-sans text-body-lg leading-[1.5] text-text-secondary">
+            <p className="whitespace-nowrap font-fw-sans text-body-sm md:text-body-lg leading-[1.5] text-text-secondary">
               <span className="font-fw-mono tabular-nums">{upcomingCount}</span>
               {' upcoming · '}
               <span className="font-fw-mono tabular-nums">{windowCount}</span>
@@ -253,7 +253,7 @@ export function FairwayCalendarHero({
       </div>
 
       {/* Day strip — sits inside the plinth, beneath the title. */}
-      <div className="mt-6 md:mt-8">
+      <div className="mt-4 md:mt-8">
         <FairwayDayStrip
           focusDate={focusDate}
           selectedDate={selectedDate}

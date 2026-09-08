@@ -123,6 +123,8 @@ export interface FairwayTeamHubProps {
 
 /** Max pending TaskRows previewed on the Tasks card before the footer count. */
 const TASK_PREVIEW_CAP = 5;
+/** Keep the Team Hub's first mobile viewport available for other team areas. */
+const MOBILE_TASK_PREVIEW_CAP = 3;
 /** Max class rows previewed on the Classes card. */
 const CLASS_PREVIEW_CAP = 3;
 /** Max avatars in the Teammates stack before the "+N" overflow chip. */
@@ -209,7 +211,7 @@ export function FairwayTeamHub({
         <Surface padding="md" className="flex flex-col gap-4 md:row-span-2">
           <Link
             href={TEAM_HUB_CARD_ROUTES.tasks}
-            className="group flex items-center justify-between gap-2 rounded-fw-sm"
+            className="group flex min-h-11 items-center justify-between gap-2 rounded-fw-sm"
           >
             <span className="flex items-center gap-2">
               <h2 className="font-fw-sans text-body-sm font-semibold text-text-secondary">Tasks</h2>
@@ -239,8 +241,10 @@ export function FairwayTeamHub({
             />
           ) : previewTasks.length > 0 ? (
             <div className="flex flex-col gap-1.5">
-              {previewTasks.map((task) => (
-                <TaskRow key={task.id} task={task} now={now} onComplete={() => onCompleteTask(task.id)} />
+              {previewTasks.map((task, index) => (
+                <div key={task.id} className={index >= MOBILE_TASK_PREVIEW_CAP ? 'hidden md:block' : undefined}>
+                  <TaskRow task={task} now={now} onComplete={() => onCompleteTask(task.id)} />
+                </div>
               ))}
             </div>
           ) : (
@@ -256,7 +260,7 @@ export function FairwayTeamHub({
             <div className="mt-auto">
               <Link
                 href={TEAM_HUB_CARD_ROUTES.tasks}
-                className="font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-800"
+                className="inline-flex min-h-11 items-center font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-800"
               >
                 {pendingTasks.length > 0 ? `All tasks · ${pendingTasks.length} open` : 'All tasks'}
               </Link>

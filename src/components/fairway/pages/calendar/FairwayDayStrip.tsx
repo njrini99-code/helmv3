@@ -40,6 +40,7 @@
 import * as React from 'react';
 import { startOfWeek, addDays, isSameDay, isBefore, format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Button } from '@/components/fairway/controls/button';
 import { getZonedDateParts } from '@/lib/calendar/timezone';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -100,6 +101,26 @@ export function FairwayDayStrip({
   onSelectDate,
   className,
 }: FairwayDayStripProps) {
+  const { ref: railRef, fadeStyle } = useScrollFade<HTMLDivElement>('x');
+  const selectedRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    const selected = selectedRef.current;
+    const rail = selected?.parentElement;
+    if (!selected || !rail) return;
+    const keepSelectedVisible = () => {
+      if (rail.scrollWidth <= rail.clientWidth) return;
+      const item = selected.getBoundingClientRect();
+      const bounds = rail.getBoundingClientRect();
+      if (item.left < bounds.left + 28 || item.right > bounds.right - 28) {
+        rail.scrollLeft += item.left + item.width / 2 - bounds.left - bounds.width / 2;
+      }
+    };
+    keepSelectedVisible();
+    const observer = new ResizeObserver(keepSelectedVisible);
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, [selectedDate, focusDate]);
+
   const days = React.useMemo(() => {
     const weekStart = startOfWeek(focusDate, { weekStartsOn: WEEK_STARTS_ON });
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -130,7 +151,9 @@ export function FairwayDayStrip({
     <div
       role="group"
       aria-label="Week navigator"
-      className={cn('grid grid-cols-7 gap-1.5 md:gap-2.5', className)}
+      ref={railRef}
+      style={fadeStyle}
+      className={cn('grid grid-flow-col auto-cols-[minmax(44px,1fr)] gap-0.5 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:gap-2.5', className)}
     >
       {days.map((day) => {
         const key = format(day, 'yyyy-MM-dd');
@@ -151,6 +174,7 @@ export function FairwayDayStrip({
           // GOTCHA (a): Fairway <Button variant="ghost">, not Surface as="button".
           <Button
             key={key}
+            ref={dayIsSelected ? selectedRef : undefined}
             type="button"
             variant="ghost"
             onClick={() => {
@@ -165,7 +189,7 @@ export function FairwayDayStrip({
                 : ' — no events'
             }`}
             className={cn(
-              'group relative block h-auto min-h-[78px] w-full border-0 font-normal md:min-h-[88px]',
+              'group relative block h-auto min-h-[68px] w-full border-0 font-normal md:min-h-[88px]',
               'rounded-card px-1.5 py-2.5 md:px-2 md:py-3',
               'transition-[background-color,box-shadow,transform,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
@@ -181,7 +205,7 @@ export function FairwayDayStrip({
               ],
             )}
           >
-            <span className="flex h-full min-h-[78px] w-full flex-col items-center justify-between md:min-h-[88px]">
+            <span className="flex h-full min-h-[48px] w-full flex-col items-center justify-between md:min-h-[88px]">
               {/* Day-of-week eyebrow. */}
               <span
                 className={cn(

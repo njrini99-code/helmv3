@@ -153,21 +153,30 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     disabled,
     children,
     onClick,
+    onClickCapture,
     ...props
   },
   ref,
 ) {
   const Comp = asChild ? Slot : 'button';
 
-  // Light tactile tap on the real <button> press (fire-and-forget, safe no-op on
-  // web). Skipped under asChild — that path forwards onClick straight to the
-  // child element/Slot and must not be wrapped.
-  const handleClick = asChild
-    ? onClick
-    : (event: MouseEvent<HTMLButtonElement>) => {
-        fwHaptic('light');
-        onClick?.(event);
-      };
+  const unavailable = Boolean(disabled || busy);
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (event.defaultPrevented || unavailable) return;
+    fwHaptic('light');
+    onClick?.(event);
+  };
+  // Links have no native disabled attribute. Capture activation before the
+  // slotted child's click handler (including Next navigation) can run. Keep
+  // focus in place while busy so completion does not strand keyboard users.
+  const handleClickCapture = (event: MouseEvent<HTMLButtonElement>) => {
+    if (asChild && unavailable) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    onClickCapture?.(event);
+  };
 
   // When rendering asChild, the consumer owns the inner element; we cannot inject
   // multiple icon spans into an arbitrary single child, so we pass through children
@@ -190,16 +199,19 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
         variantStyles[variant],
         sizeStyles[size],
         fullWidth && 'w-full',
+        asChild && unavailable && 'opacity-50 cursor-not-allowed',
         busy && 'cursor-wait',
         className,
       )}
       // `asChild` forwards these to the child element; for a non-button child the
       // consumer should ensure semantics (e.g. role) are correct.
       {...(asChild ? {} : { disabled: disabled || busy, type: props.type ?? 'button' })}
+      aria-disabled={asChild && unavailable ? true : undefined}
       aria-busy={busy || undefined}
       data-slot="fw-button"
       data-variant={variant}
       onClick={handleClick}
+      onClickCapture={handleClickCapture}
       {...props}
     >
       {content}

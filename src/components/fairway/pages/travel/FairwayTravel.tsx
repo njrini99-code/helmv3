@@ -217,6 +217,14 @@ export function FairwayTravel({
   const handleSelect = (itinerary: TravelItinerary) => {
     setSelectedId(itinerary.id);
     setActiveTab('details');
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      requestAnimationFrame(() => {
+        detailPanelRef.current?.scrollIntoView({
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      });
+    }
   };
 
   /* ── create / edit ──────────────────────────────────────────────────────── */

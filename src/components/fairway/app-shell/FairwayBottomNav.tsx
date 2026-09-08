@@ -120,14 +120,14 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
     <nav data-slot="fw-bottom-nav" aria-label="Primary"
       className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-[var(--fw-z-nav)] px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom,0px))] md:hidden', className)}>
       <LayoutGroup id={layoutId}>
-        <ul className="pointer-events-auto relative flex h-14 items-stretch gap-1 rounded-full fw-glass-chrome border p-1 shadow-raise">
+        <ul className="pointer-events-auto relative flex h-14 items-stretch gap-0.5 rounded-full fw-glass-chrome border p-1 shadow-raise">
           {items.map((item) => {
             const routeActive = item.active ?? (item.activeMatch && pathname ? item.activeMatch(pathname) : matchActive(item.href, pathname));
             const active = Boolean(routeActive && !moreSelected);
             const Icon = item.icon;
             return (
               <m.li key={item.href} layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }}
-                className="min-w-0" style={{ flex: active ? 1.8 : 1 }}>
+                className={active ? 'min-w-max' : 'min-w-[44px]'} style={{ flex: active ? '1 0 auto' : '1 1 0' }}>
                 <Link href={item.href} aria-current={routeActive ? 'page' : undefined} aria-label={item.label}
                   onClick={() => fwHaptic('selection')}
                   className={cn(control, active ? 'text-text-on-accent' : 'text-text-tertiary hover:text-text-secondary')}>
@@ -145,7 +145,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
             );
           })}
           {onMoreOpen && (
-            <m.li layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }} className="min-w-0" style={{ flex: moreSelected ? 1.8 : 1 }}>
+            <m.li layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }} className={moreSelected ? 'min-w-max' : 'min-w-[44px]'} style={{ flex: moreSelected ? '1 0 auto' : '1 1 0' }}>
               <Button type="button" variant="ghost" haptic="light" aria-haspopup="dialog" aria-expanded={moreOpen ?? false}
                 aria-label={moreLabel} onClick={onMoreOpen}
                 className={cn(control, 'bg-transparent hover:bg-transparent', moreSelected ? 'text-text-on-accent' : 'text-text-tertiary')}>

@@ -221,7 +221,7 @@ export function FairwayTeamInfo({
         className="mb-8"
       />
 
-      <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-6 md:gap-10">
         {/* ── Head coach ───────────────────────────────────────────────── */}
         <section>
           <SectionTitle icon={<IconUser size={18} />}>Head coach</SectionTitle>

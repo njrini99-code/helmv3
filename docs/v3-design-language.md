@@ -346,3 +346,12 @@ transparency replaces it with an opaque surface. Active mobile destinations
 and message filters use a green pill with cream text; hub sub-navigation uses
 a green wash and underline. The content and message bubbles stay legible on
 solid surfaces.
+
+Mobile audit follow-up (2026-09-08): selected bottom-navigation labels receive
+their intrinsic width while inactive targets retain 44px. Shared
+empty/insufficient states are visible in server-rendered HTML rather than
+waiting for hydration. Fairway link-style buttons enforce busy/disabled state
+for pointer and keyboard activation, including slotted child actions. Mobile
+tabs retain 44px touch height. Course/tee/announcement drawer callers own a
+bounded body scroller and footer safe-area clearance; profile-photo actions
+wrap within narrow cards.
