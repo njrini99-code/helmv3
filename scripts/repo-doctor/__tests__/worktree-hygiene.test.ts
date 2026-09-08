@@ -103,13 +103,13 @@ describe('worktree.canonical-off-main / worktree.oversized-next — against a di
     expect(results.find((r) => r.id === 'worktree.budget-exceeded')?.status).toBe(Status.PASS);
   });
 
-  it('FAILs branch-count once local branches exceed the 25-branch ceiling', async () => {
+  it('WARNs when local branches exceed the cleanup threshold', async () => {
     for (let i = 0; i < 26; i += 1) {
       execFileSync('git', ['branch', `spare-${i}`], { cwd: base });
     }
     const results = await worktreeRun({ repoRoot: base, homeDir: home });
     const r = results.find((x) => x.id === 'worktree.branch-count');
-    expect(r?.status).toBe(Status.FAIL);
+    expect(r?.status).toBe(Status.WARN);
     expect(r?.count).toBeGreaterThan(25);
   });
 
@@ -138,7 +138,7 @@ describe('worktree.canonical-off-main / worktree.oversized-next — against a di
     }
   });
 
-  it('FAILs stale-merged-pr for a worktree whose branch PR merged over 24h ago', async () => {
+  it('WARNs stale-merged-pr for a worktree whose branch PR merged over 24h ago', async () => {
     const wtHome = mkdtempSync(join(tmpdir(), 'a6-wt-stale-'));
     const wtPath = join(wtHome, 'landed');
     execFileSync('git', ['worktree', 'add', '--no-track', '-b', 'agent/landed', wtPath, 'main'], { cwd: base });
@@ -155,7 +155,7 @@ describe('worktree.canonical-off-main / worktree.oversized-next — against a di
     try {
       const results = await worktreeRun({ repoRoot: base, homeDir: home });
       const r = results.find((x) => x.id === 'worktree.stale-merged-pr');
-      expect(r?.status).toBe(Status.FAIL);
+      expect(r?.status).toBe(Status.WARN);
     } finally {
       execFileSync('git', ['worktree', 'remove', '--force', wtPath], { cwd: base });
       rmSync(wtHome, { recursive: true, force: true });
