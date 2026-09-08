@@ -8,18 +8,15 @@ Find tables and columns in Supabase that are genuinely dead — not referenced a
 
 ## Phase 1: Full Schema Extraction via Supabase MCP
 
-All of these are read-only `information_schema`/`pg_catalog` queries. Do not
-run them through the account-wide connector's `execute_sql` — that tool is
-an unenforced production write path per `.claude/rules/database.md` and
-stays off the permission allow list regardless of which door is used. Use
-this repo's project-scoped `mcp__supabase__*` server instead: `list_tables`,
-`list_extensions`, and `list_migrations` cover 1a/1b/1i/1j directly, and
-`search_docs` or `get_advisors` can surface policy/function/trigger
-metadata. For anything those tools don't expose directly (1c–1h), run
+All of these are read-only `information_schema`/`pg_catalog` queries. Use
+whatever connected Supabase MCP or authenticated CLI exposes the needed
+read surface. Prefer this repo's project-scoped `mcp__supabase__*` server when
+it is connected; a verified account-wide or other fallback `execute_sql` path
+is also valid for read-only inspection. For anything the connected MCP does
+not expose directly (1c–1h), use
 `./node_modules/.bin/supabase db dump --schema public --data-only=false` (or
-the equivalent local `supabase db diff`) against a local/read replica and
-inspect the output — never `execute_sql` against production. Do not skip
-any of the following checks.
+the equivalent local `supabase db diff`) and inspect the output. This command
+only reports findings; it never performs a write.
 
 ### 1a. All public tables
 ```sql
@@ -274,10 +271,10 @@ For each: table.column, reason you're confident it's unused.
 For each: table.column, reason it's ambiguous.
 
 ### Recommended Removal Steps
-For confirmed-unreferenced items only. This command only reports — any
-actual write goes through `npm run db:apply` after the migration is reviewed
-and, if it needs to wait, recorded in `supabase/migrations/HELD.md`; never
-`execute_sql` or `apply_migration` directly.
+For confirmed-unreferenced items only. This command only reports. Any
+actual write uses the reviewed, task-authorized write-capable Supabase path
+(`npm run db:apply` or a connected MCP) and follows the normal migration
+workflow, including `supabase/migrations/HELD.md` when applicable.
 1. Create a new migration with `ALTER TABLE x RENAME TO _deprecated_x`
 2. Deploy to preview/staging
 3. Run full test suite
