@@ -11,17 +11,17 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `db-migration-reviewer` | Agent | Review any Supabase/Postgres schema, RLS, auth-trigger, or migration change BEFORE it is applied. MANDATORY for DB changes — this is a Golf-shared production database. |
 | `debugger` | Agent | Root-cause hard failures — flaky tests, runtime errors, hydration mismatches, races, regressions — from evidence rather than inspection. Use when the cause is not obvious from reading the code. |
 | `helm-reader` | Agent | Read-only audit contract — inspects code/config/docs and reports findings with file:line citations, never edits anything. |
-| `helm-worker` | Agent | Standing worker contract for a task carried out inside a given worktree — confirms the branch, works door-only, gates before pushing, opens a PR, never merges or deploys. |
+| `helm-worker` | Agent | Implements an assigned task, verifies the result, and completes authorized Git or tool operations. |
 | `security-reviewer` | Agent | Review auth, permissions, RLS, user-data exposure, server/client boundaries, file uploads, and API routes for Helm Sports Labs (Next.js + Supabase). |
 | `ui-polish-reviewer` | Agent | Premium SaaS UI/UX review — visual hierarchy, spacing, states, motion, accessibility, and design-system consistency for Helm Sports Labs. |
 | `verifier` | Agent | Independently verify that a completion claim is actually true — by running commands and reading the diff, not by trusting the implementer's summary. Use before declaring any non-trivial change done. |
 | `/cleanup-db` | Command |  |
 | `/context` | Command | Build a feature-context pack for the given files/task and load the mapped docs |
-| `/gates` | Command | Run the full local CI gate set with exit codes preserved |
+| `/gates` | Command | Run the checks relevant to the changed behavior and report real exit codes |
 | `/held` | Command | List migrations still on HOLD in supabase/migrations/HELD.md (read-only) |
 | `/land` | Command | Land a PR through the sole landing script and report the result |
 | `/status` | Command | Repo/branch/worktree/control-plane health, summarized in under ten lines |
-| `/worktree` | Command | Create a task worktree through the one door and report its path |
+| `/worktree` | Command | Create an isolated task workspace when concurrent writes need one |
 | `app-store-screenshots` | Skill | App Store and Google Play screenshot creation with exact platform specs. Covers iOS/Android dimensions, gallery ordering, device mockups, and preview videos. Use for: app store optimization, ASO, app… |
 | `apple-appstore-reviewer` | Skill | Serves as a reviewer of the codebase with instructions on looking for Apple App Store optimizations or rejection reasons. |
 | `capacitor-best-practices` | Skill | Best practices for Capacitor app development including project structure, plugin usage, performance optimization, security, and deployment. Use this skill when reviewing Capacitor code, setting up… |
@@ -30,7 +30,7 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `finish-task` | Skill | Use when an implementation should be carried through to verified completion rather than stopping after the edits look right. Encodes this repo's gate sequence and the specific ways green gates have… |
 | `framer-motion` | Skill | Framer Motion performance optimization guidelines. This skill should be used when writing, reviewing, or refactoring React animations with Framer Motion to ensure optimal performance patterns.… |
 | `golfhelm-creative-engine` | Skill | Generate premium Instagram creatives, social media ads, and marketing mockups for GolfHelm — an AI-powered golf coaching SaaS for college teams. Use this skill whenever the user mentions Instagram… |
-| `helm-process` | Skill | The one-screen operating loop for doing work in helmv3 — worktree door, feature context, gates, landing, retirement, and the read-only tool surfaces. Use whenever starting a task, deciding how to… |
+| `helm-process` | Skill | Find Helm task, verification, workspace, and delivery commands. |
 | `helm-sentry` | Skill | Investigate a Sentry issue, alert email, production error, or a 'what is breaking' question for Helm Sports Labs (org helm-xs). Use whenever the request points at a Sentry issue id/link, a paging… |
 | `helm-supabase` | Skill | Traps and tooling for any Supabase/Postgres work in this repo — key precedence, the 1,000-row PostgREST cap, the .in() URL-length limit, applied-vs-recorded migrations, and the read-only MCP door.… |
 | `modern-saas-ui` | Skill | Generic premium-SaaS UI craft guidance — visual hierarchy, density, motion, empty states, when a surface should feel like chrome vs. data. Use for reasoning about how a screen should FEEL. It does… |

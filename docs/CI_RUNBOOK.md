@@ -13,39 +13,29 @@ updated.
 
 `npm install` wires a `pre-push` git hook automatically (the `prepare`
 lifecycle script, `scripts/setup-hooks.mjs` — sets `core.hooksPath` to the
-tracked `.githooks/`; `npm run hooks:install` does the same by hand). It
-runs the cheap checks that actually fail PRs, scoped to only the files the
-push changes, so failures show up in seconds locally instead of ~20 minutes
-later on GitHub:
+tracked `.githooks/`; `npm run hooks:install` does the same by hand). The hook
+keeps local work fast and range-scoped:
 
-- `typecheck:fast` (tsgo, falling back to `tsc` if tsgo isn't installed) —
-  only when a `.ts`/`.tsx` file changed.
-- `eslint` on the changed `.ts`/`.tsx`/`.mjs` files (warnings print; only an
-  error-severity finding fails the step).
-- `npm run lint:ratchet` (full-repo, ~1 min) — only when a changed file is
-  under `src/` or `scripts/`.
-- `sqlfluff lint --dialect postgres --rules core` on changed
-  `supabase/migrations/*.sql` — **informational only** (prints findings, never
-  fails the push): the SQL backlog is grandfathered on purpose, and the only
-  thing that actually gates it anywhere, CI included, is the full-repo
-  ratchet (`scripts/sql-lint-ratchet.mjs`). Skipped, not run, if `sqlfluff`
-  isn't on `PATH`.
-- `gitleaks git --log-opts=<range>` over the pushed commit range — skipped,
-  not failed, if `gitleaks` isn't on `PATH`.
-- `markdownlint-cli2` on changed `.md` files — **informational only**, same
-  reasoning as sqlfluff above (34,576 pre-existing violations are
-  grandfathered) — then `npm run markdown:ratchet` (full-repo, **this one
-  fails the push**) when a `.md` file changed.
-- Regenerates `docs/generated/` (doc inventory, world model, feature map,
-  entry points) when a `.md`, `memory/registry.yml`, or migration file
-  changed, and **fails the push** if that regeneration produces a diff —
-  commit the regenerated files and push again. It never commits for you.
-- `npm run docs:rules-current` when a `.claude/rules/*.md`, `CLAUDE.md`, or
-  `AGENTS.md` file changed.
+- `git diff --check` over each pushed commit range — blocks trailing
+  whitespace and other patch-format errors before they reach the remote.
+- `gitleaks git --redact --log-opts=<range>` over each pushed commit range —
+  runs when `gitleaks` is installed and is skipped with a notice when it is
+  unavailable. CI remains the authoritative full repository secret scan.
 
-Every step is timed and printed. Skip the whole hook for one push with
-`HELM_SKIP_PREPUSH=1 git push` (prints a loud notice) — CI still runs every
-check regardless, so skipping only defers when you find out.
+The hook does not run typecheck, ESLint, ratchets, generated-docs commands, or
+the Review Gate locally. Those project-wide checks remain in CI, where they run
+once per workflow. Skip the local hook for one push with
+`HELM_SKIP_PREPUSH=1 git push`; CI still runs every required check.
+
+The paired `pre-commit` hook scans staged content with redacted gitleaks output
+when the tool is installed. A staged migration receives a reminder to run and
+review `npm run db:types`; the hook does not contact Supabase, regenerate files,
+or alter the index.
+
+The `Feature knowledge registry` step in `ci.yml` is the single CI caller for
+the static knowledge checks. `npm run knowledge:check` already runs registry
+globs, document-inventory, and feature-map validation, so these are kept as
+named stages inside that step rather than repeated standalone workflow steps.
 
 ## 1. Status classification — hard gate vs. advisory
 

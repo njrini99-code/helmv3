@@ -9,7 +9,17 @@
 > mechanics this file documents (map-changed-files to registry to
 > context-pack to review, the PR workflow) remain accurate.
 
-Helmv3 already has the hard parts of an AI-native engineering system: `AGENTS.md`, `CLAUDE.md`, CodeRabbit, the external review bot, GitHub Actions, CircleCI, Supabase tests, Playwright, and a curated `memory/` folder. This layer makes those parts act like one operating system.
+AGENTS.md is the single operating policy. The registry routes feature context;
+hooks supply diagnostics and narrowly scoped destructive-command guards.
+Canonical and configuration edits are allowed within task authorization.
+Stop reminders are advisory. Existing worktree count is advisory unless an
+explicit HELM_MAX_MUTATION_WORKTREES cap is configured; disk reserve remains
+enforced. Local push checks do not regenerate files or repeat CI.
+
+Readers inherit available tools and stay read-only by task contract. Project
+MCP configuration carries Playwright and read-only Supabase into worktrees.
+Production mutation permissions request approval rather than making an
+authorized task impossible. Live tools outrank historical namespace tables.
 
 ## Source Of Truth
 
@@ -30,8 +40,7 @@ Use `memory/` as the repo intelligence source. Do not create a parallel `/knowle
 | Tool | Role |
 | --- | --- |
 | Codex | Implements fixes, generates context packs, validates locally, updates docs |
-| the external review bot | Whole-codebase PR review and drift detection |
-| CodeRabbit | Line-level review, static analysis, custom security and RLS rules |
+| Review Gate and CodeQL | Required deterministic checks and security analysis |
 | GitHub Actions | Fast PR gate: typecheck, lint, unit tests, build, Supabase lint and RLS |
 | CircleCI | Heavy jobs: iOS compile, Lighthouse preview, Knip, Stryker, Squawk, Promptfoo |
 | Playwright | Runtime/browser validation, especially mobile and authenticated flows |
@@ -47,8 +56,7 @@ Changed files
   -> memory/registry.yml impacted features
   -> scripts/knowledge/generate-context-pack.mjs
   -> Codex/Claude product-aware review
-  -> the external review bot whole-codebase review
-  -> CodeRabbit line/static review
+  -> Review Gate and CodeQL
   -> Playwright/Supabase/CI validation
   -> docs or Linear follow-up if knowledge is stale
 ```

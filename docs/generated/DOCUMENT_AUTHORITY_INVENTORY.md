@@ -27,11 +27,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 20 | 2 | 8 | 0 |
+| `POLICY` | 21 | 2 | 7 | 0 |
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 25 | 3 | 7 | 4 |
+| `GENERATED_TRUTH` | 24 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -50,12 +50,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `.claude/rules/autonomy.md` | current | - | - | yes | 6 | 1 | - |
+| `.claude/rules/autonomy.md` | current | - | - | - | 6 | 1 | - |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | 0 | 5 | - |
 | `.claude/rules/baseball-roles.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | 7 | 5 | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
+| `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
 | `.claude/rules/database.md` | current | - | - | - | 6 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 8 | 6 | - |
@@ -65,8 +65,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 8 | 7 | - |
-| `AGENTS.md` | current | yes | - | yes | 0 | 17 | - |
-| `CLAUDE.md` | current | yes | - | yes | 0 | 8 | - |
+| `.claude/rules/shipping.md` | current | - | - | - | 23 | 3 | - |
+| `AGENTS.md` | current | yes | - | yes | 0 | 8 | - |
+| `CLAUDE.md` | current | yes | - | yes | 0 | 4 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
 | `README.md` | current | - | - | - | 0 | 5 | - |
 | `SECURITY.md` | current | - | - | - | 0 | 1 | - |
@@ -76,14 +77,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `.claude/agents/debugger.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/agents/helm-reader.md` | current | - | - | - | 1 | 2 | - |
-| `.claude/agents/helm-worker.md` | current | - | - | yes | 1 | 1 | - |
+| `.claude/agents/helm-reader.md` | current | - | - | - | 0 | 2 | - |
+| `.claude/agents/helm-worker.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/verifier.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 4 | - |
 | `.claude/commands/context.md` | current | - | - | - | 0 | 2 | - |
-| `.claude/commands/gates.md` | current | - | - | - | 0 | 2 | - |
+| `.claude/commands/gates.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/commands/held.md` | current | - | - | - | 0 | 1 | - |
-| `.claude/commands/land.md` | current | - | - | - | 0 | 1 | - |
+| `.claude/commands/land.md` | current | - | - | yes | 0 | 0 | - |
 | `.claude/commands/status.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/commands/worktree.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/app-store-screenshots/SKILL.md` | current | - | - | - | 0 | 0 | - |
@@ -97,7 +98,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/golfhelm-creative-engine/references/creative-rules.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/golfhelm-creative-engine/references/design-tokens.md` | current | - | - | yes | 0 | 1 | - |
 | `.claude/skills/golfhelm-creative-engine/references/product-features.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/skills/helm-process/SKILL.md` | current | - | - | - | 1 | 9 | - |
+| `.claude/skills/helm-process/SKILL.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/skills/helm-sentry/SKILL.md` | current | - | - | - | 0 | 7 | - |
 | `.claude/skills/helm-supabase/SKILL.md` | current | - | - | - | 0 | 8 | - |
 | `.claude/skills/modern-saas-ui/SKILL.md` | current | - | - | yes | 0 | 3 | - |
@@ -260,14 +261,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/security-reviewer.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/rules/shipping.md` | current | - | - | yes | 24 | 7 | - |
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `audit/A1-RESOLUTION.md` | generated | - | - | - | 0 | 2 | - |
-| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 14 | 18 | - |
-| `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 7 | 3 | - |
+| `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 11 | 13 | - |
+| `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 5 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
-| `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 1 | 0 | - |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 4 | 213 | - |
+| `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 0 | 0 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 213 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
@@ -549,12 +549,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `android/playstore/SUBMISSION.md` | current | - | - | - | 0 | 4 | - |
 | `docs/AGENT_LIFECYCLE.md` | current | - | - | yes | 0 | 44 | 9 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 2 | 21 | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 9 | 22 | - |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 8 | 17 | - |
 | `docs/HELM_OS.md` | current | - | - | yes | 5 | 20 | - |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
-| `docs/REPO_MAP.md` | superseded | - | - | yes | 4 | 41 | 2 |
+| `docs/REPO_MAP.md` | superseded | - | - | yes | 3 | 41 | 2 |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 3 | 16 | 9 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 6 | 19 | 9 |

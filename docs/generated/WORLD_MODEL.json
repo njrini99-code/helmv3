@@ -1410,6 +1410,16 @@
     ],
     "services": [
       {
+        "id": "services:.claude/agents/**",
+        "pattern": ".claude/agents/**",
+        "category": "services"
+      },
+      {
+        "id": "services:.claude/hooks/**",
+        "pattern": ".claude/hooks/**",
+        "category": "services"
+      },
+      {
         "id": "services:.claude/rules/**",
         "pattern": ".claude/rules/**",
         "category": "services"
@@ -1425,8 +1435,18 @@
         "category": "services"
       },
       {
+        "id": "services:.githooks/**",
+        "pattern": ".githooks/**",
+        "category": "services"
+      },
+      {
         "id": "services:.github/workflows/feature-awareness.yml",
         "pattern": ".github/workflows/feature-awareness.yml",
+        "category": "services"
+      },
+      {
+        "id": "services:.mcp.json",
+        "pattern": ".mcp.json",
         "category": "services"
       },
       {
@@ -1485,6 +1505,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/control-plane-verify.mjs",
+        "pattern": "scripts/control-plane-verify.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/db-observability-metrics-names.mjs",
         "pattern": "scripts/db-observability-metrics-names.mjs",
         "category": "services"
@@ -1512,6 +1537,11 @@
       {
         "id": "services:scripts/knowledge/**",
         "pattern": "scripts/knowledge/**",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/lib/create-workspace.mjs",
+        "pattern": "scripts/lib/create-workspace.mjs",
         "category": "services"
       },
       {
@@ -14770,7 +14800,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 105
+          "line": 113
         }
       ]
     },
@@ -14782,7 +14812,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 105
+          "line": 113
         }
       ]
     },
@@ -14794,7 +14824,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 114
         }
       ]
     },
@@ -14806,7 +14836,31 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 106
+          "line": 114
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:.claude/agents/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".claude/agents/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:.claude/hooks/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".claude/hooks/**"
         }
       ]
     },
@@ -14848,6 +14902,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:.githooks/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".githooks/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:.github/workflows/feature-awareness.yml",
       "kind": "feature_service",
       "evidence": [
@@ -14855,6 +14921,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": ".github/workflows/feature-awareness.yml"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:.mcp.json",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ".mcp.json"
         }
       ]
     },
@@ -14944,6 +15022,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:scripts/control-plane-verify.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/control-plane-verify.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:scripts/deploy-prod.sh",
       "kind": "feature_service",
       "evidence": [
@@ -14963,6 +15053,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/knowledge/**"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/lib/create-workspace.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/lib/create-workspace.mjs"
         }
       ]
     },

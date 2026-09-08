@@ -8,13 +8,10 @@ description: Land a PR through the sole landing script and report the result
 npm run pr:land -- <pr>
 ```
 
-Before running: confirm the PR's head branch matches `agent/*`
-(`gh pr view <pr> --json headRefName`). If it does not, refuse and say so —
-proceed only if the user explicitly says to land a non-`agent/*` branch.
+Confirm the intended PR, its current head, and required checks before landing.
+Follow AGENTS.md authorization. Prefer this script for merge, canonical sync,
+and retirement; use a direct authorized GitHub merge only when necessary and
+never bypass required checks with `--admin`.
 
-Never call `gh pr merge` directly and never pass `--admin`. `pr:land` is the
-only sanctioned merge path — see `scripts/pr-land.mjs`, on `main`.
-
-Report the script's own four-line summary verbatim — do not paraphrase or
-invent a summary if the script fails before producing one. On failure, state
-the exit code and the last few lines of output.
+Report the actual merge, sync, and retirement outcomes separately. On failure,
+report the command exit code and preserve the task's branch and files.

@@ -306,15 +306,6 @@ jobs:
         continue-on-error: true
         run: npm run docs:path-drift
 
-      # The feature router (memory/registry.yml) gates governed edits, but
-      # path-drift scans only .md files and skips globs — so the one map the
-      # edit gate consults was the one map no gate checked. Fails on any
-      # registry entry that resolves to nothing; baseline is ZERO.
-      - name: Feature router against the tree
-        id: registry_globs
-        continue-on-error: true
-        run: npm run knowledge:globs
-
       # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
       # 2026-09-02 alongside the generator itself. Without this step the
       # committed artifact could go stale on the very next registry.yml edit
@@ -327,8 +318,8 @@ jobs:
         continue-on-error: true
         run: npm run knowledge:world-model:check
 
-      # The other direction from "Feature router against the tree" above:
-      # that step fails when a registry entry points at a path that no
+      # The other direction from registry glob coverage in knowledge:check:
+      # that check fails when a registry entry points at a path that no
       # longer exists, this one fails when a tracked file under a directory
       # the registry itself claims to fully cover (src/app/admin,
       # src/lib/admin — see check-registry-orphans.mjs's module doc-comment
@@ -479,26 +470,6 @@ jobs:
         id: knowledge_bench
         continue-on-error: true
         run: npm run knowledge:bench:check
-      # Document authority inventory (docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md)
-      # — non-mutating drift check, same shape as "Generated inventory is
-      # current" above. Added 2026-09-06 (docs reorg W4) alongside the
-      # --dead-refs/--lifecycle ratchets below: without this step the
-      # committed table could drift from the tracked tree on the very next
-      # doc edit and nothing would notice.
-      - name: Document authority inventory is current
-        id: doc_inventory
-        continue-on-error: true
-        run: npm run knowledge:doc-inventory:check
-
-      # Feature map (docs/generated/HELM_FEATURE_MAP.md) — same drift-check
-      # shape, generated from memory/registry.yml. Added 2026-09-06 alongside
-      # the doc-inventory check above for the same reason: a committed
-      # generated artifact with no CI caller is not actually gated.
-      - name: Feature map is current
-        id: feature_map
-        continue-on-error: true
-        run: npm run knowledge:feature-map:check
-
       # Living dead-reference ratchet (docs reorg Phase 6 / W4). Counts
       # backticked repo-relative paths that resolve to nothing tracked,
       # restricted to the nine "living" categories (REFERENCE,

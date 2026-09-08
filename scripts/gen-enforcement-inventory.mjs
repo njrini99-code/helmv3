@@ -259,7 +259,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
               mechanism: 'NONE',
               where: '—',
               observed:
-                'UNENFORCED — no hook on Bash refuses a write for where it lands; they refuse command shapes, and the one that does resolve canonical narrows to a config-surface list',
+                'UNENFORCED — authorized edits are allowed in the owned checkout',
             };
       },
     },
@@ -600,6 +600,9 @@ export function renderBlock() {
   L.push('');
   L.push('Deny rules fire even under `bypassPermissions`, and a project-scope');
   L.push('deny overrides a user-scope allow (probed 2026-08-29).');
+  L.push('');
+  L.push('Production mutation requests use `permissions.ask` instead of permanent denies.');
+  L.push('This table reports hard refusal only; an UNENFORCED row does not grant task authorization.');
   L.push('');
   L.push('## Claims, resolved against the configuration above');
   L.push('');

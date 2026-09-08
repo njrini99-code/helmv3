@@ -59,6 +59,12 @@ features:
         # itself about what "agent tooling" covers.
         - .claude/rules/**
         - .claude/settings.json
+        - .claude/agents/**
+        - .claude/hooks/**
+        - .mcp.json
+        - .githooks/**
+        - scripts/lib/create-workspace.mjs
+        - scripts/control-plane-verify.mjs
         - scripts/new-worktree.sh
         - scripts/worktree-lifecycle.mjs
         - scripts/deploy-prod.sh

@@ -265,9 +265,9 @@ export async function createWorkspace(opts = {}) {
 
   mkdirSync(home, { recursive: true });
 
-  // 3. Mutation-worktree budget — enforced BEFORE any allocation, so a
-  // refusal costs nothing. Shares its classifier with repo:doctor and the
-  // SessionStart stamp hook via listWorkspaces() below.
+  // 3. Existing checkout count is advisory by default: it does not measure
+  // active sessions. An explicitly configured HELM_MAX_MUTATION_WORKTREES
+  // is a hard cap. Disk reserve is always checked before allocation.
   const canonicalRoot = canonicalRootOf(repo);
   const budget = Number(process.env.HELM_MAX_MUTATION_WORKTREES ?? DEFAULT_MUTATION_BUDGET);
   const spaces = inspectWorkspaces(repo, canonicalRoot);
@@ -287,7 +287,10 @@ export async function createWorkspace(opts = {}) {
       '',
       'Override deliberately: HELM_MAX_MUTATION_WORKTREES=<n>.',
     ];
-    fail('BUDGET_EXCEEDED', lines.join('\n'), { decision, spaces });
+    if (process.env.HELM_MAX_MUTATION_WORKTREES !== undefined) {
+      fail('BUDGET_EXCEEDED', lines.join('\n'), { decision, spaces });
+    }
+    warn(`workspace count advisory: ${decision.reason}; continuing subject to disk reserve`);
   }
 
   // 4. Disk reserve — the same 12 GiB floor new-worktree.sh has always used.

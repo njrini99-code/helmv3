@@ -153,10 +153,9 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
 });
 
 describe('the live configuration', () => {
-  it('every tool the pattern names is denied under the Vercel connector id on file', () => {
-    // Second audit of #1738, finding 2: config/mcp-connector-ids.json recorded
-    // update_project_deployment_protection as present under this prefix while
-    // no deny rule named it. The connector file and the deny list must agree.
+  it('every production mutator asks for authorization under the recorded Vercel connector id', () => {
+    // Production mutators remain subject to native authorization, including
+    // tools addressed by the account connector UUID.
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const connectors: Connector[] = JSON.parse(
       readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),
@@ -165,17 +164,17 @@ describe('the live configuration', () => {
     expect(vercelIds.length).toBeGreaterThan(0);
     for (const id of vercelIds) {
       for (const tool of MUTATING_TOOLS) {
-        expect(settings.permissions.deny, `${tool} under ${id}`).toContain(`mcp__${id}__${tool}`);
+        expect(settings.permissions.ask, `${tool} under ${id}`).toContain(`mcp__${id}__${tool}`);
       }
     }
   });
 
-  it('the resolved claim counts every UUID-spelled rule and none from the Supabase connector', () => {
+  it('the production authorization rules cover every UUID spelling and exclude Supabase from the Vercel count', () => {
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const connectors: Connector[] = JSON.parse(
       readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),
     ).connectors;
-    const { hits, uuidHits } = vercelMutatingDenyHits(settings.permissions.deny, connectors);
+    const { hits, uuidHits } = vercelMutatingDenyHits(settings.permissions.ask, connectors);
     const supabaseIds = connectors.filter((c) => c.service === 'Supabase').map((c) => c.id);
     for (const r of hits) {
       for (const id of supabaseIds) expect(r.startsWith(`mcp__${id}__`), r).toBe(false);

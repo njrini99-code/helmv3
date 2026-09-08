@@ -118,7 +118,7 @@ describe('createWorkspace — refusals', () => {
     expect(git(['branch', '--list', 'agent/second'], seed)).toBe('');
   });
 
-  it('allows exactly the default budget of 6, and refuses the 7th', async () => {
+  it('treats the default checkout count as advisory rather than blocking an idle folder', async () => {
     await createWorkspace({ name: 'b1', repo: seed, home });
     await createWorkspace({ name: 'b2', repo: seed, home });
     await createWorkspace({ name: 'b3', repo: seed, home });
@@ -126,9 +126,9 @@ describe('createWorkspace — refusals', () => {
     await createWorkspace({ name: 'b5', repo: seed, home });
     const r6 = await createWorkspace({ name: 'b6', repo: seed, home });
     expect(existsSync(r6.path)).toBe(true);
-    await expect(createWorkspace({ name: 'b7', repo: seed, home })).rejects.toMatchObject({
-      code: 'BUDGET_EXCEEDED',
-    });
+    const r7 = await createWorkspace({ name: 'b7', repo: seed, home });
+    expect(existsSync(r7.path)).toBe(true);
+    expect(git(['rev-parse', '--abbrev-ref', 'HEAD'], r7.path)).toBe('agent/b7');
   });
 });
 
