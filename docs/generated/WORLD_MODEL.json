@@ -1917,6 +1917,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:e2e/golf-critical-paths.spec.ts",
+        "pattern": "e2e/golf-critical-paths.spec.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:e2e/golf-qualifier.spec.ts",
         "pattern": "e2e/golf-qualifier.spec.ts",
         "category": "tests"
@@ -2194,6 +2199,11 @@
       {
         "id": "tests:supabase/tests/rls/baseball_*.sql",
         "pattern": "supabase/tests/rls/baseball_*.sql",
+        "category": "tests"
+      },
+      {
+        "id": "tests:supabase/tests/rls/golf_message_reactions.sql",
+        "pattern": "supabase/tests/rls/golf_message_reactions.sql",
         "category": "tests"
       },
       {
@@ -3217,6 +3227,10 @@
       {
         "id": "golf_conversation_created_by_me",
         "definedIn": "supabase/migrations/20260807080000_golf_dm_join_requires_creator.sql"
+      },
+      {
+        "id": "golf_conversation_has_me",
+        "definedIn": "supabase/migrations/20260908160000_golf_message_reactions_access.sql"
       },
       {
         "id": "golf_conversation_has_other_participant",
@@ -21267,6 +21281,18 @@
     },
     {
       "source": "team_communications",
+      "target": "tests:e2e/golf-critical-paths.spec.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "e2e/golf-critical-paths.spec.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "tests:e2e/messages.spec.ts",
       "kind": "feature_test",
       "evidence": [
@@ -21310,6 +21336,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:supabase/tests/rls/golf_message_reactions.sql",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "supabase/tests/rls/golf_message_reactions.sql"
         }
       ]
     },

@@ -122,4 +122,61 @@ playerTest.describe('GolfHelm — Player critical paths', () => {
     await expect(page.locator('h1').first()).toBeVisible();
     await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
   });
+
+  playerTest('messages composer stays above the simulated keyboard', async ({ page }) => {
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 320, height: 694 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/golf/dashboard/messages', { waitUntil: 'domcontentloaded' });
+
+      // The rail is a named navigation landmark (the conversation list), and
+      // its first seeded row is the stable conversation this smoke test opens.
+      const conversations = page.getByRole('navigation', { name: 'Conversations' });
+      await expect(conversations).toBeVisible({ timeout: 15_000 });
+      const firstConversation = conversations.locator('button').first();
+      await expect(firstConversation).toBeVisible({ timeout: 15_000 });
+      await firstConversation.click();
+
+      const thread = page.getByRole('region', { name: 'Conversation' });
+      const textbox = thread.getByRole('textbox');
+      const composer = thread.locator('form').filter({ has: page.getByRole('textbox') });
+      await expect(thread).toBeVisible({ timeout: 15_000 });
+      await expect(textbox).toBeVisible({ timeout: 15_000 });
+      await expect(composer).toBeVisible();
+
+      const restingBottom = viewport.height;
+      await expect.poll(async () => {
+        const box = await composer.boundingBox();
+        return box ? Math.abs(box.y + box.height - restingBottom) : Number.POSITIVE_INFINITY;
+      }).toBeLessThanOrEqual(4);
+
+      await page.evaluate(() => {
+        document.documentElement.style.setProperty('--keyboard-height', '300px');
+        document.body.classList.add('keyboard-open');
+      });
+
+      const keyboardBottom = viewport.height - 300;
+      await expect.poll(async () => {
+        const box = await composer.boundingBox();
+        return box ? Math.abs(box.y + box.height - keyboardBottom) : Number.POSITIVE_INFINITY;
+      }).toBeLessThanOrEqual(4);
+      await expect(textbox).toBeVisible();
+      const textboxBox = await textbox.boundingBox();
+      expect(textboxBox).not.toBeNull();
+      expect(textboxBox!.y).toBeGreaterThanOrEqual(0);
+      expect(textboxBox!.y + textboxBox!.height).toBeLessThanOrEqual(keyboardBottom + 4);
+      expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth))).toBeLessThanOrEqual(viewport.width);
+
+      await page.evaluate(() => {
+        document.documentElement.style.removeProperty('--keyboard-height');
+        document.body.classList.remove('keyboard-open');
+      });
+      await expect.poll(async () => {
+        const box = await composer.boundingBox();
+        return box ? Math.abs(box.y + box.height - restingBottom) : Number.POSITIVE_INFINITY;
+      }).toBeLessThanOrEqual(4);
+    }
+  });
 });

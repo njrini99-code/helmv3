@@ -30,6 +30,13 @@ to add one; tap a reaction count to add/remove your own reaction. Counts include
 distinct members, refresh through realtime, and reload on window focus. Errors
 remain visible; switching threads discards stale fetch results. Removing a
 reaction targets the current user's row only and never edits group membership.
+`20260908160000_golf_message_reactions_access.sql` reconciles the already-live
+membership helper, reaction policies, indexes and publication into migration
+replay. The declarative schema already carried those objects; the earlier
+reconstructed table migration omitted them. `golf_message_reactions.sql`
+exercises authenticated member/outsider behavior with rolled-back fixtures.
+The phone composer keyboard contract is measured in
+`e2e/golf-critical-paths.spec.ts`, rather than counting a particular CSS formula.
 
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
