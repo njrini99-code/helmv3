@@ -199,6 +199,11 @@ export default defineConfig({
             // its neighbours; it is the failure-injection suite for the
             // tools/mcp-deny-connector-ids verifier check.
             'scripts/__tests__/mcp-deny-connector-ids.test.ts',
+            // W3A reduced-motion contract: every src file that imports
+            // framer-motion AND animates must honor prefers-reduced-motion
+            // (WCAG 2.3.3). Written during the W3A sweep but never named
+            // here and never given a `node --test` caller, so it ran nowhere.
+            'scripts/__tests__/motion-reduced-motion-coverage.test.mjs',
             // Fixture-repo tests for .githooks/pre-push (the local pre-push
             // gate wired by scripts/setup-hooks.mjs): the HELM_SKIP_PREPUSH
             // escape hatch, and the generated-docs regenerate-then-diff step

@@ -33,6 +33,7 @@ import {
   IconInfo,
 } from '@/components/icons';
 import { haptic } from '@/lib/lifting/haptics';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import {
   createWeightCheckInSchedule,
   updateWeightCheckInSchedule,
@@ -133,6 +134,7 @@ export function WeightCheckInScheduleBuilder({
   onSuccess,
   onCancel,
 }: WeightCheckInScheduleBuilderProps) {
+  const prefersReducedMotion = useReducedMotionGuard();
   const isEditing = existing != null;
 
   // ── Form state ─────────────────────────────────────────────────────────
@@ -277,9 +279,9 @@ export function WeightCheckInScheduleBuilder({
   if (success) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.97 }}
+        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.22 }}
+        transition={{ duration: prefersReducedMotion ? 0 : 0.22 }}
       >
         <Card variant="glass">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">

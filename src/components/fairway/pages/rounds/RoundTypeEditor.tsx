@@ -30,7 +30,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button, Segmented } from '@/components/fairway';
 import { NativeSelect } from '@/components/ui/native-select';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 // The ACTION comes from the 'use server' module; the vocabulary comes from the
 // plain one. They are split because a 'use server' file may export only async
 // functions — see lib/golf/round-type-options.ts.
@@ -150,7 +150,6 @@ export function RoundTypeEditor({
   className,
 }: RoundTypeEditorProps) {
   const router = useRouter();
-  const { addToast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [type, setType] = React.useState<EditableRoundType>(
     (EDITABLE_ROUND_TYPES as readonly string[]).includes(currentType ?? '')
@@ -205,11 +204,7 @@ export function RoundTypeEditor({
       // A control that changes what a round counts toward — and that a coach
       // has already been told twice is broken — has to say plainly that it
       // worked, and say what it did.
-      addToast({
-        type: 'success',
-        title: 'Round type updated',
-        description: describeSaved(type, chosen, roundNumber),
-      });
+      fairwayToast.success('Round type updated', { description: describeSaved(type, chosen, roundNumber) });
       setOpen(false);
       router.refresh();
     } catch (err) {

@@ -82,7 +82,7 @@ import {
   acceptFocusArea,
   declineFocusArea,
 } from '@/app/golf/actions/development';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   Drawer,
   DrawerContent,
@@ -165,7 +165,6 @@ function LogProgressDrawer({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const { addToast } = useToast();
   // Desktop-only autofocus for the measurement field: on touch, focusing it
   // as the drawer opens summons the iOS keyboard over the form (owner
   // TestFlight report, 2026-08-26). The keyboard waits for a tap.
@@ -245,16 +244,16 @@ function LogProgressDrawer({
         note: trimmedNote || undefined,
       });
       if (!result.success) {
-        addToast({ type: 'error', title: result.error || 'Failed to log progress' });
+        fairwayToast.danger(result.error || 'Failed to log progress');
         setSubmitting(false);
         return;
       }
-      addToast({ type: 'success', title: 'Progress updated' });
+      fairwayToast.success('Progress updated');
       onClose();
       router.refresh();
       setTimeout(reset, 200);
     } catch {
-      addToast({ type: 'error', title: 'Failed to log progress' });
+      fairwayToast.danger('Failed to log progress');
       setSubmitting(false);
     }
   }
@@ -366,7 +365,6 @@ export function FairwayMyDevelopment({
   achievedGoals = [],
 }: FairwayMyDevelopmentProps) {
   const router = useRouter();
-  const { addToast } = useToast();
   const [, startTransition] = useTransition();
 
   const [logState, setLogState] = useState<LogProgressState | null>(null);
@@ -392,24 +390,20 @@ export function FairwayMyDevelopment({
         try {
           const result = await acceptFocusArea(focusArea.id);
           if (!result.success) {
-            addToast({ type: 'error', title: result.error || 'Failed to accept' });
+            fairwayToast.danger(result.error || 'Failed to accept');
             setDecidingId(null);
             return;
           }
-          addToast({
-            type: 'success',
-            title: 'Focus area accepted',
-            description: focusArea.title || 'Now tracking',
-          });
+          fairwayToast.success('Focus area accepted', { description: focusArea.title || 'Now tracking' });
           setDecidingId(null);
           router.refresh();
         } catch {
-          addToast({ type: 'error', title: 'Failed to accept' });
+          fairwayToast.danger('Failed to accept');
           setDecidingId(null);
         }
       });
     },
-    [addToast, decidingId, router, startTransition],
+    [decidingId, router, startTransition],
   );
 
   // Decline a coach-prescribed area → status 'declined' (hidden from the list).
@@ -421,20 +415,20 @@ export function FairwayMyDevelopment({
         try {
           const result = await declineFocusArea(focusArea.id);
           if (!result.success) {
-            addToast({ type: 'error', title: result.error || 'Failed to decline' });
+            fairwayToast.danger(result.error || 'Failed to decline');
             setDecidingId(null);
             return;
           }
-          addToast({ type: 'success', title: 'Declined', description: focusArea.title || 'Focus area' });
+          fairwayToast.success('Declined', { description: focusArea.title || 'Focus area' });
           setDecidingId(null);
           router.refresh();
         } catch {
-          addToast({ type: 'error', title: 'Failed to decline' });
+          fairwayToast.danger('Failed to decline');
           setDecidingId(null);
         }
       });
     },
-    [addToast, decidingId, router, startTransition],
+    [decidingId, router, startTransition],
   );
 
   // Player self-create: persist their OWN focus area (active immediately).
@@ -464,24 +458,20 @@ export function FairwayMyDevelopment({
         try {
           const result = await reactivateFocusArea(focusArea.id);
           if (!result.success) {
-            addToast({ type: 'error', title: result.error || 'Failed to reopen' });
+            fairwayToast.danger(result.error || 'Failed to reopen');
             setReopeningId(null);
             return;
           }
-          addToast({
-            type: 'success',
-            title: 'Reopened',
-            description: focusArea.title || 'Focus area',
-          });
+          fairwayToast.success('Reopened', { description: focusArea.title || 'Focus area' });
           setReopeningId(null);
           router.refresh();
         } catch {
-          addToast({ type: 'error', title: 'Failed to reopen' });
+          fairwayToast.danger('Failed to reopen');
           setReopeningId(null);
         }
       });
     },
-    [addToast, reopeningId, router, startTransition],
+    [reopeningId, router, startTransition],
   );
 
   // PRESERVED: identical to the legacy MarkCompleteButton call — completeFocusArea
@@ -495,25 +485,20 @@ export function FairwayMyDevelopment({
         try {
           const result = await completeFocusArea(focusArea.id);
           if (!result.success) {
-            addToast({ type: 'error', title: result.error || 'Failed to mark complete' });
+            fairwayToast.danger(result.error || 'Failed to mark complete');
             setCompletingId(null);
             return;
           }
-          addToast({
-            type: 'success',
-            title: 'Marked complete',
-            description: focusArea.title || 'Focus area',
-            action: { label: 'Undo', onClick: () => handleReopen(focusArea) },
-          });
+          fairwayToast.success('Marked complete', { description: focusArea.title || 'Focus area', action: { label: 'Undo', onClick: () => handleReopen(focusArea) } });
           setCompletingId(null);
           router.refresh();
         } catch {
-          addToast({ type: 'error', title: 'Failed to mark complete' });
+          fairwayToast.danger('Failed to mark complete');
           setCompletingId(null);
         }
       });
     },
-    [addToast, completingId, handleReopen, router, startTransition],
+    [completingId, handleReopen, router, startTransition],
   );
 
   // Header actions: the player can always create their OWN focus area (primary).

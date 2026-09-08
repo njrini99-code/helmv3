@@ -19,9 +19,9 @@ import { cn } from '@/lib/utils';
  * byte-identically:
  *
  *   - Canonical legacy variants: `default | circular | text | button`
- *     (matte surface `bg-warm-200/60` + shimmer overlay, default animate `shimmer`).
+ *     (matte surface `bg-skeleton` + shimmer overlay, default animate `shimmer`).
  *   - skeleton-loader variants:  `text | circular | rectangular` with
- *     `width`/`height`/`animation` props (soft surface `bg-warm-100`,
+ *     `width`/`height`/`animation` props (soft surface `bg-skeleton`,
  *     default animation `pulse`).
  *
  * Rendering mode is disambiguated WITHOUT changing any call site: a call is
@@ -84,7 +84,7 @@ export function Skeleton({
     return (
       <div
         className={cn(
-          'bg-warm-100',
+          'bg-skeleton',
           anim === 'pulse' && 'animate-pulse',
           anim === 'shimmer' && 'skeleton-shimmer',
           variant === 'text' && 'h-4 rounded',
@@ -120,7 +120,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        'bg-warm-200/60 relative overflow-hidden',
+        'bg-skeleton relative overflow-hidden',
         animate === 'pulse' && 'animate-pulse',
         variantClasses[variant as CanonicalVariant | SemanticVariant] ?? 'rounded-md',
         className

@@ -21293,6 +21293,10 @@ export type Database = {
           season: string
         }[]
       }
+      golf_user_on_conversation_team: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
       has_any_baseball_team_membership: {
         Args: { p_team_id: string }
         Returns: boolean

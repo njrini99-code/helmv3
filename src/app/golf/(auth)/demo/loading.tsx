@@ -23,7 +23,12 @@
  */
 export default function Loading() {
   return (
-    <div className="relative overflow-hidden min-h-dvh">
+    <div
+      className="relative overflow-hidden min-h-dvh"
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
       <div className="relative z-10 flex flex-col items-center px-5 py-10 sm:py-14">
         {/* Logo lockup */}
         <div className="flex flex-col items-center gap-2 mb-6 sm:mb-8">

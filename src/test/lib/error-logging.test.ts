@@ -3,13 +3,14 @@
  * Tests for src/lib/error-logging.ts
  *
  * Confirms the unified contract for stale-server-action handling:
- *   - One predicate, one sessionStorage key, one reload-once-per-session guard.
+ *   - `softReloadForStaleServerAction` no longer owns a reload. It asks the
+ *     boot recovery coordinator, which holds the only attempt budget, the
+ *     only in-flight latch and the work-state gate — so this path can no
+ *     longer replace the document while the boot script is replacing it for
+ *     the same error, nor do it over a screen with unsaved work.
  *   - Both window.unhandledrejection / window.error and the route error
- *     boundary funnel through the same `softReloadForStaleServerAction` so
- *     a session can only reload once for the same error class.
- *   - The reload guard is layered: sessionStorage is primary, but a
- *     module-level flag prevents an infinite loop when sessionStorage
- *     throws (Safari private mode, sandboxed iframes, quota exceeded).
+ *     boundary funnel through it, and it stays inert if the coordinator
+ *     refuses or was never installed.
  *   - `logError` short-circuits stale-action errors so they do not page
  *     the monitoring sink.
  */
@@ -98,11 +99,13 @@ async function waitForReload(): Promise<void> {
 
 describe('softReloadForStaleServerAction', () => {
   let reloadSpy: ReturnType<typeof vi.fn>;
-  let getItemSpy: ReturnType<typeof vi.fn>;
-  let setItemSpy: ReturnType<typeof vi.fn>;
+  let requestRecovery: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.resetModules();
+    // The sonner mock is module-scoped and outlives resetModules, so its
+    // call log carries over between cases unless cleared here.
+    vi.clearAllMocks();
 
     reloadSpy = vi.fn();
     // jsdom's location is non-configurable on `window.location.reload`,
@@ -112,86 +115,68 @@ describe('softReloadForStaleServerAction', () => {
       reload: reloadSpy,
     });
 
-    getItemSpy = vi.fn().mockReturnValue(null);
-    setItemSpy = vi.fn();
-    vi.stubGlobal('sessionStorage', {
-      getItem: getItemSpy,
-      setItem: setItemSpy,
-      removeItem: vi.fn(),
-      clear: vi.fn(),
-      key: vi.fn(),
-      length: 0,
-    });
+    requestRecovery = vi.fn().mockReturnValue('scheduled');
+    (window as unknown as { __helmRecovery?: unknown }).__helmRecovery = {
+      requestRecovery,
+    };
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    delete (window as unknown as { __helmRecovery?: unknown }).__helmRecovery;
   });
 
-  it('writes to sessionStorage and reloads on first call', async () => {
-    const { softReloadForStaleServerAction, STALE_ACTION_RELOAD_KEY } =
-      await import('@/lib/error-logging');
-
-    softReloadForStaleServerAction();
-    await waitForReload();
-
-    expect(setItemSpy).toHaveBeenCalledWith(
-      STALE_ACTION_RELOAD_KEY,
-      expect.any(String),
-    );
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('is a no-op on the second call when sessionStorage already has the key', async () => {
+  it('hands the failure to the coordinator instead of reloading itself', async () => {
     const { softReloadForStaleServerAction } = await import('@/lib/error-logging');
 
-    softReloadForStaleServerAction();
-    await waitForReload();
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
-
-    // Simulate the post-reload world: sessionStorage now reports the key set.
-    getItemSpy.mockReturnValue('123');
-    softReloadForStaleServerAction();
+    softReloadForStaleServerAction('Failed to find Server Action "7f2c".');
     await waitForReload();
 
-    // Still only the original reload — no second reload triggered.
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(requestRecovery).toHaveBeenCalledWith('Failed to find Server Action "7f2c".');
+    // The navigation is the coordinator's to make, under its own budget.
+    expect(reloadSpy).not.toHaveBeenCalled();
   });
 
-  it('falls back to a module-level flag when sessionStorage.setItem throws', async () => {
-    // Simulate Safari private mode: getItem returns null, but setItem throws.
-    setItemSpy.mockImplementation(() => {
-      throw new Error('QuotaExceededError');
-    });
-
+  it('explains itself only when an attempt was actually claimed', async () => {
+    const { toast } = await import('sonner');
     const { softReloadForStaleServerAction } = await import('@/lib/error-logging');
 
-    softReloadForStaleServerAction();
+    softReloadForStaleServerAction('Failed to find Server Action "7f2c".');
     await waitForReload();
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
 
-    // Second call: sessionStorage still throws AND still reads as empty,
-    // so without the module flag this would reload again. With the flag,
-    // it must be a no-op.
-    softReloadForStaleServerAction();
-    await waitForReload();
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(toast).toHaveBeenCalledWith('Updating to latest version…');
   });
 
-  it('falls back to the module flag when sessionStorage.getItem throws', async () => {
-    getItemSpy.mockImplementation(() => {
-      throw new Error('SecurityError: storage disabled');
-    });
-
+  it('stays silent when the coordinator refuses over unsaved work', async () => {
+    const { toast } = await import('sonner');
+    requestRecovery.mockReturnValue('unsafe-work');
     const { softReloadForStaleServerAction } = await import('@/lib/error-logging');
 
-    softReloadForStaleServerAction();
+    softReloadForStaleServerAction('Failed to find Server Action "7f2c".');
     await waitForReload();
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
 
-    softReloadForStaleServerAction();
+    expect(toast).not.toHaveBeenCalled();
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('stays silent when another handler already claimed the same error', async () => {
+    const { toast } = await import('sonner');
+    requestRecovery.mockReturnValue('in-flight');
+    const { softReloadForStaleServerAction } = await import('@/lib/error-logging');
+
+    softReloadForStaleServerAction('Failed to find Server Action "7f2c".');
     await waitForReload();
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('is inert when the coordinator was never installed', async () => {
+    delete (window as unknown as { __helmRecovery?: unknown }).__helmRecovery;
+    const { softReloadForStaleServerAction } = await import('@/lib/error-logging');
+
+    expect(() => softReloadForStaleServerAction('anything')).not.toThrow();
+    await waitForReload();
+    expect(reloadSpy).not.toHaveBeenCalled();
   });
 });
 

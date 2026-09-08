@@ -15,6 +15,12 @@ import { useMediaQuery } from '@/hooks/use-media-query';
  * shadow as the real card) — instead of the previous flat green gradient
  * with a vertically-centered gray `glass-standard` card, which popped on
  * swap.
+ *
+ * `role="status"`/`aria-busy`/the sr-only label below were missing entirely
+ * — this file had no accessible-name announcement for AT users at all.
+ * Added on the content wrapper; the label text matches the page's own
+ * Suspense-fallback announcement (`page.tsx:289`,
+ * `role="status" aria-label="Loading sign-in"`).
  */
 export default function Loading() {
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -28,12 +34,17 @@ export default function Loading() {
       )}
 
       <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
         className="relative z-10 h-full flex flex-col items-center px-5"
         style={{
           paddingTop: 'max(2.5rem, calc(env(safe-area-inset-top) + 1.75rem))',
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
         }}
       >
+        <span className="sr-only">Loading sign-in</span>
+
         {/* Brand lockup */}
         <div className="flex flex-col items-center gap-2.5 shrink-0">
           <Image

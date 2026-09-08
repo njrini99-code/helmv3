@@ -38,6 +38,7 @@ import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking'
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { useActiveWork } from '@/lib/recovery/use-active-work';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -169,6 +170,18 @@ export default function ContinueRoundClient({
     }
     return { [startHoleIndex]: initialShots };
   });
+
+  // A02-001: an automatic stale-asset recovery replaces the whole document.
+  // While there is entered hole data a reload would lose — or a submit whose
+  // outcome is not known yet — this screen registers as dirty and the
+  // recovery coordinator refuses to navigate. Same predicate as the
+  // beforeunload guard below, plus the in-flight submit.
+  useActiveWork(
+    'golf-round-continue',
+    submitting ||
+      completedHoleStats.some((s) => s != null) ||
+      Object.keys(inProgressShotsByHole).length > 0,
+  );
 
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);

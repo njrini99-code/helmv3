@@ -186,3 +186,12 @@ functions.
 - `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` — the exclusion
   contract and the file-by-file list it covers
 - `src/lib/admin/feature-registry.ts` — the runtime row and the owner directive
+
+## UI Contract
+
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.

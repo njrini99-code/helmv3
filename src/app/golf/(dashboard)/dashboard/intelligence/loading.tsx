@@ -104,7 +104,10 @@ export default function IntelligenceLoading() {
               <Skeleton className={`h-2.5 w-24 ${DARK_BAR}`} />
               <Skeleton className={`h-4 w-full max-w-md ${DARK_BAR}`} />
               <div className="flex flex-wrap items-center gap-5 pt-1">
-                {[0, 1, 2].map((i) => (
+                {/* Exactly two count chips (Urgent, Players flagged) — the
+                    third ("New this week") was removed as an unreliable
+                    counter, BriefBand.tsx:47-52. */}
+                {[0, 1].map((i) => (
                   <div key={i} className="flex flex-col gap-1">
                     <Skeleton className={`h-6 w-8 ${DARK_BAR}`} />
                     <Skeleton className={`h-2 w-16 ${DARK_BAR}`} />
@@ -118,14 +121,19 @@ export default function IntelligenceLoading() {
             </div>
           </div>
 
-          {/* ── ViewSwitch — Signals / Players / Effectiveness segmented pill. ── */}
-          <div
-            aria-hidden="true"
-            className="inline-flex w-fit items-center gap-1 rounded-full border border-border-subtle bg-surface-sunken p-1"
-          >
-            {[72, 72, 118].map((w, i) => (
-              <Skeleton key={i} className="h-9 rounded-full" style={{ width: w }} />
-            ))}
+          {/* ── ViewSwitch — Signals / Players / Effectiveness segmented pill —
+              sits beside the "Ask" Button in the same row (TriageDesk.tsx:486-498),
+              not alone. ── */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div
+              aria-hidden="true"
+              className="inline-flex w-fit items-center gap-1 rounded-full border border-border-subtle bg-surface-sunken p-1"
+            >
+              {[72, 72, 118].map((w, i) => (
+                <Skeleton key={i} className="h-9 rounded-full" style={{ width: w }} />
+              ))}
+            </div>
+            <Skeleton className="h-9 w-20 rounded-full" />
           </div>
 
           {/* ── Team diagnostics disclosure + TeamShotWeaknessesPanel body

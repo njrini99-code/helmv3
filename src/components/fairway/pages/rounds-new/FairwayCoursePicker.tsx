@@ -41,7 +41,7 @@ import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
-import { useToast } from '@/components/ui/sonner';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
@@ -84,15 +84,13 @@ type Stage = 'courses' | 'tees';
 export function FairwayCoursePicker({
   open, onOpenChange, onPick, canManageLibrary = false,
 }: FairwayCoursePickerProps) {
-  const { showToast } = useToast();
-  // useToast() returns a FRESH object (new showToast identity) every render, so
-  // depending on `showToast` in a useCallback re-creates that callback every
-  // render. The course-load effect below keys off refreshCourses — an unstable
-  // refreshCourses makes the effect re-fire every render, thrashing
-  // loadingCourses and refetching the library in a loop. Keep the latest
-  // showToast in a ref so the data callbacks stay referentially stable.
-  const showToastRef = useRef(showToast);
-  showToastRef.current = showToast;
+  // The `showToastRef` dance that used to live here is gone with the hook that
+  // caused it: `useToast()` returned a FRESH object every render, so depending
+  // on its `showToast` in a useCallback re-created that callback every render,
+  // which re-fired the course-load effect (it keys off refreshCourses),
+  // thrashing loadingCourses and refetching the library in a loop. The ref was
+  // the workaround. `fairwayToast` is a module-level singleton with a stable
+  // identity, so the data callbacks are referentially stable without it.
   const reduceMotion = useReducedMotionGuard();
 
   const [stage, setStage] = useState<Stage>('courses');
@@ -131,7 +129,7 @@ export function FairwayCoursePicker({
       ]);
       // Only the library failing (null) is worth surfacing — recent/team degrade silently.
       if (lib === null && rec.length === 0 && tm.length === 0) {
-        showToastRef.current('Could not load the course library', 'error');
+        fairwayToast.danger('Could not load the course library');
       }
       const library = lib ?? [];
       setCourses(library);
@@ -139,7 +137,7 @@ export function FairwayCoursePicker({
       setTeam(tm);
       return library;
     } catch {
-      showToastRef.current('Could not load the course library', 'error');
+      fairwayToast.danger('Could not load the course library');
       return [];
     } finally {
       setLoadingCourses(false);
@@ -179,7 +177,7 @@ export function FairwayCoursePicker({
       if (teeReqRef.current !== req) return; // superseded by a newer selection
       setTees(detail?.tees ?? []);
     } catch {
-      if (teeReqRef.current === req) showToastRef.current('Could not load tees for that course', 'error');
+      if (teeReqRef.current === req) fairwayToast.danger('Could not load tees for that course');
     } finally {
       if (teeReqRef.current === req) setLoadingTees(false);
     }
@@ -201,7 +199,7 @@ export function FairwayCoursePicker({
     setPicking(true);
     try {
       const defaults = await getTeeRoundDefaults(tee.id);
-      if (!defaults) { showToastRef.current('Could not load that tee', 'error'); return; }
+      if (!defaults) { fairwayToast.danger('Could not load that tee'); return; }
       // Carry the course's imagery out with the tee. `selected` is the full
       // golf_courses row this picker already loaded to build the tee list, so
       // this costs nothing — and it lets the setup screen show the actual
@@ -213,7 +211,7 @@ export function FairwayCoursePicker({
       });
       onOpenChange(false);
     } catch {
-      showToastRef.current('Could not load that tee', 'error');
+      fairwayToast.danger('Could not load that tee');
     } finally {
       setPicking(false);
     }
