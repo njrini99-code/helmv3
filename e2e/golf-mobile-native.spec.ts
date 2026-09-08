@@ -73,4 +73,121 @@ test.describe('Golf mobile native layout', () => {
       }
     }
   });
+
+  test('continue round keeps the type editor and scorecard below the phone safe area', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    test.setTimeout(90_000);
+    test.skip(
+      browserName !== 'chromium',
+      'Safe-area emulation uses Chromium CDP.',
+    );
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', {
+      insets: { top: 47, bottom: 34 },
+    });
+
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 320, height: 694 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/golf/dashboard/rounds', {
+        waitUntil: 'domcontentloaded',
+      });
+
+      // The authenticated QA player owns an unfinished round. Discover its
+      // real id through the product flow so this test never invents or writes
+      // a round record.
+      const continueButton = page
+        .getByRole('button', { name: 'Continue', exact: true })
+        .first();
+      await expect(continueButton).toBeVisible({ timeout: 15_000 });
+      await Promise.all([
+        page.waitForURL(/\/golf\/dashboard\/rounds\/continue\/[^/]+/, {
+          timeout: 20_000,
+        }),
+        continueButton.click(),
+      ]);
+
+      await expect(
+        page.getByRole('heading', { name: /^Hole \d+$/ }),
+      ).toBeVisible({ timeout: 15_000 });
+      const typeButton = page.getByRole('button', {
+        name: 'Change round type',
+        exact: true,
+      });
+      const contextHeader = page.getByTestId('continue-round-context');
+      const scorecard = page.getByTestId('round-scorecard-header');
+      const prevButton = page.getByRole('button', { name: /Prev/ }).first();
+      await expect(typeButton).toBeVisible();
+      await expect(contextHeader).toBeVisible();
+      await expect(scorecard).toBeVisible();
+      await expect(prevButton).toBeVisible();
+
+      const typeBox = await typeButton.boundingBox();
+      const contextBox = await contextHeader.boundingBox();
+      const scorecardBox = await scorecard.boundingBox();
+      const prevBox = await prevButton.boundingBox();
+      expect(typeBox).not.toBeNull();
+      expect(contextBox).not.toBeNull();
+      expect(scorecardBox).not.toBeNull();
+      expect(prevBox).not.toBeNull();
+      expect(typeBox!.y).toBeGreaterThanOrEqual(47);
+      // The scorecard follows the context directly. A second 47px safe-area
+      // pad would produce the reported large blank band before Prev/Exit.
+      expect(
+        prevBox!.y - (contextBox!.y + contextBox!.height),
+      ).toBeLessThanOrEqual(16);
+      expect(
+        await page.evaluate(() =>
+          Math.max(
+            document.documentElement.scrollWidth,
+            document.body.scrollWidth,
+          ),
+        ),
+      ).toBeLessThanOrEqual(viewport.width);
+
+      const mutations: string[] = [];
+      const onRequest = (request: import('@playwright/test').Request) => {
+        // Only Next server-action POSTs can mutate this round. Ignore
+        // analytics/telemetry requests emitted by the shell during the check.
+        if (request.method() === 'POST' && request.headers()['next-action'])
+          mutations.push(request.url());
+      };
+      page.on('request', onRequest);
+      await typeButton.click();
+      await expect(
+        page.getByRole('heading', { name: 'Change round type', exact: true }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await expect(typeButton).toBeVisible();
+      expect(mutations).toEqual([]);
+      page.off('request', onRequest);
+
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await expect
+        .poll(async () => (await scorecard.boundingBox())?.y ?? -Infinity)
+        .toBeGreaterThanOrEqual(46);
+      await expect
+        .poll(async () => (await scorecard.boundingBox())?.y ?? Infinity)
+        .toBeLessThanOrEqual(48);
+      await expect
+        .poll(async () => (await prevButton.boundingBox())?.y ?? -Infinity)
+        .toBeGreaterThanOrEqual(47);
+      await expect
+        .poll(async () => (await prevButton.boundingBox())?.y ?? Infinity)
+        .toBeLessThanOrEqual(64);
+      expect(
+        await page.evaluate(() =>
+          Math.max(
+            document.documentElement.scrollWidth,
+            document.body.scrollWidth,
+          ),
+        ),
+      ).toBeLessThanOrEqual(viewport.width);
+    }
+  });
 });

@@ -20,7 +20,7 @@
  * guard release. Result selection ONLY ever dispatches HANDLE_RESULT_SELECT.
  * ========================================================================== */
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -47,6 +47,10 @@ type Hole = RoundHole;
 
 // IDENTICAL to the legacy ShotTrackingProps interface.
 interface ShotTrackingProps {
+  /** Resume context already occupies the initial status-bar inset. */
+  safeAreaHandledAbove?: boolean;
+  /** Round-level status stays in the same measured sticky chrome. */
+  statusSlot?: ReactNode;
   holes: Hole[];
   currentHoleIndex: number;
   /**
@@ -122,6 +126,8 @@ export function resolveDistanceAfterShot(params: {
 }
 
 export default function FairwayShotTracking({
+  safeAreaHandledAbove = false,
+  statusSlot,
   holes,
   currentHoleIndex,
   onHoleComplete,
@@ -553,7 +559,7 @@ export default function FairwayShotTracking({
   // ============================================================================
 
   return (
-    <div className="min-h-full overflow-x-hidden bg-canvas">
+    <div className="min-h-full overflow-x-clip bg-canvas">
       {/* Desktop Header with Exit */}
       {onExit && (
         <FairwayDesktopExitHeader
@@ -574,6 +580,7 @@ export default function FairwayShotTracking({
           Passing it as the header's own bottom row makes the round chrome a
           single element that scrolls, sticks and safe-areas as one thing. */}
       <FairwayScorecardHeader
+        safeAreaHandledAbove={safeAreaHandledAbove}
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         currentHoleNumber={currentHole.number}
@@ -581,12 +588,15 @@ export default function FairwayShotTracking({
         onExit={onExit}
         onNavigateToHole={onNavigateToHole ? handleNavigateToHole : undefined}
         belowSlot={
-          <FairwayShotPills
-            currentShot={currentShot}
-            recordedShotCount={shotHistory.length}
-            selectedShotNumber={selectedShotNumber}
-            onSelectShot={handleSelectShot}
-          />
+          <>
+            {statusSlot}
+            <FairwayShotPills
+              currentShot={currentShot}
+              recordedShotCount={shotHistory.length}
+              selectedShotNumber={selectedShotNumber}
+              onSelectShot={handleSelectShot}
+            />
+          </>
         }
       />
 
