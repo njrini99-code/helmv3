@@ -114,6 +114,24 @@ describe('observedUserFromHeaders', () => {
     expect(createServerClient).not.toHaveBeenCalled();
   });
 
+  it('hands the client a fetch that fails without retrying', async () => {
+    // `getSession()` is not a pure storage read: inside EXPIRY_MARGIN_MS
+    // auth-js calls `_callRefreshToken`, and `autoRefreshToken: false` does not
+    // gate that path. Left open it would put a network round trip on every
+    // server-render failure. The 400 matters as much as the refusal — a
+    // rejection or 5xx is retryable and costs ~10s of backoff sleeps instead.
+    createServerClient.mockReturnValue(clientReturning({ user: { id: 'u', email: null } }));
+
+    await observedUserFromHeaders({ cookie: `${SESSION_COOKIE}=abc` });
+
+    const options = createServerClient.mock.calls[0]![2] as {
+      global?: { fetch?: typeof fetch };
+    };
+    expect(options.global?.fetch).toBeTypeOf('function');
+    const response = await options.global!.fetch!('https://example.test/token');
+    expect(response.status).toBe(400);
+  });
+
   it('passes a no-op setAll — a refreshed token has nowhere to go from here', async () => {
     createServerClient.mockReturnValue(clientReturning({ user: { id: 'u', email: null } }));
 

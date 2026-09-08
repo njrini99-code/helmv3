@@ -43,6 +43,18 @@ import { getPublishableKey } from '@/lib/supabase/keys.mjs';
  * `{ userId: null, userEmail: null }` — exactly the value the call site passed
  * before this existed, so the Bridge write degrades to its old behaviour rather
  * than losing the error entirely.
+ *
+ * AND NEVER TOUCHES THE NETWORK. `getSession()` is not the pure storage read it
+ * looks like: auth-js's `__loadSession` treats a session inside `EXPIRY_MARGIN_MS`
+ * as expired and calls `_callRefreshToken` — a round trip to the auth server —
+ * and `autoRefreshToken: false` gates only the background timer, not that path
+ * (`GoTrueClient.js`, `if (!hasExpired) { ... }` then `await this._callRefreshToken`).
+ * A refresh here would add a network call to EVERY server-render failure, on the
+ * error path, for a token that is then thrown away because `setAll` is a no-op.
+ * So this client is handed a fetch that refuses. The refusal lands in auth-js's
+ * own fallback: a session whose access token is inside the margin but has not
+ * actually expired is still returned, and a genuinely dead one reads as no
+ * session — which is the honest answer anyway.
  */
 
 export interface ObservedUser {
@@ -87,6 +99,36 @@ function readCookieHeader(headers: Record<string, string | string[] | undefined>
   return null;
 }
 
+/**
+ * The network, closed off.
+ *
+ * `global.fetch` is forwarded by `@supabase/ssr` into `createClient` and on into
+ * the auth client, so this is the whole of auth-js's outbound surface.
+ *
+ * THE STATUS CODE IS THE WHOLE DESIGN. It has to fail in a way auth-js will not
+ * retry and cannot mistake for a session:
+ *  - Rejecting (or any 5xx) becomes an `AuthRetryableFetchError`, and
+ *    `_refreshAccessToken` then loops with exponential backoff for up to
+ *    `AUTO_REFRESH_TICK_DURATION_MS`. Measured: ~10s of sleeps per call. Trading
+ *    a network round trip for a ten-second stall on the error path is no fix.
+ *  - Any 2xx would be parsed as a real refresh result, which is how you invent
+ *    a session that does not exist.
+ * A 400 is neither: one attempt, no sleep, no session — auth-js reports a plain
+ * auth error and `__loadSession` falls back to the stored session when its
+ * access token is still genuinely valid.
+ */
+function refuseNetwork(): Promise<Response> {
+  return Promise.resolve(
+    new Response(
+      JSON.stringify({
+        error: 'invalid_request',
+        error_description: 'observed-user reads the session locally and never refreshes it',
+      }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    ),
+  );
+}
+
 export async function observedUserFromHeaders(
   headers: Record<string, string | string[] | undefined>,
 ): Promise<ObservedUser> {
@@ -104,6 +146,7 @@ export async function observedUserFromHeaders(
     if (!url || /placeholder\.supabase\.co/i.test(url)) return NOBODY;
 
     const supabase = createServerClient(url, getPublishableKey(), {
+      global: { fetch: refuseNetwork as unknown as typeof fetch },
       cookies: {
         getAll: () => cookies,
         // Read-only by construction. A refreshed token has nowhere to go from
@@ -116,9 +159,10 @@ export async function observedUserFromHeaders(
 
     // `getSession`, not `getUser`: the latter round-trips to the auth server on
     // every call, and this runs on an error path that is already paying for a
-    // database write. The session's signature is unverified — see the "NOT
-    // AUTHORIZATION" note above for why that is acceptable here and nowhere
-    // else.
+    // database write. `getSession` can itself reach for the network inside the
+    // expiry margin, which is what `refuseNetwork` above forecloses. The
+    // session's signature is unverified — see the "NOT AUTHORIZATION" note above
+    // for why that is acceptable here and nowhere else.
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session?.user) return NOBODY;
 

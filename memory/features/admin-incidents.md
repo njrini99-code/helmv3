@@ -159,6 +159,14 @@ always derived at read time.
   the same pair through `/api/internal/log-server-error`, which re-validates
   the id's UUID shape so a malformed value costs one field and not the whole
   row. Historical rows cannot be backfilled — attribution is forward-only.
+  THE IDENTITY READ NEVER TOUCHES THE NETWORK: auth-js treats a session inside
+  `EXPIRY_MARGIN_MS` as expired and `getSession()` then calls
+  `_callRefreshToken`, which `autoRefreshToken: false` does not gate — so the
+  client is handed a `global.fetch` that answers 400. The status is the design:
+  a rejection or 5xx is retryable and costs ~10s of backoff sleeps on the error
+  path, and any 2xx would be parsed as a real refresh result. A session still
+  inside its true expiry is returned by auth-js's own fallback, so the refusal
+  costs no attribution.
 - **Incident resolution has exactly one write path.** Every resolve — a single
   row, a whole fingerprint, or a bulk selection — goes through the user-scoped
   `resolve_admin_event` RPC and busts `BRIDGE_INCIDENT_CACHE_TAG`. The RPC
