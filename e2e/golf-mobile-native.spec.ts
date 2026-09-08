@@ -190,4 +190,53 @@ test.describe('Golf mobile native layout', () => {
       ).toBeLessThanOrEqual(viewport.width);
     }
   });
+
+  test('holding a message opens anchored reactions without native text selection', async ({ page, context, browserName }) => {
+    test.setTimeout(90_000);
+    test.skip(browserName !== 'chromium', 'Touch hold uses Chromium CDP.');
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 47, bottom: 34 } });
+    await page.goto('/golf/dashboard/messages');
+    await page.getByRole('navigation', { name: 'Conversations' }).getByRole('button').first().click();
+    const thread = page.getByRole('region', { name: 'Conversation' });
+    await expect(thread.getByRole('textbox')).toBeVisible();
+    const bubble = thread.locator('[data-message-bubble]').last();
+    const popup = page.getByRole('dialog', { name: 'Message actions' });
+
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 844 });
+      await bubble.scrollIntoViewIfNeeded();
+      const target = await bubble.boundingBox();
+      expect(target).not.toBeNull();
+      const point = { x: target!.x + target!.width / 2, y: target!.y + target!.height / 2 };
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+      // Deliberate dwell: this is the physical long-press gesture under test.
+      await page.waitForTimeout(650);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await expect(popup).toBeVisible();
+      expect(await page.evaluate(() => window.getSelection()?.toString() ?? '')).toBe('');
+      const bounds = await popup.boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(8);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width - 8);
+      expect(bounds!.y).toBeGreaterThanOrEqual(47);
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844 - 34);
+      await expect(popup.getByRole('button', { name: 'Copy message', exact: true })).toBeVisible();
+      for (const reaction of await popup.locator('[aria-label="React to message"] button').all()) {
+        await expect.poll(async () => (await reaction.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(44);
+        await expect.poll(async () => (await reaction.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+      }
+      await page.keyboard.press('Escape');
+      await expect(popup).toHaveCount(0);
+
+      await bubble.scrollIntoViewIfNeeded();
+      const movedTarget = await bubble.boundingBox();
+      const start = { x: movedTarget!.x + movedTarget!.width / 2, y: movedTarget!.y + movedTarget!.height / 2 };
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...start, y: start.y - 40 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(650);
+      await expect(popup).toHaveCount(0);
+    }
+  });
+
 });
