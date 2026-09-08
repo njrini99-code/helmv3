@@ -9,6 +9,7 @@ import { logError } from '@/lib/error-logging';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { isGroupConversation } from '@/components/fairway/pages/messages/conversation-kind';
 
 /** Pause before the single transport-failure retry of a message send. */
 const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
@@ -26,7 +27,63 @@ export interface GolfConversationParticipant {
   name: string;
   subtitle: string;
   avatar: string | null;
-  type: 'coach' | 'player';
+  type: 'coach' | 'player' | 'member';
+}
+
+interface CoachLookup {
+  id: string;
+  user_id: string | null;
+  full_name: string | null;
+  title: string | null;
+  avatar_url: string | null;
+}
+
+interface PlayerLookup {
+  id: string;
+  user_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  graduation_year: number | null;
+  avatar_url: string | null;
+}
+
+/** Resolve the other member without inventing a name or role when the profile is absent. */
+export function resolveConversationParticipant(
+  otherUserId: string | undefined,
+  coachByUserId: ReadonlyMap<string, CoachLookup>,
+  playerByUserId: ReadonlyMap<string, PlayerLookup>,
+): GolfConversationParticipant | undefined {
+  if (!otherUserId) return undefined;
+
+  const coach = coachByUserId.get(otherUserId);
+  if (coach) {
+    return {
+      id: otherUserId,
+      name: coach.full_name?.trim() || 'Coach',
+      subtitle: coach.title?.trim() || 'Golf Coach',
+      avatar: coach.avatar_url,
+      type: 'coach',
+    };
+  }
+
+  const player = playerByUserId.get(otherUserId);
+  if (player) {
+    return {
+      id: otherUserId,
+      name: [player.first_name, player.last_name].filter(Boolean).join(' ').trim() || 'Player',
+      subtitle: player.graduation_year ? `Class of ${player.graduation_year}` : 'Golf Player',
+      avatar: player.avatar_url,
+      type: 'player',
+    };
+  }
+
+  return {
+    id: otherUserId,
+    name: 'Conversation member',
+    subtitle: '',
+    avatar: null,
+    type: 'member',
+  };
 }
 
 /**
@@ -1412,7 +1469,7 @@ export function useGolfConversations() {
     // Get unique other user IDs for batch fetching (only for non-group conversations)
     const otherUserIds = new Set<string>();
     conversationsData.forEach((conv) => {
-      if (!conv.is_group) {
+      if (!isGroupConversation(conv)) {
         conv.participant_ids?.forEach((id) => {
           if (id !== userId) otherUserIds.add(id);
         });
@@ -1436,22 +1493,6 @@ export function useGolfConversations() {
     ]);
 
     // Create lookup maps with proper types
-    interface CoachLookup {
-      id: string;
-      user_id: string | null;
-      full_name: string | null;
-      title: string | null;
-      avatar_url: string | null;
-    }
-    interface PlayerLookup {
-      id: string;
-      user_id: string | null;
-      first_name: string | null;
-      last_name: string | null;
-      graduation_year: number | null;
-      avatar_url: string | null;
-    }
-
     const coachByUserId = new Map<string, CoachLookup>();
     (coaches || []).forEach((c) => {
       if (c.user_id) coachByUserId.set(c.user_id, c as CoachLookup);
@@ -1466,6 +1507,12 @@ export function useGolfConversations() {
     const transformedConversations = conversationsData.map((conv) => {
       // Handle group conversations differently
       if (conv.is_group) {
+        // `is_group` is also set for a team broadcast to one player. Preserve
+        // the storage flag for RLS, but resolve the other member whenever the
+        // participant count says this is actually a two-person conversation.
+        const otherUserId = isGroupConversation(conv)
+          ? undefined
+          : conv.participant_ids?.find((id) => id !== userId);
         return {
           id: conv.id,
           created_at: conv.created_at,
@@ -1484,6 +1531,7 @@ export function useGolfConversations() {
           // below; the transform was simply not copying them out.
           participant_ids: conv.participant_ids ?? [],
           creator_id: conv.creator_id ?? null,
+          other_participant: resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId),
         } as GolfConversationWithMeta;
       }
 
@@ -1493,26 +1541,7 @@ export function useGolfConversations() {
       let otherParticipant: GolfConversationParticipant | undefined;
 
       if (otherUserId) {
-        const coach = coachByUserId.get(otherUserId);
-        const player = playerByUserId.get(otherUserId);
-
-        if (coach) {
-          otherParticipant = {
-            id: otherUserId, // Use user_id for consistent comparison (conversations use user IDs)
-            name: coach.full_name || 'Coach',
-            subtitle: coach.title || 'Golf Coach',
-            avatar: coach.avatar_url,
-            type: 'coach',
-          };
-        } else if (player) {
-          otherParticipant = {
-            id: otherUserId, // Use user_id for consistent comparison (conversations use user IDs)
-            name: [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Player',
-            subtitle: player.graduation_year ? `Class of ${player.graduation_year}` : 'Golf Player',
-            avatar: player.avatar_url,
-            type: 'player',
-          };
-        }
+        otherParticipant = resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId);
       }
 
       return {

@@ -4,9 +4,7 @@
  * ============================================================================
  * Fairway · messages · MessageComposer — the "what's-next" composer track
  * ----------------------------------------------------------------------------
- * The WHAT'S-NEXT section of the two-pane inbox: a sunken matte composer track
- * (G-47: a raised glass DOCK holding an inset writing track — it was one
- * flush `border-t bg-surface-sunken` footer). It is a
+ * A compact footer with one writing track and one bottom safe-area inset. It is a
  * pure PRESENTATION re-skin of the legacy `MessageInput` — the behavior is
  * PRESERVED byte-for-byte in intent:
  *   • auto-resize textarea (grows to five MEASURED lines — G-22)
@@ -228,6 +226,7 @@ export function MessageComposer({
    * target, and a state where Enter never silently sends.
    */
   const isPointerFine = useMediaQuery('(pointer: fine)');
+  const showKeyboardHint = useMediaQuery('(min-width: 768px) and (pointer: fine)');
 
   /**
    * Auto-resize to at most five measured lines (G-22).
@@ -545,56 +544,11 @@ export function MessageComposer({
   const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
-    /* G-47 — the two-layer construction §9.1 and the artboard both specify.
-     *
-     * The <form> is now only the safe-area gutter; the DOCK is the element
-     * inside it. Before this the form WAS the composer — `border-t
-     * border-border-subtle bg-surface-sunken`, one flush edge-to-edge footer
-     * with no radius, no translucency and no shadow — so the "raised outer
-     * dock + inset writing track" pair the plan describes existed as a single
-     * layer (M03C F13).
-     *
-     * EVERY VALUE BELOW IS A TOKEN, and that is the finding rather than a
-     * convenience. `Composer.dc.html:18-20`'s `.slab` is byte-identical to
-     * the Fairway glass material: `rgb(244 232 210 / 0.74)` IS
-     * `--fw-glass-bg`, `blur(22px)` IS `--fw-blur-glass`, `saturate(190%)` IS
-     * `--fw-glass-saturate`, `1.75rem` IS `--fw-radius-lg` (whose own comment
-     * reads "glass bars"), and the two drop layers `0 2px 4px
-     * oklch(0.18 0.01 60 / 0.06), 0 12px 32px oklch(0.18 0.01 60 / 0.10)` ARE
-     * `--fw-shadow-pop`, to the byte. The artboard's third shadow, an
-     * `inset 0 1px 0 rgb(255 248 233 / 0.6)` specular, is
-     * `--fw-glass-highlight` at `rgb(255 249 235 / 0.55)` — two channel units
-     * and 0.05 of alpha apart, absorbed as render noise. Same free win G-32
-     * found on the rail and G-49b on the bubbles: the artboard was drawn from
-     * these tokens.
-     *
-     * NOT `.fw-glass-regular`, deliberately. It is the same material, but it
-     * declares itself "LOCAL to the group" and is emitted only by the Fairway
-     * overlay primitives, and it composes `--fw-shadow-raise`
-     * (0 18px 44px / 0.15) where the artboard uses `--fw-shadow-pop`
-     * (0 12px 32px / 0.10) — a visibly heavier float, right for a popover
-     * above the page and wrong for a dock resting on it. Reusing the class
-     * would have meant taking a depth step the artboard did not draw.
-     *
-     * Arbitrary-value syntax because the `--fw-glass-*` family has no Tailwind
-     * bridge (`backdrop-blur-glass` is 16px, an older, different scale).
-     * `CourseDetailDrawer.tsx:301` establishes
-     * `[background:var(--fw-glass-bg-strong)]` as the local idiom for exactly
-     * this case. */
     <form
       onSubmit={handleSubmit}
-      className="px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 [.keyboard-open_&]:pb-3 lg:pb-3"
+      className="border-t border-border-subtle bg-surface px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2 lg:pb-3"
     >
-      <div
-        className={cn(
-          // `.slab`: padding 12px 12px 14px 12px, radius 1.75rem — exact.
-          'rounded-fw-lg p-3 pb-3.5',
-          '[background:var(--fw-glass-bg)]',
-          '[-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
-          '[backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
-          '[box-shadow:inset_0_1px_0_var(--fw-glass-highlight),var(--fw-shadow-pop)]',
-        )}
-      >
+      <div>
       {/* G-20a — the "Didn't send" banner, ABOVE the track, which is where
           `Composer.dc.html:140-149` draws it. Below the track (where the G-21
           refusal used to whisper in secondary ink) it read as a footnote to a
@@ -752,7 +706,7 @@ export function MessageComposer({
             // move a single pixel of what is drawn.
             'relative flex h-10 w-10 min-h-0 flex-shrink-0 items-center justify-center rounded-full p-0',
             'after:absolute after:-inset-0.5 after:rounded-full after:content-[\'\']',
-            'outline-none transition-all duration-200',
+            'outline-none transition-[color,background-color,box-shadow,transform] duration-200',
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
             'active:scale-95 motion-reduce:active:scale-100',
             canSend
@@ -798,9 +752,9 @@ export function MessageComposer({
           vertical space a phone composer has, and on mobile the counter is
           usually the only occupant. `ml-auto` keeps the counter right-aligned
           once the hint beside it is gone. */}
-      {(isPointerFine || charsLeft) && (
+      {(showKeyboardHint || charsLeft) && (
         <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
-          {isPointerFine && (
+          {showKeyboardHint && (
             <p className="font-fw-sans text-eyebrow text-text-tertiary">
               Press Enter to send, Shift+Enter for a new line.
             </p>

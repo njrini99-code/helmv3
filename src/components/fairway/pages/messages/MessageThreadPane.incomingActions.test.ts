@@ -313,7 +313,7 @@ describe('G-42 — desktop has a path to the actions', () => {
     // `lg:invisible` or `max-lg:flex` would fail too.
     render(createElement(MessageThreadPane, baseProps(false, { mobileActionsId: MESSAGE_ID })));
     const panel = document.body.querySelector('[aria-label="Copy message"]')!
-      .parentElement!.parentElement!;
+      .closest('[data-slot="sheet"]')!;
     expect(panel.className, 'expected the Sheet panel').toContain('rounded-t-fw-lg');
     expect(panel.className).not.toMatch(/(^|\s)(lg:|max-lg:)/);
   });

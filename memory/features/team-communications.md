@@ -14,6 +14,23 @@ they are already near the bottom; an explicit search result takes precedence
 and opens at its matched message instead. The search target consumes the
 initial-open sentinel so it cannot be overwritten by a stale initial scroll.
 
+The immersive mobile thread uses one bottom safe-area inset, owned by the
+composer. Its writing field sits in a compact flush footer. Attachments open
+in the shared scrollable Sheet on phones and a menu on desktop. Group details
+use Sheet.Body so long member lists scroll within the viewport.
+
+Header, rail, and composer derive conversation kind from participant count
+(and ids when count is absent). A two-person broadcast resolves its actual
+counterpart even when its storage group flag is set. Real groups retain their
+full title; unresolved identities use an honest generic label.
+
+Message reactions are persisted in golf_message_reactions using the session
+client and existing participant RLS. Hold a message (or right-click on desktop)
+to add one; tap a reaction count to add/remove your own reaction. Counts include
+distinct members, refresh through realtime, and reload on window focus. Errors
+remain visible; switching threads discards stale fetch results. Removing a
+reaction targets the current user's row only and never edits group membership.
+
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
 ## Primary Entry Points
@@ -102,8 +119,8 @@ Announcement create
 - The composer's Attachments section renders for any coach with a team (2026-08-26): it offers direct device upload (25 MB cap, mirrors the Documents-page accept list) plus the library picker; it must NOT be hidden just because the team library is empty.
 - Announcement player view needs compact cards, clear acknowledgement action, linked documents/tasks, and urgency state.
 - Mobile versions should keep primary action clear and move lower-priority controls into sheets or menus.
-- On a phone the messages column shrinks by whichever is taller of the bottom
-  chrome (56px nav + safe area) and `--keyboard-height`, so the composer sits
+- On a phone the immersive messages column fills the viewport minus
+  `--keyboard-height`, with its sole bottom safe-area inset in the composer, which sits
   directly above the keys ("I can't see what I'm typing", Shenandoah team
   chat 2026-09-01); the thread pane re-pins to the newest message when its
   region shrinks, and the composer drops its home-indicator pad while the

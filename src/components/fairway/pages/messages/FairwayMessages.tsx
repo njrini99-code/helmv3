@@ -43,6 +43,8 @@
  * FairwayPlayerStats) WITHOUT CoachHelmShell — this is a team-management page.
  * ========================================================================== */
 
+import { useMessageReactions } from '@/hooks/golf/use-message-reactions';
+import { conversationRecipientName, isGroupConversation } from './conversation-kind';
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Users } from 'lucide-react';
@@ -133,6 +135,7 @@ export function FairwayMessages() {
     sendTypingStatus,
     currentUserId,
   } = useGolfMessages(selectedConversationId || '');
+  const reactions = useMessageReactions(selectedConversationId ?? '', messages.filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed).map((message) => message.id), currentUserId ?? userId);
 
   // ── UNCHANGED hook: attachment send ─────────────────────────────────────────
   const { sendMessageWithAttachments } = useMessageAttachments();
@@ -300,7 +303,7 @@ export function FairwayMessages() {
       }
 
       const existingConversation = conversations.find(conv => {
-        return !conv.is_group && conv.other_participant?.id === playerUserId;
+        return !isGroupConversation(conv) && conv.other_participant?.id === playerUserId;
       });
 
       if (existingConversation) {
@@ -621,7 +624,7 @@ export function FairwayMessages() {
           // and `pt-[safe-area-top]` because nothing above it is reserving
           // the notch any more. This is what makes the thread header the
           // ONE header instead of the second one.
-          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
+          ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
           : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
       )}
     >
@@ -760,6 +763,7 @@ export function FairwayMessages() {
                 it's a no-op — w-full already matches the cell exactly. */}
             <div className="mx-auto flex w-full min-h-0 max-w-[720px] flex-1 flex-col">
               <MessageThreadPane
+                reactions={reactions}
                 conversation={selectedConversation}
                 messages={messages}
                 loading={messagesLoading}
@@ -815,24 +819,7 @@ export function FairwayMessages() {
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}
-                    /* G-47 — the field names who is about to hear you
-                     * ("Message Cole", `Composer.dc.html:45`), which is the
-                     * one thing the composer can tell you that the header
-                     * cannot once it has scrolled away.
-                     *
-                     * Same source the thread header reads
-                     * (`MessageThreadPane.tsx:838`), so the two cannot name
-                     * different people. A 1:1 uses the FIRST name, matching
-                     * what the artboard writes; a group keeps its title whole,
-                     * because a group's name is not a person's and clipping it
-                     * at the first space would invent one. Undefined either
-                     * way falls back to the generic placeholder rather than
-                     * rendering "Message undefined". */
-                    recipientName={
-                      selectedConversation.is_group
-                        ? selectedConversation.title || undefined
-                        : selectedConversation.other_participant?.name?.split(' ')[0] || undefined
-                    }
+                    recipientName={conversationRecipientName(selectedConversation)}
                   />
                 ) : null}
               </MessageThreadPane>

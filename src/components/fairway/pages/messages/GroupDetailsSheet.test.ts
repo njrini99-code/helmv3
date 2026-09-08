@@ -707,13 +707,9 @@ describe('membership — who the sheet offers the controls to', () => {
     expect(sheetCode).toContain('text-caption-1 font-medium text-accent-700');
   });
 
-  it('applies the artboard\'s Leave group pill geometry', () => {
-    // `:141-143` — 50px tall, fully rounded, 15px / 600 on the danger tint.
-    expect(artboard).toContain('height: 50px');
-    expect(artboard).toContain('Leave group');
-    expect(typeStep('subhead')).toContain("'15px'");
-    expect(sheetCode).toContain('h-[50px] w-full rounded-full bg-fw-danger-bg');
-    expect(sheetCode).toContain('text-subhead font-semibold text-fw-danger-ink');
+  it('keeps Leave group readable in a compact full-width row', () => {
+    expect(sheetCode).toContain('h-12 w-full rounded-fw-md bg-surface');
+    expect(sheetCode).toContain('text-subhead font-medium text-fw-danger-ink');
   });
 });
 

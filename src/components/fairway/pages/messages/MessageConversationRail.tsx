@@ -45,7 +45,7 @@ import { Avatar } from '@/components/fairway/controls/avatar';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { isGroupConversation } from './conversation-kind';
+import { isGroupConversation, conversationDisplayName } from './conversation-kind';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -149,9 +149,7 @@ function ConversationRow({
   // rendered the group glyph instead of the person's initials. See
   // conversation-kind.ts.
   const isGroup = isGroupConversation(conv);
-  const displayName = isGroup
-    ? conv.title || 'Team Group'
-    : conv.other_participant?.name || 'Unknown User';
+  const displayName = conversationDisplayName(conv);
   const time = formatTime(conv.last_message?.created_at);
 
   return (

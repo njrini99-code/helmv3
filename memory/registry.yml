@@ -1046,6 +1046,7 @@ features:
         # than a recorded gap.
         - src/hooks/golf/use-golf-messages.ts
         - src/hooks/golf/use-message-attachments.ts
+        - src/hooks/golf/use-message-reactions.ts
       db:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql

@@ -29,12 +29,38 @@
 export interface ConversationKindInput {
   is_group?: boolean | null;
   participant_count?: number | null;
+  participant_ids?: readonly string[] | null;
 }
 
 /** True when the conversation genuinely has more than two people in it. */
 export function isGroupConversation(conv: ConversationKindInput | null | undefined): boolean {
   if (!conv) return false;
-  const count = conv.participant_count ?? 0;
+  const count = conv.participant_count ?? conv.participant_ids?.length ?? 0;
   if (count > 0) return count > 2;
   return Boolean(conv.is_group);
+}
+
+export interface ConversationDisplayInput extends ConversationKindInput {
+  title?: string | null;
+  other_participant?: { name?: string | null; type?: string } | null;
+}
+
+/**
+ * The single label policy for message headers, rails, and composers.
+ * A two-person team broadcast keeps its storage flag but is displayed as a
+ * direct conversation; an unresolved profile gets an honest generic label.
+ */
+export function conversationDisplayName(conv: ConversationDisplayInput | null | undefined): string {
+  if (isGroupConversation(conv)) {
+    return conv?.title?.trim() || 'Team Group';
+  }
+  return conv?.other_participant?.name?.trim() || 'Conversation member';
+}
+
+/** The recipient label used by a composer (full title for genuine groups). */
+export function conversationRecipientName(conv: ConversationDisplayInput | null | undefined): string | undefined {
+  if (isGroupConversation(conv)) return conv?.title?.trim() || undefined;
+  if (conv?.other_participant?.type === 'member') return undefined;
+  const name = conv?.other_participant?.name?.trim();
+  return name ? name.split(/\s+/)[0] : undefined;
 }

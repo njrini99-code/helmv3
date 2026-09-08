@@ -28,12 +28,13 @@
  *       paperclip / fake edited tag).
  * ========================================================================== */
 
+import { MESSAGE_REACTIONS, summarizeReactions, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
-import { isGroupConversation } from './conversation-kind';
+import { isGroupConversation, conversationDisplayName } from './conversation-kind';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
@@ -137,6 +138,7 @@ function ActionRow({
       variant="ghost"
       onClick={onClick}
       aria-label={`${label} message`}
+      leftIcon={icon}
       className={cn(
         // 52px is `Actions.dc.html:40`'s stated row height and is NOT on this
         // repo's spacing scale — `tailwind.config.ts:419` enumerates it and
@@ -172,8 +174,7 @@ function ActionRow({
           : 'text-text-primary hover:bg-surface-sunken active:bg-surface-sunken',
       )}
     >
-      <span className="flex-shrink-0">{icon}</span>
-      <span>{label}</span>
+      {label}
     </Button>
   );
 }
@@ -273,7 +274,13 @@ type ResolvedAttachment = NonNullable<
   Awaited<ReturnType<typeof getGolfMessageAttachments>>['attachments']
 >[number];
 
+const EMPTY_REACTIONS: MessageReactionsState = {
+  rows: [], error: null, pending: null,
+  refresh: async () => {}, setReaction: async () => false,
+};
+
 export interface MessageThreadPaneProps {
+  reactions?: MessageReactionsState;
   /** The open conversation (page-owned selection), or null on desktop no-select. */
   conversation: GolfConversationWithMeta | null;
   /** Messages from the unchanged useGolfMessages() hook. */
@@ -555,6 +562,7 @@ function MessageAttachments({
 }
 
 export function MessageThreadPane({
+  reactions: reactionProps,
   conversation,
   messages,
   loading,
@@ -588,6 +596,7 @@ export function MessageThreadPane({
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
   const reduceMotion = useReducedMotion() ?? false;
+  const reactions = reactionProps ?? EMPTY_REACTIONS;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   /** The message list itself — observed for late growth (images, fonts). */
@@ -1097,9 +1106,7 @@ export function MessageThreadPane({
   // the ONE derivation, so the avatar and the per-bubble sender identity stop
   // disagreeing with the subtitle sitting inches away from them.
   const isGroup = isGroupConversation(conversation);
-  const headerName = isGroup
-    ? conversation.title || 'Team Group'
-    : conversation.other_participant?.name || 'Unknown User';
+  const headerName = conversationDisplayName(conversation);
   // `is_group` is set for anything carrying `is_team_chat`, and a broadcast
   // sent to ONE player carries it too (the flag is load-bearing for the
   // conversation-create RLS workaround, so it can't just be dropped there).
@@ -1113,7 +1120,7 @@ export function MessageThreadPane({
   // new information, and `participant_count` was already being read one line
   // above to decide WHICH label to show — so this needs no new plumbing, only
   // the willingness to print the number it already had.
-  const headerSubtitle = conversation.is_group
+  const headerSubtitle = isGroup
     ? participantCount > 2
       ? `${participantCount} members`
       : participantCount === 2
@@ -1161,7 +1168,7 @@ export function MessageThreadPane({
           leftIcon={<ArrowLeft size={20} aria-hidden="true" />}
           className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
         >
-          Messages
+          <span className="max-[374px]:sr-only">Messages</span>
         </Button>
         {/* G-29c — a group's identity is WHO is in it, so the header shows an
             overlapping member stack rather than a generic Users glyph.
@@ -1889,6 +1896,28 @@ export function MessageThreadPane({
                         ) : null}
                       </div>
                     )}
+                    {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1" aria-label="Message reactions">
+                        {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).map((reaction) => (
+                          <Button
+                            key={reaction.emoji}
+                            type="button"
+                            variant="ghost"
+                            aria-label={`${reaction.emoji}: ${reaction.count} ${reaction.count === 1 ? 'reaction' : 'reactions'}${reaction.active ? ', including you' : ''}`}
+                            aria-pressed={reaction.active}
+                            disabled={Boolean(reactions.pending)}
+                            onClick={() => { void reactions.setReaction(msg.id, reaction.emoji, !reaction.active); }}
+                            className={cn('h-9 min-w-11 gap-1 rounded-full border px-2 text-body', reaction.active ? 'border-accent-600 bg-accent-100 text-accent-700' : 'border-border-subtle bg-surface text-text-primary')}
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <span aria-hidden="true">{reaction.emoji}</span>
+                              <span className="text-caption tabular-nums">{reaction.count}</span>
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+
                     {/* G-19 — a send that failed keeps its message here rather
                         than deleting it. The bubble above is dimmed via
                         `sendFailed`, and this row is the only trace that used
@@ -2066,7 +2095,33 @@ export function MessageThreadPane({
           // guard against this radius appearing on a bubble.
           className="sm:mx-auto sm:max-w-sm"
         >
-          <div className="flex flex-col gap-0.5 px-3 pb-3">
+          <Sheet.Body className="px-3">
+            {reactionProps && <div className="mb-3 flex justify-between gap-0.5 rounded-card bg-surface p-1.5" aria-label="React to message">
+              {MESSAGE_REACTIONS.map(({ emoji, label }) => {
+                const active = reactions.rows.some((row) => row.message_id === actionsMessage.id && row.user_id === (currentUserId ?? userId) && row.emoji === emoji);
+                return (
+                  <Button
+                    key={emoji}
+                    type="button"
+                    variant="ghost"
+                    aria-label={label}
+                    aria-pressed={active}
+                    disabled={Boolean(reactions.pending)}
+                    onClick={() => {
+                      void reactions.setReaction(actionsMessage.id, emoji, !active).then((saved) => {
+                        if (saved) onSetMobileActions(null);
+                      });
+                    }}
+                    className={cn('h-11 min-w-0 flex-1 rounded-full p-0 text-h2', active && 'bg-accent-100')}
+                  >
+                    <span aria-hidden="true">{emoji}</span>
+                  </Button>
+                );
+              })}
+            </div>}
+            {reactions.error && <p role="alert" className="px-3 pb-2 text-caption text-fw-danger-ink">{reactions.error}</p>}
+            <div className="flex flex-col gap-0.5">
+
             <ActionRow
               icon={<Copy size={21} aria-hidden="true" />}
               label="Copy"
@@ -2106,12 +2161,19 @@ export function MessageThreadPane({
                 />
               </>
             )}
-          </div>
+            </div>
+          </Sheet.Body>
         </Sheet>
       )}
 
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children
           so FairwayMessages owns the send wiring to the unchanged hooks. */}
+      {reactions.error && !actionsMessage && (
+        <div role="status" className="flex items-center justify-between gap-2 px-4 py-2">
+          <p className="text-caption text-text-secondary">{reactions.error}</p>
+          <Button type="button" variant="ghost" size="sm" onClick={() => { void reactions.refresh(); }}>Reload reactions</Button>
+        </div>
+      )}
       {children}
     </InstrumentPanel>
   );

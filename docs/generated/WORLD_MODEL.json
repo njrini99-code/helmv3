@@ -1640,6 +1640,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/hooks/golf/use-message-reactions.ts",
+        "pattern": "src/hooks/golf/use-message-reactions.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/instrumentation*.ts",
         "pattern": "src/instrumentation*.ts",
         "category": "services"
@@ -21233,6 +21238,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/hooks/golf/use-message-attachments.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "services:src/hooks/golf/use-message-reactions.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/use-message-reactions.ts"
         }
       ]
     },

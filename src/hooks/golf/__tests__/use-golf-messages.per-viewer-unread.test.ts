@@ -27,6 +27,7 @@ import { join } from 'node:path';
 import {
   applyPerViewerUnread,
   perViewerUnreadTargets,
+  resolveConversationParticipant,
   type GolfConversationRpcRow,
 } from '@/hooks/golf/use-golf-messages';
 
@@ -108,6 +109,41 @@ describe('applyPerViewerUnread — the recomputed number replaces the shared one
 
   it('handles a null row set without throwing', () => {
     expect(applyPerViewerUnread(null, new Map([['x', 1]]))).toEqual([]);
+  });
+});
+
+describe('resolveConversationParticipant — the DM counterpart lookup', () => {
+  it('resolves the other member for a flagged two-person broadcast', () => {
+    const participant = resolveConversationParticipant(
+      'player-2',
+      new Map(),
+      new Map([
+        ['player-2', {
+          id: 'profile-2',
+          user_id: 'player-2',
+          first_name: 'Jordan',
+          last_name: 'Lee',
+          graduation_year: 2028,
+          avatar_url: null,
+        }],
+      ]),
+    );
+
+    expect(participant).toMatchObject({
+      id: 'player-2',
+      name: 'Jordan Lee',
+      type: 'player',
+    });
+  });
+
+  it('uses an honest generic member when no profile row is available', () => {
+    expect(resolveConversationParticipant('missing-user', new Map(), new Map())).toEqual({
+      id: 'missing-user',
+      name: 'Conversation member',
+      subtitle: '',
+      avatar: null,
+      type: 'member',
+    });
   });
 });
 
