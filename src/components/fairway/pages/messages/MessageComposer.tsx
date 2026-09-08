@@ -24,6 +24,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, Loader2, Send } from 'lucide-react';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
@@ -132,6 +133,7 @@ export function MessageComposer({
   onTyping,
   recipientName,
 }: MessageComposerProps) {
+  const reducedMotion = useReducedMotion() ?? false;
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -612,8 +614,8 @@ export function MessageComposer({
           // Centred at rest, bottom-aligned once the text wraps — the
           // artboard adds `align-items: flex-end` on the GROWN state only.
           isGrown ? 'items-end' : 'items-center',
-          'border border-border-subtle bg-surface',
-          'transition-colors duration-200',
+          'border border-border-subtle bg-elevated shadow-flat',
+          'transition-[border-color,box-shadow] duration-200 motion-reduce:transition-none',
           // G-45 / D-05 — the artboard's glow GEOMETRY on the token's COLOUR.
           //
           // The decision is frozen in `audit/DECISIONS.md`: the artboard's
@@ -710,7 +712,7 @@ export function MessageComposer({
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
             'active:scale-95 motion-reduce:active:scale-100',
             canSend
-              ? 'bg-accent-650 text-text-on-accent shadow-flat hover:bg-accent-600 hover:shadow-soft'
+              ? 'bg-accent-650 text-text-on-accent shadow-flat hover:bg-accent-750 hover:shadow-soft'
               : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',
           )}
         >
@@ -738,11 +740,20 @@ export function MessageComposer({
               draws. `busy` itself is not usable here: the primitive renders its
               spinner ALONGSIDE children, and this is a 40px `p-0` circle, so
               the ring and the paper plane would share the well. */}
-          {sending ? (
-            <Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-          ) : (
-            <Send size={18} aria-hidden="true" />
-          )}
+          <AnimatePresence initial={false} mode="popLayout">
+            <m.span key={sending ? 'sending' : canSend ? 'ready' : 'idle'}
+              className="flex items-center justify-center"
+              initial={reducedMotion ? false : { opacity: 0, scale: 0.75, y: 3 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, scale: 0.75, y: -3 }}
+              transition={{ duration: reducedMotion ? 0 : 0.16 }}>
+              {sending ? (
+                <Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              ) : (
+                <Send size={18} aria-hidden="true" />
+              )}
+            </m.span>
+          </AnimatePresence>
         </Button>
       </div>
 

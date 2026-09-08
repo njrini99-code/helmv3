@@ -123,6 +123,37 @@ playerTest.describe('GolfHelm — Player critical paths', () => {
     await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
   });
 
+  playerTest('messages fills the desktop workspace and keeps actions beside the message', async ({ page }) => {
+    for (const viewport of [{ width: 810, height: 1080 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/golf/dashboard/messages', { waitUntil: 'domcontentloaded' });
+      const rail = page.getByRole('navigation', { name: 'Conversations' });
+      await expect(rail).toBeVisible({ timeout: 15_000 });
+      await rail.getByRole('button').first().click();
+      const thread = page.getByRole('region', { name: 'Conversation' });
+      await expect(thread.getByRole('textbox')).toBeVisible({ timeout: 15_000 });
+      await expect.poll(async () => {
+        const box = await thread.boundingBox();
+        return box ? Math.max(Math.abs(box.y), Math.abs(box.x + box.width - viewport.width), Math.abs(box.y + box.height - viewport.height)) : Infinity;
+      }).toBeLessThanOrEqual(4);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
+      const action = thread.getByRole('button', { name: 'Message actions', exact: true }).last();
+      await action.focus();
+      await expect(action).toBeFocused();
+      await page.keyboard.press('Enter');
+      const popup = page.getByRole('dialog', { name: 'Message actions' });
+      await expect(popup).toBeVisible();
+      const box = await popup.boundingBox();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+      await page.keyboard.press('Escape');
+      await expect(popup).toHaveCount(0);
+      await expect(action).toBeFocused();
+    }
+  });
+
   playerTest('messages composer stays above the simulated keyboard', async ({ page }) => {
     for (const viewport of [
       { width: 390, height: 844 },
@@ -135,7 +166,7 @@ playerTest.describe('GolfHelm — Player critical paths', () => {
       // its first seeded row is the stable conversation this smoke test opens.
       const conversations = page.getByRole('navigation', { name: 'Conversations' });
       await expect(conversations).toBeVisible({ timeout: 15_000 });
-      const firstConversation = conversations.locator('button').first();
+      const firstConversation = conversations.getByRole('button').first();
       await expect(firstConversation).toBeVisible({ timeout: 15_000 });
       await firstConversation.click();
 

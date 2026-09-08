@@ -79,7 +79,7 @@ describe('immersive surface — the hub sub-nav goes with the top bar', () => {
     const occurrences = css.split("[data-slot='fairway-hub-subnav']").slice(0, -1);
     expect(occurrences.length).toBeGreaterThan(0);
     for (const before of occurrences) {
-      expect(before.endsWith('body[data-fw-immersive] ')).toBe(true);
+      expect(before.endsWith('body[data-fw-immersive] ') || before.endsWith('body:has([data-fw-messages]) ')).toBe(true);
     }
   });
 

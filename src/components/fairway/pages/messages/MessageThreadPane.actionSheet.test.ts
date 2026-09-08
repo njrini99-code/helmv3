@@ -343,6 +343,23 @@ describe('message reaction controls', () => {
     expect(document.body.querySelector('[aria-label="Edit message"]')).toBeNull();
   });
 
+  it('does not expose actions from a previous conversation while new messages load', () => {
+    render(createElement(MessageThreadPane, baseProps(false, {
+      conversation: { id: 'another-thread', participant_count: 2, unread_count: 0 } as GolfConversationWithMeta,
+      mobileActionsId: MESSAGE_ID,
+    })));
+    expect(document.body.querySelector('[aria-label="Copy message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Edit message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Delete message"]')).toBeNull();
+  });
+
+  it('anchors the incoming avatar inside the bubble, independently of reactions and metadata', () => {
+    render(createElement(MessageThreadPane, baseProps(false)));
+    const avatar = document.body.querySelector('[data-message-avatar]');
+    expect(avatar).not.toBeNull();
+    expect(avatar!.parentElement?.hasAttribute('data-message-bubble')).toBe(true);
+  });
+
   it('shows the group count and lets the viewer remove only their reaction', () => {
     const setReaction = vi.fn(async () => true);
     render(createElement(MessageThreadPane, baseProps(false, {

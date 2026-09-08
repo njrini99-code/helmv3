@@ -171,6 +171,16 @@
     }
   }
 
+  /* The messaging workspace supplies its own header and bottom budget.
+     Keep app navigation; remove duplicate chrome only while this route exists. */
+  body:has([data-fw-messages]) [data-slot='fw-topbar'],
+  body:has([data-fw-messages]) [data-slot='fairway-hub-subnav'] {
+    display: none;
+  }
+  body:has([data-fw-messages]) [data-slot='fw-shell-content'] {
+    padding-bottom: 0;
+  }
+
   /* BaseballHelm-only (#481 mustFix): the coach `HubSubNav` strip
      (hub-sub-nav.tsx) publishes its OWN rendered height here via a
      ResizeObserver, so any leaf pane computing a fixed dvh-based height

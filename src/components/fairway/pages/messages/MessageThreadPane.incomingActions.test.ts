@@ -348,7 +348,7 @@ describe('G-42 — desktop has a path to the actions', () => {
     // `visibility` — so Tab always reached these buttons. It landed on
     // something invisible, which is the §15.3 defect rather than a fix for it.
     const { container } = render(createElement(MessageThreadPane, baseProps(true)));
-    const row = container.querySelector('[aria-label="Edit message"]')!.parentElement!;
+    const row = container.querySelector('[aria-label="Message actions"]')!.parentElement!;
     expect(row.className).toContain('opacity-0');
     expect(row.className).toContain('group-hover:opacity-100');
     expect(row.className).toContain('focus-within:opacity-100');

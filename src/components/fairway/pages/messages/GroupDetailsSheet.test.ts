@@ -296,7 +296,7 @@ describe('G-30 / G-57 — the header has an entry point now', () => {
 
   it('is wired to the sheet from the page that owns the overlay state', () => {
     expect(pageCode).toContain('onOpenGroupDetails={() => setShowGroupDetails(true)}');
-    expect(pageCode).toContain('{selectedConversation?.is_group && (');
+    expect(pageCode).toContain('{selectedConversation && isGroupConversation(selectedConversation) && (');
   });
 
   it('hands the sheet the row count AND the resolved names separately', () => {

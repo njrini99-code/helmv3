@@ -19,14 +19,33 @@ composer. Its writing field sits in a compact flush footer. Attachments open
 in the shared scrollable Sheet on phones and a menu on desktop. Group details
 use Sheet.Body so long member lists scroll within the viewport.
 
+The mobile inbox has one Messages header with working All, Unread and Groups
+filters. Short conversations settle near the composer; longer histories retain
+the existing scroll anchoring.
+
+On desktop and tablet the inbox fills the app content window beside the left
+navigation, with a compact fixed-width rail and an uncapped thread panel.
+Route-scoped `data-fw-messages` CSS removes the duplicate shell header and its
+bottom reservation. Individual bubbles retain readable widths. The shared
+`globals.css` file is outside the feature router; only this route-scoped rule
+is part of the messaging change.
+
 Header, rail, and composer derive conversation kind from participant count
 (and ids when count is absent). A two-person broadcast resolves its actual
 counterpart even when its storage group flag is set. Real groups retain their
 full title; unresolved identities use an honest generic label.
 
+Incoming avatars anchor to the final bubble in a sender group, independent of
+reaction and timestamp height. Reaction controls retain 44px hit areas around
+compact 28px visual badges that meet the bubble edge. Switching conversations
+closes action/group overlays and rejects previous-thread action targets.
+
 Message reactions are persisted in golf_message_reactions using the session
 client and existing participant RLS. Hold a message (or right-click on desktop)
-to add one; tap a reaction count to add/remove your own reaction. Counts include
+to add one; desktop also exposes a keyboard-focusable action button. Desktop
+uses an anchored, collision-aware popup; touch uses the shared sheet. Both show
+the selected message, active reactions and pending state. Reaction hover/count
+feedback and composer send transitions respect reduced motion. Tap a reaction count to add/remove your own reaction. Counts include
 distinct members, refresh through realtime, and reload on window focus. Errors
 remain visible; switching threads discards stale fetch results. Removing a
 reaction targets the current user's row only and never edits group membership.
@@ -574,3 +593,5 @@ A test that renders with `loading: false` from the start cannot see either half.
 - `memory/context/golfhelm-features.md`
 - `memory/context/golfhelm-database.md`
 - `docs/PUSH_NOTIFICATION_AUDIT.md`
+
+Group participant requests are invalidated when conversation selection changes; late results and mutation refresh callbacks cannot overwrite the next conversation’s identity map. Empty membership clears stale members.

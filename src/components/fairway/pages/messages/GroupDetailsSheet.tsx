@@ -513,7 +513,7 @@ export function GroupDetailsSheet({
          Same disposition as G-56's action sheet, and the leading edge keeps the
          variant's `rounded-t-fw-lg` (rounding all four would be wrong for a
          bottom-anchored panel and would trip G-48's guard). */
-      className="sm:mx-auto sm:max-w-sm"
+      className="!bg-canvas sm:mx-auto sm:max-w-sm"
     >
       <Sheet.Body className="flex flex-col px-4 pt-4">
         {/* Identity — the group's own object: real faces, then its name. */}
@@ -566,7 +566,7 @@ export function GroupDetailsSheet({
         )}
 
         {adding ? (
-          <div className="flex flex-col divide-y divide-border-subtle rounded-card bg-surface">
+          <div className="flex flex-col divide-y divide-border-subtle rounded-card bg-surface shadow-soft">
             {candidates === null && (
               <p className="px-3.5 py-3 font-fw-sans text-caption-1 text-text-tertiary">
                 Loading teammates…
@@ -598,7 +598,7 @@ export function GroupDetailsSheet({
             ))}
           </div>
         ) : (
-        <div className="flex flex-col divide-y divide-border-subtle rounded-card bg-surface">
+        <div className="flex flex-col divide-y divide-border-subtle rounded-card bg-surface shadow-soft">
           {visible.map((m) => (
             <MemberRow
               key={m.id}
