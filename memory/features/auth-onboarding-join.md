@@ -89,6 +89,14 @@ Join code
 - Auth/onboarding errors should be specific enough to recover: not signed in, missing profile, invalid code, already joined, or pending approval.
 - Join confirmation should show team identity before mutating membership.
 - Mobile onboarding should use the shared app shell patterns where applicable and avoid losing progress.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  These routes legitimately still use the legacy
+  `GenericPageSkeleton`/`FormPageSkeleton` family, which carries no
+  `role="status"`/`aria-busy` of its own — the call site supplies them.
 
 ## Known Risk Areas
 

@@ -5819,7 +5819,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 1089
+          "line": 1095
         },
         {
           "kind": "import_graph",
@@ -5880,7 +5880,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 736
+          "line": 742
         }
       ]
     },
@@ -6163,7 +6163,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 737
+          "line": 743
         },
         {
           "kind": "import_graph",

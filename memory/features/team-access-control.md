@@ -64,29 +64,18 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
   fields and CoachHelm terminal-processing metadata; no client or coach write
   may alter completed score history.
 - Bare unprefixed sport tables such as `players`, `coaches`, `teams`, and `rounds` are wrong.
-- Team-chat participant management is a scoped allowance, not general write access.
-  `supabase/migrations/20260907160000_golf_team_chat_membership_management.sql`
-  (written, NOT yet applied — applying it is the owner's step) lets a conversation's
-  creator add and remove OTHER participants, bounded on three axes: the conversation
-  must be a team chat with a `team_id`, the added/removed user must be on that team,
-  and the actor must still be a participant themselves. Everyone keeps the pre-existing
-  right to remove only their own row. The team check runs through the definer helper
-  `public.golf_user_on_conversation_team(uuid, uuid)`, which reads `golf_team_members`
-  and `golf_team_coach_staff`; it is revoked from `PUBLIC` and `anon` and granted to
-  `authenticated` only.
-- A departed creator cannot reach the members who stayed. Measured, not assumed:
-  Postgres applies SELECT policies to the rows a DELETE reads, and
-  `golf_participants_select_v2` has no coach branch, so a non-participant creator sees
-  the conversation but zero participant rows. The DELETE policy's own participation
-  clause is therefore deliberate redundant defence, not the only thing closing the hole
-  — `supabase/tests/rls/golf_group_membership_management.sql` GROUP 4 says so in its own
-  header rather than overclaiming.
 
 ## UI Contract
 
 - Permission-denied states should be explicit and calm, not blank screens.
 - Team/admin/account destinations belong in drawer or secondary navigation, not duplicated across bottom nav.
 - Mobile changes must follow `AGENTS.md` Standard or Action header patterns.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 
@@ -112,16 +101,3 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - `docs/architecture/USER_ROLE_DATA_OWNERSHIP.md`
 - `docs/v3-rls-template.md`
 - `docs/SECURITY_AUDIT.md`
-
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team -->
-<!--
-  `golf_user_on_conversation_team` is a real function, created by
-  20260907160000 — which is written and NOT applied, so it is correctly absent
-  from the production schema snapshot `db:types` generates. Delete this name
-  from the declaration above the moment the owner applies the migration and
-  re-runs `npm run db:types`; leaving it here would exempt a real object from
-  the drift check.
-  `golf_group_membership_management` is not a database object at all — it is
-  the pgTAP suite's own filename, which happens to start with `golf_`:
-  `supabase/tests/rls/golf_group_membership_management.sql`.
--->

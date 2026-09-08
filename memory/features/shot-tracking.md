@@ -730,6 +730,12 @@ signal keys, and every client branches on the keys before it shows anything.
   chip always says "Save failed" in words, compact or not (UI-11). The
   round-detail pulse chart scales to its column (viewBox + width 100%) instead
   of clipping at a fixed 520px (UI-1).
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 

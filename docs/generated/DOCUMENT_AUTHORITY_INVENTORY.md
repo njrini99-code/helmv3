@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 34 | 5 | 15 | 65 |
 | `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 22 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 36 | 0 | 7 | 13 |
+| `HISTORY_LEDGER` | 40 | 0 | 6 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
 | `.claude/rules/database.md` | current | - | - | - | 6 | 5 | - |
-| `.claude/rules/design-system.md` | current | - | - | yes | 8 | 6 | - |
+| `.claude/rules/design-system.md` | current | - | - | yes | 7 | 7 | - |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
@@ -187,12 +187,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | - |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 3 | 14 | - |
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
-| `memory/features/roster-team.md` | current | yes | - | - | 3 | 11 | - |
+| `memory/features/roster-team.md` | current | yes | - | - | 2 | 9 | - |
 | `memory/features/settings-preferences.md` | current | yes | - | - | 1 | 10 | - |
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 51 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
-| `memory/features/team-access-control.md` | current | yes | - | - | 1 | 20 | - |
-| `memory/features/team-communications.md` | current | yes | - | - | 10 | 12 | - |
+| `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
+| `memory/features/team-communications.md` | current | yes | - | - | 9 | 11 | - |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 17 | - |
 
 ### `REFERENCE`
@@ -267,7 +267,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 7 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 1 | 0 | - |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 4 | 209 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 4 | 213 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
@@ -438,8 +438,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | 1 | 22 | - |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | 1 | 11 | - |
 | `memory/ledgers/changes/admin_slo.md` | current | - | - | - | 1 | 14 | - |
+| `memory/ledgers/changes/auth_onboarding_join.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
+| `memory/ledgers/changes/coach_intelligence_triage.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 3 | - |
+| `memory/ledgers/changes/crm_outreach.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 19 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 2 | 6 | - |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | 1 | 6 | - |
@@ -447,12 +450,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/observability_supabase.md` | current | - | - | - | 3 | 45 | - |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | 1 | 1 | - |
-| `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 2 | - |
+| `memory/ledgers/changes/recruiting.md` | current | - | - | - | 1 | 0 | - |
+| `memory/ledgers/changes/roster_team.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/settings_preferences.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/shot_tracking.md` | current | - | - | - | 2 | 37 | - |
 | `memory/ledgers/changes/stats_analytics.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/team_access_control.md` | current | - | - | - | 1 | 2 | - |
-| `memory/ledgers/changes/team_communications.md` | current | - | - | yes | 3 | 22 | - |
+| `memory/ledgers/changes/team_access_control.md` | current | - | - | - | 1 | 0 | - |
+| `memory/ledgers/changes/team_communications.md` | current | - | - | - | 3 | 9 | - |
 | `memory/ledgers/changes/team_operations.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/deployments.md` | current | - | - | yes | 7 | 6 | - |
 | `memory/ledgers/tests/README.md` | current | - | - | - | 0 | 1 | - |
@@ -626,7 +630,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | 0 | 2 | - |
 | `public/courses/CREDITS.md` | current | - | - | - | 0 | 0 | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 1 | 15 | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | 27 | 41 | - |
+| `supabase/migrations/HELD.md` | current | - | - | - | 26 | 41 | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | 0 | 0 | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | 0 | 0 | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 0 | 3 | 1 |

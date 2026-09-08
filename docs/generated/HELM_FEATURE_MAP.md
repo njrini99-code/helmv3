@@ -95,7 +95,7 @@ is a second thing to keep true.
 - **Telemetry:** `crm_recruiting_pipeline` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/crm_outreach.md`
 
 ## `qualifiers`
 
@@ -150,7 +150,7 @@ is a second thing to keep true.
 - **Telemetry:** `alerts_system` (coachhelm, med), `patterns_dashboard` (coachhelm, med), `intelligence_dashboard` (coachhelm, med), `coaching_intelligence_settings` (coachhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/coach_intelligence_triage.md`
 
 ## `player_coachhelm_development`
 
@@ -205,7 +205,7 @@ is a second thing to keep true.
 - **Telemetry:** `recruiting_prospect_tracking` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/recruiting.md`
 
 ## `auth_onboarding_join`
 
@@ -216,7 +216,7 @@ is a second thing to keep true.
 - **Telemetry:** `auth_onboarding` (golfhelm, med), `join_team_flow` (golfhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/auth_onboarding_join.md`
 
 ## `settings_preferences`
 
