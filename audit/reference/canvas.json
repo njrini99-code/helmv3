@@ -1,0 +1,124 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Inbox"
+    },
+    {
+      "file": "Thread.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Conversation"
+    },
+    {
+      "file": "NewMessage.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "New message"
+    },
+    {
+      "file": "Group.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Group thread"
+    },
+    {
+      "file": "GroupDetails.dc.html",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Group details"
+    },
+    {
+      "file": "Empty.dc.html",
+      "x": 0,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Empty inbox"
+    },
+    {
+      "file": "Actions.dc.html",
+      "x": 470,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Long-press actions"
+    },
+    {
+      "file": "Reactions.dc.html",
+      "x": 940,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Reactions"
+    },
+    {
+      "file": "Bubbles.dc.html",
+      "x": 1410,
+      "y": 1000,
+      "w": 390,
+      "h": 1400,
+      "title": "Bubble anatomy"
+    },
+    {
+      "file": "Composer.dc.html",
+      "x": 1880,
+      "y": 1000,
+      "w": 390,
+      "h": 980,
+      "title": "Composer states"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "depth",
+      "x": -330,
+      "y": 40,
+      "w": 280,
+      "text": "Depth comes from tokens the system already ships and the messages screen never used:\n\n--fw-shadow-card carries an inset lit top edge — design-tokens.css calls it \"the 'lit from above' tell of a premium surface\".\n\n--fw-gradient-canvas is a radial wash over a linear one, so the page has a light source instead of a flat fill."
+    },
+    {
+      "id": "glass",
+      "x": -330,
+      "y": 340,
+      "w": 280,
+      "text": "Header, day chip and composer are glass: rgb(244 232 210 / 0.74) at blur 22px, saturate 190% — the --fw-glass-* family, with the warm specular rim above and the deeper warm edge below that the token comments describe as \"more depth\".\n\nNot the retired glass-* CLASSES, which design-system.md bans."
+    },
+    {
+      "id": "green",
+      "x": -330,
+      "y": 660,
+      "w": 280,
+      "text": "Own bubbles cast a GREEN ambient rather than a grey one, so their shadow belongs to their colour. Same for the send button and the primary CTA."
+    },
+    {
+      "id": "rx",
+      "x": 940,
+      "y": 1880,
+      "w": 390,
+      "text": "The five reactions are the app's own closed set, from src/lib/golf/message-reactions.ts — not a picker I invented.\n\nIn a nine-person group this is the point: one tap instead of nine \"got it\" messages."
+    },
+    {
+      "id": "grp",
+      "x": 1880,
+      "y": -190,
+      "w": 390,
+      "text": "Group details. The faces are real members — use-golf-group-avatars.ts already batches them for the inbox, so the same resolution serves this.\n\nNo read receipt anywhere in a group: the hook can only see ONE arbitrary member's last_read_at, so \"Read\" would claim the group when one person looked."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

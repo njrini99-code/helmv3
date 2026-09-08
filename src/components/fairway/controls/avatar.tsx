@@ -34,6 +34,16 @@ export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chil
   status?: AvatarStatus;
   /** Square-with-soft-corners instead of a circle. */
   square?: boolean;
+  /**
+   * Fallback tint. `neutral` (default) is the warm matte the whole app ships
+   * today. `accent` is the green-tinted identity chip the artboards draw for a
+   * person: `Group.dc.html:28,49` and `Thread.dc.html:35` all fill an initials
+   * avatar `oklch(0.939 0.045 150)` with `oklch(0.488 0.124 150)` ink — which
+   * are `--fw-color-accent-100` and `--fw-color-accent-700` byte for byte.
+   * Opt-in, so the default stays exactly what every existing caller renders;
+   * whether it should BECOME the default is the owner's call, not this PR's.
+   */
+  tone?: 'neutral' | 'accent';
   /** Override the auto-generated initials. */
   fallback?: ReactNode;
   /**
@@ -89,7 +99,7 @@ export function initialsFromName(name?: string | null): string {
 }
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
-  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, ...props },
+  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, tone = 'neutral', ...props },
   ref,
 ) {
   const [errored, setErrored] = useState(false);
@@ -109,8 +119,15 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
       <span
         className={cn(
           'flex h-full w-full select-none items-center justify-center overflow-hidden',
-          'bg-surface-sunken text-text-secondary font-fw-sans font-semibold uppercase',
-          'ring-1 ring-inset ring-border-subtle',
+          'font-fw-sans font-semibold uppercase',
+          // Accent carries NO ring. All three artboard specimens
+          // (`Group.dc.html:28,49`, `Thread.dc.html:35`) are fill-and-ink only,
+          // and inside an AvatarGroup the stack already draws its own
+          // `ring-2 ring-<surface>` cutout rim — a second inset ring under it
+          // reads as a muddy double edge rather than as depth.
+          tone === 'accent'
+            ? 'bg-accent-100 text-accent-700'
+            : 'bg-surface-sunken text-text-secondary ring-1 ring-inset ring-border-subtle',
           square ? 'rounded-fw-md' : 'rounded-full',
           fwTransition,
           className,
@@ -159,6 +176,15 @@ export interface AvatarGroupProps extends HTMLAttributes<HTMLDivElement> {
   size?: AvatarSize;
   /** Show at most this many avatars; the rest collapse into a "+N" chip. */
   max?: number;
+  /**
+   * Tailwind ring-colour class for the cutout rims, e.g. `ring-surface`.
+   *
+   * The rim exists to read as a cutout in whatever the stack is sitting ON, so
+   * it has to match that surface — `ring-canvas` is right on the page ground
+   * and wrong inside a card. Defaults to `ring-canvas`, so every existing
+   * caller is unchanged.
+   */
+  ring?: string;
   children: ReactNode;
 }
 
@@ -176,7 +202,7 @@ const ringPad: Record<AvatarSize, string> = {
  * offset; it does not resize children, so set their `size` to match this group.
  */
 export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function AvatarGroup(
-  { className, size = 'md', max, children, ...props },
+  { className, size = 'md', max, ring = 'ring-canvas', children, ...props },
   ref,
 ) {
   const items = Array.isArray(children) ? children : [children];
@@ -191,14 +217,15 @@ export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function
       {...props}
     >
       {visible.map((child, i) => (
-        <span key={i} className="rounded-full ring-2 ring-canvas">
+        <span key={i} className={cn('rounded-full ring-2', ring)}>
           {child}
         </span>
       ))}
       {overflow > 0 && (
         <span
           className={cn(
-            'relative inline-flex flex-shrink-0 items-center justify-center rounded-full ring-2 ring-canvas',
+            'relative inline-flex flex-shrink-0 items-center justify-center rounded-full ring-2',
+            ring,
             'bg-surface-sunken text-text-secondary font-fw-mono font-semibold tabular-nums',
             sizePx[size],
           )}

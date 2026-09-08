@@ -4921,6 +4921,40 @@ ALTER FUNCTION "public"."golf_team_by_join_code"("p_code" "text") OWNER TO "post
 
 COMMENT ON FUNCTION "public"."golf_team_by_join_code"("p_code" "text") IS 'Resolves exactly the team matching a supplied join code for /golf/join/[code]. Returns no join_code. Replaces the USING (join_code IS NOT NULL) policy (#1257).';
 
+CREATE OR REPLACE FUNCTION "public"."golf_user_on_conversation_team"("p_conversation_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  select exists (
+    select 1
+      from public.golf_conversations c
+     where c.id = p_conversation_id
+       and c.team_id is not null
+       and (
+         exists (
+           select 1
+             from public.golf_team_members gtm
+             join public.golf_players gp on gp.id = gtm.player_id
+            where gtm.team_id = c.team_id
+              and gp.user_id = p_user_id
+              and gtm.status = 'active'
+         )
+         or exists (
+           select 1
+             from public.golf_team_coach_staff gtcs
+             join public.golf_coaches gc on gc.id = gtcs.coach_id
+            where gtcs.team_id = c.team_id
+              and gc.user_id = p_user_id
+         )
+       )
+  );
+$$;
+
+ALTER FUNCTION "public"."golf_user_on_conversation_team"("p_conversation_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_user_on_conversation_team"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'Is the NAMED user (p_user_id, not the caller) an active player or a coach on the team that owns this conversation? SECURITY DEFINER so the participant INSERT policy can ask about a user whose roster rows the caller may not be able to read. Reads only; grants no access.';
+
+
 CREATE OR REPLACE FUNCTION "public"."guard_users_role_self_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'

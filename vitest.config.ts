@@ -211,6 +211,14 @@ export default defineConfig({
             // Failure-injection suite for repo:doctor's settings-ownership.*
             // checks (scripts/check-settings-ownership.mjs).
             'scripts/__tests__/check-settings-ownership.test.mjs',
+            // The single-file apply body (scripts/db/apply.mjs). Named here for
+            // the same reason as its neighbours, and with more at stake than
+            // most: `--apply` is denied to agents and the DB password lives
+            // only in GitHub secrets, so this code path's FIRST real execution
+            // is against production. The pure body-builder is the only part
+            // testable off a live connection, and it is the part that would
+            // ship a wrong ledger row silently.
+            'scripts/__tests__/db-apply-single-file.test.mjs',
             // Weekly control-plane report (A6): the pure decision functions
             // behind control-plane-weekly.yml's four hard checks (secret
             // scanning, Dependabot severity ceiling, full-history gitleaks

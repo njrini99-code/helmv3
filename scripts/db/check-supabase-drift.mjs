@@ -107,6 +107,16 @@ const REQUIRED_ACTIVE_BASEBALL_QUERY_COLUMNS = [
 const GOLF_EXPECTED_COLUMNS = [
   ['golf_rounds', 'status'],
   ['golf_documents', 'is_public'],
+  // G-58. These two exist in production and were declared in
+  // supabase/schemas/golf/10_tables.sql, but no migration created either, so a
+  // stack rebuilt from migrations had exactly
+  // (id, conversation_id, user_id, joined_at, last_read_at) — verified against
+  // the local stack on 2026-09-07, before 20260907120000 was written. Drift in
+  // the schemas -> migrations direction, which nothing checked: this invariant
+  // runs against the migrations rebuild, so it is the check that direction was
+  // missing. Removing or breaking that migration now fails CI.
+  ['golf_conversation_participants', 'notification_level'],
+  ['golf_conversation_participants', 'muted_until'],
 ];
 const GOLF_REMOVED_COLUMNS = [
   ['golf_rounds', 'round_status'],

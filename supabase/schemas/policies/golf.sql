@@ -763,13 +763,17 @@ CREATE POLICY "golf_messages_update_v2" ON "public"."golf_messages" FOR UPDATE U
 
 CREATE POLICY "golf_metrics_authenticated_read" ON "public"."golf_metrics" FOR SELECT TO "authenticated" USING (true);
 
-CREATE POLICY "golf_participants_delete" ON "public"."golf_conversation_participants" FOR DELETE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "golf_participants_delete" ON "public"."golf_conversation_participants" FOR DELETE TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("public"."golf_conversation_created_by_me"("conversation_id") AND ("user_id" <> ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_conversations" "c"
+  WHERE (("c"."id" = "golf_conversation_participants"."conversation_id") AND ("c"."is_team_chat" = true) AND ("c"."team_id" IS NOT NULL)))) AND ("conversation_id" IN ( SELECT "public"."user_conversation_ids"(( SELECT "auth"."uid"() AS "uid")) AS "user_conversation_ids")))));
 
 CREATE POLICY "golf_participants_insert_v2" ON "public"."golf_conversation_participants" FOR INSERT WITH CHECK (((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("public"."golf_conversation_created_by_me"("conversation_id") OR (EXISTS ( SELECT 1
    FROM "public"."golf_conversations" "c"
   WHERE (("c"."id" = "golf_conversation_participants"."conversation_id") AND ("c"."is_team_chat" = true) AND ("c"."team_id" IS NOT NULL) AND "public"."golf_conversation_on_my_team"("golf_conversation_participants"."conversation_id")))))) OR ((EXISTS ( SELECT 1
    FROM "public"."golf_conversations" "gc"
-  WHERE (("gc"."id" = "golf_conversation_participants"."conversation_id") AND ("gc"."created_by" = ( SELECT "auth"."uid"() AS "uid"))))) AND (NOT "public"."golf_conversation_has_other_participant"("conversation_id")))));
+  WHERE (("gc"."id" = "golf_conversation_participants"."conversation_id") AND ("gc"."created_by" = ( SELECT "auth"."uid"() AS "uid"))))) AND (NOT "public"."golf_conversation_has_other_participant"("conversation_id"))) OR ("public"."golf_conversation_created_by_me"("conversation_id") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_conversations" "c"
+  WHERE (("c"."id" = "golf_conversation_participants"."conversation_id") AND ("c"."is_team_chat" = true) AND ("c"."team_id" IS NOT NULL)))) AND "public"."golf_user_on_conversation_team"("conversation_id", "user_id"))));
 
 CREATE POLICY "golf_participants_select_v2" ON "public"."golf_conversation_participants" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("conversation_id" IN ( SELECT "public"."user_conversation_ids"(( SELECT "auth"."uid"() AS "uid")) AS "user_conversation_ids"))));
 

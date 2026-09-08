@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
-import { withOneTransportRetry } from '@/lib/transient-network-error';
+import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 /** Pause before the single transport-failure retry of a message send. */
 const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
@@ -28,22 +29,103 @@ export interface GolfConversationParticipant {
   type: 'coach' | 'player';
 }
 
+/**
+ * The last-message PREVIEW carried on a conversation row — not a message.
+ *
+ * `get_golf_conversations_with_details` returns exactly three scalars about the
+ * newest message (`last_message_content`, `last_message_at`,
+ * `last_message_sender_id`); it does not return that message's id, and it does
+ * not return its read state. This type therefore has three fields and no more.
+ *
+ * It used to be typed `GolfMessageRow`, which forced the transform to invent
+ * the missing columns: every conversation's preview was built with a literal
+ * `id: ''` and `read: false` (G-15, §16.1). A consumer keyed on
+ * `last_message.id` would have found every conversation in the inbox sharing
+ * one empty id, and `read` was a constant lie about a real column.
+ *
+ * Narrowing the type rather than grepping for the literal is what actually
+ * proves nothing consumed the fabrication: the compiler now rejects any read
+ * of `.id` or `.read` here. This mirrors what baseball already does honestly
+ * in `src/hooks/use-messages.ts` (content / sent_at / sender_id, no id).
+ */
+export interface GolfConversationLastMessage {
+  content: string;
+  /** `last_message_at` is nullable in the function's own signature. */
+  created_at: string | null;
+  sender_id: string | null;
+}
+
 export interface GolfConversationWithMeta {
   id: string;
   created_at: string;
   updated_at: string;
-  last_message?: GolfMessageRow | null;
+  last_message?: GolfConversationLastMessage | null;
   unread_count: number;
   other_participant?: GolfConversationParticipant;
   // Group conversation fields
   is_group?: boolean;
   title?: string | null;
   participant_count?: number;
+  /**
+   * G-33 / D-03a — who is in this group, and who made it.
+   *
+   * Both facts existed one step upstream and were dropped by the transform, so
+   * every group conversation reached the UI having lost them:
+   *
+   * - `participant_ids` is returned by `get_golf_conversations_with_details`
+   *   itself (`participant_ids uuid[]`, baseline migration :2810) and was set
+   *   to a literal `[]` on the supplemental team-chat path. The RPC-origin
+   *   rows always carried real ids; nothing downstream could see either.
+   * - `creator_id` is `c.created_by AS creator_id` in the same function
+   *   (:2820) AND is set on the supplemental push, so it is present on BOTH
+   *   paths — this corrects G-34's reading, which inferred the RPC branch
+   *   never populates it. D-03a's Admin pill reads exactly this column;
+   *   `golf_conversation_participants` has no role column of any kind, and
+   *   `users.role = 'admin'` means *platform* super-admin, which would badge
+   *   the wrong account in both directions (§24.5).
+   *
+   * Optional rather than required because a row that predates a refetch, or
+   * one built by a test fixture, must be able to say "I don't know" — the
+   * member list and the pill render from real data or not at all, never from
+   * a placeholder.
+   */
+  participant_ids?: string[];
+  creator_id?: string | null;
 }
 
 // Extended message type with read receipt info
 export interface GolfMessage extends GolfMessageRow {
   isRead?: boolean; // Whether the other participant has read this message
+  /**
+   * CLIENT-ONLY, and only ever set on an optimistic row whose send failed
+   * (G-19). It is never selected, never written, and no realtime payload
+   * carries it — a row that came back from the database always leaves this
+   * undefined.
+   *
+   * It exists because the previous behaviour on a failed send was to remove
+   * the optimistic bubble from the thread, which deletes what the user wrote
+   * and leaves a toast as the only trace. §9.2 requires the message to be
+   * RETAINED, shown muted, and offered a retry.
+   */
+  sendFailed?: boolean;
+  /**
+   * WHY the send failed, in the only two classes we can actually distinguish
+   * (G-20b, §9.5).
+   *
+   * `refused` — the server answered and said no. `fetch` resolved, so the
+   * request demonstrably arrived; whatever it says is the truth.
+   *
+   * `unknown` — the transport died and there is no answer to read. The POST
+   * may have committed with only the response lost, which is exactly the case
+   * §9.5 says must NOT be reported as a definitive failure: "An unknown commit
+   * outcome uses Checking status or Confirmation unavailable, not a red
+   * definitive failure that invites duplication."
+   *
+   * Only these two, deliberately. §9.5 names eight outcomes, but M03C's F3
+   * documents this one collapse as the gap; the other six have no evidence
+   * asking for them and are not invented here.
+   */
+  sendOutcome?: 'refused' | 'unknown';
 }
 
 // Keep old name for backward compatibility
@@ -258,6 +340,25 @@ export function useGolfMessages(conversationId: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * G-13 — the conversation currently on screen, readable from inside an
+   * async closure that captured an OLDER one.
+   *
+   * `useGolfMessages(id)` takes the id as an ARGUMENT, not a React key, so
+   * switching conversations does not remount: there is one persistent hook
+   * instance owning one `messages` state. An in-flight fetch for conversation A
+   * therefore resolves into whatever thread is open by then, and wrote A's
+   * messages, loading and error into B's view. Recreating the `useCallback` on
+   * an id change does not help — a new callback identity cannot cancel a
+   * promise the old one already started, and both call the same setter.
+   *
+   * Assigned on every render so it is never stale, and compared after every
+   * await below: if the answer changed while we were waiting, the response
+   * belongs to a thread nobody is looking at and is dropped.
+   */
+  const liveConversationIdRef = useRef(conversationId);
+  liveConversationIdRef.current = conversationId;
+
   // Fetch other participant's last_read_at for read receipts
   const fetchOtherParticipantReadStatus = useCallback(async () => {
     const uid = currentUserIdRef.current;
@@ -281,6 +382,9 @@ export function useGolfMessages(conversationId: string) {
         'medium'
       );
     }
+
+    // G-13: dropped if the reader moved on while this was in flight.
+    if (liveConversationIdRef.current !== conversationId) return;
 
     if (participants) {
       const otherParticipant = participants.find(p => p.user_id !== uid);
@@ -339,10 +443,18 @@ export function useGolfMessages(conversationId: string) {
         },
         'medium'
       );
+      // G-13: an abandoned thread's failure must not surface as an error on
+      // the thread the user is actually reading.
+      if (liveConversationIdRef.current !== conversationId) return;
       setError(true);
       setLoading(false);
       return;
     }
+
+    // G-13: the whole reason this guard exists — this setter is shared, and
+    // an unguarded write here replaced the open thread's messages with a
+    // slower response belonging to a conversation the user already left.
+    if (liveConversationIdRef.current !== conversationId) return;
 
     setMessages(((data || []) as MessageWithReadStatus[]).reverse());
     setLoading(false);
@@ -545,6 +657,37 @@ export function useGolfMessages(conversationId: string) {
     });
   }, [conversationId, currentUserId]);
 
+  /**
+   * G-19: retain the optimistic row and mark it failed, instead of deleting it.
+   *
+   * Every failure branch below used to call
+   * `setMessages(prev => prev.filter(m => m.id !== optimisticId))`, which threw
+   * away the text the user wrote and left a toast as its only trace. Marking
+   * keeps the message on screen, muted, with a retry — and because the row is
+   * still present under the SAME optimistic id, `retryMessage` can re-send it
+   * with that id and inherit the existing primary-key collision handling that
+   * makes a duplicate attempt safe.
+   */
+  const markSendFailed = (optimisticId: string, sendOutcome: 'refused' | 'unknown') => {
+    setMessages(prev =>
+      prev.map(m => (m.id === optimisticId ? { ...m, sendFailed: true, sendOutcome } : m)),
+    );
+  };
+
+  /**
+   * Classify a send failure into the two outcomes §9.5 needs kept apart.
+   *
+   * The discriminator is already sitting there and needs no new plumbing: a
+   * transport-layer error means `fetch` itself threw, so no response was ever
+   * read and the commit state is genuinely unknown. Anything else — including
+   * an `{ error }` the action returned — means the request arrived and the
+   * server refused it.
+   */
+  const classifySendFailure = (error: unknown): 'refused' | 'unknown' =>
+    isTransientNetworkErrorMessage(error instanceof Error ? error.message : String(error))
+      ? 'unknown'
+      : 'refused';
+
   const sendMessage = async (content: string) => {
     // Clear typing indicator when sending
     sendTypingStatus(false);
@@ -595,20 +738,25 @@ export function useGolfMessages(conversationId: string) {
       );
 
       // Check if the result indicates an error
+      // The action answered. Whatever it says, the request demonstrably
+      // arrived, so this is a refusal and not an unknown commit (G-20b).
       if (result && 'error' in result && result.error) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId, 'refused');
         throw new Error(result.error);
       }
 
       if (!result || !result.success) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        markSendFailed(optimisticId, 'refused');
         throw new Error('Failed to send message');
       }
 
       return true;
     } catch (error) {
-      // Roll back optimistic message on any error
-      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      // Retain the message, marked failed — see markSendFailed (G-19) — and
+      // record WHICH kind of failure it was (G-20b). Re-marking a row the
+      // branches above already marked is harmless: those errors carry app
+      // wording, so they classify as `refused` a second time.
+      markSendFailed(optimisticId, classifySendFailure(error));
       logError(
         error instanceof Error ? error : new Error(String(error)),
         { component: 'useGolfMessages', action: 'send-message', sport: 'golf', conversationId },
@@ -616,6 +764,64 @@ export function useGolfMessages(conversationId: string) {
       );
       throw error;
     }
+  };
+
+  /**
+   * Re-send a message that is sitting in the thread marked failed (G-19).
+   *
+   * Reuses the row's EXISTING id rather than minting a new one, which is what
+   * makes this safe to press twice: `sendGolfMessage` writes the client id as
+   * the real `golf_messages.id`, so a retry that races an attempt which
+   * actually committed collides on the primary key and the action reports that
+   * 23505 back as the success it is, instead of creating a duplicate. Same
+   * property `withOneTransportRetry` already relies on above.
+   *
+   * Returns true on success. The failed flag is cleared optimistically before
+   * the attempt so the bubble stops looking failed while it is in flight, and
+   * restored if the attempt fails again.
+   */
+  const retryMessage = async (messageId: string): Promise<boolean> => {
+    const target = messages.find(m => m.id === messageId && m.sendFailed);
+    if (!target) return false;
+
+    setMessages(prev =>
+      prev.map(m =>
+        // The outcome goes with the flag. Left behind, a row that retried out
+        // of `unknown` into `refused` would still be carrying the old label.
+        m.id === messageId ? { ...m, sendFailed: false, sendOutcome: undefined } : m,
+      ),
+    );
+
+    try {
+      const result = await withOneTransportRetry(
+        () => sendGolfMessage(conversationId, target.content, messageId),
+        SEND_TRANSPORT_RETRY_DELAY_MS,
+      );
+      if (!result || !result.success || ('error' in result && result.error)) {
+        markSendFailed(messageId, 'refused');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      markSendFailed(messageId, classifySendFailure(error));
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        { component: 'useGolfMessages', action: 'retry-message', sport: 'golf', conversationId },
+        'high',
+      );
+      return false;
+    }
+  };
+
+  /**
+   * Drop a failed message the user has decided not to send (G-19).
+   *
+   * Guarded on `sendFailed` so this can only ever remove a client-side row that
+   * never reached the database — it must not become a second delete path for a
+   * real message, which is `removeMessage`'s job.
+   */
+  const discardFailedMessage = (messageId: string) => {
+    setMessages(prev => prev.filter(m => !(m.id === messageId && m.sendFailed)));
   };
 
   // Edit a message
@@ -679,6 +885,8 @@ export function useGolfMessages(conversationId: string) {
     loading,
     error,
     sendMessage,
+    retryMessage,
+    discardFailedMessage,
     editMessage,
     removeMessage,
     refetch: fetchMessages,
@@ -686,6 +894,93 @@ export function useGolfMessages(conversationId: string) {
     sendTypingStatus,
     currentUserId,
   };
+}
+
+/**
+ * One row of `get_golf_conversations_with_details`, and the shape the
+ * supplemental team-chat path builds to match it.
+ *
+ * Declared at module scope rather than inside the fetch so the two pure
+ * decisions below can be exercised directly — the fetch itself needs a full
+ * supabase + auth harness to reach.
+ */
+export interface GolfConversationRpcRow {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  creator_id: string | null;
+  last_message_content: string | null;
+  last_message_at: string | null;
+  last_message_sender_id: string | null;
+  unread_count: number;
+  participant_ids: string[];
+  participant_names: string[];
+  is_group?: boolean;
+  title?: string | null;
+  participant_count?: number;
+  /**
+   * The RPC's 14th and final column. It was omitted from this interface, so it
+   * described 13 of the 14 columns the function actually returns and the value
+   * never reached the client (G-15).
+   *
+   * `is_team_channel` and `is_team_chat` are two DIFFERENT flags, not two
+   * spellings of one — both exist on `golf_conversations`. The function's
+   * `is_group` output is literally `COALESCE(c.is_team_chat, FALSE)`, so
+   * is_team_chat is the GROUPING flag; is_team_channel is separate and is used
+   * inside the function only by its own `ORDER BY`. See
+   * `audit/M01-TEAM-FLAGS.md`.
+   *
+   * Nothing branches on it yet — the inbox's ordering and sectioning are the
+   * client's own (G-01), and this only stops the type from lying.
+   */
+  is_team_channel?: boolean;
+}
+
+/**
+ * G-40 — which conversations must have their unread badge recomputed for THIS
+ * viewer.
+ *
+ * The RPC's `unread_count` is `COUNT(*) WHERE read = FALSE AND sender_id <>
+ * me`, i.e. it runs on `golf_messages.read`, ONE boolean shared by every
+ * participant. `mark_golf_messages_read` flips that boolean on every message
+ * the opener did not send — so in a 3+ person team chat, one member opening
+ * the thread clears the badge for everyone, including members who never saw
+ * those messages (§17.2).
+ *
+ * A DM is unaffected and deliberately left alone: with two people, "not sent
+ * by me" and "not read by me" are the same set, so the shared boolean is
+ * already per-viewer there, and it is what DM read receipts are built on.
+ *
+ * `alreadyPerViewer` is the set the supplemental team-chat path computed
+ * itself — those rows arrive with an honest count and must not be re-queried.
+ * That path was the "correct per-viewer fallback" the audit found: right, but
+ * reached only for team chats the RPC MISSED, so the normal path was the
+ * broken one.
+ */
+export function perViewerUnreadTargets(
+  rows: readonly GolfConversationRpcRow[] | null,
+  alreadyPerViewer: ReadonlySet<string>,
+): string[] {
+  return (rows ?? [])
+    .filter((row) => row.is_group === true && !alreadyPerViewer.has(row.id))
+    .map((row) => row.id);
+}
+
+/**
+ * G-40 — apply recomputed per-viewer counts.
+ *
+ * A conversation with no entry keeps the number it already had. That is the
+ * important half: when the recompute fails for one conversation, the badge
+ * degrades to the shared-boolean number rather than silently reading zero,
+ * which would look exactly like "you are caught up".
+ */
+export function applyPerViewerUnread(
+  rows: readonly GolfConversationRpcRow[] | null,
+  counts: ReadonlyMap<string, number>,
+): GolfConversationRpcRow[] {
+  return (rows ?? []).map((row) =>
+    counts.has(row.id) ? { ...row, unread_count: counts.get(row.id) as number } : row,
+  );
 }
 
 export function useGolfConversations() {
@@ -726,22 +1021,6 @@ export function useGolfConversations() {
 
     // Use optimized DB function - single query replaces N+1 pattern (was 50-60 queries)
     // Note: Function added in migration, types may need regeneration with `npm run db:types`
-    interface ConversationRow {
-      id: string;
-      created_at: string;
-      updated_at: string;
-      creator_id: string | null;
-      last_message_content: string | null;
-      last_message_at: string | null;
-      last_message_sender_id: string | null;
-      unread_count: number;
-      participant_ids: string[];
-      participant_names: string[];
-      is_group?: boolean;
-      title?: string | null;
-      participant_count?: number;
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawData, error } = await (supabase.rpc as any)(
       'get_golf_conversations_with_details',
@@ -763,7 +1042,7 @@ export function useGolfConversations() {
       );
     }
 
-    let conversationsData = rawData as ConversationRow[] | null;
+    let conversationsData = rawData as GolfConversationRpcRow[] | null;
     if (teamAllow) {
       const allow = teamAllow;
       conversationsData = (conversationsData ?? []).filter((c) => allow.has(c.id));
@@ -778,6 +1057,7 @@ export function useGolfConversations() {
           created_at,
           updated_at,
           is_team_chat,
+          is_team_channel,
           title,
           created_by
         )
@@ -799,8 +1079,13 @@ export function useGolfConversations() {
     }
 
     // Extract team chat conversations and merge them
-    const groupConversations: ConversationRow[] = [];
+    const groupConversations: GolfConversationRpcRow[] = [];
     const existingIds = new Set(conversationsData?.map(c => c.id) || []);
+    /**
+     * Conversations whose unread count this function computed itself, from the
+     * viewer's own `last_read_at`. They must NOT be recomputed below (G-40).
+     */
+    const perViewerUnreadIds = new Set<string>();
 
     if (groupConvs) {
       // Collect team chat conversations that aren't already in the RPC results
@@ -808,6 +1093,7 @@ export function useGolfConversations() {
         id: string;
         created_at: string;
         updated_at: string;
+        is_team_channel: boolean | null;
         title: string | null;
         created_by: string | null;
       }> = [];
@@ -818,6 +1104,7 @@ export function useGolfConversations() {
           created_at: string;
           updated_at: string;
           is_team_chat: boolean | null;
+          is_team_channel: boolean | null;
           title: string | null;
           created_by: string | null;
         } | null;
@@ -837,11 +1124,34 @@ export function useGolfConversations() {
         const teamChatIds = teamChats.map(c => c.id);
 
         const [participantCounts, userParticipantData] = await Promise.all([
-          // Participant counts for all group chats
-          supabase
-            .from('golf_conversation_participants')
-            .select('conversation_id')
-            .in('conversation_id', teamChatIds),
+          // Every participant row for these group chats.
+          //
+          // G-33 — this now supplies IDENTITY, not just a count, so it is
+          // paginated. As a count the PostgREST 1000-row cap degraded quietly
+          // (a big team channel under-counted); as the source of the member
+          // list it would silently truncate WHO is in the group, which is the
+          // class of defect this audit exists to remove. `.limit(2000)` does
+          // not raise the cap — `fetchAllRowsResult` ranges through it and
+          // preserves the `{ data, error }` shape the callers below read.
+          fetchAllRowsResult<{ conversation_id: string; user_id: string }>(
+            (from, to) =>
+              supabase
+                .from('golf_conversation_participants')
+                .select('conversation_id, user_id')
+                .in('conversation_id', teamChatIds)
+                // Stable order on the primary key — the helper's own contract.
+                // Ranging an unordered query lets page boundaries drift, which
+                // duplicates some rows and drops others.
+                .order('id', { ascending: true })
+                .range(from, to),
+            undefined,
+            {
+              table: 'golf_conversation_participants',
+              action: 'fetch-team-chat-participants',
+              sport: 'golf',
+              userId,
+            },
+          ),
           // User's last_read_at for all group chats
           supabase
             .from('golf_conversation_participants')
@@ -850,11 +1160,20 @@ export function useGolfConversations() {
             .eq('user_id', userId),
         ]);
 
-        // Build lookup maps
-        const countByConv = new Map<string, number>();
+        // Build lookup maps.
+        //
+        // G-33 — the ids and the count come off the SAME rows now, so the
+        // header's "N members" and the details sheet's member list cannot
+        // disagree with each other. They used to be two separate facts: a
+        // count from here and a hardcoded empty array below.
+        const idsByConv = new Map<string, string[]>();
         (participantCounts.data || []).forEach(p => {
-          countByConv.set(p.conversation_id, (countByConv.get(p.conversation_id) || 0) + 1);
+          const ids = idsByConv.get(p.conversation_id);
+          if (ids) ids.push(p.user_id);
+          else idsByConv.set(p.conversation_id, [p.user_id]);
         });
+        const countByConv = new Map<string, number>();
+        idsByConv.forEach((ids, cid) => countByConv.set(cid, ids.length));
 
         const lastReadByConv = new Map<string, string | null>();
         (userParticipantData.data || []).forEach(p => {
@@ -917,6 +1236,7 @@ export function useGolfConversations() {
         for (const conv of teamChats) {
           const lastMsg = lastMsgByConv.get(conv.id);
           const unreadCount = unreadByConv.get(conv.id) ?? 0;
+          perViewerUnreadIds.add(conv.id);
 
           groupConversations.push({
             id: conv.id,
@@ -927,11 +1247,25 @@ export function useGolfConversations() {
             last_message_at: lastMsg?.created_at || null,
             last_message_sender_id: lastMsg?.sender_id || null,
             unread_count: unreadCount,
-            participant_ids: [],
+            // G-33 — was a literal `[]` here, for every group, forever. The
+            // ids were one query away and that query was already being run;
+            // it just asked for `conversation_id` alone.
+            participant_ids: idsByConv.get(conv.id) ?? [],
+            // Still empty, and deliberately: NOTHING on the golf side reads
+            // `participant_names` (the RPC declares it, the DM path resolves
+            // its one name through `coachByUserId`/`playerByUserId` at
+            // transform time, and the group path resolves every name the same
+            // way). Filling it here would be a second, independently-staleable
+            // copy of names the transform already has. `participant_ids` is
+            // the identity carried forward; names are looked up from it.
             participant_names: [],
             is_group: true,
             title: conv.title,
             participant_count: countByConv.get(conv.id) || 0,
+            // Carried so a merged row has the same shape as an RPC row. These
+            // rows only reach here when `is_team_chat` is true; whether they
+            // are ALSO the team channel is a separate fact (G-15).
+            is_team_channel: conv.is_team_channel ?? false,
           });
         }
       }
@@ -940,6 +1274,102 @@ export function useGolfConversations() {
     // Merge group conversations with regular ones
     if (groupConversations.length > 0) {
       conversationsData = [...(conversationsData || []), ...groupConversations];
+    }
+
+    /**
+     * G-40 — recompute group unread for THIS viewer.
+     *
+     * See `perViewerUnreadTargets` for why the RPC's number is wrong for a 3+
+     * person chat and right for a DM. This is the same computation the
+     * supplemental team-chat path above already performs; it now covers the
+     * normal path too, which is where nearly every group conversation arrives.
+     *
+     * `head: true, count: 'exact'` transfers zero rows and is not subject to
+     * the PostgREST 1000-row cap, so a busy team chat cannot silently
+     * under-count. The id list is chunked because PostgREST filters travel in
+     * the URL and a long `.in()` is rejected with a bare 400.
+     *
+     * A viewer with a null `last_read_at` counts every message someone else
+     * sent, which is the honest reading of "has never opened this thread".
+     * `markMessagesAsRead` has written that column as the primary read marker
+     * for some time, so this is the same source the global unread badge and
+     * the notification digests already use.
+     */
+    const perViewerTargets = perViewerUnreadTargets(conversationsData, perViewerUnreadIds);
+    if (perViewerTargets.length > 0) {
+      const ID_CHUNK = 200;
+      const lastReadByConv = new Map<string, string | null>();
+      let lastReadFailed = false;
+
+      for (let i = 0; i < perViewerTargets.length; i += ID_CHUNK) {
+        const chunk = perViewerTargets.slice(i, i + ID_CHUNK);
+        const { data: myRows, error: myRowsError } = await supabase
+          .from('golf_conversation_participants')
+          .select('conversation_id, last_read_at')
+          .in('conversation_id', chunk)
+          .eq('user_id', userId);
+
+        if (myRowsError) {
+          lastReadFailed = true;
+          logError(
+            toPostgrestError(myRowsError),
+            {
+              component: 'useGolfConversations',
+              action: 'fetch-per-viewer-last-read',
+              sport: 'golf',
+              userId,
+              ...postgrestErrorContext(myRowsError),
+            },
+            'medium'
+          );
+          continue;
+        }
+        (myRows || []).forEach((row) => {
+          lastReadByConv.set(row.conversation_id, row.last_read_at);
+        });
+      }
+
+      // A failed read-marker lookup means we cannot compute an honest count,
+      // so leave every badge as the RPC reported it rather than counting every
+      // message as unread.
+      if (!lastReadFailed) {
+        const perViewerCounts = new Map<string, number>();
+
+        await Promise.all(
+          perViewerTargets.map(async (cid) => {
+            const lastReadAt = lastReadByConv.get(cid) ?? null;
+            let unreadQuery = supabase
+              .from('golf_messages')
+              .select('id', { count: 'exact', head: true })
+              .eq('conversation_id', cid)
+              .eq('is_deleted', false)
+              .neq('sender_id', userId);
+            if (lastReadAt) {
+              unreadQuery = unreadQuery.gt('created_at', lastReadAt);
+            }
+
+            const { count, error: unreadError } = await unreadQuery;
+            if (unreadError) {
+              // Leave this one conversation on the RPC's shared-boolean number.
+              logError(
+                toPostgrestError(unreadError),
+                {
+                  component: 'useGolfConversations',
+                  action: 'count-per-viewer-unread',
+                  sport: 'golf',
+                  userId,
+                  ...postgrestErrorContext(unreadError),
+                },
+                'medium'
+              );
+              return;
+            }
+            perViewerCounts.set(cid, count ?? 0);
+          }),
+        );
+
+        conversationsData = applyPerViewerUnread(conversationsData, perViewerCounts);
+      }
     }
 
     // `groupConvsError` joins the RPC error here rather than early-returning at
@@ -1041,17 +1471,19 @@ export function useGolfConversations() {
           created_at: conv.created_at,
           updated_at: conv.updated_at,
           last_message: conv.last_message_content ? {
-            id: '',
-            conversation_id: conv.id,
-            sender_id: conv.last_message_sender_id || '',
             content: conv.last_message_content,
             created_at: conv.last_message_at,
-            read: false,
+            sender_id: conv.last_message_sender_id,
           } : null,
           unread_count: conv.unread_count || 0,
           is_group: true,
           title: conv.title,
           participant_count: conv.participant_count || conv.participant_ids?.length || 0,
+          // G-33 / D-03a — forward, do not re-derive. Both fields are already
+          // on `conv` for RPC-origin rows and are set on the supplemental push
+          // below; the transform was simply not copying them out.
+          participant_ids: conv.participant_ids ?? [],
+          creator_id: conv.creator_id ?? null,
         } as GolfConversationWithMeta;
       }
 
@@ -1088,12 +1520,9 @@ export function useGolfConversations() {
         created_at: conv.created_at,
         updated_at: conv.updated_at,
         last_message: conv.last_message_content ? {
-          id: '', // Not returned by function, but not typically needed
-          conversation_id: conv.id,
-          sender_id: conv.last_message_sender_id || '',
           content: conv.last_message_content,
           created_at: conv.last_message_at,
-          read: false,
+          sender_id: conv.last_message_sender_id,
         } : null,
         unread_count: conv.unread_count || 0,
         other_participant: otherParticipant,

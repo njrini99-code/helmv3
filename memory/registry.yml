@@ -1035,9 +1035,17 @@ features:
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*conversation*.sql
         - supabase/migrations/*chat_*.sql
+        # Named explicitly: the file is about golf_conversation_participants but
+        # its name carries neither "conversation" nor "chat_", so none of the
+        # globs above reach it (G-58).
+        - supabase/migrations/20260907120000_golf_participants_mute_columns.sql
       tests:
         - e2e/messages.spec.ts
         - src/app/golf/actions/unified-notifications-model.test.ts
+        # Named explicitly rather than by a __tests__/** glob: that directory
+        # holds several other features' action tests, so a glob would claim them.
+        - src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts
+        - src/test/actions/send-message-duplicate-key-equivalence.test.ts
     integrations:
       - supabase
       - notifications

@@ -28,6 +28,10 @@ import {
   getGolfPlayerUserId,
   searchGolfMessages,
   getGolfActiveTeamConversationIds,
+  getGolfGroupAddCandidates,
+  addGolfGroupMember,
+  removeGolfGroupMember,
+  leaveGolfGroup,
 } from '@/app/actions/messages';
 import {
   sendGolfMessageWithAttachments,
@@ -308,6 +312,15 @@ export {
   getGolfPlayerUserId,
   searchGolfMessages,
   getGolfActiveTeamConversationIds,
+  // Group membership. Unlike createGolfConversation these are NOT re-declared
+  // with an extra audience probe: the shared implementations are already
+  // bounded to the conversation's own team by RLS (a candidate must satisfy
+  // golf_user_on_conversation_team, and the actor must be the creator), so
+  // there is no wider audience here for a probe to narrow.
+  getGolfGroupAddCandidates,
+  addGolfGroupMember,
+  removeGolfGroupMember,
+  leaveGolfGroup,
   // Alias for backward compatibility
   getGolfPlayerUserId as getPlayerUserId,
   // Attachment actions

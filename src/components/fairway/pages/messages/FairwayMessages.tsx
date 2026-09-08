@@ -55,7 +55,14 @@ import { logError } from '@/lib/error-logging';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
-import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/messages';
+import {
+  createGolfConversation,
+  getPlayerUserId,
+  getGolfGroupAddCandidates,
+  addGolfGroupMember,
+  removeGolfGroupMember,
+  leaveGolfGroup,
+} from '@/app/golf/actions/messages';
 import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
@@ -68,7 +75,13 @@ import { EmptyState } from '@/components/fairway/feedback';
 
 import { MessageConversationRail } from './MessageConversationRail';
 import { MessageThreadPane } from './MessageThreadPane';
+import {
+  GroupDetailsSheet,
+  type GroupMember,
+  type GroupAddCandidate,
+} from './GroupDetailsSheet';
 import { MessageComposer } from './MessageComposer';
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
 export function FairwayMessages() {
   const { showToast } = useToast();
@@ -113,6 +126,8 @@ export function FairwayMessages() {
     error: messagesError,
     refetch: refetchMessages,
     sendMessage,
+    retryMessage,
+    discardFailedMessage,
     editMessage,
     removeMessage,
     isOtherTyping,
@@ -129,14 +144,28 @@ export function FairwayMessages() {
   const [isEditSaving, setIsEditSaving] = React.useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
   const [mobileActionsId, setMobileActionsId] = React.useState<string | null>(null);
+  // G-30 — the details sheet the header's new info control opens. Page-level
+  // state, like every other overlay on this surface: the thread pane owns the
+  // trigger, this file owns what the trigger opens.
+  const [showGroupDetails, setShowGroupDetails] = React.useState(false);
 
   // ── Group participant name map: user_id → { name, avatar } (Bug fix #1) ─────
   // For group conversations, each incoming bubble's sender_id is resolved to a
   // real name + avatar by fetching golf_conversation_participants → coaches/players.
   // Mirrors the legacy fetchGroupParticipants / groupParticipants pattern.
   const [groupParticipants, setGroupParticipants] = React.useState<
-    Map<string, { name: string; avatar: string | null }>
+    Map<string, GroupMember>
   >(new Map());
+
+  // W7b — the identity map above resolves MESSAGE SENDERS, which is a strictly
+  // larger set than the group's current members: once Remove and Leave exist,
+  // somebody who is gone can still own messages in the backlog. Keying the map
+  // on current participants alone made their bubbles read "Unknown", which is
+  // both wrong and alarming. So the map covers senders too, and this set is
+  // what the details sheet lists — a former sender must never appear there.
+  const [groupMemberIds, setGroupMemberIds] = React.useState<Set<string>>(
+    new Set(),
+  );
 
   const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
     const supabase = createClient();
@@ -155,16 +184,46 @@ export function FairwayMessages() {
 
     if (!participants || participants.length === 0) return;
 
-    const userIds = participants.map(p => p.user_id);
+    const memberIds = new Set(participants.map(p => p.user_id));
 
+    // Everyone who has SPOKEN here, which after a removal is not the same set
+    // as everyone who is here. PostgREST caps this at 1000 rows and returns
+    // the oldest first, so on a thread longer than that the names that could
+    // go unresolved are the most RECENT senders — who are, by construction,
+    // the ones most likely to still be participants and therefore already
+    // covered above. Anything still unresolved renders as "Former member" in
+    // the thread pane, never "Unknown".
+    const { data: senders, error: sendersError } = await supabase
+      .from('golf_messages')
+      .select('sender_id')
+      .eq('conversation_id', conversationId);
+
+    if (sendersError) {
+      logError(
+        new Error(sendersError.message || 'Failed to fetch group message senders'),
+        { component: 'FairwayMessages', action: 'fetchGroupParticipants', sport: 'shared' },
+        'low'
+      );
+    }
+
+    const userIds = Array.from(
+      new Set([...memberIds, ...(senders ?? []).map(m => m.sender_id)]),
+    );
+
+    // D-03a — `title` and `graduation_year` are the member row's subtitle, and
+    // they are the ONLY two new columns this whole wave asks for. Both are
+    // confirmed-live and both nullable, which is why the derivation below
+    // renders NO subtitle when either is missing rather than a placeholder:
+    // "Golf Coach" under a coach's name is the category restating itself, and
+    // the artboard's rows carry a real fact or nothing.
     const [{ data: coaches, error: coachesError }, { data: players, error: playersError }] = await Promise.all([
       supabase
         .from('golf_coaches')
-        .select('user_id, full_name, avatar_url')
+        .select('user_id, full_name, avatar_url, title')
         .in('user_id', userIds),
       supabase
         .from('golf_players')
-        .select('user_id, first_name, last_name, avatar_url')
+        .select('user_id, first_name, last_name, avatar_url, graduation_year')
         .in('user_id', userIds),
     ]);
 
@@ -176,25 +235,42 @@ export function FairwayMessages() {
       );
     }
 
-    const map = new Map<string, { name: string; avatar: string | null }>();
+    const map = new Map<string, GroupMember>();
     (coaches ?? []).forEach(c => {
       if (c.user_id) {
-        map.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
+        map.set(c.user_id, {
+          id: c.user_id,
+          name: c.full_name ?? 'Coach',
+          avatar: c.avatar_url ?? null,
+          // `|| undefined`, not `?? undefined` — an empty-string title is as
+          // absent as a null one, and an empty <span> would still draw the
+          // row's second line.
+          subtitle: c.title || undefined,
+          type: 'coach',
+        });
       }
     });
     (players ?? []).forEach(p => {
       if (p.user_id) {
         const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player';
-        map.set(p.user_id, { name, avatar: p.avatar_url ?? null });
+        map.set(p.user_id, {
+          id: p.user_id,
+          name,
+          avatar: p.avatar_url ?? null,
+          subtitle: p.graduation_year ? `Class of ${p.graduation_year}` : undefined,
+          type: 'player',
+        });
       }
     });
     setGroupParticipants(map);
+    setGroupMemberIds(memberIds);
   }, []);
 
   // Fetch participant names whenever we enter a group conversation; clear on 1:1.
   React.useEffect(() => {
     if (!selectedConversationId) {
       setGroupParticipants(new Map());
+      setGroupMemberIds(new Set());
       return;
     }
     const conv = conversations.find(c => c.id === selectedConversationId);
@@ -202,6 +278,7 @@ export function FairwayMessages() {
       fetchGroupParticipants(selectedConversationId);
     } else {
       setGroupParticipants(new Map());
+      setGroupMemberIds(new Set());
     }
   }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
@@ -349,7 +426,23 @@ export function FairwayMessages() {
       await sendMessage(content);
       return true;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to send message', 'error');
+      // G-20b — the two outcomes §9.5 requires kept apart. A transport error
+      // means `fetch` itself threw, so no response was ever read and the POST
+      // may have committed: reporting that as a definitive failure is what
+      // "invites duplication". Anything else means the server answered.
+      //
+      // The row in the thread carries the same distinction (`sendOutcome`), so
+      // the toast and the bubble cannot disagree — both read the same class of
+      // error through the same helper.
+      const unknownCommit = isTransientNetworkErrorMessage(
+        error instanceof Error ? error.message : String(error),
+      );
+      showToast(
+        unknownCommit
+          ? 'Couldn’t confirm this send — check the thread before sending again.'
+          : error instanceof Error ? error.message : 'Failed to send message',
+        'error',
+      );
       logError(
         error instanceof Error ? error : new Error('Failed to send message'),
         { component: 'FairwayMessages', action: 'handleSendMessage', sport: 'shared' },
@@ -359,14 +452,37 @@ export function FairwayMessages() {
     }
   };
 
-  const handleSendMessageWithAttachments = async (content: string, attachments: PendingAttachment[]) => {
+  /**
+   * G-09a — `onProgress` is forwarded, not invented here.
+   *
+   * `useMessageAttachments` accepts a per-file `onProgress` and threads it into
+   * `uploadAttachment`; this call site simply never passed one, which is why
+   * nothing the transport reported could reach the screen. The composer owns
+   * the staged tiles and therefore owns the callback; this handler's only job
+   * is to stop dropping it on the floor.
+   */
+  const handleSendMessageWithAttachments = async (
+    content: string,
+    attachments: PendingAttachment[],
+    onProgress?: (attachmentId: string, progress: number) => void,
+    signal?: AbortSignal,
+  ) => {
     if (!selectedConversationId) return false;
     try {
       const result = await sendMessageWithAttachments({
         conversationId: selectedConversationId,
         content,
         attachments,
+        onProgress,
+        signal,
       });
+      if (result.cancelled) {
+        // G-24 — the user stopped it. No toast, because they already know:
+        // they pressed the control that did it, and the composer has put the
+        // draft back in front of them. No logError either — a cancel is not an
+        // incident, and reporting one as `high` would bury real ones.
+        return false;
+      }
       if (!result.success) {
         showToast(result.error || 'Failed to send message', 'error');
         logError(
@@ -445,7 +561,7 @@ export function FairwayMessages() {
     return (
       // Mobile subtracts FairwayBottomNav's 56px (md:hidden) too, so this empty
       // state never renders taller than the visible viewport above the tab bar.
-      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
+      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas bg-canvas-gradient p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
         <EmptyState
           icon={Users}
           title="No team found"
@@ -507,8 +623,8 @@ export function FairwayMessages() {
           // and `pt-[safe-area-top]` because nothing above it is reserving
           // the notch any more. This is what makes the thread header the
           // ONE header instead of the second one.
-          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
-          : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
+          ? 'flex h-[calc(100dvh-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))] md:pt-0'
+          : 'flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px)-max(0px,calc(var(--keyboard-height,0px)-2rem-56px-env(safe-area-inset-bottom,0px))))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]'
       )}
     >
       {/* `py-3` on phone, not `py-6`: with the editorial masthead gone below
@@ -669,7 +785,10 @@ export function FairwayMessages() {
                 onConfirmDelete={handleConfirmDelete}
                 onCancelDelete={handleCancelDelete}
                 onSetMobileActions={setMobileActionsId}
+                onRetryMessage={retryMessage}
+                onDiscardFailedMessage={discardFailedMessage}
                 groupParticipants={groupParticipants}
+                onOpenGroupDetails={() => setShowGroupDetails(true)}
                 scrollToMessageId={pendingScrollMessageId}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}
                 className="flex-1 min-h-0"
@@ -698,6 +817,24 @@ export function FairwayMessages() {
                     onSend={handleSendMessage}
                     onSendWithAttachments={handleSendMessageWithAttachments}
                     onTyping={sendTypingStatus}
+                    /* G-47 — the field names who is about to hear you
+                     * ("Message Cole", `Composer.dc.html:45`), which is the
+                     * one thing the composer can tell you that the header
+                     * cannot once it has scrolled away.
+                     *
+                     * Same source the thread header reads
+                     * (`MessageThreadPane.tsx:838`), so the two cannot name
+                     * different people. A 1:1 uses the FIRST name, matching
+                     * what the artboard writes; a group keeps its title whole,
+                     * because a group's name is not a person's and clipping it
+                     * at the first space would invent one. Undefined either
+                     * way falls back to the generic placeholder rather than
+                     * rendering "Message undefined". */
+                    recipientName={
+                      selectedConversation.is_group
+                        ? selectedConversation.title || undefined
+                        : selectedConversation.other_participant?.name?.split(' ')[0] || undefined
+                    }
                   />
                 ) : null}
               </MessageThreadPane>
@@ -714,6 +851,69 @@ export function FairwayMessages() {
         currentUserRole={userRole || 'player'}
         teamId={teamId}
       />
+
+      {/* ── Group details (G-33 · D-03a · G-30 · G-57) ─────────────────────
+          Mounted only for a selected GROUP, so a DM cannot open it even if the
+          state were somehow set. `groupParticipants` is the same map the
+          thread header and every incoming bubble already read — one fetch
+          serves all three, so the sheet's member list can never disagree with
+          the names on the messages above it.
+
+          `participant_count` is passed separately and deliberately: it counts
+          participant ROWS, while the map counts members whose coach/player row
+          resolved. Handing the sheet both lets it say "9 members" honestly
+          while listing the 8 it can name, instead of silently reporting the
+          smaller number as the truth. */}
+      {selectedConversation?.is_group && (
+        <GroupDetailsSheet
+          open={showGroupDetails}
+          onOpenChange={setShowGroupDetails}
+          title={selectedConversation.title || 'Group'}
+          createdAt={selectedConversation.created_at}
+          creatorId={selectedConversation.creator_id}
+          currentUserId={currentUserId || userId}
+          memberCount={selectedConversation.participant_count}
+          members={Array.from(groupParticipants.values()).filter((m) =>
+            groupMemberIds.has(m.id),
+          )}
+          /* Membership management. Every one of these ends in a refetch of
+             the conversation list rather than a local mutation of
+             `groupParticipants`: that map is derived from the same rows the
+             header's "N members" counts, so patching it locally would let the
+             two disagree for exactly as long as the sheet stayed open — the
+             disagreement W7 removed. `fetchGroupParticipants` re-runs from the
+             refreshed conversation, so both come from one read. */
+          onAddMember={async (targetUserId) => {
+            const result = await addGolfGroupMember(selectedConversation.id, targetUserId);
+            if ('error' in result) return { error: result.error };
+            await refetch();
+            await fetchGroupParticipants(selectedConversation.id);
+            return;
+          }}
+          onRemoveMember={async (targetUserId) => {
+            const result = await removeGolfGroupMember(selectedConversation.id, targetUserId);
+            if ('error' in result) return { error: result.error };
+            await refetch();
+            await fetchGroupParticipants(selectedConversation.id);
+            return;
+          }}
+          onLeaveGroup={async () => {
+            const result = await leaveGolfGroup(selectedConversation.id);
+            if ('error' in result) return { error: result.error };
+            // The conversation is gone for this user, so the open thread has
+            // to go with it — leaving it selected would show a thread whose
+            // participant row no longer exists.
+            setSelectedConversationId(null);
+            await refetch();
+            return;
+          }}
+          loadAddCandidates={async () => {
+            const result = await getGolfGroupAddCandidates(selectedConversation.id);
+            if ('error' in result) throw new Error(result.error);
+            return result.candidates as GroupAddCandidate[];
+          }}
+        />
+      )}
 
       {userRole === 'coach' && teamId && (
         <FairwayTeamBroadcastSheet

@@ -168,7 +168,7 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 19 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 22 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -326,7 +326,7 @@ is a second thing to keep true.
 - **Telemetry:** none. Cross-cutting authorization enforced in RLS policies and action guards rather than on a screen. It has no surface of its own to instrument; a failure here shows up as a denial inside whichever feature the user was in.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** no ledger yet
+- **History:** `memory/ledgers/changes/team_access_control.md`
 
 ## `ios_native_shell`
 
