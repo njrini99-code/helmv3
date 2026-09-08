@@ -1,286 +1,86 @@
-# Workspaces — one door
+# Helm workspaces
 
-**Status: mechanism shipped, harness wiring pending.** This page documents
-`scripts/lib/create-workspace.mjs` and the two hooks that call it
-(`.claude/hooks/worktree-create.mjs`, `.claude/hooks/stamp-workspace.mjs`).
-Both hooks exist on disk and are tested; **neither is wired into
-`.claude/settings.json` yet** — that edit is deliberately deferred to a
-separate PR (another change owns `.claude/settings.json`). Until it lands,
-the harness's own `--worktree` / `isolation: "worktree"` / background-session
-default still creates an ungoverned worktree under
-`.claude/worktrees/<name>/`. The exact JSON to add is below.
+Operating authority lives in `AGENTS.md`. This page describes the workspace
+implementation and diagnostics; it adds no permission requirements.
 
-## The problem this closes
+## Creation
 
-Before this change, a worktree in this repo could be created three ways, and
-only one of them was governed:
-
-| Path | Governed? |
-| --- | --- |
-| `scripts/new-worktree.sh` | yes — budget, disk reserve, `--no-track`, marker |
-| harness `--worktree` / `isolation: "worktree"` / background session | **no** |
-| raw `git worktree add` | **no** |
-
-The harness's own default bypasses every invariant this repo relies on: no
-mutation-budget check, no disk-reserve check, no `.helm/workspace.json`
-marker, and a location (`.claude/worktrees/<name>/`, inside the repo root)
-that the nested-worktree check exists to flag. A subagent asking for
-isolation got none of what a human running `new-worktree.sh` got for free.
-Measured on this machine while writing this page: two such worktrees already
-exist under `/Users/ricknini/Downloads/helmv3/.claude/worktrees/`, nested and
-unmarked — `npm run repo:doctor` now reports them as FAIL
-(`workspace.nested-worktrees`, `workspace.worktree-markers`) precisely
-because they bypassed the door. `repo:doctor` is not a required CI check, so
-this does not block anyone — but it will not go green on this machine until
-those two are either stamped (see below) or removed.
-
-## One module, every caller
-
-`scripts/lib/create-workspace.mjs` exports `createWorkspace()`. Every entry
-point calls it — none of them re-implements it:
-
-```text
-scripts/new-worktree.sh              CLI front door (thin — parses flags only)
-.claude/hooks/worktree-create.mjs    the WorktreeCreate hook (once wired)
-```
-
-`createWorkspace({ name, base, install, home, repo })` does, in order,
-failing loudly and refusing before allocating anything:
-
-1. normalise `name` (slashes → dashes; empty refused)
-2. refuse if the path or the branch `agent/<name>` already exists
-3. **mutation budget** — `HELM_MAX_MUTATION_WORKTREES`, default **6**
-   (`DEFAULT_MUTATION_BUDGET` in `scripts/lib/worktree-lifecycle.mjs`),
-   reusing the same `inspectWorkspaces` / `mutationBudgetDecision` classifier
-   `scripts/check-mutation-budget.mjs` always used
-4. **disk reserve** — 12 GiB floor under the worktree home
-   (`HELM_DISK_RESERVE_GIB`, falls back to the legacy `HELM_MIN_FREE_GIB`)
-5. `git fetch origin --quiet` — a failure here is a **warning**, not a
-   refusal; working from a stale `origin/main` is survivable, refusing
-   because the network hiccuped is not
-6. `git worktree add --no-track <path> -b agent/<name> <base>` — `--no-track`
-   is load-bearing: without it the new branch inherits `base` as its
-   upstream, and a bare `git push` later targets that ref instead of its own
-7. writes `.helm/workspace.json` — `kind: task`, `parkPolicy:
-   PARK_IF_REPRODUCIBLE` by default (`KEEP` only with `--keep`, since
-   2026-09-06), `createdBy: "create-workspace.mjs"`, plus `task`/`branch`/
-   `base`/`environment`/`supabase`/`productionWrites`/`createdAt`
-8. **dependencies**: symlinks `node_modules` from the canonical checkout by
-   default; `install: true` runs a real, isolated `npm ci` via
-   `scripts/ensure-worktree-deps.mjs` instead
-9. copies `.node-version` from the canonical checkout
-10. writes a **local-only** `.env.local` — see below
-
-Always under `~/worktrees/helmv3/<name>` (`HELM_WORKTREE_HOME`), never inside
-the repo, and it never touches the canonical checkout's own `.env.local`.
-
-### The node_modules symlink is a deliberate reversal
-
-`scripts/new-worktree.sh`'s own history recorded, for cause, why the symlink
-was replaced with a real per-worktree `npm ci`: two branches with different
-lockfiles testing against whichever tree was installed last manufactures both
-fake failures and fake passes. This change makes the symlink the **default
-again**. That is an accepted, real hazard — not an oversight — because the
-lesson only bites a worktree that actually runs tests against a lockfile that
-might differ from the canonical checkout's. Most control-plane, docs, and
-config work never runs a single test, and coupling every worktree to a
-~3.8 GiB isolated install is what took this repo's disk to zero bytes free on
-2026-08-29. The escape hatch is `install: true` / `--install`. Choose it for
-any task that will run tests against a possibly-different lockfile.
-
-### The `.env.local` this writes
-
-Generated fresh every time, never copied from the canonical checkout:
-
-```text
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<from `supabase status -o env` if the local
-                                stack is running at creation time, else
-                                empty with a comment — this repo's
-                                supabase/config.toml documents no default
-                                local anon key to fall back to, and one is
-                                never invented>
-```
-
-`SUPABASE_SERVICE_ROLE_KEY` is **deliberately absent**. A task workspace gets
-no production write capability — see AGENTS.md's "Helm agent canonicality".
-
-## The budget: 1, then 3, now 6
-
-`DEFAULT_MUTATION_BUDGET` first rose 1 → 3 because the harness's own
-isolation paths count against it too: a session doing one task worktree plus
-two isolated subagent checks is normal parallel work, and a budget sized for
-a single human session would refuse it.
-
-It rose again, 3 → 6, as part of the tree/routing/speed reorg
-(2026-09-06), once `scripts/serialize.mjs` started recording real wait times
-per gate into `memory/ledgers/gates.jsonl` (`npm run gates:report` prints the
-median and p95 wait per gate) instead of the budget being a guess. `repo:doctor`'s
-`worktree.budget-exceeded` check reads the same `DEFAULT_MUTATION_BUDGET`
-constant, so it fails above budget(6)+1=7 mutation worktrees without any
-separate number to keep in sync.
-
-`AGENTS.md`'s "Helm agent canonicality" section states this number in prose
-(`HELM_MAX_MUTATION_WORKTREES (default 3)` as of this writing) — that line is
-now stale by exactly this amount and needs the matching correction to 6 in
-the PR that owns `AGENTS.md`.
-
-## Budget, parking, retirement
-
-Unchanged mechanism, just a different number:
+`scripts/lib/create-workspace.mjs` implements both `scripts/new-worktree.sh`
+and `.claude/hooks/worktree-create.mjs`. The WorktreeCreate hook is wired in
+`.claude/settings.json`; SessionStart also runs `stamp-workspace.mjs`.
 
 ```bash
-npm run worktrees          # report — always safe
-npm run worktrees:park     # remove disposable checkouts, KEEP branches
-npm run worktrees:retire   # park + delete branches proven merged (exact OID)
+scripts/new-worktree.sh <task>
 ```
 
-See `scripts/lib/worktree-lifecycle.mjs` for the classifier and AGENTS.md's
-"Helm agent canonicality" section for the ownership rules (`parkPolicy`, open
-PR dispositions) that gate what an agent may do without asking.
+The creator validates the name and rejects an existing path or branch. It
+then checks capacity, fetches the base, creates an `agent/<task>` branch with
+`--no-track`, and writes `.helm/workspace.json`. The default location is
+`~/worktrees/helmv3/<task>`; `HELM_WORKTREE_HOME` overrides it.
 
-## Gate timing ledger
+Existing checkout count is advisory by default. The threshold is
+`DEFAULT_MUTATION_BUDGET` (currently 6), shared with the lifecycle classifier.
+A folder count cannot establish how many agents are currently working.
+Setting `HELM_MAX_MUTATION_WORKTREES` explicitly makes that value a hard cap.
+The disk reserve remains enforced: 12 GiB by default, configurable through
+`HELM_DISK_RESERVE_GIB` (or legacy `HELM_MIN_FREE_GIB`).
 
-`scripts/serialize.mjs` already queued the heavy gates (`typecheck`, `test*`,
-`build`) behind a machine-wide slot count (`HELM_GATE_SLOTS`, default 2). It
-now also appends one row per gate run to `memory/ledgers/gates.jsonl`:
+A failed fetch produces a warning and uses the available base. `--no-track`
+prevents a new task branch from inheriting `origin/main` as its upstream.
+The marker records the task, base, branch, environment, and cleanup policy.
+The default `parkPolicy` is `PARK_IF_REPRODUCIBLE`; `--keep` selects `KEEP`.
 
-```json
-{"ts": 1788745092620, "gate": "typecheck", "waitMs": 0, "runMs": 18000, "slots": 2}
-```
+## Dependencies and local environment
 
-`gate` is the npm lifecycle name (`typecheck`, `test`, `build`, …) when run
-via `npm run <script>`, falling back to the wrapped command line for a direct
-invocation. `waitMs` is time spent queued for a slot before the gate started;
-`runMs` is the gate's own wall time; `slots` is `HELM_GATE_SLOTS` at the time.
-The file is tracked (not gitignored) and self-trims to the last 30 days on
-every append — `recordGateTiming()` in `scripts/serialize.mjs` never throws,
-so a ledger write failure can never turn a passing gate into a failing one.
+By default, `node_modules` links to the canonical checkout and `.node-version`
+is copied. Use `--install` or `node scripts/ensure-worktree-deps.mjs <dir>`
+when the task's lockfile differs or dependencies are unavailable. Tests must
+use dependencies matching their checkout.
 
-`npm run gates:report` (`scripts/gates-report.mjs`) reads the ledger and
-prints, per gate name, the run count and the median and p95 wait and run
-time, sorted by p95 wait descending — the gate most often stuck behind the
-slot queue sorts first. This is the instrument behind the budget's 3 → 6
-move above: a rising median wait is the signal to raise `HELM_GATE_SLOTS` or
-the worktree budget, rather than guessing.
+The creator writes a fresh local `.env.local`, never copies production
+credentials, and never modifies canonical `.env.local`. It uses
+`http://127.0.0.1:54321` and the anon key from a running local Supabase stack.
+If that stack is absent, the key is empty with an explanatory comment.
+Starting an application or integration test then requires a working local
+stack and its actual key. `SUPABASE_SERVICE_ROLE_KEY` is absent. Authorized
+remote work can use a separately authenticated connector or explicit target;
+the marker is descriptive, not a tool authorization system.
 
-## repo:doctor — what changed, and what it will report on this machine today
-
-`scripts/repo-doctor/checks/workspace.mjs` now grades a worktree on two
-**separate** axes — location and marker presence — because a marked
-mis-placed worktree is at least accounted for, while an unmarked one (however
-placed) is invisible to the mutation budget as anything but "counts, fails
-safe":
-
-| Situation | Check | Status |
-| --- | --- | --- |
-| nested, marker present | `workspace.nested-worktrees` | WARN |
-| nested, no marker | `workspace.nested-worktrees` | FAIL |
-| anywhere, no marker | `workspace.worktree-markers` | FAIL |
-| canonical, no marker | `workspace.canonical-marker` | WARN (1) |
-| canonical, `kind: canonical` | `workspace.canonical-marker` | PASS |
-
-(1) gitignored and machine-local, so absence is expected on a fresh clone —
-not a defect worth failing on.
-
-`repo:doctor` is not a required CI check, so none of this blocks a PR. But it
-will not go green on a machine that still has pre-door worktrees sitting
-around. Two fixes, pick per worktree:
-
-- **stamp it** — `.claude/hooks/stamp-workspace.mjs` does this automatically
-  at SessionStart for whichever worktree is ACTIVE in that session (it cannot
-  reach an idle one it isn't running from); or write the marker by hand:
-  `{"kind":"task","parkPolicy":"PARK_IF_REPRODUCIBLE","createdBy":"manual"}` into
-  `<worktree>/.helm/workspace.json`. For the **canonical checkout itself**
-  (the WARN case, not FAIL), the equivalent is
-  `{"kind":"canonical"}` written into `.helm/workspace.json` at the repo
-  root — harmless to add since the file is gitignored, and it turns that WARN
-  into a PASS.
-- **remove it** — `git worktree remove <path>` if the work is done or
-  reproducible from a pushed branch (prefer `npm run worktrees:park`, which
-  makes that determination for you).
-
-`config/repo/manifest.yml`'s `workspace:` block documents the same table.
-
-## Hook wiring — the exact JSON to add to `.claude/settings.json`
-
-Not applied by this change. When the owning PR edits `.claude/settings.json`,
-add a `WorktreeCreate` top-level key:
-
-```json
-{
-  "hooks": {
-    "WorktreeCreate": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-create.mjs",
-            "timeout": 60
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-and append one more entry to the existing `SessionStart` array's `hooks`
-list (it currently runs `session-context.sh` and `init-session-state.mjs`;
-this is a third, independent hook, not a replacement for either):
-
-```json
-{
-  "type": "command",
-  "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs",
-  "timeout": 10
-}
-```
-
-`worktree-create.mjs` gets a longer timeout than the other hooks because it
-does real work synchronously — a `git fetch`, a `git worktree add`, and
-optionally an `npm ci` when the harness passes `install`-equivalent intent
-(today it never does, so this always symlinks; see the module for how to
-change that if the harness contract grows an install flag).
-
-### Known interaction: harness exit-cleanup vs. this repo's own refusals
-
-`parkPolicy` in the marker is **this repo's own convention** — read by
-`scripts/lib/worktree-lifecycle.mjs`, not by the harness. Per the harness's
-own worktree-lifecycle docs, an interactive `--worktree` session's exit
-prompt, if the caller chooses to remove, "deletes the worktree directory and
-its branch, along with all the work in them" — regardless of what
-`.helm/workspace.json` says. So once `worktree-create.mjs` is wired in, a
-human answering that exit prompt "yes" can delete an `agent/<name>` branch
-that `worktree-lifecycle.mjs` would have refused to touch without a recorded
-disposition. This is a **different** cleanup path from the periodic
-subagent/background-session sweep — the harness docs say that sweep "keeps
-any worktree without one [the harness's own git marker], including a
-worktree a WorktreeCreate hook created," so the sweep is not the risk here.
-Whoever wires this hook into `.claude/settings.json` should decide
-consciously whether that interaction is acceptable as-is, rather than
-discover it later.
-
-## The one-line rule for AGENTS.md
-
-Also deferred to the PR that edits AGENTS.md's canonicality section:
-
-```text
-Make a worktree through the door; it refuses when the budget or disk says so.
-```
-
-The "door" is `scripts/lib/create-workspace.mjs`, reached via
-`scripts/new-worktree.sh` (humans) or the `WorktreeCreate` hook (the harness,
-once wired). Nothing should call `git worktree add` directly.
-
-## Tests
+## Cleanup and diagnostics
 
 ```bash
-npx vitest run scripts/__tests__/create-workspace.test.ts
+npm run worktrees          # inspect
+npm run worktrees:park     # remove disposable checkouts, preserve branches
+npm run worktrees:retire   # also retire branches proven merged by exact OID
 ```
 
-Covers: name normalisation and refusal, path/branch-exists refusal,
-over-budget refusal, the marker's exact shape, the `node_modules` symlink,
-`.env.local` never containing `SUPABASE_SERVICE_ROLE_KEY`, and the
-`worktree-create.mjs` hook's stdout/exit-code contract (path-only on success,
-nothing on stdout and exit 1 on refusal).
+The lifecycle classifier owns cleanup decisions, including dirty work,
+upstream evidence, PR state, and `parkPolicy`. Follow `AGENTS.md` for standing
+cleanup authorization. Do not delete unrelated work to make a count green.
+
+`repo:doctor` reports old merged checkouts, branch counts, and default
+workspace counts as cleanup warnings. An explicit workspace cap remains
+enforced. Nested locations and missing markers have separate diagnostics;
+SessionStart stamps the active workspace automatically. Read live results
+instead of treating an older machine snapshot as current.
+
+Claude's own worktree-removal prompt is a separate cleanup mechanism. The
+repository's `parkPolicy` applies to its lifecycle script, so use that script
+when relying on its preservation checks.
+
+## Check timing
+
+`scripts/serialize.mjs` queues heavy checks behind `HELM_GATE_SLOTS` (default
+2) and records wait/run times in `memory/ledgers/gates.jsonl`.
+`npm run gates:report` summarizes them. Use measured contention to choose
+parallelism; creating a checkout does not itself mean a test is running.
+
+## Validation
+
+```bash
+npx vitest run --project unit scripts/__tests__/create-workspace.test.ts
+```
+
+Fixtures cover existing-name refusals, advisory default counts, enforced
+explicit caps, disk reserve, marker contents, dependency links, local-only
+environment creation, and the hook's path-only stdout contract.

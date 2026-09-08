@@ -615,7 +615,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 1 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 4 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 3 | 11 | - |
-| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 13 | - |
+| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 6 | - |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 9 | 1 |
