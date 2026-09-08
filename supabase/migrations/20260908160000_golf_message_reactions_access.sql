@@ -4,15 +4,21 @@
 -- authenticated reaction behavior as production. Existing policies are kept.
 -- supabase/schemas already declares this helper, its grants, policies and
 -- indexes; this repairs the migration replay, not the desired schema.
--- VERIFIED: SELECT * FROM pg_policies WHERE tablename = 'golf_message_reactions';
--- SELECT * FROM pg_publication_tables WHERE tablename = 'golf_message_reactions';
+-- VERIFIED: SELECT * FROM pg_policies
+-- WHERE tablename = 'golf_message_reactions';
+-- SELECT * FROM pg_publication_tables
+-- WHERE tablename = 'golf_message_reactions';
 -- ROLLBACK: local verification wraps this twice in a transaction and rolls it
 -- back. Do not remove the already-live production access contract to undo a
 -- reconciliation; the app can roll back independently without dropping data.
 
-CREATE OR REPLACE FUNCTION public.golf_conversation_has_me(p_conversation_id uuid)
+CREATE OR REPLACE FUNCTION public.golf_conversation_has_me(
+    p_conversation_id uuid
+)
 RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
 SET search_path TO public, pg_temp
 AS $$
   SELECT EXISTS (
@@ -22,8 +28,11 @@ AS $$
   );
 $$;
 
-REVOKE ALL ON FUNCTION public.golf_conversation_has_me(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_conversation_has_me(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.golf_conversation_has_me(uuid) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.golf_conversation_has_me(
+    uuid
+) TO authenticated,
+service_role;
 
 ALTER TABLE public.golf_message_reactions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.golf_message_reactions FROM anon;
@@ -34,11 +43,11 @@ GRANT ALL ON public.golf_message_reactions TO service_role;
 -- table. Supabase wraps migrations in a transaction, precluding CONCURRENTLY.
 -- squawk-ignore require-concurrent-index-creation
 CREATE UNIQUE INDEX IF NOT EXISTS golf_message_reactions_unique
-  ON public.golf_message_reactions (message_id, user_id, emoji);
+ON public.golf_message_reactions (message_id, user_id, emoji);
 -- Existing production index; fresh-database replay only (same reason above).
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS golf_message_reactions_message_idx
-  ON public.golf_message_reactions (message_id);
+ON public.golf_message_reactions (message_id);
 
 DO $$
 BEGIN
@@ -80,4 +89,4 @@ END;
 $$;
 
 COMMENT ON TABLE public.golf_message_reactions IS
-  'Message reactions visible to conversation participants; each user manages their own reactions.';
+'Participant-visible message reactions; users manage their own reactions.';
