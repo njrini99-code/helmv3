@@ -66,6 +66,7 @@ vi.mock('@/lib/admin/data/incident-feed', async (orig) => {
           key: `app:${FINGERPRINT}`,
           origin: 'app',
           title: 'Qualifier save failed',
+          correlationMessage: 'Qualifier save failed',
           severity: 'error',
           sport: 'golf',
           occurrences: 3,

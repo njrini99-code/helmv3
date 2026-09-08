@@ -91,6 +91,37 @@ always derived at read time.
   recomputed its own read-time key from normalized message + route + action +
   errorCode, which could disagree with the Errors tab's grouping for the same
   underlying rows.
+- **The cross-source join key hashes the MESSAGE, on every side.** A fixed
+  severity is only half of "one key"; hashing a different FIELD on each side of
+  the join splits the keyspace just as thoroughly. `correlate.ts` keys app and
+  Sentry items on `TriageItem.correlationMessage`, and each `mergeTriage`
+  branch sets that to the same expression the matching arm of
+  `src/lib/reliability/sources.ts` used before `correlationSignature`
+  (`src/lib/reliability/normalize.ts`) hashed it — `row.message ?? row.title`
+  for app rows, `` `${title} — ${culprit}` `` for Sentry issues. Until
+  2026-09-08 `correlate.ts` hashed `item.title` instead: against production,
+  ZERO of 22 app incidents in the 72h window joined a reliability signal, every
+  incident rendered twice (once as `<fingerprint>`, once as a phantom
+  `rel:<signature>` twin with `occurrences: 0`), and the board reported
+  `corroboration > 1` exactly once in 84 incidents. After: 16 of 69. The guard
+  is `correlate.test.ts`'s "keyed on the MESSAGE, not the route-decorated
+  title" — its fixture deliberately makes title and message differ, because one
+  where they are equal passes under both the broken and the fixed key. Changing
+  either side without the other silently reopens the split, and the only
+  symptom is a corroboration count nobody is watching.
+- **One classifier, one verdict, whichever source saw the fault.**
+  Reliability-only buckets run `classifyIncident` like every other incident.
+  They used to be hardcoded `defect`/actionable on the grounds that "no app or
+  Sentry classifier has ever looked at this fault" — which is not a
+  conservative default: 59 of 84 board incidents were reliability-only and all
+  59 were force-flagged actionable, including ten "N+1 Query" signals and the
+  whole empty-state family, so the board counted 77 actionable against the
+  Errors tab's 22. The safe direction is preserved where it matters because it
+  is the classifier's OWN severity ladder — an unrecognised error/critical
+  signal still returns `defect`/actionable/`matched: false`. Pass
+  `source: null`, never `'client'`: a reliability signal is server-observed
+  (Supabase/Sentry/Vercel arms) and must not take the branches that file a
+  fault as the visitor's own connectivity.
 - **Incident resolution has exactly one write path.** Every resolve — a single
   row, a whole fingerprint, or a bulk selection — goes through the user-scoped
   `resolve_admin_event` RPC and busts `BRIDGE_INCIDENT_CACHE_TAG`. The RPC

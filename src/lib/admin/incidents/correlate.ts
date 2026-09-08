@@ -29,6 +29,19 @@
  * whole module exists to produce would never fire. This is the THIRD
  * independent site doing this fold — not a coincidence, a convention.
  *
+ * WHAT THE KEY IS HASHED OVER. The message, never the title — and
+ * specifically `TriageItem.correlationMessage`, which each `mergeTriage`
+ * branch sets to the same expression the matching arm of
+ * `@/lib/reliability/sources.ts` used before `correlationSignature` hashed
+ * it. A fixed severity is only half of "one key": hashing a DIFFERENT FIELD
+ * on each side of the join splits the keyspace just as thoroughly, and that
+ * is what this module did until 2026-09-08 — app items keyed on `title`,
+ * reliability signals on `signal.signature` (a message hash), so the
+ * cross-source badge this module exists to produce fired once in 84
+ * incidents against production. `correlate.test.ts` pins an app item and a
+ * reliability signal for one fault landing in one bucket; that fixture is
+ * the only instrument for this, so do not weaken it.
+ *
  * WHAT "SAME FAULT" DOES NOT MEAN. Two rows can share a title and still be
  * different incidents — `errorCode` and normalized `route` are load-bearing
  * components of the key specifically so "Client error: Load failed" on two
@@ -39,7 +52,11 @@
 
 import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
-import type { IncidentClass } from '@/lib/admin/incident-classification';
+// A VALUE import, unlike the type-only imports around it — `classifyIncident`
+// is pure (no I/O, no clock, no `server-only` sibling), so importing it keeps
+// this module's purity contract intact. See the reliability-only branch of
+// `buildDraft` for why the correlator has to classify at all.
+import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
 import type { CorrelatedSignal } from '@/lib/reliability/types';
 import { INCIDENT_SOURCES, INCIDENT_SOURCE_LABEL } from './types';
 import type {
@@ -514,15 +531,46 @@ function buildDraft(
   } else if (bucket.sentryItems.length > 0) {
     ({ klass, actionable, klassReason } = bucket.sentryItems[0]!);
   } else {
-    // Reliability-only: no app or Sentry classifier has ever looked at this
-    // fault. Rule 6 requires the safe direction — visible and actionable —
-    // rather than silently filtering an unrecognised signal out of triage,
-    // the same "unmatched defaults to defect" ladder
-    // `classifyIncident` itself falls back to.
-    klass = 'defect';
-    actionable = true;
-    klassReason =
-      'Reliability-only signal — no admin_events or Sentry record exists for it yet, so it defaults to an actionable defect.';
+    // Reliability-only: no app or Sentry item carries a verdict for this
+    // fault, so run the SAME classifier they were classified by rather than
+    // asserting `defect`/actionable outright.
+    //
+    // Hardcoding it was a real defect, not a conservative default. Measured
+    // against production 2026-09-08: 59 of 84 board incidents were
+    // reliability-only and every one of them was force-flagged actionable —
+    // ten copies of "N+1 Query", every "[getPlayerProfile] No completed
+    // rounds found", the whole empty-state family — which is why the board
+    // counted 77 actionable while the Errors tab counted 22, two tallies
+    // `incident-feed.ts` states cannot drift.
+    //
+    // Rule 6's "safe direction" survives where it actually matters, because
+    // it is `classifyIncident`'s OWN severity ladder: an unrecognised
+    // error/critical signal still returns `defect` / actionable /
+    // `matched: false`, so a new unanticipated failure is never filtered
+    // away. An unrecognised INFO signal now lands on `telemetry` /
+    // non-actionable instead of `defect` / actionable — which is exactly what
+    // an app-origin row of the same severity has always done, and is the
+    // point: one classifier, one verdict, whichever source saw the fault.
+    //
+    // `source: null`: a reliability signal is server-observed (Supabase,
+    // Sentry and Vercel arms), never a browser report, so it must not take
+    // the `source === 'client'` branches that file a fault as the visitor's
+    // own connectivity. `summary` is redacted at storage
+    // (`redactFreeTextForStorage`), which can only make a phrase match less
+    // likely — never a false one.
+    const signal = bucket.reliabilitySignals[0]!;
+    const classification = classifyIncident({
+      title: signal.title,
+      message: signal.summary || signal.title,
+      severity,
+      source: null,
+      errorCode,
+    });
+    klass = classification.klass;
+    actionable = classification.actionable;
+    // Always the classifier's real reason, suffixed with the provenance an
+    // operator needs to read it correctly: nothing corroborates this yet.
+    klassReason = `${classification.reason} — reliability-only signal; no admin_events or Sentry record exists for it yet.`;
   }
 
   const regressed =
@@ -610,13 +658,20 @@ export function correlateIncidents(input: CorrelateInput): IncidentDraft[] {
   };
 
   for (const item of input.triage) {
-    // TriageItem carries no raw `message` distinct from `title`/`description`
-    // (`description` already has contextual suffix text appended for short
-    // messages — see `buildIncidentDescription` — which would pollute the
-    // grouping key). `title` is the one field both origins set from the same
-    // kind of source text (the row's own title / the Sentry issue's title),
-    // mirroring `triageCauseKey`'s `message ?? title` fallback one level up.
-    const key = correlationKey({ errorCode: item.errorCode, route: item.route, message: item.title });
+    // `correlationMessage`, NOT `title`. The reliability side of this join
+    // hashes the message each collector arm read (`correlationSignature` in
+    // `@/lib/reliability/normalize.ts`), so hashing a title here produced a
+    // second keyspace that could never intersect the first — see the field's
+    // doc on `TriageItem` for the production measurement (0 joins vs 13).
+    // The field is REQUIRED on `TriageItem` rather than optional-with-a-
+    // title-fallback on purpose: a fallback would let a new producer silently
+    // reopen the exact split this fixes, and the only symptom would be a
+    // corroboration count nobody is watching.
+    const key = correlationKey({
+      errorCode: item.errorCode,
+      route: item.route,
+      message: item.correlationMessage,
+    });
     const bucket = bucketFor(key);
     if (item.origin === 'app') bucket.appItems.push(item);
     else bucket.sentryItems.push(item);
