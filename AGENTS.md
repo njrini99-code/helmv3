@@ -21,6 +21,11 @@ and dirty files before editing. One session may work directly in canonical;
 concurrent writers use separate worktrees or explicitly disjoint files.
 Never overwrite another session's work or switch its branch underneath it.
 
+Use `helm` or `h` to launch Claude with current canonical tools and agents
+while staying in the selected Helm worktree. This prevents historical branch
+settings from restoring retired restrictions. Direct `claude` launches still
+use the branch's settings.
+
 Prefer `scripts/new-worktree.sh <task>` for an isolated task. It creates an
 `agent/<task>` branch without tracking origin/main. A workspace-count warning
 is capacity advice, not proof of active processes. Disk limits still apply;
@@ -67,9 +72,9 @@ login is a connection problem, not a permanent policy ban. Use a working
 connector or the repo-local CLI; never claim a service is unavailable based
 only on an old namespace or a missing environment token.
 
-The project Supabase MCP is scoped to Helm and read-only. Use it for reads;
-use an authenticated write-capable path for an authorized migration. Review
-migration SQL and target first, and verify the resulting schema. Local
+The project Supabase MCP is scoped to Helm and supports reads and writes.
+Use it or the authenticated repo-local CLI for task-authorized database work.
+Review migration SQL and target first, then verify the resulting schema. Local
 Supabase reset/migration work is allowed. Production is shared by Golf,
 Baseball and Lift Lab; preserve RLS, sport boundaries, and customer data.
 Keep secrets out of output and commits.
