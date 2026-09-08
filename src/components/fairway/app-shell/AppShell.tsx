@@ -500,7 +500,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
                 // P413: when the mobile bottom-tab bar is mounted, add its height
                 // (~56px) to the mobile bottom pad so it never overlaps content.
                 // Desktop (md+) is unaffected — the bar is md:hidden.
-                bottomNav && 'pb-[calc(2rem+56px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
+                bottomNav && 'pb-[calc(2rem+var(--fw-mobile-nav-height))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
                 // Keyboard room (a focused field scrolled above the soft keyboard)
                 // is NOT added here: globals.css pads <body> by --keyboard-height
                 // while body.keyboard-open, which covers this shell and every

@@ -607,9 +607,15 @@ export function MessageThreadPane({
     (m: MessageWithReadStatus) => m.sender_id === userId || m.sender_id === currentUserId,
     [userId, currentUserId],
   );
-  const actionsMessage = React.useMemo(
+  const currentActionsMessage = React.useMemo(
     () => (mobileActionsId ? messages.find((m) => m.id === mobileActionsId && m.conversation_id === conversation?.id) ?? null : null),
     [mobileActionsId, messages, conversation?.id],
+  );
+  // Keep the last body mounted while the shared overlay runs its exit animation.
+  const lastActionsMessage = React.useRef<MessageWithReadStatus | null>(null);
+  if (currentActionsMessage) lastActionsMessage.current = currentActionsMessage;
+  const actionsMessage = currentActionsMessage ?? (
+    lastActionsMessage.current?.conversation_id === conversation?.id ? lastActionsMessage.current : null
   );
 
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1117,7 +1123,7 @@ export function MessageThreadPane({
       )}
     >
       {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-h-16 min-w-0 items-center gap-2.5 relative z-10 border-b border-border-subtle bg-surface shadow-flat px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+      <header className="flex min-h-16 min-w-0 items-center gap-2.5 relative z-10 fw-glass-chrome border-b shadow-flat px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
         {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
             an open thread this is the only way out AND the only thing naming
             where "out" is, so it says so — the platform convention, and the
@@ -1401,38 +1407,7 @@ export function MessageThreadPane({
                   </div>
                 )}
                 {startsDay && (
-                  // G-50a took the FLOATING chip from `Thread.dc.html:52`,
-                  // whose authored comment says it "FLOATS over the thread on
-                  // glass, not inline in it". Shipped, that reading is wrong on
-                  // two counts. Thread's floater is positioned against the
-                  // SCROLL CONTAINER — one chip, `top: 12px`, pinned at the head
-                  // of the pane: a current-day indicator, not a per-boundary
-                  // separator. Ported onto each boundary it became an absolute
-                  // element over a zero-height row, and it landed on top of the
-                  // sender name of the group below it. `Group.dc.html:44` is the
-                  // artboard that matches a group thread and it draws the same
-                  // chip INLINE — `justify-content: center; padding: 0 0 16px 0`
-                  // — which structurally cannot collide. Inline it is.
-                  //
-                  // STATIC, not sticky, unchanged: pinning would turn a boundary
-                  // label into a running current-day indicator, which is new
-                  // behaviour nobody asked for and overlaps G-29's still-open
-                  // day-separator work.
-                  //
-                  // The glass licence is this chip and nothing else. DECISIONS.md
-                  // bounds it — "does not license glass on any larger surface" —
-                  // and the ban this file's own header states, no
-                  // bg-white/backdrop-blur on BUBBLES, still stands.
-                  //
-                  // Every value is a token that already existed and was unused
-                  // here: --fw-glass-bg is byte-identical to the artboard's
-                  // `.glass` background, --fw-blur-glass to its 22px, and
-                  // --fw-glass-saturate to its 190%. The chip's shadow is an
-                  // inset specular over --fw-shadow-pop, whose two layers match
-                  // the artboard exactly. Referenced through the arbitrary-
-                  // property escape, never `bg-glass` / `backdrop-blur-glass` —
-                  // those are the LEGACY cream-100 utilities the design-system
-                  // rule bans, unrelated to the --fw-glass-* tokens.
+                  // Inline date boundaries reserve space above the next sender.
                   <div className="pointer-events-none flex justify-center pb-4" role="separator">
                     <span
                       className={cn(
@@ -1931,6 +1906,7 @@ export function MessageThreadPane({
       {/* One responsive action panel for the selected message. */}
       {actionsMessage && (
         <MessageActionsPanel
+          open={Boolean(currentActionsMessage)}
           anchor={() => messageRefs.current.get(actionsMessage.id)?.querySelector<HTMLElement>('[data-message-bubble]') ?? null}
           own={isOwnMessage(actionsMessage)}
           onClose={() => onSetMobileActions(null)}
@@ -2024,7 +2000,7 @@ export function MessageThreadPane({
 
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children
           so FairwayMessages owns the send wiring to the unchanged hooks. */}
-      {reactions.error && !actionsMessage && (
+      {reactions.error && !currentActionsMessage && (
         <div role="status" className="flex items-center justify-between gap-2 px-4 py-2">
           <p className="text-caption text-text-secondary">{reactions.error}</p>
           <Button type="button" variant="ghost" size="sm" onClick={() => { void reactions.refresh(); }}>Reload reactions</Button>

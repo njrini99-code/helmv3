@@ -10,10 +10,10 @@
  * #178: every row (identity row, overflow rows) must carry an explicit 44px
  * floor (WCAG 2.2 AA 2.5.8) rather than relying on incidental content height.
  */
-import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MoreNavSheet } from '../MoreNavSheet';
-import type { NavSection } from '../types';
+import type { NavSection, ShellLinkComponent } from '../types';
 
 const LONG_LABEL = 'A Genuinely Extremely Long Task Management Row Label That Keeps Going';
 const LONG_DESCRIPTION =
@@ -100,5 +100,38 @@ describe('MoreNavSheet — 44px touch-target floor (#178)', () => {
     const identityRow = document.body.querySelector('a[href="/golf/dashboard/settings"]');
     expect(identityRow).not.toBeNull();
     expect(identityRow!.className.split(/\s+/)).toContain('min-h-[44px]');
+  });
+});
+
+
+describe('More navigation motion', () => {
+  const TestLink: ShellLinkComponent = ({ href, prefetch, children }) => (
+    <a href={href} data-prefetch={String(prefetch)} onClick={(event) => event.preventDefault()}>{children}</a>
+  );
+
+  it('defers route prefetch until the sheet entrance finishes', () => {
+    render(<MoreNavSheet open onOpenChange={vi.fn()} sections={SECTIONS} excludeHrefs={[]} linkComponent={TestLink} />);
+    const row = screen.getByRole('link', { name: new RegExp(LONG_LABEL) });
+    expect(row).toHaveAttribute('data-prefetch', 'false');
+    fireEvent.animationEnd(row); // Child animations cannot release the gate.
+    expect(row).toHaveAttribute('data-prefetch', 'false');
+    fireEvent.animationEnd(screen.getByRole('dialog'));
+    // React's jsdom capability detection may select the WebKit event name.
+    fireEvent(screen.getByRole('dialog'), new Event('webkitAnimationEnd', { bubbles: true }));
+    expect(row).toHaveAttribute('data-prefetch', 'true');
+  });
+
+  it('dismisses on a normal destination tap without waiting for a route change', () => {
+    const onOpenChange = vi.fn();
+    render(<MoreNavSheet open onOpenChange={onOpenChange} sections={SECTIONS} excludeHrefs={[]} linkComponent={TestLink} />);
+    fireEvent.click(screen.getByRole('link', { name: new RegExp(LONG_LABEL) }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps the sheet open for modified link clicks', () => {
+    const onOpenChange = vi.fn();
+    render(<MoreNavSheet open onOpenChange={onOpenChange} sections={SECTIONS} excludeHrefs={[]} linkComponent={TestLink} />);
+    fireEvent.click(screen.getByRole('link', { name: new RegExp(LONG_LABEL) }), { metaKey: true });
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 });

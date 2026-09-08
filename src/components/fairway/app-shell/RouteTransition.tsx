@@ -1,20 +1,8 @@
 'use client';
 
-/**
- * ============================================================================
- * Fairway · RouteTransition (Wave 1, ADDITIVE)
- * ----------------------------------------------------------------------------
- * The route-transition wrapper for the content region (DESIGN-SYSTEM §7.1).
- * Content settles in with a restrained route reveal: a small upward drift (≤4px)
- * + opacity, at --fw-dur-base (280ms) on the --fw-ease-glide curve. Page headers
- * own the larger visual emphasis, so route swaps stay responsive.
- *
- * Crossfade-on-key (no AnimatePresence `mode="wait"`) per §5.3 — that mode is the
- * verified flash bug. We render a single keyed `motion.div`; React swaps it on
- * route change and framer-motion runs the `initial`→`animate` reveal cleanly.
- *
- * Reduced motion (§7.3): collapses to opacity-only at --fw-dur-fast, no transform.
- * ========================================================================== */
+/** A brief, nonblanking route reveal. Keeping the initial content visible avoids
+ * a second perceived load, and omitting transforms preserves fixed descendants.
+ * Reduced motion renders the destination immediately. */
 
 import { forwardRef, useMemo } from 'react';
 import { motion, useReducedMotion, type Transition } from 'framer-motion';
@@ -42,9 +30,9 @@ export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(
   const { initial, animate, transition } = useMemo(() => {
     if (reduceMotion) {
       return {
-        initial: { opacity: 0 },
+        initial: false,
         animate: { opacity: 1 },
-        transition: { duration: 0.18, ease: 'linear' as const },
+        transition: { duration: 0, ease: 'linear' as const },
       };
     }
     return {
@@ -52,9 +40,9 @@ export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(
       // transform` establishes a CSS containing block, which would anchor every
       // page's position:fixed UI (modals, FABs, bottom action bars) to THIS
       // wrapper instead of the viewport. Fading sidesteps that entirely.
-      initial: { opacity: 0 },
+      initial: { opacity: 0.72 },
       animate: { opacity: 1 },
-      transition: { duration: 0.28, ease: GLIDE },
+      transition: { duration: 0.18, ease: GLIDE },
     };
   }, [reduceMotion]);
 

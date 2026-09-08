@@ -460,7 +460,8 @@ export function MessageConversationRail({
   // disagreeing in the same card. The rail's panel header carries no count
   // of its own now; the masthead is the single source of truth for it.
 
-  if (loading) {
+  // Realtime read receipts refresh data without replacing the visible inbox.
+  if (loading && conversations.length === 0) {
     return (
       <InstrumentPanel
         depth="base"
@@ -591,7 +592,7 @@ export function MessageConversationRail({
           options={[{ value: 'all', label: 'All' }, { value: 'unread', label: 'Unread' }, { value: 'groups', label: 'Groups' }]}
           size="lg"
           fullWidth
-          className="mb-4"
+          className="fw-message-filters mb-4"
         />
       )}
       {!isSearching && visibleConversations.length === 0 && (

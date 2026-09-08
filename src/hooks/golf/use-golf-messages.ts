@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
+import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds, getGolfConversationParticipantIdentities } from '@/app/golf/actions/messages';
 import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
@@ -21,6 +21,7 @@ const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
  * it.
  */
 const MARK_READ_ON_ARRIVAL_DEBOUNCE_MS = 900;
+const MAX_IDENTITY_CONVERSATIONS_PER_REQUEST = 100;
 
 export interface GolfConversationParticipant {
   id: string;
@@ -1455,7 +1456,7 @@ export function useGolfConversations() {
         'medium'
       );
       setError(true);
-      setConversations([]);
+      // A failed background refresh must preserve the last readable inbox.
       setLoading(false);
       return;
     }
@@ -1466,7 +1467,9 @@ export function useGolfConversations() {
       return;
     }
 
-    // Get unique other user IDs for batch fetching (only for non-group conversations)
+    // Keep the existing client-side batch reads as the fast path. They are
+    // still the source of truth whenever RLS exposes a profile; the server
+    // action below is only for DMs whose counterpart remains unresolved.
     const otherUserIds = new Set<string>();
     conversationsData.forEach((conv) => {
       if (!isGroupConversation(conv)) {
@@ -1476,7 +1479,6 @@ export function useGolfConversations() {
       }
     });
 
-    // Batch fetch golf coaches and players (2 queries instead of N*2)
     const [{ data: coaches }, { data: players }] = await Promise.all([
       otherUserIds.size > 0
         ? supabase
@@ -1492,7 +1494,6 @@ export function useGolfConversations() {
         : Promise.resolve({ data: [] }),
     ]);
 
-    // Create lookup maps with proper types
     const coachByUserId = new Map<string, CoachLookup>();
     (coaches || []).forEach((c) => {
       if (c.user_id) coachByUserId.set(c.user_id, c as CoachLookup);
@@ -1503,6 +1504,52 @@ export function useGolfConversations() {
       if (p.user_id) playerByUserId.set(p.user_id, p as PlayerLookup);
     });
 
+    // The privileged action is bounded to 100 ids per request. Chunking here
+    // keeps a long inbox responsive while ensuring each request satisfies the
+    // action's runtime contract. Rejected transport calls degrade to the
+    // existing maps/generic label and never leave the inbox loading forever.
+    const unresolvedConversationIds = conversationsData
+      .filter((conv) => {
+        if (isGroupConversation(conv)) return false;
+        const otherUserId = conv.participant_ids?.find((id) => id !== userId);
+        return !otherUserId || (!coachByUserId.has(otherUserId) && !playerByUserId.has(otherUserId));
+      })
+      .map((conv) => conv.id);
+    const identityChunks: string[][] = [];
+    for (let index = 0; index < unresolvedConversationIds.length; index += MAX_IDENTITY_CONVERSATIONS_PER_REQUEST) {
+      identityChunks.push(unresolvedConversationIds.slice(index, index + MAX_IDENTITY_CONVERSATIONS_PER_REQUEST));
+    }
+
+    const identitiesByConversation = new Map<string, GolfConversationParticipant[]>();
+    if (identityChunks.length > 0) {
+      const identityResults = await Promise.all(identityChunks.map(async (ids) => {
+        try {
+          return await getGolfConversationParticipantIdentities(ids);
+        } catch (identityError) {
+          logError(
+            identityError instanceof Error ? identityError : new Error(String(identityError)),
+            { component: 'useGolfConversations', action: 'resolve-conversation-identities', sport: 'golf', userId },
+            'medium',
+          );
+          return { participants: [] };
+        }
+      }));
+      for (const identityResult of identityResults) {
+        for (const identity of identityResult.participants ?? []) {
+          const participants = identitiesByConversation.get(identity.conversationId);
+          const participant: GolfConversationParticipant = {
+            id: identity.userId,
+            name: identity.name,
+            subtitle: identity.subtitle,
+            avatar: identity.avatar,
+            type: identity.type,
+          };
+          if (participants) participants.push(participant);
+          else identitiesByConversation.set(identity.conversationId, [participant]);
+        }
+      }
+    }
+
     // Transform to GolfConversationWithMeta format
     const transformedConversations = conversationsData.map((conv) => {
       // Handle group conversations differently
@@ -1510,9 +1557,14 @@ export function useGolfConversations() {
         // `is_group` is also set for a team broadcast to one player. Preserve
         // the storage flag for RLS, but resolve the other member whenever the
         // participant count says this is actually a two-person conversation.
-        const otherUserId = isGroupConversation(conv)
-          ? undefined
-          : conv.participant_ids?.find((id) => id !== userId);
+        const rawOtherUserId = conv.participant_ids?.find((id) => id !== userId);
+        const knownOther = !isGroupConversation(conv) && rawOtherUserId &&
+          (coachByUserId.has(rawOtherUserId) || playerByUserId.has(rawOtherUserId))
+          ? resolveConversationParticipant(rawOtherUserId, coachByUserId, playerByUserId)
+          : undefined;
+        const privilegedOther = identitiesByConversation.get(conv.id)?.find((participant) => participant.id !== userId);
+        const resolvedOther = knownOther ?? privilegedOther;
+        const otherUserId = isGroupConversation(conv) ? undefined : resolvedOther?.id ?? rawOtherUserId;
         return {
           id: conv.id,
           created_at: conv.created_at,
@@ -1531,18 +1583,20 @@ export function useGolfConversations() {
           // below; the transform was simply not copying them out.
           participant_ids: conv.participant_ids ?? [],
           creator_id: conv.creator_id ?? null,
-          other_participant: resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId),
+          other_participant: resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId),
         } as GolfConversationWithMeta;
       }
 
       // Find the other user in this conversation
-      const otherUserId = conv.participant_ids?.find((id) => id !== userId);
-
-      let otherParticipant: GolfConversationParticipant | undefined;
-
-      if (otherUserId) {
-        otherParticipant = resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId);
-      }
+      const rawOtherUserId = conv.participant_ids?.find((id) => id !== userId);
+      const knownOther = rawOtherUserId &&
+        (coachByUserId.has(rawOtherUserId) || playerByUserId.has(rawOtherUserId))
+        ? resolveConversationParticipant(rawOtherUserId, coachByUserId, playerByUserId)
+        : undefined;
+      const privilegedOther = identitiesByConversation.get(conv.id)?.find((participant) => participant.id !== userId);
+      const resolvedOther = knownOther ?? privilegedOther;
+      const otherUserId = resolvedOther?.id ?? rawOtherUserId;
+      const otherParticipant = resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId);
 
       return {
         id: conv.id,

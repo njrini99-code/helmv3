@@ -105,3 +105,17 @@ describe('conversation filters', () => {
     expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBeVisible();
   });
 });
+
+
+describe('background inbox refresh', () => {
+  it('keeps existing rows mounted while read receipts refresh and after a refresh error', () => {
+    const conversations = [{ id: 'dm', participant_count: 2, unread_count: 0, other_participant: { name: 'Jordan Lee' } }] as GolfConversationWithMeta[];
+    const props = { conversations, selectedId: 'dm', onSelect: vi.fn(), onNewMessage: vi.fn() };
+    const { rerender } = render(<MessageConversationRail {...props} loading={false} />);
+    const row = screen.getByRole('button', { name: /Jordan Lee/ });
+    rerender(<MessageConversationRail {...props} loading />);
+    expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBe(row);
+    rerender(<MessageConversationRail {...props} loading={false} error />);
+    expect(screen.getByRole('button', { name: /Jordan Lee/ })).toBe(row);
+  });
+});

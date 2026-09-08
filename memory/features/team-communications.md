@@ -595,3 +595,25 @@ A test that renders with `loading: false` from the start cannot see either half.
 - `docs/PUSH_NOTIFICATION_AUDIT.md`
 
 Group participant requests are invalidated when conversation selection changes; late results and mutation refresh callbacks cannot overwrite the next conversation’s identity map. Empty membership clears stale members.
+
+### Mobile navigation and refresh stability (2026-09-08)
+
+Phone inbox entry does not auto-select a hidden conversation or mark it read.
+Desktop keeps its adjacent-thread auto-selection. Background read-receipt
+refreshes retain existing rail rows, and a failed refresh preserves the last
+successful inbox. Reaction action bodies remain mounted through their exit
+animation, scoped to the current conversation.
+
+The shared floating bottom navigation reserves `--fw-mobile-nav-height`,
+including its capsule margins and the home indicator; the inbox uses the same
+measurement. More defers destination prefetch until its entrance finishes and
+closes on a normal navigation tap. Shared app-shell and overlay paths remain
+unmapped in `memory/registry.yml`; their visual contract is also recorded in
+`docs/v3-design-language.md` rather than implying that the messaging feature
+owns every consumer.
+
+Historical DM identities are resolved by user ID through the authenticated
+conversation-membership boundary when roster-scoped profile reads cannot
+resolve them. This does not broaden customer profile RLS, return email
+addresses, or expose a general profile directory. A truly missing profile
+keeps a generic member label.

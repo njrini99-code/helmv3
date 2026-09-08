@@ -29,6 +29,7 @@ import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
 import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
 import { useImmersiveSurface } from '@/hooks/use-immersive-surface';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
 import { Button, IconButton } from '@/components/fairway/controls/button';
@@ -47,6 +48,7 @@ import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 export function FairwayMessages() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const playerIdFromUrl = searchParams.get('player');
   // P260: notification deep-link target (?conversation=<id>). Notifications set
   // this so clicking "New message from X" opens the thread that fired, not just
@@ -337,10 +339,11 @@ export function FairwayMessages() {
     router.replace('/golf/dashboard/messages', { scroll: false });
   }, [conversations, conversationsLoading, conversationIdFromUrl, handledConversationParam, router]);
 
-  // ── Auto-select first conversation (only when no deep-link param) (PRESERVED) ─
+  // Desktop shows a thread beside the rail; a phone must not read a hidden thread.
   React.useEffect(() => {
     const firstConversation = conversations[0];
     if (
+      isDesktop &&
       !conversationsLoading &&
       firstConversation &&
       !selectedConversationId &&
@@ -349,7 +352,7 @@ export function FairwayMessages() {
     ) {
       setSelectedConversationId(firstConversation.id);
     }
-  }, [conversations, conversationsLoading, selectedConversationId, playerIdFromUrl, conversationIdFromUrl]);
+  }, [isDesktop, conversations, conversationsLoading, selectedConversationId, playerIdFromUrl, conversationIdFromUrl]);
 
   const selectedConversation = React.useMemo(() => {
     if (!selectedConversationId) return null;
@@ -575,7 +578,7 @@ export function FairwayMessages() {
       className={fairwayScope(
         mobileShowChat
           ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
-          : 'flex h-[calc(100dvh-56px-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
+          : 'flex h-[calc(100dvh-var(--fw-mobile-nav-height))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
       )}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">

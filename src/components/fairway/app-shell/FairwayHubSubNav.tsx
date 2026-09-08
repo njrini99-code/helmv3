@@ -142,29 +142,8 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
     <nav
       aria-label={ariaLabel}
       data-slot="fairway-hub-subnav"
-      // Sticky beneath the glass top bar so the strip stays reachable while a
-      // long leaf page scrolls. `--golf-mobile-header-offset` is set on the
-      // shared AppShell content column (topbar height + safe-area-inset) —
-      // the same var its sibling sticky headers (ViewAsBanner, the
-      // new-round/continue-round in-progress bars) key off of, so this strip
-      // never collides with the top bar under a notch/safe-area on mobile.
-      // An opaque fill (not the previous `/80 backdrop-blur-xl`, which was a
-      // no-op — this element never had scrolled content behind it while
-      // static) — now that it sticks, the fill needs to be solid so it fully
-      // occludes content scrolling underneath rather than reading as a glass
-      // surface floating over it.
-      //
-      // At `<md` that fill is `bg-surface`, matching FairwayTopBar directly
-      // above it. AppShell renders the two as ONE sticky chrome unit and the
-      // bar drops its own hairline (`flush`) so they read as one continuous
-      // surface — but the bar is `bg-surface` on phone and this strip was
-      // `bg-canvas`, so the "one surface" was visibly two tones with a seam
-      // across it. With cards (`bg-surface`) sliding under a `bg-canvas`
-      // strip, the clipped card edge read as a rendering fault rather than as
-      // content passing behind chrome. `md:bg-canvas` keeps desktop exactly as
-      // it was — there the bar is translucent glass, not a matte surface.
       className={cn(
-        'sticky top-[var(--golf-mobile-header-offset)] z-raised w-full border-b border-border-subtle bg-surface md:bg-canvas',
+        'sticky top-[var(--golf-mobile-header-offset)] z-raised w-full fw-glass-chrome border-b',
         className,
       )}
     >
@@ -208,7 +187,7 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
                   // leaving every hub sub-tab half-green/half-graphite.
                   // accent-700 for text on canvas (5.02:1, AA); the icon can
                   // stay 600 because non-text only needs 3:1.
-                  isActive ? 'text-accent-700' : 'text-text-secondary hover:text-text-primary',
+                  isActive ? 'bg-accent-100 text-accent-700' : 'text-text-secondary hover:bg-accent-50 hover:text-accent-700',
                 )}
               >
                 {Icon ? (

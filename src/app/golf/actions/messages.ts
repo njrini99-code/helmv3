@@ -41,6 +41,186 @@ import {
 } from './message-attachments';
 
 const ACTION = 'golf.messages.createGolfConversation';
+const MAX_IDENTITY_CONVERSATIONS = 100;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface GolfConversationParticipantIdentity {
+  conversationId: string;
+  userId: string;
+  name: string;
+  subtitle: string;
+  avatar: string | null;
+  type: 'coach' | 'player' | 'member';
+}
+
+interface ConversationParticipantRow {
+  conversation_id: string | null;
+  user_id: string | null;
+}
+
+interface CoachIdentityRow {
+  user_id: string | null;
+  full_name: string | null;
+  title: string | null;
+  avatar_url: string | null;
+}
+
+interface PlayerIdentityRow {
+  user_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  graduation_year: number | null;
+  avatar_url: string | null;
+}
+
+/**
+ * Resolve names for conversation members after proving the caller belongs to
+ * each requested conversation. The profile tables intentionally remain behind
+ * the service-role client: their customer-facing RLS policies hide some
+ * legitimate historical counterparts. The caller's membership is checked
+ * with the session client first, and only those conversation ids are sent to
+ * the privileged lookup.
+ */
+export async function getGolfConversationParticipantIdentities(
+  conversationIds: string[],
+): Promise<{ participants: GolfConversationParticipantIdentity[]; error?: string }> {
+  // Server actions are callable endpoints: do not trust the TypeScript
+  // annotation at runtime, and bound the request before any database query.
+  if (!Array.isArray(conversationIds) || conversationIds.length > MAX_IDENTITY_CONVERSATIONS) {
+    return { participants: [], error: 'Invalid conversation ids' };
+  }
+  if (conversationIds.some((id) => typeof id !== 'string' || !UUID_PATTERN.test(id))) {
+    return { participants: [], error: 'Invalid conversation ids' };
+  }
+  const ids = [...new Set(conversationIds)];
+  if (ids.length === 0) return { participants: [] };
+
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { participants: [], error: 'Not authenticated' };
+
+    // This is the authorization boundary. No service-role profile query runs
+    // until the session client has proved membership for the requested ids.
+    const { data: memberships, error: membershipError } = await supabase
+      .from('golf_conversation_participants')
+      .select('conversation_id')
+      .in('conversation_id', ids)
+      .eq('user_id', user.id);
+    if (membershipError) {
+      await logServerError(
+        `[getGolfConversationParticipantIdentities] Membership probe failed: ${describeError(membershipError)}`,
+        { action: 'messages.getGolfConversationParticipantIdentities' },
+      );
+      return { participants: [], error: 'Could not verify conversation access' };
+    }
+
+    const authorizedIds = [...new Set((memberships ?? [])
+      .map((row) => row.conversation_id)
+      .filter((id): id is string => typeof id === 'string' && ids.includes(id)))];
+    if (authorizedIds.length === 0) return { participants: [] };
+
+    const admin = createAdminClient();
+    const { data: participantRows, error: participantError } = await admin
+      .from('golf_conversation_participants')
+      .select('conversation_id, user_id')
+      .in('conversation_id', authorizedIds);
+    if (participantError) {
+      await logServerError(
+        `[getGolfConversationParticipantIdentities] Participant lookup failed: ${describeError(participantError)}`,
+        { action: 'messages.getGolfConversationParticipantIdentities' },
+      );
+      return { participants: [], error: 'Could not load conversation members' };
+    }
+
+    const rows = (participantRows ?? []) as ConversationParticipantRow[];
+    const userIds = [...new Set(rows
+      .map((row) => row.user_id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0))];
+    if (userIds.length === 0) return { participants: [] };
+
+    // Query only profile rows belonging to already-authorized conversation
+    // members. Never select users.email or query a global directory.
+    const [{ data: coaches, error: coachError }, { data: players, error: playerError }] = await Promise.all([
+      admin
+        .from('golf_coaches')
+        .select('user_id, full_name, title, avatar_url')
+        .in('user_id', userIds),
+      admin
+        .from('golf_players')
+        .select('user_id, first_name, last_name, graduation_year, avatar_url')
+        .in('user_id', userIds),
+    ]);
+    if (coachError || playerError) {
+      await logServerError(
+        `[getGolfConversationParticipantIdentities] Profile lookup failed: ${describeError(coachError ?? playerError)}`,
+        { action: 'messages.getGolfConversationParticipantIdentities' },
+      );
+      return { participants: [], error: 'Could not load conversation identities' };
+    }
+
+    const coachByUserId = new Map<string, CoachIdentityRow>();
+    for (const coach of (coaches ?? []) as CoachIdentityRow[]) {
+      if (coach.user_id) coachByUserId.set(coach.user_id, coach);
+    }
+    const playerByUserId = new Map<string, PlayerIdentityRow>();
+    for (const player of (players ?? []) as PlayerIdentityRow[]) {
+      if (player.user_id) playerByUserId.set(player.user_id, player);
+    }
+
+    const seen = new Set<string>();
+    const participants: GolfConversationParticipantIdentity[] = [];
+    for (const row of rows) {
+      if (!row.conversation_id || !row.user_id) continue;
+      const key = `${row.conversation_id}:${row.user_id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const coach = coachByUserId.get(row.user_id);
+      if (coach) {
+        participants.push({
+          conversationId: row.conversation_id,
+          userId: row.user_id,
+          name: coach.full_name?.trim() || 'Coach',
+          subtitle: coach.title?.trim() || 'Golf Coach',
+          avatar: coach.avatar_url,
+          type: 'coach',
+        });
+        continue;
+      }
+
+      const player = playerByUserId.get(row.user_id);
+      if (player) {
+        participants.push({
+          conversationId: row.conversation_id,
+          userId: row.user_id,
+          name: [player.first_name, player.last_name].filter(Boolean).join(' ').trim() || 'Player',
+          subtitle: player.graduation_year ? `Class of ${player.graduation_year}` : 'Golf Player',
+          avatar: player.avatar_url,
+          type: 'player',
+        });
+        continue;
+      }
+
+      participants.push({
+        conversationId: row.conversation_id,
+        userId: row.user_id,
+        name: 'Conversation member',
+        subtitle: '',
+        avatar: null,
+        type: 'member',
+      });
+    }
+
+    return { participants };
+  } catch (error) {
+    await logServerError(
+      `[getGolfConversationParticipantIdentities] ${describeError(error)}`,
+      { action: 'messages.getGolfConversationParticipantIdentities' },
+    );
+    return { participants: [], error: 'Could not load conversation identities' };
+  }
+}
 
 /** Probe failed — we never learned the answer, so we cannot grant access. */
 const AUDIENCE_UNAVAILABLE = 'Could not verify team access. Please try again.';

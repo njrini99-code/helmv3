@@ -10,7 +10,8 @@ import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { FW_Z } from '@/components/fairway/overlays/_shared';
 
 /** One action body, with a touch sheet or a collision-aware desktop anchor. */
-export function MessageActionsPanel({ anchor, own, onClose, children }: {
+export function MessageActionsPanel({ open, anchor, own, onClose, children }: {
+  open: boolean;
   anchor: () => HTMLElement | null;
   own: boolean;
   onClose: () => void;
@@ -24,15 +25,15 @@ export function MessageActionsPanel({ anchor, own, onClose, children }: {
 
   if (!desktop) {
     return (
-      <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}
-        title="Message actions" hideTitle className="!bg-canvas sm:mx-auto sm:max-w-sm">
+      <Sheet open={open} onOpenChange={(open) => { if (!open) onClose(); }}
+        title="Message actions" hideTitle className="fw-glass-chrome sm:mx-auto sm:max-w-sm">
         <Sheet.Body className="px-3 pt-3">{children}</Sheet.Body>
       </Sheet>
     );
   }
 
   return (
-    <Popover.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Popover.Root open={open} onOpenChange={(open) => { if (!open) onClose(); }}>
       <Popover.Anchor virtualRef={virtualRef} />
       <Popover.Portal>
         <Popover.Content asChild side="top" align={own ? 'end' : 'start'}
@@ -41,7 +42,7 @@ export function MessageActionsPanel({ anchor, own, onClose, children }: {
             event.preventDefault();
             anchor()?.closest('[data-message-row]')?.querySelector<HTMLButtonElement>('button[aria-label="Message actions"]')?.focus({ preventScroll: true });
           }}>
-          <m.div className="fairway-ds relative w-80 max-w-[calc(100vw-1.5rem)] origin-[var(--radix-popover-content-transform-origin)] rounded-card border border-border-subtle bg-elevated p-3 text-text-primary shadow-raise outline-none"
+          <m.div data-fw-message-actions className="fairway-ds relative w-80 max-w-[calc(100vw-1.5rem)] origin-[var(--radix-popover-content-transform-origin)] rounded-card fw-glass-chrome border p-3 text-text-primary shadow-raise outline-none"
             style={{ zIndex: FW_Z.command }}
             initial={reduced ? false : { opacity: 0, scale: 0.96, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -88,6 +88,7 @@ export interface ShellUser {
  */
 export type ShellLinkComponent = ComponentType<{
   href: string;
+  prefetch?: boolean;
   className?: string;
   children: React.ReactNode;
   'aria-current'?: 'page' | undefined;

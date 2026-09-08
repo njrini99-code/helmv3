@@ -154,6 +154,51 @@ playerTest.describe('GolfHelm — Player critical paths', () => {
     }
   });
 
+  playerTest('mobile navigation and round picker respect phone safe areas', async ({ page, context, browserName }) => {
+    playerTest.skip(browserName !== 'chromium', 'Safe-area emulation uses Chromium CDP.');
+    await page.setViewportSize({ width: 320, height: 694 });
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 47, bottom: 34 } });
+    await page.goto('/golf/dashboard/messages', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('navigation', { name: 'Conversations', exact: true })).toBeVisible({ timeout: 15_000 });
+    // Inbox entry must not select and mark an unseen conversation read.
+    await expect(page.getByRole('region', { name: 'Conversation', exact: true })).toBeHidden();
+    const nav = page.getByRole('navigation', { name: 'Primary', exact: true });
+    for (const target of await nav.locator('a,button').all()) {
+      const box = await target.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(694 - 34);
+    }
+    await nav.getByRole('button', { name: 'More', exact: true }).click();
+    const more = page.getByRole('dialog', { name: 'More', exact: true });
+    await expect(more).toBeVisible();
+    await more.getByRole('link', { name: 'Messages', exact: true }).click();
+    await expect(more).toHaveCount(0);
+
+    await page.goto('/golf/dashboard/rounds/new', { waitUntil: 'domcontentloaded' });
+    const picker = page.locator('[data-slot="course-picker"]');
+    await expect(picker).toBeVisible();
+    const heading = picker.getByRole('heading', { level: 1 });
+    const close = picker.getByRole('button', { name: 'Close', exact: true });
+    for (const control of [heading, close]) {
+      expect((await control.boundingBox())!.y).toBeGreaterThanOrEqual(47);
+    }
+    const course = picker.getByRole('button', { name: /^Open / }).first();
+    await expect(course).toBeVisible({ timeout: 15_000 });
+    await course.click();
+    await expect(picker.getByRole('button', { name: 'Back to courses' })).toBeVisible();
+    await expect.poll(async () => picker.locator('[data-slot="course-picker-scroll"]').evaluate(el => el.scrollTop)).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await close.click();
+    await expect(picker).toHaveCount(0);
+    // This flow only inspects the tee picker; it never starts or writes a round.
+  });
+
   playerTest('messages composer stays above the simulated keyboard', async ({ page }) => {
     for (const viewport of [
       { width: 390, height: 844 },

@@ -548,7 +548,7 @@ export function MessageComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border-subtle bg-surface px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2 lg:pb-3"
+      className="fw-glass-chrome border-t px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] [.keyboard-open_&]:pb-2 lg:pb-3"
     >
       <div>
       {/* G-20a — the "Didn't send" banner, ABOVE the track, which is where

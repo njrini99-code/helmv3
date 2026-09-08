@@ -193,7 +193,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 51 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
-| `memory/features/team-communications.md` | current | yes | - | - | 9 | 12 | - |
+| `memory/features/team-communications.md` | current | yes | - | - | 9 | 14 | - |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 17 | - |
 
 ### `REFERENCE`
@@ -233,7 +233,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/setup/RUN_ON_YOUR_MACHINE.md` | current | - | - | - | 2 | 1 | - |
 | `docs/setup/SUPABASE_MCP_SETUP.md` | current | - | - | - | 0 | 0 | - |
 | `docs/v3-decisions.md` | current | yes | - | yes | 1 | 1 | - |
-| `docs/v3-design-language.md` | current | yes | - | yes | 1 | 3 | - |
+| `docs/v3-design-language.md` | current | yes | - | yes | 2 | 3 | - |
 | `docs/v3-research-golf-domain.md` | current | yes | - | yes | 15 | 1 | - |
 | `docs/v3-rls-template.md` | current | yes | - | yes | 7 | 3 | - |
 | `docs/v3-testing-standards.md` | current | yes | - | - | 8 | 8 | - |
