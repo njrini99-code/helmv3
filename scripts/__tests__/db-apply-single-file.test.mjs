@@ -11,10 +11,15 @@
  * wrong ledger row, so it is the part worth pinning.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { buildApplyBody, hasConcurrently, isValidMigrationFilename } from '../db/apply.mjs';
+import {
+  buildApplyBody,
+  extractVerifyQueries,
+  hasConcurrently,
+  isValidMigrationFilename,
+} from '../db/apply.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 
@@ -75,5 +80,65 @@ describe('the two refusals', () => {
     // The migration headers in this repo are long prose blocks; a rollback
     // note mentioning CONCURRENTLY must not block an otherwise fine file.
     expect(hasConcurrently('-- ROLLBACK: rebuild the index CONCURRENTLY by hand.\nselect 1;')).toBe(false);
+  });
+});
+
+describe('extractVerifyQueries joins continuation lines', () => {
+  it('joins a query split across lines into ONE statement', () => {
+    const q = extractVerifyQueries(
+      ['-- VERIFY: select 1 from pg_proc p', "-- VERIFY:  where p.proname = 'x';"].join('\n'),
+    );
+    expect(q).toEqual(["select 1 from pg_proc p where p.proname = 'x';"]);
+  });
+
+  it('separates queries at the semicolon, not at the newline', () => {
+    const q = extractVerifyQueries(
+      ['-- VERIFY: select 1', '-- VERIFY:  from a;', '-- VERIFY: select 2', '-- VERIFY:  from b;'].join('\n'),
+    );
+    expect(q).toEqual(['select 1 from a;', 'select 2 from b;']);
+  });
+
+  it('emits an unterminated trailing fragment so a malformed block fails loudly', () => {
+    // Swallowing it would turn a broken VERIFY into a silently passing gate,
+    // which is the failure class this whole function exists to close.
+    expect(extractVerifyQueries('-- VERIFY: select 1 from a')).toEqual(['select 1 from a']);
+  });
+
+  it('extracts the real migration as 3 queries, not 13 fragments', () => {
+    const text = readFileSync(
+      resolve(REPO_ROOT, 'supabase/migrations/20260907160000_golf_team_chat_membership_management.sql'),
+      'utf-8',
+    );
+    expect(extractVerifyQueries(text)).toHaveLength(3);
+  });
+});
+
+describe('-- VERIFY: blocks are whole queries, repo-wide', () => {
+  // apply.mjs extracts ONE QUERY PER LINE. A VERIFY block written across
+  // continuation lines therefore becomes fragments: measured on
+  // 20260907160000 before this was fixed, 3 intended queries became 13
+  // fragments, 10 of them syntax errors — and fragment 1
+  // (`select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace`)
+  // returned thousands of rows and PASSED while verifying nothing.
+  //
+  // The consequence is the worst shape a gate can have: production commits
+  // correctly, then the run reports FAIL with a ROLLBACK recipe in the header.
+  const dir = resolve(REPO_ROOT, 'supabase/migrations');
+  const files = readdirSync(dir).filter((f) => /^\d{14}_.*\.sql$/.test(f));
+
+  const withVerify = files
+    .map((f) => ({ file: f, queries: extractVerifyQueries(readFileSync(resolve(dir, f), 'utf-8')) }))
+    .filter((x) => x.queries.length > 0);
+
+  it('finds migrations carrying VERIFY blocks (else this suite proves nothing)', () => {
+    expect(withVerify.length).toBeGreaterThan(0);
+  });
+
+  it.each(withVerify)('$file: every extracted VERIFY is one complete statement', ({ queries }) => {
+    for (const q of queries) {
+      expect(q, `not terminated — this is a continuation fragment: ${q}`).toMatch(/;$/);
+      expect(q.split(';').length - 1, `more than one statement: ${q}`).toBe(1);
+      expect(q.toLowerCase(), `does not start a statement: ${q}`).toMatch(/^\s*(select|with)\b/);
+    }
   });
 });
