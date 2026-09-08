@@ -31,12 +31,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 24 | 3 | 7 | 4 |
+| `GENERATED_TRUTH` | 24 | 3 | 7 | 9 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 38 | 6 | 17 | 20 |
+| `PLAN` | 35 | 5 | 16 | 65 |
+| `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 20 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 35 | 0 | 5 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 5 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
 | `.claude/rules/database.md` | current | - | - | - | 4 | 5 | - |
-| `.claude/rules/design-system.md` | current | - | - | yes | 4 | 6 | - |
+| `.claude/rules/design-system.md` | current | - | - | yes | 6 | 7 | - |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
@@ -266,7 +266,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 7 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 1 | 0 | - |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 4 | 208 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 4 | 213 | 5 |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
@@ -354,6 +354,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md` | current | - | - | yes | 1 | 28 | - |
 | `docs/superpowers/plans/helm-bridge/waves/w16-feature-health-board.md` | current | - | - | yes | 1 | 16 | - |
 | `docs/v3-master-plan.md` | superseded | - | - | yes | 9 | 20 | 7 |
+| `premium-audit/FIX_PLAN.md` | current | - | - | yes | 0 | 5 | - |
 
 ### `AUDIT_SNAPSHOT`
 
@@ -389,6 +390,23 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-feature-audit.md` | current | yes | - | yes | 2 | 8 | 2 |
 | `docs/v3-page-audit.md` | current | yes | - | yes | 1 | 1 | - |
 | `memory/prompts/master-feature-audit.md` | current | - | - | - | 0 | 1 | - |
+| `premium-audit/BLOCKERS.md` | current | - | - | yes | 0 | 4 | - |
+| `premium-audit/DISPOSITIONS.md` | current | - | - | yes | 0 | 4 | - |
+| `premium-audit/FINDINGS_REPORT.md` | current | - | - | yes | 0 | 9 | - |
+| `premium-audit/HANDOFF-FROM-helmv3-0e.md` | current | - | - | yes | 0 | 2 | - |
+| `premium-audit/HANDOFF.md` | current | - | - | yes | 0 | 0 | - |
+| `premium-audit/WORKER_BRIEF.md` | current | - | - | yes | 0 | 2 | - |
+| `premium-audit/decisions.md` | current | - | - | - | 0 | 0 | - |
+| `premium-audit/lanes/A01/report.md` | current | - | - | - | 0 | 19 | - |
+| `premium-audit/lanes/A02/report.md` | current | - | - | - | 0 | 23 | - |
+| `premium-audit/lanes/A03/report.md` | current | - | - | yes | 0 | 8 | - |
+| `premium-audit/lanes/A04/report.md` | current | - | - | yes | 0 | 0 | - |
+| `premium-audit/lanes/A07/report.md` | current | - | - | yes | 0 | 3 | - |
+| `premium-audit/narratives/A05.md` | current | - | - | yes | 0 | 0 | - |
+| `premium-audit/narratives/A06.md` | current | - | - | yes | 0 | 0 | - |
+| `premium-audit/narratives/A09.md` | current | - | - | yes | 0 | 0 | - |
+| `premium-audit/narratives/A11.md` | current | - | - | yes | 0 | 3 | - |
+| `premium-audit/verification/emitted-css-check.md` | current | - | - | - | 0 | 0 | - |
 | `supabase/investigations/shot_type_findings.md` | current | - | - | yes | 0 | 3 | - |
 | `tools/ultra-agent-audit/README.md` | current | - | - | - | 0 | 0 | - |
 | `tools/ux-flow-auditor/CLAUDE.md` | current | - | - | yes | 0 | 4 | - |

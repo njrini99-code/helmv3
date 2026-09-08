@@ -72,6 +72,11 @@ Team page
 - Player profile needs identity, role/status badges, recent rounds, and stats sections without blocking the whole page.
 - Team page must visibly distinguish coach-editable settings from player read-only info.
 - Empty states should distinguish no players, no pending requests, and no recent player activity.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
 
 ## Known Risk Areas
 

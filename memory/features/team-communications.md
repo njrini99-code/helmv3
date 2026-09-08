@@ -139,6 +139,11 @@ Announcement create
   action. The card patches its own collapsed header optimistically on save
   (an `override` local state cleared once the prop's own fields catch up via
   `router.refresh()`) rather than waiting on a full reload.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
 
 ## Conversation Rail Failure Semantics (2026-08-27)
 
