@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # GolfHelm calendar: complete product and engineering design
 
 Design specification · 8 September 2026 · Revision 2: complete experience refinement · Draft for implementation
@@ -28,7 +29,7 @@ The approved images are visual references, not production specifications or proo
 Source reviewed in canonical checkout on `agent/bridge-incident-wiring`. This document changes no product code. The feature document’s database inventory was verified historically on 19 August; this planning pass did not query the live database. Verify current schema and RLS before migration design is finalized.
 
 | Area | Current source evidence | Design implication |
-|---|---|---|
+| --- | --- | --- |
 | Active route | `src/app/golf/(dashboard)/dashboard/calendar/page.tsx` renders `FairwayCalendar` | Extend the active tree; do not resurrect the legacy calendar |
 | People rail | `FairwayCalendarMemberRail.tsx` performs coach-only multiselection, normally capped at eight; All can exceed the cap | Replace ambiguous avatar selection with explicit person drill-in and Compare mode; remove color-driven functional limits |
 | Availability | `src/lib/calendar/availability.ts` combines events, accepted attendance, owned classes and coach blocked time | Reuse domain rules, normalize identities, batch reads, and preserve per-source completeness |
@@ -61,7 +62,7 @@ Existing documented calendar tables: `golf_events`, `golf_event_attendance`, `go
 Keep the existing calendar route and app shell. Proposed route/query state: date, view, event, person, and mode. These are validated navigation identifiers, never serialized private schedule data or feed tokens. Deep links authorize on the server before revealing content. Back restores previous date, filters, scroll, and selection.
 
 | Surface | Mobile | Desktop | Main action |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Calendar home | Agenda + compact week strip; month expands inline | Week default, agenda/day/month alternatives | New event for coach; respond to next invitation for player |
 | Person schedule | Full-screen drill-in | Right inspector; expand into main schedule when comparing | Find a time |
 | Find a time | Full-screen touch timeline | Wide comparison workspace with suggestion inspector | Use this time |
@@ -211,7 +212,7 @@ Search covers authorized event titles, locations, and people with date/type filt
 Values are starting targets to tune on physical iPhones, not claims about measured performance.
 
 | Interaction | Behavior | Target |
-|---|---|---|
+| --- | --- | --- |
 | Button press | Slight scale/compression, release cleanly | 80–120ms feedback |
 | Selection drag | Direct finger/pointer tracking; no spring lag during drag | Display-frame update, transform only |
 | Selection release | Settle to nearest valid time, floating label settles with it | 180–240ms, minimal overshoot |
@@ -303,7 +304,7 @@ Do not create polling or external-sync tables in the core makeover. Availability
 ### Access matrix
 
 | Actor | Team event | Own schedule | Other player schedule | Event management |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Authorized team coach | Detail within managed team | Own detail | Team-approved detail/free-busy | Create/edit/cancel and attendance within team |
 | Team player | Detail for permitted team/invited events | Own detail and blocks | Free/busy only if team policy allows; otherwise unavailable | Own RSVP and own availability only |
 | Other team/user | No access | Own authorized domain only | No access | None |
@@ -333,7 +334,7 @@ Proposed performance budgets: immediate press feedback within 100ms, drag update
 ## 14. Delivery plan and release gates
 
 | Phase | Deliverable | Exit condition |
-|---|---|---|
+| --- | --- | --- |
 | 0: Contract repair | Partial status, all-day checks, organizer inclusion, stale-response guard, RSVP parity | Focused domain and component regressions pass |
 | 1: Shared engine | Normalized snapshot, privacy projection, batched reads, verified suggestions | Coach/player access tests, interval/timezone fixtures, query evidence |
 | 2: Find a time | Mobile/desktop timelines, gestures + keyboard alternatives, suggestions, editor handoff | Real-device interaction review; draft survives round trip |
@@ -495,7 +496,7 @@ Source status lists Helm events, classes, personal blocks, and any future connec
 ## 19. Workflow choreography
 
 | Journey | Sequence | Context that must survive |
-|---|---|---|
+| --- | --- | --- |
 | Schedule a practice | Calendar → New event → People/time → Find a time → Review → Event detail | Draft fields, people, duration, date, selected interval |
 | Compare one player | Avatar → Player schedule → Compare → Choose interval → Editor | Person identity, selected day, return location |
 | Resolve an overlap | Attention row → Conflict → Alternatives → Review change → Updated event | Original interval, affected occurrence, scope, acknowledgement |
@@ -531,7 +532,7 @@ Do not delay fetched data to complete a flourish. Render available information i
 ### Microinteraction details
 
 | Detail | Expected response |
-|---|---|
+| --- | --- |
 | First use of time lens | One dismissible contextual hint beside the grip, not a tutorial carousel |
 | Press selection handle | Handle gains contrast; readout lifts slightly; capture starts only after intended gesture |
 | Cross a time increment | Visual snap guide; no repeated haptic storm |

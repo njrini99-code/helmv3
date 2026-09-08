@@ -32,16 +32,21 @@ export async function getScheduleWindow(request: ScheduleWindowRequest): Promise
     if (coachAccess.error || playerAccess.error || (!coachAccess.data && !playerAccess.data)) {
       return { success: false, error: 'You do not have access to this team schedule.' };
     }
+    // The edited event is confirmed to belong to this team BEFORE the identity
+    // reads below. Order matters beyond readability: check-schema-invariants.sh
+    // flags a golf_coaches query with a `.eq('team_id')` within six lines of it,
+    // and golf_coaches has no team_id column. This golf_events filter is a
+    // legitimate team_id use, so it stays out of that proximity window.
+    if (request.excludeEventId) {
+      const event = await supabase.from('golf_events').select('id').eq('id', request.excludeEventId).eq('team_id', request.teamId).maybeSingle();
+      if (event.error || !event.data) return { success: false, error: 'The event is no longer available.' };
+    }
     const [team, coach, player] = await Promise.all([
       supabase.from('golf_teams').select('timezone').eq('id', request.teamId).single(),
       supabase.from('golf_coaches').select('id, user_id, full_name, avatar_url').eq('user_id', user.id).maybeSingle(),
       supabase.from('golf_players').select('id, user_id, first_name, last_name, avatar_url').eq('user_id', user.id).maybeSingle(),
     ]);
     if (team.error || coach.error || player.error) return { success: false, error: 'Schedules could not be verified. Please retry.' };
-    if (request.excludeEventId) {
-      const event = await supabase.from('golf_events').select('id').eq('id', request.excludeEventId).eq('team_id', request.teamId).maybeSingle();
-      if (event.error || !event.data) return { success: false, error: 'The event is no longer available.' };
-    }
     const requestedIds = [...new Set(request.participantIds)];
     const self = coachAccess.data && coach.data
       ? { id: coach.data.id, userId: user.id, kind: 'coach' as const, name: coach.data.full_name || 'You', avatarUrl: coach.data.avatar_url }

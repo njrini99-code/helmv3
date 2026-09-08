@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # GolfHelm calendar: parallel execution plan
 
 Execution companion to [DESIGN-PLAN.md](DESIGN-PLAN.md). Product scope and visual acceptance remain in that document. This file defines ownership, dependencies, verified code references, shared contracts, integration, and delivery. It is an implementation plan; no implementation or live schema validation has occurred in this planning pass.
@@ -17,7 +18,7 @@ Graph discovery was unavailable in this session; references were verified with s
 All paths in this section are relative to `/Users/ricknini/Downloads/helmv3`.
 
 | Source / symbol | Verified purpose | Integration requirement |
-|---|---|---|
+| --- | --- | --- |
 | `src/app/golf/(dashboard)/dashboard/calendar/page.tsx` | Server entry for live Fairway calendar | Keep auth, server seed and initial route context |
 | `src/components/fairway/pages/calendar/FairwayCalendar.tsx` | Live orchestration; range hook, overlays, editor, detail and subscription sheet | Coordinator alone edits this file |
 | `src/hooks/golf/use-calendar-range-events.ts` / `useCalendarRangeEvents` | Range fetch and stable realtime path used by live component | Reuse; no second calendar subscription or independent event cache |
@@ -75,7 +76,7 @@ The design document’s TypeScript block is a conceptual sketch, not a ready-to-
 Use at most four active agents including the coordinator in this environment. Packages are logical responsibilities, not a request to start nine simultaneous agents. Reuse workers across waves.
 
 | Package | Owner role | Exclusive owned paths | Must not edit |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | P0 Coordination/contracts | Coordinator | New contracts/fixtures; `FairwayCalendar.tsx`; calendar route; `golf.ts`; feature flag wiring; shared type extraction; registry/feature docs | Other workers’ implementation modules until handoff |
 | P1 Scheduling engine | Domain worker | `availability.ts`, `conflicts.ts`, timezone/class helpers as needed; **NEW** scheduling read/evaluation/suggestion modules under `src/lib/calendar/scheduling/`; corresponding domain tests | `golf.ts`, orchestration, UI, shared contracts without approval from P0 |
 | P2 Comparison visuals | UI worker | **NEW** `src/components/fairway/pages/calendar/scheduling/**`; its local styles/tests | Global tokens, editor, calendar orchestration, server actions |
@@ -156,7 +157,7 @@ Workers do not merge each other’s branches, install competing UI systems, depl
 ## 7. Verification and integration gates
 
 | Gate | Proof required before dependent work is considered complete |
-|---|---|
+| --- | --- |
 | Contract | Transport types validated; engine/action naming and timestamp differences handled; no fabricated source IDs |
 | Engine | Existing and new interval/completeness/privacy fixtures pass; organizer + player identity verified |
 | Visual lens | Mouse/touch/keyboard alternatives; duration-aware aggregate; unknown data never green; real snapshot integration |

@@ -12350,6 +12350,11 @@
           "kind": "import_graph",
           "path": "src/lib/calendar/availability.ts",
           "line": 16
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/calendar/availability.ts",
+          "line": 17
         }
       ]
     },
@@ -16047,7 +16052,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7226
+          "line": 7259
         }
       ]
     },
@@ -16122,12 +16127,12 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2323
+          "line": 2325
         },
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 2557
+          "line": 2559
         }
       ]
     },
