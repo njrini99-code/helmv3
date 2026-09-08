@@ -108,12 +108,10 @@
       "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__list_teams"
     ],
     "deny": [
-      "Bash(npm run db:apply -- *--apply*)",
       "Bash(supabase config push:*)",
       "Bash(supabase db reset:*)",
       "Bash(vercel alias set:*)",
       "Read(./.env)",
-      "Read(./.env.local)",
       "Read(./.env.*.local)",
       "Read(./context7.json)",
       "Read(./.momentic-mcp/**)",
@@ -274,7 +272,8 @@
       "mcp__eec160d1-9083-448c-ba0f-52b7e4659f5d__send_message",
       "mcp__eec160d1-9083-448c-ba0f-52b7e4659f5d__trash_message",
       "mcp__eec160d1-9083-448c-ba0f-52b7e4659f5d__trash_thread",
-      "mcp__fbd9e39e-3c95-4829-a8f1-67bb9d88ba60"
+      "mcp__fbd9e39e-3c95-4829-a8f1-67bb9d88ba60",
+      "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__execute_sql"
     ]
   },
   "hooks": {
