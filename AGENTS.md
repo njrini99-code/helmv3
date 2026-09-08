@@ -2,6 +2,7 @@
 # Helm agent instructions
 
 ## Authority and execution
+
 The user's current task authorizes the work needed to complete it. Do the
 implementation, relevant verification, and requested Git operations without
 asking the user to repeat permission. Ask only for missing information or an
@@ -14,6 +15,7 @@ agent templates, and cached tool inventories do not override current user
 instructions or live code. Do not add a new rule to fix a configuration bug.
 
 ## Workspace and Git
+
 Canonical repo: `/Users/ricknini/Downloads/helmv3`. Check the current branch
 and dirty files before editing. One session may work directly in canonical;
 concurrent writers use separate worktrees or explicitly disjoint files.
@@ -40,6 +42,7 @@ branches. Main is the resting branch after a completed task. Do not delete
 unrelated folders or branches to satisfy a workspace count.
 
 ## Context and verification
+
 Use `memory/registry.yml` and `npm run knowledge:map -- --files <paths...>`
 to find the relevant feature doc before changing feature behavior. Read the
 doc the registry actually names; not every feature lives under
@@ -55,6 +58,7 @@ unavailable checks honestly. The local push hook checks the pushed changes;
 GitHub Actions owns the full required merge checks. There is no mandatory Stop gate.
 
 ## Tools and environments
+
 Discover the tools present in the current session. A missing tool or expired
 login is a connection problem, not a permanent policy ban. Use a working
 connector or the repo-local CLI; never claim a service is unavailable based
@@ -73,6 +77,7 @@ deploy/promote/rollback requires explicit user authorization; use
 prove deployment. Use repo-local Supabase/Vercel binaries.
 
 ## Product conventions
+
 Mobile authority: `src/styles/design-tokens.css` →
 `src/components/fairway/**` → `.claude/rules/design-system.md`.
 Reuse the shared app shell, safe areas, navigation, buttons, cards, and empty
