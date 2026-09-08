@@ -25,7 +25,7 @@
  * Both are locked here as behaviour, not as source strings.
  * ========================================================================== */
 import { render } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { MessageConversationRail } from './MessageConversationRail';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 
@@ -51,8 +51,28 @@ function stubMatchMedia(desktop: boolean) {
   });
 }
 
-const hoursAgo = (h: number) => new Date(Date.now() - h * 60 * 60 * 1000).toISOString();
-const daysAgo = (d: number) => new Date(Date.now() - d * 24 * 60 * 60 * 1000).toISOString();
+/**
+ * The fixture below is anchored to THIS instant, not to the wall clock.
+ *
+ * Its two "today" read rows are `hoursAgo(5)` and `hoursAgo(7)`, which only
+ * land on today when the clock is already 8+ hours past local midnight. Read
+ * off the real `Date.now()`, the suite therefore passed all afternoon and
+ * failed on any run between midnight and ~07:00 — CI runs UTC, so a 03:18
+ * UTC run put both rows in yesterday, the Today section never rendered, and
+ * the section-set assertion failed on code nobody had touched.
+ *
+ * The anchor is midday LOCAL, not midday UTC. The rail buckets by local
+ * calendar day, so a UTC anchor only moves the bug: at UTC+13 midday UTC is
+ * 01:00 the next local day and the 5/7-hour rows fall back into yesterday
+ * again. Local midday leaves every offset in the fixture inside the same
+ * local day in every timezone. `vi.setSystemTime` in `beforeEach` moves the
+ * component's own clock to match, so the rail buckets against the same NOW
+ * the rows were built from.
+ */
+const NOW = new Date(2026, 0, 15, 12, 0, 0).getTime();
+
+const hoursAgo = (h: number) => new Date(NOW - h * 60 * 60 * 1000).toISOString();
+const daysAgo = (d: number) => new Date(NOW - d * 24 * 60 * 60 * 1000).toISOString();
 
 function conv(
   id: string,
@@ -92,7 +112,12 @@ function sectionLabels(container: HTMLElement): string[] {
 }
 
 describe('MessageConversationRail — section set matches the artboard', () => {
-  beforeEach(() => stubMatchMedia(false));
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    stubMatchMedia(false);
+  });
+  afterEach(() => vi.useRealTimers());
 
   it('labels at most three sections — Unread, Today, Earlier — never the legacy four recency buckets', () => {
     const { container } = render(
