@@ -1,27 +1,10 @@
 #!/usr/bin/env node
 // .claude/hooks/guard-git.mjs — PreToolUse guard for dangerous Bash git/gh/vercel commands.
 //
-// Blocks, in a Bash command string:
-//   - `git push --force` / `git push -f`, UNLESS `--force-with-lease` is
-//     present AND the target ref is not `main`. The landing sequencer never
-//     force-pushes at all (scripts/pr-land.mjs), so this rule exists purely
-//     as a guardrail; a bare --force/-f (no lease) is always blocked, and
-//     --force-with-lease is only allowed away from `main`.
-//   - `git push origin main` (or `git push origin HEAD:main`) from a branch
-//     whose upstream/current branch is not `main` — a stray push that would
-//     otherwise land arbitrary commits on the shared branch.
-//   - `git add -A` / `git add .` — this tree is shared between agents;
-//     explicit paths only (AGENTS.md, autonomy.md).
-//   - `git branch -D` — the lifecycle tool
-//     (`npm run worktrees{,:park,:retire}`) is the sole branch-deletion
-//     authority and preserves a tag first.
-//   - raw `git worktree add`, `git worktree remove`, `git checkout -b`,
-//     `git switch -c` — the door scripts (scripts/new-worktree.sh,
-//     worktree-lifecycle.mjs) call git from Node, not from a Bash tool_input,
-//     so they never match this.
-//   - `gh pr merge` in any form — landing goes through `npm run pr:land`.
-//   - `vercel --prod`, `vercel deploy --prod`, `vercel promote`,
-//     `vercel rollback`, `vercel env rm`.
+// Blocks unsafe force pushes, accidental main pushes from a task branch,
+// bulk staging, forced branch deletion, and unreviewed worktree removal.
+// Ordinary branch creation and authorized merges are allowed. Production
+// CLI actions use permissions.ask so the user can authorize them.
 //
 // This is text matching over a Bash command string, not shell semantics —
 // the same caveat guard-canonical-write.mjs's header documents at length.
@@ -81,17 +64,9 @@ export function pushClauseOf(command) {
   const m = cmd.match(/\bgit\s+push\b[^\n;|&]*/);
   return m ? m[0] : '';
 }
-const WORKTREE_ADD_RE = /\bgit\s+worktree\s+add\b/;
 const WORKTREE_REMOVE_RE = /\bgit\s+worktree\s+remove\b/;
-const CHECKOUT_B_RE = /\bgit\s+checkout\s+-b\b/;
-const SWITCH_C_RE = /\bgit\s+switch\s+-c\b/;
 const ADD_A_RE = /\bgit\s+add\s+(-A\b|--all\b|\.\s*$|\.\s)/;
 const BRANCH_D_RE = /\bgit\s+branch\s+(-D\b|--delete\s+--force\b)/;
-const GH_PR_MERGE_RE = /\bgh\s+pr\s+merge\b/;
-const VERCEL_PROD_RE = /\bvercel\b[^\n]*(--prod\b)/;
-const VERCEL_PROMOTE_RE = /\bvercel\s+promote\b/;
-const VERCEL_ROLLBACK_RE = /\bvercel\s+rollback\b/;
-const VERCEL_ENV_RM_RE = /\bvercel\s+env\s+rm\b/;
 
 /** The ref a `git push` command targets, best-effort, or null for "current branch". */
 export function targetRefOf(command) {
@@ -157,17 +132,9 @@ export function evaluateCommand(command, branch) {
     }
   }
 
-  if (WORKTREE_ADD_RE.test(cmd)) return 'raw `git worktree add` is blocked — use scripts/new-worktree.sh';
   if (WORKTREE_REMOVE_RE.test(cmd)) return 'raw `git worktree remove` is blocked — use npm run worktrees:{park,retire}';
-  if (CHECKOUT_B_RE.test(cmd)) return 'raw `git checkout -b` is blocked — use scripts/new-worktree.sh';
-  if (SWITCH_C_RE.test(cmd)) return 'raw `git switch -c` is blocked — use scripts/new-worktree.sh';
   if (ADD_A_RE.test(cmd)) return '`git add -A`/`git add .` is blocked — stage explicit paths, the tree is shared';
   if (BRANCH_D_RE.test(cmd)) return '`git branch -D` is blocked — use npm run worktrees:{park,retire}';
-  if (GH_PR_MERGE_RE.test(cmd)) return '`gh pr merge` is blocked — use npm run pr:land';
-  if (VERCEL_PROD_RE.test(cmd)) return 'a production Vercel deploy flag is blocked — use scripts/deploy-prod.sh';
-  if (VERCEL_PROMOTE_RE.test(cmd)) return '`vercel promote` is blocked';
-  if (VERCEL_ROLLBACK_RE.test(cmd)) return '`vercel rollback` is blocked';
-  if (VERCEL_ENV_RM_RE.test(cmd)) return '`vercel env rm` is blocked';
 
   return null;
 }

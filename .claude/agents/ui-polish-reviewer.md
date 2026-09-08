@@ -1,7 +1,7 @@
 ---
 name: ui-polish-reviewer
 description: Premium SaaS UI/UX review — visual hierarchy, spacing, states, motion, accessibility, and design-system consistency for Helm Sports Labs.
-tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, SendMessage, ListAgents, mcp__supabase__list_tables, mcp__supabase__list_extensions, mcp__supabase__list_migrations, mcp__supabase__get_advisors, mcp__supabase__search_docs
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 model: sonnet
 ---
 
