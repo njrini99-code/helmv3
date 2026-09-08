@@ -79,7 +79,7 @@ describe('buildFilteredIncidentsReport', () => {
     errorCode: null, fingerprint: 'fp-1', hasRca: false, isFixture: false, description: 'savePartialRound failed',
     key: 'app:fp-1', origin: 'app', title: 'savePartialRound failed', severity: 'error',
     correlationMessage: 'savePartialRound failed',
-    sport: 'golf', occurrences: 1, affectedUsers: 1,
+    sport: 'golf', occurrences: 1, affectedUsers: 1, affectedPeople: [],
     firstSeen: '2026-07-01T00:00:00Z', lastSeen: '2026-07-01T00:00:00Z',
     permalink: null, eventIds: ['e1'], substatus: null,
     source: 'server_action', feature: 'round_tracking', actionName: 'savePartialRound', route: '/api/golf/rounds',

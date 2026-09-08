@@ -36,6 +36,7 @@ function appItem(overrides: Partial<TriageItem> = {}): TriageItem {
     sport: 'golf',
     occurrences: 3,
     affectedUsers: 2,
+    affectedPeople: [],
     firstSeen: '2026-08-20T10:00:00.000Z',
     lastSeen: '2026-08-20T12:00:00.000Z',
     permalink: null,
@@ -74,6 +75,7 @@ function sentryItem(overrides: Partial<TriageItem> = {}): TriageItem {
     sport: 'golf',
     occurrences: 5,
     affectedUsers: 4,
+    affectedPeople: [],
     firstSeen: '2026-08-20T09:00:00.000Z',
     lastSeen: '2026-08-20T13:00:00.000Z',
     permalink: 'https://sentry.io/issues/9001',
@@ -473,6 +475,92 @@ describe('correlateIncidents — blind sources', () => {
     // corroboration counts non-blind sources only: app + supabase, not the
     // blind sentry entry.
     expect(joinedDraft.corroboration).toBe(2);
+  });
+});
+
+describe('correlateIncidents — affected people', () => {
+  it('UNIONS identities across co-bucketed app items instead of taking the max', () => {
+    // Two app items for one fault, each reporting one affected user — but two
+    // DIFFERENT users. `Math.max` said 1, which is the undercount a count-only
+    // model cannot avoid: only the identities can say whether those are the
+    // same person. They were available and discarded.
+    const a = appItem({
+      key: 'app:fp-a',
+      fingerprint: 'fp-a',
+      errorCode: 'E1',
+      route: '/r',
+      title: 'Same fault',
+      affectedUsers: 1,
+      affectedPeople: [{ userId: 'u1', email: 'u1@example.com' }],
+    });
+    const b = appItem({
+      key: 'app:fp-b',
+      fingerprint: 'fp-b',
+      errorCode: 'E1',
+      route: '/r',
+      title: 'Same fault',
+      affectedUsers: 1,
+      affectedPeople: [{ userId: 'u2', email: 'u2@example.com' }],
+    });
+
+    const drafts = correlateIncidents(input({ triage: [a, b] }));
+
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]!.affectedUsers).toBe(2);
+    expect(drafts[0]!.affectedPeople.map((p) => p.userId).sort()).toEqual(['u1', 'u2']);
+  });
+
+  it('does not double-count one person seen by two co-bucketed items', () => {
+    const a = appItem({
+      key: 'app:fp-a', fingerprint: 'fp-a', errorCode: 'E2', route: '/r2', title: 'One fault',
+      affectedUsers: 1, affectedPeople: [{ userId: 'u1', email: 'u1@example.com' }],
+    });
+    const b = appItem({
+      key: 'app:fp-b', fingerprint: 'fp-b', errorCode: 'E2', route: '/r2', title: 'One fault',
+      affectedUsers: 1, affectedPeople: [{ userId: 'u1', email: 'u1@example.com' }],
+    });
+
+    const drafts = correlateIncidents(input({ triage: [a, b] }));
+
+    expect(drafts[0]!.affectedUsers).toBe(1);
+    expect(drafts[0]!.affectedPeople).toHaveLength(1);
+  });
+
+  it('never SUMS the app union with Sentry userCount — different populations', () => {
+    const app = appItem({
+      key: 'app:fp-s', fingerprint: 'fp-s', errorCode: 'E3', route: '/r3', title: 'Shared fault',
+      affectedUsers: 2,
+      affectedPeople: [
+        { userId: 'u1', email: null },
+        { userId: 'u2', email: null },
+      ],
+    });
+    const sentry = sentryItem({
+      key: 'sentry:1', errorCode: 'E3', route: '/r3', title: 'Shared fault', affectedUsers: 7,
+    });
+
+    const drafts = correlateIncidents(input({ triage: [app, sentry] }));
+
+    // 7, not 9: Sentry's tally overlaps the app's, it does not extend it.
+    expect(drafts[0]!.affectedUsers).toBe(7);
+    // The identities we DO have still travel, even though Sentry's larger
+    // count wins the scalar — naming two of seven beats naming none.
+    expect(drafts[0]!.affectedPeople).toHaveLength(2);
+  });
+
+  it('never lets the count shrink below an item\'s own affectedUsers at the cap', () => {
+    // `affectedPeople` is capped; `affectedUsers` is not. A bucket whose
+    // identities were truncated must still report the honest total.
+    const app = appItem({
+      key: 'app:fp-c', fingerprint: 'fp-c', errorCode: 'E4', route: '/r4', title: 'Capped fault',
+      affectedUsers: 400,
+      affectedPeople: [{ userId: 'u1', email: null }],
+    });
+
+    const drafts = correlateIncidents(input({ triage: [app] }));
+
+    expect(drafts[0]!.affectedUsers).toBe(400);
+    expect(drafts[0]!.affectedPeople).toHaveLength(1);
   });
 });
 

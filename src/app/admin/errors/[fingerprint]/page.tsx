@@ -37,6 +37,8 @@ import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incident
 import { fetchCurrentReleaseWatch } from '@/lib/admin/incidents/release-watch';
 import { ReleaseRelationshipLabel } from '@/components/admin/premium';
 import { IncidentGenomePanel } from '../_components/IncidentGenomePanel';
+import { AffectedPeoplePanel } from '../_components/AffectedPeoplePanel';
+import { fetchAffectedPeopleForFingerprint } from '@/lib/admin/data/affected-people';
 export const dynamic = 'force-dynamic';
 
 const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {
@@ -203,10 +205,21 @@ export default async function FingerprintDetailPage({
     // The unified incident is fetched ALONGSIDE the forensics, not instead of
     // them: this page is the one surface where the raw occurrences still
     // matter, and a lifecycle read that fails must not take them down with it.
-    const [{ events, report, summary, forensics, trend, storedRca }, unified] = await Promise.all([
-      fetchFingerprintDetail(rawFingerprint),
-      fetchIncidentById(fingerprint).catch(() => null),
-    ]);
+    const [{ events, report, summary, forensics, trend, storedRca }, unified, affected] =
+      await Promise.all([
+        fetchFingerprintDetail(rawFingerprint),
+        fetchIncidentById(fingerprint).catch(() => null),
+        // WHO, alongside the occurrences — the identities `mergeTriage` has
+        // always read and discarded. Its own read rather than the board's
+        // capped `affectedPeople`: this page is the fault's whole history, not
+        // the board's 72h window. Fails to `known: false`, never to a silent
+        // empty, so "could not read who" can never render as "nobody".
+        fetchAffectedPeopleForFingerprint(rawFingerprint).catch(() => ({
+          people: [],
+          total: 0,
+          known: false,
+        })),
+      ]);
 
     if (events.length === 0 || !forensics) {
       // A reliability-sourced fingerprint (`rel:<signature>`, from the nightly
@@ -320,6 +333,12 @@ export default async function FingerprintDetailPage({
         </div>
 
         <ForensicsHeader forensics={forensics} />
+
+        <AffectedPeoplePanel
+          people={affected.people}
+          total={affected.total}
+          known={affected.known}
+        />
 
         {/* Rollup the data layer already computed but previously discarded —
             an operator had to Copy the report and paste it elsewhere to see

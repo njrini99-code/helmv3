@@ -45,6 +45,7 @@ vi.mock('@/lib/admin/data/incident-feed', async (orig) => {
           sport: 'golf',
           occurrences: 5,
           affectedUsers: 3,
+          affectedPeople: [],
           firstSeen: NOW,
           lastSeen: NOW,
           permalink: null,

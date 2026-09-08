@@ -16,6 +16,7 @@ function baseIncident(id: string, overrides: Partial<UnifiedIncident> = {}): Uni
     lastSeen: '2026-08-25T19:08:00Z',
     occurrences: 1,
     affectedUsers: 0,
+    affectedPeople: [],
     affectedUsersKnown: false,
     sources: [],
     corroboration: 1,
