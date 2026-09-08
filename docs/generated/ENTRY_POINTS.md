@@ -8,7 +8,7 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | Name | Type | When to use |
 | --- | --- | --- |
 | `code-reviewer` | Agent | Strict fresh-context review of a non-trivial change for correctness, regressions, missed files, and convention drift (Next.js + TypeScript + Supabase). |
-| `db-migration-reviewer` | Agent | Review any Supabase/Postgres schema, RLS, auth-trigger, or migration change BEFORE it is applied. MANDATORY for DB changes — this is a Golf-shared production database. |
+| `db-migration-reviewer` | Agent | Review Supabase/Postgres schema, RLS, auth-trigger, or migration changes when the task or risk warrants an independent review. This is a Golf-shared production database. |
 | `debugger` | Agent | Root-cause hard failures — flaky tests, runtime errors, hydration mismatches, races, regressions — from evidence rather than inspection. Use when the cause is not obvious from reading the code. |
 | `helm-reader` | Agent | Read-only audit contract — inspects code/config/docs and reports findings with file:line citations, never edits anything. |
 | `helm-worker` | Agent | Implements an assigned task, verifies the result, and completes authorized Git or tool operations. |
@@ -32,6 +32,6 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `golfhelm-creative-engine` | Skill | Generate premium Instagram creatives, social media ads, and marketing mockups for GolfHelm — an AI-powered golf coaching SaaS for college teams. Use this skill whenever the user mentions Instagram… |
 | `helm-process` | Skill | Find Helm task, verification, workspace, and delivery commands. |
 | `helm-sentry` | Skill | Investigate a Sentry issue, alert email, production error, or a 'what is breaking' question for Helm Sports Labs (org helm-xs). Use whenever the request points at a Sentry issue id/link, a paging… |
-| `helm-supabase` | Skill | Traps and tooling for any Supabase/Postgres work in this repo — key precedence, the 1,000-row PostgREST cap, the .in() URL-length limit, applied-vs-recorded migrations, and the read-only MCP door.… |
+| `helm-supabase` | Skill | Traps and tooling for any Supabase/Postgres work in this repo — key precedence, the 1,000-row PostgREST cap, the .in() URL-length limit, applied-vs-recorded migrations, and connected database access.… |
 | `modern-saas-ui` | Skill | Generic premium-SaaS UI craft guidance — visual hierarchy, density, motion, empty states, when a surface should feel like chrome vs. data. Use for reasoning about how a screen should FEEL. It does… |
 | `pencil-golfhelm` | Skill | Supercharged Pencil design system for GolfHelm — UI mockups, marketing creatives, and feature prototypes using the Lunaris component library. Use when designing anything in Pencil for GolfHelm… |

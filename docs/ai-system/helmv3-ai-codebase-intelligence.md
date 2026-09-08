@@ -17,9 +17,12 @@ explicit HELM_MAX_MUTATION_WORKTREES cap is configured; disk reserve remains
 enforced. Local push checks do not regenerate files or repeat CI.
 
 Readers inherit available tools and stay read-only by task contract. Project
-MCP configuration carries Playwright and read-only Supabase into worktrees.
-Production mutation permissions request approval rather than making an
-authorized task impossible. Live tools outrank historical namespace tables.
+MCP configuration carries Playwright and project-scoped Supabase read/write
+access into worktrees. Routine shell commands and task-authorized migrations
+use service-level permissions; destructive operations retain targeted guards. Live tools outrank historical namespace tables. The Helm launcher selects
+canonical settings, hooks, MCP definitions, agents and operating policy while
+keeping the chosen source worktree; old branch deny lists are not merged into
+that launch profile.
 
 ## Source Of Truth
 

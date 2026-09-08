@@ -31,7 +31,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 11 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 24 | 3 | 6 | 4 |
+| `GENERATED_TRUTH` | 24 | 3 | 7 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -42,7 +42,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 28 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 40 | 79 |
+| `UNKNOWN` | 93 | 12 | 40 | 80 |
 
 ## Files
 
@@ -57,12 +57,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
-| `.claude/rules/database.md` | current | - | - | - | 6 | 5 | - |
+| `.claude/rules/database.md` | current | - | - | - | 4 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 8 | 6 | - |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
-| `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 5 | - |
+| `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 4 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 8 | 7 | - |
 | `.claude/rules/shipping.md` | current | - | - | - | 23 | 3 | - |
@@ -80,7 +80,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/helm-reader.md` | current | - | - | - | 0 | 2 | - |
 | `.claude/agents/helm-worker.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/agents/verifier.md` | current | - | - | - | 0 | 0 | - |
-| `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 4 | - |
+| `.claude/commands/cleanup-db.md` | current | - | - | - | 0 | 3 | - |
 | `.claude/commands/context.md` | current | - | - | - | 0 | 2 | - |
 | `.claude/commands/gates.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/commands/held.md` | current | - | - | - | 0 | 1 | - |
@@ -100,7 +100,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/golfhelm-creative-engine/references/product-features.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/helm-process/SKILL.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/skills/helm-sentry/SKILL.md` | current | - | - | - | 0 | 7 | - |
-| `.claude/skills/helm-supabase/SKILL.md` | current | - | - | - | 0 | 8 | - |
+| `.claude/skills/helm-supabase/SKILL.md` | current | - | - | - | 0 | 5 | - |
 | `.claude/skills/modern-saas-ui/SKILL.md` | current | - | - | yes | 0 | 3 | - |
 | `.claude/skills/modern-saas-ui/references/avoiding-vibe-coded.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/skills/modern-saas-ui/references/dashboard-design.md` | current | - | - | - | 0 | 0 | - |
@@ -264,7 +264,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/apple-appstore-reviewer/SKILL.md` | current | - | - | - | 0 | 0 | - |
 | `audit/A1-RESOLUTION.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | 11 | 13 | - |
-| `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | 5 | 3 | - |
+| `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | yes | 4 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 0 | 0 | - |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 213 | - |
@@ -292,7 +292,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 3 | 7 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 4 | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 3 | - |
-| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 17 | 17 | - |
+| `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 17 | - |
 | `memory/templates/ui-contract.md` | current | - | - | - | 0 | 0 | - |
 
 ### `RUNBOOK`
@@ -594,7 +594,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/2026-05-28-coderabbit-fails-investigation.md` | current | - | - | - | 0 | 12 | - |
 | `docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md` | current | - | - | - | 0 | 3 | - |
 | `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | 2 | 7 | - |
-| `docs/operations/APPLY_PATH.md` | current | - | - | - | 1 | 7 | - |
+| `docs/operations/APPLY_PATH.md` | current | - | - | - | 1 | 5 | - |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | 3 | 30 | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 | 61 | 4 |
 | `docs/operations/BASEBALL_STATS_SOURCE_OF_TRUTH.md` | current | - | - | yes | 5 | 2 | - |
@@ -615,7 +615,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | 1 | 1 | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | 4 | 1 | - |
 | `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 3 | 11 | - |
-| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 7 | 1 |
+| `docs/operations/WORKSPACES.md` | current | - | - | yes | 0 | 9 | 2 |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | 1 | 2 | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | 0 | 1 | - |
 | `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 0 | 9 | 1 |

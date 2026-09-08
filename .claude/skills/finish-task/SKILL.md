@@ -12,25 +12,13 @@ keep happening.
 
 ## The gate sequence
 
-Run these from the repo root. Never pipe a gate without `set -o pipefail` —
-a pipeline reports the LAST command's status, so `npm test | tail` exits 0
-while the suite fails. `guard-bash.sh` blocks that shape; do not work around it.
-
-```bash
-npm run typecheck        # tsc --noEmit
-npm run lint
-npm test                 # unit only, fast
-npm run build            # the one that catches bundle-boundary breakage
-```
-
-Add when the change touches them:
-
-```bash
-npm run test:integration     # *.integration.test.{ts,tsx}
-npm run test:rls             # *.rls.test.{ts,tsx} — any RLS/policy change
-npm run test:e2e             # Playwright
-npm run docs:check           # any AUTOGEN inventory source changed
-```
+Select checks by changed paths with `/gates`; do not run unrelated gates.
+Use `set -o pipefail` for piped commands so the pipeline preserves the gate's
+exit status. For application changes, run the affected typecheck, lint, and
+tests; add `npm run build` for a changed `use server` surface,
+`npm run test:rls` for a policy or migration change, E2E for E2E changes, and
+`npm run docs:check` when generated documentation inputs changed. Config-only
+changes need syntax and affected tooling checks, not the full suite.
 
 ## What a green gate does NOT prove here
 
@@ -63,13 +51,13 @@ for them explicitly — no gate catches them:
 5. **Never delete, skip, weaken, or rewrite a test to get green.** If a test
    now fails legitimately, the implementation is wrong or the test encodes a
    requirement you are changing on purpose — say which.
-6. For anything risky, broad, security-sensitive, or schema-touching, get an
-   independent look: the `verifier` agent, or `security-reviewer` /
-   `db-migration-reviewer` as appropriate. The implementer does not grade its
-   own homework.
+6. For a risky, broad, security-sensitive, or schema-touching change, use an
+   independent look when the risk warrants it: `verifier`, `security-reviewer`,
+   or `db-migration-reviewer` as appropriate. Reviewer agents are optional and
+   risk-based; do not repeat task-authorization questions.
 7. Report with evidence: the commands run and their exit codes. If a claim
-   rests on something you could not run locally — `supabase start` needs
-   Docker, which this machine does not have — name that limit once, plainly.
+   rests on something unavailable locally — for example, `supabase start`
+   when Docker is unavailable — name that limit once, plainly.
 
 ## Reporting
 

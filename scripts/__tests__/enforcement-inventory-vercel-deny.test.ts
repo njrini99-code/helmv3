@@ -153,7 +153,7 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
 });
 
 describe('the live configuration', () => {
-  it('every production mutator asks for authorization under the recorded Vercel connector id', () => {
+  it('purchases and project controls ask while ordinary deployment tools stay usable', () => {
     // Production mutators remain subject to native authorization, including
     // tools addressed by the account connector UUID.
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
@@ -162,8 +162,10 @@ describe('the live configuration', () => {
     ).connectors;
     const vercelIds = connectors.filter((c) => c.service === 'Vercel').map((c) => c.id);
     expect(vercelIds.length).toBeGreaterThan(0);
+    expect(settings.permissions.ask).toContain('Bash(vercel --prod:*)');
+    expect(settings.permissions.ask).not.toContain('mcp__claude_ai_Vercel__deploy_to_vercel');
     for (const id of vercelIds) {
-      for (const tool of MUTATING_TOOLS) {
+      for (const tool of MUTATING_TOOLS.filter((name) => name !== 'deploy_to_vercel')) {
         expect(settings.permissions.ask, `${tool} under ${id}`).toContain(`mcp__${id}__${tool}`);
       }
     }
@@ -180,6 +182,6 @@ describe('the live configuration', () => {
       for (const id of supabaseIds) expect(r.startsWith(`mcp__${id}__`), r).toBe(false);
       expect(r.startsWith('mcp__claude_ai_Supabase__'), r).toBe(false);
     }
-    expect(uuidHits.length).toBe(MUTATING_TOOLS.length);
+    expect(uuidHits.length).toBe(MUTATING_TOOLS.length - 1);
   });
 });

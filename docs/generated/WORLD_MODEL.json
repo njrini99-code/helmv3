@@ -1505,6 +1505,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/__tests__/claude-launcher.test.mjs",
+        "pattern": "scripts/__tests__/claude-launcher.test.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/__tests__/lint-results.test.mjs",
         "pattern": "scripts/__tests__/lint-results.test.mjs",
         "category": "services"
@@ -1512,6 +1517,11 @@
       {
         "id": "services:scripts/check-feature-flags.mjs",
         "pattern": "scripts/check-feature-flags.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/claude.mjs",
+        "pattern": "scripts/claude.mjs",
         "category": "services"
       },
       {
@@ -14855,7 +14865,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 113
+          "line": 116
         }
       ]
     },
@@ -14867,7 +14877,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 113
+          "line": 116
         }
       ]
     },
@@ -14879,7 +14889,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 114
+          "line": 117
         }
       ]
     },
@@ -14891,7 +14901,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "docs/ai-system/helmv3-ai-codebase-intelligence.md",
-          "line": 114
+          "line": 117
         }
       ]
     },
@@ -15089,6 +15099,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:scripts/__tests__/claude-launcher.test.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/__tests__/claude-launcher.test.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:scripts/__tests__/lint-results.test.mjs",
       "kind": "feature_service",
       "evidence": [
@@ -15096,6 +15118,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/__tests__/lint-results.test.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/claude.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/claude.mjs"
         }
       ]
     },

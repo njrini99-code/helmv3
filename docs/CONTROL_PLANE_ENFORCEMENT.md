@@ -55,10 +55,10 @@ asserted here — see `.claude/rules/database.md`.
 
 | Kind | Count |
 | --- | --- |
-| `permissions.deny` total | 7 |
+| `permissions.deny` total | 0 |
 | …covering `mcp__` | 0 |
 | …covering `Bash(` | 0 |
-| …other | 7 |
+| …other | 0 |
 
 Deny rules fire even under `bypassPermissions`, and a project-scope
 deny overrides a user-scope allow (probed 2026-08-29).

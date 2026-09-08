@@ -89,19 +89,22 @@ describe('the live configuration', () => {
     expect(v.state, v.detail).not.toBe(FAIL);
   });
 
-  it('remote Supabase CLI mutations ask while local reset and migration commands remain usable', () => {
+  it('remote resets and configuration changes ask while task-authorized migrations remain usable', () => {
     const { ask, deny }: { ask: string[]; deny: string[] } = JSON.parse(
       readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'),
     ).permissions;
     for (const bin of ['supabase', './node_modules/.bin/supabase', 'npx supabase']) {
-      for (const verb of ['config push', 'db push']) {
+      for (const verb of ['config push']) {
         expect(ask, `${bin} ${verb}`).toContain(`Bash(${bin} ${verb}:*)`);
       }
+      expect(ask).not.toContain(`Bash(${bin} db push:*)`);
+      expect(deny).not.toContain(`Bash(${bin} db push:*)`);
       for (const verb of ['db reset', 'migration up']) {
         expect(ask).not.toContain(`Bash(${bin} ${verb}:*)`);
         expect(deny).not.toContain(`Bash(${bin} ${verb}:*)`);
         for (const target of ['--linked', '--db-url']) {
-          expect(ask).toContain(`Bash(${bin} ${verb} ${target}:*)`);
+          if (verb === 'db reset') expect(ask).toContain(`Bash(${bin} ${verb} ${target}:*)`);
+          else expect(ask).not.toContain(`Bash(${bin} ${verb} ${target}:*)`);
         }
       }
     }
