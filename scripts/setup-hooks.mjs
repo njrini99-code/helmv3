@@ -11,12 +11,9 @@
  * core.hooksPath lives in the SHARED git config (.git/config at the common
  * dir, not per-worktree) — one `npm install` from any worktree changes hook
  * behavior for the canonical checkout and every other worktree on this
- * machine too. The value this script writes is the RELATIVE path
- * `.githooks`, never an absolute one: git resolves a relative
- * core.hooksPath against each working tree's own top level, so the single
- * shared config entry still runs each worktree's own checked-out hooks
- * (its own .githooks/pre-push, at its own commit) rather than pinning every
- * worktree to whichever checkout happened to run this script.
+ * machine too. Resolve the canonical .githooks directory through Git's common
+ * directory, so all branches use the same local checks and an old checkout
+ * cannot bring back retired gates merely by running npm install.
  *
  * Never throws and never exits non-zero — a `prepare` script runs on every
  * install, including a tarball install with no .git directory (e.g. a
@@ -25,8 +22,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-
-const HOOKS_PATH = '.githooks';
+import { dirname, join } from 'node:path';
 
 function run(args) {
   return execFileSync('git', args, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -53,6 +49,7 @@ function main() {
     return;
   }
 
+  const hooksPath = join(dirname(run(['rev-parse', '--path-format=absolute', '--git-common-dir'])), '.githooks');
   let current = '';
   try {
     current = run(['config', '--get', 'core.hooksPath']);
@@ -60,15 +57,15 @@ function main() {
     current = '';
   }
 
-  if (current === HOOKS_PATH) {
-    console.log(`setup-hooks: core.hooksPath already "${HOOKS_PATH}" — nothing to do.`);
+  if (current === hooksPath) {
+    console.log(`setup-hooks: core.hooksPath already "${hooksPath}" — nothing to do.`);
     return;
   }
 
   try {
-    run(['config', 'core.hooksPath', HOOKS_PATH]);
+    run(['config', 'core.hooksPath', hooksPath]);
     console.log(
-      `setup-hooks: core.hooksPath set to "${HOOKS_PATH}" (was ${current ? `"${current}"` : 'unset'}). ` +
+      `setup-hooks: core.hooksPath set to "${hooksPath}" (was ${current ? `"${current}"` : 'unset'}). ` +
         'Runs .githooks/pre-commit and .githooks/pre-push from now on.'
     );
   } catch (err) {
