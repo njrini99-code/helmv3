@@ -236,12 +236,45 @@ function printPlan(body) {
 }
 
 /** Extract `-- VERIFY:` lines from the migration file header. */
-function extractVerifyQueries(fileText) {
-  return fileText
+/**
+ * Collect the `-- VERIFY:` queries, JOINING CONTINUATION LINES.
+ *
+ * This used to take one line as one query. A VERIFY written across
+ * continuation lines — which is how a readable one is written, and what
+ * sqlfluff's line-length rule requires — then became fragments: measured on
+ * 20260907160000, three intended queries became THIRTEEN, ten of them syntax
+ * errors. Worse, fragment 1
+ * (`select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace`)
+ * is valid, returns thousands of rows, and PASSES while verifying nothing.
+ *
+ * The consequence was the worst shape a gate can have: production commits
+ * correctly, then the run reports FAIL with a ROLLBACK recipe in the header,
+ * inverting the recorded-vs-applied distinction this path exists to provide.
+ *
+ * Fixing the extractor rather than reflowing every migration onto one long
+ * line is what keeps the two constraints compatible: `apply.mjs` gets whole
+ * statements, and the files stay under the SQL line-length ratchet.
+ * A query ends at a `;`; a trailing fragment with no terminator is still
+ * emitted, so a malformed block fails loudly instead of vanishing.
+ */
+export function extractVerifyQueries(fileText) {
+  const fragments = fileText
     .split('\n')
     .filter((l) => /^--\s*VERIFY:/i.test(l.trim()))
     .map((l) => l.replace(/^--\s*VERIFY:\s*/i, '').trim())
     .filter(Boolean);
+
+  const queries = [];
+  let current = [];
+  for (const fragment of fragments) {
+    current.push(fragment);
+    if (fragment.endsWith(';')) {
+      queries.push(current.join(' '));
+      current = [];
+    }
+  }
+  if (current.length > 0) queries.push(current.join(' '));
+  return queries;
 }
 
 function runVerifyQueries(queries) {

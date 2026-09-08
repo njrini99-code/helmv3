@@ -24,7 +24,8 @@
   against local Postgres, in both directions. The clause stays as redundant defence
   and both the migration header and the test header say so.
 
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team -->
+<!-- schema-drift-absent: golf_group_membership_management -->
+<!-- golf_user_on_conversation_team was listed here until 2026-09-08, when the owner APPLIED 20260907160000 and db:types picked the function up. Keeping it would exempt a live object from the drift check. -->
 <!--
   `golf_user_on_conversation_team` is a real function, created by
   20260907160000 — which is written and NOT applied, so it is correctly absent

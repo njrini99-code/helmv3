@@ -1,6 +1,7 @@
 # Change ledger — team_communications
 
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team -->
+<!-- schema-drift-absent: golf_group_membership_management -->
+<!-- golf_user_on_conversation_team was listed here until 2026-09-08, when the owner APPLIED 20260907160000 and db:types picked the function up. Keeping it would exempt a live object from the drift check. -->
 <!--
   `golf_user_on_conversation_team` is a real function, created by
   20260907160000 — which is written and NOT applied, so it is correctly absent
@@ -1686,3 +1687,24 @@ Tests: two in `MessageThreadPane.scroll.test.ts`, one per cause, both rendering.
 PROVEN to bite — with the source reverted they fail `expected +0 to be 750` and
 `expected 1 to be 2`.
 
+
+## 2026-09-08 — 20260907160000 APPLIED to production
+
+Add member / Remove member went from filed-but-inert to live. The owner applied
+`20260907160000_golf_team_chat_membership_management.sql` through the Supabase
+dashboard SQL editor (not `db:apply` — see `supabase/migrations/HELD.md` for
+why that path could not run it, and the same-PR fixes).
+
+Verified read-only against the live catalog after the run, not inferred:
+`golf_user_on_conversation_team` present with `prosecdef` true and
+`search_path=public, pg_temp`; ACL `postgres`/`authenticated`/`service_role`
+only — no `anon`, no `PUBLIC`; `golf_participants_insert_v2` carries the team
+branch and `golf_participants_delete` the creator branch; the ledger row is
+recorded; all three of the migration's own `-- VERIFY:` queries return 1 row.
+Ben Potter's 13-person team chat: 13/13 participants pass the new predicate,
+84 messages intact.
+
+Doc effect: the `schema-drift-absent` exemption for
+`golf_user_on_conversation_team` was REMOVED from every file that carried it —
+the function is in the `db:types` snapshot now, and an exemption would hide a
+live object from `docs:schema-drift`.

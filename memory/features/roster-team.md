@@ -81,7 +81,7 @@ Team page
 - Roster membership now has a messaging side effect. The definer helper
   `public.golf_user_on_conversation_team(uuid, uuid)`
   (`supabase/migrations/20260907160000_golf_team_chat_membership_management.sql`,
-  written but NOT applied — applying it is the owner's step) reads
+  APPLIED to production 2026-09-08) reads
   `golf_team_members` and `golf_team_coach_staff` to decide who may be added to or
   removed from a team chat. Removing someone from either roster table therefore also
   removes the ability to add them to a team conversation. Nothing about joining,
@@ -100,12 +100,10 @@ Team page
 - `docs/architecture/USER_ROLE_DATA_OWNERSHIP.md`
 - `memory/features/auth-onboarding-join.md`
 
-<!-- schema-drift-absent: golf_user_on_conversation_team -->
 <!--
-  `golf_user_on_conversation_team` is a real function, created by
-  20260907160000 — which is written and NOT applied, so it is correctly absent
-  from the production schema snapshot `db:types` generates. Delete this name
-  from the declaration above the moment the owner applies the migration and
-  re-runs `npm run db:types`; leaving it here would exempt a real object from
-  the drift check.
+  `golf_user_on_conversation_team` was declared `schema-drift-absent` here while
+  20260907160000 was written but unapplied. The owner applied that migration on
+  2026-09-08 and `npm run db:types` now carries the function, so the whole
+  declaration was removed as its own wording instructed — keeping it would
+  exempt a live object from the drift check.
 -->

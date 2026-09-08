@@ -106,6 +106,19 @@ export default tseslint.config(
     },
   },
   {
+    // Workflow-step scripts under .github/scripts/ are plain Node, run by a
+    // `run:` step (db-apply.yml's order guard). Same shape and same reason as
+    // the two blocks above: without this, eslint reports every `process`
+    // reference as no-undef, and a directory full of fake errors is how a
+    // directory ends up excluded from linting altogether.
+    files: [".github/scripts/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     // Workflow scripts (the Workflow tool's `script` payload, saved to disk).
     // They are executed inside a sandbox that INJECTS these as globals, so they
     // are never imported or declared in the file itself. Without this block

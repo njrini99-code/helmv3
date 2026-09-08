@@ -219,6 +219,11 @@ export default defineConfig({
             // testable off a live connection, and it is the part that would
             // ship a wrong ledger row silently.
             'scripts/__tests__/db-apply-single-file.test.mjs',
+            // db-apply's order guard. Named here for the same reason, and with
+            // the same stakes: the awk parser it replaces reported ZERO pending
+            // migrations while production was missing ten, and failed the run
+            // claiming the opposite of the truth.
+            'scripts/__tests__/db-apply-order-guard.test.mjs',
             // Weekly control-plane report (A6): the pure decision functions
             // behind control-plane-weekly.yml's four hard checks (secret
             // scanning, Dependabot severity ceiling, full-history gitleaks

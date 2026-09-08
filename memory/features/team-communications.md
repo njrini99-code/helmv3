@@ -303,14 +303,15 @@ when the column is empty. That is why `GroupMember` is its own type rather than
 `GolfConversationParticipant`, whose `subtitle` is required and whose DM path
 fills the gap with `'Golf Coach'` / `'Golf Player'`.
 
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team -->
+<!-- schema-drift-absent: golf_group_membership_management -->
 <!--
-  `golf_user_on_conversation_team` is a real function, created by
-  20260907160000 — which is written and NOT applied, so it is correctly absent
-  from the production schema snapshot `db:types` generates. Delete this name
-  from the declaration above the moment the owner applies the migration and
-  re-runs `npm run db:types`; leaving it here would exempt a real object from
-  the drift check.
+  `golf_user_on_conversation_team` USED to be declared here, while
+  20260907160000 was written but unapplied and the function was therefore
+  correctly absent from the snapshot `db:types` generates. The owner applied
+  that migration on 2026-09-08 and `npm run db:types` now carries the function,
+  so the name was removed from the declaration above exactly as the previous
+  wording instructed — leaving it would exempt a real object from the drift
+  check.
   `golf_group_membership_management` is not a database object at all — it is
   the pgTAP suite's own filename, which happens to start with `golf_`:
   `supabase/tests/rls/golf_group_membership_management.sql`.
@@ -330,8 +331,9 @@ against live production `pg_policies` before any code was written:
 That clause is
 `20260819070000_conversation_creator_cannot_inject_third_party.sql`, added
 after a **verified production attack**. So "Leave group" was the only membership
-mutation the product could perform, and it still is until
-`20260907160000_golf_team_chat_membership_management.sql` is APPLIED.
+mutation the product could perform. That changed on 2026-09-08, when
+`20260907160000_golf_team_chat_membership_management.sql` was APPLIED to
+production — so Add and Remove are live for a team chat's creator.
 
 **The new migration is a scoped allowance, not a reversal.** The 2026-08-19
 branch authorized an insert on the sole basis that the actor created the

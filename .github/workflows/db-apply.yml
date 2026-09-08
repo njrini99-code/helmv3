@@ -128,33 +128,16 @@ jobs:
       - name: Order guard — list every migration production is missing
         run: |
           set -euo pipefail
-          ./node_modules/.bin/supabase migration list --linked --password "$SUPABASE_DB_PASSWORD" > migration-list.txt 2>&1
-          # Rows look like: "   <local> | <remote> | <time>"; a pending row has an empty Remote column.
-          pending="$(awk -F'|' '/^[[:space:]]*[0-9]{14}[[:space:]]*\|/ { l=$1; r=$2; gsub(/[[:space:]]/,"",l); gsub(/[[:space:]]/,"",r); if (r=="") print l }' migration-list.txt || true)"
-          want="${MIGRATION%%_*}"
-          echo "Pending on production (only $want will be applied; the rest stay pending):"
-          if [ -z "$pending" ]; then echo "  (none)"; else echo "$pending" | awk '{ print "  " $0 }'; fi
-          {
-            echo "### Pending migrations on production"
-            if [ -z "$pending" ]; then echo "_none_"; else echo '```'; echo "$pending"; echo '```'; fi
-            echo "_Only \`$want\` is applied by this run._"
-          } >> "$GITHUB_STEP_SUMMARY"
-          if ! echo "$pending" | grep -qx "$want"; then
-            echo "::error::version $want is not pending — already applied, or not a migration the ledger knows. Stopping."
-            exit 1
-          fi
-          # The apply sends one file, so a NEWER pending migration is simply
-          # untouched and needs no acknowledgement. An OLDER pending one does:
-          # applying past it lands this file out of order, and it will then be
-          # skipped by any later `supabase db push` (which honours --include-all).
-          older="$(echo "$pending" | awk -v w="$want" 'NF && $0 < w' || true)"
-          if [ -n "$older" ] && [ "$ALLOW_OUT_OF_ORDER" != "true" ]; then
-            echo "::error::these OLDER migrations are still pending: ${older//$'\n'/ }." \
-                 "Applying $want now lands it out of order. Re-run with allow_out_of_order" \
-                 "ticked only if $want does not depend on any of them."
-            exit 1
-          fi
-          echo "PASS order guard"
+          # The ledger, as JSON. Nothing here parses human-facing CLI output:
+          # the previous awk over `supabase migration list` text matched a row
+          # shape the CLI no longer prints, reported ZERO pending while
+          # production was missing ten, and failed the run with the opposite of
+          # the truth (run 34178071502).
+          ./node_modules/.bin/supabase db query --linked --output-format json \
+            "select version from supabase_migrations.schema_migrations order by version;" \
+            > ledger.json
+          node .github/scripts/order-guard.mjs \
+            ledger.json supabase/migrations "${MIGRATION%%_*}" "$ALLOW_OUT_OF_ORDER"
 
       - name: apply.mjs — pre-checks, ledger, PITR marker, plan
         run: |
