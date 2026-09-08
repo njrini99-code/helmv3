@@ -64,6 +64,8 @@ features:
         - .mcp.json
         - .githooks/**
         - scripts/lib/create-workspace.mjs
+        - scripts/claude.mjs
+        - scripts/__tests__/claude-launcher.test.mjs
         - scripts/lib/shared-workspace-runtime.mjs
         - .worktreeinclude
         - scripts/lint-ci.mjs

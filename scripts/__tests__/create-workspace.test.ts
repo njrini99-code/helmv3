@@ -28,7 +28,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-import { createWorkspace } from '../lib/create-workspace.mjs';
+import { createWorkspace, renderSummary } from '../lib/create-workspace.mjs';
 import { shareWorkspaceRuntime } from '../lib/shared-workspace-runtime.mjs';
 
 const REPO = resolve(__dirname, '../..');
@@ -135,6 +135,19 @@ describe('createWorkspace — refusals', () => {
 });
 
 describe('createWorkspace — what it writes', () => {
+  it('describes the runtime as shared canonical in its summary', () => {
+    const summary = renderSummary({
+      path: join(home, 'summary'),
+      branch: 'agent/summary',
+      base: 'origin/main',
+      deps: 'symlinked',
+      reattached: false,
+      upstream: null,
+    });
+    expect(summary).toContain('env         shared canonical runtime, no production writes');
+    expect(summary).not.toContain('env         local, no production writes');
+  });
+
   it('returns { path, branch }', async () => {
     const result = await createWorkspace({ name: 'shape', repo: seed, home });
     expect(result.path).toBe(join(home, 'shape'));

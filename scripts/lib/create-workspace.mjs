@@ -455,7 +455,7 @@ function resolveRepoArg(repoArg) {
   }
 }
 
-function renderSummary({ path, branch, base, deps, reattached, upstream }) {
+export function renderSummary({ path, branch, base, deps, reattached, upstream }) {
   // A created branch has no upstream by design (--no-track), and saying so
   // is the point of this line. A reattached one keeps whatever it had, so
   // repeating the warning would be false where it matters most: a bare push
@@ -474,7 +474,7 @@ function renderSummary({ path, branch, base, deps, reattached, upstream }) {
     `  workspace   ${path}`,
     ...branchLines,
     `  base        ${reattached ? "(unused — branch's own history)" : base}`,
-    '  env         local, no production writes',
+    '  env         shared canonical runtime, no production writes',
     `  deps        ${deps}`,
     '',
     path,

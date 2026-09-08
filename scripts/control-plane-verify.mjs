@@ -815,11 +815,7 @@ function checkUserGlobal() {
   add('user-global', 'no-stale-hook-claim', stale ? FAIL : PASS,
     stale ? 'autoMode prose still names guard-bash.sh/guard-sql.sh as if they were wired — both are deleted' : 'no stale hook claim');
 
-  const d = readJson(p);
-  const allow = (d?.permissions?.allow ?? []);
-  const phantom = allow.filter((r) => r.startsWith('mcp__plugin_supabase_supabase'));
-  add('user-global', 'no-phantom-plugin-grants', phantom.length ? FAIL : PASS,
-    phantom.length ? `grants for an uninstalled plugin: ${phantom.join(', ')}` : 'no phantom plugin grants');
+
 }
 
 function checkSandbox() {

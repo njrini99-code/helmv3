@@ -256,6 +256,44 @@ function du(path) {
   }
 }
 
+/**
+ * Preserve the exact proven-merged tip before deleting its branch/ref.
+ *
+ * A local branch is recoverable from the reflog for a while, but that is not
+ * the lifecycle guarantee: DELETE_MERGED_EXACT must leave a durable, named
+ * record. An existing archive tag is acceptable only when it resolves to the
+ * same tip. A conflict or an inability to create/verify the tag is a hard
+ * veto on the destructive operation.
+ */
+function archiveBeforeDelete(branch, sha, prNumber) {
+  const tag = `archive/${branch}`;
+  const ref = `refs/tags/${tag}^{}`;
+  const existing = git(['rev-parse', '--verify', ref]);
+  if (existing !== null) {
+    if (existing === sha) return true;
+    console.log(
+      `gc: SKIP ${branch} — ${tag} already points to ${existing.slice(0, 9)}, expected ${sha.slice(0, 9)}`,
+    );
+    return false;
+  }
+
+  const message = prNumber
+    ? `Archive ${branch} after PR #${prNumber} merged`
+    : `Archive ${branch} after verified merge`;
+  if (git(['tag', '--annotate', tag, sha, '--message', message]) === null) {
+    console.log(`gc: SKIP ${branch} — could not create archive tag ${tag}`);
+    return false;
+  }
+  const verified = git(['rev-parse', '--verify', ref]);
+  if (verified !== sha) {
+    console.log(
+      `gc: SKIP ${branch} — archive tag ${tag} did not verify at ${sha.slice(0, 9)}`,
+    );
+    return false;
+  }
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 
 const CANON = canonicalRoot();
@@ -628,6 +666,7 @@ if (GC) {
       console.log(`gc: SKIP ${r.branch} — tip moved since classification`);
       continue;
     }
+    if (!archiveBeforeDelete(r.branch, now, r.prNumber)) continue;
     console.log(`gc: deleting ${r.branch} (${r.reason})`);
     if (git(['branch', '-D', r.branch]) === null) {
       console.log('  refused — left in place');
@@ -646,6 +685,7 @@ if (GC) {
       console.log(`gc: SKIP origin/${r.branch} — tip moved since classification`);
       continue;
     }
+    if (!archiveBeforeDelete(r.branch, now, r.prNumber)) continue;
     console.log(`gc: deleting REMOTE origin/${r.branch} (${r.reason})`);
     if (git(['push', 'origin', '--delete', r.branch]) === null) {
       console.log('  refused — left in place');

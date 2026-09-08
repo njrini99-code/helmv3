@@ -18,8 +18,8 @@
       "owner": "founder",
       "opened": "2026-08-29",
       "scope": "mcp__claude_ai_Supabase__execute_sql",
-      "reason": "The sanctioned project-scoped path (mcp__supabase__*) is not connected — its OAuth flow has not been completed. Until it is, the account-scoped connector is the ONLY working Supabase query path, and it carries no read_only enforcement: a DELETE reaches production and nothing intercepts it. Denying it would remove the capability without making anything safe, and #1671 is the story of a document killing a working path. Retained deliberately as TEMPORARY_FALLBACK and named UNENFORCED rather than called safe.",
-      "closes_when": "mcp__supabase__* is connected and exercised, after which this grant is removed."
+      "reason": "Historical observation (2026-08-29): the project-scoped path was not connected, so the account-scoped connector was the only working Supabase query path and had no read_only enforcement. This records that dated fallback risk; it is not a ban on connected read paths. Current sessions may use any connected Supabase MCP or authenticated CLI after verifying its target and role, with the wired guard covering destructive statement classes.",
+      "closes_when": "Historical record retained for dated audit evidence; retire this entry when that snapshot is no longer needed."
     },
     {
       "id": "SANDBOX_FILESYSTEM_DISABLED",
@@ -34,8 +34,8 @@
       "owner": "founder",
       "opened": "2026-08-29",
       "scope": "mcp__supabase__apply_migration",
-      "reason": "The owner authorization for applying production migrations through the project-scoped MCP is explicit and repeated. But that server's OAuth grant requests ONLY :read scopes — organizations, projects, database, analytics, secrets, edge_functions, environment, storage. A token minted under those scopes structurally cannot write, so the authorized capability probably cannot function as granted. This is surfaced rather than resolved: confirming it means attempting a production migration, which this run is not authorized to do and should not do to answer a documentation question.",
-      "closes_when": "the owner either completes the OAuth flow and observes what apply_migration actually does, or moves migrations to a path whose capability matches the authorization."
+      "reason": "Historical observation (2026-08-29): the project-scoped MCP grant appeared read-scoped, so its migration-write capability was unverified. The current project path is verified write-capable under the postgres role (2026-09-08); this dated entry preserves the former scope mismatch and is not a standing prohibition on a reviewed, task-authorized write path.",
+      "closes_when": "Historical record retained for dated audit evidence; retire this entry when that snapshot is no longer needed."
     },
     {
       "id": "MAIN_ADMIN_BYPASS_AVAILABLE",
@@ -50,8 +50,8 @@
       "owner": "founder",
       "opened": "2026-09-01",
       "scope": ".claude/settings.json permissions.deny rules of the form mcp__<uuid>__<tool>; config/mcp-connector-ids.json",
-      "reason": "Permission rules match tool NAMES, and the session names an account connector's tools by a UUID prefix (mcp__e139bbde-...__apply_migration), not by the display-name spelling (mcp__claude_ai_Supabase__apply_migration) every deny rule used until 2026-09-01. Measured that day: no mcp__claude_ai_* name existed in the inventory at all, so fourteen MCP deny rules matched nothing the session could call while the enforcement inventory reported them EXERCISED. The UUID spellings are now denied too, and the ids live in config/mcp-connector-ids.json so the fingerprint, the inventory and the verifier read one value. What nothing here can establish is whether the id is STABLE: one session cannot prove that a re-install or re-authorisation keeps it, and if it rotates every UUID rule silently matches nothing again — the same shape as the display-name rules today. control-plane:verify reports the recorded ids against the deny rules on every run (tools/mcp-deny-connector-ids) so a rule and its id cannot drift apart unnoticed, but it cannot see the live inventory. Registered rather than called fixed because a deny rule that may or may not name the tool is not enforcement, it is a bet.",
-      "closes_when": "either the harness offers a stable server-level name for account connectors that deny rules can key on (at which point the UUID rules are replaced and this file's ids are deleted), or the ids are re-measured across at least three separate sessions on two dates and found identical, recorded in config/mcp-connector-ids.json with stability set to VERIFIED and the observation dates listed."
+      "reason": "Historical observation (2026-09-01): account connector tool names appeared under a UUID prefix rather than the display-name prefix, so UUID-keyed deny rules were not stable enforcement. This entry preserves that dated finding and the still-unverified cross-session identity; current policy uses connected tool visibility and confirmation for authorized operations rather than permanent UUID bans. The live inventory remains the authority for which namespace and operations are present.",
+      "closes_when": "Historical record retained for dated audit evidence; retire this entry when that snapshot is no longer needed."
     },
     {
       "id": "MIGRATIONS_REPO_PRODUCTION_LEDGER_DIVERGENCE",

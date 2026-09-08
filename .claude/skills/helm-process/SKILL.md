@@ -23,7 +23,7 @@ no authorization restrictions.
 - For an explicitly authorized production deployment:
   `scripts/deploy-prod.sh`. Pushes alone do not establish a release.
 
-Use the current session's connected tools. The project Supabase MCP is
-read-only; an authorized migration needs a write-capable connector or the
-reviewed `npm run db:apply -- ...` path. Read its help and target before use.
+Use the current session's connected tools. The project Supabase MCP supports
+reads and task-authorized migrations; an authenticated CLI is also valid.
+Review the SQL and target before applying a migration.
 Vercel/Sentry connectors provide diagnostics; CLI fallbacks are valid.

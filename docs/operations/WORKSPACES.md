@@ -91,3 +91,19 @@ npx vitest run --project unit scripts/__tests__/create-workspace.test.ts
 Fixtures cover existing-name refusals, advisory default counts, enforced
 explicit caps, disk reserve, marker contents, dependency links, shared runtime links and
 environment updates, and the hook's path-only stdout contract.
+
+## Claude across older branches
+
+The `helm` and `h` shell functions run canonical `scripts/claude.mjs`. Inside
+a Helm worktree they preserve the working directory; elsewhere they open
+canonical Helm. The launcher selects user and shared local settings, passes
+current canonical project settings and MCP configuration explicitly, and
+loads canonical agent definitions and operating policy. Hook commands resolve
+to canonical scripts. It leaves other installed connectors available and does
+not rewrite tracked source files or create automatic Git commits.
+
+Claude merges permission lists, so adding a local allow cannot cancel an old
+project deny. Selecting the current profile at launch avoids that merge.
+Launching `claude` directly still loads the checked-out branch's settings; use
+`helm` when working on historical source. User-supplied CLI flags remain
+available for deliberate per-session customization.

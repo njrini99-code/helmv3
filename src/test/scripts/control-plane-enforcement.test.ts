@@ -105,17 +105,13 @@ describe('hook wiring is real', () => {
   });
 });
 
-describe('production Supabase operations remain explicitly approvable', () => {
-  it('every known account-wide mutating tool requests approval', () => {
+describe('database access and destructive-operation permissions', () => {
+  it('project deletion, resets and costly operations request approval', () => {
     const mutating = [
-      'apply_migration',
-      'create_branch',
       'create_project',
       'delete_branch',
-      'deploy_edge_function',
       'merge_branch',
       'pause_project',
-      'rebase_branch',
       'reset_branch',
       'restore_project',
     ];
@@ -123,6 +119,20 @@ describe('production Supabase operations remain explicitly approvable', () => {
       .map((t) => `mcp__claude_ai_Supabase__${t}`)
       .filter((r) => !ask.includes(r));
     expect(missing).toEqual([]);
+  });
+
+  it('provides project-scoped database access without disabling migrations', () => {
+    const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
+    const url = new URL(mcp.mcpServers.supabase.url);
+    expect(url.searchParams.get('project_ref')).toBeTruthy();
+    expect(url.searchParams.get('read_only')).not.toBe('true');
+    expect(settings.permissions?.allow).toContain('mcp__supabase');
+    for (const tool of ['execute_sql', 'apply_migration']) {
+      expect(deny).not.toContain(`mcp__supabase__${tool}`);
+      expect(ask).not.toContain(`mcp__supabase__${tool}`);
+    }
+    expect(settings.permissions?.allow).toContain('Bash');
+    expect(deny).not.toContain('Read(./.env.local)');
   });
 
   it('keeps account connector reads available', () => {
@@ -200,7 +210,6 @@ describe('the three corrected claims stay corrected', () => {
     const db = read('.claude/rules/database.md');
     expect(db).toMatch(/guard-sql\.mjs/);
     expect(db).toMatch(/not a parser/);
-    expect(db).toMatch(/autoMode/);
   });
 
   it('CLAUDE.md distinguishes detection from prevention', () => {

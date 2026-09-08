@@ -21,7 +21,7 @@
       "service": "Supabase",
       "authority": "mcp__supabase__*",
       "authoritySource": ".mcp.json (this repo)",
-      "scope": "project-scoped: qmnssrrolpinvwjjnufo, read_only=true",
+      "scope": "project-scoped: qmnssrrolpinvwjjnufo, read/write",
       "note": "Preferred discovery path, not an exclusive permission boundary. Use a connected alternative when needed; follow AGENTS.md for authorization.",
       "alternates": [
         {

@@ -420,6 +420,7 @@ export default defineConfig({
             // subprocess against a disposable git fixture.
             'scripts/__tests__/create-workspace.test.ts',
             'scripts/__tests__/lint-results.test.mjs',
+            'scripts/__tests__/claude-launcher.test.mjs',
             // Gate timing ledger (reorg Phase 7 / W3 Speed): the pure
             // append-and-trim step in scripts/serialize.mjs that writes one
             // row per gate run to memory/ledgers/gates.jsonl, exercised only

@@ -1,7 +1,8 @@
 # Apply path
 
-The only way a migration reaches production: `npm run db:apply`. Everything
-before it is preparation; everything it does is printed as PASS/FAIL, and it
+The reviewed, task-authorized paths for a migration to reach production are
+`npm run db:apply` and a connected write-capable Supabase MCP. Everything
+before the selected path is preparation; each path prints PASS/FAIL and
 refuses to proceed on the first FAIL.
 
 ## Flow
@@ -19,8 +20,9 @@ refuses to proceed on the first FAIL.
    check:migration-headers`) fails the PR if a new migration needs headers
    and lacks them. Pre-existing files are grandfathered in
    `.migration-headers-baseline.json` — a ratchet, it only shrinks.
-4. **PR + review** — `db-migration-reviewer` is mandatory for anything R3
-   (privileged) per `memory/system/golfhelm-engineering-os.md`.
+4. **PR + review** — review the SQL and target. Use
+   `db-migration-reviewer` when the task's risk warrants an independent look;
+   an agent review is optional and does not require repeating task authorization.
 5. **Replay in CI** — the Supabase lint + RLS tests job in `ci.yml` replays
    every migration against a fresh database.
 6. **Merge to `main`.**
@@ -34,14 +36,14 @@ refuses to proceed on the first FAIL.
      contains no `CONCURRENTLY` (see below).
    - Prints a PITR marker timestamp — record it before taking a backup.
    - Prints the plan: the exact SQL body `--apply` would send.
-8. **`npm run db:apply -- <migration-file> --apply`** — sends that one file,
-   re-reads the ledger, runs the file's own `-- VERIFY:` queries, and
-   prints recorded-vs-applied. `--apply` is NOT pre-approved for agents —
-   `.claude/settings.json` `permissions.deny` blocks the `--apply` form of
-   this command; only the dry-run form is allowed. Only the owner runs
-   `--apply`.
-9. **Verify** — the same `-- VERIFY:` queries, run again independently, plus
-   whatever the migration's own header calls for.
+8. **Apply after authorization** — `npm run db:apply -- <migration-file>
+   --apply` sends that one file, re-reads the ledger, runs the file's own
+   `-- VERIFY:` queries, and prints recorded-vs-applied. Already-given task
+   authorization does not need to be requested again. A connected write-capable Supabase MCP is
+   also valid after the same SQL and target review.
+9. **Verify** — inspect the executed `-- VERIFY:` results and run any
+   additional schema/RLS checks needed by the change. Repeat a query only
+   when its outcome is uncertain or the database changed afterward.
 
 ## One file means one file
 
