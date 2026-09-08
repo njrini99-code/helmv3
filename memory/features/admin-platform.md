@@ -621,6 +621,7 @@ them would have broken those routes, not the dead one.
   component's loading branch, not its settled layout. A route whose
   `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
   no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Phase 0 truth models (Bridge Premium Observability, 2026-09-03)
 

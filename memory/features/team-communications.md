@@ -144,6 +144,7 @@ Announcement create
   component's loading branch, not its settled layout. A route whose
   `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
   no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Conversation Rail Failure Semantics (2026-08-27)
 
