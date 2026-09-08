@@ -12,11 +12,14 @@
 #   3. the file is not HOLD in supabase/migrations/HELD.md (or an override
 #      anchor + reason was given deliberately)
 #   4. the production ledger does not already carry the version
-#   5. SWEEP GUARD: `supabase db push` applies EVERY pending migration, not
-#      just the named one. The pending set is listed; if it contains anything
-#      but the named file the run stops unless `allow_sweep` is ticked.
-#   6. dry-run plan printed; with mode=apply the push runs, the ledger is
-#      re-read, and the file's `-- VERIFY:` queries must each return a row.
+#   5. ORDER GUARD: the apply sends ONLY the named file, so other pending
+#      migrations are skipped rather than swept in. The pending set is listed;
+#      if any pending migration is OLDER than the named one, applying it now
+#      puts it into production out of order and the run stops unless
+#      `allow_out_of_order` is ticked.
+#   6. plan printed (the exact SQL body); with mode=apply that body is sent,
+#      the ledger is re-read, and the file's `-- VERIFY:` queries must each
+#      return a row.
 name: db-apply
 
 on:
@@ -27,13 +30,13 @@ on:
         required: true
         type: string
       mode:
-        description: 'dry-run prints the plan and stops; apply pushes to production'
+        description: 'dry-run prints the plan and stops; apply sends it to production'
         required: true
         type: choice
         default: dry-run
         options: [dry-run, apply]
-      allow_sweep:
-        description: 'Allow the push to include OTHER pending migrations besides the named one (read the pending list first)'
+      allow_out_of_order:
+        description: 'Apply even though OLDER migrations are still pending (they stay unapplied — read the pending list first)'
         required: false
         type: boolean
         default: false
@@ -64,7 +67,7 @@ jobs:
     env:
       MIGRATION: ${{ inputs.migration }}
       MODE: ${{ inputs.mode }}
-      ALLOW_SWEEP: ${{ inputs.allow_sweep }}
+      ALLOW_OUT_OF_ORDER: ${{ inputs.allow_out_of_order }}
       HELD_OVERRIDE: ${{ inputs.held_override }}
       HELD_REASON: ${{ inputs.reason }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -122,31 +125,38 @@ jobs:
             || { sed -E 's/(password|token)[^ ]*/\1 [redacted]/Ig' link.log; exit 1; }
           echo "PASS linked to project (ref redacted)"
 
-      - name: Sweep guard — list every migration production is missing
+      - name: Order guard — list every migration production is missing
         run: |
           set -euo pipefail
           ./node_modules/.bin/supabase migration list --linked --password "$SUPABASE_DB_PASSWORD" > migration-list.txt 2>&1
           # Rows look like: "   <local> | <remote> | <time>"; a pending row has an empty Remote column.
           pending="$(awk -F'|' '/^[[:space:]]*[0-9]{14}[[:space:]]*\|/ { l=$1; r=$2; gsub(/[[:space:]]/,"",l); gsub(/[[:space:]]/,"",r); if (r=="") print l }' migration-list.txt || true)"
           want="${MIGRATION%%_*}"
-          echo "Pending on production (db push applies ALL of these, in order):"
+          echo "Pending on production (only $want will be applied; the rest stay pending):"
           if [ -z "$pending" ]; then echo "  (none)"; else echo "$pending" | awk '{ print "  " $0 }'; fi
           {
             echo "### Pending migrations on production"
             if [ -z "$pending" ]; then echo "_none_"; else echo '```'; echo "$pending"; echo '```'; fi
+            echo "_Only \`$want\` is applied by this run._"
           } >> "$GITHUB_STEP_SUMMARY"
           if ! echo "$pending" | grep -qx "$want"; then
             echo "::error::version $want is not pending — already applied, or not a migration the ledger knows. Stopping."
             exit 1
           fi
-          others="$(echo "$pending" | grep -vx "$want" || true)"
-          if [ -n "$others" ] && [ "$ALLOW_SWEEP" != "true" ]; then
-            echo "::error::the push would ALSO apply: ${others//$'\n'/ }. Re-run with allow_sweep ticked only if every one of those is intended."
+          # The apply sends one file, so a NEWER pending migration is simply
+          # untouched and needs no acknowledgement. An OLDER pending one does:
+          # applying past it lands this file out of order, and it will then be
+          # skipped by any later `supabase db push` (which honours --include-all).
+          older="$(echo "$pending" | awk -v w="$want" 'NF && $0 < w' || true)"
+          if [ -n "$older" ] && [ "$ALLOW_OUT_OF_ORDER" != "true" ]; then
+            echo "::error::these OLDER migrations are still pending: ${older//$'\n'/ }." \
+                 "Applying $want now lands it out of order. Re-run with allow_out_of_order" \
+                 "ticked only if $want does not depend on any of them."
             exit 1
           fi
-          echo "PASS sweep guard"
+          echo "PASS order guard"
 
-      - name: apply.mjs — pre-checks, ledger, PITR marker, dry-run plan
+      - name: apply.mjs — pre-checks, ledger, PITR marker, plan
         run: |
           set -euo pipefail
           args=("supabase/migrations/$MIGRATION")
@@ -157,7 +167,7 @@ jobs:
           node scripts/db/apply.mjs "${args[@]}" | tee dry-run.txt
           { echo "### Dry run"; echo '```'; cat dry-run.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: apply.mjs --apply (push, re-read ledger, run VERIFY queries)
+      - name: apply.mjs --apply (send the single-file body, re-read ledger, run VERIFY queries)
         if: ${{ inputs.mode == 'apply' }}
         run: |
           set -euo pipefail
