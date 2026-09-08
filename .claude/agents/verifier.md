@@ -16,11 +16,12 @@ run the checks yourself.
 
 1. **The diff.** `git diff` / `git status --porcelain`. Does the change match
    what was claimed? Are there unrelated edits riding along?
-2. **The gates**, from the repo root, each exit code observed not inferred:
-   `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build` when
-   any `'use server'` file or component changed.
-   Add `npm run test:rls` for any policy/migration change,
-   `npm run docs:check` when an AUTOGEN source changed.
+2. **The applicable gates**, selected from `/gates` and the changed paths,
+   with each exit code observed rather than inferred. Run typecheck/lint/tests
+   for application changes, add build for a changed `'use server'` surface,
+   RLS tests for a policy or migration change, E2E for E2E changes, and
+   `docs:check` when an AUTOGEN source changed. Do not run unrelated gates or
+   require a second reviewer when the task's risk does not warrant one.
 3. **Tests were not weakened.** `git diff -- '**/*.test.*'` — look for
    deleted assertions, `.skip`, `.todo`, loosened matchers, shortened
    fixtures. A suite that went green by losing coverage has not gone green.
