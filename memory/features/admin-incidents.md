@@ -129,6 +129,26 @@ always derived at read time.
   to a third-party model. The detail page's `AffectedPeoplePanel` keeps three
   states: named people, "no identity was captured" (a capture gap), and "could
   not read who" — the last must never render as the second.
+- **Server-render faults capture the signed-in user from the request's own
+  cookies.** `onRequestError` (`src/instrumentation.ts`) is the capture path for
+  every server-render and route-handler failure and passed no identity at all,
+  so every `source='server_component'` row landed with `user_id NULL` — 79 of
+  the ~151 error rows visible in a 72h window on 2026-09-08, the top three
+  incidents by volume among them. `cookies()` from `next/headers` is
+  unavailable in that frame (the render has already unwound) and the ambient
+  `RequestContext` AsyncLocalStorage is opened only by `observed-action.ts`, so
+  a page render never has one; `request.headers` is the only identity signal
+  the hook gets. `src/lib/observability/observed-user-from-request.ts` reads it
+  via `createServerClient` — the cookie is chunked and `base64-` enveloped and
+  a hand-rolled decoder that gets it subtly wrong would ATTRIBUTE A FAULT TO
+  THE WRONG PERSON, which is worse than the null it replaces. ATTRIBUTION
+  ONLY: the session's signature is not re-verified and nothing there may ever
+  gate access — `updateSession` already verified this request via
+  `getUserResilient` before a render could throw, and a real permission
+  decision goes through `requireSuperAdmin()` or RLS. The edge branch relays
+  the same pair through `/api/internal/log-server-error`, which re-validates
+  the id's UUID shape so a malformed value costs one field and not the whole
+  row. Historical rows cannot be backfilled — attribution is forward-only.
 - **Incident resolution has exactly one write path.** Every resolve — a single
   row, a whole fingerprint, or a bulk selection — goes through the user-scoped
   `resolve_admin_event` RPC and busts `BRIDGE_INCIDENT_CACHE_TAG`. The RPC
