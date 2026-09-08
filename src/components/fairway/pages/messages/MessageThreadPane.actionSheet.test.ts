@@ -30,7 +30,7 @@
 import { createElement } from 'react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MessageThreadPane, type MessageThreadPaneProps } from './MessageThreadPane';
 import type { GolfConversationWithMeta, MessageWithReadStatus } from '@/hooks/golf/use-golf-messages';
@@ -231,7 +231,7 @@ describe('G-56 — the rendered action sheet', () => {
     render(createElement(MessageThreadPane, baseProps(own, { mobileActionsId: MESSAGE_ID })));
     const copy = document.body.querySelector('[aria-label="Copy message"]');
     expect(copy, 'expected the action sheet to be open').not.toBeNull();
-    return { row: copy!.parentElement!, panel: copy!.parentElement!.parentElement! };
+    return { row: copy!.parentElement!, panel: copy!.closest('[data-slot="sheet"]')! };
   };
 
   it('is the shared Sheet, so the panel geometry is the token by construction', () => {
@@ -317,8 +317,63 @@ describe('G-56 — the rendered action sheet', () => {
       createElement(MessageThreadPane, baseProps(true, { mobileActionsId: MESSAGE_ID, onSetMobileActions })),
     );
     const panel = document.body.querySelector('[aria-label="Copy message"]')!
-      .parentElement!.parentElement!;
+      .closest('[data-slot="sheet"]')!;
     panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(onSetMobileActions).toHaveBeenCalledWith(null);
+  });
+});
+
+// Reactions are controls backed by the page's persisted state, in both DMs and groups.
+describe('message reaction controls', () => {
+  const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+  beforeAll(() => { HTMLElement.prototype.scrollIntoView = vi.fn(); });
+  afterAll(() => { HTMLElement.prototype.scrollIntoView = originalScrollIntoView; });
+  it('offers reactions on an incoming group message without offering edit or delete', () => {
+    const setReaction = vi.fn(async () => true);
+    render(createElement(MessageThreadPane, baseProps(false, {
+      conversation: { id: 'dm-1', is_group: true, participant_count: 8, title: 'Team Updates', unread_count: 0 } as GolfConversationWithMeta,
+      mobileActionsId: MESSAGE_ID,
+      reactions: { rows: [], error: null, pending: null, refresh: vi.fn(async () => {}), setReaction },
+    })));
+    const like = document.body.querySelector('[aria-label="Like"]') as HTMLButtonElement;
+    expect(like).toBeTruthy();
+    like.click();
+    expect(setReaction).toHaveBeenCalledWith(MESSAGE_ID, '👍', true);
+    expect(document.body.querySelector('[aria-label="Delete message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Edit message"]')).toBeNull();
+  });
+
+  it('does not expose actions from a previous conversation while new messages load', () => {
+    render(createElement(MessageThreadPane, baseProps(false, {
+      conversation: { id: 'another-thread', participant_count: 2, unread_count: 0 } as GolfConversationWithMeta,
+      mobileActionsId: MESSAGE_ID,
+    })));
+    expect(document.body.querySelector('[aria-label="Copy message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Edit message"]')).toBeNull();
+    expect(document.body.querySelector('[aria-label="Delete message"]')).toBeNull();
+  });
+
+  it('anchors the incoming avatar inside the bubble, independently of reactions and metadata', () => {
+    render(createElement(MessageThreadPane, baseProps(false)));
+    const avatar = document.body.querySelector('[data-message-avatar]');
+    expect(avatar).not.toBeNull();
+    expect(avatar!.parentElement?.hasAttribute('data-message-bubble')).toBe(true);
+  });
+
+  it('shows the group count and lets the viewer remove only their reaction', () => {
+    const setReaction = vi.fn(async () => true);
+    render(createElement(MessageThreadPane, baseProps(false, {
+      reactions: {
+        rows: [
+          { id: 'one', message_id: MESSAGE_ID, user_id: 'player-2', emoji: '👍' },
+          { id: 'two', message_id: MESSAGE_ID, user_id: 'coach-1', emoji: '👍' },
+        ],
+        error: null, pending: null, refresh: vi.fn(async () => {}), setReaction,
+      },
+    })));
+    const badge = screen.getByRole('button', { name: '👍: 2 reactions, including you' });
+    expect(badge?.getAttribute('aria-pressed')).toBe('true');
+    badge.click();
+    expect(setReaction).toHaveBeenCalledWith(MESSAGE_ID, '👍', false);
   });
 });

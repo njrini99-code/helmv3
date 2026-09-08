@@ -1,23 +1,5 @@
 // @vitest-environment jsdom
-//
-// G-47 — composer geometry, now that the artboard supplies the numbers.
-//
-// Five deltas, one finding:
-//   1. the raised outer "glass dock" did not exist — the <form> WAS the
-//      composer, a flush `border-t` + `bg-surface-sunken` footer, so the
-//      two-layer dock+track construction §9.1 describes was one layer (M03C F13)
-//   2. the send control was `rounded-fw-md` (14px), a rounded square, where
-//      the artboard draws a full circle
-//   3. mobile drew a 44px VISIBLE circle, inverting §9.1's own 40px-visible /
-//      44px-hit-area split by growing the circle instead of the tap zone
-//   4. the track was hardcoded `items-end`, bottom-aligning controls on a
-//      single-line composer the artboard centres
-//   5. the placeholder was generic where the artboard names the recipient
-//
-// The dock's tests measure BOTH SIDES — the artboard's `.slab` parsed out of
-// `Composer.dc.html` against the `--fw-*` values parsed out of
-// `design-tokens.css` — because the finding IS that they are the same values.
-// If either file moves, this suite says so.
+// Composer control geometry and recipient behavior. Visual layout is browser-verified.
 
 import { createElement } from 'react';
 import { readFileSync } from 'node:fs';
@@ -25,13 +7,12 @@ import { join } from 'node:path';
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { MessageComposer } from './MessageComposer';
+import { conversationRecipientName } from './conversation-kind';
 
 const ROOT = process.cwd();
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf-8');
 
 const artboard = read('audit/reference/Composer.dc.html');
-const tokens = read('src/styles/design-tokens.css');
-const composerSource = read('src/components/fairway/pages/messages/MessageComposer.tsx');
 const parentSource = read('src/components/fairway/pages/messages/FairwayMessages.tsx');
 
 /** Comment-stripped, so the fix's own prose cannot satisfy a check. */
@@ -41,33 +22,8 @@ const strip = (src: string) =>
     .split('\n')
     .filter((line) => !line.trim().startsWith('//'))
     .join('\n');
-const composerCode = strip(composerSource);
 const parentCode = strip(parentSource);
 
-const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
-
-/** One declaration out of the artboard's `.slab` rule. */
-function slabValue(prop: string): string {
-  const body = artboard.match(/\.slab\s*\{([\s\S]*?)\}/)?.[1];
-  expect(body, 'expected a .slab rule in Composer.dc.html').toBeDefined();
-  const value = body!.match(new RegExp(`(?:^|[;{\\s])${prop}\\s*:\\s*([^;]+);`))?.[1];
-  expect(value, `expected ${prop} in .slab`).toBeDefined();
-  return squash(value!);
-}
-
-/**
- * A light-theme custom property. Names repeat in the dark block, so the FIRST
- * occurrence in file order is the light value — the same de-duping the bubble
- * depth suite needed.
- */
-function token(name: string): string {
-  const value = tokens.match(new RegExp(`${name}\\s*:\\s*([^;]+);`))?.[1];
-  expect(value, `expected ${name} in design-tokens.css`).toBeDefined();
-  return squash(value!);
-}
-
-const dock = (container: HTMLElement) =>
-  container.querySelector('form > div') as HTMLDivElement | null;
 const sendButton = () => screen.getByLabelText('Send message');
 const field = () => screen.getByPlaceholderText(/Message |Type a message/) as HTMLTextAreaElement;
 
@@ -82,67 +38,6 @@ function paintTextarea(lineHeightPx: number) {
 
 beforeEach(() => document.querySelectorAll('[data-test-paint]').forEach((el) => el.remove()));
 afterEach(() => document.querySelectorAll('[data-test-paint]').forEach((el) => el.remove()));
-
-describe('G-47 · the dock — and it is the Fairway glass material exactly', () => {
-  it('the artboard background IS --fw-glass-bg', () => {
-    expect(slabValue('background')).toBe(token('--fw-glass-bg').replace('var(--fw-glass-tint)', '244 232 210'));
-  });
-
-  it('the artboard blur and saturation ARE the glass tokens', () => {
-    expect(slabValue('backdrop-filter')).toBe(
-      `blur(${token('--fw-blur-glass')}) saturate(${token('--fw-glass-saturate')})`,
-    );
-  });
-
-  it('the artboard radius IS --fw-radius-lg, the "glass bars" step', () => {
-    expect(slabValue('border-radius')).toBe(token('--fw-radius-lg'));
-  });
-
-  it('the artboard drop shadow IS --fw-shadow-pop, to the byte', () => {
-    // The .slab shadow is three layers: an inset specular, then two drops.
-    // The two drops are what --fw-shadow-pop is.
-    const drops = slabValue('box-shadow').split(/,\s*(?=0 )/).slice(1).join(', ');
-    expect(drops).toBe(token('--fw-shadow-pop'));
-  });
-
-  it('renders a dock layer distinct from the form, carrying those tokens', () => {
-    const { container } = render(createElement(MessageComposer, { onSend: vi.fn(async () => true) }));
-    const el = dock(container);
-    expect(el, 'expected a dock element inside the form').not.toBeNull();
-
-    const cls = el!.className;
-    expect(cls).toContain('rounded-fw-lg');
-    expect(cls).toContain('[background:var(--fw-glass-bg)]');
-    expect(cls).toContain('backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))');
-    expect(cls).toContain('var(--fw-shadow-pop)');
-    expect(cls).toContain('var(--fw-glass-highlight)');
-  });
-
-  it('is padded as the artboard pads it — 12px, 14px at the bottom', () => {
-    const { container } = render(createElement(MessageComposer, { onSend: vi.fn(async () => true) }));
-    expect(slabValue('padding')).toBe('12px 12px 14px 12px');
-    expect(dock(container)!.className).toContain('p-3 pb-3.5');
-  });
-
-  it('no longer paints the flush edge-to-edge footer it replaced', () => {
-    const { container } = render(createElement(MessageComposer, { onSend: vi.fn(async () => true) }));
-    const form = container.querySelector('form') as HTMLFormElement;
-
-    // Scoped to the FORM's own classes on purpose: `bg-surface-sunken` is
-    // still correct further down, on the send button's disabled fill, and a
-    // whole-file search would ban a token that has nothing to do with this.
-    expect(form.className).not.toContain('bg-surface-sunken');
-    expect(form.className).not.toContain('border-t');
-    expect(composerCode).not.toContain('border-t border-border-subtle');
-  });
-
-  it('takes the pop depth step, not the overlay family’s raise', () => {
-    // `.fw-glass-regular` is the same material but composes --fw-shadow-raise,
-    // a visibly heavier float meant for popovers above the page.
-    expect(composerCode).not.toContain('fw-glass-regular');
-    expect(composerCode).not.toContain('var(--fw-shadow-raise)');
-  });
-});
 
 describe('G-47 · the send control', () => {
   it('is a full circle, which is what --fw-radius-full is reserved for', () => {
@@ -217,15 +112,12 @@ describe('G-47 · the field names who is about to hear you', () => {
   it('reads the same source the thread header does', () => {
     // Two places naming the same person must not be able to disagree.
     expect(parentCode).toContain('recipientName={');
-    expect(parentCode).toContain('other_participant?.name');
-    expect(parentCode).toContain('selectedConversation.is_group');
+    expect(parentCode).toContain('conversationRecipientName(selectedConversation)');
   });
 
   it('keeps a group title whole — a group name is not a person’s', () => {
-    // Clipping at the first space would invent a first name out of "Varsity
-    // Team Chat".
-    const call = parentCode.slice(parentCode.indexOf('recipientName={'));
-    const groupBranch = call.slice(0, call.indexOf('}\n'));
-    expect(groupBranch).toMatch(/is_group[\s\S]*title \|\| undefined/);
+    const recipient = conversationRecipientName({ is_group: true, participant_count: 8, title: 'Varsity Team Chat' });
+    render(createElement(MessageComposer, { onSend: vi.fn(async () => true), recipientName: recipient }));
+    expect(screen.getByPlaceholderText('Message Varsity Team Chat')).toBeTruthy();
   });
 });

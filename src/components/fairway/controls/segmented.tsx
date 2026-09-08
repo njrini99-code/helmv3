@@ -208,6 +208,7 @@ export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
   return (
     <motion.span
       layoutId={layoutId}
+      data-slot="fw-segment-pill"
       aria-hidden="true"
       // Dark scope (owner directive 2026-08-26, live coach QA): the selected
       // thumb turns accent green — the flipped `bg-surface` pill read as a

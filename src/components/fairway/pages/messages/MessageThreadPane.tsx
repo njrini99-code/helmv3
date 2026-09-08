@@ -1,40 +1,16 @@
 'use client';
 
-/**
- * ============================================================================
- * Fairway · messages · MessageThreadPane — the PULSE focal hero (open thread)
- * ----------------------------------------------------------------------------
- * The two-pane inbox's RIGHT pane and the page's ONE focal hero: a flat matte
- * `InstrumentPanel` depth='raised' thread well with a sunken composer track —
- * mirrors AskThreadPane. The conversation bubbles read on matte surfaces
- * (own = bg-accent tint, other = bg-surface-sunken); NEVER bg-white/backdrop-blur.
- *
- * It owns NO send/edit/delete logic — the parent FairwayMessages drives those
- * through the UNCHANGED useGolfMessages hook + server actions and passes the
- * handlers + state down. This pane is PRESENTATION + LAYOUT only:
- *   • each newly opened thread starts at its newest message; subsequent
- *     realtime messages auto-scroll only while the reader is near the bottom
- *   • own-vs-other bubble tint, message grouping by consecutive sender, time +
- *     read receipt on the last message of a group (tabular-nums)
- *   • edit mode (inline textarea) + delete confirmation, desktop hover / mobile
- *     tap-row controls — same affordances, re-skinned
- *   • typing indicator = three dim dots on a matte Inset (NOT a glass bubble)
- *
- * HONEST-EMPTY:
- *   (b) conversation selected, ZERO messages → subtle EmptyState.
- *   (c) no thread selected (desktop) → dim "Select a conversation" prompt.
- *   (e) the "edited" badge + attachment affordances render ONLY when
- *       edited_at / has_attachments are truthy (dormant on the demo, no fake
- *       paperclip / fake edited tag).
- * ========================================================================== */
+/** Conversation canvas: grouped messages, delivery state, scrolling and actions.
+ * The panel fills the workspace; bubble widths remain independently bounded. */
 
+import { MESSAGE_REACTIONS, summarizeReactions, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info, SmilePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
-import { isGroupConversation } from './conversation-kind';
-import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { isGroupConversation, conversationDisplayName } from './conversation-kind';
+import { MessageActionsPanel } from './MessageActionsPanel';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
   GolfConversationWithMeta,
@@ -137,6 +113,7 @@ function ActionRow({
       variant="ghost"
       onClick={onClick}
       aria-label={`${label} message`}
+      leftIcon={icon}
       className={cn(
         // 52px is `Actions.dc.html:40`'s stated row height and is NOT on this
         // repo's spacing scale — `tailwind.config.ts:419` enumerates it and
@@ -172,8 +149,7 @@ function ActionRow({
           : 'text-text-primary hover:bg-surface-sunken active:bg-surface-sunken',
       )}
     >
-      <span className="flex-shrink-0">{icon}</span>
-      <span>{label}</span>
+      {label}
     </Button>
   );
 }
@@ -273,7 +249,13 @@ type ResolvedAttachment = NonNullable<
   Awaited<ReturnType<typeof getGolfMessageAttachments>>['attachments']
 >[number];
 
+const EMPTY_REACTIONS: MessageReactionsState = {
+  rows: [], error: null, pending: null,
+  refresh: async () => {}, setReaction: async () => false,
+};
+
 export interface MessageThreadPaneProps {
+  reactions?: MessageReactionsState;
   /** The open conversation (page-owned selection), or null on desktop no-select. */
   conversation: GolfConversationWithMeta | null;
   /** Messages from the unchanged useGolfMessages() hook. */
@@ -555,6 +537,7 @@ function MessageAttachments({
 }
 
 export function MessageThreadPane({
+  reactions: reactionProps,
   conversation,
   messages,
   loading,
@@ -588,6 +571,7 @@ export function MessageThreadPane({
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
   const reduceMotion = useReducedMotion() ?? false;
+  const reactions = reactionProps ?? EMPTY_REACTIONS;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   /** The message list itself — observed for late growth (images, fonts). */
@@ -623,9 +607,15 @@ export function MessageThreadPane({
     (m: MessageWithReadStatus) => m.sender_id === userId || m.sender_id === currentUserId,
     [userId, currentUserId],
   );
-  const actionsMessage = React.useMemo(
-    () => (mobileActionsId ? messages.find((m) => m.id === mobileActionsId) ?? null : null),
-    [mobileActionsId, messages],
+  const currentActionsMessage = React.useMemo(
+    () => (mobileActionsId ? messages.find((m) => m.id === mobileActionsId && m.conversation_id === conversation?.id) ?? null : null),
+    [mobileActionsId, messages, conversation?.id],
+  );
+  // Keep the last body mounted while the shared overlay runs its exit animation.
+  const lastActionsMessage = React.useRef<MessageWithReadStatus | null>(null);
+  if (currentActionsMessage) lastActionsMessage.current = currentActionsMessage;
+  const actionsMessage = currentActionsMessage ?? (
+    lastActionsMessage.current?.conversation_id === conversation?.id ? lastActionsMessage.current : null
   );
 
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1097,9 +1087,7 @@ export function MessageThreadPane({
   // the ONE derivation, so the avatar and the per-bubble sender identity stop
   // disagreeing with the subtitle sitting inches away from them.
   const isGroup = isGroupConversation(conversation);
-  const headerName = isGroup
-    ? conversation.title || 'Team Group'
-    : conversation.other_participant?.name || 'Unknown User';
+  const headerName = conversationDisplayName(conversation);
   // `is_group` is set for anything carrying `is_team_chat`, and a broadcast
   // sent to ONE player carries it too (the flag is load-bearing for the
   // conversation-create RLS workaround, so it can't just be dropped there).
@@ -1113,7 +1101,7 @@ export function MessageThreadPane({
   // new information, and `participant_count` was already being read one line
   // above to decide WHICH label to show — so this needs no new plumbing, only
   // the willingness to print the number it already had.
-  const headerSubtitle = conversation.is_group
+  const headerSubtitle = isGroup
     ? participantCount > 2
       ? `${participantCount} members`
       : participantCount === 2
@@ -1129,24 +1117,13 @@ export function MessageThreadPane({
       aria-label="Conversation"
       className={cn(
         'flex min-h-[40vh] flex-col overflow-hidden',
-        // On a phone with a thread open this panel IS the whole screen, so the
-        // elevation stops reading as "a pane beside the rail" and starts
-        // reading as a full-screen card floating on a page — which is Doctrine
-        // Rule 11 (no full-screen monolith cards) and the "chat feels like a
-        // card inside a page" complaint. The conversation should be the
-        // canvas. Flattened below `md` only; from `md` up it is genuinely one
-        // pane of a two-pane inbox and keeps its lift.
-        //
-        // `!` is required because the depth treatment comes from a CSS module
-        // class (instrument-panel.module.css `.panelRaised` / `.panel`), which
-        // has the same single-class specificity as a Tailwind utility — without
-        // it the winner would depend on stylesheet order.
-        'max-md:!rounded-none max-md:!border-0 max-md:!shadow-none',
+        // Flatten the shared panel so the conversation reads as a workspace.
+        '!rounded-none !border-0 !shadow-none',
         className,
       )}
     >
       {/* Thread bezel header — name + subtitle, mobile back affordance. */}
-      <header className="flex min-w-0 items-center gap-2.5 border-b border-border-subtle px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+      <header className="flex min-h-16 min-w-0 items-center gap-2.5 relative z-10 fw-glass-chrome border-b shadow-flat px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
         {/* "‹ Messages", not a bare arrow. With the shell's top bar hidden for
             an open thread this is the only way out AND the only thing naming
             where "out" is, so it says so — the platform convention, and the
@@ -1161,7 +1138,7 @@ export function MessageThreadPane({
           leftIcon={<ArrowLeft size={20} aria-hidden="true" />}
           className="-ml-2 min-h-[44px] shrink-0 gap-0.5 px-2 font-fw-sans text-body-sm font-medium text-text-secondary lg:hidden"
         >
-          Messages
+          <span className="max-[374px]:sr-only">Messages</span>
         </Button>
         {/* G-29c — a group's identity is WHO is in it, so the header shows an
             overlapping member stack rather than a generic Users glyph.
@@ -1345,7 +1322,7 @@ export function MessageThreadPane({
           // by the grouping (tight within a group, generous between), and a
           // uniform gap on every child would flatten that back out and
           // double-space the day separators.
-          <div ref={messagesContentRef}>
+          <div ref={messagesContentRef} className="flex min-h-full flex-col justify-end">
             {messages.map((msg, idx) => {
               // own-message check is identical for both roles (spec §4).
               const isOwn = msg.sender_id === userId || msg.sender_id === currentUserId;
@@ -1430,38 +1407,7 @@ export function MessageThreadPane({
                   </div>
                 )}
                 {startsDay && (
-                  // G-50a took the FLOATING chip from `Thread.dc.html:52`,
-                  // whose authored comment says it "FLOATS over the thread on
-                  // glass, not inline in it". Shipped, that reading is wrong on
-                  // two counts. Thread's floater is positioned against the
-                  // SCROLL CONTAINER — one chip, `top: 12px`, pinned at the head
-                  // of the pane: a current-day indicator, not a per-boundary
-                  // separator. Ported onto each boundary it became an absolute
-                  // element over a zero-height row, and it landed on top of the
-                  // sender name of the group below it. `Group.dc.html:44` is the
-                  // artboard that matches a group thread and it draws the same
-                  // chip INLINE — `justify-content: center; padding: 0 0 16px 0`
-                  // — which structurally cannot collide. Inline it is.
-                  //
-                  // STATIC, not sticky, unchanged: pinning would turn a boundary
-                  // label into a running current-day indicator, which is new
-                  // behaviour nobody asked for and overlaps G-29's still-open
-                  // day-separator work.
-                  //
-                  // The glass licence is this chip and nothing else. DECISIONS.md
-                  // bounds it — "does not license glass on any larger surface" —
-                  // and the ban this file's own header states, no
-                  // bg-white/backdrop-blur on BUBBLES, still stands.
-                  //
-                  // Every value is a token that already existed and was unused
-                  // here: --fw-glass-bg is byte-identical to the artboard's
-                  // `.glass` background, --fw-blur-glass to its 22px, and
-                  // --fw-glass-saturate to its 190%. The chip's shadow is an
-                  // inset specular over --fw-shadow-pop, whose two layers match
-                  // the artboard exactly. Referenced through the arbitrary-
-                  // property escape, never `bg-glass` / `backdrop-blur-glass` —
-                  // those are the LEGACY cream-100 utilities the design-system
-                  // rule bans, unrelated to the --fw-glass-* tokens.
+                  // Inline date boundaries reserve space above the next sender.
                   <div className="pointer-events-none flex justify-center pb-4" role="separator">
                     <span
                       className={cn(
@@ -1478,6 +1424,7 @@ export function MessageThreadPane({
                   </div>
                 )}
                 <m.div
+                  data-message-row
                   ref={(node: HTMLDivElement | null) => {
                     // P259: register/unregister this message's scroll anchor.
                     if (node) messageRefs.current.set(msg.id, node);
@@ -1506,39 +1453,8 @@ export function MessageThreadPane({
                     isLastInGroup ? 'mb-1.5' : 'mb-0.5',
                   )}
                 >
-                  {/* Incoming avatar — EVERY incoming row, once per group.
-                      This was gated to groups on the argument that the column
-                      "cost 40px of width on every single line of the narrowest
-                      screen". Measured, it costs nothing: the narrowest screen
-                      is 390px, the thread pads 16px a side, so an incoming row
-                      has 358px and the avatar column plus `gap-2` leaves 318 —
-                      still clear of the 288px bubble cap, which is what
-                      actually binds. The premise was wrong, so the gate goes.
-                      `Group.dc.html:48` draws the column; `Thread.dc.html`
-                      omits it in a 1:1, but that is an unannotated specimen
-                      choice, and the owner has asked for the face beside the
-                      message directly. */}
-                  {!isOwn && (
-                    <div className="flex w-8 flex-shrink-0 flex-col items-center">
-                      {/* On the LAST message of the group, not the first.
-                          The row is `items-end`, so anchoring the avatar to the
-                          final bubble sits it level with the speaker's last
-                          word — and level with the timestamp, which also renders
-                          on the last message. Anchored to the FIRST bubble it
-                          floated at the top of a tall group, level with nothing,
-                          with the group's own timestamp stranded four bubbles
-                          below it. Every phone chat does it this way for the
-                          same reason. */}
-                      {isLastInGroup ? (
-                        <Avatar decorative
-                          name={senderName}
-                          src={senderAvatar}
-                          size="sm"
-                          tone="accent"
-                        />
-                      ) : null}
-                    </div>
-                  )}
+                  {/* Reserve the gutter; the face itself anchors to the bubble. */}
+                  {!isOwn && <div aria-hidden="true" className="w-8 flex-shrink-0" />}
 
                   {/* G-50b — bubble max-width is 288px, and it is a RULE, not a
                       specimen. `Bubbles.dc.html:17` states it as a class rule —
@@ -1584,58 +1500,12 @@ export function MessageThreadPane({
                       </span>
                     )}
 
-                    {/* Message controls (desktop hover / tap row).
-                        G-42 — the GATE moved. This whole block used to be
-                        `isOwn && …`; now only the hover row below is, because
-                        Edit and Delete are the own-only pair. The tap row is
-                        everyone's. */}
                     {editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
-                      <>
-                        {isOwn && (
-                        /* G-42 — `focus-within:opacity-100` is the keyboard
-                           path. `opacity-0` leaves these buttons focusable
-                           (unlike `hidden` or `visibility`), so Tab already
-                           reached them — it just landed on something invisible,
-                           which is §15.3's definition of the problem rather
-                           than a fix for it. Now the row shows itself to
-                           whoever focused it. */
-                        <div className="absolute right-full top-1/2 mr-1 hidden -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 lg:flex">
-                          <IconButton variant="ghost" size="sm" aria-label="Edit message" onClick={() => onStartEdit(msg.id, msg.content)}>
-                            <Pencil size={14} aria-hidden="true" />
-                          </IconButton>
-                          {/* G-55 — the separator before Delete, on desktop too.
-                              Same reason it exists on the sheet: the one
-                              irreversible action must not sit flush against the
-                              reversible ones. */}
-                          <span aria-hidden="true" className="mx-1.5 h-4 w-px flex-shrink-0 bg-border-subtle" />
-                          <IconButton variant="danger" size="sm" aria-label="Delete message" onClick={() => onDeleteClick(msg.id)}>
-                            <Trash2 size={14} aria-hidden="true" />
-                          </IconButton>
-                        </div>
-                        )}
-                        {/* No persistent kebab. The actions appear on long-press
-                            (see longPressHandlers) and otherwise cost nothing.
-                            Copy is included because taking over long-press takes
-                            over the gesture iOS uses to select text — without it
-                            the message would become uncopyable.
-
-                            G-55 — order is FROZEN in `audit/DECISIONS.md`:
-                            Reply, Copy, Edit, — separator — Delete. The
-                            manifest called it "three sources, three orders";
-                            the decision corrects that. `Reactions.dc.html`
-                            (Reply, Copy, Edit, — Delete) and §12.4's prose
-                            agree exactly, and only `Actions.dc.html` leads
-                            with Copy, so the majority and the plan's own
-                            words say the same thing.
-
-                            REPLY IS ABSENT, and that is a deferral rather than
-                            a disagreement: the reply affordance is G-20c,
-                            deferred with its four pieces named in PROGRESS.md.
-                            Copy / Edit / Delete already sat in the decided
-                            relative order, so what this finding actually
-                            changed is the separator — which is the part that
-                            carries the meaning. */}
-                      </>
+                      <div className={cn('absolute top-1/2 hidden -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 motion-reduce:transition-none md:flex', isOwn ? 'right-full mr-2' : 'left-full ml-2')}>
+                        <IconButton variant="ghost" aria-label="Message actions" title="React or more actions" onClick={() => onSetMobileActions(msg.id)}>
+                          <SmilePlus size={18} aria-hidden="true" />
+                        </IconButton>
+                      </div>
                     )}
 
                     {/* Delete confirmation */}
@@ -1705,8 +1575,10 @@ export function MessageThreadPane({
                       // message was the one thing in the thread you could not
                       // copy.
                       <div
+                        data-message-bubble
                         {...longPressHandlers(msg.id)}
                         className={cn(
+                          'relative',
                           // G-29b — §8.6: "the image is the message object,
                           // with a caption below; it is not an image nested
                           // inside a large padded generic chat card." The
@@ -1812,6 +1684,11 @@ export function MessageThreadPane({
                           !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
                         )}
                       >
+                        {!isOwn && isLastInGroup && (
+                          <span data-message-avatar className="absolute bottom-0 right-full mr-2 flex h-8 w-8 items-center justify-center">
+                            <Avatar decorative name={senderName} src={senderAvatar} size="sm" tone="accent" />
+                          </span>
+                        )}
                         {/* Attachments — DORMANT unless has_attachments. Renders
                             the resolved (signed) gallery once it loads; falls
                             back to a quiet "Attachment" placeholder while the
@@ -1889,6 +1766,29 @@ export function MessageThreadPane({
                         ) : null}
                       </div>
                     )}
+                    {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).length > 0 && (
+                      <div className="relative z-10 -mt-3 flex flex-wrap gap-1 px-1" aria-label="Message reactions">
+                        {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).map((reaction) => (
+                          <Button
+                            key={reaction.emoji}
+                            type="button"
+                            variant="ghost"
+                            aria-label={`${reaction.emoji}: ${reaction.count} ${reaction.count === 1 ? 'reaction' : 'reactions'}${reaction.active ? ', including you' : ''}`}
+                            aria-pressed={reaction.active}
+                            disabled={Boolean(reactions.pending)}
+                            onClick={() => { void reactions.setReaction(msg.id, reaction.emoji, !reaction.active); }}
+                            className="group h-11 min-w-11 rounded-full border-0 bg-transparent p-0 hover:bg-transparent transition-transform duration-200 motion-reduce:transition-none"
+                            title={reaction.active ? 'You reacted. Tap to remove your reaction.' : 'Tap to add your reaction.'}
+                          >
+                            <span className={cn('inline-flex h-7 min-w-10 items-center justify-center gap-1 rounded-full border px-2 shadow-flat transition-colors duration-150 motion-reduce:transition-none', reaction.active ? 'border-accent-600/40 bg-accent-100 text-accent-700' : 'border-border-subtle bg-elevated text-text-primary group-hover:bg-surface')}>
+                              <span className="text-body leading-none" aria-hidden="true">{reaction.emoji}</span>
+                              <m.span key={reaction.count} initial={reduceMotion ? false : { opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.16 }} className="text-caption tabular-nums">{reaction.count}</m.span>
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+
                     {/* G-19 — a send that failed keeps its message here rather
                         than deleting it. The bubble above is dimmed via
                         `sendFailed`, and this row is the only trace that used
@@ -2003,70 +1903,58 @@ export function MessageThreadPane({
         )}
       </div>
 
-      {/* G-56 / M03D F17 — THE ACTION SURFACE IS A LABELLED BOTTOM SHEET.
-          `Actions.dc.html:36-56` and `Reactions.dc.html:71-92` both draw a
-          vertical list of full-width rows: a 21px icon, a 16px/500 text label,
-          52px tall, stacked with a 2px gap, a rule before Delete, and NO close
-          row. The code drew an icon-only horizontal strip with an X. F17 calls
-          that a different interaction pattern rather than a styling delta, and
-          it is right: a bare glyph cannot be read, only recognised.
-
-          G-56 itself is the record of a self-correction — M03D first read these
-          overlays as scrim-tap-to-dismiss, then found that neither artboard
-          contains a dim overlay div at all, and the model is drag-via-grip over
-          a reduced-opacity background (`Actions.dc.html:24` opacity 0.32,
-          `Reactions.dc.html:36` 0.34). WHAT THAT EVIDENCE DOES AND DOES NOT
-          SAY: an artboard is a picture. "No overlay div" is strong evidence
-          about the composition and weak evidence about the interaction, because
-          a static mock draws a scrim and a dimmed sibling identically. So the
-          composition is taken from the artboard — and the shared `Sheet`, which
-          AGENTS.md's authority order puts above prose and which
-          `design-system.md` names as the ONE slide-over, brings its own scrim.
-          The X had no artboard counterpart and is gone; the grip is real now
-          rather than absent.
-
-          THE SHEET IS THE ARTBOARD, ALREADY. This is the fifth free token
-          application of the audit, after G-32, G-49b, G-47 and G-55, and the
-          closest one yet — `Sheet`'s bottom variant is `rounded-t-fw-lg`
-          (`--fw-radius-lg`, 1.75rem) with `border-t border-border-subtle`
-          (`oklch(0.862 0.013 82 / 0.95)`), and the artboard's panel is
-          `border-radius: 1.75rem 1.75rem 0 0` with
-          `border-top: 1px solid oklch(0.862 0.013 82 / 0.95)`. Byte-identical,
-          both. Its grip is `h-1.5 w-10` against the artboard's 4×38px — the
-          2px near-match M03D measured, and the shared primitive's to change,
-          not this surface's. The row radius is `--fw-radius-md`, whose own
-          comment reads "list rows".
-
-          ONE row lives here, not one per message: the artboards draw a single
-          sheet over the thread, and the id says which message it is for. */}
+      {/* One responsive action panel for the selected message. */}
       {actionsMessage && (
-        <Sheet
-          open
-          onOpenChange={(next) => { if (!next) onSetMobileActions(null); }}
-          side="bottom"
-          title="Message actions"
-          hideTitle
-          hideClose
-          // DESKTOP. `SIDE_CLASS.bottom` is `inset-x-0`, so without this the
-          // sheet is a full-width band across a 1440px monitor — a phone
-          // control stretched, which is how it would read.
-          //
-          // Every artboard in this audit is a 390x844 phone scene, so NONE of
-          // them supplies a desktop answer; that is the same gap G-50b's
-          // comment recorded about bubble width, and it was resolved there by
-          // the plan's own words rather than by inventing one. There is no
-          // equivalent sentence here, so nothing is invented: the surface stays
-          // ONE sheet with one code path, and only its measure is capped so it
-          // reads as a centred card above `sm`. A pointer-anchored context menu
-          // would be the idiomatic desktop control and is exactly the kind of
-          // unsourced design this audit does not add on its own.
-          // Measure only — the leading edge keeps the `rounded-t-fw-lg` the
-          // variant already gives it, and the sheet stays bottom-anchored, so
-          // rounding all four corners would be wrong AND would trip G-48's
-          // guard against this radius appearing on a bubble.
-          className="sm:mx-auto sm:max-w-sm"
+        <MessageActionsPanel
+          open={Boolean(currentActionsMessage)}
+          anchor={() => messageRefs.current.get(actionsMessage.id)?.querySelector<HTMLElement>('[data-message-bubble]') ?? null}
+          own={isOwnMessage(actionsMessage)}
+          onClose={() => onSetMobileActions(null)}
         >
-          <div className="flex flex-col gap-0.5 px-3 pb-3">
+          <div className="mb-4 mr-9 rounded-fw-md bg-surface px-3 py-2.5 shadow-flat">
+            <p className="text-caption font-medium text-text-secondary">
+              {isOwnMessage(actionsMessage) ? 'Your message' : (isGroup
+                ? groupParticipants?.get(actionsMessage.sender_id)?.name || 'Team member'
+                : conversationDisplayName(conversation))}
+            </p>
+            <p className="mt-1 line-clamp-2 break-words text-body text-text-primary">
+              {decodeMessageContent(actionsMessage.content) || 'Attachment'}
+            </p>
+          </div>
+          {reactionProps && (
+            <div className="mb-3 flex justify-between gap-0.5 rounded-full bg-surface p-1.5 shadow-raise" aria-label="React to message">
+              {MESSAGE_REACTIONS.map(({ emoji, label }) => {
+                const active = reactions.rows.some((row) => row.message_id === actionsMessage.id && row.user_id === (currentUserId ?? userId) && row.emoji === emoji);
+                const saving = reactions.pending === `${actionsMessage.id}:${emoji}`;
+                return (
+                  <Button
+                    key={emoji}
+                    type="button"
+                    variant="ghost"
+                    aria-label={label}
+                    title={active ? `Remove ${label.toLowerCase()}` : label}
+                    aria-pressed={active}
+                    aria-busy={saving || undefined}
+                    disabled={Boolean(reactions.pending)}
+                    onClick={() => {
+                      void reactions.setReaction(actionsMessage.id, emoji, !active).then((saved) => {
+                        if (saved) onSetMobileActions(null);
+                      });
+                    }}
+                    className={cn('group h-12 min-w-0 flex-1 rounded-full p-0 text-h2 transition-colors motion-reduce:transition-none', active && 'bg-accent-100 ring-1 ring-inset ring-accent-600 shadow-flat')}
+                  >
+                    <span className="relative flex items-center justify-center">
+                      <span aria-hidden="true" className={cn('inline-block transition-transform duration-200 ease-out motion-safe:group-hover:-translate-y-1 motion-safe:group-hover:scale-110 motion-safe:group-focus-visible:scale-110 motion-reduce:transition-none', saving && 'opacity-50')}>{emoji}</span>
+                      {active && <span aria-hidden="true" className="absolute -bottom-1 h-1 w-1 rounded-full bg-accent-700" />}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+            {reactions.error && <p role="alert" className="px-3 pb-2 text-caption text-fw-danger-ink">{reactions.error}</p>}
+            <div className="flex flex-col gap-0.5">
+
             <ActionRow
               icon={<Copy size={21} aria-hidden="true" />}
               label="Copy"
@@ -2106,12 +1994,18 @@ export function MessageThreadPane({
                 />
               </>
             )}
-          </div>
-        </Sheet>
+            </div>
+        </MessageActionsPanel>
       )}
 
       {/* WHAT'S-NEXT: the composer track (sunken matte) is passed in as children
           so FairwayMessages owns the send wiring to the unchanged hooks. */}
+      {reactions.error && !currentActionsMessage && (
+        <div role="status" className="flex items-center justify-between gap-2 px-4 py-2">
+          <p className="text-caption text-text-secondary">{reactions.error}</p>
+          <Button type="button" variant="ghost" size="sm" onClick={() => { void reactions.refresh(); }}>Reload reactions</Button>
+        </div>
+      )}
       {children}
     </InstrumentPanel>
   );

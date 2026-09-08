@@ -260,7 +260,7 @@ function MemberRow({
   onConfirmRemove: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-fw-md px-2.5 py-2">
+    <div className="flex min-h-14 items-center gap-3 px-3 py-2.5">
       {/* `md` is 40px against the artboard's 42px — absorbed to the scale step
           rather than written as an arbitrary size, the same call G-29c made on
           the header stack. `decorative` because the name is right beside it;
@@ -348,7 +348,7 @@ function CandidateRow({
   onAdd: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-fw-md px-2.5 py-2">
+    <div className="flex min-h-14 items-center gap-3 px-3 py-2.5">
       <Avatar decorative name={candidate.name} src={candidate.avatarUrl} size="md" />
       <div className="flex min-w-0 flex-1 flex-col gap-px">
         <span className="truncate font-fw-sans text-subhead font-medium text-text-primary">
@@ -506,7 +506,6 @@ export function GroupDetailsSheet({
       side="bottom"
       title={title || 'Group details'}
       hideTitle
-      hideClose
       /* Desktop is CAPPED, not designed — `SIDE_CLASS.bottom` is `inset-x-0`,
          so without this the sheet is a phone control stretched across a 1440px
          monitor. Every artboard here is a 390×844 phone scene and supplies no
@@ -514,9 +513,9 @@ export function GroupDetailsSheet({
          Same disposition as G-56's action sheet, and the leading edge keeps the
          variant's `rounded-t-fw-lg` (rounding all four would be wrong for a
          bottom-anchored panel and would trip G-48's guard). */
-      className="sm:mx-auto sm:max-w-sm"
+      className="!bg-canvas sm:mx-auto sm:max-w-sm"
     >
-      <div className="flex flex-col px-3.5 pb-6">
+      <Sheet.Body className="flex flex-col px-4 pt-4">
         {/* Identity — the group's own object: real faces, then its name. */}
         <div className="mb-5 flex flex-col items-center gap-2.5">
           {ordered.length > 0 && (
@@ -567,7 +566,7 @@ export function GroupDetailsSheet({
         )}
 
         {adding ? (
-          <div className="flex flex-col gap-px">
+          <div className="flex flex-col divide-y divide-border-subtle rounded-card bg-surface shadow-soft">
             {candidates === null && (
               <p className="px-3.5 py-3 font-fw-sans text-caption-1 text-text-tertiary">
                 Loading teammates…
@@ -599,7 +598,7 @@ export function GroupDetailsSheet({
             ))}
           </div>
         ) : (
-        <div className="flex flex-col gap-px">
+        <div className="flex flex-col divide-y divide-border-subtle rounded-card bg-surface shadow-soft">
           {visible.map((m) => (
             <MemberRow
               key={m.id}
@@ -690,14 +689,14 @@ export function GroupDetailsSheet({
                   setError(null);
                   setLeaveConfirm(true);
                 }}
-                className="h-[50px] w-full rounded-full bg-fw-danger-bg font-fw-sans text-subhead font-semibold text-fw-danger-ink"
+                className="h-12 w-full rounded-fw-md bg-surface font-fw-sans text-subhead font-medium text-fw-danger-ink"
               >
                 Leave group
               </Button>
             )}
           </div>
         )}
-      </div>
+      </Sheet.Body>
     </Sheet>
   );
 }

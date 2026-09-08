@@ -1,6 +1,9 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { Button } from '@/components/fairway/controls/button';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { fairwayToast } from '@/components/fairway';
@@ -13,7 +16,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   IconPaperclip,
@@ -46,6 +48,8 @@ export function AttachmentButton({
   maxFiles = 5,
   showDropdown = true,
 }: AttachmentButtonProps) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [sheetOpen, setSheetOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,6 +63,7 @@ export function AttachmentButton({
     if (disabled) return;
     void triggerHaptic('light');
 
+    setSheetOpen(false);
     if (type === 'camera' && cameraInputRef.current) {
       cameraInputRef.current.click();
     } else if (inputRef.current) {
@@ -149,7 +154,7 @@ export function AttachmentButton({
   const triggerButton = (
     <IconButton variant="default"
       type="button"
-      onClick={showDropdown ? undefined : handleSimpleClick}
+      onClick={showDropdown ? (isDesktop ? undefined : () => setSheetOpen(true)) : handleSimpleClick}
       disabled={disabled}
       // Fairway tokens, not the retired pre-Fairway `warm-*` palette. The
       // design system retires `warm-*`/`cream-*` on golf-dashboard surfaces
@@ -170,72 +175,47 @@ export function AttachmentButton({
         className
       )}
       aria-label="Attach files"
+      aria-haspopup={showDropdown ? (isDesktop ? 'menu' : 'dialog') : undefined}
+      aria-expanded={showDropdown && !isDesktop ? sheetOpen : undefined}
     >
       <IconPaperclip size={20} />
     </IconButton>
   );
 
+  const options = [
+    { type: 'image' as const, icon: <IconImage size={20} />, label: 'Photo library', description: `Images up to ${formatFileSize(FILE_SIZE_LIMITS.image ?? 0)}` },
+    { type: 'camera' as const, icon: <IconCamera size={20} />, label: 'Take photo', description: 'Use your camera' },
+    { type: 'video' as const, icon: <IconVideo size={20} />, label: 'Video', description: `Up to ${formatFileSize(FILE_SIZE_LIMITS.video ?? 0)}` },
+    { type: 'document' as const, icon: <IconFile size={20} />, label: 'Document', description: `Up to ${formatFileSize(FILE_SIZE_LIMITS.document ?? 0)}` },
+    { type: 'audio' as const, icon: <IconMusic size={20} />, label: 'Audio', description: `Up to ${formatFileSize(FILE_SIZE_LIMITS.audio ?? 0)}` },
+    { type: 'all' as const, icon: <IconPaperclip size={20} />, label: 'Browse files', description: `Up to ${maxFiles} files` },
+  ];
+
   return (
-    <div className="relative">
-      {showDropdown ? (
+    <div className="relative shrink-0">
+      {showDropdown && isDesktop ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild disabled={disabled}>
             {triggerButton}
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            side="top"
-            align="start"
-            className="w-60"
-          >
+          <DropdownMenuContent side="top" align="start" className="w-60">
             <DropdownMenuLabel>Attach</DropdownMenuLabel>
-
-            <AttachmentTypeOption
-              icon={<IconImage size={18} />}
-              label="Images"
-              description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.image ?? 0)}`}
-              onSelect={() => handleSelectType('image')}
-            />
-            <AttachmentTypeOption
-              icon={<IconVideo size={18} />}
-              label="Videos"
-              description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.video ?? 0)}`}
-              onSelect={() => handleSelectType('video')}
-            />
-            <AttachmentTypeOption
-              icon={<IconFile size={18} />}
-              label="Documents"
-              description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.document ?? 0)}`}
-              onSelect={() => handleSelectType('document')}
-            />
-            <AttachmentTypeOption
-              icon={<IconMusic size={18} />}
-              label="Audio"
-              description={`Up to ${formatFileSize(FILE_SIZE_LIMITS.audio ?? 0)}`}
-              onSelect={() => handleSelectType('audio')}
-            />
-
-            {/* Camera option - mobile only */}
-            <div className="lg:hidden">
-              <DropdownMenuSeparator />
-              <AttachmentTypeOption
-                icon={<IconCamera size={18} />}
-                label="Take Photo"
-                description="Use camera"
-                onSelect={() => handleSelectType('camera')}
-              />
-            </div>
-
-            <DropdownMenuSeparator />
-            <AttachmentTypeOption
-              icon={<IconPaperclip size={18} />}
-              label="Browse All"
-              description={`Max ${maxFiles} files`}
-              onSelect={() => handleSelectType('all')}
-            />
+            {options.filter((option) => option.type !== 'camera').map((option) => (
+              <AttachmentTypeOption key={option.type} {...option} onSelect={() => handleSelectType(option.type)} />
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : (
-        triggerButton
+      ) : triggerButton}
+      {showDropdown && !isDesktop && (
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title="Add attachment" side="bottom">
+          <Sheet.Body className="px-4">
+            <div className="divide-y divide-border-subtle rounded-card bg-surface">
+              {options.map((option) => (
+                <AttachmentTypeOption key={option.type} {...option} inSheet onSelect={() => handleSelectType(option.type)} />
+              ))}
+            </div>
+          </Sheet.Body>
+        </Sheet>
       )}
 
       {/* Hidden file inputs */}
@@ -266,6 +246,7 @@ interface AttachmentTypeOptionProps {
   label: string;
   description: string;
   onSelect: () => void;
+  inSheet?: boolean;
 }
 
 function AttachmentTypeOption({
@@ -273,22 +254,26 @@ function AttachmentTypeOption({
   label,
   description,
   onSelect,
+  inSheet = false,
 }: AttachmentTypeOptionProps) {
-  return (
-    <DropdownMenuItem
-      onSelect={onSelect}
-      className="gap-3 px-3 py-2.5"
-    >
-      <div className="flex-shrink-0 w-9 h-9 rounded-fw-md bg-surface-sunken flex items-center justify-center text-text-secondary">
+  const content = (
+    <>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center text-text-secondary">
         {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-body font-medium text-text-primary leading-snug">{label}</p>
-        {/* `text-caption`, not `text-xs` — the Fairway type scale, so this row
-            matches every other secondary line in the app instead of sitting a
-            half-step off it. */}
-        <p className="text-caption text-text-tertiary leading-snug">{description}</p>
-      </div>
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col text-left">
+        <span className="text-body font-medium leading-snug text-text-primary">{label}</span>
+        <span className="text-caption font-normal leading-snug text-text-tertiary">{description}</span>
+      </span>
+    </>
+  );
+  return inSheet ? (
+    <Button type="button" variant="ghost" onClick={onSelect} className="h-auto min-h-14 w-full justify-start gap-2 rounded-none px-3 py-2.5 first:rounded-t-card last:rounded-b-card">
+      <span className="flex items-center gap-2">{content}</span>
+    </Button>
+  ) : (
+    <DropdownMenuItem onSelect={onSelect} className="gap-2 px-2 py-2">
+      {content}
     </DropdownMenuItem>
   );
 }

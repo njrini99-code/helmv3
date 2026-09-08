@@ -79,15 +79,15 @@ describe('G-50b — group-incoming is derived, not numbered', () => {
     expect(row, 'expected the artboard 8px row gap').toBeDefined();
 
     // Component: `w-8` (32px) inside a `gap-2` (8px) row — the same 40px.
-    expect(code).toContain('flex w-8 flex-shrink-0 flex-col items-center');
+    expect(code).toContain('w-8 flex-shrink-0');
     expect(code).toContain("'flex items-end gap-2'");
   });
 
   it('keeps the gutter OUTSIDE the capped column, which is what derives it', () => {
-    // The avatar column must be a sibling of the bubble column, not inside it:
+    // The reserved avatar gutter must be a sibling of the bubble column:
     // that is the whole mechanism by which an incoming row has 40px less room
     // without anyone writing a second number.
-    const gutterIdx = code.indexOf('flex w-8 flex-shrink-0 flex-col items-center');
+    const gutterIdx = code.indexOf('aria-hidden="true" className="w-8 flex-shrink-0"');
     // RE-ANCHORED, not relaxed. This read `indexOf('max-w-[288px]')` and so
     // depended on the bubble column owning the file's FIRST occurrence of the
     // literal. The loading skeleton now also caps at 288 — deliberately, since

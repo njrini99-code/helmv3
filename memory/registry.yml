@@ -1046,6 +1046,7 @@ features:
         # than a recorded gap.
         - src/hooks/golf/use-golf-messages.ts
         - src/hooks/golf/use-message-attachments.ts
+        - src/hooks/golf/use-message-reactions.ts
       db:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql
@@ -1060,6 +1061,8 @@ features:
         - supabase/migrations/20260907120000_golf_participants_mute_columns.sql
       tests:
         - e2e/messages.spec.ts
+        - e2e/golf-critical-paths.spec.ts
+        - supabase/tests/rls/golf_message_reactions.sql
         - src/app/golf/actions/unified-notifications-model.test.ts
         # Named explicitly rather than by a __tests__/** glob: that directory
         # holds several other features' action tests, so a glob would claim them.

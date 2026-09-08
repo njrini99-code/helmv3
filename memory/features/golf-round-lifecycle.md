@@ -526,3 +526,18 @@ accent-green selected thumb in dark scope. Presentation layer only — no
 lifecycle contract change. Ledger: the round-lifecycle file under `memory/ledgers/changes/`
 (2026-08-26 entries); evidence: `docs/audits/evidence/ios-premium-2026-08-25/`
 (course picker, tee step, setup band, and scorecard header captures).
+
+### Course picker viewport repair (2026-09-08)
+
+The course/tee picker now applies top and bottom safe-area insets to its single
+vertical scroll owner, not only the floating Close button. Its full-screen
+surface hides the partial-sheet handle and reduces its available height with
+the keyboard inset. Choosing a course scrolls the tee stage to the top; stage
+transitions overlap briefly instead of waiting through an empty frame. Tee
+cards do not introduce a second vertical scroller. Course, tee and round data
+operations are unchanged.
+
+Long course names wrap within the reserved close-button lane; both back and
+close controls have 44px touch targets. Safe-area regression coverage is in
+`e2e/golf-critical-paths.spec.ts` and only inspects the picker without starting
+a round.

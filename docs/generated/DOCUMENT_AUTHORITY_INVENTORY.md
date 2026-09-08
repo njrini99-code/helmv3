@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 22 |
+| `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 23 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -193,7 +193,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | 5 | 51 | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | 2 | 26 | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | 1 | 18 | - |
-| `memory/features/team-communications.md` | current | yes | - | - | 9 | 12 | - |
+| `memory/features/team-communications.md` | current | yes | - | - | 9 | 14 | - |
 | `memory/features/team-operations.md` | current | yes | - | - | 2 | 17 | - |
 
 ### `REFERENCE`
@@ -233,7 +233,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/setup/RUN_ON_YOUR_MACHINE.md` | current | - | - | - | 2 | 1 | - |
 | `docs/setup/SUPABASE_MCP_SETUP.md` | current | - | - | - | 0 | 0 | - |
 | `docs/v3-decisions.md` | current | yes | - | yes | 1 | 1 | - |
-| `docs/v3-design-language.md` | current | yes | - | yes | 1 | 3 | - |
+| `docs/v3-design-language.md` | current | yes | - | yes | 2 | 3 | - |
 | `docs/v3-research-golf-domain.md` | current | yes | - | yes | 15 | 1 | - |
 | `docs/v3-rls-template.md` | current | yes | - | yes | 7 | 3 | - |
 | `docs/v3-testing-standards.md` | current | yes | - | - | 8 | 8 | - |
@@ -279,7 +279,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 19 | 5 | - |
 | `memory/glossary.md` | current | yes | yes | yes | 19 | 10 | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | 3 | 259 | - |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | 3 | 260 | - |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | 0 | 0 | - |
 
 ### `PROCESS_CONTRACT`
@@ -372,7 +372,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/M01-identity.md` | current | - | - | yes | 0 | 19 | - |
 | `audit/M02-state.md` | current | - | - | yes | 0 | 19 | - |
 | `audit/M03A-inbox.md` | current | - | - | yes | 0 | 15 | - |
-| `audit/M03B-thread.md` | current | - | - | yes | 0 | 6 | - |
+| `audit/M03B-thread.md` | current | - | - | yes | 0 | 6 | 1 |
 | `audit/M03C-composer.md` | current | - | - | yes | 0 | 20 | - |
 | `audit/M03D-overlays.md` | current | - | - | yes | 0 | 16 | 2 |
 | `audit/M04-media.md` | current | - | - | - | 0 | 21 | - |

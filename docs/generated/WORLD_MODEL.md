@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 73 routes, 45 components, 30 apis, 91 actions, 97 services, 60 tests, 130 tables, 161 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 998 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 29 features, 73 routes, 45 components, 30 apis, 91 actions, 98 services, 62 tests, 130 tables, 162 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1001 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -292,7 +292,7 @@ Team Communications · active · criticality high · owner product
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
 - **RPCs:** none
-- **Test surfaces:** 4
+- **Test surfaces:** 6
 - **Sentry/admin_events signals:** `announcements`, `messaging`, `notifications`
 
 ### `team_operations`

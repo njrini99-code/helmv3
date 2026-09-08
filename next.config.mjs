@@ -46,6 +46,9 @@ const sentryRelease = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERC
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Helm owns its agent instructions; dev startup must not rewrite them.
+  agentRules: false,
+  allowedDevOrigins: ['127.0.0.1'],
   reactStrictMode: true, // Enable to catch potential issues
 
   // Type errors block the build. Keep this honest.
