@@ -381,7 +381,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         <Select
           aria-labelledby="stats-round-scope-label"
           size="sm"
-          className="min-w-[16rem]"
+          className="min-w-0 w-full sm:min-w-[16rem] sm:w-auto min-h-11"
           value={scopeRoundId}
           disabled={loading || scopeLoading}
           onValueChange={(v) => setScopeRoundId(v ?? 'overall')}

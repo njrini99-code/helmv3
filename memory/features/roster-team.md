@@ -96,3 +96,7 @@ Team page
 - `memory/context/golfhelm-features.md`
 - `docs/architecture/USER_ROLE_DATA_OWNERSHIP.md`
 - `memory/features/auth-onboarding-join.md`
+
+The player roster owns the standard 16px phone gutter when used as a page. Phone teammates use
+compact rows with one 44px message action; embedded rosters retain their host gutters, and desktop
+cards keep their existing layout. The route skeleton follows the compact player anatomy.

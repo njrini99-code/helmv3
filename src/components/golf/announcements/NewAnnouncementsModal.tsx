@@ -121,14 +121,14 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
         if (!next) onDismiss();
       }}
     >
-      <DrawerContent>
+      <DrawerContent className="overflow-hidden">
       {/* Accessible title for the Radix/vaul dialog — visually hidden so the
           designed header below remains the visual title. Without a
           Dialog.Title, Radix logs a console error on every open (Sentry
           JAVASCRIPT-NEXTJS-2F). */}
       <DrawerTitle className="sr-only">{title}</DrawerTitle>
       <div
-        className="px-6 pb-4 overflow-y-auto overscroll-contain"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4"
       >
       {/* Header */}
       <div className="flex items-center gap-3 pb-4">
@@ -230,7 +230,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
         })}
       </div>
       </div>
-      <DrawerFooter>
+      <DrawerFooter className="pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
         <div className="flex items-center gap-3">
           <Button
             variant="primary"

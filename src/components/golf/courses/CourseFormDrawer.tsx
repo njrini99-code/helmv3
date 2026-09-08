@@ -160,7 +160,7 @@ export function CourseFormDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="sm:mx-auto sm:max-w-lg sm:rounded-fw-lg">
+      <DrawerContent className="overflow-hidden sm:mx-auto sm:max-w-lg sm:rounded-fw-lg">
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           {/* Header */}
           <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4">
@@ -261,7 +261,7 @@ export function CourseFormDrawer({
           {/* Footer */}
           <div
             className={cn(
-              'mt-auto flex items-center justify-end gap-2 px-6 py-4',
+              'mt-auto flex items-center justify-end gap-2 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]',
               'border-t border-border-subtle',
             )}
           >

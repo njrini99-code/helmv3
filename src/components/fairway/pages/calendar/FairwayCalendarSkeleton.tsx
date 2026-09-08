@@ -31,7 +31,7 @@ export function FairwayCalendarSkeleton() {
       <span className="sr-only">Loading calendar…</span>
 
       {/* ── Hero plinth — mirrors FairwayCalendarHero (Surface shadow + lg pad) ── */}
-      <Surface elevation="shadow" padding="lg" className="bg-surface">
+      <Surface elevation="shadow" padding="none" className="bg-surface p-4 md:p-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-6">
           {/* Title column: eyebrow · month title · status line (gap-2, matching
               FairwayCalendarHero's title column — was gap-3). */}
@@ -64,12 +64,10 @@ export function FairwayCalendarSkeleton() {
           </div>
         </div>
 
-        {/* Day strip — seven day pills beneath the title (min-h-[78px]/[88px]
-            + gap-1.5/2.5, matching FairwayDayStrip's real pill sizing — was a
-            flat h-16/gap-2 that undershot both breakpoints). */}
-        <div className="mt-6 grid grid-cols-7 gap-1.5 md:mt-8 md:gap-2.5">
+        {/* Match the touch-sized scrolling day rail, including its bottom gutter. */}
+        <div className="mt-4 grid grid-flow-col auto-cols-[minmax(44px,1fr)] gap-0.5 overflow-hidden pb-1 md:mt-8 md:gap-2.5">
           {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-[78px] w-full rounded-card md:h-[88px]" />
+            <Skeleton key={i} className="h-[68px] w-full rounded-card md:h-[112px]" />
           ))}
         </div>
       </Surface>

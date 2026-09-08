@@ -154,3 +154,9 @@ Player opens round review
 - `memory/context/coachhelm-ai.md`
 - `memory/context/golfhelm-features.md`
 - `docs/v3-feature-audit.md`
+
+Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. On
+phones, selected development/standing/detail views prioritize their content over the overview spine;
+desktop retains its side-by-side context. The round scope picker and Log round action retain 44px
+touch targets. What-if results reveal with opacity/translation rather than animated layout height,
+and honor reduced motion.

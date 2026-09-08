@@ -541,3 +541,8 @@ Long course names wrap within the reserved close-button lane; both back and
 close controls have 44px touch targets. Safe-area regression coverage is in
 `e2e/golf-critical-paths.spec.ts` and only inspects the picker without starting
 a round.
+
+New-round completion shows a fixed, non-blocking loading status while its summary/submit chunks
+load. The summary remains mounted after its first finish attempt so closing can complete the shared
+sheet exit. Round-detail distribution segments keep their final layout widths and reveal with
+transforms.
