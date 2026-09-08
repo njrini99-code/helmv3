@@ -284,6 +284,23 @@ it is the owner's, through `db-apply`.
       `20260907160000_golf_team_chat_membership_management.sql` through `db-apply` after
       `db-migration-reviewer` (mandatory before applying). Until then Add and Remove are
       visible to a group's creator and fail with a surfaced error; Leave works today.
+  - [x] **The mechanism that blocked it is fixed** (separate PR — it changes the
+        production apply path and does not belong in a Messages UI branch).
+        `db-apply` could not apply this file alone: `apply.mjs` ran `supabase db push
+        --linked --include-all=false`, and `--include-all=false` does not mean "just
+        this file" — it only excludes migrations older than the remote ledger tip. With
+        ten pending, firing it would have swept nine unreviewed R3 files (pgaudit, pgmq
+        + eight SECURITY DEFINER facades, a live `cron.schedule` rewrite) into
+        production. The workflow's sweep guard existed solely to stop that, so the
+        guard, not the trigger, was the blocker. Step (f) now sends ONE body through
+        `supabase db query --linked --file`: the reviewed file byte for byte plus the
+        single ledger `insert` that `db push` would have written.
+  - [x] **Still owner-run, and still after review.** The script change has to reach
+        `main` before `db-apply` can use it — the workflow checks out `main` and gate
+        (a) requires `HEAD == main`. So: PR → `db-migration-reviewer` → merge → owner
+        fires `db-apply` with `mode=apply` and `allow_out_of_order` ticked (the nine
+        older files stay pending by design). This box stays unticked until that run
+        goes green; a fixed apply path is not an applied migration.
 
 ## W8 — Rendered fidelity review (M05 / D-02)
 - [x] Serve the app against the local stack and compare against `reference/*.dc.html`.
