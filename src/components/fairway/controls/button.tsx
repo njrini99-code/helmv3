@@ -47,7 +47,7 @@ interface ButtonBaseProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
    * currently pass an icon to an asChild Button — making it a compile error
    * would be correct, but fixing those sites means 37 buttons start showing an
    * icon they do not show today, which is a visual change across two sports
-   * that wants a look before it lands. See premium-audit/DISPOSITIONS.md.
+   * that wants a look before it lands, so it is deliberately left open.
    */
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
