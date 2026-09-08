@@ -1,20 +1,5 @@
 # Change ledger — roster_team
 
-## 2026-09-07 — roster membership gains a one-way messaging side effect
-
-- SHA: (this commit).
-- Change: doc-only for this feature. `supabase/migrations/20260907160000_golf_team_chat_membership_management.sql`
-  adds `public.golf_user_on_conversation_team(uuid, uuid)`, a definer helper that
-  reads `golf_team_members` and `golf_team_coach_staff` to gate who may be added to
-  or removed from a team chat. Recorded in `memory/features/roster-team.md` under
-  Known Risk Areas.
-- Why: removing someone from either roster table now also removes the ability to
-  add them to a team conversation. Nothing about joining, approval, or roster
-  status changed and no roster code was touched — the coupling runs one way,
-  roster to messaging — but a reader of this feature would not otherwise learn
-  that a roster row is load-bearing for another surface. The migration is WRITTEN,
-  NOT APPLIED; applying it is the owner's step.
-
 ## 2026-08-27 — standing tier wraps instead of truncating
 
 - SHA: 1a57943e6.
@@ -25,12 +10,20 @@
   phrase and left "Top quartile…" — and the `title` tooltip that was the
   fallback does nothing on a touch device (2026-08-26 owner report).
 
-<!-- schema-drift-absent: golf_user_on_conversation_team -->
-<!--
-  `golf_user_on_conversation_team` is a real function, created by
-  20260907160000 — which is written and NOT applied, so it is correctly absent
-  from the production schema snapshot `db:types` generates. Delete this name
-  from the declaration above the moment the owner applies the migration and
-  re-runs `npm run db:types`; leaving it here would exempt a real object from
-  the drift check.
--->
+## 2026-09-07 — route `loading.tsx` fallbacks reshaped to the real first paint
+
+- SHA: 6eccdf03d.
+- Change: this feature's route Suspense fallbacks (`dashboard/roster`, `dashboard/team`) were reshaped.
+  No route, table, server action, data flow or business rule changed — the
+  edits are confined to `loading.tsx` skeleton geometry and its ARIA
+  wrapper.
+- Why: the fallbacks were shape-matched to each page's SETTLED layout
+  rather than the markup that paints at t=0. For a `'use client'` page
+  holding its own `loading` state, the Suspense fallback is replaced by
+  that component's loading branch, so reserving the populated geometry
+  caused the layout shift the fallback exists to prevent. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim now renders `bg-canvas`
+  only — no geometry, no `<h1>` for a screen that never mounts.
+- Verification: every edited file was adversarially re-verified against
+  its page's source, twice for the files that failed the first pass.
+  typecheck 0, lint 0, build 0.

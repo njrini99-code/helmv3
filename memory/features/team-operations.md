@@ -131,6 +131,12 @@ Player Team Hub
   Info. The Team Hub must not duplicate the roster as an inner tab.
 - Empty and failed reads are different states. Only successful empty reads may
   say there are no tasks, trips, classes, or announcements.
+- A route's `loading.tsx` reserves the page's paint at t=0 — for a
+  `'use client'` page holding its own `loading` state that is that
+  component's loading branch, not its settled layout. A route whose
+  `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
+  no geometry, and no real `<h1>` for a screen that never mounts.
+  Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
 

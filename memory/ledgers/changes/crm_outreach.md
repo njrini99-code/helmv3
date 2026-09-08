@@ -1,9 +1,9 @@
-# Change ledger — team_access_control
+# Change ledger — crm_outreach
 
 ## 2026-09-07 — route `loading.tsx` fallbacks reshaped to the real first paint
 
 - SHA: 6eccdf03d.
-- Change: this feature's route Suspense fallbacks (`dashboard/team`, `admin`) were reshaped.
+- Change: this feature's route Suspense fallbacks (`admin/crm`) were reshaped.
   No route, table, server action, data flow or business rule changed — the
   edits are confined to `loading.tsx` skeleton geometry and its ARIA
   wrapper.
