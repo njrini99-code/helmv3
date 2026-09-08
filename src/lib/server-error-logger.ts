@@ -28,7 +28,7 @@ import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
-import { getRequestId } from '@/lib/admin/request-context';
+import { getRequestId, getRequestUserId, isRequestUserIdUnverified } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump, describeError } from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
 import { resolveFeatureKey } from '@/lib/admin/feature-registry';
@@ -270,10 +270,40 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
     rawContext.requestId || !ambientRequestId
       ? rawContext
       : { ...rawContext, requestId: ambientRequestId };
-  const context: RoundErrorContext =
+  const withTraceId: RoundErrorContext =
     withRequestId.traceId || !ambientTraceId
       ? withRequestId
       : { ...withRequestId, traceId: ambientTraceId };
+
+  // Same defaulting shape, same reasoning, as requestId and traceId above —
+  // and the same measured failure. `userId` was plumbed to both Bridge tables,
+  // the Sentry scope and the /admin/errors detail view, but only 38% of
+  // production error rows carried one (server actions: 39%), because it
+  // depended on ~583 auth call sites each remembering to pass it. The ambient
+  // value is written once by createClient()'s auth wrapper. An explicitly
+  // supplied userId always wins.
+  //
+  // ATTRIBUTION ONLY. `userIdUnverified` is surfaced so an operator can see
+  // that a subject came from a session GoTrue rejected — which is the normal
+  // case for "session expired mid-round" — rather than silently presenting it
+  // as a confirmed identity.
+  //
+  // `user_id_unverified` means "getUser() did not return this id", NOT "this
+  // session is bad". It also fires when the auth check itself failed in
+  // transit (the `isTransientAuthCheckFailure` case), where the user's session
+  // is very likely fine. Read it as a confidence marker on the ATTRIBUTION,
+  // never as evidence about the user's auth state.
+  const ambientUserId = getRequestUserId();
+  const context: RoundErrorContext =
+    withTraceId.userId || !ambientUserId
+      ? withTraceId
+      : {
+          ...withTraceId,
+          userId: ambientUserId,
+          ...(isRequestUserIdUnverified()
+            ? { tags: { ...(withTraceId.tags ?? {}), user_id_unverified: 'true' } }
+            : {}),
+        };
 
   const sport = inferSport(message, context);
   if (!sport) return context;
@@ -436,7 +466,12 @@ async function writeAdminTables(
     severity,
     stack,
     context: normalizedContext as Json,
-    user_id: context.userId ?? null,
+    // `enriched`, not `context` — so both Bridge writers read one value.
+    // Not a live bug: the sole caller already passes an enriched context and
+    // enrichment is idempotent, so `context.userId` matched today. It matched
+    // only by that coincidence, and userId is now centrally defaulted, so pin
+    // the two writers to the same source rather than to the caller's habit.
+    user_id: enriched.userId ?? null,
     url,
     timestamp,
   }, { onConflict: 'id' });
