@@ -3,10 +3,12 @@ import { Skeleton } from '@/components/fairway/feedback';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
 /**
- * P433 — purpose-built loading state for the Tasks board. Shape-matches
- * FairwayTasks (max-w-[1280px] ViewHeader masthead → filter pills → search →
- * a `grid lg:grid-cols-3` task list + Templates rail), so the board paints in
- * place with no layout swap / CLS on hydrate.
+ * P433 — purpose-built loading state for the Tasks board. Shape-matches the
+ * page's own first paint: this Suspense fallback covers only the gap until
+ * GolfTasksPage mounts, then that 'use client' page's OWN loading branch
+ * (page.tsx:172-242 — same max-w-[1280px] masthead → filter pills → search →
+ * `grid lg:grid-cols-3` task list + rail) takes over until useTaskRealtime
+ * resolves, so the board paints in place with no layout swap / CLS.
  */
 export default function Loading() {
   return (
@@ -60,40 +62,27 @@ export default function Loading() {
               ))}
             </div>
 
-            {/* Templates rail — coach-only ({isCoach && teamId}-gated at
-                FairwayTasks.tsx:556), so this column intentionally mirrors
-                the coach view; players never see it. */}
+            {/* Templates rail — this Suspense fallback only covers the gap
+                until GolfTasksPage mounts (page.tsx:157-163: the 'use client'
+                page's own loading branch, not this file, is what paints for
+                the rest of the loading window before useTaskRealtime
+                resolves). So the rail here shape-matches that component's
+                OWN loading branch (page.tsx:224-236 — one bordered card,
+                header row + four h-10 skeleton rows), not the settled
+                FairwayTasks rail (a separate collapsed-Templates card plus a
+                Quick-stats card, FairwayTasks.tsx:556-618). */}
             <div className="lg:col-span-1">
-              <div className="flex flex-col gap-4">
-                {/* Templates — COLLAPSED by default (showTemplates starts
-                    false, FairwayTasks.tsx:232): header row only, no
-                    expanded template rows (FairwayTasks.tsx:587-594). */}
-                <Surface elevation="border" padding="none" className="overflow-hidden">
-                  <div className="flex items-center justify-between gap-2 px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-[18px] w-[18px] rounded-fw-sm" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <Skeleton className="h-[18px] w-[18px] rounded-fw-sm" />
-                  </div>
-                </Surface>
-
-                {/* Quick stats — always rendered under Templates, not
-                    gated by showTemplates (FairwayTasks.tsx:597-618). */}
-                <Surface elevation="border" padding="md">
-                  <Skeleton className="h-3 w-20" />
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-2 rounded-fw-md bg-surface-sunken p-4">
-                      <Skeleton className="h-6 w-8" />
-                      <Skeleton className="h-3 w-14" />
-                    </div>
-                    <div className="flex flex-col gap-2 rounded-fw-md bg-surface-sunken p-4">
-                      <Skeleton className="h-6 w-10" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                  </div>
-                </Surface>
-              </div>
+              <Surface elevation="border" padding="none" className="overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-border-subtle px-4 py-3">
+                  <Skeleton className="h-[18px] w-[18px] rounded-fw-sm" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="flex flex-col gap-2 p-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full rounded-fw-md" />
+                  ))}
+                </div>
+              </Surface>
             </div>
           </div>
         </div>

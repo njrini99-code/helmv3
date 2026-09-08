@@ -12,10 +12,16 @@ import { fairwayScope } from '@/lib/redesign/flag';
 export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas font-fw-sans')}>
-      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
+      <div
+        className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24"
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <span className="sr-only">Loading announcements…</span>
         {/* ViewHeader skeleton — eyebrow · title · description.
             No primary-action skeleton: the create CTA is coach-only
-            (FairwayAnnouncements.tsx:216-218), and this fallback renders
+            (FairwayAnnouncements.tsx:219-221), and this fallback renders
             before role is known — a button that vanishes for players is
             worse than no button. */}
         <div className="space-y-3">
@@ -25,8 +31,7 @@ export default function Loading() {
         </div>
 
         {/* Card feed skeleton — mirrors the flex flex-col gap-3 feed */}
-        <div className="mt-8 flex flex-col gap-3" role="status" aria-busy="true" aria-live="polite">
-          <span className="sr-only">Loading announcements…</span>
+        <div className="mt-8 flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}

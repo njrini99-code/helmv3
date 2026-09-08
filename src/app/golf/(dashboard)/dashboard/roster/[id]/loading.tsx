@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/fairway';
+import { Skeleton, Surface } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
 /**
@@ -27,8 +27,18 @@ export default function PlayerProfileLoading() {
         {/* Back to roster */}
         <Skeleton className="mb-5 h-8 w-20" />
 
-        {/* Identity header */}
-        <div className="mb-8 flex flex-col gap-5 rounded-card border border-border-subtle bg-surface p-8 sm:flex-row sm:items-start">
+        {/* Identity header — FairwayPlayerProfile.tsx:115 wraps this in
+            <Surface elevation="shadow" padding="lg">, which (surface.tsx's
+            elevation branch, ~line 100) renders shadow-soft with NO border —
+            only elevation="border" adds one. A hand-rolled
+            `border border-border-subtle` div here would show a border the
+            real card never has, so this uses Surface itself (same pattern as
+            FairwayRosterSkeleton.tsx's FairwayCoachCardSkeleton). */}
+        <Surface
+          elevation="shadow"
+          padding="lg"
+          className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start"
+        >
           <Skeleton className="h-20 w-20 flex-shrink-0 rounded-2xl sm:h-24 sm:w-24" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -48,7 +58,7 @@ export default function PlayerProfileLoading() {
             </div>
             <Skeleton className="mt-3 h-3 w-40" />
           </div>
-        </div>
+        </Surface>
 
         {/* Cross-surface links */}
         <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">

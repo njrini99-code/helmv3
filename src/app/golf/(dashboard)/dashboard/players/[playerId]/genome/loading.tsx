@@ -10,7 +10,15 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * (radar hero focal + persona rail + 3-up tertiary readout row) and a 4-up
  * Dimensions grid. This reserves the cockpit's real slots with Fairway tokens to
  * remove the shape/token swap on hydrate (CLS / gate B3).
+ *
+ * Sub-nav strip: GenomeDetailView mounts CoachHelmShell with `role="coach"`
+ * (GenomeDetailView.tsx:353-356), whose strip is `COACH_TABS` in
+ * CoachHelmSubNav.tsx — two plain text-label route links ("Brief", "Ask"),
+ * each `px-3.5 pb-3 pt-2.5` inside a `border-b border-border-subtle` nav, not
+ * pill chips. Widths mirror the verified-correct reference for this exact
+ * strip, src/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/loading.tsx.
  */
+const SUBNAV_TAB_WIDTHS = [44, 28] as const;
 function FairwayGenomeLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -32,12 +40,17 @@ function FairwayGenomeLoading() {
           <Skeleton className="h-9 w-28 rounded-fw-md" />
         </div>
 
-        {/* Sub-nav strip */}
-        <div className="mt-5 flex items-center gap-2 border-b border-border-subtle pb-3">
-          {[80, 104, 96, 84].map((w) => (
-            <Skeleton key={w} className="h-7 rounded-full" style={{ width: w }} />
+        {/* Sub-nav strip — CoachHelmSubNav's coach COACH_TABS: "Brief" + "Ask" */}
+        <nav
+          aria-hidden="true"
+          className="mt-5 flex w-full items-center gap-1 border-b border-border-subtle"
+        >
+          {SUBNAV_TAB_WIDTHS.map((w) => (
+            <div key={w} className="px-3.5 pb-3 pt-2.5">
+              <Skeleton className="h-4" style={{ width: w }} />
+            </div>
           ))}
-        </div>
+        </nav>
 
         {/* Body — radar-hero cockpit + dimensions grid */}
         <div className="flex flex-col gap-6 py-6">
