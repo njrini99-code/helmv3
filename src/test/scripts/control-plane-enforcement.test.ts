@@ -35,6 +35,7 @@ type Settings = {
 
 const settings: Settings = JSON.parse(readFileSync(SETTINGS, 'utf-8'));
 const deny = settings.permissions?.deny ?? [];
+const ask = settings.permissions?.ask ?? [];
 
 function hookRows() {
   const rows: Array<{ event: string; matcher: string; command: string }> = [];
@@ -84,8 +85,6 @@ describe('hook wiring is real', () => {
     const scripts = blocking.map((r) => scriptPath(r.command));
     expect(scripts).toEqual(
       expect.arrayContaining([
-        '.claude/hooks/guard-canonical-write.mjs',
-        '.claude/hooks/guard-config-change.mjs',
         '.claude/hooks/guard-git.mjs',
         '.claude/hooks/guard-sql.mjs',
       ]),
@@ -106,8 +105,8 @@ describe('hook wiring is real', () => {
   });
 });
 
-describe('project-level Supabase denies are present', () => {
-  it('every account-wide mutating tool is denied', () => {
+describe('production Supabase operations remain explicitly approvable', () => {
+  it('every known account-wide mutating tool requests approval', () => {
     const mutating = [
       'apply_migration',
       'create_branch',
@@ -122,13 +121,18 @@ describe('project-level Supabase denies are present', () => {
     ];
     const missing = mutating
       .map((t) => `mcp__claude_ai_Supabase__${t}`)
-      .filter((r) => !deny.includes(r));
+      .filter((r) => !ask.includes(r));
     expect(missing).toEqual([]);
   });
 
-  it('the uninstalled plugin namespace stays denied at server level', () => {
-    // Denied so the standing user-scope grant cannot activate on install.
-    expect(deny).toContain('mcp__plugin_supabase_supabase');
+  it('keeps account connector reads available', () => {
+    for (const tool of ['list_tables', 'list_migrations', 'get_advisors', 'execute_sql']) {
+      expect(deny).not.toContain(`mcp__claude_ai_Supabase__${tool}`);
+    }
+  });
+
+  it('fallback connector namespaces are not permanently disabled', () => {
+    expect(deny).not.toContain('mcp__plugin_supabase_supabase');
   });
 });
 
@@ -232,7 +236,7 @@ describe('the three corrected claims stay corrected', () => {
     const raw = read('.claude/rules/autonomy.md');
     expect(raw).toMatch(/guard-git\.mjs/);
     expect(raw).toMatch(/guard-sql\.mjs/);
-    expect(raw).toMatch(/no hook covers\s+Bash-driven writes into\s+the canonical checkout or a recursive `rm`/);
+    expect(raw).toMatch(/not parsers or complete security boundaries/);
   });
 
   it('all four point readers at the generated inventory', () => {

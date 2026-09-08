@@ -11,8 +11,7 @@
 # a worktree on its own." See docs/operations/WORKSPACES.md for the full
 # picture and `git log -p -- scripts/new-worktree.sh` for the history of what
 # this file used to do and why each past mistake (upstream tracking onto
-# origin/main, shared node_modules producing fake passes, copying a
-# production project link into every task workspace) shaped the module it now
+# origin/main and dependency versions drifting between tasks) shaped the module it now
 # delegates to.
 #
 # Usage:
@@ -87,4 +86,6 @@ fi
 # like replay/runners/run.mjs that take the last stdout line); every warning,
 # fetch failure, or refusal reason create-workspace.mjs prints goes to stderr,
 # so it shows up live here without polluting that convention.
-exec node "$HERE/lib/create-workspace.mjs" "${ARGS[@]}"
+# Workspace tooling is shared even when the source branch is older.
+COMMON_DIR="$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir)"
+exec node "$(dirname "$COMMON_DIR")/scripts/lib/create-workspace.mjs" "${ARGS[@]}"

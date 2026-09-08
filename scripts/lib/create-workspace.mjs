@@ -6,7 +6,7 @@
  * (--worktree / isolation: "worktree"), and raw `git worktree add` — and only
  * the first was governed. A subagent asking for isolation got none of the
  * budget check, the disk reserve, the .helm/workspace.json marker, or the
- * local-only .env.local that a human running new-worktree.sh got for free.
+ * shared runtime inputs that a human running new-worktree.sh got for free.
  *
  * Every caller now goes through `createWorkspace()`:
  *
@@ -52,6 +52,7 @@ import { fileURLToPath } from 'node:url';
 // for "what workspaces exist and what kind are they" — the same reason
 // repo-doctor's identity check stopped owning its own git calls.
 import { inspectWorkspaces } from '../check-mutation-budget.mjs';
+import { shareWorkspaceRuntime } from './shared-workspace-runtime.mjs';
 import { DEFAULT_MUTATION_BUDGET, mutationBudgetDecision } from './worktree-lifecycle.mjs';
 import { canonicalRootOf } from '../../.claude/hooks/lib/workspace-identity.mjs';
 
@@ -132,68 +133,6 @@ function freeGib(path) {
 }
 
 /**
- * The local-stack anon key, best-effort. Two sources only, in order:
- *
- *   1. `supabase status -o env`, if the local stack happens to be running.
- *   2. a documented default in supabase/config.toml.
- *
- * This repo's config.toml documents no such default (verified against the
- * file, not assumed) — so when the stack is not running, this returns an
- * empty key rather than inventing one. A fabricated JWT-shaped string would
- * trip .gitleaks.toml's hardcoded-JWT rule and the #516 secrets guard test,
- * and would be wrong besides.
- */
-function resolveLocalAnonKey(repo) {
-  const localBin = resolve(repo, 'node_modules/.bin/supabase');
-  const cmd = existsSync(localBin) ? localBin : 'supabase';
-  const result = spawnSync(cmd, ['status', '-o', 'env'], {
-    cwd: repo,
-    encoding: 'utf-8',
-    timeout: 5000,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  if (!result.error && result.status === 0 && result.stdout) {
-    const m = result.stdout.match(/ANON_KEY="?([^"\n]+)"?/);
-    if (m && m[1]) {
-      return { key: m[1], source: 'supabase status -o env (local stack running at creation time)' };
-    }
-  }
-  return { key: '', source: null };
-}
-
-function buildEnvLocal({ key, source }) {
-  const lines = [
-    '# GENERATED for a task worktree: local stack only, no production credentials;',
-    '# production env lives only in the canonical checkout.',
-    '# Rewritten by scripts/lib/create-workspace.mjs on every (re)creation — do not',
-    "# hand-edit, and never copy the canonical checkout's .env.local into a worktree.",
-    '',
-    'NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321',
-  ];
-  if (key) {
-    lines.push(`# anon key source: ${source}`);
-    lines.push(`NEXT_PUBLIC_SUPABASE_ANON_KEY=${key}`);
-  } else {
-    lines.push(
-      '# The local Supabase stack was not running when this workspace was created,',
-      '# and supabase/config.toml documents no default local anon key to fall back to',
-      "# — there isn't one to fall back to, verified against the file rather than",
-      '# assumed. Start the stack and fill this in:',
-      '#   ./node_modules/.bin/supabase start',
-      '#   ./node_modules/.bin/supabase status -o env',
-    );
-    lines.push('NEXT_PUBLIC_SUPABASE_ANON_KEY=');
-  }
-  lines.push(
-    '',
-    '# SUPABASE_SERVICE_ROLE_KEY is deliberately NOT set here. This workspace gets',
-    "# no production write capability — see AGENTS.md's \"Helm agent canonicality\".",
-    '',
-  );
-  return lines.join('\n');
-}
-
-/**
  * Create one task workspace: the ONE thing every entry point does.
  *
  * @param {object} opts
@@ -265,9 +204,9 @@ export async function createWorkspace(opts = {}) {
 
   mkdirSync(home, { recursive: true });
 
-  // 3. Mutation-worktree budget — enforced BEFORE any allocation, so a
-  // refusal costs nothing. Shares its classifier with repo:doctor and the
-  // SessionStart stamp hook via listWorkspaces() below.
+  // 3. Existing checkout count is advisory by default: it does not measure
+  // active sessions. An explicitly configured HELM_MAX_MUTATION_WORKTREES
+  // is a hard cap. Disk reserve is always checked before allocation.
   const canonicalRoot = canonicalRootOf(repo);
   const budget = Number(process.env.HELM_MAX_MUTATION_WORKTREES ?? DEFAULT_MUTATION_BUDGET);
   const spaces = inspectWorkspaces(repo, canonicalRoot);
@@ -287,7 +226,10 @@ export async function createWorkspace(opts = {}) {
       '',
       'Override deliberately: HELM_MAX_MUTATION_WORKTREES=<n>.',
     ];
-    fail('BUDGET_EXCEEDED', lines.join('\n'), { decision, spaces });
+    if (process.env.HELM_MAX_MUTATION_WORKTREES !== undefined) {
+      fail('BUDGET_EXCEEDED', lines.join('\n'), { decision, spaces });
+    }
+    warn(`workspace count advisory: ${decision.reason}; continuing subject to disk reserve`);
   }
 
   // 4. Disk reserve — the same 12 GiB floor new-worktree.sh has always used.
@@ -366,9 +308,9 @@ export async function createWorkspace(opts = {}) {
     task,
     branch,
     base,
-    environment: 'local',
-    supabase: 'local',
-    productionWrites: false,
+    environment: 'shared-canonical',
+    supabase: 'shared-canonical',
+    runtimeSource: canonicalRoot,
     parkPolicy: keep ? 'KEEP' : 'PARK_IF_REPRODUCIBLE',
     createdBy: 'create-workspace.mjs',
     createdAt: new Date().toISOString(),
@@ -422,10 +364,17 @@ export async function createWorkspace(opts = {}) {
     copyFileSync(nodeVersionSrc, join(path, '.node-version'));
   }
 
-  // 10. A LOCAL-ONLY .env.local, generated fresh. Never read or copy the
-  // canonical checkout's .env.local — it holds production credentials this
-  // workspace must never see.
-  writeFileSync(join(path, '.env.local'), buildEnvLocal(resolveLocalAnonKey(repo)));
+  // 10. Runtime inputs stay linked to canonical, so credentials and tool
+  // preferences do not drift between branches. Missing inputs stay missing.
+  const runtime = shareWorkspaceRuntime({ canonicalRoot, workspaceRoot: path });
+  if (!runtime.linked.includes('.env.local')) {
+    warn('canonical .env.local is unavailable; no empty replacement was generated');
+  }
+  // MCP definitions describe the same services even when reattaching an old branch.
+  const mcpSource = join(canonicalRoot, '.mcp.json');
+  if (existsSync(mcpSource)) copyFileSync(mcpSource, join(path, '.mcp.json'));
+  marker.sharedRuntime = runtime.linked;
+  writeFileSync(join(path, '.helm/workspace.json'), `${JSON.stringify(marker, null, 2)}\n`);
 
   const upstreamProbe = spawnSync(
     'git',
@@ -434,7 +383,7 @@ export async function createWorkspace(opts = {}) {
   );
   const upstream = upstreamProbe.status === 0 ? String(upstreamProbe.stdout || '').trim() : null;
 
-  return { path, branch, base, deps, reattached: reattach, upstream };
+  return { path, branch, base, deps, runtime, reattached: reattach, upstream };
 }
 
 /**

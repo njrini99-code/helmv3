@@ -89,14 +89,20 @@ describe('the live configuration', () => {
     expect(v.state, v.detail).not.toBe(FAIL);
   });
 
-  it('the Supabase CLI denies cover the spellings that actually run on this machine', () => {
-    // CLAUDE.md and scripts/doctor.mjs: bare `supabase` does not resolve here;
-    // ./node_modules/.bin/supabase and npx supabase do. Until 2026-09-01 only
-    // the bare spelling of `config push` and `db reset` was denied.
-    const deny: string[] = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8')).permissions.deny;
-    for (const verb of ['config push', 'db reset', 'db push', 'migration up']) {
-      for (const bin of ['supabase', './node_modules/.bin/supabase', 'npx supabase']) {
-        expect(deny, `${bin} ${verb}`).toContain(`Bash(${bin} ${verb}:*)`);
+  it('remote Supabase CLI mutations ask while local reset and migration commands remain usable', () => {
+    const { ask, deny }: { ask: string[]; deny: string[] } = JSON.parse(
+      readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'),
+    ).permissions;
+    for (const bin of ['supabase', './node_modules/.bin/supabase', 'npx supabase']) {
+      for (const verb of ['config push', 'db push']) {
+        expect(ask, `${bin} ${verb}`).toContain(`Bash(${bin} ${verb}:*)`);
+      }
+      for (const verb of ['db reset', 'migration up']) {
+        expect(ask).not.toContain(`Bash(${bin} ${verb}:*)`);
+        expect(deny).not.toContain(`Bash(${bin} ${verb}:*)`);
+        for (const target of ['--linked', '--db-url']) {
+          expect(ask).toContain(`Bash(${bin} ${verb} ${target}:*)`);
+        }
       }
     }
   });

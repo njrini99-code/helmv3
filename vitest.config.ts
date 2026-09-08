@@ -206,10 +206,13 @@ export default defineConfig({
             'scripts/__tests__/motion-reduced-motion-coverage.test.mjs',
             // Fixture-repo tests for .githooks/pre-push (the local pre-push
             // gate wired by scripts/setup-hooks.mjs): the HELM_SKIP_PREPUSH
-            // escape hatch, and the generated-docs regenerate-then-diff step
-            // both staying stale (fails) and clean (passes) against a
-            // disposable temp git repo — never this repo's own git state.
+            // escape hatch, pushed-range diff checks, and optional gitleaks
+            // invocation against disposable temp git repos.
             'scripts/__tests__/pre-push-hook.test.mjs',
+            // Fixture-repo coverage for .githooks/pre-commit: staged gitleaks
+            // uses --redact, and migration commits only receive a reminder;
+            // the hook must not regenerate or stage database types.
+            'scripts/__tests__/pre-commit-hook.test.mjs',
             // Settings ownership (A6): user-scope leaks of repo-specific
             // rules, project-scope rules gating an uninstalled plugin
             // namespace, and rule files naming an unrecorded connector id.
@@ -416,6 +419,7 @@ export default defineConfig({
             // exercises .claude/hooks/worktree-create.mjs as a real
             // subprocess against a disposable git fixture.
             'scripts/__tests__/create-workspace.test.ts',
+            'scripts/__tests__/lint-results.test.mjs',
             // Gate timing ledger (reorg Phase 7 / W3 Speed): the pure
             // append-and-trim step in scripts/serialize.mjs that writes one
             // row per gate run to memory/ledgers/gates.jsonl, exercised only

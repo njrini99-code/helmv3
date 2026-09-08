@@ -1,27 +1,10 @@
 ---
-description: Create a task worktree through the one door and report its path
+description: Create an isolated task workspace when concurrent writes need one
 ---
 
-`/worktree <task>` — create a worktree for `<task>` through the sole door:
-
-```bash
-scripts/new-worktree.sh <task>
-```
-
-Never `git worktree add`, `git checkout -b`, or `git switch -c` by hand —
-the door supplies `--no-track`, the mutation-budget check, and the
-`.helm/workspace.json` stamp the lifecycle tool relies on.
-
-If the door refuses because `HELM_MAX_MUTATION_WORKTREES` is exceeded, report
-the budget value and the verdict table from `npm run worktrees` — do not
-override it, do not remove another worktree to make room without the user
-saying so.
-
-If the new worktree needs dependencies, run:
-
-```bash
-node scripts/ensure-worktree-deps.mjs <worktree-path>
-```
-
-On success, print the worktree path and branch (`~/worktrees/helmv3/<task>`,
-`agent/<task>`) from the script's own summary line — do not guess the path.
+Follow AGENTS.md for workspace ownership. If this task needs isolation, run
+`scripts/new-worktree.sh <task>` and report the actual path and branch.
+The default checkout-count warning is advisory. An explicitly configured
+cap and the disk reserve remain enforced. Do not delete another task to
+make room. Work in the existing checkout on disjoint files when appropriate.
+Install dependencies only when they are needed and incompatible or missing.

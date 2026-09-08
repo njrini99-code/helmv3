@@ -1579,3 +1579,8 @@ assumed it would:
   above implements — see that section for its worktree location as of
   2026-09-03; not linked here as a repo path because it does not resolve in
   this checkout yet (`docs:path-drift` would flag it).
+
+Claude MCP configuration is verified by the tooling tests in
+`src/test/scripts/control-plane-enforcement.test.ts`. The former admin test
+that required long shipping prose and permanent connector bans was removed;
+it did not exercise admin application behavior.

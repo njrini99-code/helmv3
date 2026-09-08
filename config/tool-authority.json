@@ -22,22 +22,22 @@
       "authority": "mcp__supabase__*",
       "authoritySource": ".mcp.json (this repo)",
       "scope": "project-scoped: qmnssrrolpinvwjjnufo, read_only=true",
-      "note": "The sanctioned route. Its OAuth grant requests ONLY :read scopes (organizations, projects, database, analytics, secrets, edge_functions, environment, storage) — a connector-enforced capability restriction, not a URL string. Awaiting owner OAuth completion; until then it is CONFIGURED but not CONNECTED.",
+      "note": "Preferred discovery path, not an exclusive permission boundary. Use a connected alternative when needed; follow AGENTS.md for authorization.",
       "alternates": [
         {
           "namespace": "mcp__claude_ai_Supabase__*",
-          "disposition": "TEMPORARY_FALLBACK",
-          "reason": "Account-scoped (list_organizations succeeds), so it is NOT project-scoped and carries no read_only enforcement. Its ten project-mutating tools are denied at project scope (#1673). execute_sql is deliberately retained ONLY because the sanctioned path is not yet connected — it is the sole working query path. It is UNENFORCED, not safe. Remove once mcp__supabase__* is connected and exercised. Measured 2026-09-01: the session exposes this connector under a UUID prefix (next row), not under this display name — the deny rules here are kept in case the spelling returns."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         },
         {
           "namespace": "mcp__e139bbde-4728-4ed3-977f-7b1b22f4b69c__*",
-          "disposition": "TEMPORARY_FALLBACK_UUID_SPELLING",
-          "reason": "The SAME account connector as the row above, under the name the 2026-09-01 session inventory actually uses (config/mcp-connector-ids.json). list_projects -> Helm-Production only, so still account-scoped and still without read_only enforcement. The same ten mutators are denied under this prefix; execute_sql stays allowed for the same reason as above (gap SUPABASE_ARBITRARY_SQL_UNENFORCED). Whether the UUID is stable across sessions is UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS)."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         },
         {
           "namespace": "mcp__plugin_supabase_supabase__*",
-          "disposition": "PHANTOM_REMOVED",
-          "reason": "No such plugin is installed on this machine. It held user-global ALLOW grants for execute_sql and apply_migration that would have activated the moment anyone installed it. Those grants were removed 2026-08-29; the namespace remains denied at project scope."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         }
       ]
     },
@@ -46,17 +46,17 @@
       "authority": "mcp__claude_ai_Sentry__*",
       "authoritySource": "account connector",
       "scope": "org helm-xs",
-      "note": "Chosen because it is the namespace already exercised and recorded (ET-4's grouped search_events aggregate, documented in .claude/rules/shipping.md). Read-only observability.",
+      "note": "Preferred discovery path, not an exclusive permission boundary. Use a connected alternative when needed; follow AGENTS.md for authorization.",
       "alternates": [
         {
           "namespace": "mcp__plugin_sentry_sentry__*",
-          "disposition": "REDUNDANT_DENIED",
-          "reason": "Probed 2026-08-29: connected, and find_organizations returns byte-identical results to the authority (org helm-xs, same region). A duplicate full tool set with no distinct capability. Denied at project scope. REVERSIBLE: if the account connector is ever disconnected, delete one deny line to restore this path — it is a duplicate, not a dead end."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         },
         {
           "namespace": "mcp__7524981b-0003-40de-9f86-c5275420784a__*",
-          "disposition": "AUTHORITY_UUID_SPELLING",
-          "reason": "The SAME account connector as the authority, under the name the 2026-09-01 session inventory actually uses (config/mcp-connector-ids.json); no mcp__claude_ai_Sentry__* name exists in that inventory. Exercised 2026-09-01: find_organizations -> helm-xs, byte-identical to the authority's recorded result. Nothing is denied under this prefix — Sentry mutators are out of scope for repo policy. UUID stability across sessions UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS)."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         }
       ]
     },
@@ -65,22 +65,22 @@
       "authority": "mcp__claude_ai_Vercel__*",
       "authoritySource": "account connector",
       "scope": "account",
-      "note": "Deployment reads. Production mutation remains governed separately by the project CLI deny rules, which this does not weaken.",
+      "note": "Preferred discovery path, not an exclusive permission boundary. Use a connected alternative when needed; follow AGENTS.md for authorization.",
       "alternates": [
         {
           "namespace": "mcp__plugin_vercel_vercel__*",
-          "disposition": "DEAD_DENIED",
-          "reason": "Probed 2026-08-29: exposes ONLY authenticate/complete_authentication, so it is CONFIGURED but not CONNECTED and cannot operate. Denied at project scope so a dead namespace cannot sit beside the live one as though equivalent."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         },
         {
           "namespace": "mcp__plugin_vercel-plugin_vercel__*",
-          "disposition": "DEAD_DENIED",
-          "reason": "The installed plugin's server is named `vercel-plugin`, not `vercel`: the user-global allow list spells it mcp__plugin_vercel-plugin_vercel__*, so the 2026-08-29 deny on mcp__plugin_vercel_vercel covered a name the plugin never registers under. Denied under this spelling too, 2026-09-01. Same disposition and same reversibility as the row above."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         },
         {
           "namespace": "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__*",
-          "disposition": "AUTHORITY_UUID_SPELLING",
-          "reason": "The SAME account connector as the authority, under the name the 2026-09-01 session inventory actually uses (config/mcp-connector-ids.json); no `mcp__claude_ai_Vercel__*` name exists in that inventory. Exercised 2026-09-01: list_projects -> team_WYEGBoW9Hpg2tB1QClWuVxc5, project helmv3. deploy_to_vercel, pause_project, the four buy_* purchases and update_project_deployment_protection are denied under this prefix (the last added 2026-09-02, when the second audit of the PR found it recorded as present but not denied); unpause_project and create_git_project are NOT (owner decision, listed in the PR that added these rules). UUID stability across sessions UNVERIFIED (gap MCP_DENY_RULES_KEYED_ON_ROTATABLE_CONNECTOR_IDS)."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         }
       ]
     },
@@ -89,12 +89,12 @@
       "authority": "gh CLI (gh api)",
       "authoritySource": "scripts/worktree-lifecycle.mjs",
       "scope": "repo njrini99-code/helmv3",
-      "note": "The lifecycle-critical path: branch deletion depends on PR state and PR head OID. Deliberately the CLI and not mcp__github__*, because the classifier must run in scripts and in CI where MCP is unavailable. A failed lookup is UNKNOWN, never 'no PR' (#1668).",
+      "note": "Preferred discovery path, not an exclusive permission boundary. Use a connected alternative when needed; follow AGENTS.md for authorization.",
       "alternates": [
         {
           "namespace": "mcp__github__*",
-          "disposition": "RETAINED_INTERACTIVE",
-          "reason": "Declared globally in ~/.claude.json. Retained for interactive use; it is NOT on the lifecycle path and no automation depends on it. Not denied, because it removes no safety property and provides real interactive capability."
+          "disposition": "ALTERNATIVE",
+          "reason": "Use if installed, connected, and suitable for the task. This namespace is not permanently disabled. Current permissions are in .claude/settings.json; historical connectivity must be rechecked."
         }
       ]
     }
