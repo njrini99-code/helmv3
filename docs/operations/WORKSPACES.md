@@ -92,6 +92,10 @@ Fixtures cover existing-name refusals, advisory default counts, enforced
 explicit caps, disk reserve, marker contents, dependency links, shared runtime links and
 environment updates, and the hook's path-only stdout contract.
 
+The Supabase CLI also shares canonical `supabase/.temp/project-ref` and
+`pooler-url`, so `--linked` commands have the same project identity in every
+worktree. Other Supabase temporary files and local stack state stay separate.
+
 ## Claude across older branches
 
 The `helm` and `h` shell functions run canonical `scripts/claude.mjs`. Inside

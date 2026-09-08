@@ -64,7 +64,7 @@ beforeEach(() => {
   // (including the bare `node_modules` line that also catches a SYMLINK,
   // which the dir-only `node_modules/` pattern would miss) so a
   // clean-worktree assertion here means what it means in the real repo.
-  writeFileSync(join(seed, '.gitignore'), 'node_modules/\nnode_modules\n.env\n.env.local\n.env*.local\n.helm/\n.vercel\n.claude/settings.local.json\n');
+  writeFileSync(join(seed, '.gitignore'), 'node_modules/\nnode_modules\n.env\n.env.local\n.env*.local\n.helm/\n.vercel\n.claude/settings.local.json\nsupabase/.temp/\n');
   mkdirSync(join(seed, 'node_modules'), { recursive: true });
   writeFileSync(join(seed, 'node_modules/marker.json'), '{}\n');
   writeFileSync(join(seed, '.node-version'), '22\n');
@@ -200,6 +200,20 @@ describe('createWorkspace — what it writes', () => {
     expect(realpathSync(target)).toBe(canonicalEnv);
     writeFileSync(canonicalEnv, 'TEST_RUNTIME_VALUE=updated\n');
     expect(readFileSync(target, 'utf-8')).toBe('TEST_RUNTIME_VALUE=updated\n');
+    expect(git(['status', '--porcelain'], result.path)).toBe('');
+  });
+
+  it('shares Supabase CLI project identity while leaving local stack state separate', async () => {
+    mkdirSync(join(seed, 'supabase/.temp'), { recursive: true });
+    writeFileSync(join(seed, 'supabase/.temp/project-ref'), 'test-project-ref');
+    writeFileSync(join(seed, 'supabase/.temp/pooler-url'), 'postgres://fixture@localhost/postgres');
+    const result = await createWorkspace({ name: 'db-tools', repo: seed, home });
+    for (const name of ['project-ref', 'pooler-url']) {
+      expect(realpathSync(join(result.path, 'supabase/.temp', name))).toBe(join(seed, 'supabase/.temp', name));
+    }
+    expect(lstatSync(join(result.path, 'supabase/.temp')).isSymbolicLink()).toBe(false);
+    writeFileSync(join(result.path, 'supabase/.temp/local-stack-marker'), 'local');
+    expect(existsSync(join(seed, 'supabase/.temp/local-stack-marker'))).toBe(false);
     expect(git(['status', '--porcelain'], result.path)).toBe('');
   });
 

@@ -6,6 +6,7 @@ const RESOURCES = [
   '.env', '.env.local', '.env.development', '.env.development.local',
   '.env.test', '.env.test.local', '.env.production', '.env.production.local',
   '.vercel/project.json', '.claude/settings.local.json',
+  'supabase/.temp/project-ref', 'supabase/.temp/pooler-url',
 ];
 
 function ignored(root, name) {

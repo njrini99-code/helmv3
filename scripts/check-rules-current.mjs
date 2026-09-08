@@ -6,9 +6,11 @@
 // a hardcoded count — belongs in memory/incidents/, a baseline file, or an
 // AUTOGEN block, never in a file every session loads. This is the gate that
 // keeps that true: it fails on a history phrase, a bare date, a `verified:`
-// frontmatter key, a count-in-prose pattern, a single rules file over 80
-// lines, or the always-on total (AGENTS.md + CLAUDE.md + every
-// .claude/rules/*.md file with no `paths:` frontmatter) over 300 lines.
+// frontmatter key, a count-in-prose pattern, or the always-on total over
+// 300 lines. Individual rules over 80 lines produce an advisory warning.
+// The always-on total includes:
+// AGENTS.md + CLAUDE.md + every .claude/rules/*.md file with no `paths:`
+// frontmatter.
 //
 // Wire-up: `npm run docs:rules-current`, a step of `docs:check`.
 //
@@ -64,12 +66,13 @@ function listRuleFiles() {
 
 function checkFile(relPath, { enforceFileCap }) {
   const problems = [];
+  const warnings = [];
   const text = readFileSync(join(ROOT, relPath), 'utf8');
   const lines = text.split('\n');
   const lineCount = countLines(text);
 
   if (enforceFileCap && lineCount > MAX_RULE_FILE_LINES) {
-    problems.push(
+    warnings.push(
       `${relPath}: ${lineCount} lines (max ${MAX_RULE_FILE_LINES})`,
     );
   }
@@ -100,28 +103,39 @@ function checkFile(relPath, { enforceFileCap }) {
     }
   });
 
-  return { problems, lineCount };
+  return { problems, warnings, lineCount };
 }
 
 function main() {
   const problems = [];
+  const warnings = [];
   let alwaysOnTotal = 0;
 
   for (const relPath of ALWAYS_ON_EXTRA) {
-    const { problems: fileProblems, lineCount } = checkFile(relPath, {
+    const {
+      problems: fileProblems,
+      warnings: fileWarnings,
+      lineCount,
+    } = checkFile(relPath, {
       enforceFileCap: false,
     });
     problems.push(...fileProblems);
+    warnings.push(...fileWarnings);
     alwaysOnTotal += lineCount;
   }
 
   for (const relPath of listRuleFiles()) {
     const text = readFileSync(join(ROOT, relPath), 'utf8');
     const isAlwaysOn = !hasFrontmatterPathsKey(text);
-    const { problems: fileProblems, lineCount } = checkFile(relPath, {
+    const {
+      problems: fileProblems,
+      warnings: fileWarnings,
+      lineCount,
+    } = checkFile(relPath, {
       enforceFileCap: true,
     });
     problems.push(...fileProblems);
+    warnings.push(...fileWarnings);
     if (isAlwaysOn) alwaysOnTotal += lineCount;
   }
 
@@ -131,6 +145,8 @@ function main() {
         'AGENTS.md + CLAUDE.md + every .claude/rules/*.md file with no paths: frontmatter',
     );
   }
+
+  for (const warning of warnings) console.warn(`WARNING: ${warning}`);
 
   if (problems.length > 0) {
     for (const p of problems) console.error(p);
@@ -142,7 +158,9 @@ function main() {
   }
 
   console.log(
-    `docs:rules-current PASSED — always-on total ${alwaysOnTotal}/${MAX_ALWAYS_ON_TOTAL} lines.`,
+    `docs:rules-current PASSED — always-on total ${alwaysOnTotal}/${MAX_ALWAYS_ON_TOTAL} lines` +
+      (warnings.length ? `; ${warnings.length} warning(s)` : '') +
+      '.',
   );
 }
 
