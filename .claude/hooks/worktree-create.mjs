@@ -1,17 +1,9 @@
 #!/usr/bin/env node
 // .claude/hooks/worktree-create.mjs — the WorktreeCreate hook.
 //
-// The harness fires WorktreeCreate whenever a worktree is being made via
-// `--worktree`, `isolation: "worktree"`, or a background session, and — once
-// this hook is wired into .claude/settings.json (see
-// docs/operations/WORKSPACES.md; this PR does not edit settings.json) —
-// REPLACES the harness's own default of `git worktree add` under
-// `.claude/worktrees/<name>/`. That default bypasses every governance this
-// repo has: no mutation budget, no disk reserve, no .helm/workspace.json
-// marker, and a location the nested-worktree check would flag. This hook
-// routes the SAME request through scripts/lib/create-workspace.mjs — the one
-// module scripts/new-worktree.sh also calls — so a subagent asking for
-// isolation gets exactly what a human running new-worktree.sh gets.
+// The harness calls this for --worktree, isolated agents and background
+// sessions. Resolve the creator from canonical so a source branch cannot
+// bring back stale environment or tool provisioning.
 //
 // CONTRACT (harness hooks reference — see the scratchpad's
 // details-harness.md §1 for the full quoted text):
@@ -28,10 +20,10 @@
 //     root — createWorkspace()'s own path (resolve() under HELM_WORKTREE_HOME)
 //     already satisfies this, so no extra validation is duplicated here.
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-
-import { createWorkspace } from '../../scripts/lib/create-workspace.mjs';
-import { canonicalRootOf } from './lib/workspace-identity.mjs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 function readStdinJson() {
   try {
@@ -59,15 +51,17 @@ async function main() {
       ? input.name.trim()
       : `wt-${randomBytes(3).toString('hex')}`;
 
-  // Resolve the repo from `cwd` via its shared .git directory — the same
-  // logic canonicalRootOf() already implements (git rev-parse
-  // --git-common-dir, then that dir's parent), reused rather than
-  // reimplemented so this hook can never disagree with repo:doctor or
-  // scripts/lib/worktree-lifecycle.mjs about what "the repo" means.
   const cwd = typeof input.cwd === 'string' && input.cwd ? input.cwd : process.cwd();
-  const repo = canonicalRootOf(cwd);
-
   try {
+    const commonDir = execFileSync('git', ['-C', cwd, 'rev-parse', '--path-format=absolute', '--git-common-dir'], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+    const repo = dirname(commonDir);
+    const sharedModule = join(repo, 'scripts/lib/create-workspace.mjs');
+    const moduleUrl = existsSync(sharedModule)
+      ? pathToFileURL(sharedModule)
+      : new URL('../../scripts/lib/create-workspace.mjs', import.meta.url);
+    const { createWorkspace } = await import(moduleUrl.href);
     const { path } = await createWorkspace({ name, repo, base: 'origin/main' });
     // The ENTIRE contract for a command-type WorktreeCreate hook: this line,
     // and only this line, on stdout.

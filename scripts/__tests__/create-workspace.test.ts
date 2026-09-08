@@ -247,6 +247,16 @@ describe('worktree-create.mjs — the WorktreeCreate hook contract', () => {
     });
   }
 
+  it('uses canonical provisioning when the hook is launched from an older source checkout', () => {
+    const resultPath = join(home, 'canonical-provisioned');
+    mkdirSync(join(seed, 'scripts/lib'), { recursive: true });
+    writeFileSync(join(seed, 'scripts/lib/create-workspace.mjs'),
+      `export async function createWorkspace() { return { path: ${JSON.stringify(resultPath)} }; }\n`);
+    const result = runHook({ cwd: seed, name: 'shared-tooling' });
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe(resultPath);
+  });
+
   it('prints the absolute path as the LAST non-empty stdout line and exits 0', () => {
     const r = runHook({ name: 'hooked', cwd: seed });
     expect(r.status).toBe(0);
