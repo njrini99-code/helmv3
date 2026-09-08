@@ -122,6 +122,23 @@ always derived at read time.
   `source: null`, never `'client'`: a reliability signal is server-observed
   (Supabase/Sentry/Vercel arms) and must not take the branches that file a
   fault as the visitor's own connectivity.
+- **An incident carries WHO, not only how many.** `mergeTriage` built a Set of
+  `user_id`/`user_email` per fingerprint and kept only `.size`, so every Bridge
+  surface could render "2 users" and none could say which two —
+  `/admin/thread/user/<id>` and `entity-thread.ts` shipped the whole time with
+  nothing linking to them from an incident. `TriageItem.affectedPeople` and
+  `UnifiedIncident.affectedPeople` now carry the identities (capped at
+  `MAX_AFFECTED_PEOPLE`), `correlate.ts` UNIONS them across co-bucketed app
+  items rather than taking `Math.max` of the per-item counts (two items each
+  reporting one user are two people unless they are the same person, and only
+  identities can say which), and `src/lib/admin/data/affected-people.ts`
+  resolves them to names — which live on the sport profile tables, never on
+  `users`. Sentry contributors stay a MAX against the app side, never a sum:
+  its `userCount` is an opaque tally of an overlapping population. Identities
+  are deliberately NOT folded into `report`, the string the RCA action forwards
+  to a third-party model. The detail page's `AffectedPeoplePanel` keeps three
+  states: named people, "no identity was captured" (a capture gap), and "could
+  not read who" — the last must never render as the second.
 - **Incident resolution has exactly one write path.** Every resolve — a single
   row, a whole fingerprint, or a bulk selection — goes through the user-scoped
   `resolve_admin_event` RPC and busts `BRIDGE_INCIDENT_CACHE_TAG`. The RPC

@@ -23,6 +23,7 @@ function baseIncident(id: string): UnifiedIncident {
     lastSeen: '2026-09-01T00:00:00.000Z',
     occurrences: 3,
     affectedUsers: 2,
+    affectedPeople: [],
     affectedUsersKnown: true,
     sources: [],
     corroboration: 1,

@@ -50,7 +50,12 @@
  * that must go red if someone "simplifies" the key to title-only.
  */
 
-import type { TriageItem, TriageSeverity } from '@/lib/admin/data/triage';
+import {
+  MAX_AFFECTED_PEOPLE,
+  type AffectedPerson,
+  type TriageItem,
+  type TriageSeverity,
+} from '@/lib/admin/data/triage';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
 // A VALUE import, unlike the type-only imports around it — `classifyIncident`
 // is pure (no I/O, no clock, no `server-only` sibling), so importing it keeps
@@ -466,12 +471,44 @@ function buildDraft(
     bucket.appItems.reduce((sum, i) => sum + i.occurrences, 0) +
     bucket.sentryItems.reduce((sum, i) => sum + i.occurrences, 0);
 
-  // Affected users: MAX across app + sentry contributors, never summed — they
-  // count different, overlapping populations (an app-origin identity vs.
-  // Sentry's own userCount), and summing would invent users nobody observed.
-  // Reliability signals carry no user-identity concept at all.
-  const identityCandidates = [...bucket.appItems, ...bucket.sentryItems].map((i) => i.affectedUsers);
-  const affectedUsers = identityCandidates.length > 0 ? Math.max(...identityCandidates) : 0;
+  // Affected people: a true UNION across the app contributors, because those
+  // are identities and a union is what "how many distinct people" means. This
+  // used to be `Math.max` over the per-item counts for the app side too, which
+  // undercounts the moment two app items co-bucket: two items reporting one
+  // affected user each are two people unless they are the same person, and
+  // only the identities can say which. They were available and discarded (see
+  // `TriageItem.affectedPeople`), so the max was the best a count-only model
+  // could do — not the right answer.
+  const affectedPeopleByKey = new Map<string, AffectedPerson>();
+  for (const item of bucket.appItems) {
+    for (const person of item.affectedPeople) {
+      // Same key `mergeTriage` deduped on, so the union agrees with the
+      // per-item counts it is built from.
+      const key = person.userId ?? person.email;
+      if (!key) continue;
+      const existing = affectedPeopleByKey.get(key);
+      if (!existing || (existing.userId === null && person.userId)) {
+        affectedPeopleByKey.set(key, person);
+      }
+    }
+  }
+  const affectedPeople = [...affectedPeopleByKey.values()].slice(0, MAX_AFFECTED_PEOPLE);
+
+  // Sentry stays a MAX against the app side, never a sum: its `userCount` is
+  // an opaque tally of a different, overlapping population, so adding the two
+  // would invent users nobody observed. Reliability signals carry no
+  // user-identity concept at all.
+  //
+  // `appItems.affectedUsers` is still consulted alongside the union: an app
+  // item can report a count larger than the identities it carries, because
+  // `affectedPeople` is capped at MAX_AFFECTED_PEOPLE. The count must never
+  // shrink to the cap.
+  const identityCandidates = [
+    affectedPeopleByKey.size,
+    ...bucket.appItems.map((i) => i.affectedUsers),
+    ...bucket.sentryItems.map((i) => i.affectedUsers),
+  ];
+  const affectedUsers = Math.max(...identityCandidates, 0);
   const allAppOrigin = bucket.sentryItems.length === 0 && bucket.appItems.length > 0;
   const allZeroKnownIdentity = bucket.appItems.every((i) => i.affectedUsers === 0);
   // False only when EVERY contributor is app-origin AND every one of them
@@ -613,6 +650,7 @@ function buildDraft(
     lastSeen,
     occurrences,
     affectedUsers,
+    affectedPeople,
     affectedUsersKnown,
     sources,
     corroboration,
