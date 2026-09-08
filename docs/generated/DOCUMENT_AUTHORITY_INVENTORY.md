@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 34 | 5 | 15 | 65 |
-| `AUDIT_SNAPSHOT` | 55 | 6 | 30 | 23 |
+| `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 23 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -393,6 +393,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/HEALTH_AUDIT_2026_08_18.md` | current | - | - | yes | 0 | 14 | 1 |
 | `docs/audits/IOS_PREMIUM_APPLE_RESEARCH_2026-08-25.md` | current | - | - | - | 1 | 0 | - |
 | `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` | current | yes | - | yes | 3 | 21 | - |
+| `docs/audits/MOBILE_NATIVE_AUDIT_2026-09-08.md` | current | - | - | - | 0 | 0 | - |
 | `docs/audits/REPO_UNTANGLE_AND_CLEAN_BASE.md` | current | - | - | yes | 1 | 4 | - |
 | `docs/audits/RLS_SECURITY_AUDIT.md` | current | - | - | - | 0 | 0 | - |
 | `docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md` | current | - | - | - | 0 | 5 | - |
