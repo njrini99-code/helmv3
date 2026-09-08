@@ -8,7 +8,15 @@ Find tables and columns in Supabase that are genuinely dead — not referenced a
 
 ## Phase 1: Full Schema Extraction via Supabase MCP
 
-Run ALL of these queries using `execute_sql`. Do not skip any.
+All of these are read-only `information_schema`/`pg_catalog` queries. Use
+whatever connected Supabase MCP or authenticated CLI exposes the needed
+read surface. Prefer this repo's project-scoped `mcp__supabase__*` server when
+it is connected; a verified account-wide or other fallback `execute_sql` path
+is also valid for read-only inspection. For anything the connected MCP does
+not expose directly (1c–1h), use
+`./node_modules/.bin/supabase db dump --schema public --data-only=false` (or
+the equivalent local `supabase db diff`) and inspect the output. This command
+only reports findings; it never performs a write.
 
 ### 1a. All public tables
 ```sql
@@ -263,12 +271,16 @@ For each: table.column, reason you're confident it's unused.
 For each: table.column, reason it's ambiguous.
 
 ### Recommended Removal Steps
-For confirmed-unreferenced items only:
+For confirmed-unreferenced items only. This command only reports. Any
+actual write uses the reviewed, task-authorized write-capable Supabase path
+(`npm run db:apply` or a connected MCP) and follows the normal migration
+workflow, including `supabase/migrations/HELD.md` when applicable.
 1. Create a new migration with `ALTER TABLE x RENAME TO _deprecated_x`
 2. Deploy to preview/staging
 3. Run full test suite
 4. Manual smoke test for 1 week
-5. If nothing breaks, create a DROP migration6. Warn about any storage, webhooks, or external integrations that might reference the table outside the codebase
+5. If nothing breaks, create a DROP migration
+6. Warn about any storage, webhooks, or external integrations that might reference the table outside the codebase
 
 ---
 
