@@ -324,7 +324,6 @@ When a flagship visual surface justifies the bundle weight:
 
 Until then, the CSS + Framer Motion stack covers 90% of the premium feel at <50KB of additional runtime cost. We get the look, we don't pay for it.
 
-
 ### Mobile navigation and overlay motion (2026-09-08)
 
 The mobile bottom navigation is a floating warm-glass capsule. A shared raised
