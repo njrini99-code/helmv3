@@ -11,7 +11,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfEvent, GolfPlayerClass } from '@/lib/types/golf';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
-import { classIdFromDescription } from '@/lib/calendar/class-events';
+import { classIdFromDescription, isClassEvent } from '@/lib/calendar/class-events';
 import { parseSemesterDates } from '@/lib/golf/semester';
 import { todayIsoInZone, wallClockInZone } from '@/lib/golf/timezone';
 import { parseRecurrenceRule, type RecurrenceRule } from '@/lib/golf/recurrence';
@@ -50,7 +50,7 @@ type TeamEventRow = Pick<
 
 type AttendanceEventRow = Pick<
   GolfEvent,
-  'id' | 'title' | 'start_time' | 'end_time' | 'all_day'
+  'id' | 'title' | 'start_time' | 'end_time' | 'all_day' | 'event_type' | 'description'
 >;
 
 interface AttendanceWithEvent {
@@ -391,7 +391,7 @@ export async function getUserBusyPeriodsWithStatus(
           .from('golf_event_attendance')
           .select(`
             event_id,
-            event:golf_events!inner(id, title, start_time, end_time, all_day)
+            event:golf_events!inner(id, title, start_time, end_time, all_day, event_type, description)
           `)
           .eq('player_id', player.id)
           .eq('status', 'accepted')
@@ -555,6 +555,13 @@ export async function getUserBusyPeriodsWithStatus(
   for (const attendance of attendanceRows) {
     const event = firstEventOrNull(attendance.event);
     if (!event || existingEventIds.has(event.id)) continue;
+    // A class occurrence is its OWNER's commitment and is contributed above,
+    // typed 'class', only when this player owns it. An attendance row on a
+    // class row is not a commitment at all (respondToEvent refuses them; older
+    // rows may exist) — and pushing it here would relabel someone else's class
+    // as a plain 'event' with its real title, which is exactly how a class
+    // name reached a viewer with no class-detail access. Skip, never relabel.
+    if (isClassEvent(event)) continue;
 
     const interval = eventBusyInterval(event, classTimeZone);
     if (!interval || !overlapsWindow(interval, timeMin, timeMax)) continue;

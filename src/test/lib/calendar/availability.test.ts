@@ -257,6 +257,29 @@ describe('getUserBusyPeriods — timed team events (audit #7)', () => {
     expect(busy[0]!.title).toBe('Scrimmage');
   });
 
+  it("never relabels a TEAMMATE's class as a plain event through an accepted attendance row", async () => {
+    // The attendance arm used to push every accepted row as type 'event' with
+    // the row's real title and no event_type check. An attendance row on a
+    // classmate's synced class (obtainable before respondToEvent refused
+    // them) therefore reached conflict-inbox as an ordinary event, carrying
+    // the class name straight past the class-detail access gate.
+    const tables = baseTables();
+    tables.golf_event_attendance.push({
+      id: 'a1', player_id: 'p1', status: 'accepted', event_id: 'ev-theirs',
+      event: {
+        id: 'ev-theirs', title: 'ECON 350: Econometrics', status: 'scheduled',
+        start_time: '2026-06-10T18:30:00+00:00', end_time: '2026-06-10T19:30:00+00:00',
+        event_type: 'class', description: 'Instructor: Dr. Who\n[class:cls-p2]',
+      },
+    });
+
+    const busy = await getUserBusyPeriods(
+      'u1', new Date('2026-06-10T18:00:00Z'), new Date('2026-06-10T20:00:00Z'), createStubClient(tables),
+    );
+
+    expect(busy).toHaveLength(0);
+  });
+
   it('paginates past the PostgREST 1000-row page cap', async () => {
     const tables = baseTables();
     // 1200 non-overlapping 30-minute events inside the window.
