@@ -11,7 +11,7 @@ import * as React from 'react';
 import { Search, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import surfaces from '../CalendarSurfaces.module.css';
-import { ModalShell, Button, Input, Segmented, EmptyState, InlineNotice } from '@/components/fairway';
+import { ModalShell, Button, Input, Segmented, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
 import { getDocuments } from '@/app/golf/actions/documents';
 import { attachDocumentToEvent } from '@/app/golf/actions/event-documents';
 import type { GolfDocument } from '@/lib/types/golf';
@@ -122,7 +122,7 @@ export function EventFilePicker({
         {state.status === 'loading' ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-fw-md bg-surface-sunken" />
+              <Skeleton key={i} className="h-14 rounded-fw-md" />
             ))}
           </div>
         ) : state.status === 'failed' ? (

@@ -43,7 +43,7 @@ function intervalTitle(interval: ScheduleInterval): string {
 function intervalTone(interval: ScheduleInterval): string {
   if (interval.type === 'class') return 'border-accent-200 bg-accent-50 text-accent-800 shadow-flat';
   if (interval.type === 'event') return `border-accent-700 text-text-on-accent ${surfaces.selected}`;
-  return 'border-border-strong bg-text-tertiary/85 text-white shadow-flat';
+  return 'border-border-strong bg-surface-sunken text-text-secondary shadow-flat';
 }
 
 function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified, onOpenClass }: {
@@ -104,7 +104,7 @@ function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified, on
             title: `${intervalTitle(interval)} · ${timeInZone(interval.start, timeZone)}–${timeInZone(interval.end, timeZone)}`,
             style: { left: `${left}%`, width: `${width}%` },
             className: cn(
-              'absolute top-2 flex h-10 min-w-0 items-center rounded-fw-sm border px-2 font-fw-sans text-caption font-medium hover:-translate-y-px',
+              'absolute top-1 flex h-11 min-w-0 items-center rounded-fw-sm border px-2 font-fw-sans text-caption font-medium',
               openable && cn('cursor-pointer', surfaces.press),
               intervalTone(interval),
             ),
@@ -264,7 +264,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
             <div className="relative space-y-3 border-l border-accent-200 pl-4 ml-4">
               {person.intervals.map((interval) => (
                 <div key={interval.id} className={cn('group relative flex items-start gap-3 rounded-fw-lg p-4', surfaces.paper, surfaces.enter)}>
-                  <span className={cn('mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full', interval.type === 'class' ? 'bg-accent-50 text-accent-700' : 'bg-accent-50 text-accent-700')}>
+                  <span className={cn('mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full', interval.type === 'class' ? 'bg-accent-50 text-accent-700' : 'bg-surface-sunken text-text-secondary')}>
                     {interval.type === 'class' ? <BookOpen className="h-4 w-4" aria-hidden /> : <Clock className="h-4 w-4" aria-hidden />}
                   </span>
                   <div className="min-w-0 flex-1">

@@ -143,6 +143,7 @@ vi.mock('@/components/fairway', () => {
   return {
     Sheet: SheetRoot,
     ModalShell: ModalShellRoot,
+    Skeleton: ({ className }: { className?: string }) => <div data-testid="skeleton" className={className} />,
     PopoverPanel: PopoverPanelRoot,
     Segmented,
     Inset: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -545,13 +546,31 @@ describe('FairwayEventDetailDrawer — destructive actions "More" menu (§2.10)'
     expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();
   });
 
-  it('offers "Cancel event" for a coach on a live event and calls the handler', async () => {
+  it('offers "Cancel event" for a coach on a live event and only calls the handler after the confirm', async () => {
     const onCancelEvent = vi.fn(async () => ({ success: true }));
     renderDrawer({ isCoach: true, onCancelEvent });
     fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
-    const cancelItem = await screen.findByText('Cancel event');
-    fireEvent.click(cancelItem);
+    fireEvent.click(await screen.findByText('Cancel event'));
+    // The menu tap never runs the action itself — it opens a confirm with
+    // consequence copy, matching the editor's cancel/delete dialogs.
+    expect(onCancelEvent).not.toHaveBeenCalled();
+    const confirm = await screen.findByRole('dialog', { name: 'Cancel this event?' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel event' }));
     await waitFor(() => expect(onCancelEvent).toHaveBeenCalledTimes(1));
+  });
+
+  it('"Delete permanently" is gated behind its own confirm and "Keep event" backs out', async () => {
+    const onDeletePermanently = vi.fn(async () => ({ success: true }));
+    renderDrawer({ isCoach: true, event: makeEvent({ status: 'cancelled' }), onDeletePermanently });
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    fireEvent.click(await screen.findByText('Delete permanently'));
+    const confirm = await screen.findByRole('dialog', { name: 'Delete this event permanently?' });
+    expect(onDeletePermanently).not.toHaveBeenCalled();
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Keep event' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Delete this event permanently?' })).not.toBeInTheDocument(),
+    );
+    expect(onDeletePermanently).not.toHaveBeenCalled();
   });
 
   it('offers "Restore event" and "Delete permanently" only for a cancelled event', () => {
@@ -568,13 +587,15 @@ describe('FairwayEventDetailDrawer — destructive actions "More" menu (§2.10)'
     expect(screen.queryByText('Cancel event')).not.toBeInTheDocument();
   });
 
-  it('shows the server error and keeps the menu open on failure', async () => {
+  it('shows the server error and keeps the confirm open on failure', async () => {
     const onCancelEvent = vi.fn(async () => ({ success: false, error: 'Could not cancel right now.' }));
     renderDrawer({ isCoach: true, onCancelEvent });
     fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
     fireEvent.click(await screen.findByText('Cancel event'));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not cancel right now.');
-    expect(screen.getByText('Cancel event')).toBeInTheDocument();
+    const confirm = await screen.findByRole('dialog', { name: 'Cancel this event?' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel event' }));
+    expect(await within(confirm).findByRole('alert')).toHaveTextContent('Could not cancel right now.');
+    expect(screen.getByRole('dialog', { name: 'Cancel this event?' })).toBeInTheDocument();
   });
 });
 

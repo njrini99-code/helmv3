@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
-import { Button, Input, EmptyState, Avatar, Segmented } from '@/components/fairway';
+import { Button, Input, EmptyState, Avatar, Segmented, Skeleton } from '@/components/fairway';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { usePeopleSelection, type PeoplePickerPerson } from './usePeopleSelection';
 import surfaces from '../CalendarSurfaces.module.css';
@@ -175,7 +175,7 @@ function PickerBody({
         {loading ? (
           <div role="status" aria-label="Loading roster" className="space-y-1.5 p-1">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-11 animate-pulse rounded-fw-md bg-surface-sunken" />
+              <Skeleton key={i} className="h-11 rounded-fw-md" />
             ))}
           </div>
         ) : people.length === 0 ? (

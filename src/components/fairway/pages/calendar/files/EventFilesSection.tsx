@@ -10,7 +10,7 @@
 import * as React from 'react';
 import { ExternalLink, FileText, Paperclip, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, EmptyState, InlineNotice } from '@/components/fairway';
+import { Button, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
 import { getEventDocuments, detachDocumentFromEvent, type EventDocumentRow } from '@/app/golf/actions/event-documents';
 import { EventFilePicker } from './EventFilePicker';
 
@@ -126,7 +126,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
       {state.status === 'loading' ? (
         <div className="space-y-1.5" aria-hidden>
           {[0, 1].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-fw-md bg-surface-sunken" />
+            <Skeleton key={i} className="h-14 rounded-fw-md" />
           ))}
         </div>
       ) : state.status === 'failed' ? (

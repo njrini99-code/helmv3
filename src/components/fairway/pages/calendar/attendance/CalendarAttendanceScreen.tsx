@@ -15,7 +15,7 @@
 
 import * as React from 'react';
 import { CalendarClock, RefreshCw, Search, UsersRound } from 'lucide-react';
-import { ModalShell, Button, Input, EmptyState, InlineNotice } from '@/components/fairway';
+import { ModalShell, Button, Input, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
 import { getAttendanceReport, type AttendanceRecord } from '@/app/golf/actions/attendance';
 import { AttendanceRow } from './AttendanceRow';
 import { useAttendanceDraft, type DraftMark } from './useAttendanceDraft';
@@ -149,7 +149,7 @@ export function CalendarAttendanceScreen({
           <div className="space-y-2" role="status" aria-live="polite">
             <p className="font-fw-sans text-body-sm text-text-tertiary">Loading roster…</p>
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-fw-md bg-surface-sunken" />
+              <Skeleton key={i} className="h-14 rounded-fw-md" />
             ))}
           </div>
         ) : state.status === 'failed' ? (

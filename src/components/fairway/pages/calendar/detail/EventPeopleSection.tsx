@@ -10,7 +10,7 @@
 
 import * as React from 'react';
 import { RefreshCw } from 'lucide-react';
-import { Button, StatusPill } from '@/components/fairway';
+import { Button, StatusPill, Skeleton } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import { getEventRSVP, type RSVPStats } from '@/app/golf/actions/golf';
 
@@ -77,7 +77,7 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
       {state.status === 'loading' ? (
         <div className="space-y-1.5" aria-hidden>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-11 animate-pulse rounded-fw-md bg-surface-sunken" />
+            <Skeleton key={i} className="h-11 rounded-fw-md" />
           ))}
         </div>
       ) : state.status === 'failed' ? (
