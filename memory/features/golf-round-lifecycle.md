@@ -348,9 +348,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   touch for no gain; it was reverted the same day. The editor now renders on
   `/golf/dashboard/rounds/continue/[id]`, which already scopes its round to
   `player.id`, so it is always the player's own.
-  - Rendered from the SERVER component, outside `ContinueRoundClient`. That
-    component owns live scoring, autosave and recovery; a type picker does not
-    belong inside that state machine.
+  - Constructed by the server component and passed into `ContinueRoundClient`
+    as a presentation slot in its inset-aware resume header. The editor still
+    owns its independent state; scoring, autosave and recovery do not own it.
   - Player rules apply: only qualifiers the player is already ENTERED in,
     because RLS makes entry creation coach-only.
 - **A round re-typed mid-play must still submit.** Saving calls
@@ -491,8 +491,9 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 The round chrome owns the iOS status-bar zone: the Capacitor WKWebView is
 edge-to-edge (`contentInset: 'never'`), so `FairwayScorecardHeader`'s sticky
-bar pads `env(safe-area-inset-top)` (inside the measured element — the
-published `--scorecard-height` var includes it), and both
+bar owns `env(safe-area-inset-top)` as padding for New Round or a sticky
+offset below Continue Round's inset-aware context (the published
+`--scorecard-height` includes the inset in both modes), and both
 `FairwayNewRoundEntry` step wrappers plus `FairwayCoursePicker`'s floating
 Close fold the inset into their top offsets. Off-iOS these resolve to the
 prior paddings (env() = 0). No lifecycle, autosave, or navigation semantics
@@ -518,8 +519,9 @@ The push pre-prompt sheet (`PushPermissionSoftAsk.tsx`) moved off retired
 ## iOS shell chrome (updated 2026-08-26)
 
 Round entry and tracking chrome are safe-area-native in the Capacitor shell:
-`FairwayScorecardHeader` pads `env(safe-area-inset-top)` (publishing
-`--scorecard-height` inclusive of the inset), both `FairwayNewRoundEntry`
+`FairwayScorecardHeader` accounts for `env(safe-area-inset-top)` through
+padding or its resumed-round sticky offset (publishing `--scorecard-height`
+inclusive of the inset), both `FairwayNewRoundEntry`
 step wrappers fold the inset into top padding, and the course-picker close
 control sits below the status bar. The shared `Segmented` control renders an
 accent-green selected thumb in dark scope. Presentation layer only — no
@@ -546,3 +548,17 @@ New-round completion shows a fixed, non-blocking loading status while its summar
 load. The summary remains mounted after its first finish attempt so closing can complete the shared
 sheet exit. Round-detail distribution segments keep their final layout widths and reveal with
 transforms.
+
+### Continue Round header ownership (2026-09-08)
+
+The resume context and round-type editor share one header below the status-bar
+inset. The scorecard uses that inset as its sticky top offset, without adding
+a second blank padding band. Its published offset includes the inset for
+offline banners and desktop context. New Round still owns its inset inside
+the scorecard. The tracking wrapper clips horizontal overflow without becoming
+a vertical scroll container, and Continue Round avoids an ancestor transform
+that would trap fixed status-bar chrome. Scores and save behavior are unchanged.
+The completed-round Submit banner lives inside this same measured scorecard
+chrome so it remains reachable while scrolling. A ResizeObserver updates the
+published offset when the banner or save status changes height. The route
+loading placeholder reserves the same inset, context, and editor order.

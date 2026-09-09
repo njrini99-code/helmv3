@@ -650,6 +650,7 @@ export function MessageThreadPane({
     (messageId: string) => ({
       onPointerDown: (e: React.PointerEvent) => {
         cancelLongPress();
+        if (e.pointerType === 'mouse') return;
         longPressOriginRef.current = { x: e.clientX, y: e.clientY };
         longPressTimerRef.current = setTimeout(() => {
           // The detent tick, so the menu opening is felt as well as seen.
@@ -669,6 +670,15 @@ export function MessageThreadPane({
       },
       onPointerCancel: cancelLongPress,
       onPointerLeave: cancelLongPress,
+      // CSS disables selection for the touch bubble, but compatibility mouse
+      // events can still begin a selection before the long-press timer wins.
+      // Keep this guard coarse-pointer-only so desktop users retain normal
+      // text selection.
+      onMouseDown: (e: React.MouseEvent) => {
+        if (typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches) {
+          e.preventDefault();
+        }
+      },
       /**
        * G-42 — SUBSTITUTE, don't just suppress.
        *
@@ -1425,6 +1435,7 @@ export function MessageThreadPane({
                 )}
                 <m.div
                   data-message-row
+                  data-message-selected={mobileActionsId === msg.id ? 'true' : undefined}
                   ref={(node: HTMLDivElement | null) => {
                     // P259: register/unregister this message's scroll anchor.
                     if (node) messageRefs.current.set(msg.id, node);
@@ -1602,7 +1613,8 @@ export function MessageThreadPane({
                           // would have raced our menu against the native
                           // callout on exactly the messages the finding was
                           // about, which is worse than the gap it closed.
-                          'select-none [-webkit-touch-callout:none]',
+                          'select-text [-webkit-touch-callout:default] [@media(pointer:coarse)]:select-none [@media(pointer:coarse)]:[-webkit-touch-callout:none] [@media(pointer:coarse)]:[-webkit-user-select:none]',
+                          mobileActionsId === msg.id && '[@media(pointer:coarse)]:relative [@media(pointer:coarse)]:z-20 [@media(pointer:coarse)]:scale-[1.015] [@media(pointer:coarse)]:opacity-100 [@media(pointer:coarse)]:transition-[transform,opacity] [@media(pointer:coarse)]:duration-150 motion-reduce:[@media(pointer:coarse)]:transition-none',
                           // Incoming is `bg-surface`. `Bubbles.dc.html:20` and
                           // `Thread.dc.html:57` both paint it
                           // `linear-gradient(180deg, oklch(0.989 …), oklch(0.980 …))`,
@@ -1911,18 +1923,35 @@ export function MessageThreadPane({
           own={isOwnMessage(actionsMessage)}
           onClose={() => onSetMobileActions(null)}
         >
-          <div className="mb-4 mr-9 rounded-fw-md bg-surface px-3 py-2.5 shadow-flat">
-            <p className="text-caption font-medium text-text-secondary">
+          <div className="flex flex-col">
+          <m.div
+            data-fw-selected-message
+            className={cn(
+              'order-2 mb-3 w-fit max-w-[90%] overflow-clip rounded-fw-md border px-3 py-2.5 [box-shadow:var(--fw-shadow-card)]',
+              isOwnMessage(actionsMessage) ? 'self-end border-accent-700 bg-accent-650 text-text-on-accent' : 'self-start border-border-subtle bg-surface text-text-primary',
+            )}
+            initial={reduceMotion ? false : { opacity: 0, y: 4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className={cn('text-caption font-medium', isOwnMessage(actionsMessage) ? 'text-text-on-accent/80' : 'text-text-secondary')}>
               {isOwnMessage(actionsMessage) ? 'Your message' : (isGroup
                 ? groupParticipants?.get(actionsMessage.sender_id)?.name || 'Team member'
                 : conversationDisplayName(conversation))}
             </p>
-            <p className="mt-1 line-clamp-2 break-words text-body text-text-primary">
+            <p className={cn('mt-1 line-clamp-2 break-words text-body', isOwnMessage(actionsMessage) ? 'text-text-on-accent' : 'text-text-primary')}>
               {decodeMessageContent(actionsMessage.content) || 'Attachment'}
             </p>
-          </div>
+          </m.div>
           {reactionProps && (
-            <div className="mb-3 flex justify-between gap-0.5 rounded-full bg-surface p-1.5 shadow-raise" aria-label="React to message">
+            <m.div
+              data-fw-reaction-pill
+              className="order-1 mb-3 flex justify-between gap-0.5 rounded-full border border-[var(--fw-glass-border)] bg-[var(--fw-glass-bg)] p-1.5 shadow-pop [backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))] [-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.92, y: 3 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+              aria-label="React to message"
+            >
               {MESSAGE_REACTIONS.map(({ emoji, label }) => {
                 const active = reactions.rows.some((row) => row.message_id === actionsMessage.id && row.user_id === (currentUserId ?? userId) && row.emoji === emoji);
                 const saving = reactions.pending === `${actionsMessage.id}:${emoji}`;
@@ -1950,8 +1979,9 @@ export function MessageThreadPane({
                   </Button>
                 );
               })}
-            </div>
+            </m.div>
           )}
+          <div data-fw-message-actions-list className="order-3 rounded-fw-lg border border-[var(--fw-glass-border)] bg-[var(--fw-glass-bg)] p-2 shadow-pop [backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))] [-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]">
             {reactions.error && <p role="alert" className="px-3 pb-2 text-caption text-fw-danger-ink">{reactions.error}</p>}
             <div className="flex flex-col gap-0.5">
 
@@ -1995,6 +2025,8 @@ export function MessageThreadPane({
               </>
             )}
             </div>
+          </div>
+          </div>
         </MessageActionsPanel>
       )}
 
