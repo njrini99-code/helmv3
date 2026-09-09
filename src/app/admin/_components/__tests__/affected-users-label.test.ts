@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { affectedUsersLabel } from '@/app/admin/_components/TriageQueue';
+// `TriageQueue.tsx` (which used to re-export this) is deleted — the panel it
+// backed was the Overview's second rendering of the incident feed (bridge
+// redesign plan §2.1). `affectedUsersLabel` itself lives on, defined in
+// `IncidentCard.tsx`, which every remaining caller (`/admin/errors`,
+// `UnifiedIncidentQueue`) already imports directly.
+import { affectedUsersLabel } from '@/app/admin/_components/IncidentCard';
 
 describe('affectedUsersLabel', () => {
   it('renders "unknown user" for an app incident with events but zero known identities', () => {

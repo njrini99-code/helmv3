@@ -604,10 +604,16 @@ them would have broken those routes, not the dead one.
 - A count that could not be read is rendered as UNREADABLE, never as zero and
   never as nothing — the Health badge follows this rule, the same as the
   Incidents badge documented in `admin_incidents`.
-- The Overview answers "is anything on fire" above the fold: banner, briefing,
-  severity mix, then the triage queue. Posture KPIs live in a disclosure below
-  it, not above it. Each KPI carries its own source note — the provenance is
-  per-tile, not a separate panel.
+- The Overview IS the Command Deck (bridge redesign plan §2, superseding the
+  "Posture KPIs live in a disclosure" rule this bullet used to state): posture
+  sentence + blindness beacon, System Orbit, Attention Stack, Decision Inbox,
+  Release Wake, and the Self-Heal Circuit (with its proof-debt chip) answer
+  "is anything on fire" above the fold, with nothing collapsed by default —
+  the collapsed `PostureDisclosure` inverted visibility (it defaulted CLOSED
+  on every fresh session) and is deleted. The KPI `StatStrip` and the
+  feature-health rollup are promoted out of it, always visible, directly
+  below the Deck. Each KPI still carries its own source note — the provenance
+  is per-tile, not a separate panel.
 - Feature health renders through one component wherever it appears (Overview
   rollup, Health grid, per-app pages). Status thresholds, two-window hysteresis,
   and knownGaps annotations belong to the data layer, never to a view.
@@ -854,16 +860,27 @@ instead of being silently dropped by `buildAgentRunPayload`).
 
 ## Phase 2 Command Deck (Bridge Premium Observability, 2026-09-03)
 
+**Phase 3 discharged this section's "unchanged below it" claim (bridge
+redesign plan §2, 2026-09).** The Deck is no longer an additive layer sitting
+above an unchanged page — it IS the Overview. Right now / Incident operations
+/ the collapsed Posture disclosure are deleted (each was a second or third
+rendering of a computation the Deck already made, or a lens one click away);
+Change timeline survives, unchanged, directly below the Deck; the Deck itself
+gained the blindness beacon (folded in from the deleted `MissionTruthStrip`),
+an `ATTENTION_STACK_LIMIT` of 8 (was 5), and a proof-debt chip on the
+Self-Heal Circuit summary (`selectProofDebt`, reused from the deleted
+`ProofDebtPanel`). See `src/app/admin/__tests__/overview-composition.test.ts`
+for the pinned composition and `CommandDeck.tsx`'s own header comment for the
+full accounting of what moved where. The original Phase 2 description below
+is kept for its data-layer detail, which is still accurate.
+
 `src/lib/admin/command-deck/**` (six pure/mostly-pure modules) and
 `src/components/admin/command-deck/**` (six presentational components plus
-one composition, `CommandDeck.tsx`), inserted above the existing `/admin`
-panels — brief §10 ("Overview: Helm Command Deck"), §11 (System Orbit), §12
-(Release Wake), §18 (Self-Heal Circuit summary), §34 (Decision Inbox). Every
-existing panel below it (Right now / Incident operations / Change timeline /
-the collapsed Posture disclosure) is unchanged. This is a composition layer
-over Phase 0's models and this repo's EXISTING attention/self-heal/coverage
-read models — no second incident, attention, release, or self-heal model
-(brief §44).
+one composition, `CommandDeck.tsx`) — brief §10 ("Overview: Helm Command
+Deck"), §11 (System Orbit), §12 (Release Wake), §18 (Self-Heal Circuit
+summary), §34 (Decision Inbox). This is a composition layer over Phase 0's
+models and this repo's EXISTING attention/self-heal/coverage read models —
+no second incident, attention, release, or self-heal model (brief §44).
 
 - **`posture.ts`** — `derivePostureSentence`: the one scannable line,
   clauses joined by " · " (posture, release state, top incident, self-heal
