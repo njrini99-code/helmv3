@@ -38,7 +38,8 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PLAYER_COLORS, type TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import type { TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import { CalendarPeoplePicker, type PeoplePickerPerson } from './people/CalendarPeoplePicker';
 
 const MAX_SELECTION = 8;

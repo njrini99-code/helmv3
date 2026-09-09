@@ -9,13 +9,23 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 // ---------------------------------------------------------------------------
 
 vi.mock('@/components/fairway/overlays/ModalShell', () => {
-  const Root = ({ open, title, children }: { open: boolean; title?: React.ReactNode; children?: React.ReactNode }) =>
-    open ? (
-      <div data-testid="modal-shell">
-        {title ? <h2>{title}</h2> : null}
-        {children}
-      </div>
-    ) : null;
+  // `trigger` is rendered like the real shell's Radix `asChild` trigger: a
+  // click on it opens the dialog. The people picker relies on this.
+  const Root = ({ open, title, children, trigger, onOpenChange }: {
+    open: boolean; title?: React.ReactNode; children?: React.ReactNode;
+    trigger?: React.ReactNode; onOpenChange?: (open: boolean) => void;
+  }) => (
+    <>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- test stub; the real shell's trigger is a native button */}
+      {trigger ? <span onClick={() => onOpenChange?.(true)}>{trigger}</span> : null}
+      {open ? (
+        <div data-testid="modal-shell">
+          {title ? <h2>{title}</h2> : null}
+          {children}
+        </div>
+      ) : null}
+    </>
+  );
   const Body = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   const Footer = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   const ModalShell = Object.assign(Root, { Body, Footer });
@@ -130,7 +140,15 @@ function renderEditor(overrides: Partial<React.ComponentProps<typeof FairwayEven
   return { ...utils, onSave, props };
 }
 
-const playerToggle = (name: RegExp) => screen.getByRole('button', { name });
+/** The invite UI is the people picker (§2.3): open it from the summary
+ * button, toggle rows by name, and apply. Each name toggles once. */
+async function pickPlayers(...names: RegExp[]) {
+  fireEvent.click(screen.getByRole('button', { name: /Choose/ }));
+  for (const name of names) {
+    fireEvent.click(await screen.findByRole('option', { name }));
+  }
+  fireEvent.click(screen.getByRole('button', { name: /Apply attendees/ }));
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -199,8 +217,7 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     const { onSave } = renderEditor();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
-    fireEvent.click(playerToggle(/Ben Reed/)); // deselect existing
-    fireEvent.click(playerToggle(/Cam Knox/)); // select new
+    await pickPlayers(/Ben Reed/, /Cam Knox/); // deselect existing, select new
 
     expect(screen.getByText(/1 player added · 1 player removed/)).toBeInTheDocument();
 
@@ -217,7 +234,7 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
 
     await waitFor(() => expect(screen.getByText(/Couldn't load the current invitees/i)).toBeInTheDocument());
 
-    fireEvent.click(playerToggle(/Cam Knox/));
+    await pickPlayers(/Cam Knox/);
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -378,17 +395,18 @@ describe('FairwayEventEditor — primary button validity', () => {
 // the "Coach (." bug reported from production.
 // ---------------------------------------------------------------------------
 
-describe('FairwayEventEditor — invite grid name display', () => {
-  it('renders full names in the invite grid instead of truncated initials', async () => {
+describe('FairwayEventEditor — people picker name display', () => {
+  it('renders full names in the picker instead of truncated initials', async () => {
     getEventRSVP.mockResolvedValue(rsvpResult([]));
     renderEditor();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
-    expect(screen.getByRole('button', { name: /Ava Stone/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Ben Reed/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Cam Knox/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Choose/ }));
+    expect(await screen.findByRole('option', { name: /Ava Stone/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Ben Reed/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Cam Knox/ })).toBeInTheDocument();
     // None of the old truncated "First L." forms should be present.
-    expect(screen.queryByRole('button', { name: /^Ava S\.$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Ava S\.$/ })).not.toBeInTheDocument();
   });
 
   it('cannot reproduce the "Coach (." mangling for a parenthetical placeholder name', async () => {
@@ -398,7 +416,8 @@ describe('FairwayEventEditor — invite grid name display', () => {
     });
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
-    expect(screen.getByRole('button', { name: /Coach \(Nick Rini\)/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Choose/ }));
+    expect(await screen.findByRole('option', { name: /Coach \(Nick Rini\)/ })).toBeInTheDocument();
     expect(screen.queryByText('Coach (.')).not.toBeInTheDocument();
   });
 });

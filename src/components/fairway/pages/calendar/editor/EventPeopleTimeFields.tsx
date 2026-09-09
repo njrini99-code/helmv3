@@ -28,6 +28,7 @@ import {
 import type { GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { fieldCls, labelCls } from './fieldStyles';
 import type { TeamPlayer } from './types';
+import { CalendarPeoplePicker, type PeoplePickerPerson } from '../people/CalendarPeoplePicker';
 import {
   EventVerificationPanel,
   type ConflictData,
@@ -68,6 +69,11 @@ export interface EventPeopleTimeFieldsProps {
   /** Seam for the coordinator to wire the real people picker (§2.3). Until
    *  it exists, the inline avatar grid below stays the only invite UI. */
   onOpenPeoplePicker?: () => void;
+  /** The people picker (§2.3): when both are provided the invite grid is
+   * replaced by a summary button that opens `CalendarPeoplePicker`, which
+   * anchors to that button on desktop and opens a modal below 1024px. */
+  pickerPeople?: PeoplePickerPerson[];
+  onApplyAttendees?: (ids: string[]) => void;
 
   verificationStatus: VerificationStatus;
   conflicts: ConflictData | null;
@@ -105,6 +111,8 @@ export function EventPeopleTimeFields({
   attendeeChangeSummary,
   attendeeRemovalCount,
   onOpenPeoplePicker,
+  pickerPeople,
+  onApplyAttendees,
   verificationStatus,
   conflicts,
   onRetryAttendees,
@@ -114,6 +122,7 @@ export function EventPeopleTimeFields({
   isSeriesRoot,
   recurrencePreview,
 }: EventPeopleTimeFieldsProps) {
+  const [pickerOpen, setPickerOpen] = React.useState(false);
   const whenColumn = (
     <FormSection title="When">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -282,7 +291,63 @@ export function EventPeopleTimeFields({
           </UiButton>
         </FormSection>
       ) : (
-        onOpenPeoplePicker ? (
+        onApplyAttendees ? (
+          <FormSection
+            title={
+              <span className="inline-flex items-center gap-1.5">
+                <Users className="h-4 w-4 text-accent-700" /> Invite players
+              </span>
+            }
+            action={
+              <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
+                {formData.attendeeIds.length} of {availablePlayers.length}
+              </span>
+            }
+          >
+            {attendeeHydrationError ? (
+              <p
+                role="status"
+                className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg px-3 py-2 font-fw-sans text-caption text-fw-warning-ink"
+              >
+                Couldn&apos;t load the current invitees. You can still add players — existing invites won&apos;t be changed.
+              </p>
+            ) : null}
+            <CalendarPeoplePicker
+              open={pickerOpen}
+              onOpenChange={setPickerOpen}
+              trigger={
+                <UiButton
+                  variant="ghost"
+                  type="button"
+                  disabled={disabled || attendeesLoading}
+                  className="flex min-h-11 w-full items-center justify-between gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <UserRound className="h-4 w-4 text-text-tertiary" aria-hidden />
+                    {formData.attendeeIds.length > 0
+                      ? `${formData.attendeeIds.length} invited`
+                      : 'No one invited yet'}
+                  </span>
+                  <span className="font-fw-mono text-caption text-text-tertiary">Choose</span>
+                </UiButton>
+              }
+              people={pickerPeople ?? []}
+              selectedIds={formData.attendeeIds}
+              mode="invite"
+              title="Invite players"
+              doneLabel="Apply attendees"
+              onApply={(ids) => {
+                onApplyAttendees(ids);
+                setPickerOpen(false);
+              }}
+              loading={attendeesLoading}
+              emptyMessage="No players on this team yet."
+            />
+            {attendeeChangeSummary ? (
+              <p className="font-fw-sans text-caption text-text-secondary">{attendeeChangeSummary}</p>
+            ) : null}
+          </FormSection>
+        ) : onOpenPeoplePicker ? (
           <FormSection
             title={
               <span className="inline-flex items-center gap-1.5">

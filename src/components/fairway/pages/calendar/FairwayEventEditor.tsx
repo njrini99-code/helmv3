@@ -30,6 +30,7 @@ import {
 import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
 import { localDayIso } from '@/lib/golf/local-day';
 import type { TeamPlayer } from './editor/types';
+import type { PeoplePickerPerson } from './people/CalendarPeoplePicker';
 import { EventEssentialsFields } from './editor/EventEssentialsFields';
 import { EventPeopleTimeFields } from './editor/EventPeopleTimeFields';
 import { EventReviewReceipt } from './editor/EventReviewReceipt';
@@ -316,6 +317,17 @@ export function FairwayEventEditor({
 }: FairwayEventEditorProps) {
   const isCreating = !event;
   const availablePlayers = teamPlayers.filter((p) => p.id !== currentUserId);
+  // The people picker (§2.3) owns its own search, so it gets the whole
+  // roster rather than the query-filtered `visiblePlayers` the inline grid
+  // shows; applying replaces the selection outright — that is what the
+  // picker's Apply means, unlike the grid's per-avatar toggles.
+  const pickerPeople = React.useMemo<PeoplePickerPerson[]>(
+    () => availablePlayers.map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}`.trim() || 'Player', avatarUrl: p.avatar_url ?? null })),
+    [availablePlayers],
+  );
+  const applyAttendees = React.useCallback((ids: string[]) => {
+    setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+  }, []);
 
   // Desktop means ≥1024px (SCREEN-BUILD-PLAN.md §2 shared rules): a
   // two-column layout with the review receipt always visible, no stage
@@ -1069,6 +1081,8 @@ export function FairwayEventEditor({
                 attendeeChangeSummary={attendeeChangeSummary}
                 attendeeRemovalCount={attendeeChanges?.removeAttendeeIds.length ?? 0}
                 onOpenPeoplePicker={onOpenPeoplePicker}
+                pickerPeople={pickerPeople}
+                onApplyAttendees={applyAttendees}
                 verificationStatus={conflictStatus}
                 conflicts={conflicts}
                 onRetryAttendees={() => setAttendeeRetry((value) => value + 1)}
