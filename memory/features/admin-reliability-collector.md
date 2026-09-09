@@ -55,7 +55,7 @@ budget — a NEW derived view over `error-budget.ts`, likewise owned by
 
 ### Routes
 
-- `src/app/admin/reliability/**`
+- `src/app/admin/errors/_components/sources/**` — the `sources` view of `/admin/errors` (`/admin/reliability` redirects there, 307)
 
 ### API
 
@@ -226,7 +226,7 @@ budget — a NEW derived view over `error-budget.ts`, likewise owned by
 - `src/lib/reliability/invariants/__tests__/*.test.ts` — the round-graph
   checks' pure logic, the timeout/error-degrades-to-unknown runner contract,
   and a read-only-by-construction source check.
-- `src/app/admin/reliability/__tests__/reliability-view.test.ts`
+- `src/app/admin/errors/_components/sources/__tests__/reliability-view.test.ts`
 - `src/lib/admin/release-intel/__tests__/risk-score.test.ts`,
   `src/lib/admin/release-intel/__tests__/rollback.test.ts`.
 - Typecheck/build for admin UI changes.

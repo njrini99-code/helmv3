@@ -1787,9 +1787,9 @@ features:
       incidents: []
     code:
       routes:
-        # /admin/slo retired in the 30→19 consolidation; its page is now the
-        # `budgets` view of /admin/health, under admin_platform's routes glob.
-        # The four read models under src/lib/admin/slo/** stay here.
+      # /admin/slo retired in the 30→19 consolidation; its page is now the
+      # `budgets` view of /admin/health, under admin_platform's routes glob.
+      # The four read models under src/lib/admin/slo/** stay here.
       # src/components/admin/slo/** is reserved (this feature's rendering
       # lives inline in page.tsx, matching admin_qualifiers's own
       # convention) — not globbed here since an empty glob fails
@@ -1890,7 +1890,10 @@ features:
     criticality: medium
     observability:
       feature_keys: []
-      reason: "Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/errors?view=loop) reads a bundled generated index, not a runtime telemetry source."
+      reason: >-
+        Agent/operator tooling, not a product surface. No admin_events writes;
+        the Bridge panel it feeds (/admin/errors?view=loop) reads a bundled
+        generated index, not a runtime telemetry source.
     docs:
       feature: memory/features/admin-replay-lab.md
       flows:

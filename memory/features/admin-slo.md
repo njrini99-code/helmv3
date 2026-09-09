@@ -61,7 +61,7 @@ index.
 
 ### Routes
 
-- `src/app/admin/slo/**`
+- `src/app/admin/health/_components/BudgetsView.tsx` — the `budgets` view of `/admin/health` (`/admin/slo` redirects there, 307)
 
 ### API
 
@@ -77,7 +77,7 @@ index.
   `admin_reliability_collector`'s existing `src/lib/reliability/**` glob, not
   duplicated here.
 - `src/components/admin/slo/**` — reserved; the page's rendering currently
-  lives inline in `src/app/admin/slo/page.tsx`, matching
+  lives inline in `src/app/admin/health/_components/BudgetsView.tsx`, matching
   `admin_qualifiers`'s own convention of keeping page-scoped presentation
   inline rather than extracting single-use components.
 

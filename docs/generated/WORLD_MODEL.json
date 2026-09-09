@@ -232,11 +232,6 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/admin/billing/**",
-        "pattern": "src/app/admin/billing/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/admin/database/**",
         "pattern": "src/app/admin/database/**",
         "category": "routes"
@@ -272,38 +267,13 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/admin/lenses/**",
-        "pattern": "src/app/admin/lenses/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/admin/lifting/**",
         "pattern": "src/app/admin/lifting/**",
         "category": "routes"
       },
       {
-        "id": "routes:src/app/admin/qualifiers/**",
-        "pattern": "src/app/admin/qualifiers/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/admin/releases/**",
         "pattern": "src/app/admin/releases/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/reliability/**",
-        "pattern": "src/app/admin/reliability/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/self-heal/**",
-        "pattern": "src/app/admin/self-heal/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/slo/**",
-        "pattern": "src/app/admin/slo/**",
         "category": "routes"
       },
       {
@@ -329,11 +299,6 @@
       {
         "id": "routes:src/app/admin/utilization/**",
         "pattern": "src/app/admin/utilization/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/admin/work-log/**",
-        "pattern": "src/app/admin/work-log/**",
         "category": "routes"
       },
       {
@@ -4508,7 +4473,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 253
+          "line": 263
         },
         {
           "kind": "import_graph",
@@ -4670,12 +4635,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 62
+          "line": 72
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 261
+          "line": 271
         }
       ]
     },
@@ -4687,22 +4652,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 49
+          "line": 59
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 98
+          "line": 108
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 128
+          "line": 138
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-incidents.md",
-          "line": 181
+          "line": 191
         },
         {
           "kind": "import_graph",
@@ -5110,22 +5075,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 168
+          "line": 175
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 381
+          "line": 388
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 401
+          "line": 408
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 606
+          "line": 613
         },
         {
           "kind": "import_graph",
@@ -5364,17 +5329,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 40
+          "line": 42
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 244
+          "line": 251
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 400
+          "line": 407
         }
       ]
     },
@@ -5386,27 +5351,32 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 41
+          "line": 42
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 169
+          "line": 44
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 245
+          "line": 176
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 410
+          "line": 252
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 492
+          "line": 417
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-platform.md",
+          "line": 499
         },
         {
           "kind": "import_graph",
@@ -5933,7 +5903,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 1095
+          "line": 1178
         },
         {
           "kind": "import_graph",
@@ -5994,7 +5964,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 742
+          "line": 755
         }
       ]
     },
@@ -6277,7 +6247,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-platform.md",
-          "line": 743
+          "line": 756
         },
         {
           "kind": "import_graph",
@@ -6802,18 +6772,6 @@
     },
     {
       "source": "admin_platform",
-      "target": "routes:src/app/admin/billing/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/billing/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
       "target": "routes:src/app/admin/database/**",
       "kind": "feature_route",
       "evidence": [
@@ -6886,18 +6844,6 @@
     },
     {
       "source": "admin_platform",
-      "target": "routes:src/app/admin/lenses/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/lenses/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
       "target": "routes:src/app/admin/lifting/**",
       "kind": "feature_route",
       "evidence": [
@@ -6905,18 +6851,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/lifting/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "routes:src/app/admin/qualifiers/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/qualifiers/**"
         }
       ]
     },
@@ -6977,18 +6911,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/utilization/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_platform",
-      "target": "routes:src/app/admin/work-log/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/work-log/**"
         }
       ]
     },
@@ -7180,27 +7102,32 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 119
+          "line": 19
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 144
+          "line": 130
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 153
+          "line": 155
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 163
+          "line": 164
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 180
+          "line": 174
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-reliability-collector.md",
+          "line": 191
         }
       ]
     },
@@ -7269,12 +7196,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 41
+          "line": 52
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 79
+          "line": 90
         }
       ]
     },
@@ -7298,7 +7225,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-reliability-collector.md",
-          "line": 54
+          "line": 65
         }
       ]
     },
@@ -7311,18 +7238,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/releases/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_reliability_collector",
-      "target": "routes:src/app/admin/reliability/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/reliability/**"
         }
       ]
     },
@@ -7490,17 +7405,22 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 74
+          "line": 18
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 124
+          "line": 83
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-selfheal.md",
-          "line": 179
+          "line": 133
+        },
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/admin-selfheal.md",
+          "line": 188
         },
         {
           "kind": "import_graph",
@@ -7748,18 +7668,6 @@
     },
     {
       "source": "admin_selfheal",
-      "target": "routes:src/app/admin/self-heal/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/self-heal/**"
-        }
-      ]
-    },
-    {
-      "source": "admin_selfheal",
       "target": "services:docs/ai-system/selfheal/**",
       "kind": "feature_service",
       "evidence": [
@@ -7915,7 +7823,7 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 80
+          "line": 90
         },
         {
           "kind": "import_graph",
@@ -7992,17 +7900,17 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 46
+          "line": 56
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 67
+          "line": 77
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/admin-slo.md",
-          "line": 78
+          "line": 88
         }
       ]
     },
@@ -8039,18 +7947,6 @@
           "kind": "import_graph",
           "path": "src/lib/admin/slo/trace-funnels.ts",
           "line": 30
-        }
-      ]
-    },
-    {
-      "source": "admin_slo",
-      "target": "routes:src/app/admin/slo/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/admin/slo/**"
         }
       ]
     },
