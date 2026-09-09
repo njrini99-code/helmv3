@@ -133,7 +133,7 @@
     "tool-authority:check": "node scripts/gen-tool-authority.mjs --check",
     "tool-authority:regen": "node scripts/gen-tool-authority.mjs",
     "trace:db": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/trace-db.ts",
-    "triage": "tsx -r dotenv/config scripts/run-triage.ts",
+    "triage": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/run-triage.ts",
     "typecheck": "NODE_OPTIONS=--max-old-space-size=8192 node scripts/serialize.mjs -- tsc --noEmit",
     "typecheck:fast": "NODE_OPTIONS=--max-old-space-size=8192 node scripts/serialize.mjs -- tsgo --noEmit -p tsconfig.json",
     "typecheck:functions": "deno check --node-modules-dir=none --minimum-dependency-age=120 supabase/functions/*/index.ts",
