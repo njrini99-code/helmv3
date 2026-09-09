@@ -9,7 +9,7 @@
   `admin_platform` split. New route `/admin/slo`
   (`src/app/admin/_components/admin-nav.ts` key `'O'`,
   `src/app/admin/_components/AdminShell.tsx` icon `Target`).
-- New page (`src/app/admin/slo/page.tsx`) and services
+- New page (now `src/app/admin/health/_components/BudgetsView.tsx`; originally a standalone `/admin/slo` page) and services
   (`src/lib/admin/slo/**`): `error-budget.ts` (lives under
   `admin_reliability_collector`'s `src/lib/reliability/**`, not duplicated
   here), `golden-path-health.ts`, `silence-detection.ts`,

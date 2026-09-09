@@ -35,6 +35,8 @@ import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStat
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { LogEvidenceForm } from './LogEvidenceForm';
+import { ViewRail } from '../_components/ViewRail';
+import { parseView, hrefForView, type AdminViewOf } from '@/lib/admin/views';
 import {
   SlowStatementsPanel,
   IndexSuggestionsPanel,
@@ -1244,6 +1246,7 @@ export default async function DatabasePage({
   const params = await searchParams;
   const rawIncident = params.incident;
   const incidentFingerprint = typeof rawIncident === 'string' && rawIncident.length > 0 ? rawIncident : null;
+  const view = parseView('/admin/database', params.view);
 
   return (
     <div className="space-y-5">
@@ -1251,32 +1254,26 @@ export default async function DatabasePage({
       <div>
         <h1 className="text-lg font-semibold text-warm-900">Database</h1>
         <p className="mt-0.5 max-w-2xl text-sm text-warm-600">
-          Postgres health, deduped Supabase/PostgREST failures, and query-performance deltas — read from what the
-          collectors already wrote. Zero-cost: no log drain, no new vendor.
+          Read from what the collectors already wrote. Zero-cost: no log drain, no new vendor.
         </p>
       </div>
 
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Changed since yesterday</Eyebrow>
-          <div className="mt-2">
-            <PanelBoundary title="Changed since yesterday" skeleton={<PanelPageSkeleton rows={1} />}>
-              <ChangedSinceYesterdayStrip />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
+      {/* A deep link carries `?incident=<fingerprint>` — from an alert, a
+          Slack paste, another Bridge surface. It is the thing the operator
+          asked for, so it renders above the rail under EVERY view rather than
+          being reachable only from `posture`: a link that resolves to a page
+          where its subject is invisible is a broken link with extra steps. */}
       {incidentFingerprint !== null ? (
         <>
           <Surface>
             <Inset>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Eyebrow as="h2">Incident detail</Eyebrow>
+                {/* Drops `?incident=` and keeps the view — a hardcoded
+                    /admin/database here would silently throw the operator back
+                    to Posture from whichever view they were reading. */}
                 <Link
-                  href="/admin/database"
+                  href={hrefForView('/admin/database', view, { ...params, incident: undefined })}
                   className="text-xs text-accent-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
                 >
                   ← back to all sections
@@ -1293,283 +1290,314 @@ export default async function DatabasePage({
               </div>
             </Inset>
           </Surface>
-
-          <DatelineRule />
         </>
       ) : null}
 
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Mission Control</Eyebrow>
-          <div className="mt-3">
-            <PanelBoundary title="Mission Control" skeleton={<PanelPageSkeleton />}>
-              <MissionControlPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
+      <ViewRail
+        host="/admin/database"
+        active={view}
+        ariaLabel="Database view"
+        searchParams={params}
+        labels={{ posture: 'Posture', performance: 'Performance', schema: 'Schema' }}
+        descriptions={{
+          posture: 'Is the database healthy right now — Mission Control, deduped failures, telemetry, locks, platform metrics, alert policy.',
+          performance: 'What is slow and why — query deltas, slow statements, index suggestions, unused indexes, bloat, table health, jobs.',
+          schema: 'Shape and safety — RLS/SECURITY DEFINER coverage, migration drift, Supabase advisors, on-demand log evidence.',
+        }}
+      />
 
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Database Errors</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Grouped by fingerprint (service, feature, operation, RPC/relation, code) — not by message.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Database Errors" skeleton={<PanelPageSkeleton rows={5} />}>
-              <ErrorsPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Query Performance</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Most recent 15-minute Top-K window by pg_stat_statements delta. No raw query text is ever stored.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Query Performance" skeleton={<PanelPageSkeleton rows={5} />}>
-              <PerformancePanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Slow statements</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Top 10 by mean time and top 10 by total time (of the stored top 25), with a 7-day mean-time sparkline per
-            fingerprint. A statement over 500ms mean pages Sentry once per day.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Slow statements" skeleton={<PanelPageSkeleton rows={5} />}>
-              <SlowStatementsPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Index suggestions</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            index_advisor (via hypopg) run against the latest captured statements. Skipped, never CREATE EXTENSION'd,
-            when the extension is not installed.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Index suggestions" skeleton={<PanelPageSkeleton rows={5} />}>
-              <IndexSuggestionsPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Unused indexes</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Zero scans since stats reset, excluding primary-key and unique-constraint indexes.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Unused indexes" skeleton={<PanelPageSkeleton rows={5} />}>
-              <UnusedIndexesPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Bloat</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            pgstattuple_approx over the 20 largest tables. Skipped, never CREATE EXTENSION'd, when pgstattuple is not
-            installed.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Bloat" skeleton={<PanelPageSkeleton rows={5} />}>
-              <BloatPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Coverage</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            RLS-enabled tables with zero policies, and public SECURITY DEFINER functions still executable by
-            anon/authenticated.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Coverage" skeleton={<PanelPageSkeleton rows={5} />}>
-              <CoveragePanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Drift</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Migration ledger count and last health-sample time — the fallback view when no live schema/types/ledger
-            drift verdict is reachable from this Bridge deployment.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Drift" skeleton={<PanelPageSkeleton rows={3} />}>
-              <DriftPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Locks &amp; Transactions</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Threshold-crossing lock waits, long-active queries, idle-in-transaction, and deadlocks. Never full query text.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Locks & Transactions" skeleton={<PanelPageSkeleton rows={5} />}>
-              <LocksPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Table Health</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Dead tuples, vacuum/analyze recency, scan patterns, and write concentration for the largest relations.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Table Health" skeleton={<PanelPageSkeleton rows={5} />}>
-              <TableHealthPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Jobs &amp; Webhooks</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            pg_cron job history and pg_net queue/response health. Counts only — never raw job SQL or response payloads.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Jobs & Webhooks" skeleton={<PanelPageSkeleton rows={5} />}>
-              <JobsPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Telemetry Health</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Is the observability system itself watching? A blind or stale required source caps the overall state below green.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Telemetry Health" skeleton={<PanelPageSkeleton rows={5} />}>
-              <TelemetryHealthPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Platform</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Supabase Metrics API — CPU, memory, connection pool, DB size. $0-cost: read-only, 60s cache.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Platform" skeleton={<PanelPageSkeleton />}>
-              <PlatformPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Advisors</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Supabase Security and Performance Advisors, deduped by (advisor type, name, object). No persistence this
-            phase — re-fetched live, 10-minute cache.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Advisors" skeleton={<PanelPageSkeleton rows={5} />}>
-              <AdvisorsPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Alert policy</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Every declared rule, always — a rule with no Bridge-level data source reads &quot;unknown&quot;, never a
-            fabricated &quot;clear&quot;.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Alert policy" skeleton={<PanelPageSkeleton rows={8} />}>
-              <AlertPolicyPanel />
-            </PanelBoundary>
-          </div>
-        </Inset>
-      </Surface>
-
-      <DatelineRule />
-
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Fetch Supabase evidence</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            On-demand only, never scheduled. Disabled by default (HELM_SUPABASE_LOG_EVIDENCE_ENABLED). One bounded
-            query, sanitized, discarded after a &lt;= 40-line summary.
-          </p>
-          <div className="mt-3">
-            <LogEvidenceForm />
-          </div>
-        </Inset>
-      </Surface>
+      {renderView()}
     </div>
   );
+
+  /**
+   * One branch per registered view. This page was a nineteen-section scroll:
+   * every section always mounted, so reaching "is anything slow" meant
+   * scrolling past Mission Control, deduped errors and telemetry health first,
+   * and the three questions it answers — is it healthy, is it slow, is it safe
+   * — had no boundary between them. Same sections, same reads, three framings.
+   */
+  function renderView() {
+    switch (view as AdminViewOf<'/admin/database'>) {
+      case 'posture':
+        return (
+          <div className="space-y-5">
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Changed since yesterday</Eyebrow>
+                <div className="mt-2">
+                  <PanelBoundary title="Changed since yesterday" skeleton={<PanelPageSkeleton rows={1} />}>
+                    <ChangedSinceYesterdayStrip />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Mission Control</Eyebrow>
+                <div className="mt-3">
+                  <PanelBoundary title="Mission Control" skeleton={<PanelPageSkeleton />}>
+                    <MissionControlPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Database Errors</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Grouped by fingerprint (service, feature, operation, RPC/relation, code) — not by message.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Database Errors" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <ErrorsPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Telemetry Health</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Is the observability system itself watching? A blind or stale required source caps the overall state below green.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Telemetry Health" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <TelemetryHealthPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Locks &amp; Transactions</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Threshold-crossing lock waits, long-active queries, idle-in-transaction, and deadlocks. Never full query text.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Locks & Transactions" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <LocksPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Platform</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Supabase Metrics API — CPU, memory, connection pool, DB size. $0-cost: read-only, 60s cache.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Platform" skeleton={<PanelPageSkeleton />}>
+                    <PlatformPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Alert policy</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Every declared rule, always — a rule with no Bridge-level data source reads &quot;unknown&quot;, never a
+                  fabricated &quot;clear&quot;.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Alert policy" skeleton={<PanelPageSkeleton rows={8} />}>
+                    <AlertPolicyPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+          </div>
+        );
+      case 'performance':
+        return (
+          <div className="space-y-5">
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Query Performance</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Most recent 15-minute Top-K window by pg_stat_statements delta. No raw query text is ever stored.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Query Performance" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <PerformancePanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Slow statements</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Top 10 by mean time and top 10 by total time (of the stored top 25), with a 7-day mean-time sparkline per
+                  fingerprint. A statement over 500ms mean pages Sentry once per day.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Slow statements" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <SlowStatementsPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Index suggestions</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  index_advisor (via hypopg) run against the latest captured statements. Skipped, never CREATE EXTENSION'd,
+                  when the extension is not installed.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Index suggestions" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <IndexSuggestionsPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Unused indexes</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Zero scans since stats reset, excluding primary-key and unique-constraint indexes.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Unused indexes" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <UnusedIndexesPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Bloat</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  pgstattuple_approx over the 20 largest tables. Skipped, never CREATE EXTENSION'd, when pgstattuple is not
+                  installed.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Bloat" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <BloatPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Table Health</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Dead tuples, vacuum/analyze recency, scan patterns, and write concentration for the largest relations.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Table Health" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <TableHealthPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Jobs &amp; Webhooks</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  pg_cron job history and pg_net queue/response health. Counts only — never raw job SQL or response payloads.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Jobs & Webhooks" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <JobsPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+          </div>
+        );
+      case 'schema':
+        return (
+          <div className="space-y-5">
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Coverage</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  RLS-enabled tables with zero policies, and public SECURITY DEFINER functions still executable by
+                  anon/authenticated.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Coverage" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <CoveragePanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Drift</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Migration ledger count and last health-sample time — the fallback view when no live schema/types/ledger
+                  drift verdict is reachable from this Bridge deployment.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Drift" skeleton={<PanelPageSkeleton rows={3} />}>
+                    <DriftPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Advisors</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  Supabase Security and Performance Advisors, deduped by (advisor type, name, object). No persistence this
+                  phase — re-fetched live, 10-minute cache.
+                </p>
+                <div className="mt-3">
+                  <PanelBoundary title="Advisors" skeleton={<PanelPageSkeleton rows={5} />}>
+                    <AdvisorsPanel />
+                  </PanelBoundary>
+                </div>
+              </Inset>
+            </Surface>
+            <DatelineRule />
+
+            <Surface>
+              <Inset>
+                <Eyebrow as="h2">Fetch Supabase evidence</Eyebrow>
+                <p className="mt-1 text-xs text-warm-500">
+                  On-demand only, never scheduled. Disabled by default (HELM_SUPABASE_LOG_EVIDENCE_ENABLED). One bounded
+                  query, sanitized, discarded after a &lt;= 40-line summary.
+                </p>
+                <div className="mt-3">
+                  <LogEvidenceForm />
+                </div>
+              </Inset>
+            </Surface>
+          </div>
+        );
+    }
+  }
 }

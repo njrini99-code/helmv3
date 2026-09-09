@@ -12,6 +12,15 @@
 > `memory/features/admin-incidents.md` (the incidents this loop acts on and
 > whose lifecycle `selfheal-flow.ts` reads).
 
+> **UI ownership moved 2026-09-08 (30→19 consolidation).** `/admin/self-heal`
+> is retired; its page is now the `loop` view of `/admin/errors`
+> (`src/app/admin/errors/_components/loop/`), owned in `registry.yml` by
+> `admin_incidents` — self-healing is what happens TO the incidents on that
+> page, so watching the loop from a separate destination cost two tabs and a
+> fingerprint held in your head. The triage contract, the circuit read model
+> under `src/lib/admin/triage/**` and the `selfheal-triage`/`log-retention`
+> crons all still belong to this feature.
+
 ## Status
 
 - active

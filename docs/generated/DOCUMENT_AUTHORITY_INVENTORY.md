@@ -35,8 +35,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 37 | 5 | 18 | 68 |
-| `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 23 |
+| `PLAN` | 37 | 5 | 18 | 75 |
+| `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
 | `INCIDENT` | 28 | 15 | 2 | 0 |
@@ -168,12 +168,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 29 | - |
-| `memory/features/admin-platform.md` | current | yes | - | yes | 14 | 163 | - |
-| `memory/features/admin-reliability-collector.md` | current | yes | - | - | 6 | 28 | - |
+| `memory/features/admin-incidents.md` | current | yes | - | yes | 5 | 30 | - |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 14 | 169 | - |
+| `memory/features/admin-reliability-collector.md` | current | yes | - | - | 6 | 30 | - |
 | `memory/features/admin-replay-lab.md` | current | yes | - | - | 1 | 10 | - |
-| `memory/features/admin-selfheal.md` | current | yes | - | - | 9 | 33 | - |
-| `memory/features/admin-slo.md` | current | yes | - | yes | 3 | 25 | - |
+| `memory/features/admin-selfheal.md` | current | yes | - | - | 9 | 35 | - |
+| `memory/features/admin-slo.md` | current | yes | - | yes | 3 | 24 | - |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 28 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
@@ -267,11 +267,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | yes | 4 | 3 | - |
 | `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 | 38 | - |
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | 0 | 0 | - |
-| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 213 | - |
+| `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | 3 | 212 | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | 1 | 10 | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | 0 | 2 | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | 0 | 7 | - |
-| `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 0 | 134 | 4 |
+| `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 0 | 153 | 4 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | - | 0 | 41 | - |
 | `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | 0 | 43 | - |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | 0 | 1 | - |
@@ -322,7 +322,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | 2 | 0 | - |
-| `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 10 | 89 | 11 |
+| `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 10 | 89 | 14 |
 | `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 3 | 40 | 1 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | yes | - | yes | 3 | 0 | - |
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 1 | 6 | 4 |
@@ -344,8 +344,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/helm-bridge/waves/w01-auth-foundation.md` | current | - | - | yes | 0 | 13 | - |
 | `docs/superpowers/plans/helm-bridge/waves/w02-admin-events-schema.md` | current | - | - | - | 0 | 6 | - |
 | `docs/superpowers/plans/helm-bridge/waves/w03-server-data-layer.md` | current | - | - | - | 0 | 9 | - |
-| `docs/superpowers/plans/helm-bridge/waves/w04-design-foundation.md` | current | - | - | yes | 0 | 16 | - |
-| `docs/superpowers/plans/helm-bridge/waves/w05-overview.md` | current | - | - | - | 0 | 7 | - |
+| `docs/superpowers/plans/helm-bridge/waves/w04-design-foundation.md` | current | - | - | yes | 0 | 16 | 2 |
+| `docs/superpowers/plans/helm-bridge/waves/w05-overview.md` | current | - | - | - | 0 | 7 | 2 |
 | `docs/superpowers/plans/helm-bridge/waves/w06-errors-tab.md` | current | - | - | - | 0 | 10 | - |
 | `docs/superpowers/plans/helm-bridge/waves/w07-auth-signins.md` | current | - | - | yes | 0 | 14 | - |
 | `docs/superpowers/plans/helm-bridge/waves/w08-golf-tab.md` | current | - | - | - | 0 | 10 | 2 |
@@ -403,7 +403,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | 1 | 6 | - |
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 1 | 28 | - |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | 0 | 0 | - |
-| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 1 | 35 | 2 |
+| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 1 | 35 | 3 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 0 | 7 | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | 0 | 3 | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 0 | 2 | 1 |

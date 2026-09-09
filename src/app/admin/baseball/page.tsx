@@ -15,16 +15,12 @@ import { TeamCommandCard } from '../_components/TeamCommandCard';
 import { PlayerWatchlist } from '../_components/PlayerWatchlist';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
+import { parseView, type AdminViewOf } from '@/lib/admin/views';
+import { ViewRail } from '../_components/ViewRail';
+import { BaseballJourneyView } from './_components/BaseballJourneyView';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 // Dateline rule — replaces the retired border-l-2 "key panel" left-edge
 // stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
@@ -264,14 +260,39 @@ async function BaseballBody() {
   );
 }
 
-export default async function BaseballTabPage() {
+export default async function BaseballTabPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = (await searchParams) ?? {};
+  const view = parseView('/admin/baseball', params.view);
+
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <ViewRail
+        host="/admin/baseball"
+        active={view}
+        ariaLabel="Baseball view"
+        searchParams={params}
+        labels={{ production: 'Production', journey: 'Journey' }}
+        descriptions={{ production: 'Live BaseballHelm signals.', journey: "Baseball's golden paths, with incidents per stage." }}
+      />
       <PanelBoundary title="Baseball" skeleton={<PanelPageSkeleton rows={8} />}>
-        <BaseballBody />
+        {renderView(view)}
       </PanelBoundary>
     </div>
   );
+}
+
+/** One branch per registered view — see `src/lib/admin/views.ts`. */
+function renderView(view: AdminViewOf<'/admin/baseball'>) {
+  switch (view) {
+    case 'production':
+      return <BaseballBody />;
+    case 'journey':
+      return <BaseballJourneyView />;
+  }
 }

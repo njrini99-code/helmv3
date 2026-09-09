@@ -99,7 +99,10 @@ import BaseballTabPage from '@/app/admin/baseball/page';
  */
 describe('AdminBaseballPage', () => {
   it('does not render a nested <main> landmark', async () => {
-    const element = await BaseballTabPage();
+    // The page now takes `searchParams` (the `?view=` axis added by the
+    // 30->19 consolidation). Passing an empty set exercises the DEFAULT view,
+    // which is the production body this test has always asserted on.
+    const element = await BaseballTabPage({ searchParams: Promise.resolve({}) });
     render(element);
     expect(screen.queryByRole('main')).not.toBeInTheDocument();
     expect(screen.queryByText(/baseball tab is held/i)).not.toBeInTheDocument();

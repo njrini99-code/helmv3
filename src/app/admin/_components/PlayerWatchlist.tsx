@@ -4,14 +4,7 @@ import { PanelNoData } from './PanelStates';
 import { LocalTime } from './LocalTime';
 import type { RosterPlayerInsight } from '@/lib/admin/data/users';
 import { playerTone } from './player-tone';
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
+import { SectionLabel } from './SectionLabel';
 
 /**
  * Sport-agnostic quiet/error-prone/profile-gap player watchlist, sorted by

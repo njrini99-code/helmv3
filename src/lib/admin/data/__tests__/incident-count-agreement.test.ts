@@ -119,8 +119,24 @@ describe('Bridge incident counts — the call sites read the shared field', () =
     expect(src).toMatch(/updateTag\(/);
   });
 
-  it('Overview and the Errors tab both render actionableGroups', () => {
-    expect(read('src/app/admin/page.tsx')).toContain('counts.actionableGroups');
+  it('the Errors tab renders actionableGroups directly; the badge (not the Overview page body) carries it there', () => {
+    // STATED DECISION (bridge redesign plan §2.1, Phase 2->3 migration): the
+    // Overview page's `MissionTruthStrip` — which used to render this same
+    // number in an "Actionable" cell — is deleted. That cell was exactly the
+    // kind of duplicate render this migration exists to kill: a second copy
+    // of a number the Errors tab already lists, on the same page as a global
+    // nav badge that already shows it too. Removing the duplicate is the
+    // fix, not a regression of the invariant above ("one number across three
+    // surfaces") — it reduces three renderers to two, and the two that
+    // remain still read the same field: the nav badge
+    // (`fetchBridgeErrorBadge`, pinned two tests up, which is chrome on
+    // every Bridge route including `/admin` itself — see
+    // `src/app/admin/layout.tsx` / `AdminShell.tsx`) and the Errors tab's own
+    // list. If a future change reintroduces a second on-page render of this
+    // count on the Overview, it must read `counts.actionableGroups` like
+    // every other call site — this test still pins that the Overview page
+    // body does NOT independently duplicate it today.
     expect(read('src/app/admin/errors/page.tsx')).toContain('counts.actionableGroups');
+    expect(read('src/app/admin/page.tsx')).not.toContain('counts.actionableGroups');
   });
 });

@@ -245,7 +245,7 @@ is a second thing to keep true.
 **Admin Platform** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-platform.md`
-- **Code:** `src/app/admin/engineering/**`, `src/app/admin/work-log/**`, `src/app/admin/database/**`, `src/app/admin/lenses/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**` … and 57 more in the registry
+- **Code:** `src/app/admin/engineering/**`, `src/app/admin/database/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**`, `src/app/admin/deploys/**`, `src/app/admin/auth/**` … and 53 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
 - **Incidents:** `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`, `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
 - **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
@@ -267,7 +267,7 @@ is a second thing to keep true.
 **Admin Reliability Collector** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-reliability-collector.md`
-- **Code:** `src/app/admin/reliability/**`, `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`, `src/lib/admin/release-intel/**`, `scripts/release-intel/**` … and 1 more in the registry
+- **Code:** `src/app/admin/releases/**`, `src/app/api/cron/reliability-triage/**`, `src/lib/reliability/**`, `src/lib/admin/release-intel/**`, `scripts/release-intel/**`, `src/lib/admin/release-intel/__tests__/**`
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — writes background_job_logs rows (reliability-snapshot/-triage job types), not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -278,7 +278,7 @@ is a second thing to keep true.
 **Admin SLO Center** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-slo.md`
-- **Code:** `src/app/admin/slo/**`, `src/lib/admin/slo/**`
+- **Code:** `src/lib/admin/slo/**`
 - **Telemetry:** none — covered by `admin_platform`. A synthesis layer — reads background_job_logs, get_feature_health() and helm_debug_list_traces; writes nothing of its own, so it has no admin_events feature tag.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -289,7 +289,7 @@ is a second thing to keep true.
 **Admin Self-Heal** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/admin-selfheal.md`
-- **Code:** `src/app/admin/self-heal/**`, `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts` … and 9 more in the registry
+- **Code:** `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts`, `src/lib/admin/triage-*.ts` … and 8 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -301,7 +301,7 @@ is a second thing to keep true.
 
 - **Behaviour:** `memory/features/admin-replay-lab.md`
 - **Code:** `src/components/admin/replay/**`, `replay/**`, `src/lib/admin/replay/**`, `src/lib/admin/replay/__tests__/replay-manifest-schema.test.ts`
-- **Telemetry:** none. Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/self-heal) reads a bundled generated index, not a runtime telemetry source.
+- **Telemetry:** none. Agent/operator tooling, not a product surface. No admin_events writes; the Bridge panel it feeds (/admin/errors?view=loop) reads a bundled generated index, not a runtime telemetry source.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
 - **History:** no ledger yet
