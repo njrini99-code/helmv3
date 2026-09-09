@@ -159,12 +159,10 @@ fi
 # Two kinds of churn made it answer NO for a tree whose SOURCE had not moved,
 # re-arming a gate whose own demand produced the churn:
 #
-#   1. memory/ledgers/ — running the gates appends a timing row to
-#      gates.jsonl (scripts/serialize.mjs). The act this hook demands changed
-#      the tree state, which re-armed the hook, which demanded it again. A
-#      measured session: seven fires, ~four wasted full gate passes. Every
-#      escape made it worse — committing the ledger moved HEAD, reverting it
-#      after later commits produced a third unseen state.
+#   1. Before 2026-09-09, running a gate appended a timing row to a tracked
+#      ledger. That made the act this hook demanded change the tree state and
+#      re-arm the hook. Gate telemetry now lives in ignored `.helm/runtime/`,
+#      but historical append-only ledgers remain excluded below.
 #   2. Untracked NON-SOURCE files — a worktree writing screenshots and a
 #      findings report re-armed the gate once per file, none of which is
 #      source. Note the qualifier: dropping untracked files wholesale is the
