@@ -222,7 +222,7 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 432', () => {
+  it('total wrapped-and-valid action count across the discovered area is exactly 436', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -374,6 +374,13 @@ describe('global tripwire', () => {
     // (20260907160000_golf_team_chat_membership_management.sql); the wrapper
     // requirement is about the action being a public POSTable surface, which
     // it is either way.
-    expect(total).toBe(432);
+    // 2026-09-09 (+4), calendar premium: updateAttendanceNote (coach note on
+    // an attendance row) plus three reads — getScheduleWindow (find-a-time
+    // workspace), getConflictInbox (conflict centre) and
+    // getClassOccurrenceDetail (class detail behind golf_player_classes RLS)
+    // — in src/app/golf/actions/{attendance,scheduling,conflict-inbox,
+    // class-detail}.ts, all wrapped with feature `calendar_events`. The three
+    // reads carry no demoSafe. Total 432 -> 436.
+    expect(total).toBe(436);
   });
 });

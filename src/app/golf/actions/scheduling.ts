@@ -8,9 +8,10 @@ import type { ScheduleParticipant, ScheduleWindowRequest, ScheduleWindowResult }
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /** RLS-backed snapshot. Only managed-team coaches may compare other players. */
-export async function getScheduleWindow(request: ScheduleWindowRequest): Promise<ScheduleWindowResult> {
+async function getScheduleWindowImpl(request: ScheduleWindowRequest): Promise<ScheduleWindowResult> {
   try {
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuid.test(request.teamId) || !/^\d{4}-\d{2}-\d{2}$/.test(request.date)
@@ -109,4 +110,15 @@ export async function getScheduleWindow(request: ScheduleWindowRequest): Promise
     );
     return { success: false, error: 'Schedules could not be loaded. Your selection has been kept.' };
   }
+}
+
+// Read, so no demoSafe: guarding it would break the demo tour's own workspace.
+const observedGetScheduleWindow = withAdminObserved(
+  'getScheduleWindow',
+  { sport: 'golf', feature: 'calendar_events' },
+  getScheduleWindowImpl,
+);
+
+export async function getScheduleWindow(request: ScheduleWindowRequest): Promise<ScheduleWindowResult> {
+  return observedGetScheduleWindow(request);
 }

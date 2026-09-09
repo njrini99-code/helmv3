@@ -23,6 +23,7 @@ import { createClient } from '@/lib/supabase/server';
 import { classIdFromDescription } from '@/lib/calendar/class-events';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -110,7 +111,7 @@ interface EventRow {
  * Resolve one class occurrence and decide, server-side, how much of it this
  * viewer may see. See the module doc for the access rule.
  */
-export async function getClassOccurrenceDetail(
+async function getClassOccurrenceDetailImpl(
   request: ClassOccurrenceDetailRequest,
 ): Promise<ClassOccurrenceDetailResult> {
   try {
@@ -281,4 +282,18 @@ export async function getClassOccurrenceDetail(
     );
     return { success: false, error: 'This class could not be loaded. Please retry.' };
   }
+}
+
+// Read, so no demoSafe. The wrapper adds the request-scoped correlation id
+// every logServerError call above inherits; access decisions stay inside.
+const observedGetClassOccurrenceDetail = withAdminObserved(
+  'getClassOccurrenceDetail',
+  { sport: 'golf', feature: 'calendar_events' },
+  getClassOccurrenceDetailImpl,
+);
+
+export async function getClassOccurrenceDetail(
+  request: ClassOccurrenceDetailRequest,
+): Promise<ClassOccurrenceDetailResult> {
+  return observedGetClassOccurrenceDetail(request);
 }

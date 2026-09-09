@@ -33,6 +33,7 @@ import { classIdFromDescription, isClassEvent } from '@/lib/calendar/class-event
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -106,7 +107,7 @@ interface EventRow {
   status: string | null;
 }
 
-export async function getConflictInbox(request: ConflictInboxRequest): Promise<ConflictInboxResult> {
+async function getConflictInboxImpl(request: ConflictInboxRequest): Promise<ConflictInboxResult> {
   try {
     if (!UUID.test(request.teamId) || !isValidCalendarDate(request.from) || !isValidCalendarDate(request.to)) {
       return { success: false, error: 'Choose a valid team and date range.' };
@@ -420,4 +421,15 @@ export async function getConflictInbox(request: ConflictInboxRequest): Promise<C
     );
     return { success: false, error: 'Conflicts could not be loaded. Your selection has been kept.' };
   }
+}
+
+// Read, so no demoSafe.
+const observedGetConflictInbox = withAdminObserved(
+  'getConflictInbox',
+  { sport: 'golf', feature: 'calendar_events' },
+  getConflictInboxImpl,
+);
+
+export async function getConflictInbox(request: ConflictInboxRequest): Promise<ConflictInboxResult> {
+  return observedGetConflictInbox(request);
 }
