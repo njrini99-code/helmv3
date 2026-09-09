@@ -28,7 +28,7 @@ import {
 import { formatSafeErrorResponse, CommonSchemas } from '@/lib/validation/server-action-validator';
 import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
-import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { isClassEvent } from '@/lib/calendar/class-events';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { roundStage, classifyAutosaveOutcome, OPERATION } from '@/lib/observability/spans';
 import { recordWorkflow } from '@/lib/observability/metrics';
@@ -5077,7 +5077,7 @@ async function respondToEventImpl(
     // generic write failure.
     const { data: event, error: eventError } = await supabase
       .from('golf_events')
-      .select('id, team_id, event_type')
+      .select('id, team_id, event_type, description')
       .eq('id', eventId)
       .maybeSingle();
 
@@ -5098,7 +5098,9 @@ async function respondToEventImpl(
     // calendar, not an invitation (class-events.ts). It takes no RSVPs: an
     // attendance row on it was the only way a teammate could pull another
     // player's class — real title and all — into their own busy schedule.
-    if (event.event_type === CLASS_EVENT_TYPE) {
+    // `isClassEvent` also honours the `[class:<id>]` tag so a row with a stale
+    // event_type is refused the same way every read path already treats it.
+    if (isClassEvent(event)) {
       return { success: false, error: 'Class meetings don\'t take RSVPs.', code: 'class_meeting' };
     }
 
