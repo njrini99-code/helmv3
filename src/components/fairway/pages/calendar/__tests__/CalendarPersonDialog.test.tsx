@@ -56,6 +56,61 @@ describe('CalendarPersonDialog', () => {
     expect(onEvent).toHaveBeenCalledWith('event-1');
   });
 
+  it('opens class detail from a lane block when the interval carries a classId (SCREEN-BUILD-PLAN.md §2.4)', () => {
+    const onOpenClass = vi.fn();
+    const withClass: ScheduleSnapshot = {
+      ...snapshot,
+      participants: [{
+        ...snapshot.participants[0]!,
+        intervals: [
+          { id: 'class-2', type: 'class', classId: 'class-uuid-1', title: 'Biology 201', start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:15:00.000Z' },
+        ],
+      }],
+    };
+    useScheduleWindow.mockReturnValue({ snapshot: withClass, loading: false, error: null, retry: vi.fn() });
+    render(
+      <CalendarPersonDialog
+        request={request}
+        personId={request.participantIds[0]!}
+        onDateChange={() => {}}
+        onCompare={() => {}}
+        onClose={() => {}}
+        onEvent={() => {}}
+        onOpenClass={onOpenClass}
+      />,
+    );
+
+    // The lane block AND the commitments row both open class detail.
+    fireEvent.click(screen.getByTitle(/Biology 201/));
+    expect(onOpenClass).toHaveBeenCalledWith({ classId: 'class-uuid-1', eventId: undefined, date: request.date });
+
+    onOpenClass.mockClear();
+    // Two "Biology 201" controls exist now (lane block + commitments row) —
+    // the lane block is the one with a `title` attribute; take the other.
+    const buttons = screen.getAllByRole('button', { name: 'Biology 201' });
+    expect(buttons).toHaveLength(2);
+    fireEvent.click(buttons[1]!);
+    expect(onOpenClass).toHaveBeenCalledWith({ classId: 'class-uuid-1', eventId: undefined, date: request.date });
+  });
+
+  it('leaves a class interval with neither classId nor eventId inert — never a fabricated deep link', () => {
+    const onOpenClass = vi.fn();
+    render(
+      <CalendarPersonDialog
+        request={request}
+        personId={request.participantIds[0]!}
+        onDateChange={() => {}}
+        onCompare={() => {}}
+        onClose={() => {}}
+        onEvent={() => {}}
+        onOpenClass={onOpenClass}
+      />,
+    );
+    // "Calculus III" (class-1) has no classId/eventId in this fixture — it
+    // must render as plain text, never a clickable control.
+    expect(screen.queryByRole('button', { name: 'Calculus III' })).not.toBeInTheDocument();
+  });
+
   it('keeps partial schedule data visibly unverified', () => {
     useScheduleWindow.mockReturnValue({
       snapshot: { ...snapshot, participants: snapshot.participants.map((person) => ({ ...person, verification: 'partial' as const })) },

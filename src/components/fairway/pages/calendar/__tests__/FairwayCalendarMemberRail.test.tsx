@@ -69,115 +69,70 @@ describe('FairwayCalendarMemberRail — initials', () => {
   });
 });
 
-describe('FairwayCalendarMemberRail — person drill-in and comparison are separate', () => {
-  it('opens a person by default, then enters an explicit comparison mode', async () => {
+describe('FairwayCalendarMemberRail — an avatar always opens the person, never a toggle', () => {
+  it('calls onOpenPerson on click, regardless of selection state', async () => {
     const onOpenPerson = vi.fn();
     const onSelect = vi.fn();
     const roster = [member({ id: 'p1', first_name: 'Ava', last_name: 'Stone' })];
     render(
       <FairwayCalendarMemberRail
         teamMembers={roster}
-        selectedPlayerIds={[]}
+        selectedPlayerIds={['p1']}
         onOpenPerson={onOpenPerson}
         onSelect={onSelect}
       />,
     );
 
-    const person = screen.getByRole('button', { name: 'Open Ava Stone\'s schedule' });
+    const person = screen.getByRole('button', { name: /Open Ava Stone's schedule/ });
     expect(person).not.toHaveAttribute('aria-pressed');
     await userEvent.click(person);
     expect(onOpenPerson).toHaveBeenCalledWith('p1');
+    // An avatar click never mutates the comparison selection any more — that
+    // now happens only through the picker (below) or the ALL toggle.
     expect(onSelect).not.toHaveBeenCalled();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Compare' }));
-    await userEvent.click(screen.getByRole('button', { name: /View Ava Stone's schedule/ }));
-    expect(onSelect).toHaveBeenCalledWith(['p1']);
   });
 });
 
 /**
- * The 8-member selection cap is enforced SILENTLY.
- *
- * `toggle()` reads `else if (selectedPlayerIds.length < MAX_SELECTION)` — so
- * once eight members are selected, a click on a ninth chip falls off the end
- * of the branch and returns. No toast, no disabled state, no cursor change,
- * no explanation. The chip looks identical to the eight that work, and the
- * coach's click is simply discarded.
- *
- * This is live, not hypothetical: measured 2026-08-17, five of the nine golf
- * teams carry rosters above eight actives (Hampden-Sydney 15, Shenandoah 12).
- * On those teams the rail's own trailing chips are dead controls the moment a
- * coach fills the first eight.
- *
- * The cap itself stays. It is not arbitrary — `MAX_SELECTION` equals
- * `AVATAR_TINT_COUNT`, one selectable member per tint, which is what makes the
- * colour-coded overlay readable at all (see #1470, where raising it is an open
- * design decision). What is fixed here is the silence: the chip has to SAY it
- * cannot be added, and how to make room.
+ * SCREEN-BUILD-PLAN.md §2.3: "Compare in the member rail opens the picker
+ * instead of toggling avatars in place." Earlier, pressing Compare switched
+ * the avatar row itself into a checkbox mode (and silently discarded a click
+ * past the 8-member cap — #1470's most literal form). Both are gone: Compare
+ * now opens `CalendarPeoplePicker`, which owns search/select-shown/Done and
+ * never disables a row for exceeding the cap (covered in
+ * `people/__tests__/CalendarPeoplePicker.test.tsx`).
  */
-describe('FairwayCalendarMemberRail — the selection cap explains itself', () => {
-  const roster = Array.from({ length: 10 }, (_, i) =>
-    member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
-  );
-  const eightSelected = roster.slice(0, 8).map((m) => m.id);
+describe('FairwayCalendarMemberRail — Compare opens the people picker', () => {
+  const roster = [
+    member({ id: 'p1', first_name: 'Ava', last_name: 'Stone' }),
+    member({ id: 'p2', first_name: 'Ben', last_name: 'Cortez' }),
+  ];
 
-  function chipFor(m: TeamMember) {
-    return screen.getByRole('button', { name: new RegExp(`${m.first_name} ${m.last_name}\\b`) });
-  }
-
-  it('marks a chip that cannot be added as disabled, and says why in its title', () => {
-    render(
-      <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={eightSelected} onSelect={vi.fn()} />,
-    );
-
-    const ninth = chipFor(roster[8]!);
-    expect(ninth).toHaveAttribute('aria-disabled', 'true');
-    // The tooltip has to carry the reason AND the remedy, not just the name.
-    // Asserted on the phrase, not on a bare "8" — every chip's own label
-    // already contains digits, so /8/ alone passes without a fix.
-    expect(ninth.getAttribute('title')).toMatch(/maximum of 8/);
-    expect(ninth.getAttribute('title')).toMatch(/clear one/i);
-  });
-
-  it('leaves the reason in the accessible name too, so it is not hover-only', () => {
-    render(
-      <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={eightSelected} onSelect={vi.fn()} />,
-    );
-    expect(chipFor(roster[8]!).getAttribute('aria-label')).toMatch(/maximum of 8/);
-  });
-
-  it('keeps every SELECTED chip live at the cap — deselecting is the way out', async () => {
+  it('opens a searchable picker instead of turning the avatars into checkboxes', async () => {
     const onSelect = vi.fn();
-    render(
-      <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={eightSelected} onSelect={onSelect} />,
-    );
-
-    const first = chipFor(roster[0]!);
-    expect(first).not.toHaveAttribute('aria-disabled', 'true');
-    await userEvent.click(first);
-    expect(onSelect).toHaveBeenCalledWith(eightSelected.slice(1));
-  });
-
-  it('marks nothing disabled below the cap', () => {
     render(
       <FairwayCalendarMemberRail
         teamMembers={roster}
-        selectedPlayerIds={eightSelected.slice(0, 7)}
-        onSelect={vi.fn()}
+        selectedPlayerIds={[]}
+        onOpenPerson={vi.fn()}
+        onSelect={onSelect}
       />,
     );
-    for (const m of roster) {
-      expect(chipFor(m), m.id).not.toHaveAttribute('aria-disabled', 'true');
-    }
+
+    await userEvent.click(screen.getByRole('button', { name: 'Compare' }));
+    expect(screen.getByRole('option', { name: /Ben Cortez/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('option', { name: /Ben Cortez/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Compare selected' }));
+    expect(onSelect).toHaveBeenCalledWith(['p2']);
+
+    // Still true: an avatar click never toggled anything.
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
-  it('still refuses the ninth selection — the cap is explained, not lifted', async () => {
-    const onSelect = vi.fn();
-    render(
-      <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={eightSelected} onSelect={onSelect} />,
-    );
-    await userEvent.click(chipFor(roster[8]!));
-    expect(onSelect).not.toHaveBeenCalled();
+  it('is not rendered at all when there is no onOpenPerson (test-only bare mode)', () => {
+    render(<FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={[]} onSelect={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Compare' })).not.toBeInTheDocument();
   });
 });
 
@@ -289,27 +244,11 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
     expect(screen.queryByText(/clear one to swap/i)).not.toBeInTheDocument();
   });
 
-  it('re-selecting a member deselected from an over-the-cap ALL state is not silently refused', async () => {
-    // Reproduces the #1470 "silent cap" failure mode one level up: start
-    // ALL-selected on an 11-member roster (past the cap), deselect one
-    // member (10 left, still past the cap), then click them again — this
-    // must re-add them, not drop the click the way the cap used to for a
-    // fresh 9th manual selection.
-    const roster = Array.from({ length: 11 }, (_, i) =>
-      member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
-    );
-    const tenSelected = roster.slice(1).map((m) => m.id); // p0 deselected
-    const onSelect = vi.fn();
-    render(
-      <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={tenSelected} onSelect={onSelect} />,
-    );
-
-    const chip = screen.getByRole('button', { name: new RegExp(`${roster[0]!.first_name} ${roster[0]!.last_name}\\b`) });
-    expect(chip).not.toHaveAttribute('aria-disabled', 'true');
-    await userEvent.click(chip);
-
-    expect(onSelect).toHaveBeenCalledWith([...tenSelected, 'p0']);
-  });
+  // The #1470 "silent cap" bug was specifically an avatar CLICK silently
+  // discarded past 8 selections. That interaction is retired (see "an
+  // avatar always opens the person" above) — the equivalent guarantee for
+  // its replacement lives in `people/__tests__/CalendarPeoplePicker.test.tsx`
+  // ("does not block selecting more than eight people").
 });
 
 describe('FairwayCalendarMemberRail — scroll affordance (finding #123)', () => {

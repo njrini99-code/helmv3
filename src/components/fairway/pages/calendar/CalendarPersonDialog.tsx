@@ -46,13 +46,17 @@ function intervalTone(interval: ScheduleInterval): string {
   return 'border-border-strong bg-text-tertiary/85 text-white shadow-flat';
 }
 
-function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified }: {
+function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified, onOpenClass }: {
   label: string;
   intervals: ScheduleInterval[];
   timeZone: string;
   type: 'class' | 'commitment';
   dayStart: string;
   verified: boolean;
+  /** Present only when a class lane block should open class detail
+   * (SCREEN-BUILD-PLAN.md §2.4 entry point: "a class interval in
+   * CalendarPersonDialog (lane block or commitments row)"). */
+  onOpenClass?: (interval: ScheduleInterval) => void;
 }) {
   const visible = intervals.flatMap((interval) => {
     const dateKey = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
@@ -88,25 +92,44 @@ function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified }: 
           <span className="absolute inset-0 grid place-items-center font-fw-sans text-caption text-text-tertiary">
             {!verified ? 'Schedule not fully verified' : intervals.length ? 'Commitments outside 7 AM–9 PM' : isClasses ? 'No classes recorded in Helm' : 'No commitments recorded in Helm'}
           </span>
-        ) : visible.map(({ interval, left, width }) => (
-          <span
-            key={interval.id}
-            title={`${intervalTitle(interval)} · ${timeInZone(interval.start, timeZone)}–${timeInZone(interval.end, timeZone)}`}
-            style={{ left: `${left}%`, width: `${width}%` }}
-            className={cn(
+        ) : visible.map(({ interval, left, width }) => {
+          // Openable when there is something class-detail can resolve — the
+          // server authorizes against `golf_player_classes` independently of
+          // what THIS snapshot returned, so a free/busy-only block still
+          // deep-links (§2.4: "lets a free/busy viewer's UI still deep-link
+          // to a class detail lookup that the server will authorize").
+          const openable = interval.type === 'class' && Boolean(onOpenClass) && Boolean(interval.classId || interval.eventId);
+          const commonProps = {
+            key: interval.id,
+            title: `${intervalTitle(interval)} · ${timeInZone(interval.start, timeZone)}–${timeInZone(interval.end, timeZone)}`,
+            style: { left: `${left}%`, width: `${width}%` },
+            className: cn(
               'absolute top-2 flex h-10 min-w-0 items-center rounded-fw-sm border px-2 font-fw-sans text-caption font-medium transition-transform duration-200 hover:-translate-y-px motion-reduce:transition-none',
+              openable && 'cursor-pointer active:scale-[0.98]',
               intervalTone(interval),
-            )}
-          >
-            <span className="truncate">{intervalTitle(interval)}</span>
-          </span>
-        ))}
+            ),
+          };
+          return openable ? (
+            <button type="button" {...commonProps} onClick={() => onOpenClass!(interval)}>
+              <span className="truncate">{intervalTitle(interval)}</span>
+            </button>
+          ) : (
+            <span {...commonProps}>
+              <span className="truncate">{intervalTitle(interval)}</span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function PersonScheduleVisual({ person, timeZone, dayStart }: { person: ScheduleParticipant; timeZone: string; dayStart: string }) {
+function PersonScheduleVisual({ person, timeZone, dayStart, onOpenClass }: {
+  person: ScheduleParticipant;
+  timeZone: string;
+  dayStart: string;
+  onOpenClass?: (interval: ScheduleInterval) => void;
+}) {
   const intervals = [...person.intervals].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   const classes = intervals.filter((interval) => interval.type === 'class');
   const commitments = intervals.filter((interval) => interval.type !== 'class');
@@ -132,7 +155,7 @@ function PersonScheduleVisual({ person, timeZone, dayStart }: { person: Schedule
       </div>
 
       <div className="relative mt-4 space-y-3">
-        <ScheduleLane label="Classes" intervals={classes} timeZone={timeZone} type="class" dayStart={dayStart} verified={person.verification === 'complete'} />
+        <ScheduleLane label="Classes" intervals={classes} timeZone={timeZone} type="class" dayStart={dayStart} verified={person.verification === 'complete'} onOpenClass={onOpenClass} />
         <ScheduleLane label="Team & personal" intervals={commitments} timeZone={timeZone} type="commitment" dayStart={dayStart} verified={person.verification === 'complete'} />
         <div aria-hidden className="relative h-4 font-fw-mono text-microbadge tabular-nums text-text-tertiary">
           {[{ minute: 420, label: '7 AM' }, { minute: 600, label: '10 AM' }, { minute: 780, label: '1 PM' }, { minute: 960, label: '4 PM' }, { minute: 1260, label: '9 PM' }].map(({ minute, label }, index) => (
@@ -144,17 +167,35 @@ function PersonScheduleVisual({ person, timeZone, dayStart }: { person: Schedule
   );
 }
 
-export function CalendarPersonDialog({ request, personId, onDateChange, onCompare, onClose, onEvent }: {
+/** What a class interval hands back to open class detail (SCREEN-BUILD-PLAN.md
+ * §2.4). Either id may be absent — an unsynced class carries no `eventId`,
+ * and an interval from before `classId` existed carries neither — the
+ * class-detail action resolves what it can and reports `not_found` rather
+ * than the dialog guessing. */
+export interface OpenClassRequest {
+  classId?: string;
+  eventId?: string;
+  date: string;
+}
+
+export function CalendarPersonDialog({ request, personId, onDateChange, onCompare, onClose, onEvent, onOpenClass }: {
   request: ScheduleWindowRequest | null;
   personId: string | null;
   onDateChange: (date: string) => void;
   onCompare: () => void;
   onClose: () => void;
   onEvent: (id: string) => void;
+  /** Opens class detail (S4) for a class interval — from a lane block or a
+   * commitments row. Omit to leave class intervals inert (no entry point
+   * mounted yet). */
+  onOpenClass?: (request: OpenClassRequest) => void;
 }) {
   const { snapshot, loading, error, retry } = useScheduleWindow(request, getScheduleWindow);
   const person = snapshot?.participants.find((participant) => participant.id === personId);
   const timeZone = snapshot?.timeZone ?? 'UTC';
+  const handleOpenClass = onOpenClass && request
+    ? (interval: ScheduleInterval) => onOpenClass({ classId: interval.classId, eventId: interval.eventId, date: request.date })
+    : undefined;
   const move = (days: number) => {
     if (!request) return;
     const date = new Date(`${request.date}T12:00:00Z`);
@@ -216,7 +257,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
         {person && person.verification !== 'complete' ? (
           <p role="status" className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3 font-fw-sans text-caption text-fw-warning-ink">This schedule could not be fully verified. Missing time is not confirmed availability.</p>
         ) : null}
-        {person ? <PersonScheduleVisual person={person} timeZone={timeZone} dayStart={snapshot!.window.start} /> : null}
+        {person ? <PersonScheduleVisual person={person} timeZone={timeZone} dayStart={snapshot!.window.start} onOpenClass={handleOpenClass} /> : null}
         {person && person.intervals.length > 0 ? (
           <section aria-labelledby="commitments-heading">
             <div className="mb-2 flex items-center justify-between gap-3"><h3 id="commitments-heading" className="font-fw-display text-body-lg font-semibold text-text-primary">Commitments</h3><span className="font-fw-mono text-caption tabular-nums text-text-tertiary">{person.intervals.length} total</span></div>
@@ -228,7 +269,9 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-fw-mono text-caption font-medium tabular-nums text-text-secondary">{timeInZone(interval.start, timeZone)} – {timeInZone(interval.end, timeZone)}</p>
-                    {interval.eventId ? (
+                    {interval.type === 'class' && handleOpenClass && (interval.classId || interval.eventId) ? (
+                      <Button variant="ghost" className="mt-0.5 h-auto min-h-11 justify-start px-0 py-1 text-left font-fw-sans text-body-sm font-semibold text-text-primary hover:bg-transparent hover:text-accent-700" onClick={() => handleOpenClass(interval)}>{intervalTitle(interval)}</Button>
+                    ) : interval.eventId ? (
                       <Button variant="ghost" className="mt-0.5 h-auto min-h-11 justify-start px-0 py-1 text-left font-fw-sans text-body-sm font-semibold text-text-primary hover:bg-transparent hover:text-accent-700" onClick={() => onEvent(interval.eventId!)}>{intervalTitle(interval)}</Button>
                     ) : <p className="mt-0.5 font-fw-sans text-body-sm font-semibold text-text-primary">{intervalTitle(interval)}</p>}
                     <p className="mt-1 font-fw-sans text-caption capitalize text-text-tertiary">{interval.type === 'blocked' ? 'Personal block' : interval.type}</p>
