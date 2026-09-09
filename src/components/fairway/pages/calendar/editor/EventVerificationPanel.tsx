@@ -116,7 +116,7 @@ export function EventVerificationPanel({
       data-state={state}
       className={cn(
         'flex flex-col gap-3 rounded-card p-3 font-fw-sans text-caption',
-        isAttention ? surfaces.attention : surfaces.paper,
+        isAttention ? 'border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink' : 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]',
         !isAttention && (isConflicts ? 'text-fw-warning-ink' : 'text-text-secondary'),
       )}
     >
@@ -128,13 +128,8 @@ export function EventVerificationPanel({
             aria-hidden
             className={cn(
               'grid h-8 w-8 shrink-0 place-items-center rounded-full',
-              state === 'verified' ? surfaces.check : surfaces.rowIcon,
+              state === 'verified' ? 'bg-accent-650 text-text-on-accent' : 'bg-fw-warning-bg text-fw-warning-ink',
             )}
-            style={
-              state === 'verified'
-                ? undefined
-                : ({ '--row-tint': 'var(--fw-color-warning-ink)', '--row-tint-bg': 'var(--fw-color-warning-bg)' } as React.CSSProperties)
-            }
           >
             {state === 'verified' ? <Check className="h-4 w-4" aria-hidden /> : <AlertTriangle className="h-4 w-4" aria-hidden />}
           </span>
@@ -189,7 +184,7 @@ export function EventVerificationPanel({
       {conflicts?.hasConflict && !conflicts.partial && conflicts.suggestions.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {conflicts.suggestions.slice(0, 3).map((slot, index) => (
-            <UiButton key={index} variant="ghost" type="button" onClick={() => onSelectSuggestion(slot)} className={cn('min-h-11 rounded-full px-3.5 font-fw-mono text-caption tabular-nums text-text-primary', surfaces.float, surfaces.press)}>
+            <UiButton key={index} variant="ghost" type="button" onClick={() => onSelectSuggestion(slot)} className={cn('min-h-11 rounded-full px-3.5 font-fw-mono text-caption tabular-nums text-text-primary', 'border border-border-subtle bg-surface')}>
               Try {slot.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
             </UiButton>
           ))}

@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { Button, IconButton, Surface, Inset } from '@/components/fairway';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { formatShortDate } from '@/lib/golf/format-date';
-import surfaces from '../CalendarSurfaces.module.css';
 import type { CalendarFeedRow, CalendarFeedType } from './types';
 
 /** Masks the token segment of a feed URL: keeps the origin + path visible
@@ -86,9 +85,9 @@ export function FeedRow({ label, description, feed, busy, disabled, error, onCre
   }
 
   return (
-    <Surface padding="none" elevation="border" className={cn('overflow-hidden rounded-card border-transparent', surfaces.paper)}>
+    <Surface padding="none" elevation="border" className={cn('overflow-hidden rounded-card border-transparent', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
       <div className="flex items-start gap-3 p-4">
-        <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+        <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
           <Icon className="h-4 w-4" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
@@ -154,14 +153,14 @@ export function FeedRow({ label, description, feed, busy, disabled, error, onCre
           ) : (
             <div className="mt-3 flex items-center justify-between gap-2">
               <p className="font-fw-sans text-caption text-text-tertiary">Not added yet</p>
-              <Button variant="primary" size="sm" busy={busy} disabled={disabled} onClick={onCreate} className={surfaces.glow}>
+              <Button variant="primary" size="sm" busy={busy} disabled={disabled} onClick={onCreate}>
                 Create link
               </Button>
             </div>
           )}
 
           {error ? (
-            <p role="alert" className={cn('mt-2 font-fw-sans text-caption font-medium text-fw-danger-ink')}>
+            <p role="alert" className={'mt-2 font-fw-sans text-caption font-medium text-fw-danger-ink'}>
               {error}
             </p>
           ) : null}

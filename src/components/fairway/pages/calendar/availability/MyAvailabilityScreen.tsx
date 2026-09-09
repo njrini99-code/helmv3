@@ -274,7 +274,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
           surfaces.panel,
         )}
       >
-        <header className={cn('relative z-10 flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-6', surfaces.chrome)}>
+        <header className={cn('relative z-10 flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-6', 'fw-glass-chrome')}>
           {!isDesktop && showEditor ? (
             <Button
               variant="ghost"
@@ -306,7 +306,6 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
               size="sm"
               leftIcon={<Plus className="h-4 w-4" aria-hidden />}
               onClick={() => { setSubmitError(null); setSelection({ kind: 'new' }); }}
-              className={surfaces.glow}
             >
               Add busy time
             </Button>
@@ -327,7 +326,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
         <div className="min-h-0 flex-1 overflow-hidden">
           {tab === 'sources' ? (
             <div className="h-full overflow-y-auto p-4 sm:p-6">
-              <div className={cn('rounded-card p-4', surfaces.paper)}>
+              <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
                 <p className="mb-3 font-fw-sans text-body-sm text-text-secondary">
                   How completely Helm could check your schedule when other people compare availability with you.
                 </p>

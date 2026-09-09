@@ -1040,7 +1040,7 @@ export function FairwayEventEditor({
                 stages={stages}
                 stageIndex={stageIndex}
                 onGoTo={handleStageGoTo}
-                className={cn('sticky top-0 z-10 -mx-6 -mt-2 border-b px-4 py-1.5', surfaces.chrome)}
+                className={cn('sticky top-0 z-10 -mx-6 -mt-2 border-b px-4 py-1.5', 'fw-glass-chrome')}
               />
             ) : null}
 
@@ -1134,7 +1134,7 @@ export function FairwayEventEditor({
               extra affordance is a ghost "Discard" once the draft is dirty. */}
           <ModalShell.Footer
             data-slot="event-editor-dock"
-            className={cn('flex-col items-stretch gap-2 border-t sm:items-center', surfaces.dock)}
+            className={cn('flex-col items-stretch gap-2 border-t sm:items-center', 'fw-glass-chrome')}
           >
             {(showDestructive || showDiscard || isCancelled) ? (
               <div className="flex items-center justify-between gap-1 sm:mr-auto sm:justify-start">
@@ -1189,7 +1189,7 @@ export function FairwayEventEditor({
                       onClick={handleSubmit}
                       busy={isSaving}
                       disabled={isSaving || !isTitleValid || isOffline}
-                      className={cn('flex-1 sm:flex-none', surfaces.glow)}
+                      className={'flex-1 sm:flex-none'}
                     >
                       {primaryLabel}
                     </Button>

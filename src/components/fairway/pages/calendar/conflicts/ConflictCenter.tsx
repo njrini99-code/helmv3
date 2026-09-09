@@ -128,7 +128,7 @@ export function ConflictCenter({
 
   return (
     <div className={cn('flex h-full min-h-0 flex-col', surfaces.scope, className)}>
-      <header className={cn('sticky top-0 z-20 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b px-4 py-4 sm:px-6', surfaces.chrome)}>
+      <header className={cn('sticky top-0 z-20 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b px-4 py-4 sm:px-6', 'fw-glass-chrome')}>
         <div className="min-w-0">
           <h1 className="font-fw-display text-title font-semibold tracking-[-0.02em] text-text-primary">Conflicts</h1>
           {snapshot ? (

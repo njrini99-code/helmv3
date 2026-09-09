@@ -144,7 +144,7 @@ function PickerBody({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className={cn('sticky top-0 z-10 shrink-0 border-b px-4 py-3 sm:px-5', surfaces.chrome)}>
+      <div className={cn('sticky top-0 z-10 shrink-0 border-b px-4 py-3 sm:px-5', 'fw-glass-chrome')}>
         <Input
           type="search"
           aria-label="Search people"
@@ -228,7 +228,7 @@ function PickerBody({
                       aria-hidden
                       className={cn(
                         'grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors',
-                        selected ? cn('border-transparent', surfaces.check) : 'border-border-strong text-transparent',
+                        selected ? cn('border-transparent', 'bg-accent-650 text-text-on-accent') : 'border-border-strong text-transparent',
                       )}
                     >
                       <Check className="h-3.5 w-3.5" />
@@ -255,9 +255,9 @@ function PickerBody({
         )}
       </div>
 
-      <div className={cn('flex shrink-0 items-center justify-end gap-2 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5', surfaces.dock)}>
+      <div className={cn('flex shrink-0 items-center justify-end gap-2 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5', 'fw-glass-chrome')}>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button className={surfaces.glow} onClick={() => onApply(selection.selectedIds, { requiredIds: selection.requiredIds })}>{doneLabel}</Button>
+        <Button onClick={() => onApply(selection.selectedIds, { requiredIds: selection.requiredIds })}>{doneLabel}</Button>
       </div>
     </div>
   );

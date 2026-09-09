@@ -130,8 +130,8 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
   return (
     <div className="space-y-3">
       {location ? (
-        <div className={cn('flex items-start gap-3 rounded-fw-md p-3', surfaces.paper)}>
-          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+        <div className={cn('flex items-start gap-3 rounded-fw-md p-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
+          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
             <MapPin className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -141,8 +141,8 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
         </div>
       ) : null}
       {data.instructor ? (
-        <div className={cn('flex items-start gap-3 rounded-fw-md p-3', surfaces.paper)}>
-          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+        <div className={cn('flex items-start gap-3 rounded-fw-md p-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
+          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
             <GraduationCap className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -206,10 +206,10 @@ export function CalendarClassDetail({
   const primaryAction = (() => {
     if (!data) return null;
     if (viewer === 'owner' && onEditClass) {
-      return <Button size="lg" fullWidth className={surfaces.glow} onClick={() => onEditClass(data.classId)}>Edit class</Button>;
+      return <Button size="lg" fullWidth onClick={() => onEditClass(data.classId)}>Edit class</Button>;
     }
     if (viewer === 'coach' && onCompareSchedules) {
-      return <Button size="lg" fullWidth className={surfaces.glow} onClick={onCompareSchedules}>Compare schedules</Button>;
+      return <Button size="lg" fullWidth onClick={onCompareSchedules}>Compare schedules</Button>;
     }
     return null;
   })();
@@ -228,7 +228,7 @@ export function CalendarClassDetail({
 
         {data && meetingKind ? (
           <>
-            <header className={cn('flex shrink-0 items-start gap-3 border-b px-4 py-4 sm:px-5', surfaces.chrome)}>
+            <header className={cn('flex shrink-0 items-start gap-3 border-b px-4 py-4 sm:px-5', 'fw-glass-chrome')}>
               <span className={cn('mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full', surfaces.class)}>
                 <BookOpen className="h-5 w-5" aria-hidden />
               </span>
@@ -269,7 +269,7 @@ export function CalendarClassDetail({
             </div>
 
             {primaryAction ? (
-              <footer className={cn('shrink-0 rounded-t-fw-lg border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5', surfaces.dock)}>{primaryAction}</footer>
+              <footer className={cn('shrink-0 rounded-t-fw-lg border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5', 'fw-glass-chrome')}>{primaryAction}</footer>
             ) : null}
           </>
         ) : null}

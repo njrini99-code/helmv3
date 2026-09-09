@@ -27,7 +27,6 @@ import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input'
 import { cn } from '@/lib/utils';
 import type { GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { fieldCls } from './fieldStyles';
-import surfaces from '../CalendarSurfaces.module.css';
 
 type EventType = GolfEventFormData['eventType'];
 
@@ -90,10 +89,9 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
                 // this explicit override, matching FairwayDayStrip /
                 // FairwayEventCard's own `ring-offset-canvas` convention.
                 'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
-                surfaces.press,
                 active
-                  ? cn('border border-transparent text-text-on-accent hover:text-text-on-accent', surfaces.selected)
-                  : cn('text-text-secondary hover:text-text-primary', surfaces.float),
+                  ? cn('border border-transparent text-text-on-accent hover:text-text-on-accent', 'bg-accent-650 text-text-on-accent')
+                  : cn('text-text-secondary hover:text-text-primary', 'border border-border-subtle bg-surface'),
               )}
             >
               <Icon className="h-3.5 w-3.5" aria-hidden />
@@ -104,9 +102,9 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
       </div>
 
       {/* Location + Notes — one card, one icon disc per row. */}
-      <div className={cn('flex flex-col divide-y divide-border-subtle rounded-card px-4', surfaces.paper)}>
+      <div className={cn('flex flex-col divide-y divide-border-subtle rounded-card px-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
         <label htmlFor="ev-location" className="flex items-center gap-3 py-3">
-          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
             <MapPin className="h-4 w-4" aria-hidden />
           </span>
           <span className="sr-only">Location</span>
@@ -122,7 +120,7 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
           />
         </label>
         <label htmlFor="ev-desc" className="flex items-start gap-3 py-3">
-          <span aria-hidden className={cn('mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+          <span aria-hidden className={cn('mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
             <AlignLeft className="h-4 w-4" aria-hidden />
           </span>
           <span className="sr-only">Notes</span>

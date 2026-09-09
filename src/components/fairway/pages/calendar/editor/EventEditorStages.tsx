@@ -24,7 +24,6 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
 import { useReducedMotionGuard, DURATION } from '@/lib/coachhelm/v3/motion';
-import surfaces from '../CalendarSurfaces.module.css';
 import type { EditorStageDef, EditorStageKey } from './useEventEditorStages';
 
 export interface EventEditorStageDotsProps {
@@ -146,7 +145,7 @@ export function EventEditorStages({
   return (
     <div
       data-slot="editor-stage-dock"
-      className={cn('flex flex-col gap-2 rounded-fw-md border p-2', surfaces.dock)}
+      className={cn('flex flex-col gap-2 rounded-fw-md border p-2', 'fw-glass-chrome')}
     >
       <EventEditorStageDots stage={stage} stages={stages} stageIndex={stageIndex} onGoTo={onGoTo} />
       <div className="flex items-center justify-between gap-2">

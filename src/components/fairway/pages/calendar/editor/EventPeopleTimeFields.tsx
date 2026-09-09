@@ -36,7 +36,6 @@ import {
 } from './EventVerificationPanel';
 import { EventRecurrenceFields } from './EventRecurrenceFields';
 import type { FairwayEventTimeRequest } from '../FairwayEventEditor';
-import surfaces from '../CalendarSurfaces.module.css';
 import { sectionCardCls, sectionTitle } from './sectionChrome';
 
 export interface EventPeopleTimeFieldsProps {
@@ -316,7 +315,7 @@ export function EventPeopleTimeFields({
                   variant="ghost"
                   type="button"
                   disabled={disabled || attendeesLoading}
-                  className={cn('flex min-h-12 w-full items-center justify-between gap-2 rounded-fw-md border-transparent px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas', surfaces.float, surfaces.press)}
+                  className={cn('flex min-h-12 w-full items-center justify-between gap-2 rounded-fw-md border-transparent px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas', 'border border-border-subtle bg-surface')}
                 >
                   <span className="inline-flex items-center gap-2">
                     <UserRound className="h-4 w-4 text-text-tertiary" aria-hidden />
@@ -353,7 +352,7 @@ export function EventPeopleTimeFields({
               type="button"
               onClick={onOpenPeoplePicker}
               disabled={disabled || attendeesLoading}
-              className={cn('flex min-h-12 w-full items-center justify-between gap-2 rounded-fw-md border-transparent px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas', surfaces.float, surfaces.press)}
+              className={cn('flex min-h-12 w-full items-center justify-between gap-2 rounded-fw-md border-transparent px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas', 'border border-border-subtle bg-surface')}
             >
               <span className="inline-flex items-center gap-2">
                 <UserRound className="h-4 w-4 text-text-tertiary" aria-hidden />
@@ -447,10 +446,9 @@ export function EventPeopleTimeFields({
                     className={cn(
                       'flex items-center gap-2.5 rounded-fw-md border p-2 text-left transition-colors',
                       'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
-                      surfaces.press,
                       selected
                         ? 'border-accent-600 bg-accent-50 ring-1 ring-accent-600'
-                        : cn('border-transparent hover:bg-surface-tint', surfaces.float),
+                        : cn('border-transparent hover:bg-surface-tint', 'border border-border-subtle bg-surface'),
                     )}
                   >
                     <span

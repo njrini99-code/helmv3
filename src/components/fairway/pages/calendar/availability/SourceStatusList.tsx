@@ -17,7 +17,6 @@
  * failed data).
  * ========================================================================== */
 
-import * as React from 'react';
 import { AlertTriangle, CheckCircle2, RefreshCw, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, Skeleton } from '@/components/fairway';
@@ -61,7 +60,7 @@ export function SourceStatusList({ state, onRetry, className }: SourceStatusList
       <div
         className={cn(
           'flex items-center justify-between gap-3 rounded-fw-md px-3 py-2.5',
-          styles.attention,
+          'border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink',
           className,
         )}
       >
@@ -85,12 +84,11 @@ export function SourceStatusList({ state, onRetry, className }: SourceStatusList
       <div
         className={cn(
           'flex items-center gap-3 rounded-fw-md px-3 py-2.5',
-          styles.row,
+          'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]',
           className,
         )}
-        style={{ '--row-tint': 'var(--fw-color-accent-600)' } as React.CSSProperties}
       >
-        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', styles.check)}>
+        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-accent-650 text-text-on-accent')}>
           <CheckCircle2 className="h-4 w-4" aria-hidden />
         </span>
         <p className="font-fw-sans text-body-sm text-text-primary">

@@ -14,7 +14,6 @@ import { Button, StatusPill, Skeleton } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { getEventRSVP, type RSVPStats } from '@/app/golf/actions/golf';
-import surfaces from '../CalendarSurfaces.module.css';
 
 type Attendee = RSVPStats['summary']['attendees'][number];
 
@@ -83,7 +82,7 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
           <Users className="h-4 w-4" aria-hidden />
         </span>
         <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
@@ -97,7 +96,7 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
           ))}
         </div>
       ) : state.status === 'failed' ? (
-        <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-4 py-3', surfaces.attention)}>
+        <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-4 py-3', 'border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink')}>
           <p className="font-fw-sans text-body-sm">{state.error}</p>
           <Button variant="secondary" size="sm" onClick={load} leftIcon={<RefreshCw className="h-3.5 w-3.5" aria-hidden />}>
             Retry
@@ -112,13 +111,13 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
             return (
               <li
                 key={a.playerId}
-                className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3', surfaces.row)}
-                style={{ '--row-tint': meta.tint, '--row-tint-bg': meta.tintBg } as React.CSSProperties}
+                className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span
                     aria-hidden
-                    className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-semibold', surfaces.rowIcon)}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-semibold"
+                    style={{ color: meta.tint, backgroundColor: meta.tintBg }}
                   >
                     {initials(a.playerName)}
                   </span>

@@ -278,18 +278,18 @@ export function FairwayEventDetailDrawer({
     }
   };
 
-  /** Tinted 32px icon disc used at the head of every detail row. */
+  /** 32px icon disc at the head of a detail row: neutral, or a semantic tone. */
   const rowIcon = (Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, tint?: 'warning' | 'success') => (
     <span
       aria-hidden
-      className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}
-      style={
+      className={cn(
+        'grid h-8 w-8 shrink-0 place-items-center rounded-full',
         tint === 'warning'
-          ? ({ '--row-tint': 'var(--fw-color-warning-ink)', '--row-tint-bg': 'var(--fw-color-warning-bg)' } as React.CSSProperties)
+          ? 'bg-fw-warning-bg text-fw-warning-ink'
           : tint === 'success'
-            ? ({ '--row-tint': 'var(--fw-color-success-ink)', '--row-tint-bg': 'var(--fw-color-success-bg)' } as React.CSSProperties)
-            : undefined
-      }
+            ? 'bg-fw-success-bg text-fw-success-ink'
+            : 'bg-surface-sunken text-text-secondary',
+      )}
     >
       <Icon className="h-4 w-4" aria-hidden />
     </span>
@@ -324,7 +324,7 @@ export function FairwayEventDetailDrawer({
           <header
             className={cn(
               'sticky top-0 z-20 flex flex-col gap-2.5 border-b px-5 pb-4 pr-14 pt-5',
-              surfaces.chrome,
+              'fw-glass-chrome',
             )}
           >
             <div className="flex items-center justify-between gap-2">
@@ -369,7 +369,7 @@ export function FairwayEventDetailDrawer({
               header, response-or-edit, location). */}
           {!isCoach && onRespond && requiresRsvp ? (
             rsvpLocked ? (
-              <div className={cn('flex items-center gap-3 rounded-card p-4', surfaces.paper)}>
+              <div className={cn('flex items-center gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
                 {rowIcon(Lock)}
                 <div className="min-w-0">
                   <p className="font-fw-sans text-body-sm font-medium text-text-primary">{lockReason}</p>
@@ -379,7 +379,7 @@ export function FairwayEventDetailDrawer({
                 </div>
               </div>
             ) : (
-              <div className={cn('flex flex-col gap-3 rounded-card p-4', surfaces.paper)}>
+              <div className={cn('flex flex-col gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
                 <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
                   Your response
                 </p>
@@ -400,8 +400,7 @@ export function FairwayEventDetailDrawer({
                         className={cn(
                           'h-auto min-h-[84px] flex-col gap-2 rounded-fw-md px-2 py-3 font-fw-sans text-body-sm font-semibold',
                           'text-text-primary hover:bg-transparent hover:text-text-primary',
-                          surfaces.float,
-                          surfaces.press,
+                          'border border-border-subtle bg-surface',
                           isSelected && 'ring-2 ring-accent-600 ring-offset-2 ring-offset-surface',
                         )}
                       >
@@ -409,7 +408,7 @@ export function FairwayEventDetailDrawer({
                           aria-hidden
                           className={cn(
                             'grid h-8 w-8 place-items-center rounded-full',
-                            isSelected ? surfaces.check : surfaces.rowIcon,
+                            isSelected ? 'bg-accent-650 text-text-on-accent' : 'bg-surface-sunken text-text-secondary',
                           )}
                         >
                           <Icon className="h-4 w-4" />
@@ -450,7 +449,7 @@ export function FairwayEventDetailDrawer({
               is a 44px row with a tinted icon disc; rows that navigate carry
               a chevron / external-link glyph. */}
           {(event.owner_label && event.owner_player_id) || event.location || stripClassTag(event.description) || linkedTrip ? (
-            <div className={cn('flex flex-col rounded-card px-4 py-1', surfaces.paper)}>
+            <div className={cn('flex flex-col rounded-card px-4 py-1', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
               {/* Whose class this is. Only ever set on synced class meetings,
                   and the one place the FULL name is shown — the chips
                   elsewhere are abbreviated to fit. */}
@@ -528,7 +527,7 @@ export function FairwayEventDetailDrawer({
               Sits directly above the per-person People list below: one
               summary, one roster, not two disconnected counts. */}
           {isCoach && rsvpSummary ? (
-            <div className={cn('flex flex-col gap-3 rounded-card p-4', surfaces.paper)}>
+            <div className={cn('flex flex-col gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
               <div className="flex items-center gap-3">
                 {rowIcon(ClipboardCheck)}
                 <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
@@ -562,13 +561,13 @@ export function FairwayEventDetailDrawer({
           ) : null}
 
           {/* People — who is involved and their status (§2.10, §18). */}
-          <div className={cn('rounded-card p-4', surfaces.paper)}>
+          <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
             <EventPeopleSection eventId={event.id} active={open} />
           </div>
 
           {/* Files (§2.6) — attach-from-library, count in the heading. */}
           {event.team_id ? (
-            <div className={cn('rounded-card p-4', surfaces.paper)}>
+            <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
               <EventFilesSection
                 eventId={event.id}
                 teamId={event.team_id}
@@ -616,7 +615,7 @@ export function FairwayEventDetailDrawer({
             <div
               className={cn(
                 'sticky bottom-0 z-20 mt-auto flex border-t px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-end',
-                surfaces.dock,
+                'fw-glass-chrome',
               )}
             >
               <Button
@@ -625,7 +624,7 @@ export function FairwayEventDetailDrawer({
                 fullWidth
                 leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
                 onClick={() => onEdit(event)}
-                className={cn('sm:w-auto', surfaces.glow)}
+                className={'sm:w-auto'}
               >
                 Edit event
               </Button>

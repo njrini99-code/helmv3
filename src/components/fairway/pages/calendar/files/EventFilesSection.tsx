@@ -10,7 +10,6 @@
 import * as React from 'react';
 import { ExternalLink, FileText, Paperclip, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import surfaces from '../CalendarSurfaces.module.css';
 import { Button, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
 import { getEventDocuments, detachDocumentFromEvent, type EventDocumentRow } from '@/app/golf/actions/event-documents';
 import { EventFilePicker } from './EventFilePicker';
@@ -102,7 +101,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
             <Paperclip className="h-4 w-4" aria-hidden />
           </span>
           <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
@@ -136,7 +135,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
           ))}
         </div>
       ) : state.status === 'failed' ? (
-        <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-4 py-3', surfaces.attention)}>
+        <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-4 py-3', 'border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink')}>
           <p className="font-fw-sans text-body-sm">{state.error}</p>
           <Button variant="secondary" size="sm" onClick={load} leftIcon={<RefreshCw className="h-3.5 w-3.5" aria-hidden />}>
             Retry
@@ -163,7 +162,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
           {rows.map(({ document, attachedAt, note }) => (
             <li
               key={document.id}
-              className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-2', surfaces.row, surfaces.rise)}
+              className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-2', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
             >
               <a
                 href={document.file_url}
@@ -175,7 +174,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
                 )}
               >
-                <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+                <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
                   <FileText className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="min-w-0">

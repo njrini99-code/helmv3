@@ -90,9 +90,9 @@ export function EventReviewReceipt({
     : 'Not required';
 
   return (
-    <div role="group" aria-labelledby={headingId} className={cn('flex flex-col gap-4 rounded-card p-4', surfaces.paper, surfaces.enter)}>
+    <div role="group" aria-labelledby={headingId} className={cn('flex flex-col gap-4 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]', surfaces.enter)}>
       <div className="flex items-center gap-3">
-        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
           <ClipboardList className="h-4 w-4" aria-hidden />
         </span>
         <h3 id={headingId} className="font-fw-display text-body-lg font-semibold text-text-primary">

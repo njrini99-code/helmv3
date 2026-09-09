@@ -31,7 +31,6 @@ import { Button, Input, TextArea, Switch, Segmented, SelectablePill, InlineNotic
 import { DateChooser, TimeChooser, SpanSummary, toMinutes } from '../EventWhenFields';
 import { parseRecurrenceRule, serializeRecurrenceRule, describeRecurrenceRule, type RecurrenceRule } from '@/lib/golf/recurrence';
 import type { BlockedTimeInput, CoachBlockedTimeRow } from './useBlockedTime';
-import styles from '../CalendarSurfaces.module.css';
 
 const WEEKDAYS: ReadonlyArray<{ value: number; short: string; label: string }> = [
   { value: 1, short: 'M', label: 'Monday' },
@@ -215,7 +214,7 @@ export function BusyTimeEditor({
           allDay={allDay}
         />
 
-        <div className={cn('space-y-3 rounded-card p-4', styles.paper)}>
+        <div className={cn('space-y-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
           <Switch checked={repeatOn} onCheckedChange={handleRepeatToggle} label="Repeat weekly" aria-label="Repeat weekly" disabled={disabled} />
           {repeatOn ? (
             <>
@@ -277,7 +276,7 @@ export function BusyTimeEditor({
         </InlineNotice>
       </div>
 
-      <div className={cn('flex shrink-0 items-center justify-between gap-3 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6', styles.dock)}>
+      <div className={cn('flex shrink-0 items-center justify-between gap-3 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6', 'fw-glass-chrome')}>
         {initial && onDelete ? (
           <Button type="button" variant="ghost" size="sm" busy={deleting} disabled={disabled || saving} onClick={onDelete} className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink">
             Delete
@@ -289,7 +288,7 @@ export function BusyTimeEditor({
           <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="md" busy={saving} disabled={disabled || deleting} className={styles.glow}>
+          <Button type="submit" variant="primary" size="md" busy={saving} disabled={disabled || deleting}>
             Save
           </Button>
         </div>

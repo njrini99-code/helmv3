@@ -188,7 +188,7 @@ export function CalendarAttendanceScreen({
             ) : null}
 
             {viewerIsCoach && draft.selected.size > 0 ? (
-              <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-3.5 py-2.5', surfaces.float)}>
+              <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-3.5 py-2.5', 'border border-border-subtle bg-surface')}>
                 <span className="font-fw-sans text-body-sm font-medium text-text-primary">
                   {draft.selected.size} selected
                 </span>
@@ -281,7 +281,7 @@ export function CalendarAttendanceScreen({
       </ModalShell.Body>
 
       {viewerIsCoach && loaded && visibleRows.length > 0 ? (
-        <ModalShell.Footer className={cn('flex flex-row items-center justify-between gap-3 border-t px-6 pt-4', surfaces.dock)}>
+        <ModalShell.Footer className={cn('flex flex-row items-center justify-between gap-3 border-t px-6 pt-4', 'fw-glass-chrome')}>
           <p
             role="status"
             aria-live="polite"
@@ -293,7 +293,6 @@ export function CalendarAttendanceScreen({
           <Button
             variant="primary"
             size="lg"
-            className={surfaces.glow}
             busy={draft.saving}
             disabled={draft.pendingCount === 0 || isOffline}
             onClick={async () => {

@@ -206,7 +206,6 @@ function WeekStrip({ date, timeZone, onSelect }: { date: string; timeZone: strin
             onClick={() => { if (!isSelected) onSelect(key); }}
             className={cn(
               'flex h-auto min-h-[52px] w-full flex-col items-center justify-center gap-0.5 rounded-fw-md px-0 py-1.5',
-              surfaces.press,
               isSelected
                 ? 'bg-accent-650 text-text-on-accent shadow-soft hover:bg-accent-750'
                 : isToday
@@ -254,7 +253,7 @@ function DayTimeline({ person, timeZone, dayStart, isToday, onOpenClass, onEvent
   const height = (startMinute: number, endMinute: number) => Math.max(28, ((endMinute - startMinute) / 60) * HOUR_PX);
 
   return (
-    <div className={cn('overflow-hidden rounded-card', surfaces.paper)}>
+    <div className={cn('overflow-hidden rounded-card', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
       <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-2.5">
         <p className="font-fw-sans text-caption font-semibold uppercase tracking-[0.1em] text-text-tertiary">
           {hourLabel(rangeStart)}–{hourLabel(rangeEnd)}
@@ -341,7 +340,7 @@ function DayTimeline({ person, timeZone, dayStart, isToday, onOpenClass, onEvent
                     title={tooltip}
                     aria-label={`${kindLabel(kind)}, ${title}, ${timeLine}`}
                     onClick={() => (openable ? onOpenClass!(interval) : onEvent(interval.eventId!))}
-                    className={cn('h-full min-h-0 w-full items-start justify-start rounded-fw-md px-3 py-2 font-normal hover:brightness-[0.98]', tone, surfaces.press)}
+                    className={cn('h-full min-h-0 w-full items-start justify-start rounded-fw-md px-3 py-2 font-normal hover:brightness-[0.98]', tone)}
                   >
                     {body}
                   </Button>
@@ -401,7 +400,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
   }, [person?.intervals]);
 
   const primaryButton = (
-    <Button size="lg" fullWidth onClick={onCompare} disabled={!person || loading} className={surfaces.glow}>
+    <Button size="lg" fullWidth onClick={onCompare} disabled={!person || loading}>
       {primaryLabel}
     </Button>
   );
@@ -416,7 +415,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
       size="xl"
       className={cn('h-[min(92dvh,900px)] !w-[calc(100vw-1rem)] sm:!w-auto lg:!w-[880px] lg:!max-w-[calc(100vw-4rem)]', surfaces.scope, surfaces.panel)}
     >
-      <header className={cn('relative z-10 shrink-0 border-b px-3 pb-3 pt-3 sm:px-5', surfaces.chrome)}>
+      <header className={cn('relative z-10 shrink-0 border-b px-3 pb-3 pt-3 sm:px-5', 'fw-glass-chrome')}>
         <div className="flex items-center gap-3">
           <IconButton variant="ghost" size="md" aria-label="Back to calendar" onClick={onClose} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
@@ -442,7 +441,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
           <IconButton variant="ghost" size="md" aria-label="Previous day" onClick={() => move(-1)}>
             <ChevronLeft className="h-5 w-5" />
           </IconButton>
-          <div className={cn('relative flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-4', surfaces.float)}>
+          <div className={cn('relative flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-4', 'border border-border-subtle bg-surface')}>
             <CalendarDays className="h-4 w-4 shrink-0 text-accent-700" aria-hidden />
             <span className="truncate font-fw-sans text-body font-semibold text-text-primary">{dayLabel}</span>
             <Input
@@ -467,7 +466,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-3 py-4 pb-6 sm:px-5 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1 space-y-4">
           {loading ? (
-            <div role="status" aria-label="Loading schedule" className={cn('overflow-hidden rounded-card', surfaces.paper)}>
+            <div role="status" aria-label="Loading schedule" className={cn('overflow-hidden rounded-card', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
               <div className="border-b border-border-subtle px-4 py-3"><Skeleton className="h-3.5 w-24" /></div>
               <div className="flex gap-3 p-3">
                 <div className="w-11 space-y-10 pt-1">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-3 w-9" />)}</div>
@@ -479,7 +478,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
             <div role="alert" className="rounded-card border border-fw-danger/30 bg-fw-danger-bg p-4"><p className="font-fw-sans text-body-sm font-medium text-fw-danger-ink">{error}</p><Button variant="secondary" className="mt-3" onClick={retry}>Retry</Button></div>
           ) : null}
           {!loading && !error && !person ? (
-            <div className={cn('rounded-card p-5 text-center', surfaces.paper)}>
+            <div className={cn('rounded-card p-5 text-center', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
               <p className="font-fw-display text-body-lg font-semibold text-text-primary">Schedule unavailable</p>
               <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">This person’s schedule can’t be shown right now.</p>
             </div>
@@ -498,7 +497,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
             />
           ) : null}
           {person?.verification === 'complete' && person.intervals.length === 0 ? (
-            <div className={cn('rounded-card px-5 py-6 text-center', surfaces.paper)}>
+            <div className={cn('rounded-card px-5 py-6 text-center', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
               <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent-50 text-accent-700"><CalendarDays className="h-5 w-5" aria-hidden /></span>
               <p className="mt-3 font-fw-display text-body-lg font-semibold text-text-primary">No commitments in Helm</p>
               <p className="mx-auto mt-1.5 max-w-xs font-fw-sans text-body-sm text-text-secondary">There are no recorded classes, team events, or personal blocks for this day.</p>
@@ -507,7 +506,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
         </div>
 
         {person ? (
-          <aside aria-label="Day summary" className={cn('sticky top-0 hidden w-[300px] shrink-0 self-start space-y-4 rounded-card p-4 lg:block', surfaces.paper)}>
+          <aside aria-label="Day summary" className={cn('sticky top-0 hidden w-[300px] shrink-0 self-start space-y-4 rounded-card p-4 lg:block', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
             <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">Day summary</p>
             <dl className="space-y-2">
               {([['class', BookOpen, 'Classes'], ['team', CalendarDays, 'Team events'], ['personal', Clock, 'Personal blocks']] as const).map(([key, Icon, label]) => (
@@ -528,7 +527,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
         ) : null}
       </div>
 
-      <footer className={cn('sticky bottom-0 shrink-0 rounded-t-fw-lg border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 lg:hidden', surfaces.dock)}>
+      <footer className={cn('sticky bottom-0 shrink-0 rounded-t-fw-lg border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 lg:hidden', 'fw-glass-chrome')}>
         <p className="mb-2.5 text-center font-fw-sans text-caption text-text-secondary">Based on Helm schedules · {timeZone}</p>
         {primaryButton}
       </footer>

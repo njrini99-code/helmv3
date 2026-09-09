@@ -186,7 +186,7 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className={cn('sticky top-0 z-20 flex shrink-0 items-start gap-3 border-b px-4 py-4 sm:px-5', surfaces.chrome)}>
+      <header className={cn('sticky top-0 z-20 flex shrink-0 items-start gap-3 border-b px-4 py-4 sm:px-5', 'fw-glass-chrome')}>
         {onClose ? (
           <Button variant="ghost" size="sm" aria-label="Close conflict detail" onClick={onClose} className="mt-0.5 shrink-0">
             <ArrowLeft className="h-4 w-4" />
@@ -211,11 +211,10 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
         ) : null}
 
         {/* The event card — what is being moved. */}
-        <div className={cn('flex items-center gap-3 rounded-card p-4', surfaces.paper, surfaces.enter)}>
+        <div className={cn('flex items-center gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]', surfaces.enter)}>
           <span
             aria-hidden="true"
-            className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}
-            style={{ '--row-tint': 'var(--fw-color-warning-ink)', '--row-tint-bg': 'var(--fw-color-warning-bg)' } as React.CSSProperties}
+            className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}
           >
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
           </span>
@@ -242,8 +241,7 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
               {visibleOverlaps.map((overlap) => (
                 <li
                   key={overlap.playerId}
-                  className={cn('flex items-center gap-3 rounded-fw-md py-2.5 pl-4 pr-3', surfaces.row)}
-                  style={{ '--row-tint': 'var(--fw-color-warning)', '--row-tint-bg': 'var(--fw-color-warning-bg)' } as React.CSSProperties}
+                  className={cn('flex items-center gap-3 rounded-fw-md py-2.5 pl-4 pr-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-fw-sans text-body-sm font-semibold text-text-primary">{overlap.name}</p>
@@ -280,7 +278,7 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
             vertical hour axis (the event ±1h). Purely presentational: the
             same facts as the list above, drawn once, never a new claim. */}
         {chartOverlaps.length > 0 && eventBand ? (
-          <div className={cn('rounded-card p-4', surfaces.paper)}>
+          <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
             <div className="mb-3 flex items-center justify-between gap-3">
               <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">Scheduling conflict</h3>
               <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
@@ -374,7 +372,7 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
             />
           </div>
         ) : (
-          <div className={cn('space-y-3 rounded-card p-4', surfaces.paper)}>
+          <div className={cn('space-y-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
             <p className="font-fw-sans text-body-sm font-medium text-text-primary">No confirmed overlap to compare.</p>
             <p className="font-fw-sans text-caption text-text-secondary">
               {unverifiedCount > 0
@@ -385,7 +383,6 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
               variant="primary"
               disabled={isOffline}
               onClick={() => onReviewNewTime({ start: group.event.start, end: group.event.end })}
-              className={surfaces.glow}
             >
               Open Find a time
             </Button>
