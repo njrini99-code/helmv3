@@ -579,7 +579,7 @@ export function classifyWorkspaceKind(facts) {
 
 // Raised 1 -> 3 with the "one workspace door" change (2026-09-05), then
 // 3 -> 6 with the tree/routing/speed reorg (2026-09-06) once gate timing
-// (scripts/serialize.mjs, memory/ledgers/gates.jsonl) gave visibility into
+// (scripts/serialize.mjs, .helm/runtime/gates.jsonl) gave visibility into
 // actual machine load instead of a guess. The mutation budget now has to
 // cover every path that allocates a workspace, not just a human running
 // scripts/new-worktree.sh: the WorktreeCreate hook routes
