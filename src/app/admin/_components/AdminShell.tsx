@@ -32,11 +32,6 @@ import {
   Recycle,
   Bot,
   FileCheck2,
-  Route,
-  Milestone,
-  LineChart,
-  Footprints,
-  TrendingUp,
   ToggleLeft,
   Target,
 } from 'lucide-react';
@@ -65,6 +60,7 @@ import {
   BRIDGE_BOTTOM_NAV_HREFS,
   BRIDGE_BOTTOM_NAV_LABELS,
 } from './admin-nav';
+import { RETIRED_SHORTCUTS } from '@/lib/admin/retired-routes';
 import { RelativeTime } from './RelativeTime';
 
 /** Sub-route leaf labels the Breadcrumb trail can't derive from ADMIN_NAV
@@ -180,11 +176,6 @@ const NAV_ICON_BY_HREF = {
   '/admin/health': HeartPulse,
   '/admin/teams': Radar,
   '/admin/billing': CreditCard,
-  '/admin/lenses/golf': Route,
-  '/admin/lenses/baseball': Milestone,
-  '/admin/lenses/lifting': TrendingUp,
-  '/admin/lenses/teams': LineChart,
-  '/admin/lenses/users': Footprints,
 } as const;
 
 /**
@@ -406,6 +397,19 @@ export function AdminShell({
       if (href) {
         e.preventDefault();
         router.push(href);
+        return;
+      }
+      // A shortcut whose TAB was retired by the 30->19 consolidation still
+      // works — it routes to the view that absorbed that tab, so an operator
+      // with muscle memory for Shift+G ("Golf journey lens") lands on
+      // /admin/golf?view=journey rather than on nothing at all. Consulted
+      // AFTER hrefForShortcut, never before, so a live tab can never be
+      // shadowed by a retired one; `retired-shortcuts.test.ts` pins that no
+      // retired key collides with a live ADMIN_NAV key or a reserved local.
+      const retired = RETIRED_SHORTCUTS[e.key];
+      if (retired) {
+        e.preventDefault();
+        router.push(retired);
       }
     }
     window.addEventListener('keydown', onKeyDown);

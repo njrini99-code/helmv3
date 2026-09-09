@@ -18,6 +18,9 @@ import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 import { honestRoundsDelta } from './honest-rounds-delta';
+import { parseView, type AdminViewOf } from '@/lib/admin/views';
+import { ViewRail } from '../_components/ViewRail';
+import { GolfJourneyView } from './_components/GolfJourneyView';
 
 export const dynamic = 'force-dynamic';
 
@@ -470,14 +473,39 @@ async function GolfBody() {
   );
 }
 
-export default async function GolfAdminPage() {
+export default async function GolfAdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = (await searchParams) ?? {};
+  const view = parseView('/admin/golf', params.view);
+
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <ViewRail
+        host="/admin/golf"
+        active={view}
+        ariaLabel="Golf view"
+        searchParams={params}
+        labels={{ production: 'Production', journey: 'Journey' }}
+        descriptions={{ production: 'Live GolfHelm signals — teams, features, AI, releases.', journey: 'Login → round → autosave → submit → stats, with incidents per stage.' }}
+      />
       <PanelBoundary title="Golf" skeleton={<PanelPageSkeleton rows={8} />}>
-        <GolfBody />
+        {renderView(view)}
       </PanelBoundary>
     </div>
   );
+}
+
+/** One branch per registered view — see `src/lib/admin/views.ts`. */
+function renderView(view: AdminViewOf<'/admin/golf'>) {
+  switch (view) {
+    case 'production':
+      return <GolfBody />;
+    case 'journey':
+      return <GolfJourneyView />;
+  }
 }

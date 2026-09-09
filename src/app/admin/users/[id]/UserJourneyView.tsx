@@ -1,24 +1,29 @@
 import Link from 'next/link';
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchUserJourneyRibbon } from '@/lib/admin/lenses/user-ribbon';
 import { UserJourneyRibbon } from '@/components/admin/lenses/UserJourneyRibbon';
 import { Surface, InlineNotice } from '@/components/fairway';
-import { PanelBoundary } from '../../../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../../../_components/PanelSkeletons';
-import { PanelNoData, PanelStale } from '../../../_components/PanelStates';
+import { PanelNoData, PanelStale } from '../../_components/PanelStates';
 
-export const dynamic = 'force-dynamic';
-
-async function UserRibbonBody({ userId }: { userId: string }) {
+/**
+ * The per-user Journey Ribbon — Login → Dashboard → Start round → Autosave →
+ * Submit → Stats → CoachHelm.
+ *
+ * WAS `/admin/lenses/users/[id]`, a whole parallel directory whose own page
+ * comment admitted the overlap ("/admin/users already carries the full
+ * directory experience"). It is a FRAMING of a user, not a second user page, so
+ * it moved onto `/admin/users/[id]?view=journey` — the detail page every
+ * operator was already on when they wanted it. The body below is that page's
+ * body verbatim; only the route shell was dropped.
+ */
+export async function UserJourneyView({ userId }: { userId: string }) {
   const ribbon = await fetchUserJourneyRibbon(userId);
 
   // `found` is tri-state and the two non-true cases are NOT interchangeable:
-  // `false` is a CONFIRMED absence (malformed id, or a clean existence
-  // check that found no row) — same contract as
-  // src/app/admin/users/[id]/page.tsx:66. `null` is a FAILED existence
-  // check (timeout, connection fault) — rendering that as "not found" would
-  // be a fabricated negative, exactly the defect this tri-state exists to
-  // prevent. See UserJourneyRibbon.found's doc comment in user-ribbon.ts.
+  // `false` is a CONFIRMED absence (malformed id, or a clean existence check
+  // that found no row) — same contract as this route's overview view. `null` is
+  // a FAILED existence check (timeout, connection fault); rendering that as
+  // "not found" would be a fabricated negative, exactly the defect this
+  // tri-state exists to prevent. See UserJourneyRibbon.found in user-ribbon.ts.
   if (ribbon.found === null) {
     return <PanelStale label="User lookup" error={ribbon.degradedNote ?? undefined} />;
   }
@@ -29,11 +34,10 @@ async function UserRibbonBody({ userId }: { userId: string }) {
   return (
     <div className="space-y-6">
       <Surface padding="sm">
-        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">User lens</p>
-        <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">User Journey Ribbon</h2>
+        <h2 className="text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">User Journey Ribbon</h2>
         <p className="mt-2 text-sm leading-6 text-warm-600">
           Login → Dashboard → Start round → Autosave → Submit → Stats → CoachHelm. Opaque subject id only — no
-          email or name is read here; the directory list is the place for identity.
+          email or name is read here; the Overview view is the place for identity.
         </p>
       </Surface>
 
@@ -47,7 +51,7 @@ async function UserRibbonBody({ userId }: { userId: string }) {
 
       {ribbon.incidents.recentTitles.length > 0 && (
         <Surface padding="sm">
-          <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Recent incidents</p>
+          <p className="text-eyebrow uppercase text-warm-500">Recent incidents</p>
           <div className="mt-3 divide-y divide-warm-200/60">
             {ribbon.incidents.recentTitles.map((title, i) => (
               <p key={i} className="truncate py-2 text-sm text-warm-800">
@@ -61,18 +65,6 @@ async function UserRibbonBody({ userId }: { userId: string }) {
       <Link href={ribbon.threadHref} className="inline-block text-xs font-medium text-accent-700 hover:underline">
         Open full activity thread →
       </Link>
-    </div>
-  );
-}
-
-export default async function UserLensDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireSuperAdmin();
-  const { id } = await params;
-  return (
-    <div className="space-y-6">
-      <PanelBoundary title="User lens" skeleton={<PanelPageSkeleton rows={4} />}>
-        <UserRibbonBody userId={id} />
-      </PanelBoundary>
     </div>
   );
 }

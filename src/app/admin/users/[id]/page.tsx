@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchUserDetail } from '@/lib/admin/data/users';
 import { fetchActiveSessions } from '@/lib/admin/data/auth';
-import { Surface, StatusPill, Button, Skeleton, type FwStatusTone } from '@/components/fairway';
+import { Surface, StatusPill, Button, Skeleton, SegmentedLinks, type FwStatusTone } from '@/components/fairway';
+import { hrefWithView, parseViewFrom, USER_DETAIL_VIEWS } from '@/lib/admin/views';
 import { SessionsPanel } from '../../_components/SessionsPanel';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
@@ -13,6 +14,7 @@ import { enterViewAs } from '../../actions/view-as';
 import { EngagementPanel } from './EngagementPanel';
 import { GolfPlayerDetailPanel } from './GolfPlayerDetailPanel';
 import { ViewAsButton } from './ViewAsButton';
+import { UserJourneyView } from './UserJourneyView';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,11 +57,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default async function UserDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireSuperAdmin();
   const { id } = await params;
+  // `/admin/users/[id]` is a DYNAMIC route, so it cannot be an ADMIN_VIEWS key
+  // (that map is keyed by real pathnames so hrefForView can return one). It
+  // uses the generic helpers instead — same three rules, host supplied here.
+  const search = (await searchParams) ?? {};
+  const view = parseViewFrom(USER_DETAIL_VIEWS, search.view);
 
   async function Body() {
     const detail = await fetchUserDetail(id);
@@ -268,8 +277,29 @@ export default async function UserDetailPage({
 
   return (
     <div className="space-y-6">
+      <SegmentedLinks
+        options={[
+          {
+            value: 'overview',
+            label: 'Overview',
+            href: hrefWithView(`/admin/users/${id}`, 'overview', USER_DETAIL_VIEWS, search),
+          },
+          {
+            value: 'journey',
+            label: 'Journey',
+            href: hrefWithView(`/admin/users/${id}`, 'journey', USER_DETAIL_VIEWS, search),
+          },
+        ]}
+        value={view}
+        ariaLabel="User view"
+        description={
+          view === 'overview'
+            ? 'Identity, engagement, memberships, activity, auth and error events, sessions.'
+            : 'Login → round → autosave → submit → stats → CoachHelm, by opaque subject id.'
+        }
+      />
       <PanelBoundary title="User detail" skeleton={<PanelPageSkeleton stats={3} rows={6} />}>
-        <Body />
+        {view === 'overview' ? <Body /> : <UserJourneyView userId={id} />}
       </PanelBoundary>
     </div>
   );

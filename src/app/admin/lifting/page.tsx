@@ -7,6 +7,9 @@ import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
+import { parseView, type AdminViewOf } from '@/lib/admin/views';
+import { ViewRail } from '../_components/ViewRail';
+import { LiftingFlowView } from './_components/LiftingFlowView';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,14 +133,39 @@ async function LiftingBody() {
   );
 }
 
-export default async function LiftingAdminPage() {
+export default async function LiftingAdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = (await searchParams) ?? {};
+  const view = parseView('/admin/lifting', params.view);
+
   return (
     <div className="space-y-6">
       <AutoRefresh />
-      <PanelBoundary title="Lift Lab" skeleton={<PanelPageSkeleton rows={6} />}>
-        <LiftingBody />
+      <ViewRail
+        host="/admin/lifting"
+        active={view}
+        ariaLabel="Lift Lab view"
+        searchParams={params}
+        labels={{ production: 'Production', flow: 'Program flow' }}
+        descriptions={{ production: 'Cross-sport strength program activity.', flow: 'Program assigned → session opened → sets logged → progress updated.' }}
+      />
+      <PanelBoundary title="Lift Lab" skeleton={<PanelPageSkeleton rows={8} />}>
+        {renderView(view)}
       </PanelBoundary>
     </div>
   );
+}
+
+/** One branch per registered view — see `src/lib/admin/views.ts`. */
+function renderView(view: AdminViewOf<'/admin/lifting'>) {
+  switch (view) {
+    case 'production':
+      return <LiftingBody />;
+    case 'flow':
+      return <LiftingFlowView />;
+  }
 }

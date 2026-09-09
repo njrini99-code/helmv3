@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchGolfJourneyLens } from '@/lib/admin/lenses/golf-journey';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { fetchGolfTab, sortTeamsByHealth } from '@/lib/admin/data/golf';
@@ -7,12 +6,8 @@ import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
 import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
 import { JourneyFlow } from '@/components/admin/lenses/JourneyFlow';
 import { Surface, StatusPill, InlineNotice } from '@/components/fairway';
-import { PanelBoundary } from '../../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
-import { AutoRefresh } from '../../_components/AutoRefresh';
 
-export const dynamic = 'force-dynamic';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -22,7 +17,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-async function GolfLensBody() {
+export async function GolfJourneyView() {
   const [journey, errors, golf, ai, releases] = await Promise.all([
     fetchGolfJourneyLens(),
     fetchErrorsTab({ sport: 'golf', windowHours: 168 }),
@@ -130,14 +125,3 @@ async function GolfLensBody() {
   );
 }
 
-export default async function GolfLensPage() {
-  await requireSuperAdmin();
-  return (
-    <div className="space-y-6">
-      <AutoRefresh />
-      <PanelBoundary title="Golf lens" skeleton={<PanelPageSkeleton rows={6} />}>
-        <GolfLensBody />
-      </PanelBoundary>
-    </div>
-  );
-}

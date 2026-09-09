@@ -1,17 +1,12 @@
 import Link from 'next/link';
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchLiftingFlowLens } from '@/lib/admin/lenses/lifting-flow';
 import { fetchLiftingTab } from '@/lib/admin/data/lifting';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { JourneyFlow } from '@/components/admin/lenses/JourneyFlow';
 import { Surface, StatusPill, InlineNotice, StatStrip } from '@/components/fairway';
-import { PanelBoundary } from '../../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
-import { AutoRefresh } from '../../_components/AutoRefresh';
 
-export const dynamic = 'force-dynamic';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +16,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-async function LiftingLensBody() {
+export async function LiftingFlowView() {
   const [journey, lift, errors] = await Promise.all([
     fetchLiftingFlowLens(),
     fetchLiftingTab(),
@@ -92,14 +87,3 @@ async function LiftingLensBody() {
   );
 }
 
-export default async function LiftingLensPage() {
-  await requireSuperAdmin();
-  return (
-    <div className="space-y-6">
-      <AutoRefresh />
-      <PanelBoundary title="Lift Lab lens" skeleton={<PanelPageSkeleton rows={6} />}>
-        <LiftingLensBody />
-      </PanelBoundary>
-    </div>
-  );
-}

@@ -352,6 +352,38 @@ const nextConfig = {
         destination: '/golf/dashboard/players/:playerId/genome',
         permanent: false, // shim used redirect()
       },
+
+      // ─── Bridge consolidation: retired /admin routes ────────────────────
+      // The 30→19 nav fold. Each of these had a `page.tsx` that has been
+      // deleted; its surface now lives as a `?view=` on the destination.
+      //
+      // KEPT IN SYNC BY TEST, not by discipline: this config is `.mjs` and
+      // cannot import the typed table in `src/lib/admin/retired-routes.ts`,
+      // so `src/test/lib/admin/admin-redirects.test.ts` reads BOTH and fails
+      // if either grows an entry the other lacks. A retired route with no
+      // redirect is a dead bookmark, which is the one outcome this fold is
+      // not allowed to produce.
+      //
+      // ALL `permanent: false` — see that module's header. A 308 would be
+      // cached effectively forever, and this is an organisational judgement
+      // that must stay revertible in code.
+      //
+      // `/admin/errors/<fingerprint>` is deliberately absent and never moves:
+      // it is stored in `rca_analysis` rows and matched by the repair
+      // contract's PR-body regex.
+      {
+        // Ordered before the bare `/admin/lenses/users` rule below: Next
+        // matches in array order, and the detail route must not be swallowed
+        // by the directory rule.
+        source: '/admin/lenses/users/:id',
+        destination: '/admin/users/:id?view=journey',
+        permanent: false,
+      },
+      { source: '/admin/lenses/users', destination: '/admin/users', permanent: false },
+      { source: '/admin/lenses/golf', destination: '/admin/golf?view=journey', permanent: false },
+      { source: '/admin/lenses/baseball', destination: '/admin/baseball?view=journey', permanent: false },
+      { source: '/admin/lenses/lifting', destination: '/admin/lifting?view=flow', permanent: false },
+      { source: '/admin/lenses/teams', destination: '/admin/teams?view=ekg', permanent: false },
     ];
   },
 

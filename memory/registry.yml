@@ -1481,7 +1481,6 @@ features:
         - src/app/admin/engineering/**
         - src/app/admin/work-log/**
         - src/app/admin/database/**
-        - src/app/admin/lenses/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
         # below (errors/ -> admin_incidents, reliability/ ->
         # admin_reliability_collector, self-heal/ -> admin_selfheal), so a

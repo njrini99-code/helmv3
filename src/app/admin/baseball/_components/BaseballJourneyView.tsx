@@ -1,17 +1,12 @@
 import Link from 'next/link';
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchBaseballJourneyLens } from '@/lib/admin/lenses/baseball-journey';
 import { fetchTeamsEkgLens } from '@/lib/admin/lenses/teams-ekg';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
 import { JourneyFlow } from '@/components/admin/lenses/JourneyFlow';
 import { Surface, StatusPill, InlineNotice } from '@/components/fairway';
-import { PanelBoundary } from '../../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
-import { AutoRefresh } from '../../_components/AutoRefresh';
 
-export const dynamic = 'force-dynamic';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +16,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-async function BaseballLensBody() {
+export async function BaseballJourneyView() {
   const [journey, errors, ekg, releases] = await Promise.all([
     fetchBaseballJourneyLens(),
     fetchErrorsTab({ sport: 'baseball', windowHours: 168 }),
@@ -116,14 +111,3 @@ async function BaseballLensBody() {
   );
 }
 
-export default async function BaseballLensPage() {
-  await requireSuperAdmin();
-  return (
-    <div className="space-y-6">
-      <AutoRefresh />
-      <PanelBoundary title="Baseball lens" skeleton={<PanelPageSkeleton rows={6} />}>
-        <BaseballLensBody />
-      </PanelBoundary>
-    </div>
-  );
-}

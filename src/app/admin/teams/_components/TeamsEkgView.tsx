@@ -1,4 +1,3 @@
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchTeamsEkgLens } from '@/lib/admin/lenses/teams-ekg';
 import { fetchAdoptionMapLens } from '@/lib/admin/lenses/adoption-map';
 import { fetchSemanticActivityThreads } from '@/lib/admin/lenses/activity-threads';
@@ -6,12 +5,8 @@ import { TeamEkgRow } from '@/components/admin/lenses/TeamEkgRow';
 import { AdoptionMapPanel } from '@/components/admin/lenses/AdoptionMapPanel';
 import { ActivityThreadsPanel } from '@/components/admin/lenses/ActivityThreadsPanel';
 import { Surface, InlineNotice } from '@/components/fairway';
-import { PanelBoundary } from '../../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
-import { AutoRefresh } from '../../_components/AutoRefresh';
 
-export const dynamic = 'force-dynamic';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +16,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-async function TeamsLensBody() {
+export async function TeamsEkgView() {
   const [ekg, adoption, threads] = await Promise.all([
     fetchTeamsEkgLens('attention'),
     fetchAdoptionMapLens(),
@@ -69,14 +64,3 @@ async function TeamsLensBody() {
   );
 }
 
-export default async function TeamsLensPage() {
-  await requireSuperAdmin();
-  return (
-    <div className="space-y-6">
-      <AutoRefresh />
-      <PanelBoundary title="Teams lens" skeleton={<PanelPageSkeleton rows={8} />}>
-        <TeamsLensBody />
-      </PanelBoundary>
-    </div>
-  );
-}
