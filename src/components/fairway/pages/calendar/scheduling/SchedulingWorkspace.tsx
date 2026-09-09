@@ -63,6 +63,42 @@ export interface SchedulingWorkspaceProps {
   error?: string | null;
   onRetry?: () => void;
   onPersonClick?: (id: string) => void;
+  /** A static "Current" band (SCREEN-BUILD-PLAN.md §2.8, §17B) drawn on every
+   * participant row — the event's OWN original time, distinct from the
+   * movable selection band above. Dashed, no transition (`.reference`):
+   * it marks a fact, not something being chosen, so it never competes
+   * visually with the accent-filled selected band. Omit to render none. */
+  referenceInterval?: { start: string; end: string; label?: string };
+  /**
+   * Participant ids to show by default when a fuller roster is present in
+   * `snapshot.participants` — conflict detail (§2.8) passes only the people
+   * whose OWN schedule produced the conflict, keeping "the shortest timeline
+   * that explains the overlap" instead of every invited person. A "Show
+   * everyone" control reveals the rest.
+   *
+   * Evaluation (`evaluateSelection`, `canChoose`, suggestions) always runs
+   * against the FULL `snapshot.participants` regardless of this filter —
+   * only which ROWS render changes. Hiding a person's row must never make a
+   * proposed time look safer than it is.
+   *
+   * Ignored (no toggle rendered) when omitted, empty, or when it already
+   * covers every participant in the snapshot — there is nothing left to
+   * reveal, so a "Show everyone" control would be a no-op.
+   */
+  affectedParticipantIds?: string[];
+  /** Hide the date `<Input>` in the header. A compact, single-day embedding
+   * (like conflict detail) has no data for any day but the one it was built
+   * for; changing the date field would relabel the header without changing
+   * anything else on screen. Default true (unchanged behavior). */
+  showDatePicker?: boolean;
+  /** Footer CTA label. Default "Use this time"; conflict detail passes
+   * "Review new time" — same `onChoose` wiring, different call to action. */
+  primaryActionLabel?: string;
+  /** Disables the footer CTA regardless of `canChoose` — conflict detail
+   * sets this while offline ("Resolve disabled", §2.8's offline state),
+   * without borrowing `loading` (which would also relabel the button
+   * "Publishing…"). Default false. */
+  disablePrimaryAction?: boolean;
 }
 
 function safeDate(value: string): Date | null {
@@ -204,6 +240,11 @@ export function SchedulingWorkspace({
   error = null,
   onRetry,
   onPersonClick,
+  referenceInterval,
+  affectedParticipantIds,
+  showDatePicker = true,
+  primaryActionLabel = 'Use this time',
+  disablePrimaryAction = false,
 }: SchedulingWorkspaceProps) {
   const slots = React.useMemo(() => createSlots(snapshot), [snapshot]);
   const firstSlot = slots.find((slot) => slot.minuteOfDay >= 9 * 60)?.start ?? slots[0]?.start ?? snapshot.window.start;
@@ -227,6 +268,35 @@ export function SchedulingWorkspace({
   React.useEffect(() => {
     setDateValue(formatDateInput(initialStart ?? firstSlot, snapshot.timeZone));
   }, [firstSlot, initialStart, snapshot.timeZone]);
+
+  // Affected-only filter (§2.8): only rendered when the filter would
+  // actually hide someone — otherwise "Show everyone" would be a no-op.
+  const hasAffectedFilter = Boolean(
+    affectedParticipantIds
+    && affectedParticipantIds.length > 0
+    && affectedParticipantIds.length < snapshot.participants.length,
+  );
+  const [showEveryone, setShowEveryone] = React.useState(false);
+  const visibleParticipants = hasAffectedFilter && !showEveryone
+    ? snapshot.participants.filter((participant) => affectedParticipantIds!.includes(participant.id))
+    : snapshot.participants;
+
+  // Toggling the row count shrinks/grows the scrollable body under
+  // `overflow-y-auto`, which the browser clamps `scrollTop` against — so
+  // switching back restores a smaller value than the viewer left it at
+  // unless it is captured and reapplied explicitly (never inferred from
+  // "it usually just works"; verified in SchedulingWorkspace.test.tsx).
+  const bodyScrollRef = React.useRef<HTMLDivElement>(null);
+  const pendingScrollTopRef = React.useRef<number | null>(null);
+  const toggleShowEveryone = () => {
+    pendingScrollTopRef.current = bodyScrollRef.current?.scrollTop ?? null;
+    setShowEveryone((current) => !current);
+  };
+  React.useLayoutEffect(() => {
+    if (pendingScrollTopRef.current === null) return;
+    if (bodyScrollRef.current) bodyScrollRef.current.scrollTop = pendingScrollTopRef.current;
+    pendingScrollTopRef.current = null;
+  }, [showEveryone]);
 
   React.useEffect(() => {
     const timeline = timelineRef.current;
@@ -336,22 +406,24 @@ export function SchedulingWorkspace({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            aria-label="Date"
-            value={dateValue}
-            onChange={(event) => setDate(event.target.value)}
-            leading={<CalendarDays />}
-            size="md"
-            className="w-auto min-w-[170px] rounded-full bg-surface px-3.5 shadow-flat"
-          />
+          {showDatePicker ? (
+            <Input
+              type="date"
+              aria-label="Date"
+              value={dateValue}
+              onChange={(event) => setDate(event.target.value)}
+              leading={<CalendarDays />}
+              size="md"
+              className="w-auto min-w-[170px] rounded-full bg-surface px-3.5 shadow-flat"
+            />
+          ) : null}
           <IconButton variant="ghost" size="md" aria-label="Close scheduling workspace" onClick={onClose}>
             <X className="h-5 w-5" />
           </IconButton>
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 pb-6 sm:px-6">
+      <div ref={bodyScrollRef} data-testid="scheduling-body" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 pb-6 sm:px-6">
         {error ? (
           <div role="alert" className="flex items-start gap-3 rounded-card border border-fw-danger/30 bg-fw-danger-bg px-4 py-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-fw-danger-ink" aria-hidden="true" />
@@ -410,6 +482,25 @@ export function SchedulingWorkspace({
             {availableSummary}
           </div>
         </div>
+
+        {hasAffectedFilter ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              {showEveryone ? 'Showing everyone invited.' : 'Showing only the people this overlap affects.'}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={showEveryone}
+              onClick={toggleShowEveryone}
+              className={surfaces.press}
+            >
+              {showEveryone
+                ? `Show affected only (${affectedParticipantIds!.length})`
+                : `Show everyone (${snapshot.participants.length})`}
+            </Button>
+          </div>
+        ) : null}
 
         <div className={cn("overflow-hidden rounded-card", surfaces.paper)}>
           <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3", surfaces.chrome)}>
@@ -476,7 +567,7 @@ export function SchedulingWorkspace({
                 );
               })}
 
-              {snapshot.participants.map((participant) => (
+              {visibleParticipants.map((participant) => (
                 <React.Fragment key={participant.id}>
                   <Button
                     variant="ghost"
@@ -524,6 +615,25 @@ export function SchedulingWorkspace({
                         </div>
                       );
                     })}
+                    {referenceInterval ? (() => {
+                      const windowStart = Date.parse(snapshot.window.start);
+                      const windowEnd = Date.parse(snapshot.window.end);
+                      const start = Math.max(windowStart, Date.parse(referenceInterval.start));
+                      const end = Math.min(windowEnd, Date.parse(referenceInterval.end));
+                      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+                      const label = referenceInterval.label ?? 'Current';
+                      return (
+                        <div
+                          key="reference"
+                          title={`${label}, ${formatTime(referenceInterval.start, snapshot.timeZone)}–${formatTime(referenceInterval.end, snapshot.timeZone)}`}
+                          aria-label={`${label}, ${formatTime(referenceInterval.start, snapshot.timeZone)}–${formatTime(referenceInterval.end, snapshot.timeZone)}`}
+                          className={cn('pointer-events-none absolute inset-y-3 overflow-hidden rounded-fw-sm px-3 py-2', surfaces.reference)}
+                          style={{ left: `${100 * (start - windowStart) / (windowEnd - windowStart)}%`, width: `${100 * (end - start) / (windowEnd - windowStart)}%` }}
+                        >
+                          <span className="block truncate font-fw-sans text-caption font-semibold text-text-secondary">{label}</span>
+                        </div>
+                      );
+                    })() : null}
                     <div aria-hidden className="pointer-events-none absolute inset-y-0 border-x-2 border-accent-500 bg-accent-500/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-[left,width] duration-150 motion-reduce:transition-none"
                       style={{ left: `${100 * (Date.parse(selectedStart) - Date.parse(snapshot.window.start)) / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%`, width: `${100 * duration * 60000 / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%` }} />
                   </div>
@@ -535,6 +645,9 @@ export function SchedulingWorkspace({
             <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-accent-100" aria-hidden="true" /> Busy</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm border border-dashed border-border-strong bg-surface-sunken" aria-hidden="true" /> Not verified</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-accent-100 ring-1 ring-inset ring-accent-500" aria-hidden="true" /> Selected</span>
+            {referenceInterval ? (
+              <span className="inline-flex items-center gap-1.5"><span className={cn("h-3 w-3 rounded-sm", surfaces.reference)} aria-hidden="true" /> {referenceInterval.label ?? 'Current'}</span>
+            ) : null}
           </div>
         </div>
 
@@ -585,11 +698,11 @@ export function SchedulingWorkspace({
             size="lg"
             fullWidth
             busy={loading}
-            disabled={!canChoose || loading}
+            disabled={!canChoose || loading || disablePrimaryAction}
             onClick={() => onChoose({ start: selectedStart, end: selectedEnd })}
             className={cn("sm:w-auto sm:min-w-[220px]", surfaces.selected)}
           >
-            Use this time
+            {primaryActionLabel}
           </Button>
         </div>
       </footer>

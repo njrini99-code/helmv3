@@ -172,4 +172,124 @@ describe('SchedulingWorkspace', () => {
     restorePointerCapture();
     Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true, writable: true });
   });
+
+  it('draws a static "Current" reference band distinct from the movable selected band, and hides the date field when asked', () => {
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+        referenceInterval={{ start: '2026-09-08T14:00:00.000Z', end: '2026-09-08T15:00:00.000Z' }}
+        showDatePicker={false}
+        primaryActionLabel="Review new time"
+      />,
+    );
+
+    // One band per participant row (2 participants here).
+    expect(screen.getAllByTitle('Current, 2:00 PM–3:00 PM')).toHaveLength(2);
+    // Two per-row band labels plus the legend entry, all reading "Current".
+    expect(screen.getAllByText('Current')).toHaveLength(3);
+    expect(screen.queryByLabelText('Date')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Review new time' })).toBeVisible();
+  });
+
+  it('filters the timeline to only the affected people by default, and "Show everyone" reveals the rest in the original order without changing the availability evaluation', () => {
+    const snapshot: ScheduleSnapshot = {
+      ...SNAPSHOT,
+      participants: [
+        ...SNAPSHOT.participants,
+        {
+          id: 'player-2',
+          kind: 'player',
+          name: 'Jordan Free',
+          avatarUrl: null,
+          isViewer: false,
+          required: true,
+          verification: 'complete',
+          intervals: [],
+        },
+      ],
+    };
+    render(
+      <SchedulingWorkspace
+        snapshot={snapshot}
+        initialProposal={{ start: '2026-09-08T14:00:00.000Z', end: '2026-09-08T15:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+        affectedParticipantIds={['player-1']}
+      />,
+    );
+
+    // Everyone here is actually free at 2-3pm, so the evaluation text is
+    // identical whether or not a row is hidden from view — filtering rows
+    // must never change what "available" means.
+    expect(screen.getByText('Everyone is available')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Open Alex Player schedule' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Open You schedule' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open Jordan Free schedule' })).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole('button', { name: 'Show everyone (3)' });
+    fireEvent.click(toggle);
+
+    expect(screen.getByText('Everyone is available')).toBeVisible();
+    // All three rows are present, and in the snapshot's own document order
+    // (the viewer labeled "You", Alex, Jordan) — never re-sorted "affected
+    // first".
+    const personRows = screen.getAllByRole('button', { name: /^Open .* schedule$/ });
+    expect(personRows.map((row) => row.getAttribute('aria-label'))).toEqual([
+      'Open You schedule',
+      'Open Alex Player schedule',
+      'Open Jordan Free schedule',
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show affected only (1)' }));
+    expect(screen.queryByRole('button', { name: 'Open You schedule' })).not.toBeInTheDocument();
+  });
+
+  it('restores the body scroll position captured before the affected-only toggle', () => {
+    render(
+      <SchedulingWorkspace
+        snapshot={{
+          ...SNAPSHOT,
+          participants: [...SNAPSHOT.participants, {
+            id: 'player-2', kind: 'player', name: 'Jordan Free', avatarUrl: null, isViewer: false,
+            required: true, verification: 'complete', intervals: [],
+          }],
+        }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+        affectedParticipantIds={['player-1']}
+      />,
+    );
+
+    // jsdom performs no real layout, so it never actually clamps scrollTop
+    // when rows are removed — this only proves the capture-then-restore
+    // path runs and does not reset the value (e.g. to 0) across the toggle,
+    // which is the part a real browser's clamp would otherwise expose.
+    const body = screen.getByTestId('scheduling-body');
+    Object.defineProperty(body, 'scrollTop', { value: 140, configurable: true, writable: true });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show everyone (3)' }));
+    expect(body.scrollTop).toBe(140);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show affected only (1)' }));
+    expect(body.scrollTop).toBe(140);
+  });
+
+  it('does not render the "Show everyone" toggle when there is nothing more to reveal', () => {
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+        affectedParticipantIds={['viewer', 'player-1']}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Show everyone/ })).not.toBeInTheDocument();
+  });
 });
