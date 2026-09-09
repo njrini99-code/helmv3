@@ -58,15 +58,14 @@ import {
   endOfMonth,
   addDays,
   addMonths,
-  isSameDay,
 } from 'date-fns';
 import { AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
-import { Sheet, Button as FwButton, fairwayToast } from '@/components/fairway';
+import { Sheet, Button as FwButton, PressTarget, fairwayToast } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight, eventDaySpan, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { wallClockInZone } from '@/lib/golf/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
@@ -77,6 +76,7 @@ import { FairwayCalendarHero } from './FairwayCalendarHero';
 import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
+import { FairwayMonthOverview } from './FairwayMonthOverview';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
@@ -844,68 +844,6 @@ export function FairwayCalendar({
     total: number;
   } | null>(null);
 
-  // Count of events in the visible window (for the hero status line). Day
-  // view is special-cased: `visibleWindow` for 'day' reuses the WEEK range
-  // (a fetch-buffer implementation detail — see visibleWindow above), but the
-  // Day body (FairwayAgendaView mode="day") only ever shows `focusDate`'s own
-  // events, so the hero count must match what's actually on screen instead of
-  // silently counting the whole week (mustFix #4).
-  const windowCount = React.useMemo(() => {
-    if (view === 'day') {
-      return events.filter((e) => {
-        // Zoned bucketing (not implicit-local `new Date(s)`) — must agree
-        // with what FairwayAgendaView mode="day" actually renders for the
-        // same day (both bucket by `teamTimezone`), or the hero count and
-        // the visible list could silently disagree near a midnight boundary.
-        //
-        // `eventDaySpan`, not `eventCalendarDay`, for the same reason: the
-        // agenda counts an event on every day it RUNS, so a start-only test
-        // here would report "0 events" on the Saturday of a tournament the
-        // list below is showing.
-        const span = eventDaySpan(e, teamTimezone);
-        if (!span) return false;
-        return (
-          (isSameDay(span.first, focusDate) || span.first < focusDate) &&
-          (isSameDay(span.last, focusDate) || span.last > focusDate)
-        );
-      }).length;
-    }
-    const startMs = visibleWindow.start.getTime();
-    const endMs = visibleWindow.end.getTime() + 24 * 60 * 60 * 1000 - 1;
-    return events.filter((e) => {
-      const s = e.start_time || e.start_date;
-      if (!s) return false;
-      const t = new Date(s).getTime();
-      return t >= startMs && t <= endMs;
-    }).length;
-  }, [events, visibleWindow, view, focusDate, teamTimezone]);
-
-  // Upcoming count — derived from the SAME canonical `events` list as
-  // `windowCount` (finding #37/#166/#185/#83). The server-computed
-  // `upcomingCount` prop is a SEPARATE read of the same underlying table at a
-  // slightly different instant (its own count query vs. this page's own
-  // fetch+merge), so the hero previously showed two numbers that could each
-  // change independently — one canonical read path now feeds both. `nowRef`
-  // starts equal to `serverNow` (hydration-safe: identical on the first
-  // client render, so no SSR/CSR mismatch), then promotes to the real client
-  // clock exactly like every other "now" in this surface.
-  //
-  // Class meetings are excluded. "12 upcoming" means team commitments — the
-  // coach dashboard's own tile counts exactly that — and counting every
-  // lecture put the two numbers ~150x apart on the same screen for the same
-  // team. A player seeing "187 upcoming" on their calendar is being told
-  // their week is full of the team's business when most of it is their own
-  // timetable, which they can already see rendered.
-  const liveUpcomingCount = React.useMemo(() => {
-    const nowMs = nowRef.getTime();
-    return events.filter((e) => {
-      if (isClassEvent(e)) return false;
-      const s = e.start_time || e.start_date;
-      if (!s) return false;
-      return new Date(s).getTime() >= nowMs;
-    }).length;
-  }, [events, nowRef]);
-
   // ── Navigation ──────────────────────────────────────────────────────────────
   const navigate = React.useCallback(
     (direction: 'prev' | 'next' | 'today') => {
@@ -1118,22 +1056,18 @@ export function FairwayCalendar({
   const isDay = view === 'day';
 
   return (
-    <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-6 pt-2 md:gap-5 md:px-6", surfaces.scope, surfaces.ground)}>
-      {/* ── ONE HERO (plinth + day strip) ────────────────────────────────────── */}
+    <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-6 md:gap-5 md:px-6", surfaces.scope)}>
+      {/* ── The toolbar: title, view selector, stepping, primary action ─────── */}
       <FairwayCalendarHero
         focusDate={focusDate}
         selectedDate={focusDate}
         events={events}
         nowRef={nowRef}
-        upcomingCount={liveUpcomingCount}
-        windowCount={windowCount}
-        isMonthView={view === 'month'}
-        isAgendaView={isAgenda}
         isDayView={isDay}
         isCoach={isCoach}
         onNavigate={navigate}
         onSelectDate={(d) => setFocusDate(d)}
-        onPrimaryAction={primaryAction}
+        onPrimaryAction={isCoach ? primaryAction : undefined}
         primaryActionLabel={primaryActionLabel}
         teamTimezone={teamTimezone}
         view={view}
@@ -1150,14 +1084,9 @@ export function FairwayCalendar({
           item, only when there is one. Real count from the inbox; never a
           global red alert for every soft overlap. */}
       {homeConflictCount && homeConflictCount > 0 ? (
-        <FwButton
-          variant="ghost"
+        <PressTarget
           onClick={() => setConflictsOpen(true)}
-          className={cn(
-            'flex h-auto min-h-[48px] w-full items-center justify-between gap-3 rounded-fw-md px-4 py-3 text-left font-normal hover:bg-transparent',
-            surfaces.attention,
-            surfaces.press,
-          )}
+          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-fw-warning-bg px-4 py-2.5 text-left text-fw-warning-ink"
         >
           <span className="flex min-w-0 items-center gap-2.5">
             <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
@@ -1166,7 +1095,23 @@ export function FairwayCalendar({
             </span>
           </span>
           <ArrowRight className="h-4 w-4 flex-shrink-0" aria-hidden />
-        </FwButton>
+        </PressTarget>
+      ) : null}
+
+      {/* ── Player: a contextual response row, only when there is something
+          to respond to. Not a header CTA. ─────────────────────────────────── */}
+      {!isCoach && primaryAction && mostImminentUnrsvpd ? (
+        <div className="flex min-h-11 items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-4 py-2 [box-shadow:var(--fw-shadow-card)]">
+          <span className="min-w-0">
+            <span className="block truncate font-fw-sans text-body-sm font-semibold text-text-primary">
+              {mostImminentUnrsvpd.title}
+            </span>
+            <span className="block font-fw-sans text-caption text-text-tertiary">Needs your reply</span>
+          </span>
+          <FwButton variant="primary" size="sm" onClick={primaryAction}>
+            {primaryActionLabel}
+          </FwButton>
+        </div>
       ) : null}
 
       {/* ── Range-fetch affordances (loading + retryable error ≠ empty) ──────── */}
@@ -1276,17 +1221,47 @@ export function FairwayCalendar({
         //    full create (hero "New event" → FairwayEventEditor) and edit/delete/
         //    restore (tap an event → Fairway drawer → Edit → FairwayEventEditor),
         //    all wired to the SAME server actions the legacy grid called.
-        <FairwayMonthGrid
-          events={events}
-          focusDate={focusDate}
-          nowRef={nowRef}
-          timezone={teamTimezone}
-          onEventClick={openDrawerForEvent}
-          onSelectDate={(d) => {
-            setFocusDate(d);
-            setView('day');
-          }}
-        />
+        <>
+          {/* Phone: the shared compact month (CalendarSurface) with the
+              selected day's schedule directly beneath it. Tapping a day only
+              moves the selection — the month stays on screen. */}
+          <div className="flex flex-col gap-4 md:hidden">
+            <FairwayMonthOverview
+              events={events}
+              selectedDate={focusDate}
+              nowRef={nowRef}
+              timezone={teamTimezone}
+              onSelectDate={(d) => setFocusDate(d)}
+              className="block w-full"
+            />
+            <FairwayAgendaView
+              events={events}
+              mode="day"
+              focusDate={focusDate}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onCreateEvent={isCoach ? handlePrimaryAction : undefined}
+              nowRef={nowRef}
+              isLoadingRange={isLoadingRange}
+            />
+          </div>
+          <div className="hidden md:block">
+            <FairwayMonthGrid
+              events={events}
+              focusDate={focusDate}
+              nowRef={nowRef}
+              selectedDate={focusDate}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onSelectDate={(d) => {
+                setFocusDate(d);
+                setView('day');
+              }}
+            />
+          </div>
+        </>
       ) : (
         // ── Week → a week-scoped agenda for BOTH roles (sparse golf calendars
         //    read better as a list than a time-grid). Opens the same Fairway

@@ -23,12 +23,11 @@ import * as React from 'react';
 import { format, isSameDay, addDays, startOfDay, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Surface, EmptyState, Button } from '@/components/fairway';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, History } from 'lucide-react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { eventDaySpan } from '@/lib/calendar/timezone';
 import { FairwayEventCard } from './FairwayEventCard';
-import surfaces from './CalendarSurfaces.module.css';
 
 export interface FairwayAgendaViewProps {
   events: CalendarEvent[];
@@ -197,7 +196,9 @@ export function FairwayAgendaView({
         : [],
     [buckets, mode, todayStartRef],
   );
-  const pastEventCount = pastBuckets.reduce((sum, b) => sum + b.events.length, 0);
+  // Counted as UNIQUE events, not day appearances: a three-day tournament in
+  // history is one earlier event, not three.
+  const pastEventCount = new Set(pastBuckets.flatMap((b) => b.events.map((e) => e.id))).size;
   // If EVERYTHING in range is past (the all-past demo season), collapsing would
   // leave an empty list under a "Show earlier" button — show them instead.
   const allPast = pastBuckets.length === buckets.length;
@@ -323,7 +324,7 @@ export function FairwayAgendaView({
 
   // ── Populated agenda ───────────────────────────────────────────────────────
   return (
-    <div className={cn('flex flex-col gap-6', className)}>
+    <div className={cn('flex flex-col gap-5', className)}>
       {/*
         Past days are COLLAPSED behind an explicit affordance in range mode.
         The agenda's fetch window runs from three months back (deliberately —
@@ -335,38 +336,17 @@ export function FairwayAgendaView({
         own header while keeping every past event one tap away.
       */}
       {mode === 'range' && pastBuckets.length > 0 ? (
-        // Centered, intrinsic-width control — matches the "Show N more" convention
-        // used elsewhere in Fairway (FairwayQualifiers' concluded-list expander:
-        // `<div className="flex justify-center ..."><Button variant="secondary">`).
-        //
-        // `secondary`, not `ghost` — a `ghost` Button is transparent at rest by
-        // design, and the `bg-surface-sunken` override this used to carry RECEDES
-        // below canvas in dark theme (a "well" cue that only reads correctly
-        // nested inside a lighter Surface). `secondary` is the Fairway "matte
-        // surface + warm hairline + shadow" recipe: bg-surface LIFTS off canvas
-        // in both themes (dark: surface L=0.228 vs canvas L=0.188; light:
-        // surface L=0.984 vs canvas L=0.953 — checked in design-tokens.css).
-        //
-        // That alone wasn't enough, though: this row previously stretched
-        // `w-full` across the ~1130px content column with a squared-off
-        // `rounded-fw-sm` corner radius. No other button in the app spans full
-        // content width, so at that width even a bordered/shadowed fill reads as
-        // a divider bar, not a control — regardless of variant. Letting the
-        // Button size to its own content (default `rounded-full` pill, no
-        // `w-full`) and centering it in a `flex justify-center` wrapper is what
-        // actually restores the button affordance.
-        <div className="flex justify-center">
+        // History is a secondary action: a quiet ghost control at the list's
+        // own gutter, never a raised chip competing with the schedule.
+        <div className="-mt-1 flex">
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            leftIcon={<History className="h-4 w-4" aria-hidden />}
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
-            className={cn(
-              'min-h-10 px-4 font-fw-sans text-body-sm font-semibold tracking-[0.01em] text-text-primary hover:bg-surface-sunken active:bg-surface-sunken',
-              surfaces.chipFloat,
-              surfaces.press,
-            )}
+            className="-ml-2"
           >
             {showPast
               ? 'Hide earlier events'
@@ -391,24 +371,25 @@ export function FairwayAgendaView({
               else bucketNodesRef.current.delete(bucket.key);
             }}
           >
-            {/* Day header — eyebrow rule + count. */}
-            <div className="mb-2.5 flex items-center gap-3 pl-0.5">
-              <p
+            {/* Day heading — aligned to the page gutter; a count only when
+                there is more than one thing to count. */}
+            <div className="mb-2 flex items-baseline gap-2">
+              <h2
                 className={cn(
-                  'font-fw-display text-body-sm font-semibold tracking-[-0.01em]',
+                  'font-fw-sans text-body-sm font-semibold',
                   bucketIsToday ? 'text-accent-700' : 'text-text-primary',
                 )}
               >
-                {bucketIsToday ? 'Today · ' : ''}
                 {bucket.label}
-              </p>
-              <span aria-hidden className="h-px flex-1 bg-border-subtle" />
-              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                {bucket.events.length} {bucket.events.length === 1 ? 'event' : 'events'}
-              </span>
+              </h2>
+              {bucket.events.length > 1 ? (
+                <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
+                  {bucket.events.length} events
+                </span>
+              ) : null}
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="overflow-hidden rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] divide-y divide-border-subtle">
               {bucket.events.map((ev, index) => (
                 <FairwayEventCard
                   key={ev.id}

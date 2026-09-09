@@ -81,6 +81,14 @@ export interface SegmentedProps<T extends string = string> {
    * meet the 44px touch-target minimum (WCAG 2.2 AA 2.5.8).
    */
   size?: 'sm' | 'md' | 'lg';
+  /**
+   * Quiet presentation (opt-in): one low-contrast track and one clearly
+   * selected segment — no carved inset shadow, no lifted thumb highlight, no
+   * indicator dot. For toolbars where the control should recede behind the
+   * content it switches (the calendar view selector). Selection, keyboard
+   * and haptic behavior are identical to the default.
+   */
+  quiet?: boolean;
   /** Stretch each segment to share the row equally. */
   fullWidth?: boolean;
   /** Accessible name for the group (maps to aria-label on the toggle group). */
@@ -183,6 +191,8 @@ export const TRACK_SUNKEN_SHADOW =
 const PILL_SHADOW = 'inset 0 1px 0 oklch(1 0 0 / 0.6), var(--fw-shadow-soft)';
 
 export interface SegmentedPillProps {
+  /** Quiet presentation: a flat surface pill, no highlight, no dot. */
+  quiet?: boolean;
   /**
    * Unique `layoutId` for the framer-motion shared-layout glide between
    * segments. `undefined` disables the animated travel (reduced motion: the
@@ -204,7 +214,19 @@ export interface SegmentedPillProps {
  * never participates in the host item's box model, so it can never cause a
  * sibling to reflow when the active segment changes.
  */
-export function SegmentedPill({ layoutId, reduceMotion }: SegmentedPillProps) {
+export function SegmentedPill({ layoutId, reduceMotion, quiet = false }: SegmentedPillProps) {
+  if (quiet) {
+    return (
+      <motion.span
+        layoutId={layoutId}
+        data-slot="fw-segment-pill"
+        data-quiet=""
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 rounded-md bg-surface shadow-flat dark:bg-accent-600"
+        transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 450, damping: 30, mass: 0.6 }}
+      />
+    );
+  }
   return (
     <motion.span
       layoutId={layoutId}
@@ -259,6 +281,7 @@ export function Segmented<T extends string = string>({
   onValueChange,
   size = 'md',
   fullWidth = false,
+  quiet = false,
   className,
   ...aria
 }: SegmentedProps<T>) {
@@ -309,8 +332,9 @@ export function Segmented<T extends string = string>({
       }}
       aria-label={aria['aria-label']}
       data-slot="fw-segmented"
-      style={{ ...fadeStyle, boxShadow: TRACK_SUNKEN_SHADOW }}
-      className={segmentedTrackClassName(size, fullWidth, className)}
+      data-quiet={quiet ? '' : undefined}
+      style={quiet ? fadeStyle : { ...fadeStyle, boxShadow: TRACK_SUNKEN_SHADOW }}
+      className={segmentedTrackClassName(size, fullWidth, cn(quiet && 'border-transparent', className))}
     >
       {options.map((opt) => {
         const selected = opt.value === value;
@@ -336,6 +360,7 @@ export function Segmented<T extends string = string>({
               <SegmentedPill
                 layoutId={reduceMotion ? undefined : `fw-segment-pill-${pillId}`}
                 reduceMotion={Boolean(reduceMotion)}
+                quiet={quiet}
               />
             )}
             {opt.icon && <span className="flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4">{opt.icon}</span>}

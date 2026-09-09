@@ -1,12 +1,6 @@
 /**
- * FairwayCalendarMemberRail — initials + scroll affordance.
- *
- *  - finding #85: a member whose name field carries a parenthetical role
- *    suffix (e.g. "(Captain)"/"(C)") rendered a garbled chip like "C(" from
- *    a raw `name?.[0]`, instead of two clean letter initials.
- *  - finding #123: the horizontal pill row hides its scrollbar with NO other
- *    cue that it continues past the viewport edge — it must show a scroll
- *    affordance when there's more content in that direction.
+ * FairwayCalendarMemberRail — the coach's compact people entry: a status
+ * line, a Compare picker, and a People menu (Everyone + open a schedule).
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -18,78 +12,47 @@ function member(overrides: Partial<TeamMember> & { id: string }): TeamMember {
   return { first_name: '', last_name: '', ...overrides };
 }
 
-describe('FairwayCalendarMemberRail — initials', () => {
-  it('renders clean two-letter initials for an ordinary name', () => {
+describe('FairwayCalendarMemberRail — the people entry', () => {
+  it('describes the team schedule and previews the roster without a portrait carousel', () => {
+    render(
+      <FairwayCalendarMemberRail
+        teamMembers={[member({ id: 'p1', first_name: 'Ava', last_name: 'Stone' }), member({ id: 'p2', first_name: 'Ben', last_name: 'Cortez' })]}
+        selectedPlayerIds={[]}
+        onSelect={vi.fn()}
+        onOpenPerson={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Team schedule')).toBeInTheDocument();
+    expect(screen.getByText('2 people')).toBeInTheDocument();
+    // A person is opened from the People menu, not from a tappable portrait.
+    expect(screen.queryByRole('button', { name: /Open Ava Stone/ })).not.toBeInTheDocument();
+  });
+
+  it('opens a person from the People menu', async () => {
+    const onOpenPerson = vi.fn();
     render(
       <FairwayCalendarMemberRail
         teamMembers={[member({ id: 'p1', first_name: 'Ava', last_name: 'Stone' })]}
         selectedPlayerIds={[]}
         onSelect={vi.fn()}
-      />,
-    );
-    expect(screen.getByText('AS')).toBeInTheDocument();
-  });
-
-  it('degrades gracefully instead of rendering a garbled "C(" when a name field is a bare role tag (finding #85)', () => {
-    render(
-      <FairwayCalendarMemberRail
-        // A roster whose last_name field carries only a role tag with no
-        // real surname reproduces the exact reported garble: a raw
-        // `last_name?.[0]` grabs the tag's opening "(" verbatim, pairing
-        // with the first initial to render "C(".
-        teamMembers={[member({ id: 'p1', first_name: 'Cam', last_name: '(Captain)' })]}
-        selectedPlayerIds={[]}
-        onSelect={vi.fn()}
-      />,
-    );
-    expect(screen.queryByText('C(')).not.toBeInTheDocument();
-    expect(screen.getByText('C')).toBeInTheDocument();
-  });
-
-  it('renders two clean initials when a role suffix trails a real surname', () => {
-    render(
-      <FairwayCalendarMemberRail
-        teamMembers={[member({ id: 'p1', first_name: 'Cam', last_name: 'Cortez (Captain)' })]}
-        selectedPlayerIds={[]}
-        onSelect={vi.fn()}
-      />,
-    );
-    expect(screen.getByText('CC')).toBeInTheDocument();
-  });
-
-  it('falls back to an em dash when neither name yields a letter', () => {
-    render(
-      <FairwayCalendarMemberRail
-        teamMembers={[member({ id: 'p1', first_name: '', last_name: '' })]}
-        selectedPlayerIds={[]}
-        onSelect={vi.fn()}
-      />,
-    );
-    expect(screen.getByText('—')).toBeInTheDocument();
-  });
-});
-
-describe('FairwayCalendarMemberRail — an avatar always opens the person, never a toggle', () => {
-  it('calls onOpenPerson on click, regardless of selection state', async () => {
-    const onOpenPerson = vi.fn();
-    const onSelect = vi.fn();
-    const roster = [member({ id: 'p1', first_name: 'Ava', last_name: 'Stone' })];
-    render(
-      <FairwayCalendarMemberRail
-        teamMembers={roster}
-        selectedPlayerIds={['p1']}
         onOpenPerson={onOpenPerson}
-        onSelect={onSelect}
       />,
     );
-
-    const person = screen.getByRole('button', { name: /Open Ava Stone's schedule/ });
-    expect(person).not.toHaveAttribute('aria-pressed');
-    await userEvent.click(person);
+    await userEvent.click(screen.getByRole('button', { name: 'People' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Ava Stone/ }));
     expect(onOpenPerson).toHaveBeenCalledWith('p1');
-    // An avatar click never mutates the comparison selection any more — that
-    // now happens only through the picker (below) or the ALL toggle.
-    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('names who is being compared and in which colors', () => {
+    render(
+      <FairwayCalendarMemberRail
+        teamMembers={[member({ id: 'p1', first_name: 'Ava', last_name: 'Stone' }), member({ id: 'p2', first_name: 'Ben', last_name: 'Cortez' })]}
+        selectedPlayerIds={['p2']}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Comparing 1')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'People in this comparison' })).toHaveTextContent('Ben');
   });
 });
 
@@ -154,7 +117,8 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
     );
     render(<FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={[]} onSelect={onSelect} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'All' }));
+    await userEvent.click(screen.getByRole('button', { name: 'People' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Everyone' }));
 
     expect(onSelect).toHaveBeenCalledWith(roster.map((m) => m.id));
   });
@@ -166,7 +130,8 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
     );
     render(<FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={[]} onSelect={onSelect} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'All' }));
+    await userEvent.click(screen.getByRole('button', { name: 'People' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Everyone' }));
 
     expect(onSelect).toHaveBeenCalledWith(roster.map((m) => m.id));
     expect(onSelect.mock.calls[0]![0]).toHaveLength(12);
@@ -181,7 +146,8 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
       <FairwayCalendarMemberRail teamMembers={roster} selectedPlayerIds={['p0', 'p2']} onSelect={onSelect} />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'All' }));
+    await userEvent.click(screen.getByRole('button', { name: 'People' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Everyone' }));
 
     expect(onSelect).toHaveBeenCalledWith(roster.map((m) => m.id));
   });
@@ -199,7 +165,8 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
       />,
     );
 
-    const allButton = screen.getByRole('button', { name: 'All' });
+    await userEvent.click(screen.getByRole('button', { name: 'People' }));
+    const allButton = await screen.findByRole('button', { name: 'Stop comparing everyone' });
     expect(allButton).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(allButton);
 
@@ -224,7 +191,7 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
     expect(onSelect).toHaveBeenCalledWith([]);
   });
 
-  it('does not disable or grey out any chip once ALL has pushed the selection past the 8-member cap', () => {
+  it('still names every compared person once ALL has pushed the selection past the 8-member cap', () => {
     const roster = Array.from({ length: 10 }, (_, i) =>
       member({ id: `p${i}`, first_name: `First${i}`, last_name: `Last${i}` }),
     );
@@ -235,12 +202,9 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
         onSelect={vi.fn()}
       />,
     );
-    for (const m of roster) {
-      const chip = screen.getByRole('button', { name: new RegExp(`${m.first_name} ${m.last_name}\\b`) });
-      expect(chip).not.toHaveAttribute('aria-disabled', 'true');
-    }
-    // The 8-cap notice is specific to the manual-selection cap; it must not
-    // appear once ALL has intentionally exceeded it.
+    const legend = screen.getByRole('list', { name: 'People in this comparison' });
+    for (const m of roster) expect(legend).toHaveTextContent(m.first_name!);
+    expect(screen.getByText('Comparing everyone')).toBeInTheDocument();
     expect(screen.queryByText(/clear one to swap/i)).not.toBeInTheDocument();
   });
 
@@ -249,17 +213,4 @@ describe('FairwayCalendarMemberRail — ALL shows the whole team, not less than 
   // avatar always opens the person" above) — the equivalent guarantee for
   // its replacement lives in `people/__tests__/CalendarPeoplePicker.test.tsx`
   // ("does not block selecting more than eight people").
-});
-
-describe('FairwayCalendarMemberRail — scroll affordance (finding #123)', () => {
-  it('renders the scrollable rail without asserting a hard visual cutoff', () => {
-    const members = Array.from({ length: 12 }, (_, i) => member({ id: `p${i}`, first_name: `P${i}`, last_name: 'X' }));
-    render(<FairwayCalendarMemberRail teamMembers={members} selectedPlayerIds={[]} onSelect={vi.fn()} />);
-    // jsdom reports 0 for scrollWidth/clientWidth, so the edge indicators
-    // don't light up here — this test only guards that the scroller mounts
-    // and every member's chip is present. The affordance's on/off state is a
-    // measured-layout behavior, exercised visually (see the component's
-    // documented rationale) rather than re-derived in jsdom.
-    expect(screen.getAllByRole('button').length).toBeGreaterThan(members.length);
-  });
 });

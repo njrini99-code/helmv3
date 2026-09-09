@@ -2,29 +2,29 @@
 
 /**
  * ============================================================================
- * Fairway · Calendar · FairwayCalendarHero
+ * Fairway · Calendar · FairwayCalendarHero — the calendar's toolbar
  * ----------------------------------------------------------------------------
- * The calendar's chrome: ONE frosted champagne instrument (DESIGN-PLAN.md §5,
- * §18 "a calm daily briefing") that holds the month title, an HONEST status
- * line from real counts, Prev/Today/Next, the single primary action, the week
- * strip, and — at md+ — the view switcher and the secondary actions. On a
- * phone the secondary actions live in an anchored "More" menu so the first
- * viewport reaches the first useful event.
+ * Two quiet rows on the shared chrome material, sticky under the app header:
  *
- * HONEST status line (no fabricated numbers):
- *   - upcomingCount > 0 → "{n} upcoming · {m} this {week|month}" (tabular-nums)
- *   - upcomingCount === 0 → "No upcoming events" (NO invented count).
+ *   1. Title row   — month/date context · "Today" (only when away from it) ·
+ *                    More (phone) · the ONE primary action.
+ *   2. Control row — the explicit view selector (Fairway Segmented) and the
+ *                    previous / next pair. At xl+ (a wide desktop stage) the secondary actions sit
+ *                    here as quiet ghost pills instead of behind More.
+ *   3. Day strip   — Day view only, where a week of nearby dates is exactly
+ *                    the scope on screen. Agenda, Week and Month do not show
+ *                    a strip that would misstate their scope.
  *
- * ONE PRIMARY ACTION:
- *   - coach  → "New event" (a round "+" on the phone, a labelled Button at md+).
- *   - player → "Respond" on the most-imminent un-RSVP'd event; absent when
- *     there is nothing to respond to (no fake CTA).
+ * Material comes from the shell (`fw-glass-chrome`, with its own opaque
+ * reduced-transparency fallback). Nothing here glows, washes or floats on
+ * its own; every control is the shared Fairway primitive in its shared state.
  *
- * HYDRATION: `nowRef` is parent-owned (serverNow→nowRef). "Today" highlight uses
+ * The player's "Respond" action is NOT a header CTA — it is rendered by the
+ * parent as a contextual row beside the schedule, when there is something to
+ * respond to.
+ *
+ * HYDRATION: `nowRef` is parent-owned (serverNow→nowRef). "Today" uses
  * isSameDay(focusDate, nowRef), never Date.now().
- *
- * GOTCHA (a): nav arrows are Fairway IconButton / the primary is Fairway Button
- * (both native <button>s) — never `Surface as="button"`.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -33,8 +33,6 @@ import {
   AlertTriangle,
   CalendarClock,
   CalendarPlus,
-  Check,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
@@ -45,7 +43,6 @@ import { Button, IconButton, PopoverPanel, Segmented } from '@/components/fairwa
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayDayStrip } from './FairwayDayStrip';
-import surfaces from './CalendarSurfaces.module.css';
 
 export type FairwayCalendarViewId = 'day' | 'week' | 'month' | 'agenda';
 
@@ -56,38 +53,22 @@ export interface FairwayCalendarHeroProps {
   events: CalendarEvent[];
   /** Parent-owned reference "now" (seeded from serverNow). */
   nowRef: Date;
-  /** Total events with a start at/after serverNow (page-derived, stable). */
-  upcomingCount: number;
-  /** Events inside the currently visible window (this week / month). */
-  windowCount: number;
-  /** Whether the active lens is the month grid (affects the "this …" label). */
-  isMonthView: boolean;
-  /** Whether the active lens is the agenda (wide range — label changes to "in view"). */
-  isAgendaView?: boolean;
-  /**
-   * Whether the active lens is the single Day view — labels the window
-   * "today". Day view reuses the week fetch buffer internally, so without
-   * its own branch it fell through to "this week" for a one-day window.
-   */
+  /** Whether the active lens is the single Day view (shows the day strip). */
   isDayView?: boolean;
   isCoach: boolean;
   /** Prev / Next / Today. */
   onNavigate: (direction: 'prev' | 'next' | 'today') => void;
   /** Day-strip tap. */
   onSelectDate: (date: Date) => void;
-  /**
-   * Team timezone for the day-strip density dots (IANA). `null` → the
-   * default team zone inside the strip.
-   */
+  /** Team timezone for the day-strip density dots (IANA). */
   teamTimezone?: string | null;
   /**
-   * The ONE primary action. Coach → create; player → respond to the most
-   * imminent un-RSVP'd event. `undefined` renders no CTA (demo / nothing to do).
+   * The coach's ONE primary action (create). Players get no header CTA —
+   * their response action lives beside the schedule (see parent).
    */
   onPrimaryAction?: () => void;
-  /** Override the CTA label (defaults: coach "New event", player "Respond"). */
   primaryActionLabel?: string;
-  /** View switcher — rendered inside the chrome at every width. */
+  /** View switcher. */
   view?: FairwayCalendarViewId;
   viewOptions?: ReadonlyArray<{ value: FairwayCalendarViewId; label: string }>;
   onViewChange?: (view: FairwayCalendarViewId) => void;
@@ -105,10 +86,6 @@ export function FairwayCalendarHero({
   selectedDate,
   events,
   nowRef,
-  upcomingCount,
-  windowCount,
-  isMonthView,
-  isAgendaView = false,
   isDayView = false,
   isCoach,
   onNavigate,
@@ -125,23 +102,9 @@ export function FairwayCalendarHero({
   onAvailability,
   conflictCount = null,
 }: FairwayCalendarHeroProps) {
-  const monthTitle = format(focusDate, 'MMMM yyyy');
+  const title = isDayView ? format(focusDate, 'EEEE, MMMM d') : format(focusDate, 'MMMM yyyy');
   const focusIsToday = isSameDay(focusDate, nowRef);
-  // Agenda lens spans ±3 months — "this week/month" is misleading; use "in view".
-  // Each lens owns its OWN full phrase (not a noun the sentence re-prefixes
-  // with "this ") so there is no seam where a second "this" can sneak in and
-  // no fallthrough where an un-handled lens silently inherits another lens's
-  // wording. Day view reuses the week fetch buffer internally — that
-  // implementation detail must never leak into this label.
-  const windowLabel = isAgendaView
-    ? 'in view'
-    : isMonthView
-      ? 'this month'
-      : isDayView
-        ? 'today'
-        : 'this week';
-
-  const ctaLabel = primaryActionLabel ?? (isCoach ? 'New event' : 'Respond');
+  const ctaLabel = primaryActionLabel ?? 'New event';
   const hasViews = Boolean(view && viewOptions && onViewChange);
   const conflictsLabel =
     conflictCount && conflictCount > 0 ? `Conflicts (${conflictCount})` : 'Conflicts';
@@ -161,297 +124,130 @@ export function FairwayCalendarHero({
       : null,
   ].filter((action): action is NonNullable<typeof action> => action !== null);
 
+  const stepLabel = view === 'month' ? 'month' : view === 'day' ? 'day' : 'week';
+
   return (
     <section
       aria-label="Calendar controls"
       className={cn(
-        // Sticky chrome: the agenda, rail and grids scroll UNDER this glass.
-        // Sits just below the top bar + hub sub-nav (AppShell publishes both
-        // offsets) and beneath the sub-nav's z-raised.
-        'sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9] overflow-hidden',
-        // Phone: a full-bleed glass band under the app chrome (hairline
-        // below, no card frame). md+: the framed instrument.
-        '-mx-4 border-b px-4 pb-3 pt-3 md:mx-0 md:rounded-fw-lg md:border md:p-4',
-        surfaces.chrome,
-        surfaces.enter,
+        // Sticky under the app header + hub sub-nav (AppShell publishes both
+        // offsets). The shell's chrome material keeps scrolled rows from
+        // reading as ghost text behind the controls.
+        'fw-glass-chrome sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9]',
+        '-mx-4 border-b px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3',
       )}
     >
-      {/* A quiet emerald breath at the top-right so the glass has light to refract. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-accent-500/10 blur-3xl"
-      />
-
-      <div className="relative flex flex-row items-start gap-2 md:flex-row md:flex-wrap md:items-center md:gap-4">
-        {/* Title column — month + honest status line. `md:min-w-[260px]` gives
-            the row something to wrap AROUND at tablet widths so the control
-            cluster drops to its own line instead of squeezing the title. */}
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-initial md:min-w-[260px]">
-          {hasViews ? (
-            // Phone: the month title is the way into (and out of) the month
-            // grid — the segmented switcher is a desktop-only control.
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onViewChange!(isMonthView ? 'agenda' : 'month')}
-              aria-expanded={isMonthView}
-              aria-label={isMonthView ? `${monthTitle} — back to agenda` : `${monthTitle} — show month grid`}
-              className={cn(
-                '-ml-1 h-auto min-h-0 w-auto max-w-full justify-start gap-1 rounded-fw-sm px-1 py-0 text-left hover:bg-transparent active:bg-transparent md:hidden',
-                '[&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-1',
-                surfaces.press,
-              )}
-            >
-              <span className="min-w-0 truncate font-fw-display text-[1.25rem] font-semibold leading-[1.15] tracking-[-0.02em] text-text-primary">
-                {monthTitle}
-              </span>
-              <ChevronDown
-                aria-hidden
-                className={cn('h-4 w-4 flex-shrink-0 text-text-tertiary transition-transform motion-reduce:transition-none', isMonthView && 'rotate-180')}
-              />
-            </Button>
-          ) : null}
-          <h1
-            className={cn(
-              'font-fw-display text-[1.375rem] font-semibold leading-[1.15] tracking-[-0.02em] text-text-primary md:text-h2 [text-wrap:balance]',
-              hasViews && 'sr-only md:not-sr-only',
-            )}
-          >
-            {monthTitle}
-          </h1>
-          {upcomingCount > 0 ? (
-            <p className="whitespace-nowrap font-fw-sans text-caption leading-[1.4] text-text-secondary">
-              <span className="font-fw-mono tabular-nums">{upcomingCount}</span>
-              {' upcoming · '}
-              <span className="font-fw-mono tabular-nums">{windowCount}</span>
-              {` ${windowLabel}`}
-              {!focusIsToday ? (
-                <>
-                  {' · '}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onNavigate('today')}
-                    className="inline h-auto min-h-0 w-auto rounded-none border-0 p-0 align-baseline font-fw-sans text-caption font-semibold text-accent-700 hover:bg-transparent hover:underline md:hidden"
-                  >
-                    Today
-                  </Button>
-                </>
-              ) : null}
-            </p>
-          ) : (
-            <p className="font-fw-sans text-caption leading-[1.4] text-text-tertiary">
-              No upcoming events
-              {!focusIsToday ? (
-                <>
-                  {' · '}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onNavigate('today')}
-                    className="inline h-auto min-h-0 w-auto rounded-none border-0 p-0 align-baseline font-fw-sans text-caption font-semibold text-accent-700 hover:bg-transparent hover:underline md:hidden"
-                  >
-                    Today
-                  </Button>
-                </>
-              ) : null}
-            </p>
-          )}
-        </div>
-
-        {/* Control cluster — nav, the ONE primary action, and (phone) the
-            anchored More menu. Flush right at md+ whether it shares the title
-            row or wraps below it. */}
-        <div className="ml-auto flex flex-shrink-0 items-center gap-0 md:ml-auto md:flex md:gap-2">
-          <IconButton
-            variant="ghost"
-            size="sm"
-            aria-label="Previous"
-            onClick={() => onNavigate('prev')}
-            className={cn('md:hidden', surfaces.press)}
-          >
-            <ChevronLeft />
-          </IconButton>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            aria-label="Next"
-            onClick={() => onNavigate('next')}
-            className={cn('md:hidden', surfaces.press)}
-          >
-            <ChevronRight />
-          </IconButton>
-          <IconButton
-            variant="secondary"
-            size="md"
-            aria-label="Previous"
-            onClick={() => onNavigate('prev')}
-            className={cn('hidden md:inline-flex', surfaces.press)}
-          >
-            <ChevronLeft />
-          </IconButton>
-          <Button
-            variant={focusIsToday ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => onNavigate('today')}
-            aria-pressed={focusIsToday}
-            className={cn('hidden md:inline-flex', surfaces.press)}
-          >
+      {/* Row 1 — title and the primary action. */}
+      <div className="flex items-center gap-1.5 md:gap-2">
+        <h1 className="min-w-0 flex-1 truncate font-fw-sans text-h3 font-semibold text-text-primary md:text-h2">
+          {title}
+        </h1>
+        {!focusIsToday ? (
+          <Button variant="ghost" size="sm" onClick={() => onNavigate('today')}>
             Today
           </Button>
-          <IconButton
-            variant="secondary"
-            size="md"
-            aria-label="Next"
-            onClick={() => onNavigate('next')}
-            className={cn('hidden md:inline-flex', surfaces.press)}
+        ) : null}
+        {secondaryActions.length > 0 ? (
+          <PopoverPanel
+            open={moreOpen}
+            onOpenChange={setMoreOpen}
+            side="bottom"
+            align="end"
+            width="sm"
+            ariaLabel="More calendar actions"
+            trigger={
+              <IconButton variant="ghost" size="sm" aria-label="More calendar actions" className="xl:hidden">
+                <MoreHorizontal />
+              </IconButton>
+            }
           >
+            {secondaryActions.map((action) => (
+              <PopoverPanel.Item
+                key={action.key}
+                onClick={() => {
+                  setMoreOpen(false);
+                  action.run();
+                }}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="text-text-tertiary">{action.icon}</span>
+                  {action.label}
+                </span>
+              </PopoverPanel.Item>
+            ))}
+          </PopoverPanel>
+        ) : null}
+        {onPrimaryAction && isCoach ? (
+          <>
+            <IconButton
+              variant="primary"
+              size="md"
+              aria-label={ctaLabel}
+              onClick={onPrimaryAction}
+              className="md:hidden"
+            >
+              <Plus />
+            </IconButton>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={onPrimaryAction}
+              leftIcon={<Plus />}
+              className="hidden md:inline-flex"
+            >
+              {ctaLabel}
+            </Button>
+          </>
+        ) : null}
+      </div>
+
+      {/* Row 2 — the explicit view selector and stepping. */}
+      <div className="mt-2 flex items-center gap-2">
+        {hasViews ? (
+          <div className="min-w-0 flex-1 md:flex-none">
+            <Segmented<FairwayCalendarViewId>
+              options={viewOptions!}
+              value={view!}
+              onValueChange={onViewChange!}
+              size="sm"
+              fullWidth
+              quiet
+              aria-label="Calendar view"
+              className="md:w-auto"
+            />
+          </div>
+        ) : null}
+        <div className="flex shrink-0 items-center gap-0.5">
+          <IconButton variant="ghost" size="sm" aria-label={`Previous ${stepLabel}`} onClick={() => onNavigate('prev')}>
+            <ChevronLeft />
+          </IconButton>
+          <IconButton variant="ghost" size="sm" aria-label={`Next ${stepLabel}`} onClick={() => onNavigate('next')}>
             <ChevronRight />
           </IconButton>
-
-          {secondaryActions.length > 0 || hasViews ? (
-            <PopoverPanel
-              open={moreOpen}
-              onOpenChange={setMoreOpen}
-              side="bottom"
-              align="end"
-              width="sm"
-              ariaLabel="More calendar actions"
-              trigger={
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  aria-label="More calendar actions"
-                  className={cn('md:hidden', surfaces.press)}
-                >
-                  <MoreHorizontal />
-                </IconButton>
-              }
-            >
-              {hasViews ? (
-                <>
-                  <PopoverPanel.Header>View</PopoverPanel.Header>
-                  {viewOptions!.map((option) => (
-                    <PopoverPanel.Item
-                      key={option.value}
-                      role="menuitemradio"
-                      aria-checked={option.value === view}
-                      onClick={() => {
-                        setMoreOpen(false);
-                        onViewChange!(option.value);
-                      }}
-                    >
-                      <span className="flex w-full items-center justify-between gap-2.5">
-                        {option.label}
-                        {option.value === view ? <Check className="h-4 w-4 text-accent-700" aria-hidden /> : null}
-                      </span>
-                    </PopoverPanel.Item>
-                  ))}
-                  {secondaryActions.length > 0 ? <PopoverPanel.Separator /> : null}
-                </>
-              ) : null}
-              {secondaryActions.map((action) => (
-                <PopoverPanel.Item
-                  key={action.key}
-                  onClick={() => {
-                    setMoreOpen(false);
-                    action.run();
-                  }}
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className="text-text-tertiary">{action.icon}</span>
-                    {action.label}
-                  </span>
-                </PopoverPanel.Item>
-              ))}
-            </PopoverPanel>
-          ) : null}
-
-          {onPrimaryAction ? (
-            <>
-              {/* Phone: a round "+" for coaches (one primary action, no wide
-                  band); players keep the labelled "Respond" chip. */}
-              {isCoach ? (
-                <IconButton
-                  variant="primary"
-                  size="md"
-                  aria-label={ctaLabel}
-                  onClick={onPrimaryAction}
-                  className={cn('ml-1 md:hidden', surfaces.glow, surfaces.press)}
-                >
-                  <Plus />
-                </IconButton>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={onPrimaryAction}
-                  className={cn('ml-1 md:hidden', surfaces.glow, surfaces.press)}
-                >
-                  {ctaLabel}
-                </Button>
-              )}
-              <Button
-                variant="primary"
-                size="md"
-                onClick={onPrimaryAction}
-                leftIcon={isCoach ? <Plus /> : undefined}
-                className={cn('ml-1 hidden md:inline-flex', surfaces.selected, surfaces.press)}
-              >
-                {ctaLabel}
-              </Button>
-            </>
-          ) : null}
         </div>
+        {secondaryActions.length > 0 ? (
+          <div className="ml-auto hidden items-center gap-1 xl:flex">
+            {secondaryActions.map((action) => (
+              <Button key={action.key} variant="ghost" size="sm" leftIcon={action.icon} onClick={action.run}>
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
-      {/* Week strip — the second row of the instrument. On a phone the month
-          grid already shows every day, so the strip steps aside there. */}
-      <div className={cn('relative mt-2.5 md:mt-3', isMonthView && 'max-md:hidden')}>
-        <FairwayDayStrip
-          focusDate={focusDate}
-          selectedDate={selectedDate}
-          events={events}
-          nowRef={nowRef}
-          teamTimezone={teamTimezone}
-          onSelectDate={onSelectDate}
-          onSwipe={(direction) => onNavigate(direction)}
-        />
-      </div>
-
-      {/* Third row — the view switcher (every width) and, at md+, the
-          secondary actions as quiet labelled pills. */}
-      {hasViews || secondaryActions.length > 0 ? (
-        <div className="relative mt-3 hidden items-center gap-2 md:flex">
-          {hasViews ? (
-            <div className="min-w-0 flex-1 md:flex-none">
-              <Segmented<FairwayCalendarViewId>
-                options={viewOptions!}
-                value={view!}
-                onValueChange={onViewChange!}
-                size="sm"
-                fullWidth
-                aria-label="Calendar view"
-                className="md:w-auto"
-              />
-            </div>
-          ) : null}
-          {secondaryActions.length > 0 ? (
-            <div className="hidden flex-wrap items-center gap-1.5 md:ml-auto md:flex">
-              {secondaryActions.map((action) => (
-                <Button
-                  key={action.key}
-                  variant="ghost"
-                  size="sm"
-                  leftIcon={action.icon}
-                  onClick={action.run}
-                  className={cn('rounded-full', surfaces.press)}
-                >
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          ) : null}
+      {/* Row 3 — Day view only: the week around the selected day. */}
+      {isDayView ? (
+        <div className="mt-2">
+          <FairwayDayStrip
+            focusDate={focusDate}
+            selectedDate={selectedDate}
+            events={events}
+            nowRef={nowRef}
+            teamTimezone={teamTimezone}
+            onSelectDate={onSelectDate}
+            onSwipe={(direction) => onNavigate(direction)}
+          />
         </div>
       ) : null}
     </section>

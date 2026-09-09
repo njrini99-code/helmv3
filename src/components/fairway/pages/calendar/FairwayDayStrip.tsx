@@ -40,7 +40,6 @@
 import * as React from 'react';
 import { startOfWeek, addDays, isSameDay, isBefore, format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import surfaces from './CalendarSurfaces.module.css';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Button } from '@/components/fairway/controls/button';
 import { fwHaptic } from '@/lib/fairway/haptics';
@@ -227,10 +226,7 @@ export function FairwayDayStrip({
               'transition-[background-color,box-shadow,transform,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'motion-reduce:transition-none',
-              'bg-transparent hover:bg-surface/60 active:translate-y-0',
-              surfaces.press,
-              // Selected — the emerald disc below carries the fill; the cell
-              // itself stays glass-clear so the strip reads as one instrument.
+              'bg-transparent hover:bg-surface-sunken active:translate-y-0',
               dayIsSelected && 'text-text-primary',
             )}
           >
@@ -259,10 +255,11 @@ export function FairwayDayStrip({
                   Selected = the emerald fill; today = a quiet ring. */}
               <span
                 className={cn(
-                  // A 40px rounded square: the reference's selected-day tile.
-                  'grid h-10 w-10 place-items-center rounded-lg font-fw-sans text-[1.0625rem] font-semibold leading-none tabular-nums transition-[background-color,color,transform] motion-reduce:transition-none',
-                  dayIsSelected && cn('text-text-on-accent', surfaces.selected),
-                  !dayIsSelected && dayIsToday && 'text-accent-700',
+                  // One date-state vocabulary shared with the month grid:
+                  // selected = solid accent fill; today = a quiet accent ring.
+                  'grid h-9 w-9 place-items-center rounded-full font-fw-sans text-body font-semibold leading-none tabular-nums transition-[background-color,color] motion-reduce:transition-none',
+                  dayIsSelected && 'bg-accent-650 text-text-on-accent',
+                  !dayIsSelected && dayIsToday && 'ring-1 ring-inset ring-accent-650 text-accent-700',
                   dayIsSelected
                     ? 'text-text-on-accent'
                     : dayIsToday

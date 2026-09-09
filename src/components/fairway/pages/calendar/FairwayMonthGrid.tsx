@@ -33,12 +33,11 @@ import {
 } from 'date-fns';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button, PressTarget } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { formatEventTimeCompact, zonedMidnight, eventDaySpan } from '@/lib/calendar/timezone';
-import { typeMeta } from './FairwayEventCard';
-import surfaces from './CalendarSurfaces.module.css';
+import { typeMeta } from './eventPresentation';
 import { tintFor } from './FairwayCalendarMemberRail';
 
 /** A color-coded busy period for the coach availability overlay. */
@@ -58,6 +57,8 @@ export interface FairwayMonthGridProps {
   focusDate: Date;
   /** Parent-owned "today" (seeded from serverNow then promoted client-side). */
   nowRef?: Date;
+  /** The user's selected date, if any — filled marker; today gets a quiet ring. */
+  selectedDate?: Date;
   /**
    * Team's canonical IANA timezone — chip times render anchored to this zone
    * so they agree with the Agenda row and detail drawer (audit W1: cal-tz).
@@ -107,6 +108,7 @@ export function FairwayMonthGrid({
   events,
   focusDate,
   nowRef,
+  selectedDate,
   timezone,
   overlays,
   onEventClick,
@@ -178,9 +180,9 @@ export function FairwayMonthGrid({
   }, [events, overlays, overlayMode, timezone, days]);
 
   return (
-    <div className={cn("overflow-hidden rounded-card", surfaces.paper)}>
+    <div className="overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
       {/* Weekday header */}
-      <div className="grid grid-cols-7 border-b border-border-subtle bg-surface-sunken">
+      <div className="grid grid-cols-7 border-b border-border-subtle bg-surface">
         {WEEKDAYS.map((d) => (
           <div
             key={d}
@@ -213,6 +215,8 @@ export function FairwayMonthGrid({
           const items = byDay.get(key) ?? [];
           const inMonth = isSameMonth(day, focusDate);
           const isToday = nowRef ? isSameDay(day, nowRef) : false;
+          const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
+          const dayLabel = format(day, 'EEEE, MMMM d');
           const overflow = items.length - MAX_CHIPS;
           const dotTones: FwStatusTone[] = [];
           for (const item of items) {
@@ -224,24 +228,18 @@ export function FairwayMonthGrid({
           return (
             <div
               key={key}
-              className={cn(
-                'relative flex h-full flex-col gap-1 overflow-hidden p-1.5',
-                inMonth ? 'bg-surface' : 'bg-surface-sunken/40',
-              )}
+              className="relative flex h-full flex-col gap-1 overflow-hidden bg-surface p-1.5"
             >
-              {/* Phone: the whole cell is the tap target (the 44px day
-                  button below stays for sm+ and for AT users everywhere). */}
+              {/* Phone: ONE day action — the whole cell, named with the date
+                  and what is on it. At sm+ this is replaced by the 44px day
+                  number below, so each viewport has exactly one day target. */}
               {onSelectDate ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  tabIndex={-1}
-                  aria-hidden
+                <PressTarget
                   onClick={() => onSelectDate(day)}
-                  className="absolute inset-0 z-0 h-auto min-h-0 w-auto rounded-none border-0 bg-transparent p-0 hover:bg-transparent active:bg-surface-tint sm:hidden"
-                >
-                  {null}
-                </Button>
+                  aria-label={`${dayLabel}, ${items.length === 0 ? 'nothing scheduled' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}`}
+                  aria-current={isSelected ? 'date' : undefined}
+                  className="absolute inset-0 z-0 rounded-none focus-visible:ring-inset focus-visible:ring-offset-0 sm:hidden"
+                />
               ) : null}
               {items.length > 0 ? (
                 <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center gap-1 sm:hidden">
@@ -256,29 +254,48 @@ export function FairwayMonthGrid({
                   anchored top-left (`items-start justify-start`) so it overlaps
                   invisibly into the cell's own padding/chip-list space instead of
                   shifting the visible number — only the tap target grows. */}
-              <Button
-                type="button"
-                variant="ghost"
-                haptic="none"
+              <PressTarget
                 onClick={onSelectDate ? () => onSelectDate(day) : undefined}
-                aria-label={format(day, 'EEEE, MMMM d')}
-                className="group pointer-events-none relative z-10 flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-start justify-start self-start rounded-full p-0 hover:bg-transparent active:bg-transparent sm:pointer-events-auto"
+                aria-label={dayLabel}
+                aria-current={isSelected ? 'date' : undefined}
+                className="group pointer-events-none relative z-10 flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-start justify-start self-start rounded-full p-0 max-sm:sr-only sm:pointer-events-auto"
                 suppressHydrationWarning
               >
                 <span
                   aria-hidden
                   className={cn(
+                    // Same date-state vocabulary as the week strip: selected =
+                    // solid accent fill, today = a quiet accent ring; when
+                    // today is selected the fill wins.
                     'flex h-6 w-6 items-center justify-center rounded-full font-fw-sans text-caption font-semibold tabular-nums transition-colors',
-                    isToday
+                    isSelected
                       ? 'bg-accent-650 text-text-on-accent'
-                      : inMonth
-                        ? 'text-text-secondary group-hover:bg-surface-tint group-active:bg-surface-tint'
-                        : 'text-text-tertiary group-hover:bg-surface-tint group-active:bg-surface-tint',
+                      : isToday
+                        ? 'ring-1 ring-inset ring-accent-650 text-accent-700'
+                        : inMonth
+                          ? 'text-text-secondary [@media(hover:hover)]:group-hover:bg-surface-sunken'
+                          : 'text-text-tertiary',
                   )}
                 >
                   {format(day, 'd')}
                 </span>
-              </Button>
+              </PressTarget>
+              {/* Phone: the visible date, painted by the cell target above. */}
+              <span
+                aria-hidden
+                className={cn(
+                  'pointer-events-none flex h-6 w-6 items-center justify-center rounded-full font-fw-sans text-caption font-semibold tabular-nums sm:hidden',
+                  isSelected
+                    ? 'bg-accent-650 text-text-on-accent'
+                    : isToday
+                      ? 'ring-1 ring-inset ring-accent-650 text-accent-700'
+                      : inMonth
+                        ? 'text-text-primary'
+                        : 'text-text-tertiary',
+                )}
+              >
+                {format(day, 'd')}
+              </span>
 
               {/* Chips — `min-h-0` lets this region shrink below its content
                   size (the default flex-item floor would otherwise fight the
@@ -328,11 +345,8 @@ export function FairwayMonthGrid({
                   // compact month chip, so the tint swap carries the signal.
                   const isCancelled = e.status === 'cancelled';
                   return (
-                    <Button
+                    <PressTarget
                       key={e.id}
-                      type="button"
-                      variant="ghost"
-                      haptic="none"
                       onClick={onEventClick ? () => onEventClick(e) : undefined}
                       title={[
                         e.owner_label ? `${e.owner_label} — ` : '',
@@ -369,7 +383,7 @@ export function FairwayMonthGrid({
                         </span>
                       ) : null}
                       <span className="min-w-0 flex-1 truncate">{e.title}</span>
-                    </Button>
+                    </PressTarget>
                   );
                 })}
 
@@ -377,7 +391,6 @@ export function FairwayMonthGrid({
                   <Button
                     type="button"
                     variant="ghost"
-                    haptic="none"
                     onClick={onSelectDate ? () => onSelectDate(day) : undefined}
                     // `py-1` matches the event/overlay chip rows above (they
                     // set it explicitly; this button fell through to the
