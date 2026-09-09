@@ -4,7 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { Tables } from '@/lib/types/database';
@@ -647,32 +647,31 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
   return (
     <AnimatedPage>
-      <AnimatedItem>
-        <RoundTypeEditor
-          roundId={id}
-          currentType={round.round_type}
-          currentQualifierId={round.qualifier_id}
-          currentQualifierRoundNumber={round.qualifier_round_number}
-          qualifierOptions={liveQualifierOptions}
-          qualifierReadFailed={liveQualifierReadFailed}
-          viewerIsCoach={false}
-          className="mb-3"
-        />
-        <ContinueRoundClient
-          roundId={id}
-          playerId={player.id}
-          setupData={setupData}
-          holes={allHoles}
-          completedHoleStats={completedHoleStats}
-          startHoleIndex={startHoleIndex}
-          initialShots={initialShots}
-          initialShotNumber={startShotNumber}
-          initialInProgressShotsByHole={allInProgressShots}
-          serverDataTimestamp={round.updated_at ?? undefined}
-          qualifierRoundNumberOptions={qualifierRoundNumberOptions}
-          qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
-        />
-      </AnimatedItem>
+      <ContinueRoundClient
+        roundTypeEditor={
+          <RoundTypeEditor
+            roundId={id}
+            currentType={round.round_type}
+            currentQualifierId={round.qualifier_id}
+            currentQualifierRoundNumber={round.qualifier_round_number}
+            qualifierOptions={liveQualifierOptions}
+            qualifierReadFailed={liveQualifierReadFailed}
+            viewerIsCoach={false}
+          />
+        }
+        roundId={id}
+        playerId={player.id}
+        setupData={setupData}
+        holes={allHoles}
+        completedHoleStats={completedHoleStats}
+        startHoleIndex={startHoleIndex}
+        initialShots={initialShots}
+        initialShotNumber={startShotNumber}
+        initialInProgressShotsByHole={allInProgressShots}
+        serverDataTimestamp={round.updated_at ?? undefined}
+        qualifierRoundNumberOptions={qualifierRoundNumberOptions}
+        qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
+      />
     </AnimatedPage>
   );
 }

@@ -43,8 +43,14 @@ closes action/group overlays and rejects previous-thread action targets.
 Message reactions are persisted in golf_message_reactions using the session
 client and existing participant RLS. Hold a message (or right-click on desktop)
 to add one; desktop also exposes a keyboard-focusable action button. Desktop
-uses an anchored, collision-aware popup; touch uses the shared sheet. Both show
-the selected message, active reactions and pending state. Reaction hover/count
+and touch use an anchored, collision-aware popup beside the held message.
+Touch bubbles suppress native text selection and WebKit callouts; mouse text
+selection remains available and Copy is an explicit action. A drag cancels the
+hold timer so scrolling does not accidentally open reactions. The warm glass
+reaction rail and actions sit over a softly blurred backdrop, with a crisp
+selected-message preview and an entrance/exit from the message anchor. Bounds
+respect the actual device insets; reduced motion removes the lift transition.
+Both show active reactions and pending state. Reaction hover/count
 feedback and composer send transitions respect reduced motion. Tap a reaction count to add/remove your own reaction. Counts include
 distinct members, refresh through realtime, and reload on window focus. Errors
 remain visible; switching threads discards stale fetch results. Removing a

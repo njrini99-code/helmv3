@@ -228,9 +228,8 @@ describe('G-42 — an incoming message can be acted on', () => {
 
   it('gives the sheet Copy, and withholds only Edit and Delete', () => {
     render(createElement(MessageThreadPane, baseProps(false, { mobileActionsId: MESSAGE_ID })));
-    // G-56 moved the actions into the shared `Sheet`, a fixed panel outside the
-    // render container, and removed the Close row — it had no counterpart in
-    // either artboard, and the sheet dismisses by grip, scrim and Escape.
+    // G-56 moved the actions into an anchored popup outside the render
+    // container, and removed the Close row from the action list.
     const copy = document.body.querySelector('[aria-label="Copy message"]');
     expect(copy, 'an incoming message must be copyable').not.toBeNull();
 
@@ -261,6 +260,45 @@ describe('G-42 — an incoming message can be acted on', () => {
       const el = bubble(container);
       expect(el.className).toContain('select-none');
       expect(el.className).toContain('[-webkit-touch-callout:none]');
+    }
+  });
+
+  it('blocks coarse-pointer text selection while keeping fine-pointer selection available', () => {
+    const originalMatchMedia = window.matchMedia;
+    const matchMedia = vi.fn((query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: matchMedia });
+
+    try {
+      const { container } = render(createElement(MessageThreadPane, baseProps(false)));
+      const el = bubble(container);
+      const touchSelection = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      el.dispatchEvent(touchSelection);
+      expect(touchSelection.defaultPrevented).toBe(true);
+
+      matchMedia.mockImplementation((query: string) => ({
+        matches: query !== '(pointer: coarse)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+      const desktopSelection = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      el.dispatchEvent(desktopSelection);
+      expect(desktopSelection.defaultPrevented).toBe(false);
+    } finally {
+      Object.defineProperty(window, 'matchMedia', { configurable: true, value: originalMatchMedia });
     }
   });
 
@@ -313,8 +351,8 @@ describe('G-42 — desktop has a path to the actions', () => {
     // `lg:invisible` or `max-lg:flex` would fail too.
     render(createElement(MessageThreadPane, baseProps(false, { mobileActionsId: MESSAGE_ID })));
     const panel = document.body.querySelector('[aria-label="Copy message"]')!
-      .closest('[data-slot="sheet"]')!;
-    expect(panel.className, 'expected the Sheet panel').toContain('rounded-t-fw-lg');
+      .closest('[data-slot="message-actions"]')!;
+    expect(panel.querySelector('[data-fw-message-actions-list]'), 'expected the anchored action list').not.toBeNull();
     expect(panel.className).not.toMatch(/(^|\s)(lg:|max-lg:)/);
   });
 

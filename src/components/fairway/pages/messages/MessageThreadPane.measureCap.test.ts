@@ -15,6 +15,12 @@ const code = source
   .filter((line) => !line.trim().startsWith('//'))
   .join('\n');
 
+// The selected-message action panel owns its own preview geometry. Keep the
+// message-thread measure contract scoped to the actual thread surface so a
+// popup preview can choose a percentage width without weakening bubble caps.
+const threadSurfaceEnd = code.indexOf('<MessageActionsPanel');
+const threadSurfaceCode = code.slice(0, threadSurfaceEnd);
+
 /** The artboard's stated cap, read rather than repeated. */
 const ruleWidth = Number(
   (bubblesArtboard.split('\n').find((l) => l.trim().startsWith('.bub {')) ?? '').match(
@@ -38,10 +44,11 @@ describe('G-49 — the measure cap is absolute, not a percentage of the pane', (
     expect(bubbleColumn).not.toMatch(/\bmd:max-w-|\blg:max-w-|\bxl:max-w-/);
   });
 
-  it('caps by no percentage anywhere in the thread', () => {
+  it('keeps percentage caps off the actual message thread surface', () => {
     // A percentage cap cannot express a maximum measure: it is a function of
     // the container, which is exactly the variable the rule is protecting from.
-    expect(code).not.toMatch(/max-w-\[\d+(\.\d+)?%\]/);
+    expect(threadSurfaceEnd).toBeGreaterThan(0);
+    expect(threadSurfaceCode).not.toMatch(/max-w-\[\d+(\.\d+)?%\]/);
   });
 
 });
