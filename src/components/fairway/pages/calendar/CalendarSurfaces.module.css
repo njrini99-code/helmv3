@@ -40,10 +40,16 @@
   transform: scale(0.98);
 }
 
-/* Task dock in a focused workflow — the SAME chrome material as `.chrome`,
- * named for its role: one per screen, never rendered alongside global nav. */
+/* Task dock in a focused workflow — the SAME chrome material as `.chrome`
+ * (duplicated, not composed: this file has no other `composes` usage and
+ * this codebase's CSS Modules setup is unverified for it), named for its
+ * role: one per screen, never rendered alongside global nav. */
 .dock {
-  composes: chrome;
+  background: var(--fw-glass-bg);
+  border-color: var(--fw-glass-border);
+  box-shadow: inset 0 1px 0 var(--fw-glass-highlight), 0 1px 0 var(--fw-glass-border-bot), 0 8px 24px oklch(0.3 0.035 70 / 0.06);
+  backdrop-filter: blur(18px) saturate(var(--fw-glass-saturate));
+  -webkit-backdrop-filter: blur(18px) saturate(var(--fw-glass-saturate));
 }
 
 /* Desktop right panel: slide/fade 200ms, EASE_CINEMATIC, no reflow of the
@@ -98,5 +104,5 @@
   .settle { transition: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .chrome { background: var(--fw-color-surface-tint); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .chrome, .dock { background: var(--fw-color-surface-tint); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }

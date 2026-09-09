@@ -131,14 +131,20 @@ describe('SchedulingWorkspace', () => {
     expect(onPersonClick).toHaveBeenCalledWith('player-1');
   });
 
-  it('reaches the last valid start when the drag handle goes to the end of the timeline', () => {
+  it.each([
+    ['desktop', 1024],
+    ['320px mobile', 320],
+  ])('reaches the last valid start when the drag handle goes to the end of the timeline (%s)', (_label, viewportWidth) => {
     // Window is 12:00-20:00 UTC in 15-minute slots (32 slots); a 60-minute
     // selection's last valid start is 19:00 (19:00-20:00 still fits before
     // the window ends), one full hour short of the timeline's own end.
     // selectFromPointer (SchedulingWorkspace.tsx:278-292) maps the drag
     // fraction across all 32 slots, then clamps into the 29 valid starts —
     // dragging past the visible edge must still land on 19:00, not slide
-    // short of it or throw past the array bound.
+    // short of it or throw past the array bound. Both viewport widths matter:
+    // the nameWidth this diff fixed used to differ below 768px (128 vs 96).
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { value: viewportWidth, configurable: true, writable: true });
     const restorePointerCapture = stubPointerCapture();
     render(
       <SchedulingWorkspace
@@ -162,6 +168,8 @@ describe('SchedulingWorkspace', () => {
 
     expect(handle).toHaveAttribute('aria-valuetext', '7:00 PM–8:00 PM');
     expect(handle).toHaveAttribute('aria-valuenow', '28');
+
     restorePointerCapture();
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true, writable: true });
   });
 });
