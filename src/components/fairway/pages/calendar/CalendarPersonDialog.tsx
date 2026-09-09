@@ -32,6 +32,14 @@ function minuteInZone(iso: string, timeZone: string): number {
   return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : DAY_START_MINUTE;
 }
 
+/** `title` is absent when the server sent `access: 'free_busy'` (or, for
+ * intervals produced before that field existed, genuinely missing). Never
+ * fabricate a name here — show the same honest, type-keyed label every
+ * free/busy-only viewer of this interval would see. */
+function intervalTitle(interval: ScheduleInterval): string {
+  return interval.title || (interval.type === 'class' ? 'Class' : 'Busy');
+}
+
 function intervalTone(interval: ScheduleInterval): string {
   if (interval.type === 'class') return 'border-accent-200 bg-accent-50 text-accent-800 shadow-flat';
   if (interval.type === 'event') return `border-accent-700 text-text-on-accent ${surfaces.selected}`;
@@ -83,14 +91,14 @@ function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified }: 
         ) : visible.map(({ interval, left, width }) => (
           <span
             key={interval.id}
-            title={`${interval.title} · ${timeInZone(interval.start, timeZone)}–${timeInZone(interval.end, timeZone)}`}
+            title={`${intervalTitle(interval)} · ${timeInZone(interval.start, timeZone)}–${timeInZone(interval.end, timeZone)}`}
             style={{ left: `${left}%`, width: `${width}%` }}
             className={cn(
               'absolute top-2 flex h-10 min-w-0 items-center rounded-fw-sm border px-2 font-fw-sans text-caption font-medium transition-transform duration-200 hover:-translate-y-px motion-reduce:transition-none',
               intervalTone(interval),
             )}
           >
-            <span className="truncate">{interval.title || (interval.type === 'class' ? 'Class' : 'Busy')}</span>
+            <span className="truncate">{intervalTitle(interval)}</span>
           </span>
         ))}
       </div>
@@ -221,8 +229,8 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
                   <div className="min-w-0 flex-1">
                     <p className="font-fw-mono text-caption font-medium tabular-nums text-text-secondary">{timeInZone(interval.start, timeZone)} – {timeInZone(interval.end, timeZone)}</p>
                     {interval.eventId ? (
-                      <Button variant="ghost" className="mt-0.5 h-auto min-h-11 justify-start px-0 py-1 text-left font-fw-sans text-body-sm font-semibold text-text-primary hover:bg-transparent hover:text-accent-700" onClick={() => onEvent(interval.eventId!)}>{interval.title}</Button>
-                    ) : <p className="mt-0.5 font-fw-sans text-body-sm font-semibold text-text-primary">{interval.title}</p>}
+                      <Button variant="ghost" className="mt-0.5 h-auto min-h-11 justify-start px-0 py-1 text-left font-fw-sans text-body-sm font-semibold text-text-primary hover:bg-transparent hover:text-accent-700" onClick={() => onEvent(interval.eventId!)}>{intervalTitle(interval)}</Button>
+                    ) : <p className="mt-0.5 font-fw-sans text-body-sm font-semibold text-text-primary">{intervalTitle(interval)}</p>}
                     <p className="mt-1 font-fw-sans text-caption capitalize text-text-tertiary">{interval.type === 'blocked' ? 'Personal block' : interval.type}</p>
                   </div>
                 </div>

@@ -83,10 +83,16 @@ export async function getScheduleWindow(request: ScheduleWindowRequest): Promise
         if (!person.userId) return { ...base, verification: 'failed', intervals: [] };
         try {
           const result = await getUserBusyPeriodsWithStatus(person.userId, start, end, supabase);
+          // Every period reaching this map already cleared getScheduleWindow's
+          // authorization above (self, or a coach viewing an active team
+          // member) and RLS on the underlying reads — there is no free/busy-only
+          // path through this action today, so `access` is always 'detail' and
+          // `title` is sent as the server actually read it, never a fabricated
+          // "Busy" standing in for a title that was never fetched.
           return { ...base, verification: result.partial ? 'partial' : 'complete', intervals: result.periods
             .filter((period) => period.eventId !== request.excludeEventId || !request.excludeEventId)
             .filter((period) => Number.isFinite(+period.start) && Number.isFinite(+period.end) && period.end > period.start)
-            .map((period, index) => ({ id: `${person.id}:${period.eventId ?? 'busy'}:${index}`, start: period.start.toISOString(), end: period.end.toISOString(), type: period.type, title: period.title || 'Busy', ...(period.eventId ? { eventId: period.eventId } : {}) })) };
+            .map((period, index) => ({ id: `${person.id}:${period.eventId ?? 'busy'}:${index}`, start: period.start.toISOString(), end: period.end.toISOString(), type: period.type, title: period.title, access: 'detail' as const, ...(period.eventId ? { eventId: period.eventId } : {}) })) };
         } catch { return { ...base, verification: 'failed', intervals: [] }; }
       })));
     }
