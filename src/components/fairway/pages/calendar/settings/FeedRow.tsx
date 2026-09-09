@@ -87,7 +87,7 @@ export function FeedRow({ label, description, feed, busy, disabled, error, onCre
   return (
     <Surface padding="none" elevation="border" className={cn('overflow-hidden rounded-card border-transparent', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
       <div className="flex items-start gap-3 p-4">
-        <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+        <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
           <Icon className="h-4 w-4" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">

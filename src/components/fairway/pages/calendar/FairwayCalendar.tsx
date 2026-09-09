@@ -247,9 +247,10 @@ export function FairwayCalendar({
       return { start: startOfMonth(focusDate), end: endOfMonth(focusDate) };
     }
     if (view === 'agenda') {
-      // Agenda gets a wide window so the demo's full Feb–Apr season shows: from
-      // 3 months before the focused day through 3 months after.
-      return { start: addMonths(focusDate, -3), end: addMonths(focusDate, 3) };
+      // Agenda is month-scoped: the period on screen is exactly the month the
+      // title names, stepped by month. "Show N earlier events" reveals the
+      // month's past days; the title's date-jump reaches any other month.
+      return { start: startOfMonth(focusDate), end: endOfMonth(focusDate) };
     }
     return {
       start: startOfWeekFn(focusDate, { weekStartsOn: 0 }),
@@ -853,10 +854,10 @@ export function FairwayCalendar({
         return;
       }
       const dir = direction === 'next' ? 1 : -1;
-      if (view === 'month') {
+      if (view === 'month' || view === 'agenda') {
         setFocusDate((d) => addMonths(d, dir));
       } else {
-        // Day/Week/Agenda turn the page by a week (the day-strip is the picker).
+        // Day/Week turn the page by a week (the day-strip is the picker).
         setFocusDate((d) => addDays(d, dir * 7));
       }
     },
@@ -1187,6 +1188,7 @@ export function FairwayCalendar({
           focusDate={focusDate}
           rangeStart={visibleWindow.start}
           rangeEnd={visibleWindow.end}
+          periodLabel={format(focusDate, 'MMMM yyyy')}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
           timezone={teamTimezone}

@@ -131,7 +131,7 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
     <div className="space-y-3">
       {location ? (
         <div className={cn('flex items-start gap-3 rounded-fw-md p-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
             <MapPin className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -142,7 +142,7 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
       ) : null}
       {data.instructor ? (
         <div className={cn('flex items-start gap-3 rounded-fw-md p-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
             <GraduationCap className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">

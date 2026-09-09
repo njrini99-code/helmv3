@@ -6,8 +6,10 @@
  * ----------------------------------------------------------------------------
  * Two quiet rows on the shared chrome material, sticky under the app header:
  *
- *   1. Title row   — month/date context · "Today" (only when away from it) ·
- *                    More (phone) · the ONE primary action.
+ *   1. Title row   — month/date context (the title is also the date-jump:
+ *                    it opens a CalendarSurface to pick any day) · "Today"
+ *                    (only when away from it) · More (phone) · the ONE
+ *                    primary action.
  *   2. Control row — the explicit view selector (Fairway Segmented) and the
  *                    previous / next pair. At xl+ (a wide desktop stage) the secondary actions sit
  *                    here as quiet ghost pills instead of behind More.
@@ -29,17 +31,19 @@
 
 import * as React from 'react';
 import { format, isSameDay } from 'date-fns';
+import { CalendarSurface } from '@/components/fairway/calendar';
 import {
   AlertTriangle,
   CalendarClock,
   CalendarPlus,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
   Plus,
   ScanLine,
 } from 'lucide-react';
-import { Button, IconButton, PopoverPanel, Segmented } from '@/components/fairway';
+import { Button, IconButton, PopoverPanel, PressTarget, Segmented } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayDayStrip } from './FairwayDayStrip';
@@ -109,6 +113,7 @@ export function FairwayCalendarHero({
   const conflictsLabel =
     conflictCount && conflictCount > 0 ? `Conflicts (${conflictCount})` : 'Conflicts';
   const [moreOpen, setMoreOpen] = React.useState(false);
+  const [jumpOpen, setJumpOpen] = React.useState(false);
   const secondaryActions = [
     onFindTime && isCoach
       ? { key: 'find', label: 'Find a time', icon: <ScanLine className="h-4 w-4" aria-hidden />, run: onFindTime }
@@ -124,7 +129,8 @@ export function FairwayCalendarHero({
       : null,
   ].filter((action): action is NonNullable<typeof action> => action !== null);
 
-  const stepLabel = view === 'month' ? 'month' : view === 'day' ? 'day' : 'week';
+  // Agenda is month-scoped (its period is the title's month), so it steps by month too.
+  const stepLabel = view === 'month' || view === 'agenda' ? 'month' : view === 'day' ? 'day' : 'week';
 
   return (
     <section
@@ -140,7 +146,38 @@ export function FairwayCalendarHero({
       {/* Row 1 — title and the primary action. */}
       <div className="flex items-center gap-1.5 md:gap-2">
         <h1 className="min-w-0 flex-1 truncate font-fw-sans text-h3 font-semibold text-text-primary md:text-h2">
-          {title}
+          {/* The title is the date-jump: same headless CalendarSurface the
+              DatePicker uses, in a PopoverPanel, behind an unstyled press. */}
+          <PopoverPanel
+            open={jumpOpen}
+            onOpenChange={setJumpOpen}
+            side="bottom"
+            align="start"
+            width="auto"
+            ariaLabel="Jump to a date"
+            trigger={
+              <PressTarget className="-mx-1.5 inline-flex max-w-full items-center gap-1 rounded-fw-sm px-1.5 py-0.5 text-left hover:bg-surface-sunken">
+                <span className="truncate">{title}</span>
+                <span className="sr-only">, jump to a date</span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+              </PressTarget>
+            }
+          >
+            <CalendarSurface
+              mode="single"
+              selected={selectedDate}
+              defaultMonth={focusDate}
+              today={nowRef}
+              size="cozy"
+              glass={false}
+              className="border-0 shadow-none"
+              onSelect={(date) => {
+                if (!date) return;
+                onSelectDate(date);
+                setJumpOpen(false);
+              }}
+            />
+          </PopoverPanel>
         </h1>
         {!focusIsToday ? (
           <Button variant="ghost" size="sm" onClick={() => onNavigate('today')}>

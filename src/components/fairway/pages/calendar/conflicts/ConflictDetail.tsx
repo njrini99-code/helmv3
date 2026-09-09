@@ -214,7 +214,7 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
         <div className={cn('flex items-center gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]', surfaces.enter)}>
           <span
             aria-hidden="true"
-            className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}
+            className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}
           >
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
           </span>

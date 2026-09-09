@@ -39,6 +39,9 @@ export interface FairwayAgendaViewProps {
   focusDate: Date;
   rangeStart?: Date;
   rangeEnd?: Date;
+  /** Human name of the range ("September 2026") for the honest-empty copy,
+   *  so an empty month never reads as "nothing upcoming, ever". */
+  periodLabel?: string;
   isCoach: boolean;
   /** eventId → player's RSVP status (player view). */
   userRsvpStatuses?: Map<string, RSVPStatus>;
@@ -169,6 +172,7 @@ export function FairwayAgendaView({
   focusDate,
   rangeStart,
   rangeEnd,
+  periodLabel,
   isCoach,
   userRsvpStatuses,
   timezone,
@@ -276,10 +280,10 @@ export function FairwayAgendaView({
       <Surface elevation="border" padding="lg" className={className}>
         <EmptyState
           icon={CalendarDays}
-          title={isCoach ? 'No upcoming events' : 'Nothing upcoming'}
+          title={periodLabel ? `Nothing in ${periodLabel}` : isCoach ? 'No upcoming events' : 'Nothing upcoming'}
           description={
             isCoach
-              ? 'Schedule the next practice or tournament and it shows up here.'
+              ? 'Schedule a practice or tournament and it shows up here.'
               : 'Check back when your coach adds events.'
           }
           action={

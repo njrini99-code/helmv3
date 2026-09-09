@@ -101,7 +101,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
             <Paperclip className="h-4 w-4" aria-hidden />
           </span>
           <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
@@ -174,7 +174,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
                 )}
               >
-                <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+                <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
                   <FileText className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="min-w-0">

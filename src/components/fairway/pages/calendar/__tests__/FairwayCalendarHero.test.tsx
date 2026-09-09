@@ -7,7 +7,7 @@
  * whose scope the reader cannot see is not a status line.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import * as React from 'react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayCalendarHero } from '../FairwayCalendarHero';
@@ -55,6 +55,16 @@ describe('FairwayCalendarHero — header contract', () => {
   it('shows no week strip for Agenda, Week or Month — the strip would misstate their scope', () => {
     renderHero({ view: 'agenda' });
     expect(screen.queryByRole('group', { name: 'Week navigator' })).not.toBeInTheDocument();
+  });
+
+  it('makes the title a date-jump: opening it shows a month grid, picking a day selects it', () => {
+    const onSelectDate = vi.fn();
+    renderHero({ onSelectDate });
+    const title = screen.getByRole('heading', { level: 1 });
+    fireEvent.click(within(title).getByRole('button', { name: /July 2026/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^(Tuesday, July 21st|July 21)/ }));
+    expect(onSelectDate).toHaveBeenCalledTimes(1);
+    expect(onSelectDate.mock.calls[0]![0].getDate()).toBe(21);
   });
 
   it('names previous/next for the active view', () => {

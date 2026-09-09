@@ -10,7 +10,7 @@ export const sectionCardCls = cn('rounded-card p-4', 'border border-border-subtl
 export function sectionTitle(Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, label: string) {
   return (
     <span className="inline-flex items-center gap-3 font-fw-sans text-body font-semibold text-text-primary">
-      <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+      <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
         <Icon className="h-4 w-4" aria-hidden />
       </span>
       {label}

@@ -295,15 +295,26 @@ keeps its date separate from the return-to-today action.
 - `CalendarSurfaces.module.css` keeps only functional calendar vocabulary:
   `.scope` colours, lane/day grid hairlines, busy/class/team/personal blocks,
   `.hatch` (unverified), `.reference`, the selection lens and its
-  follow/settle/dragging motion, `.enter` stagger, and the reduced-motion /
-  reduced-transparency blocks. Removed: `.ground`, `.chipFloat`,
-  `.avatarChip`, `.teamChip`, `.buttonRow`. Still present for remaining
-  consumers and slated for removal as they migrate: `.panel`, `.paper`,
-  `.chrome`, `.dock`, `.float`, `.row`, `.rowIcon`, `.glow`, `.press`,
-  `.rise`, `.check`.
+  follow/settle/dragging motion, `.enter` stagger, `.pending`, `.inspector`,
+  `.panel` (page ground), and the reduced-motion / reduced-transparency
+  blocks. Retired (2026-09-09): `.ground`, `.chipFloat`, `.avatarChip`,
+  `.teamChip`, `.buttonRow`, `.paper`, `.well`, `.chrome`, `.dock`, `.float`,
+  `.selected`, `.glow`, `.check`, `.attention`, `.row`, `.rowIcon`, `.press`,
+  `.rise`. Their consumers use Tailwind tokens directly (`fw-glass-chrome`
+  for chrome, bordered `bg-surface` for rows, `bg-accent-650
+  text-text-on-accent` for a checked state, `fw-warning-*` for attention).
+- Detail drawer (`FairwayEventDetailDrawer`): row icons are bare glyphs in
+  `text-text-secondary` (a cream disc on a cream card washed out — owner,
+  2026-09-09); only semantic warning/success discs keep a fill. Responses is
+  ONE centred `dl` strip — figure over label, hairline dividers, labels
+  Accepted / Maybe / No / Pending — not four sunken tiles. The date line is
+  the sans body-sm face, not mono.
 - Hero (`FairwayCalendarHero`): shared `fw-glass-chrome` material, sticky at
   `--golf-mobile-header-offset` + `--fw-hub-subnav-offset`. Row 1 = title
-  (`MMMM yyyy`, or `EEEE, MMMM d` in Day) · Today (only when away) · More
+  (`MMMM yyyy`, or `EEEE, MMMM d` in Day) — the title is the date-jump: a
+  `PressTarget` trigger opening a `PopoverPanel` with the shared
+  `CalendarSurface` (frameless inside the panel); picking a day calls
+  `onSelectDate` and closes it — · Today (only when away) · More
   (below xl) · the coach's ONE primary action. Row 2 = the explicit view
   `Segmented` (opt-in `quiet` presentation, added to the shared control) ·
   prev/next. Row 3 = the week strip in Day view only. Secondary actions are
@@ -313,14 +324,16 @@ keeps its date separate from the return-to-today action.
   the existing `CalendarPeoplePicker` behind "Compare". Three distinct
   actions — team schedule, open a person, include in a comparison — never
   one avatar meaning all three. Wraps to two lines below md.
-- Agenda: a day heading and ONE grouped Surface of rows divided by
-  hairlines; "Show N earlier events" is a ghost action with the real count.
+- Agenda: month-scoped — its visible window is the title's calendar month
+  and prev/next step by month (`Previous month` / `Next month`); the empty
+  state names the period ("Nothing in September 2026"). A day heading and
+  ONE grouped Surface of rows divided by hairlines; "Show N earlier events"
+  is a ghost action with the real count.
   Phone Month view is `CalendarSurface` (DayPicker, event-day dots from
   `eventDaySpan`) with the selected day's events beneath; a day tap never
   switches view. Desktop month keeps a single day target per cell. The week
   strip marks every day a multi-day event runs (same `eventDaySpan`).
 - Player: "Needs your reply → Respond" is a contextual row next to the
   schedule, not a header CTA.
-- Not yet done (Phase C): month title as a date-jump, month-scoped agenda
-  period, availability failure ≠ empty, detail-drawer / person dialog /
-  editor propagation, desktop context rail, event-to-detail continuity.
+- Not yet done (Phase C): desktop context rail (Spine & Stage),
+  event-to-detail continuity, physical-device / dark / large-text checks.

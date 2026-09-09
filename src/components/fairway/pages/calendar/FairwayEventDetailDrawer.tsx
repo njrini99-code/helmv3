@@ -35,7 +35,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, Inset, Readout, Button, PressTarget, StatusPill } from '@/components/fairway';
+import { Sheet, Button, PressTarget, StatusPill } from '@/components/fairway';
 import type { FwStatusTone, SheetSide } from '@/components/fairway';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -278,7 +278,9 @@ export function FairwayEventDetailDrawer({
     }
   };
 
-  /** 32px icon disc at the head of a detail row: neutral, or a semantic tone. */
+  /** Icon at the head of a detail row: a bare glyph in a 32px alignment box
+   *  (a cream disc on a cream card washes out), or a semantic-tone disc when
+   *  the tone carries meaning. */
   const rowIcon = (Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, tint?: 'warning' | 'success') => (
     <span
       aria-hidden
@@ -288,10 +290,10 @@ export function FairwayEventDetailDrawer({
           ? 'bg-fw-warning-bg text-fw-warning-ink'
           : tint === 'success'
             ? 'bg-fw-success-bg text-fw-success-ink'
-            : 'bg-surface-sunken text-text-secondary',
+            : 'text-text-secondary',
       )}
     >
-      <Icon className="h-4 w-4" aria-hidden />
+      <Icon className="h-[18px] w-[18px]" aria-hidden />
     </span>
   );
 
@@ -355,7 +357,7 @@ export function FairwayEventDetailDrawer({
             >
               {event.title}
             </h2>
-            <p className="flex items-center gap-1.5 font-fw-mono text-caption tabular-nums text-text-secondary">
+            <p className="flex items-center gap-1.5 font-fw-sans text-body-sm tabular-nums text-text-secondary">
               <Clock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
               <span>{formatDateLine(event, timezone)}</span>
             </p>
@@ -408,7 +410,7 @@ export function FairwayEventDetailDrawer({
                           aria-hidden
                           className={cn(
                             'grid h-8 w-8 place-items-center rounded-full',
-                            isSelected ? 'bg-accent-650 text-text-on-accent' : 'bg-surface-sunken text-text-secondary',
+                            isSelected ? 'bg-accent-650 text-text-on-accent' : 'text-text-secondary',
                           )}
                         >
                           <Icon className="h-4 w-4" />
@@ -534,29 +536,22 @@ export function FairwayEventDetailDrawer({
                   Responses · {rsvpSummary.total} invited
                 </p>
               </div>
-              {/* 2-up on phone, 4-up from `sm`. Readout's label is
-                  `uppercase tracking-[0.14em]`, so "ACCEPTED" / "PENDING"
-                  need far more than the ~80px a 4-column grid leaves at
-                  390pt (owner device report, 2026-08-26). */}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {/* One centred stat strip: figure over label, hairline dividers.
+                  Not four sunken tiles — cream on cream washed out and the
+                  left-aligned figures read off-centre (owner, 2026-09-09). */}
+              <dl className="grid grid-cols-4 divide-x divide-border-subtle">
                 {[
                   { label: 'Accepted', value: rsvpSummary.accepted },
                   { label: 'Maybe', value: rsvpSummary.tentative },
                   { label: 'No', value: rsvpSummary.declined },
                   { label: 'Pending', value: rsvpSummary.pending },
                 ].map((stat) => (
-                  <Inset key={stat.label} padding="sm" className="flex min-w-0 justify-center">
-                    <Readout
-                      value={stat.value}
-                      format={{ maximumFractionDigits: 0 }}
-                      label={stat.label}
-                      size="sm"
-                      state="live"
-                      align="start"
-                    />
-                  </Inset>
+                  <div key={stat.label} className="flex min-w-0 flex-col items-center gap-0.5 px-1 py-1 text-center">
+                    <dd className="font-fw-sans text-h3 font-semibold tabular-nums leading-none text-text-primary">{stat.value}</dd>
+                    <dt className="truncate font-fw-sans text-caption font-medium text-text-secondary">{stat.label}</dt>
+                  </div>
                 ))}
-              </div>
+              </dl>
             </div>
           ) : null}
 

@@ -104,7 +104,7 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
       {/* Location + Notes — one card, one icon disc per row. */}
       <div className={cn('flex flex-col divide-y divide-border-subtle rounded-card px-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
         <label htmlFor="ev-location" className="flex items-center gap-3 py-3">
-          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
             <MapPin className="h-4 w-4" aria-hidden />
           </span>
           <span className="sr-only">Location</span>
@@ -120,7 +120,7 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
           />
         </label>
         <label htmlFor="ev-desc" className="flex items-start gap-3 py-3">
-          <span aria-hidden className={cn('mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-surface-sunken text-text-secondary')}>
+          <span aria-hidden className={cn('mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
             <AlignLeft className="h-4 w-4" aria-hidden />
           </span>
           <span className="sr-only">Notes</span>
