@@ -153,7 +153,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
           <p className="font-fw-sans text-body-sm text-text-tertiary">No files attached.</p>
         )
       ) : (
-        <ul className="flex flex-col gap-1.5" role="list">
+        <ul className="flex flex-col gap-1.5">
           {rows.map(({ document, attachedAt, note }) => (
             <li
               key={document.id}
@@ -183,20 +183,20 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
                 </span>
               </a>
               {isCoach ? (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleDetach(document.id)}
                   disabled={detachingId === document.id}
                   aria-label={`Remove ${document.title}`}
                   className={cn(
-                    'grid h-9 w-9 shrink-0 place-items-center rounded-fw-sm text-text-tertiary transition-colors',
-                    'hover:bg-surface hover:text-fw-danger-ink',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
-                    'disabled:opacity-50',
+                    'h-9 w-9 shrink-0 rounded-fw-sm p-0 text-text-tertiary',
+                    'hover:bg-surface hover:text-fw-danger-ink disabled:opacity-50',
                   )}
                 >
                   <X className="h-4 w-4" aria-hidden />
-                </button>
+                </Button>
               ) : null}
             </li>
           ))}

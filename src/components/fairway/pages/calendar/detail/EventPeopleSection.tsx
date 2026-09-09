@@ -90,7 +90,7 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
       ) : attendees.length === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">No one invited yet.</p>
       ) : (
-        <ul className="flex flex-col gap-1.5" role="list">
+        <ul className="flex flex-col gap-1.5">
           {attendees.map((a) => {
             const meta = STATUS_META[a.status] ?? STATUS_META.pending;
             return (

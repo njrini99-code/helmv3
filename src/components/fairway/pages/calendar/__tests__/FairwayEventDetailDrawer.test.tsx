@@ -152,20 +152,27 @@ vi.mock('@/components/fairway', () => {
         {label}: {value}
       </div>
     ),
+    // Drops the Fairway-only props and forwards the rest (aria-label, role,
+    // onClick, disabled) so icon buttons keep their accessible names.
     Button: ({
       children,
-      onClick,
-      disabled,
+      variant: _variant,
+      size: _size,
+      busy,
+      asChild: _asChild,
+      ...props
     }: {
       children?: React.ReactNode;
-      onClick?: () => void;
-      disabled?: boolean;
-    }) => (
-      <button type="button" onClick={onClick} disabled={disabled}>
+      variant?: string;
+      size?: string;
+      busy?: boolean;
+      asChild?: boolean;
+    } & React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+      <button type="button" {...props} disabled={props.disabled || busy}>
         {children}
       </button>
     ),
-    Input: ({ leading, trailing, ...props }: Record<string, unknown>) => <input {...props} />,
+    Input: ({ leading: _leading, trailing: _trailing, ...props }: Record<string, unknown>) => <input {...props} />,
     TextArea: (props: Record<string, unknown>) => <textarea {...props} />,
     Checkbox: ({
       checked,

@@ -2,7 +2,7 @@
 
 import { NotebookPen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Segmented, Checkbox } from '@/components/fairway';
+import { Segmented, Checkbox, Button } from '@/components/fairway';
 import surfaces from '../CalendarSurfaces.module.css';
 import { enterStyle } from '../motion';
 import type { AttendanceRecord } from '@/app/golf/actions/attendance';
@@ -150,20 +150,21 @@ export function AttendanceRow({
             onOpenChange={noteEditor.onOpenChange}
             onSaved={noteEditor.onSaved}
             trigger={
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 aria-label={record.notes ? `Edit note for ${name}` : `Add note for ${name}`}
                 disabled={disabled}
                 className={cn(
-                  'grid h-9 w-9 shrink-0 place-items-center rounded-fw-sm text-text-tertiary transition-colors',
+                  'h-9 w-9 shrink-0 rounded-fw-sm p-0 text-text-tertiary',
                   surfaces.press,
                   'hover:bg-surface hover:text-text-secondary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
                   record.notes && 'text-accent-700',
                 )}
               >
                 <NotebookPen className="h-4 w-4" aria-hidden />
-              </button>
+              </Button>
             }
           />
         ) : null}

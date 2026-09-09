@@ -193,6 +193,7 @@ function PickerBody({
           <div
             ref={listRef}
             role="listbox"
+            tabIndex={-1}
             aria-multiselectable="true"
             aria-label="People"
             onKeyDown={handleListKeyDown}
@@ -202,8 +203,9 @@ function PickerBody({
               const selected = selection.isSelected(person.id);
               return (
                 <div key={person.id} className={cn('rounded-fw-md', selected && 'bg-accent-50/60')}>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     role="option"
                     aria-selected={selected}
                     tabIndex={index === activeIndex ? 0 : -1}
@@ -211,10 +213,10 @@ function PickerBody({
                     onFocus={() => setActiveIndex(index)}
                     onClick={() => toggleRow(person.id)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-fw-md px-2 py-1.5 text-left transition-transform',
+                      'flex h-auto w-full items-center justify-start gap-3 rounded-fw-md px-2 py-1.5 text-left font-normal',
                       ROW_HEIGHT_CLASS,
                       surfaces.press,
-                      'hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                      'hover:bg-surface-sunken',
                     )}
                   >
                     <Avatar src={person.avatarUrl ?? undefined} name={person.name} size="sm" />
@@ -235,7 +237,7 @@ function PickerBody({
                     >
                       <Check className="h-3.5 w-3.5" />
                     </span>
-                  </button>
+                  </Button>
                   {mode === 'compare' && selected ? (
                     <div className="flex items-center justify-end px-2 pb-2">
                       <Segmented

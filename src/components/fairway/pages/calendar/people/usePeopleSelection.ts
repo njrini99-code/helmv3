@@ -82,7 +82,6 @@ export function usePeopleSelection({
     setSelectedIds(initialSelectedRef.current);
     setRequiredIds(initialRequiredRef.current);
     setQuery('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
   const filtered = React.useMemo(() => {

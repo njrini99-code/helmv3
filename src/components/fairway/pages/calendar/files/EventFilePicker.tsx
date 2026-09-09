@@ -67,7 +67,7 @@ export function EventFilePicker({
     };
   }, [open, teamId]);
 
-  const documents = state.status === 'loaded' ? state.documents : [];
+  const documents = React.useMemo(() => (state.status === 'loaded' ? state.documents : []), [state]);
   const categories = React.useMemo(
     () => Array.from(new Set(documents.map((d) => d.category).filter((c): c is string => Boolean(c)))),
     [documents],
@@ -143,17 +143,17 @@ export function EventFilePicker({
             description={documents.length === 0 ? undefined : 'Try a different search or category.'}
           />
         ) : (
-          <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto" role="list">
+          <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto">
             {filtered.map((doc) => (
               <li key={doc.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => handleAttach(doc.id)}
                   disabled={attachingId !== null}
                   className={cn(
-                    'flex w-full min-h-11 items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3.5 py-2.5 text-left',
-                    'transition-colors hover:bg-surface-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
-                    'disabled:opacity-60',
+                    'flex h-auto w-full min-h-11 items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3.5 py-2.5 text-left font-normal',
+                    'hover:bg-surface-tint disabled:opacity-60',
                     surfaces.press,
                   )}
                 >
@@ -166,7 +166,7 @@ export function EventFilePicker({
                   <span className="shrink-0 font-fw-sans text-caption text-text-tertiary">
                     {attachingId === doc.id ? 'Attaching…' : doc.category ?? ''}
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

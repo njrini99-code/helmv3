@@ -185,7 +185,6 @@ export function useBlockedTime({ enabled, actions }: UseBlockedTimeOptions): Use
     if (!enabled) return;
     void load();
     // `retryNonce` intentionally re-triggers this effect; `load` is stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, retryNonce, load]);
 
   const retry = React.useCallback(() => setRetryNonce((n) => n + 1), []);

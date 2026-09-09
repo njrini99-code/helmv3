@@ -110,9 +110,15 @@ function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified, on
             ),
           };
           return openable ? (
-            <button type="button" {...commonProps} onClick={() => onOpenClass!(interval)}>
+            <Button
+              type="button"
+              variant="ghost"
+              {...commonProps}
+              className={cn('h-11 justify-start p-0 font-medium', commonProps.className)}
+              onClick={() => onOpenClass!(interval)}
+            >
               <span className="truncate">{intervalTitle(interval)}</span>
-            </button>
+            </Button>
           ) : (
             <span {...commonProps}>
               <span className="truncate">{intervalTitle(interval)}</span>

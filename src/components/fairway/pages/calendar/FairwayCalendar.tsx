@@ -1450,7 +1450,7 @@ export function FairwayCalendar({
       <MyAvailabilityScreen
         open={availabilityOpen}
         onOpenChange={setAvailabilityOpen}
-        role={isCoach ? 'coach' : 'player'}
+        viewerRole={isCoach ? 'coach' : 'player'}
         teamId={teamId ?? null}
       />
     </div>

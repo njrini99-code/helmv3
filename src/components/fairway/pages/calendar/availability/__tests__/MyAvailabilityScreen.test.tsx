@@ -9,7 +9,7 @@
  *
  * `@/app/golf/actions/golf` and `@/app/golf/actions/scheduling` are mocked
  * wholesale: this screen must never touch the real Supabase-backed actions
- * in a unit test, and — the load-bearing honesty check — a `role="player"`
+ * in a unit test, and — the load-bearing honesty check — a `viewerRole="player"`
  * render must NEVER call the coach-only blocked-time actions at all.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -77,7 +77,7 @@ function makeRow(overrides: Partial<CoachBlockedTimeRow> = {}): CoachBlockedTime
 
 describe('MyAvailabilityScreen — player', () => {
   it('renders FeatureUnavailable on Busy time and never calls the coach-only action', () => {
-    render(<MyAvailabilityScreen open role="player" teamId={null} onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="player" teamId={null} onOpenChange={() => {}} />);
     expect(screen.getByText('Personal busy time')).toBeInTheDocument();
     expect(mockGetCoachBlockedTime).not.toHaveBeenCalled();
   });
@@ -86,7 +86,7 @@ describe('MyAvailabilityScreen — player', () => {
 describe('MyAvailabilityScreen — coach, Busy time', () => {
   it('shows a loading state, then the list grouped by day', async () => {
     mockGetCoachBlockedTime.mockResolvedValue({ success: true, data: [makeRow()] });
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
 
     expect(await screen.findByText('Dentist')).toBeInTheDocument();
     expect(screen.getByText(/2:00 PM.*3:00 PM/)).toBeInTheDocument();
@@ -94,21 +94,21 @@ describe('MyAvailabilityScreen — coach, Busy time', () => {
 
   it('shows the empty state with Add busy time when there is nothing yet', async () => {
     mockGetCoachBlockedTime.mockResolvedValue({ success: true, data: [] });
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
     expect(await screen.findByText('No busy time added')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add busy time' })).toBeInTheDocument();
   });
 
   it('shows a failed-load state with Retry', async () => {
     mockGetCoachBlockedTime.mockResolvedValue({ success: false, error: 'Network down' });
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
     expect(await screen.findByText('Network down')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 
   it('tapping a row opens the editor (mobile swap) with Back replacing the tabs', async () => {
     mockGetCoachBlockedTime.mockResolvedValue({ success: true, data: [makeRow()] });
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
 
     fireEvent.click(await screen.findByText('Dentist'));
 
@@ -123,7 +123,7 @@ describe('MyAvailabilityScreen — coach, Busy time', () => {
       .mockResolvedValueOnce({ success: true, data: [makeRow({ id: 'row-new', title: 'Team meeting' })] });
     mockAddCoachBlockedTime.mockResolvedValue({ success: true, data: { id: 'row-new' } });
 
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
     // Wait for the list to settle on its loaded-empty state first: while the
     // fetch is still in flight, the header's own "Add busy time" transiently
     // renders too (it only hides once the empty state has its own copy of
@@ -143,7 +143,7 @@ describe('MyAvailabilityScreen — coach, Busy time', () => {
   it('goes offline: hides Add busy time and shows the offline notice, but keeps the loaded list', async () => {
     mockGetCoachBlockedTime.mockResolvedValue({ success: true, data: [makeRow()] });
     setOnline(false);
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
 
     expect(await screen.findByText('Dentist')).toBeInTheDocument();
     expect(screen.getByText(/You.{1,2}re offline/)).toBeInTheDocument();
@@ -153,7 +153,7 @@ describe('MyAvailabilityScreen — coach, Busy time', () => {
 
 describe('MyAvailabilityScreen — Sources (role-agnostic)', () => {
   it('renders an honest "no team" line when there is no team to check', () => {
-    render(<MyAvailabilityScreen open role="player" teamId={null} onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="player" teamId={null} onOpenChange={() => {}} />);
     fireEvent.click(screen.getByRole('radio', { name: 'Sources' }));
     expect(screen.getByText('No team schedule to check yet.')).toBeInTheDocument();
   });
@@ -172,7 +172,7 @@ describe('MyAvailabilityScreen — Sources (role-agnostic)', () => {
       },
     });
 
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
     fireEvent.click(screen.getByRole('radio', { name: 'Sources' }));
 
     expect(await screen.findByText(/Based on Helm schedules/)).toBeInTheDocument();
@@ -192,7 +192,7 @@ describe('MyAvailabilityScreen — Sources (role-agnostic)', () => {
       },
     });
 
-    render(<MyAvailabilityScreen open role="coach" teamId="team-1" onOpenChange={() => {}} />);
+    render(<MyAvailabilityScreen open viewerRole="coach" teamId="team-1" onOpenChange={() => {}} />);
     fireEvent.click(screen.getByRole('radio', { name: 'Sources' }));
 
     expect(await screen.findByText(/Not verified/)).toBeInTheDocument();

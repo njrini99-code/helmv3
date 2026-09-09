@@ -6,6 +6,8 @@ import { getValidTimezone } from '@/lib/calendar/timezone';
 import { wallClockInZone } from '@/lib/golf/timezone';
 import type { ScheduleParticipant, ScheduleWindowRequest, ScheduleWindowResult } from '@/lib/calendar/scheduling-contracts';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 /** RLS-backed snapshot. Only managed-team coaches may compare other players. */
 export async function getScheduleWindow(request: ScheduleWindowRequest): Promise<ScheduleWindowResult> {
@@ -97,7 +99,14 @@ export async function getScheduleWindow(request: ScheduleWindowRequest): Promise
       })));
     }
     return { success: true, data: { teamId: request.teamId, timeZone, window: { start: start.toISOString(), end: end.toISOString() }, checkedAt: new Date().toISOString(), participants } };
-  } catch {
+  } catch (error) {
+    // Observed, not swallowed: a schedule read that throws is an outage the
+    // bridge must see, even though the UI only ever gets the calm message.
+    await logServerError(
+      `[scheduling] schedule window failed for team ${request.teamId}: ${describeError(error)}`,
+      { action: 'golf.getScheduleWindow', featureArea: 'calendar' },
+      'warning'
+    );
     return { success: false, error: 'Schedules could not be loaded. Your selection has been kept.' };
   }
 }

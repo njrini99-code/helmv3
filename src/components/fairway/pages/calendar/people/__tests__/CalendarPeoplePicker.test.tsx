@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+/* eslint-disable helm/no-raw-button -- thin test stand-ins for the picker trigger, not user-facing UI */
 /**
  * CalendarPeoplePicker — SCREEN-BUILD-PLAN.md §2.3 (S3).
  *

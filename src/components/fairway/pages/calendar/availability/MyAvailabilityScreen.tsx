@@ -58,7 +58,7 @@ type Selection = { kind: 'list' } | { kind: 'new' } | { kind: 'edit'; id: string
 export interface MyAvailabilityScreenProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  role: 'coach' | 'player';
+  viewerRole: 'coach' | 'player';
   /** The viewer's active team, for the Sources check only. `null` renders an
    *  honest "no team to check yet" instead of a fabricated result. */
   teamId: string | null;
@@ -80,7 +80,7 @@ function groupByDay(blocks: CoachBlockedTimeRow[]): Array<[string, CoachBlockedT
   return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
-export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAvailabilityScreenProps) {
+export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }: MyAvailabilityScreenProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const online = useIsOnline();
   const [tab, setTab] = React.useState<Tab>('busy');
@@ -95,7 +95,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAva
     }
   }, [open]);
 
-  const busyEnabled = open && role === 'coach';
+  const busyEnabled = open && viewerRole === 'coach';
   const { blocks, loading, error, retry, pendingIds, create, update, remove } = useBlockedTime({ enabled: busyEnabled });
 
   const scheduleRequest = React.useMemo<ScheduleWindowRequest | null>(() => {
@@ -141,7 +141,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAva
   const groups = React.useMemo(() => groupByDay(blocks), [blocks]);
 
   function renderBusyList() {
-    if (role === 'player') {
+    if (viewerRole === 'player') {
       return (
         <div className="min-h-[22rem]">
           <FeatureUnavailable
@@ -200,12 +200,13 @@ export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAva
                 const rowPending = pendingIds.has(block.id);
                 return (
                   <li key={block.id} className={cn(index < 8 && surfaces.enter)} style={index < 8 ? { animationDelay: `${index * 30}ms` } : undefined}>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => setSelection({ kind: 'edit', id: block.id })}
                       disabled={rowPending}
                       className={cn(
-                        'flex w-full min-h-11 items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5 text-left',
+                        'flex h-auto w-full min-h-11 items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5 text-left font-normal',
                         surfaces.press,
                         'hover:border-border-strong disabled:opacity-60',
                       )}
@@ -223,7 +224,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAva
                           {rule ? ` · ${describeRecurrenceRule(rule)}` : ''}
                         </span>
                       </span>
-                    </button>
+                    </Button>
                   </li>
                 );
               })}
@@ -235,7 +236,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAva
   }
 
   function renderEditor() {
-    if (role === 'player') return null;
+    if (viewerRole === 'player') return null;
     return (
       <BusyTimeEditor
         initial={editingBlock}
@@ -254,8 +255,8 @@ export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAva
   // IS the screen's one primary action — a second copy in the header would
   // violate the plan's one-primary-action rule by putting two identical
   // buttons on screen at once.
-  const listIsEmpty = role === 'coach' && !loading && !error && blocks.length === 0;
-  const canAdd = role === 'coach' && tab === 'busy' && online && !listIsEmpty;
+  const listIsEmpty = viewerRole === 'coach' && !loading && !error && blocks.length === 0;
+  const canAdd = viewerRole === 'coach' && tab === 'busy' && online && !listIsEmpty;
 
   return (
     <>
@@ -332,9 +333,9 @@ export function MyAvailabilityScreen({ open, onOpenChange, role, teamId }: MyAva
             <div className="grid h-full grid-cols-[minmax(0,1fr)_360px]">
               <div className="min-h-0 overflow-y-auto border-r border-border-subtle">{renderBusyList()}</div>
               <div className={cn('min-h-0 overflow-hidden', surfaces.inspector)}>
-                {role === 'coach' && showEditor ? (
+                {viewerRole === 'coach' && showEditor ? (
                   renderEditor()
-                ) : role === 'coach' ? (
+                ) : viewerRole === 'coach' ? (
                   <div className="flex h-full items-center justify-center p-6 text-center">
                     <p className="font-fw-sans text-body-sm text-text-tertiary">
                       Select a busy time block to edit, or add a new one.

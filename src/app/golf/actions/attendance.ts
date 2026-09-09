@@ -1020,13 +1020,21 @@ async function updateAttendanceNoteImpl(
       return { success: false, error: authz.error };
     }
 
-    const { data: member } = await supabase
+    const { data: member, error: memberError } = await supabase
       .from('golf_team_members')
       .select('id')
       .eq('team_id', authz.event.team_id)
       .eq('player_id', playerId)
       .eq('status', 'active')
       .maybeSingle();
+    if (memberError) {
+      await logServerError(
+        `[attendance] member read failed while saving a note — denying, but this is an outage not a missing member: ${describeError(memberError)}`,
+        { action: 'golf.updateAttendanceNote', featureArea: 'calendar' },
+        'warning'
+      );
+      return { success: false, error: "Couldn't verify the player's team membership. Please try again." };
+    }
     if (!member) {
       return { success: false, error: 'Player is not an active member of this team' };
     }

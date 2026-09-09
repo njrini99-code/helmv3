@@ -108,13 +108,14 @@ export function EventActionsMenu({
       width="sm"
       ariaLabel="More event actions"
       trigger={
-        <button
+        <Button
           type="button"
+          variant="ghost"
           aria-label="More actions"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-text-tertiary transition-colors hover:bg-surface-sunken hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+          className="h-11 w-11 shrink-0 rounded-full p-0 text-text-tertiary hover:bg-surface-sunken hover:text-text-secondary"
         >
           <MoreHorizontal className="h-4.5 w-4.5" aria-hidden />
-        </button>
+        </Button>
       }
     >
       {error ? (

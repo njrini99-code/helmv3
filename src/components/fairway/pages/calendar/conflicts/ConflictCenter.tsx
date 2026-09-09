@@ -113,7 +113,7 @@ export function ConflictCenter({
   const [filter, setFilter] = React.useState<ConflictFilter>('needsAttention');
   const [selectedEventId, setSelectedEventId] = React.useState<string | null>(null);
 
-  const groups = snapshot?.groups ?? [];
+  const groups = React.useMemo(() => snapshot?.groups ?? [], [snapshot]);
   const needsAttentionGroups = React.useMemo(() => groups.filter(needsAttention), [groups]);
   const unverifiedGroups = React.useMemo(() => groups.filter(isUnverified), [groups]);
   const filteredGroups = filter === 'needsAttention' ? needsAttentionGroups : unverifiedGroups;

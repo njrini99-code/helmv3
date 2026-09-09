@@ -21,7 +21,7 @@
 
 import { AlertTriangle, ChevronRight, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar } from '@/components/fairway';
+import { Avatar, Button } from '@/components/fairway';
 import type { ConflictGroup } from '@/app/golf/actions/conflict-inbox';
 import surfaces from '../CalendarSurfaces.module.css';
 import { enterStyle } from '../motion';
@@ -80,13 +80,14 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect, enter
   const overflow = Math.max(0, group.overlaps.length - MAX_AVATARS);
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onSelect}
       aria-pressed={selected}
       aria-label={conflictRowLabel(group, timeZone)}
       className={cn(
-        'flex w-full min-h-[64px] items-center gap-3 rounded-fw-lg p-3 text-left',
+        'flex h-auto w-full min-h-[64px] items-center justify-start gap-3 rounded-fw-lg p-3 text-left font-normal',
         surfaces.paper,
         surfaces.press,
         enterIndex !== undefined && surfaces.enter,
@@ -144,7 +145,7 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect, enter
       ) : null}
 
       <ChevronRight className="h-5 w-5 shrink-0 text-text-tertiary" aria-hidden="true" />
-    </button>
+    </Button>
   );
 }
 
