@@ -402,10 +402,11 @@ export function FairwayAgendaView({
             </div>
 
             <div className="flex flex-col gap-2.5">
-              {bucket.events.map((ev) => (
+              {bucket.events.map((ev, index) => (
                 <FairwayEventCard
                   key={ev.id}
                   event={ev}
+                  enterIndex={index}
                   showRsvp={!isCoach}
                   rsvpStatus={userRsvpStatuses?.get(ev.id) ?? null}
                   onClick={onEventClick}

@@ -129,10 +129,30 @@ Coach checks attendance
   -> attendance action/component
   -> update checked_in and absence metadata
 
+Coach compares schedules
+  -> getScheduleWindow() (RLS-backed read only)
+  -> getUserBusyPeriodsWithStatus() for the coach and selected active roster members
+  -> verified free/busy snapshot; partial reads are never presented as free
+
 Calendar renders views
   -> month, week, day, mobile list/sheet
   -> conflict detection against classes and blocked time
 ```
+
+## Scheduling Workspace
+
+`src/app/golf/actions/scheduling.ts` is the single server boundary for the
+Fairway “Find a time” workspace. It requires a coach or player membership in
+the requested team; only a coach may request another player’s schedule. The
+returned snapshot carries only the team-local day, named busy intervals, and a
+per-person verification state. `CalendarSchedulingDialog` rechecks the exact
+choice immediately before returning it to the event editor, so a stale visual
+snapshot cannot be used as a confirmation.
+
+The workspace is read-only. Creating or editing an event remains in the
+existing event actions and reuses `checkScheduleConflicts`. A valid
+`golf_coach_blocked_time.recurrence_rule` is authoritative; writes keep its
+legacy `is_recurring` flag in sync for older consumers.
 
 ## Business Rules
 
@@ -141,6 +161,18 @@ Calendar renders views
 - Recurring event edits must respect scope: this, thisAndFuture, or all.
 - Feed tokens must be treated as secrets and rate limited.
 - Calendar conflict detection should consider classes, blocked time, and exclusions.
+- **Class meetings take no RSVPs and never travel through attendance.**
+  `respondToEvent` refuses any `isClassEvent` row with code `class_meeting`;
+  `getUserBusyPeriodsWithStatus` skips class rows reached via
+  `golf_event_attendance`; the conflict inbox re-resolves class-ness from a
+  fresh `golf_events`/`golf_player_classes` read and omits the title when the
+  viewer lacks access. A teammate's class is a titleless busy block or
+  nothing — never a titled event. The `golf_event_attendance_insert_self` RLS
+  policy still lacks an `event_type` check (defense-in-depth migration
+  pending owner decision); the app layer is the enforced boundary. Tests:
+  `src/test/lib/calendar/availability.test.ts`,
+  `src/app/golf/actions/__tests__/conflict-inbox.test.ts`,
+  `src/test/golf/actions/rsvp-failure-vs-refusal.test.ts`.
 - Event state transitions should not skip lifecycle logging when status changes.
 
 ## UI Contract

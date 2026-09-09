@@ -9,13 +9,23 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 // ---------------------------------------------------------------------------
 
 vi.mock('@/components/fairway/overlays/ModalShell', () => {
-  const Root = ({ open, title, children }: { open: boolean; title?: React.ReactNode; children?: React.ReactNode }) =>
-    open ? (
-      <div data-testid="modal-shell">
-        {title ? <h2>{title}</h2> : null}
-        {children}
-      </div>
-    ) : null;
+  // `trigger` is rendered like the real shell's Radix `asChild` trigger: a
+  // click on it opens the dialog. The people picker relies on this.
+  const Root = ({ open, title, children, trigger, onOpenChange }: {
+    open: boolean; title?: React.ReactNode; children?: React.ReactNode;
+    trigger?: React.ReactNode; onOpenChange?: (open: boolean) => void;
+  }) => (
+    <>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- test stub; the real shell's trigger is a native button */}
+      {trigger ? <span onClick={() => onOpenChange?.(true)}>{trigger}</span> : null}
+      {open ? (
+        <div data-testid="modal-shell">
+          {title ? <h2>{title}</h2> : null}
+          {children}
+        </div>
+      ) : null}
+    </>
+  );
   const Body = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   const Footer = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   const ModalShell = Object.assign(Root, { Body, Footer });
@@ -130,7 +140,15 @@ function renderEditor(overrides: Partial<React.ComponentProps<typeof FairwayEven
   return { ...utils, onSave, props };
 }
 
-const playerToggle = (name: RegExp) => screen.getByRole('button', { name });
+/** The invite UI is the people picker (§2.3): open it from the summary
+ * button, toggle rows by name, and apply. Each name toggles once. */
+async function pickPlayers(...names: RegExp[]) {
+  fireEvent.click(screen.getByRole('button', { name: /Choose/ }));
+  for (const name of names) {
+    fireEvent.click(await screen.findByRole('option', { name }));
+  }
+  fireEvent.click(screen.getByRole('button', { name: /Apply attendees/ }));
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -199,8 +217,7 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     const { onSave } = renderEditor();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
-    fireEvent.click(playerToggle(/Ben Reed/)); // deselect existing
-    fireEvent.click(playerToggle(/Cam Knox/)); // select new
+    await pickPlayers(/Ben Reed/, /Cam Knox/); // deselect existing, select new
 
     expect(screen.getByText(/1 player added · 1 player removed/)).toBeInTheDocument();
 
@@ -217,7 +234,7 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
 
     await waitFor(() => expect(screen.getByText(/Couldn't load the current invitees/i)).toBeInTheDocument());
 
-    fireEvent.click(playerToggle(/Cam Knox/));
+    await pickPlayers(/Cam Knox/);
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -378,17 +395,18 @@ describe('FairwayEventEditor — primary button validity', () => {
 // the "Coach (." bug reported from production.
 // ---------------------------------------------------------------------------
 
-describe('FairwayEventEditor — invite grid name display', () => {
-  it('renders full names in the invite grid instead of truncated initials', async () => {
+describe('FairwayEventEditor — people picker name display', () => {
+  it('renders full names in the picker instead of truncated initials', async () => {
     getEventRSVP.mockResolvedValue(rsvpResult([]));
     renderEditor();
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
-    expect(screen.getByRole('button', { name: /Ava Stone/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Ben Reed/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Cam Knox/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Choose/ }));
+    expect(await screen.findByRole('option', { name: /Ava Stone/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Ben Reed/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Cam Knox/ })).toBeInTheDocument();
     // None of the old truncated "First L." forms should be present.
-    expect(screen.queryByRole('button', { name: /^Ava S\.$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Ava S\.$/ })).not.toBeInTheDocument();
   });
 
   it('cannot reproduce the "Coach (." mangling for a parenthetical placeholder name', async () => {
@@ -398,7 +416,336 @@ describe('FairwayEventEditor — invite grid name display', () => {
     });
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
-    expect(screen.getByRole('button', { name: /Coach \(Nick Rini\)/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Choose/ }));
+    expect(await screen.findByRole('option', { name: /Coach \(Nick Rini\)/ })).toBeInTheDocument();
     expect(screen.queryByText('Coach (.')).not.toBeInTheDocument();
+  });
+});
+
+describe('FairwayEventEditor — scheduling verification and draft handoff', () => {
+  it('checks the organizer even when no attendees are selected', async () => {
+    renderEditor({ event: null });
+    expect(screen.getByText('Checking Helm schedules…')).toBeInTheDocument();
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+    expect(checkScheduleConflicts.mock.calls[0]?.[4]).toEqual([]);
+    expect(await screen.findByText('No conflicts found in checked Helm schedules.')).toBeInTheDocument();
+  });
+
+  it('keeps partial availability unverified and does not offer unverified suggestions', async () => {
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: {
+      hasConflict: false, conflicts: [], partial: true,
+      suggestions: [{ start: '2026-06-15T14:00:00Z', end: '2026-06-15T15:00:00Z' }],
+    } });
+    renderEditor({ event: null });
+    expect(await screen.findByText('Schedules partially checked. Some availability is not verified.')).toBeInTheDocument();
+    expect(screen.queryByText(/No conflicts found/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Try / })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check again' })).toBeEnabled();
+  });
+
+  it.each(['rejected', 'unsuccessful'])('shows a retryable unverified state after a %s check', async (failure) => {
+    if (failure === 'rejected') checkScheduleConflicts.mockRejectedValue(new Error('offline'));
+    else checkScheduleConflicts.mockResolvedValue({ success: false, error: 'offline' });
+    renderEditor({ event: null });
+    expect(await screen.findByText('Schedules not verified. The check could not finish.')).toBeInTheDocument();
+    expect(screen.queryByText(/No conflicts found/)).not.toBeInTheDocument();
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: { hasConflict: false, conflicts: [] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+    expect(screen.getByText('Checking Helm schedules…')).toBeInTheDocument();
+    expect(await screen.findByText('No conflicts found in checked Helm schedules.')).toBeInTheDocument();
+  });
+
+  it('checks an all-day edit and excludes the same event for every existing attendee', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
+    renderEditor({ event: makeEvent({ all_day: true, start_date: '2026-06-15T00:00:00Z', end_date: '2026-06-15T00:00:00Z' }) });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+    expect(checkScheduleConflicts.mock.calls.at(-1)).toEqual([
+      '2026-06-15', '00:00', '2026-06-15', '23:59', ['p1', 'p2'], 'evt-1', expect.any(Number), true,
+    ]);
+  });
+
+  it('rechecks existing attendees after accepting a new interval without resetting the draft', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult(['p1', 'p2']));
+    const onFindTime = vi.fn();
+    const { rerender, props, onSave } = renderEditor({ onFindTime });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Draft practice' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'West range' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find a time' }));
+    expect(onFindTime).toHaveBeenCalledWith(expect.objectContaining({ attendeeIds: ['p1', 'p2'], eventId: 'evt-1' }));
+    rerender(<FairwayEventEditor {...props} suspended />);
+    expect(screen.queryByLabelText(/event title/i)).not.toBeInTheDocument();
+    const start = new Date(2026, 6, 20, 23, 30);
+    const end = new Date(2026, 6, 21, 1, 30);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 1 }} />);
+    expect(screen.getByLabelText(/event title/i)).toHaveValue('Draft practice');
+    expect(screen.getByRole('textbox', { name: 'Location' })).toHaveValue('West range');
+    expect(screen.getByText('Checking Helm schedules…')).toBeInTheDocument();
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenLastCalledWith(
+      '2026-07-20', '23:30', '2026-07-21', '01:30', ['p1', 'p2'], 'evt-1', start.getTimezoneOffset(), false,
+    ));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Draft practice', location: 'West range', attendeeIds: ['p1', 'p2'],
+      startDate: '2026-07-20', endDate: '2026-07-21', startTime: '23:30', endTime: '01:30',
+    })));
+  });
+
+  it('shows overlap names and times with an explicit count and expands every overlap', async () => {
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: {
+      hasConflict: true,
+      conflicts: Array.from({ length: 6 }, (_, index) => ({ userId: `u${index}`, userName: `Player ${index + 1}`, conflictingEvent: {
+        title: `Commitment ${index + 1}`, type: 'event', start: '2026-06-15T14:00:00Z', end: '2026-06-15T15:00:00Z',
+      } })), suggestions: [],
+    } });
+    renderEditor({ event: null });
+    expect(await screen.findByText('6 overlaps · 6 people affected')).toBeInTheDocument();
+    expect(screen.getByText('Player 1 — Commitment 1')).toBeInTheDocument();
+    expect(screen.getAllByText(/Jun 15.*Event/)).toHaveLength(4);
+    expect(screen.queryByText('Player 6 — Commitment 6')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show all 6 overlaps (4 shown)' }));
+    expect(screen.getByText('Player 6 — Commitment 6')).toBeInTheDocument();
+  });
+
+  it('discards an obsolete check when a new proposal is already checking', async () => {
+    let resolveOld!: (value: unknown) => void;
+    checkScheduleConflicts.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+    const { rerender, props } = renderEditor({ event: null });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalledOnce());
+    checkScheduleConflicts.mockResolvedValue({ success: true, data: { hasConflict: false, conflicts: [], partial: true } });
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: '2026-07-20T14:00:00Z', end: '2026-07-20T15:00:00Z', token: 9 }} />);
+    resolveOld({ success: true, data: { hasConflict: false, conflicts: [], partial: false } });
+    expect(await screen.findByText('Schedules partially checked. Some availability is not verified.')).toBeInTheDocument();
+    expect(screen.queryByText(/No conflicts found/)).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mobile stage navigation and the review receipt (SCREEN-BUILD-PLAN.md §2.1).
+// Every field stays mounted regardless of `stage` (see
+// editor/EventEditorStages.tsx's docblock) — the dock only gates whether the
+// review receipt renders and moves focus, so this exercises the dock without
+// disturbing any of the suite above.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — mobile stage navigation and review', () => {
+  it('Continue off Essentials is disabled until the title is filled', async () => {
+    renderEditor({ event: null });
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    expect(continueButton).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
+    expect(continueButton).toBeEnabled();
+  });
+
+  it('stage navigation preserves the draft, and the review stage surfaces unresolved verification', async () => {
+    checkScheduleConflicts.mockResolvedValue({
+      success: true,
+      data: {
+        hasConflict: true,
+        conflicts: [
+          {
+            userId: 'p1',
+            userName: 'Ava Stone',
+            conflictingEvent: { title: 'Lift', type: 'event', start: '2026-06-15T14:00:00Z', end: '2026-06-15T15:00:00Z' },
+          },
+        ],
+        suggestions: [],
+      },
+    });
+    renderEditor({ event: null });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'West range' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Go to People & time' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Review' }));
+
+    // The draft is untouched by navigating stages — nothing was unmounted.
+    expect(screen.getByLabelText(/event title/i)).toHaveValue('Morning practice');
+    expect(screen.getByRole('textbox', { name: 'Location' })).toHaveValue('West range');
+
+    // The review receipt reflects that same draft and states the unresolved
+    // verification plainly, without repeating the panel's own sentence or
+    // upgrading a real conflict to a clean bill.
+    expect(await screen.findByText(/Morning practice · Practice/)).toBeInTheDocument();
+    expect(screen.getByText(/West range/)).toBeInTheDocument();
+    expect(await screen.findByText(/1 unresolved overlap/i)).toBeInTheDocument();
+    expect(screen.getByText('Attendees will be notified.')).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// §7: the primary label becomes "Move event" only when every changed field
+// is a time field. Driven through the existing `suggestedTime` prop (already
+// exercised above) rather than the DateChooser/TimeChooser popovers, since
+// that's the code path that actually mutates start/end date and time.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — "Move event" label', () => {
+  it('relabels Save changes to Move event when only the time changed', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const { rerender, props } = renderEditor();
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /^save changes$/i })).toBeInTheDocument();
+
+    const start = new Date(2026, 5, 16, 9, 0);
+    const end = new Date(2026, 5, 16, 11, 0);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 101 }} />);
+
+    expect(await screen.findByRole('button', { name: /^move event$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^save changes$/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps Save changes when a non-time field changes alongside the time', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const { rerender, props } = renderEditor();
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'West range' } });
+    const start = new Date(2026, 5, 16, 9, 0);
+    const end = new Date(2026, 5, 16, 11, 0);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 102 }} />);
+
+    expect(await screen.findByRole('button', { name: /^save changes$/i })).toBeInTheDocument();
+  });
+
+  // Regression: opening a series ROOT re-baselines the pristine snapshot's
+  // recurrence fields from the stored rule (so extending/reshaping the
+  // pattern doesn't itself count as a "change"). That re-baseline must not
+  // leave a stale phantom diff behind once the coach then moves the time —
+  // the label should still read "Move event", not "Save changes".
+  it('still reads Move event on a series root after its recurrence prefill settles', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const { rerender, props } = renderEditor({
+      event: makeEvent({ recurrence_rule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR;COUNT=12' }),
+    });
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /^save changes$/i })).toBeInTheDocument();
+
+    const start = new Date(2026, 5, 16, 9, 0);
+    const end = new Date(2026, 5, 16, 11, 0);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 103 }} />);
+
+    expect(await screen.findByRole('button', { name: /^move event$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^save changes$/i })).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Offline (§2.1 states): Publish and Find a time are disabled with an
+// explicit reason; every other field stays editable, and the draft is never
+// dropped just because the network is down.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — offline', () => {
+  afterEach(() => {
+    Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('disables Publish and Find a time while offline, and re-enables them back online', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const onFindTime = vi.fn();
+    renderEditor({ onFindTime });
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeEnabled();
+
+    Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
+    fireEvent(window, new Event('offline'));
+
+    expect(await screen.findByText(/Reconnect to publish/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Find a time' })).toBeDisabled();
+
+    Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
+    fireEvent(window, new Event('online'));
+
+    await waitFor(() => expect(screen.queryByText(/Reconnect to publish/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeEnabled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Desktop (≥1024px, SCREEN-BUILD-PLAN.md §2 shared rules): the review
+// receipt is always visible with no stage stepper — this actually forces the
+// `useMediaQuery('(min-width: 1024px)')` branch to true, rather than relying
+// on the suite's default matchMedia stub (always non-matching, i.e. mobile).
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — desktop layout', () => {
+  it('shows the review receipt immediately with no stage dock, unlike mobile', async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes('1024'),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    try {
+      getEventRSVP.mockResolvedValue(rsvpResult([]));
+      renderEditor();
+      await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+      // No mobile stage dock — desktop has no stepper.
+      expect(screen.queryByRole('button', { name: 'Continue' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Go to /i })).not.toBeInTheDocument();
+
+      // The receipt is visible without navigating any stage.
+      expect(await screen.findByRole('heading', { name: 'Review' })).toBeInTheDocument();
+      expect(screen.getByText('Attendees will be notified.')).toBeInTheDocument();
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Empty roster (§2.1 states): "empty roster (invite button disabled with
+// 'No players on this team yet')". An empty team must never make the whole
+// invite section disappear — that would read as "there's no invite step",
+// not "there's no one to invite yet" — so it renders a disabled affordance
+// with that exact message instead. Covers both the default inline-fallback
+// path (no people-picker seam wired) and the summary-button seam.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — empty roster', () => {
+  it('shows a disabled invite affordance with "No players on this team yet." when the roster is empty', async () => {
+    renderEditor({ event: null, teamPlayers: [] });
+
+    expect(await screen.findByText(/No players on this team yet\./i)).toBeInTheDocument();
+    const inviteButton = screen.getByText(/No players on this team yet\./i).closest('button');
+    expect(inviteButton).toBeDisabled();
+
+    // No trace of the populated-roster affordances.
+    expect(screen.queryByText(/No one invited yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /select all/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the same disabled empty-roster message when the people-picker seam is wired', async () => {
+    const onOpenPeoplePicker = vi.fn();
+    renderEditor({ event: null, teamPlayers: [], onOpenPeoplePicker });
+
+    const inviteButton = (await screen.findByText(/No players on this team yet\./i)).closest('button');
+    expect(inviteButton).toBeDisabled();
+    if (inviteButton) fireEvent.click(inviteButton);
+    expect(onOpenPeoplePicker).not.toHaveBeenCalled();
+  });
+
+  // Discriminator: `availablePlayers` (derived synchronously from the
+  // `teamPlayers` prop) is empty from the first render, independent of
+  // whether the event's OWN attendee-hydration fetch (`getEventRSVP`,
+  // `attendeesLoading`) is still in flight — an empty team is already known
+  // before that unrelated fetch resolves. Editing an existing event (not
+  // `event: null`) puts hydration into its 'loading' window immediately on
+  // mount, so asserting synchronously (no `findBy`/`waitFor`) here would
+  // have caught the earlier version of this fix, which hid the empty state
+  // for as long as `attendeesLoading` stayed true.
+  it('shows the disabled empty-roster message even while this event\'s own attendee hydration is still loading', () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    renderEditor({ teamPlayers: [] });
+
+    expect(screen.getByText(/No players on this team yet\./i)).toBeInTheDocument();
   });
 });

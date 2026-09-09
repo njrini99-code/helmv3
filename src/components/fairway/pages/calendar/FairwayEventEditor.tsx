@@ -1,64 +1,24 @@
 'use client';
 
-/**
- * ============================================================================
- * Fairway · Calendar · FairwayEventEditor — native create / edit event modal
- * ----------------------------------------------------------------------------
- * The Fairway re-skin of the legacy EventDetailModal (coach create + edit). ALL
- * the form logic is copied VERBATIM — formData shape (GolfEventFormData), the
- * edit-mode prefill, the debounced conflict check (checkScheduleConflicts), the
- * recurring-series detection + scope picker, attendee toggling, and the
- * onSave/onDelete contract are byte-for-byte the same. Only the presentation
- * changes: a centered Fairway ModalShell + native inputs styled with Fairway
- * tokens (the proven-safe pattern — no Base UI control rewrite), a colored-avatar
- * attendee picker (same tints as the member rail), and a Fairway conflict notice.
- *
- * Wiring lives in FairwayCalendar (handleSaveEvent / handleDeleteEvent), which
- * replicates PremiumCalendarClient's payload mapping and calls the EXACT same
- * server actions (createGolfEvent / updateGolfEvent / deleteGolfEvent +
- * createRecurringEvent / editRecurringEvent / deleteRecurringEvent). No writes
- * are reimplemented here; this component only gathers form data.
- *
- * Coach-only (create + edit). The player path stays the read-only Fairway drawer.
- * ========================================================================== */
+import surfaces from './CalendarSurfaces.module.css';
+
+/** Event form with preserved drafts and explicit schedule verification. */
 
 import * as React from 'react';
 import {
-  Dumbbell,
-  Trophy,
-  Flag,
-  Users,
-  Plane,
-  CalendarDays,
-  Calendar as CalendarIcon,
-  Clock,
-  MapPin,
-  AlignLeft,
-  Repeat,
   AlertTriangle,
   Trash2,
-  Check,
   Ban,
 } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { DiscardChangesModal } from '@/components/fairway/overlays/DiscardChangesModal';
 import { Button } from '@/components/fairway/controls/button';
-import { Button as UiButton } from '@/components/ui/button';
-import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
-import { Switch } from '@/components/fairway/forms/Switch';
-import { FormSection } from '@/components/fairway/forms/FormSection';
-import { Segmented } from '@/components/fairway/controls/segmented';
-import {
-  DateChooser,
-  TimeChooser,
-  SpanSummary,
-} from '@/components/fairway/pages/calendar/EventWhenFields';
+import { fwHaptic } from '@/lib/fairway/haptics';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type {
   GolfEventFormData,
-  RecurrenceFrequency,
   RecurringEditScope,
 } from '@/components/golf/calendar/EventDetailModal';
 import {
@@ -67,24 +27,40 @@ import {
   toDateTimeLocalValue,
   buildRecurrenceRule,
   recurrenceFieldsFromRule,
-  WEEKDAY_OPTIONS,
-  MIN_RECURRENCE_COUNT,
-  MAX_RECURRENCE_COUNT,
-  type RecurrenceEndMode,
 } from '@/components/golf/calendar/event-form-helpers';
 import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
-import { tintFor } from './FairwayCalendarMemberRail';
 import { localDayIso } from '@/lib/golf/local-day';
+import type { TeamPlayer } from './editor/types';
+import type { PeoplePickerPerson } from './people/CalendarPeoplePicker';
+import { EventEssentialsFields } from './editor/EventEssentialsFields';
+import { EventPeopleTimeFields } from './editor/EventPeopleTimeFields';
+import { EventReviewReceipt } from './editor/EventReviewReceipt';
+import { EventEditorStages } from './editor/EventEditorStages';
+import { useEventEditorStages, type EditorStageKey } from './editor/useEventEditorStages';
+import { buildChangeSummary, isMoveOnlyChange } from './editor/changeDetection';
+import type { ConflictData, VerificationStatus } from './editor/EventVerificationPanel';
 
-interface TeamPlayer {
-  id: string;
-  first_name: string;
-  last_name: string;
-  avatar_url?: string;
+export interface FairwayEventTimeRequest {
+  date: string;
+  attendeeIds: string[];
+  startTime: string;
+  endTime: string;
+  endDate: string;
+  eventId?: string;
+}
+
+export interface FairwayEventSuggestedTime {
+  start: string;
+  end: string;
+  token: number;
 }
 
 export interface FairwayEventEditorProps {
   open: boolean;
+  /** Keep the draft mounted while the shared scheduling workspace is open. */
+  suspended?: boolean;
+  onFindTime?: (request: FairwayEventTimeRequest) => void;
+  suggestedTime?: FairwayEventSuggestedTime | null;
   onClose: () => void;
   /** null = create; an event = edit. */
   event: CalendarEvent | null;
@@ -111,30 +87,13 @@ export interface FairwayEventEditorProps {
   teamPlayers?: TeamPlayer[];
   currentUserId?: string;
   timezone?: string | null;
+  /**
+   * Seam for the real people picker (§2.3, W-People). Until the coordinator
+   * wires it, the invite grid stays inline — passing this prop swaps the
+   * grid for a summary button that opens the picker instead.
+   */
+  onOpenPeoplePicker?: () => void;
 }
-
-type EventType = GolfEventFormData['eventType'];
-
-const EVENT_TYPES: ReadonlyArray<{ type: EventType; label: string; icon: typeof Dumbbell }> = [
-  { type: 'practice', label: 'Practice', icon: Dumbbell },
-  { type: 'tournament', label: 'Tournament', icon: Trophy },
-  { type: 'qualifier', label: 'Qualifier', icon: Flag },
-  { type: 'meeting', label: 'Meeting', icon: Users },
-  { type: 'travel', label: 'Travel', icon: Plane },
-  { type: 'other', label: 'Other', icon: CalendarDays },
-];
-
-const RECURRENCE_OPTIONS: ReadonlyArray<{ value: RecurrenceFrequency; label: string }> = [
-  { value: 'none', label: 'Does not repeat' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'biweekly', label: 'Every 2 weeks' },
-  { value: 'monthly', label: 'Monthly' },
-];
-
-const fieldCls =
-  'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50';
-const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
 
 /**
  * Hand-rolled here and identical to `localDayIso()`, which the two legacy
@@ -272,17 +231,6 @@ export function shiftStartTime(form: GolfEventFormData, nextStart: string | null
   return { ...form, startTime: nextStart, endTime: fromMinutes(endTotal), endDate };
 }
 
-interface ConflictData {
-  hasConflict: boolean;
-  conflicts: Array<{
-    userId: string;
-    userName: string;
-    playerId?: string;
-    conflictingEvent: { id: string; title: string; type: 'event' | 'class' | 'blocked'; start: string; end: string };
-  }>;
-  suggestions: Array<{ start: Date; end: Date }>;
-}
-
 /**
  * The wire shape of `checkScheduleConflicts`, which is NOT `ConflictData`.
  *
@@ -320,6 +268,7 @@ function toDate(value: Date | string): Date {
 function normalizeConflictData(raw: WireConflictData): ConflictData {
   return {
     hasConflict: raw.hasConflict,
+    partial: raw.partial ?? false,
     conflicts: raw.conflicts ?? [],
     suggestions: (raw.suggestions ?? [])
       .map((s) => ({ start: toDate(s.start), end: toDate(s.end) }))
@@ -352,6 +301,9 @@ const DEFAULT_FORM: GolfEventFormData = {
 
 export function FairwayEventEditor({
   open,
+  suspended = false,
+  onFindTime,
+  suggestedTime,
   onClose,
   event,
   isCoach,
@@ -362,25 +314,63 @@ export function FairwayEventEditor({
   isSaving,
   teamPlayers = [],
   currentUserId,
-  timezone,
+  onOpenPeoplePicker,
 }: FairwayEventEditorProps) {
   const isCreating = !event;
   const availablePlayers = teamPlayers.filter((p) => p.id !== currentUserId);
+  // The people picker (§2.3) owns its own search, so it gets the whole
+  // roster rather than the query-filtered `visiblePlayers` the inline grid
+  // shows; applying replaces the selection outright — that is what the
+  // picker's Apply means, unlike the grid's per-avatar toggles.
+  const pickerPeople = React.useMemo<PeoplePickerPerson[]>(
+    () => availablePlayers.map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}`.trim() || 'Player', avatarUrl: p.avatar_url ?? null })),
+    [availablePlayers],
+  );
+  const applyAttendees = React.useCallback((ids: string[]) => {
+    setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+  }, []);
 
+  // Desktop means ≥1024px (SCREEN-BUILD-PLAN.md §2 shared rules): a
+  // two-column layout with the review receipt always visible, no stage
+  // stepper. Below that, the mobile staged flow (dots + Back/Continue dock)
+  // applies — see EventEditorStages.tsx for why staging doesn't hide fields.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
-  const tzAbbrev = React.useMemo(() => {
-    if (!timezone) return null;
-    try {
-      const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' }).formatToParts(
-        new Date(),
-      );
-      return parts.find((p) => p.type === 'timeZoneName')?.value ?? null;
-    } catch {
-      return null;
-    }
-  }, [timezone]);
+  // Offline (§2.1 states): Publish and Find a time are disabled with an
+  // explicit reason; every other field stays editable so the draft isn't
+  // locked just because the network is down. `navigator.onLine` defaults to
+  // `true` in every browser and in jsdom, so this never fires in existing
+  // tests unless they explicitly flip it.
+  const [isOffline, setIsOffline] = React.useState(
+    () => typeof navigator !== 'undefined' && 'onLine' in navigator && !navigator.onLine,
+  );
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
 
   const [formData, setFormData] = React.useState<GolfEventFormData>(DEFAULT_FORM);
+  /**
+   * The event-name input carries a DOM `required` attribute, but this form has
+   * no enclosing <form> to submit, so that attribute was purely decorative —
+   * the primary button stayed clickable (`disabled: false`) against an empty
+   * title. Computed early (not just near the footer) because the mobile
+   * stage machine also needs it to gate Continue off the essentials stage.
+   */
+  const isTitleValid = formData.title.trim().length > 0;
+  const tzAbbrev = React.useMemo(() => {
+    const date = new Date(`${formData.startDate}T12:00:00`);
+    if (!Number.isFinite(date.getTime())) return null;
+    return new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+      .formatToParts(date).find((part) => part.type === 'timeZoneName')?.value ?? null;
+  }, [formData.startDate]);
   // Roster filter. Only surfaced above 8 players (see the search box below);
   // the state is unconditional so clearing it can't strand a stale filter.
   const [attendeeQuery, setAttendeeQuery] = React.useState('');
@@ -413,6 +403,9 @@ export function FairwayEventEditor({
     if (error) errorRef.current?.scrollIntoView({ block: 'nearest' });
   }, [error]);
   const [conflicts, setConflicts] = React.useState<ConflictData | null>(null);
+  const [conflictStatus, setConflictStatus] = React.useState<VerificationStatus>('idle');
+  const [conflictRetry, setConflictRetry] = React.useState(0);
+  const lastSuggestionToken = React.useRef<number | null>(null);
   // Two DISTINCT destructive confirms, matching weight (a real ModalShell
   // confirm dialog with consequence copy — same pattern as Delete Task),
   // never a bare inline tap-to-confirm:
@@ -427,6 +420,7 @@ export function FairwayEventEditor({
   // against a null baseline, so a slow/failed fetch can't wipe attendees.
   const [existingAttendeeIds, setExistingAttendeeIds] = React.useState<string[] | null>(null);
   const [attendeeHydration, setAttendeeHydration] = React.useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [attendeeRetry, setAttendeeRetry] = React.useState(0);
 
   // Edit prefill / create reset — verbatim from the legacy modal.
   React.useEffect(() => {
@@ -456,9 +450,14 @@ export function FairwayEventEditor({
       // (the old toISOString prefill displayed UTC wall-time — audit #15).
       const rsvpDeadline = toDateTimeLocalValue(event.rsvp_deadline);
       const isAllDay = event.all_day ?? false;
+      // All-day values represent calendar dates, not viewer-local instants.
+      if (isAllDay) {
+        startDate = startDateTime.slice(0, 10) || getTodayDate();
+        endDate = endDateTime.slice(0, 10) || null;
+      }
       const prefilled: GolfEventFormData = {
         title: event.title || '',
-        eventType: (event.event_type as EventType) || 'practice',
+        eventType: (event.event_type as GolfEventFormData['eventType']) || 'practice',
         startDate,
         endDate,
         startTime: isAllDay ? null : startTime,
@@ -516,7 +515,7 @@ export function FairwayEventEditor({
         if (result.success && result.data) {
           const ids = result.data.summary.attendees.map((a) => a.playerId);
           setExistingAttendeeIds(ids);
-          setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+          setFormData((prev) => ({ ...prev, attendeeIds: Array.from(new Set([...ids, ...prev.attendeeIds])) }));
           // Hydration is not a coach edit. pristineRef was snapshotted when
           // the editor opened, before these ids arrived, so without
           // re-baselining, opening an event that HAS attendees and closing it
@@ -535,7 +534,7 @@ export function FairwayEventEditor({
     return () => {
       cancelled = true;
     };
-  }, [open, event, isCreating]);
+  }, [open, event, isCreating, attendeeRetry]);
 
   // Series-root edits: prefill the recurrence pattern from the stored rule so
   // the series can be extended (more occurrences / later end date) or
@@ -563,13 +562,25 @@ export function FairwayEventEditor({
   }, [isCreating, existingAttendeeIds, formData.attendeeIds]);
   const attendeeChangeSummary = attendeeChanges ? summarizeAttendeeChanges(attendeeChanges) : null;
 
-  // In edit mode only check conflicts for NEWLY added players — existing
-  // invitees already have this event in their schedule, so checking them
-  // would flag the event against itself.
-  const conflictCheckIds = React.useMemo(() => {
-    if (!isCreating && attendeeChanges) return attendeeChanges.addAttendeeIds;
-    return formData.attendeeIds;
-  }, [isCreating, formData.attendeeIds, attendeeChanges]);
+  // The excluded event ID prevents self-overlap; every selected person must
+  // be checked again when the event moves, including existing invitees.
+  const conflictCheckIds = formData.attendeeIds;
+
+  React.useEffect(() => {
+    if (!open || !suggestedTime || suggestedTime.token === lastSuggestionToken.current) return;
+    const start = new Date(suggestedTime.start);
+    const end = new Date(suggestedTime.end);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return;
+    lastSuggestionToken.current = suggestedTime.token;
+    setFormData((prev) => ({
+      ...prev,
+      startDate: localDayIso(start),
+      endDate: localDayIso(end),
+      startTime: start.toTimeString().slice(0, 5),
+      endTime: end.toTimeString().slice(0, 5),
+      allDay: false,
+    }));
+  }, [open, suggestedTime]);
 
   // Live human-readable summary of the pattern being built, e.g.
   // "Every 2 weeks on Mon, Wed, Fri until Aug 15, 2026".
@@ -579,52 +590,51 @@ export function FairwayEventEditor({
     return rule ? describeRecurrenceRule(rule) : null;
   }, [formData]);
 
-  // Debounced conflict check — verbatim contract (checkScheduleConflicts).
+  // Invalidate the previous result as soon as the proposal changes. Requests
+  // include all-day windows and an empty player list (the server adds You).
   React.useEffect(() => {
     let cancelled = false;
+    setConflicts(null);
+    if (!open || event?.status === 'cancelled' || !formData.startDate ||
+        (!formData.allDay && (!formData.startTime || !formData.endTime))) {
+      setConflictStatus('idle');
+      return;
+    }
+    if (!isCreating && attendeeHydration !== 'loaded') {
+      setConflictStatus(attendeeHydration === 'error' ? 'error' : 'checking');
+      return;
+    }
+    setConflictStatus('checking');
     async function check() {
-      if (conflictCheckIds.length === 0 || !formData.startDate || formData.allDay) {
-        setConflicts(null);
-        return;
-      }
-      if (!formData.startTime || !formData.endTime) {
-        setConflicts(null);
-        return;
-      }
       try {
         const { checkScheduleConflicts } = await import('@/app/golf/actions/golf');
         const result = await checkScheduleConflicts(
           formData.startDate,
-          formData.startTime,
+          formData.allDay ? '00:00' : formData.startTime!,
           formData.endDate || formData.startDate,
-          formData.endTime,
+          formData.allDay ? '23:59' : formData.endTime!,
           conflictCheckIds,
-          undefined,
-          /**
-           * Anchor the proposed window to the coach's wall clock.
-           *
-           * The action's last parameter exists for exactly this (audit finding
-           * #7) and defaults to UTC when omitted — which this call site did.
-           * A coach in EDT picking 9:00 AM had the window compared as 09:00
-           * UTC, i.e. 5:00 AM their time, so conflicts were computed against a
-           * window four hours off the one on screen: real clashes missed, and
-           * clashes reported against a slot the coach never chose.
-           */
-          new Date().getTimezoneOffset(),
+          event?.id,
+          new Date(`${formData.startDate}T${formData.startTime || '00:00'}`).getTimezoneOffset(),
+          formData.allDay,
         );
-        if (!cancelled && result.success && result.data) {
+        if (cancelled) return;
+        if (result.success && result.data) {
           setConflicts(normalizeConflictData(result.data as WireConflictData));
+          setConflictStatus('ready');
+        } else {
+          setConflictStatus('error');
         }
       } catch {
-        /* conflict check failed — continue without warning */
+        if (!cancelled) setConflictStatus('error');
       }
     }
-    const t = setTimeout(check, 500);
+    const timer = setTimeout(check, 500);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
-  }, [conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
+  }, [open, isCreating, event?.id, event?.status, attendeeHydration, conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay, conflictRetry]);
 
   const isInSeries = !isCreating && Boolean(event && (event.parent_event_id || event.recurrence_rule));
   const [pendingScopeAction, setPendingScopeAction] = React.useState<null | 'edit' | 'delete'>(null);
@@ -659,6 +669,7 @@ export function FairwayEventEditor({
     try {
       if (pendingScopeAction === 'edit') {
         await onSave({ ...buildSubmitData(), editScope: scope });
+        fwHaptic('success');
       } else if (pendingScopeAction === 'delete' && onDelete) {
         await onDelete(scope);
       }
@@ -706,6 +717,7 @@ export function FairwayEventEditor({
     }
     try {
       await onSave(buildSubmitData());
+      fwHaptic('success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save event');
     }
@@ -758,18 +770,6 @@ export function FairwayEventEditor({
     }
   };
 
-  const toggleRecurrenceWeekday = (day: number) => {
-    setFormData((prev) => {
-      const current = prev.recurrenceWeekdays ?? [];
-      return {
-        ...prev,
-        recurrenceWeekdays: current.includes(day)
-          ? current.filter((d) => d !== day)
-          : [...current, day].sort((a, b) => a - b),
-      };
-    });
-  };
-
   const toggleAttendee = (id: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -791,38 +791,15 @@ export function FairwayEventEditor({
     const startDate = localDayIso(s.start);
     const startTime = s.start.toTimeString().slice(0, 5);
     const endTime = s.end.toTimeString().slice(0, 5);
-    setFormData((prev) => ({ ...prev, startDate: startDate || prev.startDate, startTime, endTime, allDay: false }));
+    setFormData((prev) => ({ ...prev, startDate: startDate || prev.startDate, endDate: localDayIso(s.end), startTime, endTime, allDay: false }));
     setConflicts(null);
   };
-
-  // Same robust first-letter extraction as FairwayCalendarMemberRail's
-  // `initials` (finding #85) — skips a "(Captain)"/"(C)" role-tag suffix and
-  // any other leading non-letter character instead of grabbing name[0] raw.
-  const firstLetter = (name: string | null | undefined): string => {
-    if (!name) return '';
-    const match = name.replace(/\(.*?\)/g, '').match(/\p{L}/u);
-    return match ? match[0] : '';
-  };
-  const initials = (p: TeamPlayer) => `${firstLetter(p.first_name)}${firstLetter(p.last_name)}`.toUpperCase() || '—';
 
   // Soft-cancelled events are read-only — the only offered action is
   // Restore (when wired). Re-cancelling is a no-op, so Delete is hidden too.
   const isCancelled = !isCreating && event?.status === 'cancelled';
   const locked = isSaving || isCancelled;
   const attendeesLoading = attendeeHydration === 'loading';
-
-  /**
-   * The event-name input carries a DOM `required` attribute, but this form has
-   * no enclosing <form> to submit, so that attribute was purely decorative —
-   * the primary button stayed clickable (`disabled: false`) against an empty
-   * title, matching the Settings-page precedent's OPPOSITE of how a primary
-   * action should behave (Save/Create stays disabled until the form is
-   * actually submittable — see FairwaySettingsGeneral's `disabled={!isDirty}`
-   * SaveRow gating). This mirrors that: the button reflects validity, not just
-   * clickability. handleSubmit's own `if (!formData.title.trim())` guard is
-   * UNCHANGED below — this is an added layer, not a replacement for it.
-   */
-  const isTitleValid = formData.title.trim().length > 0;
 
   /**
    * Has the coach actually changed anything since the editor opened?
@@ -838,12 +815,76 @@ export function FairwayEventEditor({
   }, [formData]);
 
   /**
+   * Changed-field diff vs the prefill snapshot (§2.2 review receipt) and the
+   * §7 "Move event" rule: the primary label becomes "Move event" only when
+   * every changed field is a time field (start/end date or time, all-day),
+   * never on create and never when anything else changed alongside the time.
+   */
+  const changedFields = React.useMemo(
+    () => buildChangeSummary(pristineRef.current, formData),
+    [formData],
+  );
+  const isMoveOnly = React.useMemo(
+    () => !isCreating && isMoveOnlyChange(pristineRef.current, formData),
+    [isCreating, formData],
+  );
+  const primaryLabel = isCreating ? 'Create event' : isMoveOnly ? 'Move event' : 'Save changes';
+
+  /**
+   * Mobile staged flow (§2.1): essentials -> people & time -> review. Every
+   * field stays mounted regardless of `stage` (see EventEditorStages.tsx's
+   * docblock) — this only drives the dot/dock UI and, on mobile, whether the
+   * review receipt renders. Desktop ignores it and shows everything at once.
+   */
+  const canContinueStage = React.useCallback(
+    (s: EditorStageKey) => {
+      if (s === 'essentials') return isTitleValid;
+      if (s === 'people-time') {
+        return Boolean(formData.startDate) && (formData.allDay || Boolean(formData.startTime && formData.endTime));
+      }
+      return true;
+    },
+    [isTitleValid, formData.startDate, formData.allDay, formData.startTime, formData.endTime],
+  );
+  const stageResetKey = `${open}:${isCreating ? 'new' : event?.id}`;
+  const { stage, stageIndex, stages, isFirst, isLast, canContinueNow, next, back, goTo } = useEventEditorStages({
+    resetKey: stageResetKey,
+    canContinue: canContinueStage,
+  });
+  const stageHeadingIds: Record<EditorStageKey, string> = {
+    essentials: 'ev-stage-essentials',
+    'people-time': 'ev-stage-people-time',
+    review: 'ev-stage-review',
+  };
+  const focusStageHeading = React.useCallback((key: EditorStageKey) => {
+    if (typeof window === 'undefined') return;
+    window.requestAnimationFrame(() => {
+      document.getElementById(stageHeadingIds[key])?.focus();
+    });
+    // stageHeadingIds is a stable literal object re-created each render but
+    // with identical values — safe to omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const handleStageContinue = () => {
+    next();
+    focusStageHeading(stages[Math.min(stageIndex + 1, stages.length - 1)]!.key);
+  };
+  const handleStageBack = () => {
+    back();
+    focusStageHeading(stages[Math.max(stageIndex - 1, 0)]!.key);
+  };
+  const handleStageGoTo = (key: EditorStageKey) => {
+    goTo(key);
+    focusStageHeading(key);
+  };
+
+  /**
    * Every close attempt funnels here — Escape, scrim tap, the X (all via
    * ModalShell's onOpenChange) and the footer Cancel button. An untouched form
    * closes immediately; a dirty one asks first.
    */
   function requestClose() {
-    if (isSaving) return;
+    if (isSaving || suspended) return;
     if (isDirty) {
       setConfirmDiscardOpen(true);
       return;
@@ -854,13 +895,14 @@ export function FairwayEventEditor({
   return (
     <>
     <ModalShell
-      open={open}
+      open={open && !suspended}
       onOpenChange={(o) => {
-        if (!o) requestClose();
+        if (!o && !suspended) requestClose();
       }}
-      size="xl"
+      size={isDesktop ? 'full' : 'xl'}
       title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
       data-slot="event-editor"
+      className={surfaces.panel}
     >
       {/* Recurring-series scope picker (edit/delete) — overrides the body */}
       {pendingScopeAction ? (
@@ -977,563 +1019,104 @@ export function FairwayEventEditor({
               </div>
             ) : null}
 
-            {/* Title — with a green editorial spine. The wrapper carries the
-                visible focus cue (WCAG 2.4.7) since the input itself is a
-                bare editorial field with no border. */}
-            <div className="flex items-center gap-3 rounded-fw-md transition-shadow focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-2 focus-within:ring-offset-canvas">
-              <span aria-hidden className="h-7 w-1 flex-shrink-0 rounded-full bg-accent-500" />
-              <UiInput
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            {/* Mobile stage dock — see EventEditorStages.tsx for why staging
+                doesn't hide any field below. Hidden on desktop (no stepper,
+                everything is visible at once) and while cancelled (nothing
+                to move toward). */}
+            {!isDesktop && !isCancelled ? (
+              <EventEditorStages
+                stage={stage}
+                stages={stages}
+                stageIndex={stageIndex}
+                isFirst={isFirst}
+                isLast={isLast}
+                canContinueNow={canContinueNow}
+                onBack={handleStageBack}
+                onContinue={handleStageContinue}
+                onGoTo={handleStageGoTo}
+              />
+            ) : null}
+
+            <div
+              id={stageHeadingIds.essentials}
+              role="group"
+              aria-label="Essentials"
+              tabIndex={-1}
+              className="flex flex-col gap-5 outline-none"
+            >
+              <EventEssentialsFields formData={formData} onChange={setFormData} disabled={locked} />
+            </div>
+
+            <div
+              id={stageHeadingIds['people-time']}
+              role="group"
+              aria-label="People and time"
+              tabIndex={-1}
+              className="outline-none"
+            >
+              <EventPeopleTimeFields
+                formData={formData}
+                setFormData={setFormData}
+                shiftStartDate={shiftStartDate}
+                shiftStartTime={shiftStartTime}
                 disabled={locked}
-                placeholder="Event name…"
-                aria-label="Event title"
-                className="w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary focus-visible:ring-0 focus-visible:ring-offset-0"
-                required
+                isCancelled={isCancelled}
+                tzAbbrev={tzAbbrev}
+                desktopSplit={isDesktop}
+                offline={isOffline}
+                eventId={event?.id}
+                onFindTime={onFindTime ? (request) => onFindTime(request) : undefined}
+                attendeesLoading={attendeesLoading}
+                attendeeHydrationError={attendeeHydration === 'error'}
+                availablePlayers={availablePlayers}
+                visiblePlayers={visiblePlayers}
+                attendeeQuery={attendeeQuery}
+                onAttendeeQueryChange={setAttendeeQuery}
+                allPlayersSelected={allPlayersSelected}
+                onSelectAllPlayers={() =>
+                  setFormData({
+                    ...formData,
+                    attendeeIds: Array.from(new Set([...formData.attendeeIds, ...visiblePlayers.map((p) => p.id)])),
+                  })
+                }
+                onClearPlayers={() => setFormData({ ...formData, attendeeIds: [] })}
+                onToggleAttendee={toggleAttendee}
+                attendeeChangeSummary={attendeeChangeSummary}
+                attendeeRemovalCount={attendeeChanges?.removeAttendeeIds.length ?? 0}
+                onOpenPeoplePicker={onOpenPeoplePicker}
+                pickerPeople={pickerPeople}
+                onApplyAttendees={applyAttendees}
+                verificationStatus={conflictStatus}
+                conflicts={conflicts}
+                onRetryAttendees={() => setAttendeeRetry((value) => value + 1)}
+                onRetryConflicts={() => setConflictRetry((value) => value + 1)}
+                onSelectSuggestion={selectSuggestedTime}
+                showRecurrence={isCreating || isSeriesRoot}
+                isSeriesRoot={isSeriesRoot}
+                recurrencePreview={recurrencePreview}
               />
             </div>
 
-            {/* Event type */}
-            <div className="flex flex-wrap gap-2">
-              {EVENT_TYPES.map(({ type, label, icon: Icon }) => {
-                const active = formData.eventType === type;
-                return (
-                  <UiButton
-                    key={type}
-                    variant="ghost"
-                    type="button"
-                    onClick={() => setFormData({ ...formData, eventType: type })}
-                    disabled={locked}
-                    aria-pressed={active}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
-                      // UiButton's base style hardcodes `ring-offset-white`
-                      // (src/components/ui/button.tsx); twMerge only dedupes
-                      // within the same ring-offset-* group, so the color
-                      // override below doesn't touch it — a bright white
-                      // square flashes around the ring in dark mode without
-                      // this explicit override, matching FairwayDayStrip /
-                      // FairwayEventCard's own `ring-offset-canvas` convention.
-                      'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
-                      active
-                        ? 'bg-accent-650 text-text-on-accent shadow-flat'
-                        : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {label}
-                  </UiButton>
-                );
-              })}
-            </div>
-
-            {/* Date & time well — the icon lives INSIDE the first column's
-                label (same convention as Location/Notes below) instead of as
-                a row-level flex sibling. A sibling icon pushed the grid's
-                left edge over by icon+gap, so Start/End date sat ~28px
-                further right than the RSVP/Recurrence two-column rows in the
-                same well and had a narrower column than its own End-date
-                partner — this keeps every two-column row in the modal on one
-                consistent grid. */}
-            <FormSection title="When">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <DateChooser
-                  label="Start date"
-                  labelIcon={<CalendarIcon className="h-3.5 w-3.5 text-accent-700" />}
-                  value={formData.startDate || null}
-                  onChange={(iso) => setFormData(shiftStartDate(formData, iso))}
-                  disabled={locked}
-                />
-                <DateChooser
-                  label="End date"
-                  value={formData.endDate}
-                  onChange={(iso) => setFormData({ ...formData, endDate: iso })}
-                  disabled={locked}
-                  placeholder="Same day"
+            {/* Review receipt (§2.1/§2.2): always visible on desktop, gated
+                to the review stage on mobile — see EventEditorStages.tsx. */}
+            {!isCancelled && (isDesktop || stage === 'review') ? (
+              <div id={stageHeadingIds.review} tabIndex={-1} className="outline-none">
+                <EventReviewReceipt
+                  headingId="ev-review-receipt-heading"
+                  isCreating={isCreating}
+                  formData={formData}
+                  tzAbbrev={tzAbbrev}
+                  totalPlayers={availablePlayers.length}
+                  attendeeAddCount={attendeeChanges?.addAttendeeIds.length ?? 0}
+                  attendeeRemoveCount={attendeeChanges?.removeAttendeeIds.length ?? 0}
+                  recurrencePreview={recurrencePreview}
+                  verificationStatus={conflictStatus}
+                  conflicts={conflicts}
+                  changes={changedFields}
+                  offline={isOffline}
                 />
               </div>
-
-              {!formData.allDay && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <TimeChooser
-                    label="Start time"
-                    labelIcon={<Clock className="h-3.5 w-3.5 text-accent-700" />}
-                    value={formData.startTime}
-                    onChange={(hhmm) => setFormData(shiftStartTime(formData, hhmm))}
-                    disabled={locked}
-                  />
-                  {/* Duration-aware: every end option is labelled with its length
-                      from the chosen start, so picking an end IS picking a
-                      duration. */}
-                  <TimeChooser
-                    label="End time"
-                    value={formData.endTime}
-                    onChange={(hhmm) => setFormData({ ...formData, endTime: hhmm })}
-                    disabled={locked}
-                    durationFrom={formData.startTime}
-                  />
-                </div>
-              )}
-
-              {/* The span itself, stated once. The editor previously showed only
-                  the fields the span was assembled from, never the result. */}
-              {formData.startDate ? (
-                <SpanSummary
-                  startDate={formData.startDate}
-                  endDate={formData.endDate}
-                  startTime={formData.startTime}
-                  endTime={formData.endTime}
-                  allDay={formData.allDay}
-                  timezoneLabel={!formData.allDay ? tzAbbrev : null}
-                />
-              ) : null}
-
-              <Switch
-                label="All day"
-                checked={formData.allDay}
-                onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
-                disabled={locked}
-              />
-            </FormSection>
-
-            {/* Location — one FormSection per field-group, same primitive as
-                every other section below (finding: this form used to mix four
-                different section treatments — label-above-input here, a
-                tinted no-header panel for RSVP, a header+count row for
-                invitees, and a tinted panel WITH a header for Repeat — with no
-                rule for which earned a tint. FormSection (already the modal
-                section primitive — see FocusAreaModal) replaces all four. */}
-            <FormSection
-              title={
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-accent-700" /> Location
-                </span>
-              }
-            >
-              <UiInput
-                id="ev-location"
-                type="text"
-                value={formData.location || ''}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
-                disabled={locked}
-                placeholder="Course, facility, or address"
-                aria-label="Location"
-                className={fieldCls}
-              />
-            </FormSection>
-
-            {/* Notes */}
-            <FormSection
-              title={
-                <span className="inline-flex items-center gap-1.5">
-                  <AlignLeft className="h-4 w-4 text-accent-700" /> Notes
-                </span>
-              }
-            >
-              <UiTextarea
-                id="ev-desc"
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
-                disabled={locked}
-                rows={2}
-                placeholder="Details for the team…"
-                aria-label="Notes"
-                className={cn(fieldCls, 'resize-none')}
-              />
-            </FormSection>
-
-            {/* RSVP */}
-            <FormSection title="RSVP">
-              <Switch
-                label="Require RSVP"
-                description="Players respond Going / Maybe / Decline"
-                checked={formData.requiresRsvp}
-                onCheckedChange={(checked) => setFormData({ ...formData, requiresRsvp: checked })}
-                disabled={locked}
-              />
-              {formData.requiresRsvp && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="ev-rsvp-deadline" className={labelCls}>RSVP deadline</label>
-                    <UiInput
-                      id="ev-rsvp-deadline"
-                      type="datetime-local"
-                      value={formData.rsvpDeadline || ''}
-                      onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
-                      disabled={locked}
-                      className={cn(fieldCls, 'bg-surface')}
-                    />
-                    <p className="mt-1 font-fw-sans text-caption text-text-tertiary">Your local time</p>
-                  </div>
-                  <div>
-                    <label htmlFor="ev-max" className={labelCls}>Max attendees</label>
-                    <UiInput
-                      id="ev-max"
-                      type="number"
-                      min={1}
-                      inputMode="numeric"
-                      value={formData.maxAttendees ?? ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value, 10) : null })
-                      }
-                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      disabled={locked}
-                      placeholder="No limit"
-                      className={cn(fieldCls, 'bg-surface')}
-                    />
-                  </div>
-                </div>
-              )}
-            </FormSection>
-
-            {/* Attendees — colored-avatar toggle grid */}
-            {availablePlayers.length > 0 && (
-              <FormSection
-                title={
-                  <span className="inline-flex items-center gap-1.5">
-                    <Users className="h-4 w-4 text-accent-700" /> Invite players
-                  </span>
-                }
-                // Always show the count, not only once someone is picked —
-                // "0 of 14" is the honest starting state and tells the coach
-                // how big the roster is before they start tapping. The
-                // `action` slot is FormSection's own right-aligned cluster —
-                // exactly what this count needed instead of a hand-rolled
-                // header row.
-                action={
-                  <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
-                    {formData.attendeeIds.length} of {availablePlayers.length}
-                  </span>
-                }
-              >
-                {/* Select-all / clear. Inviting the whole team is the single
-                    most common case (practice, lift, study hall) and used to
-                    cost one tap per player. */}
-                <div className="flex items-center gap-3">
-                  <UiButton
-                    variant="ghost"
-                    type="button"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        attendeeIds: Array.from(
-                          new Set([...formData.attendeeIds, ...visiblePlayers.map((p) => p.id)]),
-                        ),
-                      })
-                    }
-                    disabled={locked || attendeesLoading || allPlayersSelected}
-                    className="h-auto p-0 font-fw-sans text-caption font-medium text-accent-700 underline-offset-2 hover:underline focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas disabled:no-underline disabled:opacity-40"
-                  >
-                    {attendeeQuery.trim() ? `Select ${visiblePlayers.length} shown` : 'Select all'}
-                  </UiButton>
-                  <UiButton
-                    variant="ghost"
-                    type="button"
-                    onClick={() => setFormData({ ...formData, attendeeIds: [] })}
-                    disabled={locked || attendeesLoading || formData.attendeeIds.length === 0}
-                    className="h-auto p-0 font-fw-sans text-caption font-medium text-text-secondary underline-offset-2 hover:underline focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas disabled:no-underline disabled:opacity-40"
-                  >
-                    Clear
-                  </UiButton>
-                </div>
-
-                {/* Search appears only once the roster is long enough to need
-                    it — a filter box over eight names is clutter. */}
-                {availablePlayers.length > 8 ? (
-                  <UiInput
-                    type="search"
-                    value={attendeeQuery}
-                    onChange={(e) => setAttendeeQuery(e.target.value)}
-                    disabled={locked || attendeesLoading}
-                    placeholder="Search the roster…"
-                    aria-label="Search the roster"
-                    className={cn(fieldCls, 'bg-surface')}
-                  />
-                ) : null}
-
-                {attendeesLoading ? (
-                  <p role="status" className="font-fw-sans text-caption text-text-tertiary">
-                    Loading current invitees...
-                  </p>
-                ) : null}
-
-                {attendeeHydration === 'error' ? (
-                  <p
-                    role="status"
-                    className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg px-3 py-2 font-fw-sans text-caption text-fw-warning-ink"
-                  >
-                    Couldn&apos;t load the current invitees. You can still add players — existing invites won&apos;t be changed.
-                  </p>
-                ) : null}
-
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {visiblePlayers.map((p) => {
-                    const selected = formData.attendeeIds.includes(p.id);
-                    const tint = tintFor(p.id);
-                    return (
-                      <UiButton
-                        key={p.id}
-                        variant="ghost"
-                        type="button"
-                        onClick={() => toggleAttendee(p.id)}
-                        disabled={locked || attendeesLoading}
-                        aria-pressed={selected}
-                        className={cn(
-                          'flex items-center gap-2.5 rounded-fw-md border p-2 text-left transition-colors',
-                          'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
-                          selected
-                            ? 'border-accent-500 bg-accent-50'
-                            : 'border-border-subtle bg-surface hover:bg-surface-tint',
-                        )}
-                      >
-                        <span
-                          className="relative grid h-8 w-8 flex-shrink-0 place-items-center overflow-hidden rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle"
-                          style={p.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
-                        >
-                          {p.avatar_url ? (
-                            <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            initials(p)
-                          )}
-                          {selected ? (
-                            <span className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent-500 ring-2 ring-surface">
-                              <Check className="h-2.5 w-2.5 text-text-on-accent" />
-                            </span>
-                          ) : null}
-                        </span>
-                        {/* Full name, not a truncated "Last I." — the chip has
-                            room to spare (filter chips show "CB", the agenda
-                            shows "Cole Bennett"; this was the odd one out).
-                            Truncating to the last name's FIRST CHARACTER is
-                            also what turned a coach's placeholder profile name
-                            into "Coach (." in the live app: last_name[0] on a
-                            name like "(Nick Rini)" reads as "(", and the old
-                            `${last_name[0]}.` built "(." from it. A full name
-                            can't mangle that way — the worst case is just
-                            longer, and `truncate` above already ellipsizes
-                            anything that doesn't fit. */}
-                        <span className="min-w-0 flex-1 truncate font-fw-sans text-caption font-medium text-text-primary">
-                          {p.last_name ? `${p.first_name} ${p.last_name}` : p.first_name}
-                        </span>
-                      </UiButton>
-                    );
-                  })}
-                </div>
-
-                {/* Pending attendee changes — the save summary. Removals only
-                    ever come from explicit deselects against the hydrated
-                    baseline, and they're called out before saving. */}
-                {!isCancelled && attendeeChangeSummary ? (
-                  <p
-                    role="status"
-                    className={cn(
-                      'rounded-fw-md border px-3 py-2 font-fw-sans text-caption',
-                      (attendeeChanges?.removeAttendeeIds.length ?? 0) > 0
-                        ? 'border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink'
-                        : 'border-accent-100 bg-accent-50 text-accent-700',
-                    )}
-                  >
-                    Saving will update invites: {attendeeChangeSummary}.
-                  </p>
-                ) : null}
-
-                {/* Conflict notice */}
-                {conflicts?.hasConflict ? (
-                  <div className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3">
-                    <p className="flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-fw-warning-ink">
-                      <AlertTriangle className="h-3.5 w-3.5 text-fw-warning-ink" />
-                      Schedule conflict
-                    </p>
-                    <ul className="mt-1.5 flex flex-col gap-0.5">
-                      {conflicts.conflicts.slice(0, 4).map((c, i) => (
-                        <li key={`${c.userId}-${i}`} className="font-fw-sans text-caption text-fw-warning-ink">
-                          {c.userName} — {c.conflictingEvent.title}
-                          {c.conflictingEvent.type === 'class' ? (
-                            <span className="ml-1 text-fw-warning-ink/70">(class)</span>
-                          ) : c.conflictingEvent.type === 'blocked' ? (
-                            <span className="ml-1 text-fw-warning-ink/70">(blocked time)</span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                    {conflicts.suggestions.length > 0 ? (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {conflicts.suggestions.slice(0, 3).map((s, i) => (
-                          <UiButton
-                            key={i}
-                            variant="ghost"
-                            type="button"
-                            onClick={() => selectSuggestedTime(s)}
-                            className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
-                          >
-                            {s.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                          </UiButton>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </FormSection>
-            )}
-
-            {/* Recurrence pattern — on create, and on series-root edit (the
-                series-extend affordance: bump the count or push the end date
-                to add occurrences, or re-shape the weekday pattern). Child
-                occurrences don't carry the pattern; their edits go through
-                the scope picker instead. */}
-            {!isCancelled && (isCreating || isSeriesRoot) && (
-              <FormSection
-                title={
-                  <span className="inline-flex items-center gap-1.5">
-                    <Repeat className="h-4 w-4 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
-                  </span>
-                }
-              >
-                {/* Visible chips, not a dropdown. The whole pattern is legible
-                    at a glance and it matches the two pill rows this modal
-                    already uses (event type above, weekdays below) — a coach
-                    shouldn't have to open a menu to see how a practice
-                    repeats. Wraps on mobile, where a 5-up segmented track
-                    would not fit.
-                    A series root can't be flipped back to a one-off here —
-                    that's a delete-with-scope, not a pattern change. */}
-                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Recurrence">
-                  {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => {
-                    const active = formData.recurrence === o.value;
-                    return (
-                      <UiButton
-                        key={o.value}
-                        variant="ghost"
-                        type="button"
-                        onClick={() => setFormData({ ...formData, recurrence: o.value })}
-                        disabled={locked}
-                        aria-pressed={active}
-                        className={cn(
-                          'inline-flex items-center rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
-                          'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
-                          active
-                            ? 'bg-accent-700 text-text-on-accent shadow-flat'
-                            : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
-                        )}
-                      >
-                        {o.label}
-                      </UiButton>
-                    );
-                  })}
-                </div>
-
-                {(formData.recurrence === 'weekly' || formData.recurrence === 'biweekly') && (
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex gap-1.5" role="group" aria-label="Repeat on days">
-                      {WEEKDAY_OPTIONS.map((day) => {
-                        const selected = (formData.recurrenceWeekdays ?? []).includes(day.value);
-                        return (
-                          <UiButton
-                            key={day.value}
-                            variant="ghost"
-                            type="button"
-                            onClick={() => toggleRecurrenceWeekday(day.value)}
-                            disabled={locked}
-                            aria-pressed={selected}
-                            aria-label={day.long}
-                            className={cn(
-                              'relative grid h-8 w-8 place-items-center rounded-full font-fw-sans text-caption font-medium transition-colors disabled:opacity-50',
-                              // Invisible hit-slop expands the 32px visual chip to the
-                              // 44px WCAG 2.2 AA touch-target floor without growing seven
-                              // circles past the modal's mobile content width — same
-                              // technique as ModalShell's close button (CLOSE_BUTTON_CLASS).
-                              "before:absolute before:-inset-1.5 before:content-['']",
-                              'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
-                              selected
-                                ? 'bg-accent-650 text-text-on-accent shadow-flat'
-                                : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
-                            )}
-                          >
-                            {day.short}
-                          </UiButton>
-                        );
-                      })}
-                    </div>
-                    {(formData.recurrenceWeekdays ?? []).length === 0 ? (
-                      <p className="font-fw-sans text-caption text-text-tertiary">
-                        No days picked — repeats on the start date&apos;s weekday.
-                      </p>
-                    ) : null}
-                  </div>
-                )}
-
-                {formData.recurrence !== 'none' && (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {/* Two mutually exclusive modes — a segmented track shows
-                        both at once where a dropdown hid one behind a click. */}
-                    <div>
-                      <span className={labelCls}>Series ends</span>
-                      {/* Segmented takes no `disabled` — gate the wrapper so a
-                          cancelled event's pattern still reads clearly. */}
-                      <div className={cn(locked && 'pointer-events-none opacity-50')}>
-                      <Segmented
-                        value={formData.recurrenceEndMode ?? 'count'}
-                        onValueChange={(v) =>
-                          setFormData({ ...formData, recurrenceEndMode: v as RecurrenceEndMode })
-                        }
-                        size="sm"
-                        fullWidth
-                        aria-label="Series ends"
-                        options={[
-                          { value: 'count', label: 'After N events' },
-                          { value: 'until', label: 'On a date' },
-                        ]}
-                      />
-                      </div>
-                    </div>
-                    {(formData.recurrenceEndMode ?? 'count') === 'count' ? (
-                      <div>
-                        <label htmlFor="ev-recurrence-count" className={labelCls}>Occurrences</label>
-                        <UiInput
-                          id="ev-recurrence-count"
-                          type="number"
-                          min={MIN_RECURRENCE_COUNT}
-                          max={MAX_RECURRENCE_COUNT}
-                          inputMode="numeric"
-                          value={formData.recurrenceCount}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              recurrenceCount: Math.max(
-                                MIN_RECURRENCE_COUNT,
-                                Math.min(MAX_RECURRENCE_COUNT, parseInt(e.target.value, 10) || 10),
-                              ),
-                            })
-                          }
-                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                          disabled={locked}
-                          className={cn(fieldCls, 'bg-surface')}
-                        />
-                      </div>
-                    ) : (
-                      <DateChooser
-                        label="Repeat until"
-                        value={formData.recurrenceUntil ?? null}
-                        onChange={(iso) => setFormData({ ...formData, recurrenceUntil: iso })}
-                        disabled={locked}
-                        placeholder="Pick an end date"
-                      />
-                    )}
-                  </div>
-                )}
-
-                {recurrencePreview ? (
-                  <p className="font-fw-sans text-caption text-text-tertiary">{recurrencePreview}</p>
-                ) : null}
-
-                {isSeriesRoot ? (
-                  <p className="font-fw-sans text-caption text-text-tertiary">
-                    Raising the count or pushing the end date later extends this series with new occurrences.
-                  </p>
-                ) : null}
-              </FormSection>
-            )}
+            ) : null}
           </ModalShell.Body>
 
           <ModalShell.Footer>
@@ -1558,15 +1141,22 @@ export function FairwayEventEditor({
               {isCancelled ? 'Close' : 'Cancel'}
             </Button>
             {!isCancelled ? (
-              <Button
-                variant="primary"
-                type="button"
-                onClick={handleSubmit}
-                busy={isSaving}
-                disabled={isSaving || !isTitleValid}
-              >
-                {isCreating ? 'Create event' : 'Save changes'}
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={handleSubmit}
+                  busy={isSaving}
+                  disabled={isSaving || !isTitleValid || isOffline}
+                >
+                  {primaryLabel}
+                </Button>
+                {isOffline ? (
+                  <p role="status" className="font-fw-sans text-caption text-fw-warning-ink">
+                    Reconnect to publish. Your draft is kept.
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </ModalShell.Footer>
         </>

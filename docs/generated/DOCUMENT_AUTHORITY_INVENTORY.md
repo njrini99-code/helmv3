@@ -29,13 +29,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 21 | 2 | 7 | 0 |
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 11 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 12 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 24 | 3 | 7 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 34 | 5 | 15 | 65 |
+| `PLAN` | 37 | 5 | 18 | 68 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 23 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
 | `.claude/rules/database.md` | current | - | - | - | 4 | 5 | - |
-| `.claude/rules/design-system.md` | current | - | - | yes | 8 | 6 | - |
+| `.claude/rules/design-system.md` | current | - | - | yes | 9 | 6 | - |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
 | `.claude/rules/golf-review.md` | current | - | - | - | 6 | 6 | - |
@@ -175,7 +175,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/admin-selfheal.md` | current | yes | - | - | 9 | 33 | - |
 | `memory/features/admin-slo.md` | current | yes | - | yes | 3 | 25 | - |
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
-| `memory/features/calendar-events.md` | current | yes | - | - | 3 | 24 | - |
+| `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 28 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 27 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
@@ -279,7 +279,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | 3 | 7 | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | 19 | 5 | - |
 | `memory/glossary.md` | current | yes | yes | yes | 19 | 10 | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | 3 | 260 | - |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | 3 | 265 | - |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | 0 | 0 | - |
 
 ### `PROCESS_CONTRACT`
@@ -331,6 +331,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 1 | 23 | 4 |
 | `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md` | current | yes | - | - | 1 | 12 | 3 |
 | `docs/plans/IOS_PREMIUM_NATIVE_UPDATE_2026-08-25.md` | current | yes | - | yes | 2 | 1 | - |
+| `docs/plans/calendar-premium/DESIGN-PLAN.md` | current | - | - | yes | 0 | 5 | - |
+| `docs/plans/calendar-premium/PARALLEL-EXECUTION-PLAN.md` | current | - | - | yes | 0 | 23 | 3 |
+| `docs/plans/calendar-premium/SCREEN-BUILD-PLAN.md` | current | - | - | yes | 0 | 24 | - |
 | `docs/superpowers/plans/2026-07-01-helm-bridge-command-center.md` | current | - | - | - | 1 | 8 | - |
 | `docs/superpowers/plans/2026-08-17-coachhelm-instrumentation.md` | current | - | - | - | 1 | 15 | 7 |
 | `docs/superpowers/plans/2026-08-18-coachhelm-cron-insights-wiring.md` | current | - | - | yes | 0 | 1 | - |
@@ -555,7 +558,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 1 | 3 | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | 5 | 6 | - |
 | `docs/OBSERVABILITY_AUTHORITY.md` | current | - | - | - | 4 | 3 | - |
-| `docs/REPO_MAP.md` | superseded | - | - | yes | 3 | 41 | 2 |
+| `docs/REPO_MAP.md` | superseded | - | - | yes | 4 | 41 | 2 |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | 2 | 20 | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 3 | 16 | 9 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 6 | 19 | 9 |

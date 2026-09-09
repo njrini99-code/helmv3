@@ -964,3 +964,128 @@ export async function getPlayerAttendanceStats(
 ): Promise<ActionResult<AttendanceStatsSummary>> {
   return observedGetPlayerAttendanceStats(playerId);
 }
+
+// ============================================================================
+// UPDATE ATTENDANCE NOTE (N1 — gated on the UPDATE policy's WITH CHECK)
+// ============================================================================
+
+/**
+ * N1 gate, resolved: `golf_event_attendance_update_coach_or_player`
+ * (baseline migration 20260527000000, line 19076) specifies a `USING`
+ * clause but no `WITH CHECK`. Per Postgres, an UPDATE policy with no
+ * `WITH CHECK` reuses its `USING` expression for the new row too — so
+ * `is_golf_team_coach("e"."team_id")` governs the written row exactly as it
+ * governs the read one, and a coach's note write is covered. Confirmed by
+ * inspecting the migration directly; nothing here relies on an assumption.
+ *
+ * This still writes with a plain `.update()`, never `.upsert()`: every
+ * invited player already has a `golf_event_attendance` row (created at
+ * invite time), so a note is always an edit to an existing row. The sibling
+ * INSERT policy (`golf_event_attendance_insert_coach`, line 19064) has a
+ * DIFFERENT `WITH CHECK` that was not part of this gate's verification, so
+ * an upsert here would silently rely on a check this review never read.
+ * Zero rows updated is reported as an honest error, not turned into a
+ * silent insert.
+ *
+ * Coach-only, matching `markAttendance` and `bulkCheckIn` in this file (the
+ * policy also allows a player to update their own row, but this action does
+ * not expose a player-authored path — the S5 attendance screen this backs
+ * is a coach workflow).
+ */
+const MAX_NOTE_LENGTH = 2000;
+
+async function updateAttendanceNoteImpl(
+  eventId: string,
+  playerId: string,
+  note: string | null,
+): Promise<ActionResult> {
+  if (!eventId || !playerId) {
+    return { success: false, error: 'Event and player are required' };
+  }
+  const trimmed = note === null ? null : note.trim();
+  if (trimmed !== null && trimmed.length > MAX_NOTE_LENGTH) {
+    return { success: false, error: `Note must be ${MAX_NOTE_LENGTH} characters or fewer` };
+  }
+
+  try {
+    const supabase = await createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const authz = await authorizeCoachForEvent(supabase, user.id, eventId);
+    if (!authz.ok) {
+      return { success: false, error: authz.error };
+    }
+
+    const { data: member, error: memberError } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', authz.event.team_id)
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (memberError) {
+      await logServerError(
+        `[attendance] member read failed while saving a note — denying, but this is an outage not a missing member: ${describeError(memberError)}`,
+        { action: 'golf.updateAttendanceNote', featureArea: 'calendar' },
+        'warning'
+      );
+      return { success: false, error: "Couldn't verify the player's team membership. Please try again." };
+    }
+    if (!member) {
+      return { success: false, error: 'Player is not an active member of this team' };
+    }
+
+    // Plain UPDATE — see the block comment above for why this never upserts.
+    const { data: updated, error: updateError } = await supabase
+      .from('golf_event_attendance')
+      .update({ notes: trimmed === '' ? null : trimmed })
+      .eq('event_id', eventId)
+      .eq('player_id', playerId)
+      .select('id');
+
+    if (updateError) {
+      await logServerError(`updateAttendanceNote failed: ${updateError.message}`, {
+        action: 'updateAttendanceNote',
+        featureArea: 'attendance',
+        playerId,
+        extra: { eventId },
+      });
+      return { success: false, error: 'Failed to save note. Please try again.' };
+    }
+    if (!updated || updated.length === 0) {
+      return { success: false, error: 'No attendance record exists for this player yet.' };
+    }
+
+    revalidatePath('/golf/dashboard/calendar');
+    return { success: true };
+  } catch (err) {
+    await logServerError(`updateAttendanceNote failed: ${describeError(err)}`, {
+      action: 'updateAttendanceNote',
+      featureArea: 'attendance',
+      playerId,
+      extra: { eventId },
+    });
+    return {
+      success: false,
+      error: 'Failed to save note. Please try again.',
+    };
+  }
+}
+
+const observedUpdateAttendanceNote = withAdminObserved(
+  'updateAttendanceNote',
+  { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
+  updateAttendanceNoteImpl,
+);
+
+export async function updateAttendanceNote(
+  eventId: string,
+  playerId: string,
+  note: string | null,
+): Promise<ActionResult> {
+  return observedUpdateAttendanceNote(eventId, playerId, note);
+}
