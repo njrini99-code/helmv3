@@ -1,7 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchVercelDeployments,
-  fetchVercelWebInsights,
   formatDeployAge,
   type VercelDeployment,
   type VercelDeployState,
@@ -369,28 +368,6 @@ async function ReleaseHealth() {
   );
 }
 
-async function WebVitals() {
-  const insights = await fetchVercelWebInsights();
-  if (insights.status !== 'ok' || !insights.data) {
-    return (
-      <PanelNoData
-        label="Web insights unavailable"
-        description="Same Vercel token trio as the deployments table."
-      />
-    );
-  }
-  return (
-    // Below `sm`: doctrine "2 + 1-wide" rhythm for a 3-peer strip (2-col grid,
-    // 3rd cell spans both) instead of 3 full-width stacked rows. `sm:` and up
-    // is untouched — still the original flat 3-across row.
-    <div className="grid grid-cols-2 gap-3 [&>*:last-child]:col-span-2 sm:grid-cols-3 sm:[&>*:last-child]:col-span-1">
-      <StatTile label="Visitors 24h" value={insights.data.visitors24h} tone="neutral" mono />
-      <StatTile label="Visitors 7d" value={insights.data.visitors7d} tone="neutral" mono />
-      <StatTile label="Visitors 30d" value={insights.data.visitors30d} tone="neutral" mono />
-    </div>
-  );
-}
-
 async function ReleaseRunwaySection() {
   const runway = await fetchReleaseRunway();
   if (runway.status !== 'ok' || !runway.data) {
@@ -447,24 +424,21 @@ export default async function DeploysPage() {
         </div>
       </Surface>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Surface padding="sm">
-          <SectionLabel>Release health</SectionLabel>
-          <div className="mt-3">
-            <PanelBoundary title="Release health" skeleton={<PanelStatsSkeleton count={2} />}>
-              <ReleaseHealth />
-            </PanelBoundary>
-          </div>
-        </Surface>
-        <Surface padding="sm">
-          <SectionLabel>Traffic</SectionLabel>
-          <div className="mt-3">
-            <PanelBoundary title="Traffic" skeleton={<PanelStatsSkeleton count={3} />}>
-              <WebVitals />
-            </PanelBoundary>
-          </div>
-        </Surface>
-      </div>
+      {/* Traffic (three Vercel visitor counts) was removed 2026-09-08. Web
+          Analytics is not enabled for this project — the API answers
+          `404 not_found: Web Analytics not found` — so the panel could only
+          ever render "Web insights unavailable", and it occupied half a row
+          next to Release health to do it. fetchVercelWebInsights() and its
+          tests are untouched; re-adding the panel is one commit once Web
+          Analytics is turned on. */}
+      <Surface padding="sm">
+        <SectionLabel>Release health</SectionLabel>
+        <div className="mt-3">
+          <PanelBoundary title="Release health" skeleton={<PanelStatsSkeleton count={2} />}>
+            <ReleaseHealth />
+          </PanelBoundary>
+        </div>
+      </Surface>
     </div>
   );
 }

@@ -17,8 +17,7 @@ type AdminHref =
   | '/admin/deploys'
   | '/admin/releases'
   | '/admin/health'
-  | '/admin/teams'
-  | '/admin/billing';
+  | '/admin/teams';
 
 export interface AdminNavEntry {
   label: string;
@@ -91,9 +90,6 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // were two tabs until the 30→19 consolidation; one feed, two framings.
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline and change-to-proof', meta: 'prs' },
   { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
-
-  // REVENUE — zero inbound links repo-wide before this entry.
-  { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },
 
   // INTAKE
   { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },

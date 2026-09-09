@@ -32,18 +32,17 @@ describe('ADMIN_NAV', () => {
       '/admin/auth',
       '/admin/work',
       '/admin/engineering',
-      '/admin/billing',
       '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
       '1', '3', '0', '8', 'X', 'F', 'T', '7',
-      '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'Z', 'V', 'B',
+      '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'Z', 'B',
     ]);
   });
 
   it('groups by the question being asked, not by subsystem', () => {
     const sections = [...new Set(ADMIN_NAV.map((e) => e.section))];
-    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform', 'Revenue']);
+    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform']);
   });
 
   it('maps shortcut keys to hrefs', () => {

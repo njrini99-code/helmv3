@@ -409,6 +409,10 @@ const nextConfig = {
       { source: '/admin/reliability', destination: '/admin/errors?view=sources', permanent: false },
       { source: '/admin/self-heal', destination: '/admin/errors?view=loop', permanent: false },
       { source: '/admin/slo', destination: '/admin/health?view=budgets', permanent: false },
+
+      // Step 6. Billing's page is deleted, not folded — it had nothing to fold
+      // into. Overview is where an operator who typed this URL should land.
+      { source: '/admin/billing', destination: '/admin', permanent: false },
     ];
   },
 

@@ -20,7 +20,6 @@ import {
   SearchCheck,
   ScrollText,
   Radar,
-  CreditCard,
   GitBranch,
   Database,
   RefreshCw,
@@ -159,7 +158,6 @@ const NAV_ICON_BY_HREF = {
   '/admin/releases': ToggleLeft,
   '/admin/health': HeartPulse,
   '/admin/teams': Radar,
-  '/admin/billing': CreditCard,
 } as const;
 
 /**

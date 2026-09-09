@@ -108,6 +108,12 @@ export const RETIRED_ADMIN_ROUTES: readonly RetiredRoute[] = [
     reason:
       'Every one of its four read models is a read of FEATURE HEALTH — budgets are per feature, golden paths roll up the same budgets, silence detection reads get_feature_health()\'s own heartbeat signal. A second place to ask a question /admin/health already owned.',
   },
+  {
+    from: '/admin/billing',
+    to: '/admin',
+    reason:
+      'Production has no Stripe key — verified 2026-09-08: zero STRIPE_* variables across 68 production env vars — so isStripeConfigured() is false and this page could only ever render its own "Invoicing is not available yet" notice. A whole nav section for a surface that cannot act. CreateInvoiceForm and src/lib/stripe/** are untouched: restoring the page is one commit if a key is ever configured.',
+  },
 ];
 
 /**
@@ -130,6 +136,7 @@ export const RETIRED_SHORTCUTS: Readonly<Record<string, string>> = {
   R: '/admin/errors?view=sources',
   S: '/admin/errors?view=loop',
   O: '/admin/health?view=budgets',
+  V: '/admin',
 };
 
 /** The full destination for a retired route, including its `?view=`. */

@@ -1500,7 +1500,6 @@ features:
         - src/app/admin/lifting/**
         - src/app/admin/jobs/**
         - src/app/admin/thread/**
-        - src/app/admin/billing/**
         - src/app/admin/*.tsx
         - src/app/golf/admin/**
       components:
