@@ -400,6 +400,20 @@
     user-select: text;
   }
 
+  /* Message bubbles own their long-press gesture (MessageThreadPane.tsx
+     opens the reactions row on a 500ms hold, and Copy in that row replaces
+     what selection provided). The re-enable above matches the bubble's own
+     <p> and <span> at higher specificity than the bubble's select-none
+     class, so on the app a hold opened the row AND started an iOS highlight
+     under it. Scoped to the bubble so nothing else loses selection. */
+  body.capacitor [data-message-bubble],
+  body.capacitor [data-message-bubble] p,
+  body.capacitor [data-message-bubble] span {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
   /* Scroll containers on iOS — momentum + no rubber-band at body level */
   body.capacitor {
     overscroll-behavior-y: none;
