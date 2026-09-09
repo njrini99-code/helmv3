@@ -240,6 +240,35 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   future-dated rounds shipped this date, tracked as an explicit gap here
   rather than silently declared solved.
 
+### Penalty strokes (2026-09-09)
+
+A penalty is its own `golf_shots` row (`is_penalty`, `shot_type: 'penalty'`),
+written by `usePenaltyHandler` → `buildPenaltyShot` AFTER the player records
+the errant shot; the scorecard counts rows, so score = shots + penalty rows.
+The row's `lieBefore` / `distanceToHoleAfter` mean "where the ball is played
+from next" — that is what `CONFIRM_PENALTY`, undo, and the continue-round
+reload (`lieFromShotResult`) restore position from.
+
+- **Water / unplayable**: play on from the drop — the row keeps the current
+  position (two rows, correct).
+- **OB / lost ball**: stroke AND distance — the row carries the errant shot's
+  `lieBefore` / `distanceToHoleBefore`, so the next stroke is entered from
+  there (`getShotTypeFromState` types anything played from `tee` as a tee
+  shot, not only shot 1). Before this the row copied the provisional's landing
+  spot and the replayed stroke was never entered: 24 of 37 OB tee shots and
+  24 of 29 lost balls in the 90 days to 2026-09-09 scored one stroke short.
+- **"+ Penalty" is disabled until a shot exists on the hole** — logged first,
+  the penalty became shot 1 and the real tee shot was entered as the
+  provisional (78 of 311 rows).
+- **Stats attribution** (`getPenaltyCategory`, `golf-stats-calculator-shots.ts`)
+  charges the −1.0 SG to the shot that EARNED the penalty — the nearest
+  preceding non-penalty shot on the hole, else the nearest following one —
+  never to the row's own (drop) position. That had put 130 tee-shot penalties
+  against Approach and 16 approach penalties against Around Green. Pure
+  calculator change: history corrects itself without a data migration.
+- Player-facing summary that went to the coach who reported it: scores were
+  right for water, one short for OB/lost; the SG split was wrong for all four.
+
 ### Reclassification — changing what a round counts toward
 
 - **Re-typing a round is not editing it.** Changing `round_type` /

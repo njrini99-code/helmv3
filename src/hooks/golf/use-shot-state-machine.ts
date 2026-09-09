@@ -876,8 +876,13 @@ export function getShotTypeFromState(
   currentHole: RoundHole | undefined,
 ): 'tee' | 'approach' | 'around_green' | 'putting' {
   if (state.currentLie === 'green') return 'putting';
-  if (state.currentShot === 1 && currentHole?.par === 3) return 'approach';
-  if (state.currentShot === 1 && currentHole?.par !== 3) return 'tee';
+  // Anything played from the tee is a tee shot — including the stroke
+  // replayed after an OB / lost-ball penalty (stroke and distance puts the
+  // player back on the tee at shot 3). Keyed on the lie, not `currentShot ===
+  // 1`, so that replay is not typed as a 400-yard "approach". On a par 3 the
+  // tee shot IS the approach.
+  if (state.currentLie === 'tee') return currentHole?.par === 3 ? 'approach' : 'tee';
+  if (state.currentShot === 1) return currentHole?.par === 3 ? 'approach' : 'tee';
   const distanceInYards = state.distanceUnit === 'feet' ? state.distanceToHole / 3 : state.distanceToHole;
   // Around-green vs approach split at 50 yd to the hole — matches
   // AROUND_GREEN_THRESHOLD_YARDS in the stats calculator and the v3 approach

@@ -133,6 +133,13 @@ describe('getShotTypeFromState', () => {
     expect(getShotTypeFromState(state, makeRoundHole({ par: 3 }))).toBe('approach');
   });
 
+  it('returns tee for the stroke replayed from the tee after an OB / lost-ball penalty', () => {
+    // Stroke and distance: shot 1 OB, shot 2 penalty, shot 3 is hit from the tee again.
+    const state = makeInitialState({ currentShot: 3, currentLie: 'tee', distanceToHole: 400, distanceUnit: 'yards' });
+    expect(getShotTypeFromState(state, makeRoundHole({ par: 4 }))).toBe('tee');
+    expect(getShotTypeFromState(state, makeRoundHole({ par: 3 }))).toBe('approach');
+  });
+
   it('returns around_green when <= 30 yards', () => {
     const state = makeInitialState({ currentShot: 3, currentLie: 'rough', distanceToHole: 25, distanceUnit: 'yards' });
     expect(getShotTypeFromState(state, makeRoundHole({ par: 4 }))).toBe('around_green');
@@ -378,6 +385,20 @@ describe('shotReducer', () => {
       expect(next.currentShot).toBe(3);
       expect(next.showPenaltyModal).toBe(false);
       expect(next.penaltyType).toBeNull();
+    });
+
+    it('CONFIRM_PENALTY for OB puts the player back on the tee at full yardage', () => {
+      const state = makeInitialState({ showPenaltyModal: true, penaltyType: 'ob', currentShot: 2, currentLie: 'other', distanceToHole: 180 });
+      const penaltyShot = makeShotRecord({
+        shotNumber: 2, shotType: 'penalty', isPenalty: true, penaltyType: 'ob', result: 'penalty',
+        lieBefore: 'tee', distanceToHoleBefore: 400, distanceUnitBefore: 'yards',
+        distanceToHoleAfter: 400, distanceUnitAfter: 'yards',
+      });
+      const next = shotReducer(state, { type: 'CONFIRM_PENALTY', payload: penaltyShot });
+      expect(next.currentShot).toBe(3);
+      expect(next.currentLie).toBe('tee');
+      expect(next.distanceToHole).toBe(400);
+      expect(next.distanceUnit).toBe('yards');
     });
 
     it('CLOSE_PENALTY_MODAL closes modal and clears type', () => {

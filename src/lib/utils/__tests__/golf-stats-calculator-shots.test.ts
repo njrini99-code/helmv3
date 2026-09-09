@@ -1210,6 +1210,36 @@ describe('getPenaltyCategory (SG-4)', () => {
     });
     expect(getPenaltyCategory(shot, 4)).toBe('around_green');
   });
+
+  describe('with the hole\'s shots: charged to the shot that earned it, not the drop spot', () => {
+    const teeShot = makeRawShot({ shot_number: 1, shot_type: 'tee', lie_before: 'tee', distance_to_hole_before: 400, result: 'other', distance_to_hole_after: 150 });
+    // The tracker writes the penalty row at the DROP position (rough, 150 yd).
+    const penaltyAtDrop = makeRawShot({ shot_number: 2, shot_type: 'penalty', is_penalty: true, lie_before: 'rough', distance_to_hole_before: 150, distance_unit_before: 'yards' });
+    const next = makeRawShot({ shot_number: 3, shot_type: 'approach', lie_before: 'rough', distance_to_hole_before: 150, result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet' });
+
+    it('a tee-shot penalty logged at the drop is charged to tee on a par 4', () => {
+      expect(getPenaltyCategory(penaltyAtDrop, 4, [teeShot, penaltyAtDrop, next])).toBe('tee');
+    });
+
+    it('…and to approach on a par 3 (the tee shot is the approach)', () => {
+      expect(getPenaltyCategory(penaltyAtDrop, 3, [teeShot, penaltyAtDrop, next])).toBe('approach');
+    });
+
+    it('a penalty logged BEFORE the shot (first row of the hole) uses the following shot', () => {
+      const penaltyFirst = makeRawShot({ shot_number: 1, shot_type: 'penalty', is_penalty: true, lie_before: 'tee', distance_to_hole_before: 400 });
+      const chip = makeRawShot({ shot_number: 2, shot_type: 'around_green', lie_before: 'rough', distance_to_hole_before: 20, distance_unit_before: 'yards', result: 'green', distance_to_hole_after: 6, distance_unit_after: 'feet' });
+      expect(getPenaltyCategory(penaltyFirst, 4, [penaltyFirst, chip])).toBe('around_green');
+    });
+
+    it('a second stacked penalty still resolves to the real shot before both', () => {
+      const secondPenalty = makeRawShot({ shot_number: 3, shot_type: 'penalty', is_penalty: true, lie_before: 'rough', distance_to_hole_before: 150 });
+      expect(getPenaltyCategory(secondPenalty, 4, [teeShot, penaltyAtDrop, secondPenalty])).toBe('tee');
+    });
+
+    it('falls back to its own position when the hole has no other shots', () => {
+      expect(getPenaltyCategory(penaltyAtDrop, 4, [penaltyAtDrop])).toBe('approach');
+    });
+  });
 });
 
 describe('SG-4: penalty strokes preserve SG additivity', () => {
