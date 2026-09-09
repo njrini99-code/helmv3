@@ -47,6 +47,16 @@ export const LOCAL_BUILD_ENVIRONMENT = 'local-production-build';
 export function resolveServerEnvironment(
   env: EnvironmentInput = process.env,
 ): string {
+  // `next dev` is positive evidence of a developer machine: Vercel forces
+  // NODE_ENV=production on every build and runtime, so a development NODE_ENV
+  // can never be a deployed event. This has to run BEFORE the VERCEL branch —
+  // `vercel env pull` writes `VERCEL="1"` and `VERCEL_ENV` into .env.local,
+  // and Next loads that file for `next dev`, so a laptop with a pulled
+  // production env otherwise reports `environment: production`
+  // (2026-09-08: `server_name: Mac.lan`, Watchpack EMFILE, RSC stream aborts,
+  // all tagged production — see #1919).
+  if (env.NODE_ENV === 'development') return 'development';
+
   // On Vercel: trust VERCEL_ENV verbatim (production | preview | development).
   // This branch is what makes the fix safe — it runs BEFORE any downgrade.
   if (env.VERCEL) return env.VERCEL_ENV || env.NODE_ENV || 'development';

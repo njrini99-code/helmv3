@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 import { describeError } from '@/lib/utils/describe-error';
-import { startCronCheckIn, finishCronCheckIn } from '@/lib/observability/cron-monitors';
+import { startCronCheckIn, finishCronCheckIn, flushCronCheckIn } from '@/lib/observability/cron-monitors';
 
 /**
  * Capture class #4 — cron/job outcomes into background_job_logs (the empty
@@ -30,7 +30,9 @@ import { startCronCheckIn, finishCronCheckIn } from '@/lib/observability/cron-mo
  * this function's own try even starts — which background_job_logs cannot,
  * since a job that never ran also never writes a row. Check-in calls are
  * fail-open (never throw) and gated off outside a real Vercel deployment; see
- * cron-monitors.ts.
+ * cron-monitors.ts. The terminal check-in is flushed before returning —
+ * Vercel freezes the function on response, and an unflushed `ok` is what
+ * Sentry reports as a monitor timeout (#1918).
  */
 export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Promise<T> {
   const startedAt = new Date();
@@ -53,12 +55,14 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
         ),
       );
       finishCronCheckIn(jobType, checkInId, 'error', elapsedMs());
+      await flushCronCheckIn(checkInId);
       return result;
     }
     const metadata =
       result instanceof Response ? await extractOutcomeMetadata(result) : null;
     await writeRow(jobType, 'completed', startedAt, null, metadata);
     finishCronCheckIn(jobType, checkInId, 'ok', elapsedMs());
+    await flushCronCheckIn(checkInId);
     return result;
   } catch (err) {
     // A cron that fetches an unreachable upstream throws with the gateway's
@@ -75,6 +79,7 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
       ),
     );
     finishCronCheckIn(jobType, checkInId, 'error', elapsedMs());
+    await flushCronCheckIn(checkInId);
     throw err;
   }
 }

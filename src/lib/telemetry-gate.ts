@@ -38,6 +38,14 @@
 export function shouldPersistAdminTables(): boolean {
   if (process.env.ADMIN_EVENTS_FORCE_CAPTURE === '1') return true;
   if (process.env.NEXT_PHASE === 'phase-production-build') return false;
+  // `next dev` is never the live deployment: Vercel forces NODE_ENV=production
+  // on every build and runtime. A pulled `.env.local` (`vercel env pull
+  // --environment=production`) carries VERCEL_ENV=production, and Next loads
+  // it for `next dev`, so without this guard a laptop dev server writes
+  // prod rows (2026-09-08: fingerprints 530e91c6/e9f122e7, ~100 rows of RSC
+  // stream aborts from Mac.lan — #1919). Checked before the preview opt-in
+  // and the VERCEL_ENV read so neither can be satisfied by a pulled file.
+  if (process.env.NODE_ENV === 'development') return false;
   // GitHub Actions sets both CI=true and GITHUB_ACTIONS=true on every job
   // runner — never persist from there, independent of whatever VERCEL_ENV
   // happens to read (it's normally unset in CI, but this must not depend
@@ -73,6 +81,10 @@ export type RuntimeEnv = 'production' | 'preview' | 'ci' | 'dev';
  */
 export function getRuntimeEnv(): RuntimeEnv {
   if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') return 'ci';
+  // Same reasoning as shouldPersistAdminTables(): a development NODE_ENV is
+  // `next dev`, whatever a pulled .env.local says VERCEL_ENV is. This also
+  // gates Sentry cron check-ins (cron-monitors.ts reuses this classifier).
+  if (process.env.NODE_ENV === 'development') return 'dev';
   if (process.env.VERCEL_ENV === 'production') return 'production';
   if (process.env.VERCEL_ENV) return 'preview';
   return 'dev';

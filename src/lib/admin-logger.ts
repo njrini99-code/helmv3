@@ -96,6 +96,31 @@ export function __resetAdminLoggerAlertWindowForTests(): void {
   bridgeWriteFailureCount = 0;
 }
 
+/**
+ * Every value `admin_events.source` accepts — mirrors the DB check constraint
+ * `admin_events_source_check` (supabase/schemas/shared/20_constraints.sql).
+ * Closed on purpose: the constraint rejects anything else, and a rejected
+ * insert is a `bridge_write_failed` — the Bridge silently losing its own
+ * events. `logEmailSuppressed` used to pass the caller's free-form origin
+ * (`'notifications/email.sendEmailNotification'`) straight through here;
+ * 1,006 rejected email.suppressed writes later (#1917), the origin now goes
+ * in metadata and `source` is typed.
+ */
+export const ADMIN_EVENT_SOURCES = [
+  'server_action',
+  'route_handler',
+  'server_component',
+  'background_job',
+  'request_hook',
+  'rls_denial',
+  'auth',
+  'cron',
+  'integrity',
+  'client',
+  'system',
+] as const;
+export type AdminEventSource = (typeof ADMIN_EVENT_SOURCES)[number];
+
 interface AdminEventInput {
   eventType: AdminEventType;
   title: string;
@@ -110,7 +135,7 @@ interface AdminEventInput {
   sport?: 'golf' | 'baseball' | 'shared';
   teamId?: string | null;
   fingerprint?: string;
-  source?: string;
+  source?: AdminEventSource;
   /** Helm Bridge: canonical feature key (src/lib/admin/feature-registry.ts). */
   feature?: FeatureKey | string | null;
 }
@@ -335,6 +360,7 @@ export async function logSecurityEvent(
  */
 export async function logEmailSuppressed(params: {
   kind: string;
+  /** Caller origin, e.g. `notifications/email.sendEmailNotification` — free-form, stored in metadata. */
   source: string;
   recipientCount: number;
   collapsedCount?: number;
@@ -343,9 +369,13 @@ export async function logEmailSuppressed(params: {
     eventType: 'email.suppressed',
     title: `Customer email suppressed (${params.kind})`,
     severity: 'info',
-    source: params.source,
+    // `source` is a closed DB enum (ADMIN_EVENT_SOURCES); the caller's
+    // free-form origin is not one of them and was rejected by the check
+    // constraint on every write (#1917).
+    source: 'system',
     metadata: {
       kind: params.kind,
+      origin: params.source,
       recipientCount: params.recipientCount,
       ...(params.collapsedCount ? { collapsedCount: params.collapsedCount } : {}),
     },

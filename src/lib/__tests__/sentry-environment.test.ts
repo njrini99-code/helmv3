@@ -44,6 +44,17 @@ describe('resolveServerEnvironment — the matrix', () => {
   it('no VERCEL + NODE_ENV=development -> development', () => {
     expect(resolveServerEnvironment({ NODE_ENV: 'development' })).toBe('development');
   });
+
+  it('`next dev` with a pulled production .env.local -> development (#1919)', () => {
+    // `vercel env pull --environment=production` writes VERCEL="1" and
+    // VERCEL_ENV=production into .env.local; Next loads it for `next dev`.
+    // NODE_ENV=development is positive evidence of a laptop — Vercel never
+    // runs anything with it — so it must win over the pulled VERCEL_ENV.
+    expect(resolveServerEnvironment({ VERCEL: '1', VERCEL_ENV: 'production', NODE_ENV: 'development' }))
+      .toBe('development');
+    expect(resolveServerEnvironment({ VERCEL: '1', VERCEL_ENV: 'preview', NODE_ENV: 'development' }))
+      .toBe('development');
+  });
 });
 
 describe('resolveServerEnvironment — a real Vercel event is never relabelled', () => {
