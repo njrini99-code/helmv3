@@ -55,7 +55,7 @@
  * redirect naming it actually resolves.
  */
 export const ADMIN_VIEWS = {
-  '/admin/golf': ['production', 'journey'],
+  '/admin/golf': ['production', 'journey', 'qualifiers'],
   '/admin/baseball': ['production', 'journey'],
   '/admin/lifting': ['production', 'flow'],
   '/admin/teams': ['pulse', 'ekg'],

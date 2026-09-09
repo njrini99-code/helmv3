@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import type { WorkLogProofRow } from '@/lib/admin/engineering/work-log';
 import { StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
-import { LocalTime } from '../_components/LocalTime';
+import { LocalTime } from '../../_components/LocalTime';
 
 const AREA_LABEL: Record<WorkLogProofRow['area'], string> = {
   golf: 'GolfHelm',

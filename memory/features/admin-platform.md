@@ -74,10 +74,14 @@ This area is high criticality because it often uses broader access patterns, ope
   blast radius + causal confidence, repair quality. Five independently
   `PanelBoundary`-wrapped sections, each backed by its own module under
   `src/lib/admin/engineering/`.
-- `src/app/admin/work-log/**` — the change-to-proof Work Log (Bridge
-  Premium Phase 5). Distinct from `src/app/admin/work/**` (the existing
-  PR-narrative timeline, `github-pr-timeline.ts`'s own render): this adds
-  the release-shipped-in and post-deploy-proof join over the SAME entries.
+- `src/app/admin/work/_components/WorkProofView.tsx` — the change-to-proof
+  Work Log (Bridge Premium Phase 5), reached at `/admin/work?view=proof`.
+  It was its own tab at `/admin/work-log` until the 30→19 consolidation:
+  same PR feed as the timeline view (`github-pr-timeline.ts`), one join
+  wider (release-shipped-in and post-deploy proof). Its own page copy used
+  to have to explain which of the two tabs you wanted, which is the tell
+  that it was one page with two framings. `/admin/work-log` now 307s to the
+  view; see `src/lib/admin/retired-routes.ts`.
     `release-compare.ts` (baseline-vs-current post-deploy comparison).
   - `genome.ts` and `release-watch.ts`, added 2026-09-03 as Phase 1
     ("Incidents + release tracking") of the same brief, §45 — the adapters
@@ -1192,7 +1196,7 @@ Phase 0 entry above.
   not a placeholder waiting to be wired. The two sources with a real
   outcome: `qualifier-invariants.ts`'s `evaluateQualifierInvariants` (the
   established "read model over already-fetched rows" idiom, already wired
-  into `/admin/qualifiers`) and the nightly `admin_events` integrity rows
+  into `/admin/golf?view=qualifiers`) and the nightly `admin_events` integrity rows
   (`source='integrity'`, via `jobs.ts`'s exported `parseIntegrityRows`). A
   failing integrity row is always `severity: 'critical'` — a silent
   data-integrity violation outranks an ordinary warning.
@@ -1547,7 +1551,7 @@ assumed it would:
   a genuinely unknown match, and repair-quality per-source isolation (the
   release ledger failing still returns the PR rows).
 - `src/app/admin/engineering/__tests__/page.test.tsx`,
-  `src/app/admin/work-log/__tests__/{page,WorkLogProofCard}.test.tsx` —
+  `src/app/admin/work/__tests__/{WorkProofView,WorkLogProofCard}.test.tsx` —
   page-shell render tests (every section heading, no nested `<main>`) plus
   a fully data-driven suite for `WorkLogProofCard`.
 - `src/lib/admin/lenses/__tests__/*.test.ts` (Phase 4) — one file per lens

@@ -4,8 +4,6 @@ type AdminHref =
   | '/admin/errors'
   | '/admin/traces'
   | '/admin/engineering'
-  | '/admin/work-log'
-  | '/admin/qualifiers'
   | '/admin/reliability'
   | '/admin/slo'
   | '/admin/database'
@@ -81,10 +79,6 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // that answers "which rounds are stuck", this answers "walk me through one
   // execution and show me where it diverged".
   { label: 'Flight Recorder', href: '/admin/traces', key: 'F', section: 'Triage', description: 'One round mutation traced end to end', meta: 'trace' },
-  // Qualifier lifecycle + the business rules rendered as live invariant checks.
-  // Sits in Triage because a breached invariant (a round on another team's
-  // qualifier) is an integrity incident, not a reporting curiosity.
-  { label: 'Qualifiers', href: '/admin/qualifiers', key: 'Q', section: 'Triage', description: 'Qualifier lifecycle and rule invariants', meta: 'rules' },
   { label: 'Teams pulse', href: '/admin/teams', key: 'T', section: 'Triage', description: 'Cross-sport team activity and error EKG' },
 
   // CUSTOMERS — "who is this, and how are they doing"
@@ -103,14 +97,12 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // registry, not the deploy-risk/rollback surface `/admin/deploys` owns.
   { label: 'Releases', href: '/admin/releases', key: 'K', section: 'Platform', description: 'Feature flags and kill switches', meta: 'flags' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
-  { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
-  // Distinct from the "Work log" tab above: that is the PR-timeline view
-  // (github-pr-timeline.ts entries, problem/fix narrative), this is the
-  // change-to-proof join over the SAME entries (repair verdict, shipped
-  // release, post-deploy delta) — Bridge Premium Phase 5 (Engineering OS).
-  { label: 'Proof Log', href: '/admin/work-log', key: 'Y', section: 'Platform', description: 'PR → release shipped in → post-deploy proof', meta: 'proof' },
+  // Two views: the PR timeline (problem/fix narrative from
+  // github-pr-timeline.ts) and ?view=proof, the change-to-proof join over the
+  // SAME entries (repair verdict, shipped release, post-deploy delta). They
+  // were two tabs until the 30→19 consolidation; one feed, two framings.
+  { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline and change-to-proof', meta: 'prs' },
   { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
-
 
   // REVENUE — zero inbound links repo-wide before this entry.
   { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },

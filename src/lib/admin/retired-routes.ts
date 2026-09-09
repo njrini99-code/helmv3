@@ -73,6 +73,20 @@ export const RETIRED_ADMIN_ROUTES: readonly RetiredRoute[] = [
     reason:
       'A second user directory beside /admin/users. The lens page said so itself; the Journey Ribbon it existed to reach now hangs off the user detail page.',
   },
+  {
+    from: '/admin/work-log',
+    to: '/admin/work',
+    view: 'proof',
+    reason:
+      'A second Platform tab over the same PR feed, one join wider. Its own page copy had to explain the difference in prose ("Distinct from the PR-timeline view at /admin/work") — a page that has to tell you which of two tabs you want is one page with two framings.',
+  },
+  {
+    from: '/admin/qualifiers',
+    to: '/admin/golf',
+    view: 'qualifiers',
+    reason:
+      'Qualifiers are a golf feature (golf_qualifiers, golf rounds, memory/features/qualifiers.md). "Are the qualifier rules holding?" is a question about golf, asked from the golf destination.',
+  },
 ];
 
 /**
@@ -90,6 +104,8 @@ export const RETIRED_SHORTCUTS: Readonly<Record<string, string>> = {
   P: '/admin/lifting?view=flow',
   E: '/admin/teams?view=ekg',
   D: '/admin/users',
+  Y: '/admin/work?view=proof',
+  Q: '/admin/golf?view=qualifiers',
 };
 
 /** The full destination for a retired route, including its `?view=`. */

@@ -39,26 +39,27 @@ vi.mock('@/lib/admin/engineering/work-log', () => ({
   })),
 }));
 
-import WorkLogPage from '@/app/admin/work-log/page';
+import { WorkProofView } from '@/app/admin/work/_components/WorkProofView';
 
 /**
- * `WorkLogProofBody` is an async Server Component nested inside
- * `PanelBoundary`'s `<Suspense>` — under `@testing-library/react`'s client
- * reconciler it stays suspended on first render (the skeleton renders
- * instead of the resolved rows), matching the same shell-only render-test
- * shape `src/app/admin/baseball/__tests__/page.test.tsx` already
- * establishes for a page built the same way. This pins the page shell and
- * that the read model is actually invoked, not the resolved row content.
+ * `WorkProofView` was `/admin/work-log`'s page body. After the 30→22 fold it is
+ * the `?view=proof` framing of `/admin/work`, mounted inside that page's
+ * `PanelBoundary` — so this suite now awaits the view directly rather than a
+ * route component. Awaiting it also resolves what used to stay suspended under
+ * `@testing-library/react`'s client reconciler, so the rows are assertable.
  */
-describe('WorkLogPage', () => {
-  it('renders the change-to-proof heading and does not nest a second <main> landmark', async () => {
+describe('WorkProofView', () => {
+  it('reads the proof model and renders its PR rows', async () => {
     const { fetchWorkLogProof } = await import('@/lib/admin/engineering/work-log');
-    const element = await WorkLogPage();
+    const element = await WorkProofView();
     render(element);
 
-    expect(screen.getByRole('heading', { level: 1, name: /change-to-proof work log/i })).toBeInTheDocument();
-    expect(screen.getByText(/\/admin\/work/)).toBeInTheDocument();
-    expect(screen.queryByRole('main')).not.toBeInTheDocument();
     expect(fetchWorkLogProof).toHaveBeenCalled();
+    // No <h1> of its own any more — the host page owns the masthead, and a
+    // second level-1 heading inside a view is exactly the duplication the
+    // consolidation removed.
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('main')).not.toBeInTheDocument();
+    expect(screen.getByText(/PRs tracked/i)).toBeInTheDocument();
   });
 });

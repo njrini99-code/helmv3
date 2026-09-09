@@ -1479,7 +1479,6 @@ features:
     code:
       routes:
         - src/app/admin/engineering/**
-        - src/app/admin/work-log/**
         - src/app/admin/database/**
         # Every src/app/admin/** subdirectory EXCEPT the three carved out
         # below (errors/ -> admin_incidents, reliability/ ->
@@ -1490,7 +1489,6 @@ features:
         - src/app/admin/traces/**
         - src/app/admin/deploys/**
         - src/app/admin/auth/**
-        - src/app/admin/qualifiers/**
         - src/app/admin/activity/**
         - src/app/admin/baseball/**
         - src/app/admin/health/**

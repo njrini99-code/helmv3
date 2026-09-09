@@ -1,21 +1,27 @@
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchWorkLogProof } from '@/lib/admin/engineering/work-log';
-import { Eyebrow, InlineNotice, StatStrip, StatTile, Skeleton, SkeletonList } from '@/components/fairway';
-import { PanelBoundary } from '../_components/PanelBoundary';
-import { PanelNoData, PanelStale } from '../_components/PanelStates';
-import { AutoRefresh } from '../_components/AutoRefresh';
+import { InlineNotice, StatStrip, StatTile, Skeleton, SkeletonList } from '@/components/fairway';
+import { PanelNoData, PanelStale } from '../../_components/PanelStates';
 import { WorkLogProofCard } from './WorkLogProofCard';
 
-export const dynamic = 'force-dynamic';
-
-const PROOF_SKELETON = (
+/** Reserved by the host page's PanelBoundary — a stat strip over a PR list. */
+export const PROOF_SKELETON = (
   <div className="space-y-4">
     <Skeleton className="h-16 w-full max-w-lg rounded-fw-md" />
     <SkeletonList rows={6} />
   </div>
 );
 
-async function WorkLogProofBody() {
+/**
+ * The change-to-proof view of the Work log — every PR joined to the release it
+ * shipped in and that release's post-deploy error delta.
+ *
+ * WAS `/admin/work-log`, a second Platform tab beside `/admin/work` whose own
+ * page copy had to explain the difference in prose ("Distinct from the
+ * PR-timeline view at /admin/work — this view adds the release/proof join").
+ * A page that has to tell you which of two tabs you want is two framings of one
+ * subject: same PR feed, one more join. It is now `/admin/work?view=proof`.
+ */
+export async function WorkProofView() {
   const result = await fetchWorkLogProof();
 
   if (result.status === 'unconfigured') {
@@ -67,28 +73,6 @@ async function WorkLogProofBody() {
           <WorkLogProofCard key={row.number} row={row} />
         ))}
       </div>
-    </div>
-  );
-}
-
-export default async function WorkLogPage() {
-  await requireSuperAdmin();
-
-  return (
-    <div className="space-y-6">
-      <AutoRefresh intervalMs={120_000} />
-      <div className="space-y-1">
-        <Eyebrow>Engineering OS</Eyebrow>
-        <h1 className="text-h2 font-fw-display text-text-primary">Change-to-Proof Work Log</h1>
-        <p className="max-w-2xl text-sm text-warm-500">
-          Every PR: what it claims, whether it self-reports as a confirmed or corrected repair, which release it shipped
-          in, and that release&apos;s post-deploy error delta. Distinct from the PR-timeline view at{' '}
-          <span className="font-fw-mono">/admin/work</span> — this view adds the release/proof join.
-        </p>
-      </div>
-      <PanelBoundary title="Change-to-proof Work Log" skeleton={PROOF_SKELETON}>
-        <WorkLogProofBody />
-      </PanelBoundary>
     </div>
   );
 }

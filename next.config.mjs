@@ -384,6 +384,12 @@ const nextConfig = {
       { source: '/admin/lenses/baseball', destination: '/admin/baseball?view=journey', permanent: false },
       { source: '/admin/lenses/lifting', destination: '/admin/lifting?view=flow', permanent: false },
       { source: '/admin/lenses/teams', destination: '/admin/teams?view=ekg', permanent: false },
+
+      // Step 4. Two more tabs that were framings of a subject that already had
+      // one: the change-to-proof Work Log over the SAME PR feed as /admin/work,
+      // and Qualifier Logic, which is a golf rules question.
+      { source: '/admin/work-log', destination: '/admin/work?view=proof', permanent: false },
+      { source: '/admin/qualifiers', destination: '/admin/golf?view=qualifiers', permanent: false },
     ];
   },
 

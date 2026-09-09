@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { WorkLogProofCard } from '@/app/admin/work-log/WorkLogProofCard';
+import { WorkLogProofCard } from '@/app/admin/work/_components/WorkLogProofCard';
 import type { WorkLogProofRow } from '@/lib/admin/engineering/work-log';
 
 const BASE_ROW: WorkLogProofRow = {

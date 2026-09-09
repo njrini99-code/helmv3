@@ -21,6 +21,7 @@ import { honestRoundsDelta } from './honest-rounds-delta';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
 import { GolfJourneyView } from './_components/GolfJourneyView';
+import { QualifiersView } from './_components/QualifiersView';
 
 export const dynamic = 'force-dynamic';
 
@@ -490,8 +491,12 @@ export default async function GolfAdminPage({
         active={view}
         ariaLabel="Golf view"
         searchParams={params}
-        labels={{ production: 'Production', journey: 'Journey' }}
-        descriptions={{ production: 'Live GolfHelm signals — teams, features, AI, releases.', journey: 'Login → round → autosave → submit → stats, with incidents per stage.' }}
+        labels={{ production: 'Production', journey: 'Journey', qualifiers: 'Qualifiers' }}
+        descriptions={{
+          production: 'Live GolfHelm signals — teams, features, AI, releases.',
+          journey: 'Login → round → autosave → submit → stats, with incidents per stage.',
+          qualifiers: 'Every qualifier business rule, checked against live rows — listed whether it is violated or not.',
+        }}
       />
       <PanelBoundary title="Golf" skeleton={<PanelPageSkeleton rows={8} />}>
         {renderView(view)}
@@ -507,5 +512,7 @@ function renderView(view: AdminViewOf<'/admin/golf'>) {
       return <GolfBody />;
     case 'journey':
       return <GolfJourneyView />;
+    case 'qualifiers':
+      return <QualifiersView />;
   }
 }

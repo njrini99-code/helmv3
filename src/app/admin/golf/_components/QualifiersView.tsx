@@ -1,18 +1,18 @@
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchQualifierLogic } from '@/lib/admin/data/qualifier-logic';
 import type { QualifierInvariantResult } from '@/lib/admin/qualifier-invariants';
-import { Surface, Inset, StatStrip, StatusPill, Badge, InlineNotice, Eyebrow, type FwStatusTone } from '@/components/fairway';
+import { Surface, Inset, StatStrip, StatusPill, Badge, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import { KpiTile } from '../_components/KpiTile';
-import { PanelBoundary } from '../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../_components/PanelSkeletons';
-import { AutoRefresh } from '../_components/AutoRefresh';
-import { LocalTime } from '../_components/LocalTime';
-
-export const dynamic = 'force-dynamic';
+import { KpiTile } from '../../_components/KpiTile';
+import { LocalTime } from '../../_components/LocalTime';
 
 /**
- * Helm Bridge — Qualifier Logic.
+ * Helm Bridge — Qualifier Logic, the rules view of the Golf tab.
+ *
+ * WAS `/admin/qualifiers`, a Triage tab of its own. Qualifiers are a GOLF
+ * feature — `golf_qualifiers`, `memory/features/qualifiers.md`, golf rounds —
+ * so "are the qualifier rules holding?" is a question about golf, asked from
+ * the golf destination, not a thirtieth place to look. It is now
+ * `/admin/golf?view=qualifiers`.
  *
  * Full visibility into qualifier business rules: every invariant
  * `qualifier-invariants.ts` can check against live rows, rendered as a row —
@@ -100,7 +100,7 @@ function InvariantRow({ result, partialRead }: { result: QualifierInvariantResul
   );
 }
 
-async function QualifierLogicBody() {
+export async function QualifiersView() {
   const result = await fetchQualifierLogic();
 
   if (result.status !== 'ok' || !result.data) {
@@ -217,32 +217,6 @@ async function QualifierLogicBody() {
           ))}
         </div>
       </Surface>
-    </div>
-  );
-}
-
-export default async function QualifierLogicPage() {
-  await requireSuperAdmin();
-
-  return (
-    <div className="space-y-6">
-      <AutoRefresh intervalMs={60_000} />
-      <div>
-        <Eyebrow as="p" tone="accent">
-          Qualifier Logic
-        </Eyebrow>
-        <h1 className="mt-1 text-h3 font-semibold text-warm-900 md:text-2xl">
-          Every qualifier business rule, checked against live rows
-        </h1>
-        <p className="mt-1 hidden max-w-2xl text-sm text-warm-500 md:block">
-          Lifecycle counts plus every cross-team, orphan-link, duplicate-slot, and over-cap invariant from{' '}
-          <span className="font-fw-mono">memory/features/qualifiers.md</span>, evaluated against production on every
-          load. A passing row means the rule was checked and held — not that there was nothing to check.
-        </p>
-      </div>
-      <PanelBoundary title="Qualifier Logic" skeleton={<PanelPageSkeleton stats={4} rows={6} />}>
-        <QualifierLogicBody />
-      </PanelBoundary>
     </div>
   );
 }
