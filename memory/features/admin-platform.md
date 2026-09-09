@@ -36,8 +36,11 @@ This area is high criticality because it often uses broader access patterns, ope
 ### Routes
 
 - `src/app/admin/**` (Helm Bridge) — **except** `src/app/admin/errors/**`
-  (`admin_incidents`), `src/app/admin/reliability/**`
-  (`admin_reliability_collector`), and `src/app/admin/self-heal/**`
+  (`admin_incidents`; as of the 30→19 consolidation that glob also covers the
+  Reliability and Self-heal UI, which are now `?view=sources` and `?view=loop`
+  of that one route — their data layers stay with
+  `admin_reliability_collector` and `admin_selfheal`), and the retired
+  `src/app/admin/reliability/**`, `src/app/admin/self-heal/**`
   (`admin_selfheal`); those three sub-capabilities' routes are documented in
   their own docs. Everything else — the dashboard, Golf Tracer, Flight
   Recorder/traces, health, deploys, auth, qualifiers, activity, users, teams,
@@ -1054,12 +1057,71 @@ result. Brief §14/§9/§12/§13/§45 (Phase 1).
   card's footer). Corrected 2026-09-03 (PR #1789 review) — this entry
   previously said the opposite, stale from before that wiring landed.
 
+## The 30→19 consolidation (2026-09-08)
+
+The Bridge Premium Observability brief shipped COMPLETELY — Phases 0 through 6
+are all live. The 30-tab sprawl was not unfinished work; it was finished work
+where no phase removed what it superseded. Phase 2's Command Deck was
+explicitly additive ("keep the existing lower panels") as transitional
+scaffolding, and Phase 3 then landed as three NEW tabs rather than replacing
+those panels. Every duplication symptom below follows from that one unfinished
+migration step, which is why this pass is subtraction and re-composition rather
+than construction.
+
+**The mechanism is `?view=`** (`src/lib/admin/views.ts`), which generalises what
+`src/lib/admin/incidents/types.ts` already stated for the incident queue:
+"These are FILTERS OVER ONE MODEL, not separate datasets — Reliability stopped
+being a competing incident list the moment it became a lens." A view applies
+that to a PAGE: one destination, one fetch, several framings, each addressable.
+Three rules, pinned by `src/test/lib/admin/views.test.ts`:
+
+1. The default view emits no param, so every destination keeps ONE canonical
+   URL and no existing bookmark or `activeMatch` breaks.
+2. An unknown view falls back rather than throwing — a stale link is not a 500.
+3. Every other query param survives a view switch.
+
+**What moved** (all retired paths 307, never 308, and keep their keyboard
+shortcut via `RETIRED_SHORTCUTS`; the table is
+`src/lib/admin/retired-routes.ts`, pinned by `admin-redirects.test.ts`):
+
+| Was | Now |
+| --- | --- |
+| `/admin/lenses/{golf,baseball,lifting,teams,users}` | a `?view=` of each subject |
+| `/admin/lenses/users/[id]` | `/admin/users/[id]?view=journey` |
+| `/admin/work-log` | `/admin/work?view=proof` |
+| `/admin/qualifiers` | `/admin/golf?view=qualifiers` |
+| `/admin/reliability` | `/admin/errors?view=sources` |
+| `/admin/self-heal` | `/admin/errors?view=loop` |
+| `/admin/slo` | `/admin/health?view=budgets` |
+| `/admin/billing` | deleted — `/admin` |
+
+`/admin/health` also gained `?view=heartbeats` (the matrix and lattice,
+promoted out of the bottom of a four-section scroll) and `/admin/database`
+split its nineteen-section column into `posture | performance | schema`.
+
+`/admin/errors/<fingerprint>` did NOT move and will not: it is stored in
+`rca_analysis` rows and matched by the repair contract's PR-body regex in
+`src/lib/admin/incidents/repair-link.ts`.
+
+**Two surfaces were deleted rather than folded**, both verified against
+production first: `/admin/billing` (zero `STRIPE_*` variables across 68
+production env vars, so it could only render its own "not available" notice)
+and the Deploys Traffic panel (the Vercel Web Analytics API answers `404
+not_found` for this project). `CreateInvoiceForm`, `src/lib/stripe/**` and
+`fetchVercelWebInsights()` are all untouched — each is a one-commit restore.
+
+**Result: 30 nav destinations → 19, with no surface lost.**
+
 ## Phase 4 lenses (Bridge Premium Observability, 2026-09-03)
 
 Seven new pure read models under `src/lib/admin/lenses/`, five small
 Fairway-token components under `src/components/admin/lenses/`, and six pages
 under `src/app/admin/lenses/**`, all registered in `ADMIN_NAV` under
-Platform. Source: the owner's Bridge Premium Observability brief §20-27
+Platform. **Superseded 2026-09-08**: the six lens pages were folded into the
+subjects they lens (see "The 30→19 consolidation" above) and
+`src/app/admin/lenses/**` no longer exists. The read models under
+`src/lib/admin/lenses/**` and the components under
+`src/components/admin/lenses/**` are unchanged and still in use. Source: the owner's Bridge Premium Observability brief §20-27
 (App and customer lenses) — `docs/ai-system/briefs/
 BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md`, which DOES resolve in
 this checkout (on `main`), unlike the Phase 0 brief referenced above.
