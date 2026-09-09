@@ -43,6 +43,18 @@ const SNAPSHOT: ScheduleSnapshot = {
   ],
 };
 
+/** jsdom has no `setPointerCapture`; the workspace calls it on drag start
+ * (SchedulingWorkspace.tsx:296) so the handle keeps receiving pointer moves
+ * off its own bounds. Stub it rather than skip the drag path entirely. */
+function stubPointerCapture() {
+  const proto = Element.prototype as unknown as { setPointerCapture?: (id: number) => void };
+  const original = proto.setPointerCapture;
+  proto.setPointerCapture = () => {};
+  return () => {
+    proto.setPointerCapture = original;
+  };
+}
+
 describe('SchedulingWorkspace', () => {
   it('keeps the selected time, timeline, and accessible start controls in one workspace', () => {
     render(
@@ -117,5 +129,39 @@ describe('SchedulingWorkspace', () => {
 
     expect(onDateChange).toHaveBeenCalledWith('2026-09-09');
     expect(onPersonClick).toHaveBeenCalledWith('player-1');
+  });
+
+  it('reaches the last valid start when the drag handle goes to the end of the timeline', () => {
+    // Window is 12:00-20:00 UTC in 15-minute slots (32 slots); a 60-minute
+    // selection's last valid start is 19:00 (19:00-20:00 still fits before
+    // the window ends), one full hour short of the timeline's own end.
+    // selectFromPointer (SchedulingWorkspace.tsx:278-292) maps the drag
+    // fraction across all 32 slots, then clamps into the 29 valid starts —
+    // dragging past the visible edge must still land on 19:00, not slide
+    // short of it or throw past the array bound.
+    const restorePointerCapture = stubPointerCapture();
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+
+    const timeline = screen.getByTestId('scheduling-timeline');
+    timeline.getBoundingClientRect = () => ({
+      left: 0, top: 0, right: 1056, bottom: 0, width: 1056, height: 0, x: 0, y: 0, toJSON() {},
+    });
+    Object.defineProperty(timeline, 'scrollWidth', { value: 1056, configurable: true });
+    Object.defineProperty(timeline, 'scrollLeft', { value: 0, configurable: true, writable: true });
+
+    const handle = screen.getByRole('slider', { name: 'Move selected time window' });
+    fireEvent.pointerDown(handle, { clientX: 3000, pointerId: 1 });
+
+    expect(handle).toHaveAttribute('aria-valuetext', '7:00 PM–8:00 PM');
+    expect(handle).toHaveAttribute('aria-valuenow', '28');
+    restorePointerCapture();
   });
 });

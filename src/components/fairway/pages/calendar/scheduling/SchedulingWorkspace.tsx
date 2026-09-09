@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import surfaces from '../CalendarSurfaces.module.css';
 import {
   AlertTriangle,
   CalendarDays,
@@ -205,7 +206,7 @@ export function SchedulingWorkspace({
   onPersonClick,
 }: SchedulingWorkspaceProps) {
   const slots = React.useMemo(() => createSlots(snapshot), [snapshot]);
-  const firstSlot = slots[0]?.start ?? snapshot.window.start;
+  const firstSlot = slots.find((slot) => slot.minuteOfDay >= 9 * 60)?.start ?? slots[0]?.start ?? snapshot.window.start;
   const [selectedStart, setSelectedStart] = React.useState(initialProposal?.start ?? firstSlot);
   const [duration, setDuration] = React.useState(durationBetween(initialProposal));
   const [dragging, setDragging] = React.useState(false);
@@ -226,6 +227,14 @@ export function SchedulingWorkspace({
   React.useEffect(() => {
     setDateValue(formatDateInput(initialStart ?? firstSlot, snapshot.timeZone));
   }, [firstSlot, initialStart, snapshot.timeZone]);
+
+  React.useEffect(() => {
+    const timeline = timelineRef.current;
+    if (!timeline) return;
+    const index = slots.findIndex((slot) => slot.start === (initialStart ?? firstSlot));
+    const slotWidth = window.innerWidth < 768 ? 24 : 32;
+    timeline.scrollLeft = Math.max(0, index - 2) * slotWidth;
+  }, [firstSlot, initialStart, slots]);
 
   const selectedEnd = React.useMemo(() => addMinutes(selectedStart, duration), [duration, selectedStart]);
   const evaluation = React.useMemo(
@@ -270,14 +279,14 @@ export function SchedulingWorkspace({
     const timeline = timelineRef.current;
     if (!timeline || validStarts.length === 0) return;
     const rect = timeline.getBoundingClientRect();
-    const nameWidth = window.innerWidth < 768 ? 96 : 128;
+    const nameWidth = 96;
     // The schedule can be much wider than the viewport. Account for its
     // horizontal scroll position so dragging after a pan still lands on the
     // time under the finger rather than jumping back to the visible viewport.
     const trackWidth = timeline.scrollWidth - nameWidth;
     const position = clientX - rect.left + timeline.scrollLeft - nameWidth;
     const fraction = Math.max(0, Math.min(0.999, position / trackWidth));
-    const nextIndex = Math.round(fraction * Math.max(0, validStarts.length - 1));
+    const nextIndex = Math.min(validStarts.length - 1, Math.round(fraction * slots.length));
     const next = validStarts[nextIndex];
     if (next) setSelectedStart(next.start);
   };
@@ -311,7 +320,7 @@ export function SchedulingWorkspace({
   return (
     <section
       aria-labelledby="scheduling-workspace-title"
-      className="flex min-h-0 w-full flex-col bg-canvas text-text-primary"
+      className={cn("flex min-h-0 w-full flex-1 flex-col text-text-primary", surfaces.panel)}
       data-testid="scheduling-workspace"
     >
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border-subtle px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top,0px))] sm:px-6">
@@ -342,7 +351,7 @@ export function SchedulingWorkspace({
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 pb-32 sm:px-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 pb-6 sm:px-6">
         {error ? (
           <div role="alert" className="flex items-start gap-3 rounded-card border border-fw-danger/30 bg-fw-danger-bg px-4 py-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-fw-danger-ink" aria-hidden="true" />
@@ -388,7 +397,7 @@ export function SchedulingWorkspace({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-fw-sans text-body-sm font-semibold text-text-primary">Compare schedules</p>
             <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{snapshot.timeZone} · checked {formatTime(snapshot.checkedAt, snapshot.timeZone)}</p>
@@ -402,11 +411,11 @@ export function SchedulingWorkspace({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-card border border-border-subtle bg-surface shadow-flat">
-          <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+        <div className={cn("overflow-hidden rounded-card", surfaces.paper)}>
+          <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3", surfaces.chrome)}>
             <div>
               <p className="font-fw-sans text-caption font-semibold uppercase tracking-[0.1em] text-text-tertiary">{duration}-min windows</p>
-              <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">Drag the window or choose a start time below.</p>
+              <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">Slide to explore. Choose a time on the ruler.</p>
             </div>
             <GlassSurface
               surface="chrome"
@@ -432,11 +441,12 @@ export function SchedulingWorkspace({
           </div>
           <div
             ref={timelineRef}
+            data-testid="scheduling-timeline"
             className="overflow-x-auto overscroll-x-contain touch-pan-x"
             data-dragging={dragging || undefined}
           >
             <div
-              className="grid min-w-max [--slot-width:24px] md:[--slot-width:44px]"
+              className="grid min-w-max [--slot-width:24px] md:[--slot-width:32px]"
               style={{ gridTemplateColumns: `96px repeat(${slots.length}, minmax(var(--slot-width), 1fr))` }}
             >
               <div className="sticky left-0 z-20 border-b border-r border-border-subtle bg-surface px-3 py-3 font-fw-sans text-caption font-semibold text-text-tertiary">People</div>
@@ -479,7 +489,7 @@ export function SchedulingWorkspace({
                     className="sticky left-0 z-20 flex min-h-[76px] w-full !rounded-none !border-0 border-b border-r border-border-subtle bg-surface px-3 text-left hover:bg-surface-tint focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus"
                     aria-label={`Open ${participantLabel(participant)} schedule`}
                   >
-                    <span className="flex min-w-0 w-full items-center gap-2">
+                    <span className="flex min-w-0 w-full flex-col items-center gap-1.5">
                       <Avatar
                         src={participant.avatarUrl ?? undefined}
                         name={participant.avatarUrl ? participantLabel(participant) : null}
@@ -487,48 +497,42 @@ export function SchedulingWorkspace({
                         fallback={<UserRound className="h-4 w-4" />}
                         size="sm"
                       />
-                      <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">{participantLabel(participant)}</span>
+                      <span className="w-full min-w-0 truncate text-center font-fw-sans text-caption font-medium text-text-primary">{participantLabel(participant)}</span>
                     </span>
                   </Button>
-                  {slots.map((slot) => {
-                    const selected = slot.start >= selectedStart && slot.start < selectedEnd;
-                    const state = evaluation.states.get(participant.id) ?? 'unknown';
-                    const interval = participant.intervals.find((candidate) => intervalOverlaps(candidate, slot.start, slot.end));
-                    return (
-                      <div
-                        key={`${participant.id}-${slot.start}`}
-                        className={cn(
-                          'relative min-h-[76px] border-b border-r border-border-subtle p-1',
-                          selected && 'bg-accent-50/70',
-                          selected && slot.start === selectedStart && 'border-l-2 border-l-accent-500',
-                          selected && slot.end >= selectedEnd && 'border-r-2 border-r-accent-500',
-                        )}
-                      >
-                        {interval ? (
-                          <div
-                            className={cn(
-                              'h-full min-h-[62px] rounded-fw-sm px-2 py-1.5 font-fw-sans text-microbadge',
-                              interval.type === 'blocked' ? 'bg-text-tertiary/15 text-text-secondary' : 'bg-slate-200/80 text-slate-700',
-                              selected && 'ring-1 ring-inset ring-fw-warning/70',
-                            )}
-                            title={intervalLabel(interval, snapshot.timeZone)}
-                          >
-                            <span className="block truncate">{interval.title || (interval.type === 'blocked' ? 'Busy' : 'Scheduled')}</span>
-                          </div>
-                        ) : state === 'unknown' ? (
-                          <div className="flex h-full min-h-[62px] items-center justify-center rounded-fw-sm border border-dashed border-border-subtle bg-surface-sunken/70 px-1 text-center font-fw-sans text-microbadge text-text-tertiary">
-                            Not verified
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                  <div
+                    className="relative min-h-[76px] border-b border-border-subtle"
+                    style={{ gridColumn: `span ${slots.length}`, backgroundImage: 'linear-gradient(to right, var(--fw-border-subtle, rgba(90,80,60,0.08)) 1px, transparent 1px)', backgroundSize: `${100 / slots.length}% 100%` }}
+                  >
+                    {participant.verification !== 'complete' ? (
+                      <div className="absolute inset-2 flex items-center rounded-fw-sm border border-dashed border-border-strong bg-surface-sunken/70 px-3 font-fw-sans text-caption text-text-secondary">Not verified</div>
+                    ) : null}
+                    {participant.intervals.map((interval) => {
+                      const windowStart = Date.parse(snapshot.window.start);
+                      const windowEnd = Date.parse(snapshot.window.end);
+                      const start = Math.max(windowStart, Date.parse(interval.start));
+                      const end = Math.min(windowEnd, Date.parse(interval.end));
+                      if (end <= start) return null;
+                      return (
+                        <div key={interval.id} title={intervalLabel(interval, snapshot.timeZone)}
+                          aria-label={intervalLabel(interval, snapshot.timeZone)}
+                          className={cn('absolute inset-y-3 overflow-hidden rounded-fw-sm border px-3 py-2 shadow-flat',
+                            interval.type === 'class' ? 'border-accent-200 bg-accent-50 text-accent-800' : interval.type === 'event' ? 'border-accent-700 bg-accent-650 text-text-on-accent' : 'border-border-subtle bg-surface-sunken text-text-secondary')}
+                          style={{ left: `${100 * (start - windowStart) / (windowEnd - windowStart)}%`, width: `${100 * (end - start) / (windowEnd - windowStart)}%` }}>
+                          <span className="block truncate font-fw-sans text-caption font-semibold">{interval.title || 'Busy'}</span>
+                          <span className="block truncate font-fw-mono text-microbadge opacity-75">{formatTime(interval.start, snapshot.timeZone)}–{formatTime(interval.end, snapshot.timeZone)}</span>
+                        </div>
+                      );
+                    })}
+                    <div aria-hidden className="pointer-events-none absolute inset-y-0 border-x-2 border-accent-500 bg-accent-500/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-[left,width] duration-150 motion-reduce:transition-none"
+                      style={{ left: `${100 * (Date.parse(selectedStart) - Date.parse(snapshot.window.start)) / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%`, width: `${100 * duration * 60000 / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%` }} />
+                  </div>
                 </React.Fragment>
               ))}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle px-4 py-3 font-fw-sans text-caption text-text-secondary">
-            <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-slate-200" aria-hidden="true" /> Busy</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-accent-100" aria-hidden="true" /> Busy</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm border border-dashed border-border-strong bg-surface-sunken" aria-hidden="true" /> Not verified</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-accent-100 ring-1 ring-inset ring-accent-500" aria-hidden="true" /> Selected</span>
           </div>
@@ -570,7 +574,7 @@ export function SchedulingWorkspace({
         )}
       </div>
 
-      <footer className="sticky bottom-0 z-30 border-t border-border-subtle bg-canvas/95 px-4 py-3 shadow-[0_-8px_24px_rgba(35,33,29,0.06)] backdrop-blur-md sm:px-6 sm:pb-4">
+      <footer className={cn("sticky bottom-0 z-30 shrink-0 border-t px-4 py-3 sm:px-6 sm:pb-4", surfaces.chrome)}>
         <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="font-fw-sans text-caption font-semibold uppercase tracking-[0.1em] text-text-tertiary">Selected time</p>
@@ -583,7 +587,7 @@ export function SchedulingWorkspace({
             busy={loading}
             disabled={!canChoose || loading}
             onClick={() => onChoose({ start: selectedStart, end: selectedEnd })}
-            className="sm:w-auto sm:min-w-[220px]"
+            className={cn("sm:w-auto sm:min-w-[220px]", surfaces.selected)}
           >
             Use this time
           </Button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowLeft, BookOpen, CalendarDays, ChevronLeft, ChevronRight, Clock, UserRound } from 'lucide-react';
+import surfaces from './CalendarSurfaces.module.css';
 import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button, Input, Skeleton } from '@/components/fairway';
@@ -32,27 +33,30 @@ function minuteInZone(iso: string, timeZone: string): number {
 }
 
 function intervalTone(interval: ScheduleInterval): string {
-  if (interval.type === 'class') return 'border-sky-600 bg-sky-700 text-white shadow-[0_8px_18px_rgba(12,74,110,0.2)]';
-  if (interval.type === 'event') return 'border-accent-700 bg-accent-650 text-text-on-accent shadow-[0_8px_18px_rgba(18,101,65,0.2)]';
+  if (interval.type === 'class') return 'border-accent-200 bg-accent-50 text-accent-800 shadow-flat';
+  if (interval.type === 'event') return `border-accent-700 text-text-on-accent ${surfaces.selected}`;
   return 'border-border-strong bg-text-tertiary/85 text-white shadow-flat';
 }
 
-function ScheduleLane({ label, intervals, timeZone, type }: {
+function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified }: {
   label: string;
   intervals: ScheduleInterval[];
   timeZone: string;
   type: 'class' | 'commitment';
+  dayStart: string;
+  verified: boolean;
 }) {
   const visible = intervals.flatMap((interval) => {
-    const start = minuteInZone(interval.start, timeZone);
-    const end = minuteInZone(interval.end, timeZone);
+    const dateKey = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+    const start = Date.parse(interval.start) < Date.parse(dayStart) ? 0 : minuteInZone(interval.start, timeZone);
+    const end = dateKey(interval.end) !== dateKey(dayStart) ? 1440 : minuteInZone(interval.end, timeZone);
     const clippedStart = Math.max(DAY_START_MINUTE, start);
-    const clippedEnd = Math.min(DAY_END_MINUTE, Math.max(end, start + 15));
+    const clippedEnd = Math.min(DAY_END_MINUTE, end);
     if (clippedEnd <= DAY_START_MINUTE || clippedStart >= DAY_END_MINUTE) return [];
     return [{
       interval,
       left: ((clippedStart - DAY_START_MINUTE) / (DAY_END_MINUTE - DAY_START_MINUTE)) * 100,
-      width: Math.max(6, ((clippedEnd - clippedStart) / (DAY_END_MINUTE - DAY_START_MINUTE)) * 100),
+      width: ((clippedEnd - clippedStart) / (DAY_END_MINUTE - DAY_START_MINUTE)) * 100,
     }];
   });
   const isClasses = type === 'class';
@@ -62,7 +66,7 @@ function ScheduleLane({ label, intervals, timeZone, type }: {
       <div className="mb-1.5 flex items-center justify-between gap-3">
         <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">{label}</p>
         <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-          {intervals.length === 0 ? 'Clear' : `${intervals.length} ${intervals.length === 1 ? 'block' : 'blocks'}`}
+          {intervals.length === 0 ? (verified ? 'No blocks' : 'Not verified') : `${intervals.length} ${intervals.length === 1 ? 'block' : 'blocks'}`}
         </span>
       </div>
       <div
@@ -74,7 +78,7 @@ function ScheduleLane({ label, intervals, timeZone, type }: {
         <span aria-hidden className="absolute inset-y-0 left-3/4 border-l border-dashed border-border-subtle" />
         {visible.length === 0 ? (
           <span className="absolute inset-0 grid place-items-center font-fw-sans text-caption text-text-tertiary">
-            {isClasses ? 'No classes recorded in Helm' : 'No team commitments recorded'}
+            {!verified ? 'Schedule not fully verified' : intervals.length ? 'Commitments outside 7 AM–9 PM' : isClasses ? 'No classes recorded in Helm' : 'No commitments recorded in Helm'}
           </span>
         ) : visible.map(({ interval, left, width }) => (
           <span
@@ -94,17 +98,17 @@ function ScheduleLane({ label, intervals, timeZone, type }: {
   );
 }
 
-function PersonScheduleVisual({ person, timeZone }: { person: ScheduleParticipant; timeZone: string }) {
+function PersonScheduleVisual({ person, timeZone, dayStart }: { person: ScheduleParticipant; timeZone: string; dayStart: string }) {
   const intervals = [...person.intervals].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   const classes = intervals.filter((interval) => interval.type === 'class');
   const commitments = intervals.filter((interval) => interval.type !== 'class');
 
   return (
-    <section aria-labelledby="class-day-heading" className="relative overflow-hidden rounded-card border border-border-subtle bg-surface p-4 shadow-flat">
+    <section aria-labelledby="class-day-heading" className={cn("relative overflow-hidden rounded-card p-4", surfaces.paper)}>
       <span aria-hidden className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-accent-500/10 blur-3xl" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-800 ring-1 ring-sky-200">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-50 text-accent-700 ring-1 ring-accent-200">
             <BookOpen className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -120,10 +124,12 @@ function PersonScheduleVisual({ person, timeZone }: { person: ScheduleParticipan
       </div>
 
       <div className="relative mt-4 space-y-3">
-        <ScheduleLane label="Classes" intervals={classes} timeZone={timeZone} type="class" />
-        <ScheduleLane label="Team & personal" intervals={commitments} timeZone={timeZone} type="commitment" />
-        <div aria-hidden className="grid grid-cols-5 font-fw-mono text-microbadge tabular-nums text-text-tertiary">
-          <span>7 AM</span><span className="text-center">10 AM</span><span className="text-center">1 PM</span><span className="text-center">4 PM</span><span className="text-right">9 PM</span>
+        <ScheduleLane label="Classes" intervals={classes} timeZone={timeZone} type="class" dayStart={dayStart} verified={person.verification === 'complete'} />
+        <ScheduleLane label="Team & personal" intervals={commitments} timeZone={timeZone} type="commitment" dayStart={dayStart} verified={person.verification === 'complete'} />
+        <div aria-hidden className="relative h-4 font-fw-mono text-microbadge tabular-nums text-text-tertiary">
+          {[{ minute: 420, label: '7 AM' }, { minute: 600, label: '10 AM' }, { minute: 780, label: '1 PM' }, { minute: 960, label: '4 PM' }, { minute: 1260, label: '9 PM' }].map(({ minute, label }, index) => (
+            <span key={minute} className="absolute" style={{ left: `${100 * (minute - 420) / 840}%`, transform: index === 0 ? undefined : index === 4 ? 'translateX(-100%)' : 'translateX(-50%)' }}>{label}</span>
+          ))}
         </div>
       </div>
     </section>
@@ -156,9 +162,9 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
       hideTitle
       hideClose
       size="xl"
-      className="h-[min(90dvh,850px)] !w-[calc(100vw-1rem)] sm:!w-auto"
+      className={cn("h-[min(90dvh,850px)] !w-[calc(100vw-1rem)] sm:!w-auto", surfaces.panel)}
     >
-      <header className="flex shrink-0 items-center gap-3 border-b border-border-subtle px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top,0px))] sm:px-6">
+      <header className={cn("relative z-10 flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-6", surfaces.chrome)}>
         <Button variant="ghost" aria-label="Back to calendar" onClick={onClose} className="shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -191,7 +197,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
         <Button variant="ghost" onClick={() => move(1)} aria-label="Next day"><ChevronRight className="h-5 w-5" /></Button>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-auto px-4 py-4 pb-28 sm:px-6">
+      <div className="min-h-0 flex-1 space-y-5 overflow-auto px-4 py-5 pb-6 sm:px-6">
         {loading ? (
           <div role="status" aria-label="Loading schedule" className="space-y-3"><Skeleton className="h-40 w-full rounded-card" /><Skeleton className="h-20 w-full" /></div>
         ) : null}
@@ -202,20 +208,20 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
         {person && person.verification !== 'complete' ? (
           <p role="status" className="rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg p-3 font-fw-sans text-caption text-fw-warning-ink">This schedule could not be fully verified. Missing time is not confirmed availability.</p>
         ) : null}
-        {person ? <PersonScheduleVisual person={person} timeZone={timeZone} /> : null}
+        {person ? <PersonScheduleVisual person={person} timeZone={timeZone} dayStart={snapshot!.window.start} /> : null}
         {person && person.intervals.length > 0 ? (
           <section aria-labelledby="commitments-heading">
             <div className="mb-2 flex items-center justify-between gap-3"><h3 id="commitments-heading" className="font-fw-display text-body-lg font-semibold text-text-primary">Commitments</h3><span className="font-fw-mono text-caption tabular-nums text-text-tertiary">{person.intervals.length} total</span></div>
-            <div className="space-y-2">
+            <div className="relative space-y-3 border-l border-accent-200 pl-4 ml-4">
               {person.intervals.map((interval) => (
-                <div key={interval.id} className="group flex items-start gap-3 rounded-fw-lg border border-border-subtle bg-surface p-3.5 shadow-flat transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-accent-200 hover:shadow-soft motion-reduce:transition-none">
-                  <span className={cn('mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full', interval.type === 'class' ? 'bg-sky-100 text-sky-800' : 'bg-accent-50 text-accent-700')}>
+                <div key={interval.id} className={cn("group relative flex items-start gap-3 rounded-fw-lg p-4 transition-transform active:scale-[0.99] motion-reduce:transform-none", surfaces.paper, surfaces.enter)}>
+                  <span className={cn('mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full', interval.type === 'class' ? 'bg-accent-50 text-accent-700' : 'bg-accent-50 text-accent-700')}>
                     {interval.type === 'class' ? <BookOpen className="h-4 w-4" aria-hidden /> : <Clock className="h-4 w-4" aria-hidden />}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-fw-mono text-caption font-medium tabular-nums text-text-secondary">{timeInZone(interval.start, timeZone)} – {timeInZone(interval.end, timeZone)}</p>
                     {interval.eventId ? (
-                      <Button variant="ghost" className="mt-0.5 h-auto min-h-0 justify-start px-0 py-0 text-left font-fw-sans text-body-sm font-semibold text-text-primary hover:bg-transparent hover:text-accent-700" onClick={() => onEvent(interval.eventId!)}>{interval.title}</Button>
+                      <Button variant="ghost" className="mt-0.5 h-auto min-h-11 justify-start px-0 py-1 text-left font-fw-sans text-body-sm font-semibold text-text-primary hover:bg-transparent hover:text-accent-700" onClick={() => onEvent(interval.eventId!)}>{interval.title}</Button>
                     ) : <p className="mt-0.5 font-fw-sans text-body-sm font-semibold text-text-primary">{interval.title}</p>}
                     <p className="mt-1 font-fw-sans text-caption capitalize text-text-tertiary">{interval.type === 'blocked' ? 'Personal block' : interval.type}</p>
                   </div>
@@ -229,7 +235,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
         ) : null}
       </div>
 
-      <footer className="sticky bottom-0 shrink-0 border-t border-border-subtle bg-canvas/95 px-4 py-3 shadow-[0_-8px_24px_rgba(35,33,29,0.06)] backdrop-blur-md sm:px-6 sm:pb-4">
+      <footer className={cn("sticky bottom-0 shrink-0 border-t px-4 py-3 sm:px-6 sm:pb-4", surfaces.chrome)}>
         <p className="mb-3 text-center font-fw-sans text-caption text-text-secondary">Based on Helm schedules · {timeZone}</p>
         <Button className="w-full" onClick={onCompare} disabled={!person || loading}>Compare with my schedule</Button>
       </footer>

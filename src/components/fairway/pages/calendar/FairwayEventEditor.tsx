@@ -1,5 +1,7 @@
 'use client';
 
+import surfaces from './CalendarSurfaces.module.css';
+
 /** Event form with preserved drafts and explicit schedule verification. */
 
 import * as React from 'react';
@@ -882,6 +884,7 @@ export function FairwayEventEditor({
       size="xl"
       title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
       data-slot="event-editor"
+      className={surfaces.panel}
     >
       {/* Recurring-series scope picker (edit/delete) — overrides the body */}
       {pendingScopeAction ? (

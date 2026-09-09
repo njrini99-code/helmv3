@@ -1,5 +1,7 @@
 'use client';
 
+import surfaces from './CalendarSurfaces.module.css';
+
 /** Event details with role-specific actions and persistent RSVP confirmation. */
 
 import * as React from 'react';
@@ -229,14 +231,14 @@ export function FairwayEventDetailDrawer({
       side="bottom"
       title={event?.title ?? 'Event'}
       hideTitle
-      className="sm:mx-auto sm:max-w-xl"
+      className={cn("sm:mx-auto sm:max-w-xl", surfaces.panel)}
     >
       {event ? (
         <Sheet.Body className="flex flex-col gap-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           {/* Header — type pill (+ cancelled badge) + title + date/time line.
               Cancelled events render DISTINCTLY (badge + strike) instead of
               disappearing — soft-cancel lifecycle. */}
-          <div className="flex flex-col gap-2">
+          <div className={cn("flex flex-col gap-3 rounded-card p-5", surfaces.paper)}>
             <div className="flex items-center gap-2">
               <StatusPill tone={meta.tone} size="sm" dot={false}>
                 {meta.label}
