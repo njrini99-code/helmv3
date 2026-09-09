@@ -5,19 +5,30 @@
  * Fairway · Calendar · FairwayCalendarMemberRail — coach availability filter
  * ----------------------------------------------------------------------------
  * The Fairway-native re-skin of the legacy CalendarAvatarSidebar. A horizontal
- * avatar rail (coach-only) that multi-selects team members to overlay their
- * schedules on the calendar — "ALL" selects every roster member (their
- * combined availability overlay), picking specific players narrows it to just
- * them, so the coach can see one player's schedule / find common free time.
- * Deselecting everything (clicking ALL again, or Clear) drops back to the
- * plain team calendar.
+ * avatar rail (coach-only): tapping an avatar opens that player's schedule
+ * (`onOpenPerson`); "All" instantly overlays every roster member's combined
+ * availability; "Compare" opens a deliberate, searchable picker
+ * (`CalendarPeoplePicker`, SCREEN-BUILD-PLAN.md §2.3) for choosing a specific
+ * subset to overlay. Deselecting everything (ALL again, or Clear) drops back
+ * to the plain team calendar.
  *
- * Manual selection stays capped at 8 (one per color tint, see MAX_SELECTION
- * below) so each selected player reads as a distinct color. "ALL" bypasses
- * that cap — past 8 simultaneous selections there is no unambiguous color
- * left to assign, so those members render identified by initials + a
- * per-person tint (the same fallback FairwayMonthGrid already uses for
- * class-owner chips) instead of a numbered palette color.
+ * Selection input lives in exactly one place now: the picker (plus the ALL
+ * instant toggle). Earlier this rail put the avatar row itself into a
+ * checkbox mode once "Compare" was pressed — SCREEN-BUILD-PLAN.md §2.3 calls
+ * for the picker instead ("Compare in the member rail opens the picker
+ * instead of toggling avatars in place"), so an avatar chip is now ALWAYS a
+ * pure "open this person's schedule" control, never a toggle. The chosen
+ * `selectedPlayerIds` still colors the avatar row and the "Viewing" legend
+ * below exactly as before — only how a coach GETS to that selection changed.
+ *
+ * Manual selection past 8 has no unambiguous palette color left to assign
+ * (MAX_SELECTION === AVATAR_TINT_COUNT, one color per selectable member), so
+ * those members render identified by initials + a per-person tint (the same
+ * fallback FairwayMonthGrid already uses for class-owner chips) instead of a
+ * numbered palette color — a rendering fallback only; nothing here still
+ * blocks a selection for being the ninth (see #1470 — that used to be a real,
+ * silently-discarded click on this very rail; picking people now happens in
+ * the picker, which never disables a row for it either).
  *
  * Reuses the EXACT legacy PLAYER_COLORS palette so colors match across the app.
  * Selection state is parent-owned; this is presentation only.
@@ -27,7 +38,9 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { PLAYER_COLORS, type TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import type { TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
+import { CalendarPeoplePicker, type PeoplePickerPerson } from './people/CalendarPeoplePicker';
 
 const MAX_SELECTION = 8;
 
@@ -35,6 +48,7 @@ export interface FairwayCalendarMemberRailProps {
   teamMembers: TeamMember[];
   selectedPlayerIds: string[];
   onSelect: (ids: string[]) => void;
+  onOpenPerson?: (id: string) => void;
 }
 
 // First LETTER of a name field, skipping any parenthetical suffix (e.g. a
@@ -81,6 +95,7 @@ export function FairwayCalendarMemberRail({
   teamMembers,
   selectedPlayerIds,
   onSelect,
+  onOpenPerson,
 }: FairwayCalendarMemberRailProps) {
   // Scroll affordance (finding #123) — `scrollbar-hide` removes the native
   // scrollbar with NO other visual cue that the pill row continues past the
@@ -90,6 +105,7 @@ export function FairwayCalendarMemberRail({
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(false);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
 
   const updateScrollAffordance = React.useCallback(() => {
     const el = scrollerRef.current;
@@ -110,42 +126,26 @@ export function FairwayCalendarMemberRail({
     };
   }, [updateScrollAffordance, teamMembers.length]);
 
+  const pickerPeople = React.useMemo<PeoplePickerPerson[]>(
+    () => teamMembers.map((m) => ({
+      id: m.id,
+      name: fullName(m),
+      avatarUrl: m.avatar_url ?? null,
+      role: m.role === 'coach' ? 'Coach' : 'Player',
+    })),
+    [teamMembers],
+  );
+
   if (teamMembers.length === 0) return null;
 
-  // Two distinct "nothing picked" concepts: `noneSelected` is the DEFAULT
-  // state (team calendar, no overlay) and gates the quiet initials key below.
-  // `isAllSelected` is "every roster member is in the overlay" — the state
-  // ALL now produces — and drives the pill's own pressed/fill styling. They
-  // are different states (empty vs. full), not two names for the same thing.
   const noneSelected = selectedPlayerIds.length === 0;
   const isAllSelected = teamMembers.every((m) => selectedPlayerIds.includes(m.id));
 
-  // At the cap, `toggle` below silently drops a click on any UNSELECTED chip.
-  // Five of the nine teams in production carry rosters larger than
-  // MAX_SELECTION (Hampden-Sydney 15, Shenandoah 12, Guilford 12, UNCW 10,
-  // Lynchburg 10 — measured 2026-08-17), so on most teams the trailing chips
-  // become dead controls the moment eight are picked. The cap itself is
-  // correct for MANUAL selection — it equals AVATAR_TINT_COUNT, one
-  // selectable member per tint, which is what keeps the overlay legible — so
-  // the fix there is to SAY so rather than to raise it.
-  //
-  // ALL is a different path (#1470): it bypasses the cap outright rather than
-  // silently refusing it, because past 8 selections the per-index color
-  // scheme has already given way to the initials-only fallback below — one
-  // more selected member doesn't make that fallback any less legible. Once a
-  // selection is already over the cap (only reachable via ALL), individual
-  // toggles stay uncapped too, so deselecting one member and picking them
-  // back doesn't get silently refused the way #1470 originally described.
+  // Purely a rendering fallback now (see file doc): once a selection exceeds
+  // the 8-color palette, further members are identified by initials + an
+  // id-hash tint rather than a numbered color. It never blocks a selection —
+  // the picker (and the ALL toggle) can select as many people as exist.
   const useInitialsOnlyColoring = selectedPlayerIds.length > MAX_SELECTION;
-  const atCap = selectedPlayerIds.length >= MAX_SELECTION && !useInitialsOnlyColoring;
-
-  const toggle = (id: string) => {
-    if (selectedPlayerIds.includes(id)) {
-      onSelect(selectedPlayerIds.filter((x) => x !== id));
-    } else if (selectedPlayerIds.length < MAX_SELECTION || useInitialsOnlyColoring) {
-      onSelect([...selectedPlayerIds, id]);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -175,7 +175,7 @@ export function FairwayCalendarMemberRail({
         <div
           ref={scrollerRef}
           role="group"
-          aria-label="Filter calendar by team member"
+          aria-label="Team availability filter"
           className={cn(
             'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
             // Reserve the chevron's own 28px gutter, and only while that
@@ -186,14 +186,13 @@ export function FairwayCalendarMemberRail({
             canScrollRight && 'pr-7 scroll-pr-7',
           )}
         >
-        {/* ALL — selects every roster member (bypassing the manual 8 cap) so
-            the overlay shows the whole team's schedule, not less than picking
-            a single player (#1470). Pressing it again while everyone is
-            already selected clears back to the plain team calendar; the
-            "Clear" control in the legend below does the same. Visible pill
-            stays h-9 (36px); the Button itself floors at the 44px touch
-            target and centers the pill inside, so only the invisible hit
-            area grows. */}
+        {/* ALL — instantly overlays every roster member's schedule (bypassing
+            the 8-color cap, see `useInitialsOnlyColoring`), or clears back to
+            the plain team calendar if everyone is already selected. This is
+            the one-tap shortcut; "Compare" (below) is the deliberate,
+            searchable path for a specific subset. Visible pill stays h-9
+            (36px); the Button itself floors at the 44px touch target and
+            centers the pill inside, so only the invisible hit area grows. */}
         <Button
           type="button"
           variant="ghost"
@@ -214,48 +213,53 @@ export function FairwayCalendarMemberRail({
           </span>
         </Button>
 
+        {onOpenPerson ? (
+          <CalendarPeoplePicker
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            mode="compare"
+            people={pickerPeople}
+            selectedIds={selectedPlayerIds}
+            title="Compare schedules"
+            doneLabel="Compare selected"
+            onApply={(ids) => onSelect(ids)}
+            emptyMessage="No players on this team yet."
+            trigger={
+              <Button
+                type="button"
+                variant="ghost"
+                haptic="none"
+                className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
+              >
+                <span className="flex h-9 items-center rounded-full border border-border-subtle bg-surface-sunken px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary transition-colors group-hover:bg-surface-tint">
+                  Compare
+                </span>
+              </Button>
+            }
+          />
+        ) : null}
+
         <span aria-hidden className="h-6 w-px flex-shrink-0 bg-border-subtle" />
 
         {teamMembers.map((m) => {
           const idx = selectedPlayerIds.indexOf(m.id);
           const selected = idx !== -1;
-          // Past the cap (only reachable via ALL), the index-based palette
-          // wraps and two different members would render the same color —
-          // so `indexColor` is deliberately null there and the chip falls
-          // back to the id-hash tint instead (see `useInitialsOnlyColoring`).
+          // Past the cap, the index-based palette wraps and two different
+          // members would render the same color — so `indexColor` is
+          // deliberately null there and the chip falls back to the id-hash
+          // tint instead (see `useInitialsOnlyColoring`).
           const indexColor = selected && !useInitialsOnlyColoring ? PLAYER_COLORS[idx % PLAYER_COLORS.length]! : null;
           const tint = tintFor(m.id);
-          // Unselectable right now, because the cap is full. `aria-disabled`
-          // rather than `disabled`: the chip stays focusable and hoverable, so
-          // both the tooltip and the screen-reader name can deliver the reason.
-          // A real `disabled` would also set `pointer-events-none`, which kills
-          // the very tooltip that explains the state.
-          const capped = !selected && atCap;
           return (
             <Button
               key={m.id}
               type="button"
               variant="ghost"
               haptic="none"
-              onClick={() => toggle(m.id)}
-              aria-pressed={selected}
-              aria-disabled={capped || undefined}
-              aria-label={
-                selected
-                  ? `${fullName(m)} (viewing schedule)`
-                  : capped
-                    ? `${fullName(m)} — already viewing the maximum of ${MAX_SELECTION} players`
-                    : `View ${fullName(m)}'s schedule`
-              }
-              title={
-                capped
-                  ? `${fullName(m)} — already viewing the maximum of ${MAX_SELECTION} players. Clear one to add another.`
-                  : fullName(m)
-              }
-              className={cn(
-                'group relative flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-center justify-center overflow-visible rounded-full p-0 transition-transform hover:bg-transparent active:bg-transparent',
-                capped && 'cursor-not-allowed',
-              )}
+              onClick={() => onOpenPerson?.(m.id)}
+              aria-label={`Open ${fullName(m)}'s schedule${selected ? ' — included in comparison' : ''}`}
+              title={fullName(m)}
+              className="group relative flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-center justify-center overflow-visible rounded-full p-0 transition-transform hover:bg-transparent active:bg-transparent"
             >
               {/* Visible avatar chip — fixed 36x36 (h-9 w-9), unchanged from
                   before the fix. The Button around it is the 44x44 touch
@@ -269,7 +273,6 @@ export function FairwayCalendarMemberRail({
                   // (the tint background/text stays the same as unselected —
                   // it's the person's fixed id-hash color either way).
                   selected && !indexColor && 'scale-[1.06] ring-2 ring-accent-650',
-                  capped && 'opacity-40 grayscale',
                 )}
                 style={
                   indexColor
@@ -322,15 +325,6 @@ export function FairwayCalendarMemberRail({
               </span>
             );
           })}
-          {/* The cap, stated where it can be seen without hovering. The dimmed
-              chips above carry it in `title`/aria-label, but `title` never
-              fires on touch — and the coach who just had a click discarded is
-              on the surface where the count matters. */}
-          {atCap ? (
-            <span className="font-fw-sans text-caption text-text-tertiary">
-              Max {MAX_SELECTION} — clear one to swap
-            </span>
-          ) : null}
           <Button
             type="button"
             variant="ghost"

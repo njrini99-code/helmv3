@@ -97,18 +97,32 @@ const SurfaceRoot = forwardRef<HTMLDivElement, SurfaceProps>(function Surface(
         elevation === 'border'
           ? 'border border-border-subtle [box-shadow:var(--fw-shadow-card)]'
           : 'shadow-soft',
-        // interactive affordance (cinematic, small-distance transforms only):
-        // a smooth cinematic-glide lift on hover, then a quick tactile press
-        // back down on active for a responsive, physical feel.
+        // Interactive affordance, split by input capability.
+        //
+        // The hover lift used to be the WHOLE affordance, and `active:` only
+        // returned the surface to its resting position — which cancels a lift
+        // that never happened on a phone. So on touch, the primary surface of
+        // the app acknowledged a tap with nothing. The press below is now the
+        // baseline (it is what touch gets), and the hover lift is an addition
+        // for pointer devices, gated behind `@media (hover: hover)` so it can
+        // never fire sticky on tap in mobile WebKit. (Scoped here rather than
+        // via Tailwind's global `hoverOnlyWhenSupported`, which would also
+        // silence 46 hover-reveal controls across admin/messages/baseball.)
+        //
+        // Pressed goes BELOW rest, not back to it: the surface settles onto the
+        // page (shadow-flat) and dims a hair, which is what taking a finger's
+        // weight looks like.
         interactive && [
-          'cursor-pointer transition-[box-shadow,transform,border-color] will-change-transform',
+          'cursor-pointer transition-[box-shadow,transform,border-color,filter] will-change-transform',
           '[transition-duration:240ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-          'hover:shadow-raise hover:-translate-y-[2px]',
-          'active:translate-y-0 active:shadow-soft active:[transition-duration:110ms]',
+          '[@media(hover:hover)]:hover:shadow-raise [@media(hover:hover)]:hover:-translate-y-[2px]',
+          'active:translate-y-0 active:scale-[0.994] active:shadow-flat active:brightness-[0.985]',
+          'active:[transition-duration:110ms] active:[transition-timing-function:var(--fw-ease-spring)]',
           // green focus-visible ring that survives black + cream
           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           // honor reduced motion — collapse transforms, keep the shadow cue
-          'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
+          'motion-reduce:transition-none motion-reduce:active:translate-y-0',
+          'motion-reduce:active:scale-100 motion-reduce:active:brightness-100',
         ],
         className,
       )}

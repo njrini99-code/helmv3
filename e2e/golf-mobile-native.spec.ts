@@ -73,4 +73,170 @@ test.describe('Golf mobile native layout', () => {
       }
     }
   });
+
+  test('continue round keeps the type editor and scorecard below the phone safe area', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    test.setTimeout(90_000);
+    test.skip(
+      browserName !== 'chromium',
+      'Safe-area emulation uses Chromium CDP.',
+    );
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', {
+      insets: { top: 47, bottom: 34 },
+    });
+
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 320, height: 694 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/golf/dashboard/rounds', {
+        waitUntil: 'domcontentloaded',
+      });
+
+      // The authenticated QA player owns an unfinished round. Discover its
+      // real id through the product flow so this test never invents or writes
+      // a round record.
+      const continueButton = page
+        .getByRole('button', { name: 'Continue', exact: true })
+        .first();
+      await expect(continueButton).toBeVisible({ timeout: 15_000 });
+      await Promise.all([
+        page.waitForURL(/\/golf\/dashboard\/rounds\/continue\/[^/]+/, {
+          timeout: 20_000,
+        }),
+        continueButton.click(),
+      ]);
+
+      await expect(
+        page.getByRole('heading', { name: /^Hole \d+$/ }),
+      ).toBeVisible({ timeout: 15_000 });
+      const typeButton = page.getByRole('button', {
+        name: 'Change round type',
+        exact: true,
+      });
+      const contextHeader = page.getByTestId('continue-round-context');
+      const scorecard = page.getByTestId('round-scorecard-header');
+      const prevButton = page.getByRole('button', { name: /Prev/ }).first();
+      await expect(typeButton).toBeVisible();
+      await expect(contextHeader).toBeVisible();
+      await expect(scorecard).toBeVisible();
+      await expect(prevButton).toBeVisible();
+
+      const typeBox = await typeButton.boundingBox();
+      const contextBox = await contextHeader.boundingBox();
+      const scorecardBox = await scorecard.boundingBox();
+      const prevBox = await prevButton.boundingBox();
+      expect(typeBox).not.toBeNull();
+      expect(contextBox).not.toBeNull();
+      expect(scorecardBox).not.toBeNull();
+      expect(prevBox).not.toBeNull();
+      expect(typeBox!.y).toBeGreaterThanOrEqual(47);
+      // The scorecard follows the context directly. A second 47px safe-area
+      // pad would produce the reported large blank band before Prev/Exit.
+      expect(
+        prevBox!.y - (contextBox!.y + contextBox!.height),
+      ).toBeLessThanOrEqual(16);
+      expect(
+        await page.evaluate(() =>
+          Math.max(
+            document.documentElement.scrollWidth,
+            document.body.scrollWidth,
+          ),
+        ),
+      ).toBeLessThanOrEqual(viewport.width);
+
+      const mutations: string[] = [];
+      const onRequest = (request: import('@playwright/test').Request) => {
+        // Only Next server-action POSTs can mutate this round. Ignore
+        // analytics/telemetry requests emitted by the shell during the check.
+        if (request.method() === 'POST' && request.headers()['next-action'])
+          mutations.push(request.url());
+      };
+      page.on('request', onRequest);
+      await typeButton.click();
+      await expect(
+        page.getByRole('heading', { name: 'Change round type', exact: true }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await expect(typeButton).toBeVisible();
+      expect(mutations).toEqual([]);
+      page.off('request', onRequest);
+
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await expect
+        .poll(async () => (await scorecard.boundingBox())?.y ?? -Infinity)
+        .toBeGreaterThanOrEqual(46);
+      await expect
+        .poll(async () => (await scorecard.boundingBox())?.y ?? Infinity)
+        .toBeLessThanOrEqual(48);
+      await expect
+        .poll(async () => (await prevButton.boundingBox())?.y ?? -Infinity)
+        .toBeGreaterThanOrEqual(47);
+      await expect
+        .poll(async () => (await prevButton.boundingBox())?.y ?? Infinity)
+        .toBeLessThanOrEqual(64);
+      expect(
+        await page.evaluate(() =>
+          Math.max(
+            document.documentElement.scrollWidth,
+            document.body.scrollWidth,
+          ),
+        ),
+      ).toBeLessThanOrEqual(viewport.width);
+    }
+  });
+
+  test('holding a message opens anchored reactions without native text selection', async ({ page, context, browserName }) => {
+    test.setTimeout(90_000);
+    test.skip(browserName !== 'chromium', 'Touch hold uses Chromium CDP.');
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 47, bottom: 34 } });
+    await page.goto('/golf/dashboard/messages');
+    await page.getByRole('navigation', { name: 'Conversations' }).getByRole('button').first().click();
+    const thread = page.getByRole('region', { name: 'Conversation' });
+    await expect(thread.getByRole('textbox')).toBeVisible();
+    const bubble = thread.locator('[data-message-bubble]').last();
+    const popup = page.getByRole('dialog', { name: 'Message actions' });
+
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 844 });
+      await bubble.scrollIntoViewIfNeeded();
+      const target = await bubble.boundingBox();
+      expect(target).not.toBeNull();
+      const point = { x: target!.x + target!.width / 2, y: target!.y + target!.height / 2 };
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+      // Deliberate dwell: this is the physical long-press gesture under test.
+      await page.waitForTimeout(650);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await expect(popup).toBeVisible();
+      expect(await page.evaluate(() => window.getSelection()?.toString() ?? '')).toBe('');
+      const bounds = await popup.boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(8);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width - 8);
+      expect(bounds!.y).toBeGreaterThanOrEqual(47);
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844 - 34);
+      await expect(popup.getByRole('button', { name: 'Copy message', exact: true })).toBeVisible();
+      for (const reaction of await popup.locator('[aria-label="React to message"] button').all()) {
+        await expect.poll(async () => (await reaction.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(44);
+        await expect.poll(async () => (await reaction.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+      }
+      await page.keyboard.press('Escape');
+      await expect(popup).toHaveCount(0);
+
+      await bubble.scrollIntoViewIfNeeded();
+      const movedTarget = await bubble.boundingBox();
+      const start = { x: movedTarget!.x + movedTarget!.width / 2, y: movedTarget!.y + movedTarget!.height / 2 };
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...start, y: start.y - 40 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(650);
+      await expect(popup).toHaveCount(0);
+    }
+  });
+
 });

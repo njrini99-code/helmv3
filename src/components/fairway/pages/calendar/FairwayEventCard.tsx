@@ -24,6 +24,8 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { formatEventTime } from '@/lib/calendar/timezone';
 import { tintFor } from './FairwayCalendarMemberRail';
+import surfaces from './CalendarSurfaces.module.css';
+import { enterStyle } from './motion';
 
 /**
  * event_type → { label, tone } using ONLY the Fairway status tones
@@ -73,6 +75,12 @@ export interface FairwayEventCardProps {
   /** True for events whose day has already passed — renders at reduced opacity. */
   isPast?: boolean;
   /**
+   * Position in a freshly rendered list. Drives the staggered `.enter`
+   * reveal (30ms per card, capped at 8 so long agendas never wait on the
+   * animation). Omit for cards rendered alone.
+   */
+  enterIndex?: number;
+  /**
    * Team's canonical IANA timezone (golf_team_settings.timezone). Times
    * render anchored to this zone — NOT the runtime's own local zone — so the
    * SAME event agrees between server and client render, and between this
@@ -112,6 +120,7 @@ export function FairwayEventCard({
   isPast = false,
   timezone,
   className,
+  enterIndex,
 }: FairwayEventCardProps) {
   const { label: typeLabel, tone: typeTone } = typeMeta(event.event_type);
   const start = startTimeLabel(event, timezone);
@@ -140,9 +149,12 @@ export function FairwayEventCard({
         'active:translate-y-[0.5px] active:shadow-flat',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
+        surfaces.press,
+        enterIndex !== undefined && surfaces.enter,
         isPast && 'opacity-50',
         className,
       )}
+      style={enterStyle(enterIndex)}
     >
       <span className="flex w-full items-stretch gap-4">
         {/* Time block — Fragment-Mono tabular-nums, fixed width for column alignment. */}

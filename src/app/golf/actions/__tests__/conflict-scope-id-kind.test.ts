@@ -84,7 +84,11 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn(async () => undefined),
 }));
 vi.mock('@/lib/calendar/conflicts', () => ({
-  checkEventConflicts: vi.fn(async () => ({ hasConflicts: false, conflicts: [], suggestedTimes: [] })),
+  checkEventConflicts: vi.fn(async () => ({ hasConflict: false, conflicts: [], suggestedTimes: [] })),
+}));
+vi.mock('@/lib/calendar/availability', () => ({
+  getUserBusyPeriodsWithStatus: vi.fn(async () => ({ periods: [], partial: false })),
+  periodsOverlap: vi.fn(() => false),
 }));
 
 const { checkScheduleConflicts } = await import('../golf');
