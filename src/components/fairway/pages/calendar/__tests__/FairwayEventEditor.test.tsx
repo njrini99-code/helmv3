@@ -500,3 +500,233 @@ describe('FairwayEventEditor — scheduling verification and draft handoff', () 
     expect(screen.queryByText(/No conflicts found/)).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mobile stage navigation and the review receipt (SCREEN-BUILD-PLAN.md §2.1).
+// Every field stays mounted regardless of `stage` (see
+// editor/EventEditorStages.tsx's docblock) — the dock only gates whether the
+// review receipt renders and moves focus, so this exercises the dock without
+// disturbing any of the suite above.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — mobile stage navigation and review', () => {
+  it('Continue off Essentials is disabled until the title is filled', async () => {
+    renderEditor({ event: null });
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    expect(continueButton).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
+    expect(continueButton).toBeEnabled();
+  });
+
+  it('stage navigation preserves the draft, and the review stage surfaces unresolved verification', async () => {
+    checkScheduleConflicts.mockResolvedValue({
+      success: true,
+      data: {
+        hasConflict: true,
+        conflicts: [
+          {
+            userId: 'p1',
+            userName: 'Ava Stone',
+            conflictingEvent: { title: 'Lift', type: 'event', start: '2026-06-15T14:00:00Z', end: '2026-06-15T15:00:00Z' },
+          },
+        ],
+        suggestions: [],
+      },
+    });
+    renderEditor({ event: null });
+    await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'West range' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Go to People & time' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Review' }));
+
+    // The draft is untouched by navigating stages — nothing was unmounted.
+    expect(screen.getByLabelText(/event title/i)).toHaveValue('Morning practice');
+    expect(screen.getByRole('textbox', { name: 'Location' })).toHaveValue('West range');
+
+    // The review receipt reflects that same draft and states the unresolved
+    // verification plainly, without repeating the panel's own sentence or
+    // upgrading a real conflict to a clean bill.
+    expect(await screen.findByText(/Morning practice · Practice/)).toBeInTheDocument();
+    expect(screen.getByText(/West range/)).toBeInTheDocument();
+    expect(await screen.findByText(/1 unresolved overlap/i)).toBeInTheDocument();
+    expect(screen.getByText('Attendees will be notified.')).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// §7: the primary label becomes "Move event" only when every changed field
+// is a time field. Driven through the existing `suggestedTime` prop (already
+// exercised above) rather than the DateChooser/TimeChooser popovers, since
+// that's the code path that actually mutates start/end date and time.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — "Move event" label', () => {
+  it('relabels Save changes to Move event when only the time changed', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const { rerender, props } = renderEditor();
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /^save changes$/i })).toBeInTheDocument();
+
+    const start = new Date(2026, 5, 16, 9, 0);
+    const end = new Date(2026, 5, 16, 11, 0);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 101 }} />);
+
+    expect(await screen.findByRole('button', { name: /^move event$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^save changes$/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps Save changes when a non-time field changes alongside the time', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const { rerender, props } = renderEditor();
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Location' }), { target: { value: 'West range' } });
+    const start = new Date(2026, 5, 16, 9, 0);
+    const end = new Date(2026, 5, 16, 11, 0);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 102 }} />);
+
+    expect(await screen.findByRole('button', { name: /^save changes$/i })).toBeInTheDocument();
+  });
+
+  // Regression: opening a series ROOT re-baselines the pristine snapshot's
+  // recurrence fields from the stored rule (so extending/reshaping the
+  // pattern doesn't itself count as a "change"). That re-baseline must not
+  // leave a stale phantom diff behind once the coach then moves the time —
+  // the label should still read "Move event", not "Save changes".
+  it('still reads Move event on a series root after its recurrence prefill settles', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const { rerender, props } = renderEditor({
+      event: makeEvent({ recurrence_rule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR;COUNT=12' }),
+    });
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /^save changes$/i })).toBeInTheDocument();
+
+    const start = new Date(2026, 5, 16, 9, 0);
+    const end = new Date(2026, 5, 16, 11, 0);
+    rerender(<FairwayEventEditor {...props} suggestedTime={{ start: start.toISOString(), end: end.toISOString(), token: 103 }} />);
+
+    expect(await screen.findByRole('button', { name: /^move event$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^save changes$/i })).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Offline (§2.1 states): Publish and Find a time are disabled with an
+// explicit reason; every other field stays editable, and the draft is never
+// dropped just because the network is down.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — offline', () => {
+  afterEach(() => {
+    Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('disables Publish and Find a time while offline, and re-enables them back online', async () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    const onFindTime = vi.fn();
+    renderEditor({ onFindTime });
+    await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeEnabled();
+
+    Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
+    fireEvent(window, new Event('offline'));
+
+    expect(await screen.findByText(/Reconnect to publish/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Find a time' })).toBeDisabled();
+
+    Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
+    fireEvent(window, new Event('online'));
+
+    await waitFor(() => expect(screen.queryByText(/Reconnect to publish/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeEnabled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Desktop (≥1024px, SCREEN-BUILD-PLAN.md §2 shared rules): the review
+// receipt is always visible with no stage stepper — this actually forces the
+// `useMediaQuery('(min-width: 1024px)')` branch to true, rather than relying
+// on the suite's default matchMedia stub (always non-matching, i.e. mobile).
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — desktop layout', () => {
+  it('shows the review receipt immediately with no stage dock, unlike mobile', async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes('1024'),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    try {
+      getEventRSVP.mockResolvedValue(rsvpResult([]));
+      renderEditor();
+      await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
+
+      // No mobile stage dock — desktop has no stepper.
+      expect(screen.queryByRole('button', { name: 'Continue' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Go to /i })).not.toBeInTheDocument();
+
+      // The receipt is visible without navigating any stage.
+      expect(await screen.findByRole('heading', { name: 'Review' })).toBeInTheDocument();
+      expect(screen.getByText('Attendees will be notified.')).toBeInTheDocument();
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Empty roster (§2.1 states): "empty roster (invite button disabled with
+// 'No players on this team yet')". An empty team must never make the whole
+// invite section disappear — that would read as "there's no invite step",
+// not "there's no one to invite yet" — so it renders a disabled affordance
+// with that exact message instead. Covers both the default inline-fallback
+// path (no people-picker seam wired) and the summary-button seam.
+// ---------------------------------------------------------------------------
+
+describe('FairwayEventEditor — empty roster', () => {
+  it('shows a disabled invite affordance with "No players on this team yet." when the roster is empty', async () => {
+    renderEditor({ event: null, teamPlayers: [] });
+
+    expect(await screen.findByText(/No players on this team yet\./i)).toBeInTheDocument();
+    const inviteButton = screen.getByText(/No players on this team yet\./i).closest('button');
+    expect(inviteButton).toBeDisabled();
+
+    // No trace of the populated-roster affordances.
+    expect(screen.queryByText(/No one invited yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /select all/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the same disabled empty-roster message when the people-picker seam is wired', async () => {
+    const onOpenPeoplePicker = vi.fn();
+    renderEditor({ event: null, teamPlayers: [], onOpenPeoplePicker });
+
+    const inviteButton = (await screen.findByText(/No players on this team yet\./i)).closest('button');
+    expect(inviteButton).toBeDisabled();
+    if (inviteButton) fireEvent.click(inviteButton);
+    expect(onOpenPeoplePicker).not.toHaveBeenCalled();
+  });
+
+  // Discriminator: `availablePlayers` (derived synchronously from the
+  // `teamPlayers` prop) is empty from the first render, independent of
+  // whether the event's OWN attendee-hydration fetch (`getEventRSVP`,
+  // `attendeesLoading`) is still in flight — an empty team is already known
+  // before that unrelated fetch resolves. Editing an existing event (not
+  // `event: null`) puts hydration into its 'loading' window immediately on
+  // mount, so asserting synchronously (no `findBy`/`waitFor`) here would
+  // have caught the earlier version of this fix, which hid the empty state
+  // for as long as `attendeesLoading` stayed true.
+  it('shows the disabled empty-roster message even while this event\'s own attendee hydration is still loading', () => {
+    getEventRSVP.mockResolvedValue(rsvpResult([]));
+    renderEditor({ teamPlayers: [] });
+
+    expect(screen.getByText(/No players on this team yet\./i)).toBeInTheDocument();
+  });
+});
