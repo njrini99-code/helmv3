@@ -6,15 +6,7 @@ import { AdoptionMapPanel } from '@/components/admin/lenses/AdoptionMapPanel';
 import { ActivityThreadsPanel } from '@/components/admin/lenses/ActivityThreadsPanel';
 import { Surface, InlineNotice } from '@/components/fairway';
 import { PanelNoData } from '../../_components/PanelStates';
-
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
+import { SectionLabel } from '../../_components/SectionLabel';
 
 export async function TeamsEkgView() {
   const [ekg, adoption, threads] = await Promise.all([

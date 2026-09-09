@@ -6,15 +6,7 @@ import { JourneyFlow } from '@/components/admin/lenses/JourneyFlow';
 import { Surface, StatusPill, InlineNotice, StatStrip } from '@/components/fairway';
 import { PanelNoData } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
-
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
+import { SectionLabel } from '../../_components/SectionLabel';
 
 export async function LiftingFlowView() {
   const [journey, lift, errors] = await Promise.all([

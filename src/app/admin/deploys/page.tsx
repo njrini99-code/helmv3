@@ -17,6 +17,7 @@ import { ReleaseLedger } from './_components/ReleaseLedger';
 import { fetchReleaseRunway } from '@/lib/admin/triage/release-runway';
 import { ReleaseRunwayStrip } from '@/components/admin/triage/ReleaseRunwayStrip';
 import { ReleaseIntelPanel } from './_components/ReleaseIntelPanel';
+import { SectionLabel } from '../_components/SectionLabel';
 
 /** Phone card list (below `md`) shows this many deploys before "Show more" —
  *  keeps the default view inside the ~3-screen-height scroll budget (Mobile
@@ -33,14 +34,6 @@ const STATE_TONE: Record<VercelDeployState, FwStatusTone> = {
   ERROR: 'danger',
   CANCELED: 'warning',
 };
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 /** Deep-links each row to its Sentry issue stream, filtered to that
  *  release's commit sha. SENTRY_ORG is a non-secret org slug — safe to

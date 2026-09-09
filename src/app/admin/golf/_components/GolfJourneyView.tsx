@@ -7,15 +7,7 @@ import { fetchReleaseLedger } from '@/lib/admin/data/release-ledger';
 import { JourneyFlow } from '@/components/admin/lenses/JourneyFlow';
 import { Surface, StatusPill, InlineNotice } from '@/components/fairway';
 import { PanelNoData } from '../../_components/PanelStates';
-
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
+import { SectionLabel } from '../../_components/SectionLabel';
 
 export async function GolfJourneyView() {
   const [journey, errors, golf, ai, releases] = await Promise.all([

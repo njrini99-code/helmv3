@@ -15,6 +15,7 @@ import { EngagementPanel } from './EngagementPanel';
 import { GolfPlayerDetailPanel } from './GolfPlayerDetailPanel';
 import { ViewAsButton } from './ViewAsButton';
 import { UserJourneyView } from './UserJourneyView';
+import { SectionLabel } from '../../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,14 +47,6 @@ const SEVERITY_TONE: Record<string, FwStatusTone> = {
 // `fetchUserDetail`'s `recentActivity` is cross-sport (golf rounds + Lift Lab
 // sessions) — kinds map 1:1 to the two queries that feed it in `users.ts`.
 const ACTIVITY_KIND_LABEL: Record<string, string> = { round: 'Round', lift: 'Lift' };
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 export default async function UserDetailPage({
   params,

@@ -10,6 +10,7 @@ import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
 import { AutoRefresh } from '../../_components/AutoRefresh';
 import { LocalTime } from '../../_components/LocalTime';
+import { SectionLabel } from '../../_components/SectionLabel';
 
 /**
  * Helm Bridge — SLO / Error Budget Center (Bridge Control Plane Phase D).
@@ -50,14 +51,6 @@ const SILENCE_TONE: Record<FeatureSilence['state'], FwStatusTone> = {
   no_heartbeat_signal: 'neutral',
   unknown: 'neutral',
 };
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 function ErrorBudgetRow({ row }: { row: FeatureErrorBudget }) {
   return (

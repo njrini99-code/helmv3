@@ -11,6 +11,7 @@
  *   Tabs (+List/Trigger/Content) — underline section-nav tabs
  *   StatusPill           — tinted status indicator with optional live dot
  *   FilterPill           — toggleable filter pill (aria-pressed)
+ *   FilterPillLink       — the same pill as a real <a href> (aria-current)
  *   Badge / Chip         — count/tag token; Chip is removable
  *   Avatar / AvatarGroup — image + initials fallback + presence + stack
  *   Toolbar              — the one quiet search+filters+actions row (matte at
@@ -49,7 +50,7 @@ export type { TabsProps, TabsTriggerProps } from './tabs';
 export { StatusPill } from './status-pill';
 export type { StatusPillProps } from './status-pill';
 
-export { FilterPill } from './filter-pill';
+export { FilterPill, FilterPillLink } from './filter-pill';
 export type { FilterPillProps } from './filter-pill';
 
 export { SelectablePill } from './selectable-pill';

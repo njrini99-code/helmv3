@@ -18,6 +18,7 @@ import { buildJobWaterfall } from '@/lib/admin/triage/job-waterfall';
 import { JobExecutionWaterfall } from '@/components/admin/triage/JobExecutionWaterfall';
 import { fetchHelmJobsQueueStatus } from '@/lib/admin/data/helm-jobs';
 import { HelmJobsQueuePanel } from './HelmJobsQueuePanel';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,14 +103,6 @@ function InngestDetail({ inngest }: { inngest: InngestHealth }) {
         ) : null}
       </p>
     </>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-primary-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
   );
 }
 

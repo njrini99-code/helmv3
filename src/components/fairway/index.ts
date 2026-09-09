@@ -129,6 +129,7 @@ export {
   StatusPill,
   type StatusPillProps,
   FilterPill,
+  FilterPillLink,
   type FilterPillProps,
   SelectablePill,
   type SelectablePillProps,

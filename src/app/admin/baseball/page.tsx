@@ -18,16 +18,9 @@ import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
 import { BaseballJourneyView } from './_components/BaseballJourneyView';
+import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 // Dateline rule — replaces the retired border-l-2 "key panel" left-edge
 // stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full

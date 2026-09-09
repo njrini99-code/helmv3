@@ -4,6 +4,7 @@ import { Surface, Inset, StatStrip, StatusPill, Badge, InlineNotice, type FwStat
 import { cn } from '@/lib/utils';
 import { KpiTile } from '../../_components/KpiTile';
 import { LocalTime } from '../../_components/LocalTime';
+import { SectionLabel } from '../../_components/SectionLabel';
 
 /**
  * Helm Bridge — Qualifier Logic, the rules view of the Golf tab.
@@ -41,14 +42,6 @@ import { LocalTime } from '../../_components/LocalTime';
  * degrades to an honest "unconfirmed" instead of a fabricated all-clear if
  * that ever stops being true.
  */
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 const SEVERITY_TONE: Record<QualifierInvariantResult['severity'], FwStatusTone> = {
   critical: 'danger',
