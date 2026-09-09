@@ -67,7 +67,14 @@ export function CalendarSchedulingDialog({ request, initialProposal, onChange, o
           onDateChange={(date) => { if (request) onChange({ ...request, date }); }}
           onPersonClick={onOpenPerson} />
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto p-4 md:p-6">
+        /* The workspace shell is full-bleed on phones (ModalShell
+           `presentation="workspace"`: top 0, square corners) and delegates safe
+           areas to its child. SchedulingWorkspace pads them in its own header
+           and footer; this sibling branch has to do the same or the Back button
+           and the `role="alert"` retry sit under the notch. Not a first-mount
+           state either: `useScheduleWindow` nulls `snapshot` on every
+           request-key change, so every date jump lands here. */
+        <div className="min-h-0 flex-1 overflow-auto p-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom,0px))] max-sm:pt-[max(1rem,env(safe-area-inset-top,0px))] md:p-6">
           <div className="mb-6 flex items-center gap-3"><Button variant="ghost" aria-label="Back to calendar" onClick={onClose}><ArrowLeft className="h-5 w-5" /></Button><h2 className="text-title font-semibold">Find a time</h2></div>
           {error ? <div role="alert" className="space-y-4"><p>{error}</p><Button variant="secondary" onClick={retry} leftIcon={<RefreshCw className="h-4 w-4" />}>Try again</Button></div>
             : <div aria-label="Loading schedules" role="status" className="space-y-5"><Skeleton className="h-10 w-48" />{[0, 1, 2, 3, 4].map((key) => <Skeleton key={key} className="h-16 w-full" />)}<p className="text-sm text-text-secondary">Checking Helm schedules…</p></div>}

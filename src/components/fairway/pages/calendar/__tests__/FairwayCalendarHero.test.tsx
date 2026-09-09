@@ -81,6 +81,21 @@ describe('FairwayCalendarHero — header contract', () => {
     expect(screen.getByRole('button', { name: 'Next month' })).toBeInTheDocument();
   });
 
+  // Agenda is month-scoped, and Day/Week both page by seven days — FairwayCalendar's
+  // navigate() sends Day through addDays(d, dir * 7) because the day-strip is the
+  // single-day picker. The arrows must announce the step they actually take: an
+  // assistive-technology user cannot see the strip to infer it.
+  it.each([
+    ['agenda', 'month'],
+    ['week', 'week'],
+    ['day', 'week'],
+  ] as const)('names the %s view step "%s"', (view, step) => {
+    const { unmount } = renderHero({ view, isDayView: view === 'day' });
+    expect(screen.getByRole('button', { name: `Previous ${step}` })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `Next ${step}` })).toBeInTheDocument();
+    unmount();
+  });
+
   it('offers "Today" only when the focus date is not today', () => {
     const onNavigate = vi.fn();
     const { unmount } = renderHero({ onNavigate });

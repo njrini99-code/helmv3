@@ -258,7 +258,12 @@ export function FairwayMonthGrid({
                 onClick={onSelectDate ? () => onSelectDate(day) : undefined}
                 aria-label={dayLabel}
                 aria-current={isSelected ? 'date' : undefined}
-                className="group pointer-events-none relative z-10 flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-start justify-start self-start rounded-full p-0 max-sm:sr-only sm:pointer-events-auto"
+                // `max-sm:hidden`, not `sr-only`: sr-only still leaves a native button
+                // in the tab order and the a11y tree, so on phones every cell had TWO
+                // stops -- the full-cell target above and this one -- and the second
+                // painted no focus ring. Below sm the visible date is the aria-hidden
+                // span further down; this control belongs to sm+ only.
+                className="group pointer-events-none relative z-10 flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-start justify-start self-start rounded-full p-0 max-sm:hidden sm:pointer-events-auto"
                 suppressHydrationWarning
               >
                 <span

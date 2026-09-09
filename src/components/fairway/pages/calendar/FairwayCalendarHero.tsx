@@ -145,7 +145,11 @@ export function FairwayCalendarHero({
   ].filter((action): action is NonNullable<typeof action> => action !== null);
 
   // Agenda is month-scoped (its period is the title's month), so it steps by month too.
-  const stepLabel = view === 'month' || view === 'agenda' ? 'month' : view === 'day' ? 'day' : 'week';
+  // Day steps by a WEEK, not a day: FairwayCalendar's navigate() routes both
+  // Day and Week through addDays(d, dir * 7) because the day-strip is the
+  // single-day picker and these arrows turn the page. The label has to match
+  // what the button does -- an AT user cannot see the strip to infer it.
+  const stepLabel = view === 'month' || view === 'agenda' ? 'month' : 'week';
 
   return (
     <section

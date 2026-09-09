@@ -795,7 +795,11 @@ export function SchedulingWorkspace({
                         setStart(slot.start);
                       }}
                       className={cn(
-                        'relative h-8 w-full border-b border-border-subtle px-0 font-fw-mono text-caption text-text-tertiary hover:bg-surface-sunken focus-visible:z-30 focus-visible:ring-inset focus-visible:ring-offset-0',
+                        // 32px keeps the ruler compact for a mouse, but these are real
+                        // start-time controls: on a coarse pointer they take the 44px
+                        // floor the rest of the kit uses (segmented.tsx, PopoverPanel),
+                        // restoring the hit area main had at `min-h-14`.
+                        'relative h-8 w-full border-b border-border-subtle px-0 font-fw-mono text-caption text-text-tertiary hover:bg-surface-sunken focus-visible:z-30 focus-visible:ring-inset focus-visible:ring-offset-0 [@media(pointer:coarse)]:min-h-[44px]',
                         isHour && 'border-l border-l-border-subtle',
                         selected && 'text-accent-700',
                       )}
