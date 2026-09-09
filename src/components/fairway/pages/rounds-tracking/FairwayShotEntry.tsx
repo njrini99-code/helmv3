@@ -591,7 +591,17 @@ export function FairwayShotEntry({
           {resultOfShot === 'hole' ? `Complete hole · Score ${currentShot}` : 'Next shot →'}
         </Button>
         <div className="mt-2 flex gap-2">
-          <Button variant="ghost" className="flex-1" onClick={onAddPenalty} aria-label="Add penalty stroke">
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={onAddPenalty}
+            // A penalty is attached to the shot that earned it; logged first it
+            // becomes shot 1 and the real tee shot is entered as the provisional
+            // (78 of 311 penalty rows, 90 days to 2026-09-09) — scored a stroke short.
+            disabled={shotHistory.length === 0}
+            title={shotHistory.length === 0 ? 'Enter the shot first, then add its penalty' : undefined}
+            aria-label="Add penalty stroke"
+          >
             + Penalty
           </Button>
           {shotHistory.length > 0 && (
