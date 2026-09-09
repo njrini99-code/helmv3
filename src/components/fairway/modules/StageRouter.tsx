@@ -128,8 +128,14 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
   // move focus onto the new view's container so keyboard/AT users land in
   // the fresh content instead of staying stranded on whatever trigger they
   // clicked. Skipped on first mount — that's initial page load, not a
-  // stage swap, and stealing focus there would fight the page's own
-  // initial-focus behavior.
+  // stage swap.
+  //
+  // `preventScroll: true` is load-bearing. Focusing a container that starts
+  // below the fold makes the browser scroll it into view, and `activeKey`
+  // also settles when the search params resolve AFTER hydration — so a plain
+  // page load fired this effect and dumped players partway down the page
+  // (CoachHelm landed 34% down; Game Profile 161px in). Focus should move;
+  // the page should not.
   const stageViewRef = React.useRef<HTMLDivElement | null>(null);
   const hasMounted = React.useRef(false);
   React.useEffect(() => {
@@ -137,7 +143,7 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
       hasMounted.current = true;
       return;
     }
-    stageViewRef.current?.focus({ preventScroll: false });
+    stageViewRef.current?.focus({ preventScroll: true });
   }, [activeKey]);
 
   const open = React.useCallback(
