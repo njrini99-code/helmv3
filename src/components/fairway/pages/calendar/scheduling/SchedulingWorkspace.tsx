@@ -264,6 +264,14 @@ function participantLabel(participant: ScheduleParticipant): string {
   return participant.name || 'Unnamed participant';
 }
 
+/** Phone name column: the first name whole beats "Aud…" (the full name stays
+ *  in the accessible label and from `sm` up). */
+function participantShortLabel(participant: ScheduleParticipant): string {
+  const label = participantLabel(participant);
+  const first = label.split(/\s+/)[0];
+  return first || label;
+}
+
 function intervalLabel(interval: ScheduleInterval, timeZone: string): string {
   const title = interval.title || (interval.type === 'blocked' ? 'Busy' : 'Scheduled');
   return `${title}, ${formatTime(interval.start, timeZone)}–${formatTime(interval.end, timeZone)}`;
@@ -737,7 +745,7 @@ export function SchedulingWorkspace({
               data-dragging={dragging || undefined}
             >
               <div
-                className="relative grid min-w-max [--name-width:96px] [--slot-width:24px] md:[--name-width:104px] md:[--slot-width:40px]"
+                className="relative grid min-w-max [--name-width:116px] [--slot-width:24px] md:[--name-width:120px] md:[--slot-width:40px]"
                 style={{ gridTemplateColumns: `var(--name-width) repeat(${slots.length}, minmax(var(--slot-width), 1fr))` }}
               >
                 {/* Row 1: the floating readout above the ruler. */}
@@ -816,7 +824,10 @@ export function SchedulingWorkspace({
                         fallback={<UserRound className="h-4 w-4" />}
                         size="sm"
                       />
-                      <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">{participantLabel(participant)}</span>
+                      <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                        <span className="sm:hidden">{participantShortLabel(participant)}</span>
+                        <span className="hidden sm:inline">{participantLabel(participant)}</span>
+                      </span>
                     </PressTarget>
                     <div
                       className={cn('relative min-h-[60px] border-b border-border-subtle md:min-h-[64px]', surfaces.laneGrid)}

@@ -328,7 +328,12 @@ keeps its date separate from the return-to-today action.
   one avatar meaning all three. Wraps to two lines below md.
 - Agenda: month-scoped — its visible window is the title's calendar month
   and prev/next step by month (`Previous month` / `Next month`); the empty
-  state names the period ("Nothing in September 2026"). A day heading and
+  state names the period ("Nothing in September 2026"). Week view titles its
+  exact Sunday-start range ("Sep 6 – 12, 2026", `weekRangeTitle`) and its
+  empty state names the week. Day headings within the coming week carry a
+  quiet "in N days" cue (Today / Tomorrow / Yesterday are the heading).
+- Scheduling name column: 116px on phones showing the first name whole
+  (full name from `sm` and in the accessible label), 120px from md. A day heading and
   ONE grouped Surface of rows divided by hairlines; "Show N earlier events"
   is a ghost action with the real count.
   Phone Month view is `CalendarSurface` (DayPicker, event-day dots from

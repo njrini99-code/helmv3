@@ -30,7 +30,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { format, isSameDay } from 'date-fns';
+import { endOfWeek, format, isSameDay, isSameMonth, isSameYear, startOfWeek } from 'date-fns';
 import { CalendarSurface } from '@/components/fairway/calendar';
 import {
   AlertTriangle,
@@ -85,6 +85,17 @@ export interface FairwayCalendarHeroProps {
   conflictCount?: number | null;
 }
 
+/** Week view names its exact scope: "Sep 6 – 12, 2026", "Aug 30 – Sep 5, 2026",
+ *  "Dec 27, 2026 – Jan 2, 2027". Sunday-start weeks, matching the parent's
+ *  visible window. */
+export function weekRangeTitle(focusDate: Date): string {
+  const start = startOfWeek(focusDate, { weekStartsOn: 0 });
+  const end = endOfWeek(focusDate, { weekStartsOn: 0 });
+  if (!isSameYear(start, end)) return `${format(start, 'MMM d, yyyy')} – ${format(end, 'MMM d, yyyy')}`;
+  if (!isSameMonth(start, end)) return `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`;
+  return `${format(start, 'MMM d')} – ${format(end, 'd, yyyy')}`;
+}
+
 export function FairwayCalendarHero({
   focusDate,
   selectedDate,
@@ -106,7 +117,11 @@ export function FairwayCalendarHero({
   onAvailability,
   conflictCount = null,
 }: FairwayCalendarHeroProps) {
-  const title = isDayView ? format(focusDate, 'EEEE, MMMM d') : format(focusDate, 'MMMM yyyy');
+  const title = isDayView
+    ? format(focusDate, 'EEEE, MMMM d')
+    : view === 'week'
+      ? weekRangeTitle(focusDate)
+      : format(focusDate, 'MMMM yyyy');
   const focusIsToday = isSameDay(focusDate, nowRef);
   const ctaLabel = primaryActionLabel ?? 'New event';
   const hasViews = Boolean(view && viewOptions && onViewChange);

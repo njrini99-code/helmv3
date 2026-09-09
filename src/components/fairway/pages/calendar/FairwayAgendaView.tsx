@@ -74,6 +74,16 @@ interface DayBucket {
   events: CalendarEvent[];
 }
 
+/** A quiet "in 3 days" beside a heading within the coming week (Today and
+ *  Tomorrow are already the heading itself). */
+function relativeDayCue(date: Date, nowRef?: Date): string | null {
+  if (!nowRef) return null;
+  const days = Math.round((startOfDay(date).getTime() - startOfDay(nowRef).getTime()) / 86_400_000);
+  if (days === -1) return 'Yesterday';
+  if (days >= 2 && days <= 6) return `in ${days} days`;
+  return null;
+}
+
 function formatDayLabel(date: Date, nowRef?: Date): string {
   if (nowRef) {
     if (isSameDay(date, nowRef)) return 'Today';
@@ -386,6 +396,9 @@ export function FairwayAgendaView({
               >
                 {bucket.label}
               </h2>
+              {relativeDayCue(bucket.date, nowRef) ? (
+                <span className="font-fw-sans text-caption text-text-tertiary">{relativeDayCue(bucket.date, nowRef)}</span>
+              ) : null}
               {bucket.events.length > 1 ? (
                 <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
                   {bucket.events.length} events

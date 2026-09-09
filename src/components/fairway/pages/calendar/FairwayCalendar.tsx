@@ -1274,6 +1274,7 @@ export function FairwayCalendar({
           focusDate={focusDate}
           rangeStart={visibleWindow.start}
           rangeEnd={visibleWindow.end}
+          periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
           timezone={teamTimezone}

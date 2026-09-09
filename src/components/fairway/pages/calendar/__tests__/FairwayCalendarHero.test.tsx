@@ -10,7 +10,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import * as React from 'react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { FairwayCalendarHero } from '../FairwayCalendarHero';
+import { FairwayCalendarHero, weekRangeTitle } from '../FairwayCalendarHero';
 
 const NOW = new Date('2026-07-16T12:00:00');
 const VIEWS = [
@@ -65,6 +65,14 @@ describe('FairwayCalendarHero — header contract', () => {
     fireEvent.click(screen.getByRole('button', { name: /^(Tuesday, July 21st|July 21)/ }));
     expect(onSelectDate).toHaveBeenCalledTimes(1);
     expect(onSelectDate.mock.calls[0]![0].getDate()).toBe(21);
+  });
+
+  it('titles Week view with its exact Sunday-start range', () => {
+    renderHero({ view: 'week' });
+    // NOW is Thursday, July 16 2026 → the week of Sun Jul 12 – Sat Jul 18.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Jul 12 – 18, 2026');
+    expect(weekRangeTitle(new Date(2026, 7, 30))).toBe('Aug 30 – Sep 5, 2026');
+    expect(weekRangeTitle(new Date(2026, 11, 29))).toBe('Dec 27, 2026 – Jan 2, 2027');
   });
 
   it('names previous/next for the active view', () => {
