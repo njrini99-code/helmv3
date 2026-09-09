@@ -5,6 +5,7 @@ import { SELFHEAL_RUNNER_LABEL, type SelfHealRunner } from '@/lib/admin/selfheal
 import { RUN_PROVENANCE_LABEL, type StageRunOutcome } from '@/lib/admin/selfheal-provenance';
 import type { SelfHealStageDetail, StageRunRecord } from '@/lib/admin/data/selfheal';
 import type { CapabilityState, LoopVerdict } from '@/lib/admin/selfheal-capability';
+import { VERDICT_TONE } from '@/lib/admin/triage/self-heal-circuit';
 import { PanelNoData } from '../../_components/PanelStates';
 import { LocalTime } from '../../_components/LocalTime';
 
@@ -50,16 +51,6 @@ const RUNTIME_TONE: Record<SelfHealStageDetail['status'], FwStatusTone> = {
 const CAPABILITY_TONE: Record<CapabilityState, FwStatusTone> = {
   proven: 'success',
   unproven: 'warning',
-  unknown: 'info',
-};
-
-/** Loop verdict tone — exported so `page.tsx`'s header banner and this
- *  component's footer line render the identical color for the identical
- *  word, rather than two independently-authored mappings drifting apart. */
-export const VERDICT_TONE: Record<LoopVerdict['tone'], FwStatusTone> = {
-  ok: 'success',
-  warning: 'warning',
-  danger: 'danger',
   unknown: 'info',
 };
 

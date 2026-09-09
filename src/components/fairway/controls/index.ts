@@ -40,6 +40,9 @@ export {
 } from './segmented';
 export type { SegmentedProps, SegmentedOption, SegmentedPillProps } from './segmented';
 
+export { SegmentedLinks } from './segmented-links';
+export type { SegmentedLinksOption, SegmentedLinksProps } from './segmented-links';
+
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
 export type { TabsProps, TabsTriggerProps } from './tabs';
 

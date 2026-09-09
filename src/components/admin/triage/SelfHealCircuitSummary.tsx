@@ -18,8 +18,7 @@
  */
 import { formatWait } from '@/lib/admin/selfheal-flow';
 import { StatusPill, InlineNotice } from '@/components/fairway';
-import { VERDICT_TONE } from '@/app/admin/self-heal/_components/SelfHealCircuit';
-import type { SelfHealCircuitStage, SelfHealCircuitView } from '@/lib/admin/triage/self-heal-circuit';
+import { VERDICT_TONE, type SelfHealCircuitStage, type SelfHealCircuitView } from '@/lib/admin/triage/self-heal-circuit';
 
 const CAPABILITY_LABEL: Record<SelfHealCircuitStage['capabilityState'], string> = {
   proven: 'Proven',
