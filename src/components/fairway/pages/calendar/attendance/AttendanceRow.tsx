@@ -4,6 +4,7 @@ import { NotebookPen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Segmented, Checkbox } from '@/components/fairway';
 import surfaces from '../CalendarSurfaces.module.css';
+import { enterStyle } from '../motion';
 import type { AttendanceRecord } from '@/app/golf/actions/attendance';
 import type { DraftMark } from './useAttendanceDraft';
 import { AttendanceNoteEditor } from './AttendanceNoteEditor';
@@ -39,6 +40,8 @@ export interface AttendanceRowProps {
   showTimes?: boolean;
   disabled?: boolean;
   readOnly?: boolean;
+  /** Position in the roster for the staggered `.enter` reveal. */
+  enterIndex?: number;
 }
 
 function playerName(record: AttendanceRecord): string {
@@ -68,6 +71,7 @@ export function AttendanceRow({
   showTimes = false,
   disabled = false,
   readOnly = false,
+  enterIndex,
 }: AttendanceRowProps) {
   const name = playerName(record);
   const jersey = record.player?.jersey_number;
@@ -81,7 +85,9 @@ export function AttendanceRow({
       className={cn(
         'flex flex-col gap-2 rounded-fw-md border border-transparent bg-surface-sunken px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between',
         isPending && surfaces.pending,
+        enterIndex !== undefined && surfaces.enter,
       )}
+      style={enterStyle(enterIndex)}
     >
       <div className="flex min-w-0 items-center gap-2.5">
         {selectable ? (
@@ -150,6 +156,7 @@ export function AttendanceRow({
                 disabled={disabled}
                 className={cn(
                   'grid h-9 w-9 shrink-0 place-items-center rounded-fw-sm text-text-tertiary transition-colors',
+                  surfaces.press,
                   'hover:bg-surface hover:text-text-secondary',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
                   record.notes && 'text-accent-700',

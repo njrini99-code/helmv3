@@ -104,8 +104,8 @@ function ScheduleLane({ label, intervals, timeZone, type, dayStart, verified, on
             title: `${intervalTitle(interval)} · ${timeInZone(interval.start, timeZone)}–${timeInZone(interval.end, timeZone)}`,
             style: { left: `${left}%`, width: `${width}%` },
             className: cn(
-              'absolute top-2 flex h-10 min-w-0 items-center rounded-fw-sm border px-2 font-fw-sans text-caption font-medium transition-transform duration-200 hover:-translate-y-px motion-reduce:transition-none',
-              openable && 'cursor-pointer active:scale-[0.98]',
+              'absolute top-2 flex h-10 min-w-0 items-center rounded-fw-sm border px-2 font-fw-sans text-caption font-medium hover:-translate-y-px',
+              openable && cn('cursor-pointer', surfaces.press),
               intervalTone(interval),
             ),
           };
@@ -263,7 +263,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
             <div className="mb-2 flex items-center justify-between gap-3"><h3 id="commitments-heading" className="font-fw-display text-body-lg font-semibold text-text-primary">Commitments</h3><span className="font-fw-mono text-caption tabular-nums text-text-tertiary">{person.intervals.length} total</span></div>
             <div className="relative space-y-3 border-l border-accent-200 pl-4 ml-4">
               {person.intervals.map((interval) => (
-                <div key={interval.id} className={cn("group relative flex items-start gap-3 rounded-fw-lg p-4 transition-transform active:scale-[0.99] motion-reduce:transform-none", surfaces.paper, surfaces.enter)}>
+                <div key={interval.id} className={cn('group relative flex items-start gap-3 rounded-fw-lg p-4', surfaces.paper, surfaces.enter)}>
                   <span className={cn('mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full', interval.type === 'class' ? 'bg-accent-50 text-accent-700' : 'bg-accent-50 text-accent-700')}>
                     {interval.type === 'class' ? <BookOpen className="h-4 w-4" aria-hidden /> : <Clock className="h-4 w-4" aria-hidden />}
                   </span>

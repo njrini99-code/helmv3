@@ -229,9 +229,10 @@ export function ConflictCenter({
                     {dateHeading(bucket.groups[0]!.event.start, timeZone)}
                   </h2>
                   <div className="space-y-2">
-                    {bucket.groups.map((group) => (
+                    {bucket.groups.map((group, index) => (
                       <ConflictRow
                         key={group.event.id}
+                        enterIndex={index}
                         group={group}
                         timeZone={timeZone}
                         selected={group.event.id === selectedEventId}

@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import {
   Avatar,
   Button,
@@ -522,7 +523,10 @@ export function SchedulingWorkspace({
               onKeyDown={handleDragKeyDown}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
-              onPointerUp={() => setDragging(false)}
+              onPointerUp={() => {
+                if (dragging) fwHaptic('selection');
+                setDragging(false);
+              }}
               onPointerCancel={() => setDragging(false)}
               className="flex min-h-11 touch-none items-center gap-1.5 px-3 py-1.5 font-fw-sans text-caption font-medium text-accent-700 shadow-flat outline-none transition-transform hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-border-focus motion-reduce:transition-none"
             >
@@ -593,7 +597,7 @@ export function SchedulingWorkspace({
                   </Button>
                   <div
                     className="relative min-h-[76px] border-b border-border-subtle"
-                    style={{ gridColumn: `span ${slots.length}`, backgroundImage: 'linear-gradient(to right, var(--fw-border-subtle, rgba(90,80,60,0.08)) 1px, transparent 1px)', backgroundSize: `${100 / slots.length}% 100%` }}
+                    style={{ gridColumn: `span ${slots.length}`, backgroundImage: 'linear-gradient(to right, var(--fw-color-border-subtle) 1px, transparent 1px)', backgroundSize: `${100 / slots.length}% 100%` }}
                   >
                     {participant.verification !== 'complete' ? (
                       <div className="absolute inset-2 flex items-center rounded-fw-sm border border-dashed border-border-strong bg-surface-sunken/70 px-3 font-fw-sans text-caption text-text-secondary">Not verified</div>
@@ -634,7 +638,7 @@ export function SchedulingWorkspace({
                         </div>
                       );
                     })() : null}
-                    <div aria-hidden className="pointer-events-none absolute inset-y-0 border-x-2 border-accent-500 bg-accent-500/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-[left,width] duration-150 motion-reduce:transition-none"
+                    <div aria-hidden className={cn('pointer-events-none absolute inset-y-0 border-x-2 border-accent-500 bg-accent-500/10', surfaces.settle)}
                       style={{ left: `${100 * (Date.parse(selectedStart) - Date.parse(snapshot.window.start)) / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%`, width: `${100 * duration * 60000 / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%` }} />
                   </div>
                 </React.Fragment>

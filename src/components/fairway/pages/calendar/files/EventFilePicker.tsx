@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { Search, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import surfaces from '../CalendarSurfaces.module.css';
 import { ModalShell, Button, Input, Segmented, EmptyState, InlineNotice } from '@/components/fairway';
 import { getDocuments } from '@/app/golf/actions/documents';
 import { attachDocumentToEvent } from '@/app/golf/actions/event-documents';
@@ -153,6 +154,7 @@ export function EventFilePicker({
                     'flex w-full min-h-11 items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3.5 py-2.5 text-left',
                     'transition-colors hover:bg-surface-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                     'disabled:opacity-60',
+                    surfaces.press,
                   )}
                 >
                   <span className="flex min-w-0 items-center gap-2.5">

@@ -14,6 +14,7 @@ import {
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { DiscardChangesModal } from '@/components/fairway/overlays/DiscardChangesModal';
 import { Button } from '@/components/fairway/controls/button';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type {
@@ -668,6 +669,7 @@ export function FairwayEventEditor({
     try {
       if (pendingScopeAction === 'edit') {
         await onSave({ ...buildSubmitData(), editScope: scope });
+        fwHaptic('success');
       } else if (pendingScopeAction === 'delete' && onDelete) {
         await onDelete(scope);
       }
@@ -715,6 +717,7 @@ export function FairwayEventEditor({
     }
     try {
       await onSave(buildSubmitData());
+      fwHaptic('success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save event');
     }

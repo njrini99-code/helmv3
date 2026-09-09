@@ -18,6 +18,7 @@
  */
 
 import * as React from 'react';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import {
   bulkCheckIn,
   markAttendance,
@@ -198,6 +199,7 @@ export function useAttendanceDraft(
     }
 
     const summary = { saved, failed };
+    if (failed === 0 && saved > 0) fwHaptic('success');
     setLastSummary(summary);
     return summary;
   }, [eventId, pending]);

@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/fairway';
 import type { ConflictGroup } from '@/app/golf/actions/conflict-inbox';
 import surfaces from '../CalendarSurfaces.module.css';
+import { enterStyle } from '../motion';
 
 const MAX_AVATARS = 3;
 
@@ -67,9 +68,11 @@ export interface ConflictRowProps {
   timeZone: string;
   selected?: boolean;
   onSelect: () => void;
+  /** Position in the list for the staggered `.enter` reveal. */
+  enterIndex?: number;
 }
 
-export function ConflictRow({ group, timeZone, selected = false, onSelect }: ConflictRowProps) {
+export function ConflictRow({ group, timeZone, selected = false, onSelect, enterIndex }: ConflictRowProps) {
   const overlapCount = group.overlaps.length;
   const unverifiedCount = group.unverifiedAttendeeIds.length;
   const minutes = totalOverlapMinutes(group);
@@ -83,11 +86,13 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect }: Con
       aria-pressed={selected}
       aria-label={conflictRowLabel(group, timeZone)}
       className={cn(
-        'flex w-full min-h-[64px] items-center gap-3 rounded-fw-lg p-3 text-left transition-transform active:scale-[0.99] motion-reduce:transform-none',
+        'flex w-full min-h-[64px] items-center gap-3 rounded-fw-lg p-3 text-left',
         surfaces.paper,
         surfaces.press,
+        enterIndex !== undefined && surfaces.enter,
         selected && 'ring-2 ring-accent-500',
       )}
+      style={enterStyle(enterIndex)}
     >
       <div className="w-16 shrink-0 text-right">
         <p className="font-fw-mono text-caption font-semibold tabular-nums text-text-primary">

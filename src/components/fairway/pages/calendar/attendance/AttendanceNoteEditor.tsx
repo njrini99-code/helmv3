@@ -13,6 +13,7 @@
 import * as React from 'react';
 import { PopoverPanel, Button, TextArea } from '@/components/fairway';
 import { updateAttendanceNote } from '@/app/golf/actions/attendance';
+import { fwHaptic } from '@/lib/fairway/haptics';
 
 export interface AttendanceNoteEditorProps {
   eventId: string;
@@ -59,6 +60,7 @@ export function AttendanceNoteEditor({
         return;
       }
       onSaved(draft.trim() === '' ? null : draft.trim());
+      fwHaptic('success');
       onOpenChange(false);
     } catch {
       setError('Could not save the note. Try again.');

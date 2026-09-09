@@ -227,13 +227,14 @@ export function CalendarAttendanceScreen({
                         {group.label} · {group.rows.length}
                       </p>
                       <div className="flex flex-col gap-2">
-                        {group.rows.map((record) => {
+                        {group.rows.map((record, index) => {
                           const mark = draft.markFor(record.player_id);
                           const isPending = draft.pending.has(record.player_id);
                           return (
                             <AttendanceRow
                               key={record.id}
                               record={record}
+                              enterIndex={index}
                               mark={mark}
                               isPending={isPending}
                               error={draft.rowErrors.get(record.player_id)}

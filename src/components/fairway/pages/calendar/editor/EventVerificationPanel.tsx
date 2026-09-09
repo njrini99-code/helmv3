@@ -23,6 +23,7 @@ import { AlertTriangle, Check, LoaderCircle } from 'lucide-react';
 import { Button as UiButton } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { localDayIso } from '@/lib/golf/local-day';
+import { fwHaptic } from '@/lib/fairway/haptics';
 
 export type VerificationStatus = 'idle' | 'checking' | 'ready' | 'error';
 
@@ -87,10 +88,17 @@ export function EventVerificationPanel({
   onSelectSuggestion,
 }: EventVerificationPanelProps) {
   const [showAllConflicts, setShowAllConflicts] = React.useState(false);
+  const state = deriveVerificationState(status, conflicts);
+
+  // One light tap when a check lands clean — never on partial/conflict/failed,
+  // and never repeated while the panel re-renders in the same state.
+  const previousState = React.useRef<VerificationState>(state);
+  React.useEffect(() => {
+    if (previousState.current === 'checking' && state === 'verified') fwHaptic('light');
+    previousState.current = state;
+  }, [state]);
 
   if (status === 'idle') return null;
-
-  const state = deriveVerificationState(status, conflicts);
 
   return (
     <div
