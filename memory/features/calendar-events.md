@@ -161,6 +161,18 @@ legacy `is_recurring` flag in sync for older consumers.
 - Recurring event edits must respect scope: this, thisAndFuture, or all.
 - Feed tokens must be treated as secrets and rate limited.
 - Calendar conflict detection should consider classes, blocked time, and exclusions.
+- **Class meetings take no RSVPs and never travel through attendance.**
+  `respondToEvent` refuses any `isClassEvent` row with code `class_meeting`;
+  `getUserBusyPeriodsWithStatus` skips class rows reached via
+  `golf_event_attendance`; the conflict inbox re-resolves class-ness from a
+  fresh `golf_events`/`golf_player_classes` read and omits the title when the
+  viewer lacks access. A teammate's class is a titleless busy block or
+  nothing — never a titled event. The `golf_event_attendance_insert_self` RLS
+  policy still lacks an `event_type` check (defense-in-depth migration
+  pending owner decision); the app layer is the enforced boundary. Tests:
+  `src/test/lib/calendar/availability.test.ts`,
+  `src/app/golf/actions/__tests__/conflict-inbox.test.ts`,
+  `src/test/golf/actions/rsvp-failure-vs-refusal.test.ts`.
 - Event state transitions should not skip lifecycle logging when status changes.
 
 ## UI Contract
