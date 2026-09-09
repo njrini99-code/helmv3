@@ -256,3 +256,26 @@ Mobile calendar day cells retain a 44px width and scroll horizontally when the w
 selected date stays visible after selection and resize. Phone hero padding and day-cell height are
 compact, with a matching route skeleton. The schedule card uses the same touch-sized day rail and
 keeps its date separate from the return-to-today action.
+
+## Calendar material contract (2026-09-09 makeover)
+
+- `src/components/fairway/pages/calendar/CalendarSurfaces.module.css` is the one
+  material vocabulary for every calendar surface: `.scope` declares the
+  calendar-only colours (busy periwinkle, class, team, lens, overlap, ground
+  wash, chrome tint) once with dark overrides; `.ground` paints the page wash
+  the glass refracts; `.chrome`, `.dock`, `.float` are the frosted champagne
+  glass (token blur, `--fw-blur-mobile` at ≤768px); `.paper`, `.well`,
+  `.row` are matte content planes; `.selected`, `.glow`, `.check`, `.lens`
+  are the emerald focused plane. Reduced motion switches off every
+  animated/transitioned class and reduced transparency makes chrome and docks
+  opaque — `__tests__/CalendarSurfaces.reducedMotion.test.ts` enforces both.
+- The calendar hero (`FairwayCalendarHero`) is sticky glass chrome: it sits at
+  `--golf-mobile-header-offset` plus `--fw-hub-subnav-offset` (AppShell
+  publishes the second one as `2.5rem` when a hub sub-nav is part of its
+  sticky unit, else `0px`) so agenda rows, the member rail and the grids
+  scroll under it. It owns the view `Segmented` control, prev/today/next, the
+  ONE primary action, and the secondary actions (Find a time, Conflicts, My
+  availability, Add to phone) as ghost pills at md+ or a More menu on phone.
+- Agenda rows are time-gutter + ivory `.row` cards with a type-tinted icon
+  disc; the conflict count on the home is a real inbox count (`null` while
+  unknown, never a fabricated zero).

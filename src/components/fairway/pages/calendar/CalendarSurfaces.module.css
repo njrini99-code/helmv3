@@ -1,63 +1,182 @@
-/* Fairway's champagne glass and warm lifted paper: chrome stays distinct from content. */
+/* Fairway calendar material vocabulary.
+ *
+ * Three planes (DESIGN-PLAN.md §4): a matte ivory CONTENT plane where every
+ * schedule fact lives crisp; a frosted champagne INTERACTIVE plane for chrome,
+ * docks, floating readouts and menus; and an emerald FOCUSED plane for the
+ * selection lens and the one primary action. Glass is spent on chrome only —
+ * the grid, the busy blocks and the agenda rows stay matte so a scheduling
+ * decision is never read through blur. Every value here is a token; the few
+ * calendar-only colours (busy periwinkle, class tint) are declared once on
+ * `.scope` so inline styles and dark mode both see them. */
+
+/* ── Calendar-local colour scope ─────────────────────────────────────────── */
+.scope {
+  /* Busy intervals: a cool, soft periwinkle so "busy" is never confused with
+   * the emerald that means selected/available (reference: pale blue bars). */
+  --cal-busy-bg: oklch(0.885 0.055 262);
+  --cal-busy-ink: oklch(0.40 0.10 262);
+  --cal-busy-edge: oklch(0.82 0.07 262);
+  /* Class meetings read as busy-but-known: same hue, one step stronger. */
+  --cal-class-bg: oklch(0.90 0.05 258);
+  --cal-class-ink: oklch(0.38 0.10 258);
+  --cal-class-edge: oklch(0.83 0.065 258);
+  /* Team events on a person's day: soft emerald paper, never the CTA fill. */
+  --cal-team-bg: oklch(0.93 0.045 152);
+  --cal-team-ink: var(--fw-color-accent-800);
+  --cal-team-edge: oklch(0.86 0.07 152);
+  /* Personal blocks: warm stone. */
+  --cal-personal-bg: var(--fw-color-surface-sunken);
+  --cal-personal-ink: var(--fw-color-text-secondary);
+  --cal-personal-edge: var(--fw-color-border-strong);
+  /* The selection lens: translucent emerald over whatever it covers. */
+  --cal-lens-fill: oklch(0.72 0.14 152 / 0.16);
+  --cal-lens-fill-strong: oklch(0.72 0.14 152 / 0.26);
+  --cal-lens-edge: var(--fw-color-accent-600);
+  --cal-lens-glow: oklch(0.55 0.13 152 / 0.28);
+  /* Conflict intersections: amber, always paired with a label. */
+  --cal-overlap-bg: var(--fw-color-warning-bg);
+  --cal-overlap-ink: var(--fw-color-warning-ink);
+  --cal-overlap-edge: var(--fw-color-warning);
+  /* Hairline grid inside timelines. */
+  --cal-grid-line: oklch(0.86 0.014 82 / 0.7);
+  --cal-blur: var(--fw-blur-glass);
+  /* Page ground under the glass: a fairway breath top-left, warm sun top-right,
+   * a shaded band further down — so chrome has real light to refract. */
+  --cal-ground-fairway: oklch(0.89 0.075 150 / 0.75);
+  --cal-ground-sun: oklch(0.965 0.055 85);
+  --cal-ground-shade: oklch(0.89 0.035 80 / 0.8);
+  /* Chrome tint: one step clearer than the shell's glass so the ground shows
+   * through the sticky hero and the docks. */
+  --cal-chrome-bg: rgb(var(--fw-glass-tint) / 0.68);
+}
+:global(.dark) .scope {
+  --cal-busy-bg: oklch(0.38 0.07 262);
+  --cal-busy-ink: oklch(0.90 0.04 262);
+  --cal-busy-edge: oklch(0.46 0.08 262);
+  --cal-class-bg: oklch(0.36 0.06 258);
+  --cal-class-ink: oklch(0.90 0.04 258);
+  --cal-class-edge: oklch(0.45 0.07 258);
+  --cal-team-bg: oklch(0.33 0.06 152);
+  --cal-team-ink: oklch(0.90 0.06 152);
+  --cal-team-edge: oklch(0.42 0.08 152);
+  --cal-lens-fill: oklch(0.72 0.14 152 / 0.20);
+  --cal-lens-fill-strong: oklch(0.72 0.14 152 / 0.32);
+  --cal-lens-edge: var(--fw-color-accent-500);
+  --cal-lens-glow: oklch(0.72 0.14 152 / 0.30);
+  --cal-grid-line: oklch(0.32 0.01 80 / 0.9);
+  --cal-ground-fairway: oklch(0.32 0.06 150 / 0.5);
+  --cal-ground-sun: oklch(0.34 0.025 80 / 0.55);
+  --cal-ground-shade: oklch(0.16 0.008 80 / 0.8);
+  --cal-chrome-bg: rgb(var(--fw-glass-tint) / 0.55);
+}
+@media (max-width: 768px) {
+  .scope { --cal-blur: var(--fw-blur-mobile); }
+}
+
+/* ── Ground ──────────────────────────────────────────────────────────────── */
+/* The calendar page's own light: painted once behind everything in the scope
+ * so the sticky chrome, the docks and the bottom navigation frost over
+ * something other than flat canvas. Isolated so the wash never climbs above a
+ * sibling; z-index -1 keeps it under every child. */
+.ground {
+  position: relative;
+  isolation: isolate;
+}
+.ground::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 72% 34rem at 6% -6rem, var(--cal-ground-fairway), transparent 68%),
+    radial-gradient(ellipse 58% 28rem at 102% 1rem, var(--cal-ground-sun), transparent 70%),
+    radial-gradient(ellipse 80% 30rem at 40% 44rem, var(--cal-ground-shade), transparent 72%);
+  background-repeat: no-repeat;
+}
+
+/* ── Content plane ───────────────────────────────────────────────────────── */
+/* Page/panel ground: warm champagne with a sunlit wash and one quiet emerald
+ * breath top-right, so chrome has something to refract. */
 .panel {
-  background: var(--fw-color-canvas);
-  background-image: radial-gradient(ellipse at 20% 0%, var(--fw-color-surface-tint), transparent 65%);
+  background-color: var(--fw-color-canvas);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 18% 0%, var(--fw-color-surface-tint), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 100% 0%, var(--fw-glass-accent-ring), transparent 70%);
 }
-.chrome {
-  background: var(--fw-glass-bg);
-  border-color: var(--fw-glass-border);
-  box-shadow: inset 0 1px 0 var(--fw-glass-highlight), 0 1px 0 var(--fw-glass-border-bot), 0 8px 24px oklch(0.3 0.035 70 / 0.06);
-  backdrop-filter: blur(18px) saturate(var(--fw-glass-saturate));
-  -webkit-backdrop-filter: blur(18px) saturate(var(--fw-glass-saturate));
-}
+/* Lifted cream card: specular rim on top, warm hairline, soft grounded shadow. */
 .paper {
   background: var(--fw-color-surface);
   border: 1px solid var(--fw-glass-border);
-  box-shadow: inset 0 1px 0 var(--fw-glass-highlight), 0 2px 4px oklch(0.3 0.035 70 / 0.06), 0 12px 30px -12px oklch(0.3 0.035 70 / 0.2);
+  box-shadow:
+    inset 0 1px 0 var(--fw-glass-highlight),
+    0 0 0 1px var(--fw-glass-border-bot),
+    0 2px 4px oklch(0.3 0.035 70 / 0.05),
+    0 14px 32px -14px oklch(0.3 0.035 70 / 0.22);
 }
-.selected {
-  background: linear-gradient(155deg, var(--fw-color-accent-650), var(--fw-color-accent-700));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 3px 5px oklch(0.3 0.08 150 / 0.12), 0 10px 24px -8px oklch(0.3 0.08 150 / 0.28);
+/* Sunken track for a timeline or a day column: an inset well with hairlines. */
+.well {
+  background: var(--fw-color-surface-sunken);
+  box-shadow: inset 0 1px 2px oklch(0.3 0.035 70 / 0.08), inset 0 0 0 1px var(--fw-color-border-subtle);
 }
-.enter {
-  animation: calendar-reveal 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+/* Vertical hour hairlines for a horizontal timeline lane. `--cal-slot` is the
+ * slot width as a percentage, set inline by the component. */
+.laneGrid {
+  background-image: linear-gradient(to right, var(--cal-grid-line) 1px, transparent 1px);
+  background-size: var(--cal-slot, 12.5%) 100%;
 }
-@keyframes calendar-reveal {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* §3 shared microinteraction vocabulary (SCREEN-BUILD-PLAN.md §3). Every
- * class here is token-based; none introduces a one-off shadow or blur — glass
- * stays reserved for chrome, dock, floating labels, and menus. */
-
-/* Button and row compression: transform 0.98, 90ms, EASE_TAP
- * (cubic-bezier(0.32, 0.72, 0, 1) from src/lib/coachhelm/v3/motion.ts). */
-.press {
-  transition: transform 90ms cubic-bezier(0.32, 0.72, 0, 1);
-}
-.press:active {
-  transform: scale(0.98);
+/* Horizontal hour hairlines for a vertical day column. `--cal-hour` is the
+ * hour height in px, set inline by the component. */
+.dayGrid {
+  background-image: linear-gradient(to bottom, var(--cal-grid-line) 1px, transparent 1px);
+  background-size: 100% var(--cal-hour, 64px);
 }
 
-/* Task dock in a focused workflow — the SAME chrome material as `.chrome`
- * (duplicated, not composed: this file has no other `composes` usage and
- * this codebase's CSS Modules setup is unverified for it), named for its
- * role: one per screen, never rendered alongside global nav. */
-.dock {
-  background: var(--fw-glass-bg);
+/* ── Interactive plane (glass) ───────────────────────────────────────────── */
+/* Sticky header / footer chrome. Fine bright top rim, soft warm lower edge,
+ * token blur with the mobile downshift. */
+.chrome {
+  background-color: var(--cal-chrome-bg, var(--fw-glass-bg));
+  background-image: linear-gradient(180deg, var(--fw-glass-highlight), transparent 55%);
   border-color: var(--fw-glass-border);
-  box-shadow: inset 0 1px 0 var(--fw-glass-highlight), 0 1px 0 var(--fw-glass-border-bot), 0 8px 24px oklch(0.3 0.035 70 / 0.06);
-  backdrop-filter: blur(18px) saturate(var(--fw-glass-saturate));
-  -webkit-backdrop-filter: blur(18px) saturate(var(--fw-glass-saturate));
+  box-shadow:
+    inset 0 1px 0 var(--fw-glass-highlight),
+    0 1px 0 var(--fw-glass-border-bot),
+    0 4px 10px -4px oklch(0.3 0.035 70 / 0.10),
+    0 18px 40px -14px oklch(0.3 0.035 70 / 0.22);
+  backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
 }
-
-/* Desktop right panel: slide/fade 200ms, EASE_CINEMATIC, no reflow of the
- * grid it sits beside. Matte surface, not glass — the grid stays matte per
- * the glass budget (DESIGN-PLAN.md §20). */
+/* Task dock in a focused workflow: the same material, lifted from below, with
+ * a rounded top so it reads as a floating instrument, not a footer bar. */
+.dock {
+  background-color: var(--fw-glass-bg-strong);
+  background-image: linear-gradient(180deg, var(--fw-glass-highlight), transparent 60%);
+  border-color: var(--fw-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--fw-glass-highlight),
+    0 -1px 0 var(--fw-glass-border-bot),
+    0 -12px 36px -12px oklch(0.3 0.035 70 / 0.22);
+  backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
+}
+/* Floating glass pill: date chooser, readout, anchored menu, legend chip. */
+.float {
+  background-color: var(--fw-glass-bg-strong);
+  background-image: linear-gradient(165deg, var(--fw-glass-highlight), transparent 55%);
+  border: 1px solid var(--fw-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--fw-glass-highlight),
+    0 1px 0 var(--fw-glass-border-bot),
+    0 6px 18px -6px oklch(0.3 0.035 70 / 0.22);
+  backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
+}
+/* Desktop right panel: matte, slides in beside the grid without reflowing it. */
 .inspector {
   background: var(--fw-color-surface);
   border-left: 1px solid var(--fw-color-border-subtle);
+  box-shadow: -12px 0 32px -20px oklch(0.3 0.035 70 / 0.25);
   animation: calendar-inspector-enter 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes calendar-inspector-enter {
@@ -65,36 +184,209 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* Dashed "Current" band in a scheduling timeline: static, token border, no
- * shadow — it marks a fact, not a selection, so it never competes visually
- * with `.selected`. */
+/* ── Focused plane (emerald) ─────────────────────────────────────────────── */
+/* The one primary action: deep emerald gradient with a specular rim. */
+.selected {
+  background-image: linear-gradient(155deg, var(--fw-color-accent-650), var(--fw-color-accent-700));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 3px 5px oklch(0.3 0.08 150 / 0.12),
+    0 10px 24px -8px oklch(0.3 0.08 150 / 0.28);
+}
+/* Luminous dock CTA: the emerald glow from the reference, restrained. */
+.glow {
+  background-image: linear-gradient(160deg, var(--fw-color-accent-600), var(--fw-color-accent-700) 70%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    inset 0 -1px 0 oklch(0.3 0.08 150 / 0.35),
+    0 0 0 1px oklch(0.4 0.1 150 / 0.35),
+    0 10px 30px -6px var(--cal-lens-glow, oklch(0.55 0.13 152 / 0.28)),
+    0 22px 48px -18px oklch(0.4 0.12 150 / 0.55);
+  transition: transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.glow:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 0 0 1px oklch(0.4 0.1 150 / 0.4),
+    0 14px 36px -6px var(--cal-lens-glow, oklch(0.55 0.13 152 / 0.32)),
+    0 26px 56px -18px oklch(0.4 0.12 150 / 0.6);
+}
+.glow:disabled {
+  background-image: linear-gradient(160deg, var(--fw-color-accent-300), var(--fw-color-accent-500));
+  box-shadow: none;
+}
+/* Emerald check disc: the "verified" mark. Only after a complete result. */
+.check {
+  background-image: linear-gradient(160deg, var(--fw-color-accent-600), var(--fw-color-accent-700));
+  color: var(--fw-color-text-on-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 4px 12px -3px oklch(0.4 0.12 150 / 0.5);
+}
+/* The selection lens: a translucent emerald window over aligned rows. Data
+ * beneath stays legible; the band lifts with an inner rim, not a blur. */
+.lens {
+  background-image: linear-gradient(180deg, var(--cal-lens-fill-strong), var(--cal-lens-fill));
+  box-shadow:
+    inset 1.5px 0 0 var(--cal-lens-edge),
+    inset -1.5px 0 0 var(--cal-lens-edge),
+    inset 0 0 0 1px oklch(0.72 0.14 152 / 0.25),
+    0 6px 18px -8px var(--cal-lens-glow);
+}
+/* The lens's floating time readout: glass pill, emerald ink, caret below. */
+.lensLabel {
+  background-color: var(--fw-glass-bg-strong);
+  background-image: linear-gradient(165deg, var(--fw-glass-highlight), transparent 55%);
+  border: 1px solid var(--fw-glass-border);
+  color: var(--fw-color-accent-700);
+  box-shadow: inset 0 1px 0 var(--fw-glass-highlight), 0 1px 0 var(--fw-glass-border-bot), 0 8px 20px -6px oklch(0.3 0.06 150 / 0.3);
+  backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--cal-blur, 22px)) saturate(var(--fw-glass-saturate));
+}
+.lensLabel::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background-color: var(--fw-glass-bg-strong);
+  border-right: 1px solid var(--fw-glass-border);
+  border-bottom: 1px solid var(--fw-glass-border);
+}
+/* Grip discs at the lens's corners. */
+.lensGrip {
+  background: var(--fw-color-accent-650);
+  box-shadow: 0 0 0 2px var(--fw-color-surface), 0 2px 6px oklch(0.3 0.08 150 / 0.35);
+}
+
+/* ── Interval and row tints (matte) ──────────────────────────────────────── */
+.busy {
+  background: var(--cal-busy-bg);
+  color: var(--cal-busy-ink);
+  box-shadow: inset 0 0 0 1px var(--cal-busy-edge);
+}
+.class {
+  background: var(--cal-class-bg);
+  color: var(--cal-class-ink);
+  box-shadow: inset 0 0 0 1px var(--cal-class-edge), inset 3px 0 0 var(--cal-class-edge);
+}
+.team {
+  background: var(--cal-team-bg);
+  color: var(--cal-team-ink);
+  box-shadow: inset 0 0 0 1px var(--cal-team-edge), inset 3px 0 0 var(--fw-color-accent-600);
+}
+.personal {
+  background: var(--cal-personal-bg);
+  color: var(--cal-personal-ink);
+  box-shadow: inset 0 0 0 1px var(--cal-personal-edge);
+}
+/* A verified free gap on a person's day: dashed emerald, quiet fill. */
+.avail {
+  background: oklch(0.72 0.14 152 / 0.07);
+  border: 1.5px dashed var(--fw-color-accent-500);
+  color: var(--fw-color-accent-700);
+}
+/* Where a proposal meets someone's busy time. Always paired with a label. */
+.overlap {
+  background: var(--cal-overlap-bg);
+  color: var(--cal-overlap-ink);
+  box-shadow: inset 0 0 0 1px var(--cal-overlap-edge);
+}
+/* The single attention row on Calendar home. */
+.attention {
+  background: var(--fw-color-warning-bg);
+  color: var(--fw-color-warning-ink);
+  border: 1px solid var(--fw-color-warning-ring);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+/* Agenda row with a type-tinted left rule and matching icon disc. Set
+ * `--row-tint` and `--row-tint-bg` on the element. */
+.row {
+  position: relative;
+  background: var(--fw-color-surface);
+  border: 1px solid var(--fw-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--fw-glass-highlight),
+    0 0 0 1px var(--fw-glass-border-bot),
+    0 2px 4px oklch(0.3 0.035 70 / 0.05),
+    0 12px 28px -14px oklch(0.3 0.035 70 / 0.2);
+}
+.row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--row-tint, var(--fw-color-accent-600));
+}
+.rowIcon {
+  background: var(--row-tint-bg, var(--fw-color-accent-50));
+  color: var(--row-tint, var(--fw-color-accent-700));
+  box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.04);
+}
+/* Dashed "Current" band in a scheduling timeline: a fact, not a selection. */
 .reference {
   border: 1px dashed var(--fw-color-border-strong);
   background: transparent;
 }
-
-/* Unverified rows and intervals: a gray hatch. The visible "Not verified"
- * text is the component's job — this class only supplies the texture, never
- * a verified-looking solid fill (honesty rule: no verified-green from
- * partial or failed data). */
+/* Unverified rows and intervals: gray hatch; the component adds the text. */
 .hatch {
   background-image: repeating-linear-gradient(135deg, var(--fw-color-border-subtle) 0 6px, transparent 6px 12px);
   border: 1px dashed var(--fw-color-border-strong);
   color: var(--fw-color-text-secondary);
 }
-
-/* Unsaved attendance or draft rows: a quiet left rule, never a colour flood
- * across the row. */
+/* Unsaved attendance or draft rows: a quiet left rule. */
 .pending {
   border-left: 3px solid var(--fw-color-warning);
   background: transparent;
 }
 
-/* Band and label settle after a drag release: 200ms, EASE_CINEMATIC,
- * minimal overshoot (the curve itself has none — "minimal" here means the
- * grammar never adds a spring bounce on top of it). */
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+.enter {
+  animation: calendar-reveal 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes calendar-reveal {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Button and row compression: 0.98, 90ms, EASE_TAP. */
+.press {
+  transition: transform 90ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.press:active {
+  transform: scale(0.98);
+}
+/* Card lift on hover: transform and shadow only, never layout. */
+.rise {
+  transition: transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.rise:hover {
+  transform: translateY(-1px);
+}
+/* Band and label settle after a drag release: 200ms, EASE_CINEMATIC. */
 .settle {
   transition: left 200ms cubic-bezier(0.16, 1, 0.3, 1), width 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: left;
+}
+/* Horizontal position: the gesture's free value while a finger is down,
+ * React's snapped slot otherwise. */
+.follow {
+  left: var(--lens-free, var(--lens-left, 0%));
+}
+/* While a finger is down the band follows it directly: no easing, no lag.
+ * The settle transition only plays on release, when the free offset clears. */
+.dragging {
+  transition: none;
+}
+.dragging.lens {
+  box-shadow:
+    inset 1.5px 0 0 var(--cal-lens-edge),
+    inset -1.5px 0 0 var(--cal-lens-edge),
+    inset 0 0 0 1px oklch(0.72 0.14 152 / 0.35),
+    0 10px 26px -8px var(--cal-lens-glow);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -102,7 +394,11 @@
   .press { transition: none; }
   .inspector { animation: none; }
   .settle { transition: none; }
+  .rise { transition: none; }
+  .glow { transition: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .chrome, .dock { background: var(--fw-color-surface-tint); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .float, .lensLabel { background: var(--fw-color-elevated); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .lensLabel::after { background: var(--fw-color-elevated); }
 }

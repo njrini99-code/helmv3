@@ -17,6 +17,7 @@
  * failed data).
  * ========================================================================== */
 
+import * as React from 'react';
 import { AlertTriangle, CheckCircle2, RefreshCw, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, Skeleton } from '@/components/fairway';
@@ -59,11 +60,12 @@ export function SourceStatusList({ state, onRetry, className }: SourceStatusList
     return (
       <div
         className={cn(
-          'flex items-center justify-between gap-3 rounded-fw-md border border-fw-danger/30 bg-fw-danger-bg px-3 py-2.5',
+          'flex items-center justify-between gap-3 rounded-fw-md px-3 py-2.5',
+          styles.attention,
           className,
         )}
       >
-        <span className="flex items-center gap-2 font-fw-sans text-body-sm text-fw-danger-ink">
+        <span className="flex items-center gap-2 font-fw-sans text-body-sm">
           <XCircle className="h-4 w-4 shrink-0" aria-hidden />
           {state.message}
         </span>
@@ -82,11 +84,15 @@ export function SourceStatusList({ state, onRetry, className }: SourceStatusList
     return (
       <div
         className={cn(
-          'flex items-center gap-2.5 rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2.5',
+          'flex items-center gap-3 rounded-fw-md px-3 py-2.5',
+          styles.row,
           className,
         )}
+        style={{ '--row-tint': 'var(--fw-color-accent-600)' } as React.CSSProperties}
       >
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-accent-700" aria-hidden />
+        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', styles.check)}>
+          <CheckCircle2 className="h-4 w-4" aria-hidden />
+        </span>
         <p className="font-fw-sans text-body-sm text-text-primary">
           Based on Helm schedules{time ? ` · checked ${time}` : ''}
         </p>

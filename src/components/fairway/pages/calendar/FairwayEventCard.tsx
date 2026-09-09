@@ -16,7 +16,19 @@
  * ADDITIVE + GATED — only mounted behind the isRedesignEnabled() fork.
  * ========================================================================== */
 
+import * as React from 'react';
 import { cn } from '@/lib/utils';
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Dumbbell,
+  Flag,
+  Plane,
+  Target,
+  Trophy,
+  Users,
+} from 'lucide-react';
 import { StatusPill } from '@/components/fairway';
 import { Button } from '@/components/fairway/controls/button';
 import type { FwStatusTone } from '@/components/fairway';
@@ -51,6 +63,36 @@ const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
 // Standalone non-optional fallback (TYPE_META.other is `| undefined` under
 // noUncheckedIndexedAccess, so it can't guarantee a non-undefined return).
 const TYPE_META_FALLBACK: { label: string; tone: FwStatusTone } = { label: 'Event', tone: 'neutral' };
+
+/** event_type → icon for the row's disc. */
+const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  practice: Flag,
+  tournament: Trophy,
+  qualifier: Target,
+  qualifying: Target,
+  travel: Plane,
+  workout: Dumbbell,
+  team_meeting: Users,
+  meeting: Users,
+  class: BookOpen,
+  other: CalendarDays,
+};
+
+/** event_type → the row's rule/disc tint, as token custom properties consumed
+ * by `.row` / `.rowIcon` (CalendarSurfaces.module.css). Class rows use the
+ * calendar-local class colour declared on `.scope`. */
+const TYPE_TINT: Record<string, { '--row-tint': string; '--row-tint-bg': string }> = {
+  practice: { '--row-tint': 'var(--fw-color-accent-650)', '--row-tint-bg': 'var(--fw-color-accent-50)' },
+  workout: { '--row-tint': 'var(--fw-color-accent-650)', '--row-tint-bg': 'var(--fw-color-accent-50)' },
+  qualifier: { '--row-tint': 'var(--fw-color-accent-800)', '--row-tint-bg': 'var(--fw-color-accent-100)' },
+  qualifying: { '--row-tint': 'var(--fw-color-accent-800)', '--row-tint-bg': 'var(--fw-color-accent-100)' },
+  tournament: { '--row-tint': 'var(--fw-color-warning)', '--row-tint-bg': 'var(--fw-color-warning-bg)' },
+  travel: { '--row-tint': 'var(--fw-color-text-secondary)', '--row-tint-bg': 'var(--fw-color-surface-sunken)' },
+  team_meeting: { '--row-tint': 'var(--fw-color-warm-600)', '--row-tint-bg': 'var(--fw-color-warm-100)' },
+  meeting: { '--row-tint': 'var(--fw-color-warm-600)', '--row-tint-bg': 'var(--fw-color-warm-100)' },
+  class: { '--row-tint': 'var(--cal-class-ink)', '--row-tint-bg': 'var(--cal-class-bg)' },
+  other: { '--row-tint': 'var(--fw-color-text-secondary)', '--row-tint-bg': 'var(--fw-color-surface-sunken)' },
+};
 
 export function typeMeta(eventType: string | null | undefined): { label: string; tone: FwStatusTone } {
   return TYPE_META[(eventType || 'other').toLowerCase()] ?? TYPE_META_FALLBACK;
@@ -122,7 +164,7 @@ export function FairwayEventCard({
   className,
   enterIndex,
 }: FairwayEventCardProps) {
-  const { label: typeLabel, tone: typeTone } = typeMeta(event.event_type);
+  const { label: typeLabel } = typeMeta(event.event_type);
   const start = startTimeLabel(event, timezone);
   const end = endTimeLabel(event, timezone);
   const rsvp = showRsvp && rsvpStatus ? RSVP_PILL[rsvpStatus] : null;
@@ -133,61 +175,74 @@ export function FairwayEventCard({
   // past or upcoming, both cues apply independently.
   const isCancelled = event.status === 'cancelled';
 
+  const Icon = TYPE_ICON[(event.event_type || 'other').toLowerCase()] ?? CalendarDays;
+  const tint = TYPE_TINT[(event.event_type || 'other').toLowerCase()] ?? TYPE_TINT.other!;
+
   return (
     // GOTCHA (a): a real Fairway <Button variant="ghost">, NOT `Surface as="button"`.
+    // The Button is the whole row (time gutter + card) so the hit target and
+    // the accessible name cover everything; the visible card is the inner
+    // span carrying the material.
     <Button
       type="button"
       variant="ghost"
       onClick={onClick ? () => onClick(event) : undefined}
       aria-label={`${event.title} — ${timeAria(event, timezone)}${event.location ? `, ${event.location}` : ''}`}
       className={cn(
-        'group relative block h-auto min-h-[64px] w-full border text-left font-normal',
-        'rounded-card bg-surface border-border-subtle shadow-flat',
-        'p-4',
-        'transition-[box-shadow,transform,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-        'hover:-translate-y-px hover:bg-surface hover:shadow-soft hover:border-border-strong',
-        'active:translate-y-[0.5px] active:shadow-flat',
+        'group relative flex h-auto min-h-[64px] w-full items-stretch justify-start whitespace-normal border-0 bg-transparent p-0 text-left font-normal',
+        // Button wraps children in a bare <span>; make that span the row.
+        '[&>span]:flex [&>span]:w-full [&>span]:min-w-0 [&>span]:items-stretch [&>span]:gap-3',
+        'hover:bg-transparent active:bg-transparent',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
         surfaces.press,
         enterIndex !== undefined && surfaces.enter,
-        isPast && 'opacity-50',
+        isPast && 'opacity-60',
         className,
       )}
       style={enterStyle(enterIndex)}
     >
-      <span className="flex w-full items-stretch gap-4">
-        {/* Time block — Fragment-Mono tabular-nums, fixed width for column alignment. */}
-        <span className="flex w-[68px] flex-shrink-0 flex-col items-start justify-center md:w-[84px]">
-          <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
-            {start}
+      {/* Time gutter — outside the card, Fragment-Mono tabular-nums. */}
+      <span className="flex w-[60px] flex-shrink-0 flex-col items-start justify-center gap-0.5 whitespace-nowrap pl-0.5 md:w-[76px]">
+        <span className="font-fw-mono text-body-sm font-semibold tabular-nums leading-tight text-text-primary">
+          {start}
+        </span>
+        {end ? (
+          <span className="font-fw-mono text-caption tabular-nums leading-tight text-text-tertiary">
+            {end}
           </span>
-          {end ? (
-            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-              {end}
-            </span>
-          ) : null}
+        ) : null}
+      </span>
+
+      {/* The card — a lifted cream row with a type-tinted rule and icon disc. */}
+      <span
+        className={cn(
+          'flex min-w-0 flex-1 items-center gap-3 rounded-card py-3 pl-4 pr-3',
+          surfaces.row,
+          surfaces.rise,
+          'group-hover:shadow-soft',
+        )}
+        style={tint as React.CSSProperties}
+      >
+        <span
+          aria-hidden
+          className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-full', surfaces.rowIcon)}
+        >
+          <Icon className="h-[18px] w-[18px]" />
         </span>
 
-        {/* Title + location. */}
-        <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-          <p
+        <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+          <span
             className={cn(
-              'truncate font-fw-sans text-body-sm font-medium text-text-primary',
+              'line-clamp-2 font-fw-sans text-body-lg font-semibold leading-tight text-text-primary',
               isCancelled && 'text-text-tertiary line-through decoration-2',
             )}
           >
             {event.title}
-          </p>
+          </span>
           <span className="flex min-w-0 items-center gap-2">
-            <StatusPill tone={typeTone} size="sm" dot={false}>
-              {typeLabel}
-            </StatusPill>
             {/* Whose class this is. Carries the player's identity tint — the
                 same one their avatar wears in the member rail and on the
-                roster — so the name and the color reinforce each other. The
-                name is what makes it certain: the tint palette is 8 wide and
-                a roster can be larger. */}
+                roster — so the name and the color reinforce each other. */}
             {event.owner_label && event.owner_player_id ? (
               <span
                 className="flex-shrink-0 rounded-full px-2 py-0.5 font-fw-sans text-caption font-semibold"
@@ -205,10 +260,12 @@ export function FairwayEventCard({
               </StatusPill>
             ) : null}
             {event.location ? (
-              <span className="truncate font-fw-sans text-caption text-text-tertiary">
+              <span className="truncate font-fw-sans text-body-sm text-text-secondary">
                 {event.location}
               </span>
-            ) : null}
+            ) : (
+              <span className="truncate font-fw-sans text-body-sm text-text-tertiary">{typeLabel}</span>
+            )}
           </span>
         </span>
 
@@ -220,6 +277,10 @@ export function FairwayEventCard({
             </StatusPill>
           </span>
         ) : null}
+        <ChevronRight
+          aria-hidden
+          className="h-4 w-4 flex-shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+        />
       </span>
     </Button>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { NotebookPen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Segmented, Checkbox, Button } from '@/components/fairway';
@@ -83,11 +84,15 @@ export function AttendanceRow({
       role="group"
       aria-label={name}
       className={cn(
-        'flex flex-col gap-2 rounded-fw-md border border-transparent bg-surface-sunken px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between',
+        'flex flex-col gap-2 rounded-fw-md py-3 pl-4 pr-3.5 sm:flex-row sm:items-center sm:justify-between',
+        surfaces.row,
         isPending && surfaces.pending,
         enterIndex !== undefined && surfaces.enter,
       )}
-      style={enterStyle(enterIndex)}
+      style={{
+        ...enterStyle(enterIndex),
+        '--row-tint': mark === 'present' ? 'var(--fw-color-success)' : mark === 'late' ? 'var(--fw-color-warning)' : mark === 'no_show' ? 'var(--fw-color-danger)' : 'var(--fw-color-border-strong)',
+      } as React.CSSProperties}
     >
       <div className="flex min-w-0 items-center gap-2.5">
         {selectable ? (

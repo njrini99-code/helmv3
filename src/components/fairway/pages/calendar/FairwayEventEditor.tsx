@@ -15,6 +15,7 @@ import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { DiscardChangesModal } from '@/components/fairway/overlays/DiscardChangesModal';
 import { Button } from '@/components/fairway/controls/button';
 import { fwHaptic } from '@/lib/fairway/haptics';
+import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type {
@@ -35,7 +36,7 @@ import type { PeoplePickerPerson } from './people/CalendarPeoplePicker';
 import { EventEssentialsFields } from './editor/EventEssentialsFields';
 import { EventPeopleTimeFields } from './editor/EventPeopleTimeFields';
 import { EventReviewReceipt } from './editor/EventReviewReceipt';
-import { EventEditorStages } from './editor/EventEditorStages';
+import { EventEditorStageDots, EventEditorStageRail } from './editor/EventEditorStages';
 import { useEventEditorStages, type EditorStageKey } from './editor/useEventEditorStages';
 import { buildChangeSummary, isMoveOnlyChange } from './editor/changeDetection';
 import type { ConflictData, VerificationStatus } from './editor/EventVerificationPanel';
@@ -892,6 +893,16 @@ export function FairwayEventEditor({
     onClose();
   }
 
+  // Dock composition (see the footer below). Stages only exist on phones
+  // and never on a cancelled event; the destructive action waits for the
+  // review stage there so the first screen carries one primary action.
+  const mobileStages = !isDesktop && !isCancelled;
+  const showDestructive = !isCreating && Boolean(onDelete) && !isCancelled && (!mobileStages || isLast);
+  const showDiscard = !isCancelled && isDirty;
+  // The review receipt carries its own offline notice; the dock note only
+  // fills in on the phone stages where the receipt isn't on screen.
+  const showDockOfflineNote = isOffline && !(isDesktop || stage === 'review');
+
   return (
     <>
     <ModalShell
@@ -902,7 +913,7 @@ export function FairwayEventEditor({
       size={isDesktop ? 'full' : 'xl'}
       title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
       data-slot="event-editor"
-      className={surfaces.panel}
+      className={cn(surfaces.scope, surfaces.panel)}
     >
       {/* Recurring-series scope picker (edit/delete) — overrides the body */}
       {pendingScopeAction ? (
@@ -1024,16 +1035,12 @@ export function FairwayEventEditor({
                 everything is visible at once) and while cancelled (nothing
                 to move toward). */}
             {!isDesktop && !isCancelled ? (
-              <EventEditorStages
+              <EventEditorStageDots
                 stage={stage}
                 stages={stages}
                 stageIndex={stageIndex}
-                isFirst={isFirst}
-                isLast={isLast}
-                canContinueNow={canContinueNow}
-                onBack={handleStageBack}
-                onContinue={handleStageContinue}
                 onGoTo={handleStageGoTo}
+                className={cn('sticky top-0 z-10 -mx-6 -mt-2 border-b px-4 py-1.5', surfaces.chrome)}
               />
             ) : null}
 
@@ -1119,39 +1126,76 @@ export function FairwayEventEditor({
             ) : null}
           </ModalShell.Body>
 
-          <ModalShell.Footer>
-            {/* deleteGolfEvent is a SOFT CANCEL for one-off events (status →
-                cancelled, RSVPs kept, attendees notified), so the copy says
-                "Cancel event"; series deletes go through the scope picker
-                where permanent removal is spelled out. Hidden on an already-
-                cancelled event — re-cancelling is a no-op. */}
-            {!isCreating && onDelete && !isCancelled ? (
-              <Button
-                variant="ghost"
-                type="button"
-                onClick={handleDelete}
-                disabled={isSaving}
-                leftIcon={<Trash2 className="h-4 w-4" />}
-                className="sm:mr-auto"
-              >
-                {isInSeries ? 'Delete' : 'Cancel event'}
-              </Button>
+          {/* The ONE bottom dock (§2.1): glass, pinned under the body. On
+              phones the stage rail (Back / Continue) lives here on every
+              stage but the last, where the publish action takes its place;
+              on desktop there are no stages and the publish action is
+              always present. Closing goes through the shell's X — the only
+              extra affordance is a ghost "Discard" once the draft is dirty. */}
+          <ModalShell.Footer
+            data-slot="event-editor-dock"
+            className={cn('flex-col items-stretch gap-2 border-t sm:items-center', surfaces.dock)}
+          >
+            {(showDestructive || showDiscard || isCancelled) ? (
+              <div className="flex items-center justify-between gap-1 sm:mr-auto sm:justify-start">
+                {/* deleteGolfEvent is a SOFT CANCEL for one-off events
+                    (status → cancelled, RSVPs kept, attendees notified), so
+                    the copy says "Cancel event"; series deletes go through
+                    the scope picker where permanent removal is spelled out.
+                    Hidden on an already-cancelled event — re-cancelling is a
+                    no-op — and, on phones, until the review stage. */}
+                {showDestructive && onDelete ? (
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isSaving}
+                    leftIcon={<Trash2 className="h-4 w-4" />}
+                    className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink"
+                  >
+                    {isInSeries ? 'Delete' : 'Cancel event'}
+                  </Button>
+                ) : null}
+                {isCancelled ? (
+                  <Button variant="ghost" type="button" onClick={requestClose} disabled={isSaving}>
+                    Close
+                  </Button>
+                ) : null}
+                {showDiscard ? (
+                  <Button variant="ghost" type="button" onClick={requestClose} disabled={isSaving}>
+                    Discard
+                  </Button>
+                ) : null}
+              </div>
             ) : null}
-            <Button variant="secondary" type="button" onClick={requestClose} disabled={isSaving}>
-              {isCancelled ? 'Close' : 'Cancel'}
-            </Button>
             {!isCancelled ? (
-              <div className="flex flex-col items-end gap-1">
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={handleSubmit}
-                  busy={isSaving}
-                  disabled={isSaving || !isTitleValid || isOffline}
-                >
-                  {primaryLabel}
-                </Button>
-                {isOffline ? (
+              <div className="flex flex-col gap-1.5 sm:items-end">
+                <div className="flex items-center gap-2">
+                  {mobileStages ? (
+                    <EventEditorStageRail
+                      isFirst={isFirst}
+                      isLast={isLast}
+                      canContinueNow={canContinueNow}
+                      onBack={handleStageBack}
+                      onContinue={handleStageContinue}
+                      fullWidth
+                    />
+                  ) : null}
+                  {!mobileStages || isLast ? (
+                    <Button
+                      variant="primary"
+                      type="button"
+                      size="lg"
+                      onClick={handleSubmit}
+                      busy={isSaving}
+                      disabled={isSaving || !isTitleValid || isOffline}
+                      className={cn('flex-1 sm:flex-none', surfaces.glow)}
+                    >
+                      {primaryLabel}
+                    </Button>
+                  ) : null}
+                </div>
+                {showDockOfflineNote ? (
                   <p role="status" className="font-fw-sans text-caption text-fw-warning-ink">
                     Reconnect to publish. Your draft is kept.
                   </p>

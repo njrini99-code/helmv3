@@ -4,6 +4,8 @@ import * as React from 'react';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button, Skeleton } from '@/components/fairway';
+import { cn } from '@/lib/utils';
+import surfaces from './CalendarSurfaces.module.css';
 import { SchedulingWorkspace } from './scheduling/SchedulingWorkspace';
 import { useScheduleWindow } from '@/hooks/golf/use-schedule-window';
 import { getScheduleWindow } from '@/app/golf/actions/scheduling';
@@ -46,7 +48,14 @@ export function CalendarSchedulingDialog({ request, initialProposal, onChange, o
   };
   return (
     <ModalShell open={Boolean(request)} onOpenChange={(open) => { if (!open) onClose(); }} title="Find a time" hideTitle hideClose size="full"
-      className="!max-w-[1200px] !w-[calc(100vw-1rem)] h-[min(88dvh,900px)]">
+      className={cn(
+        // Phone: the workspace IS the screen — full height, square corners, no
+        // gutter. Tablet and up: a wide comparison canvas.
+        'max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-full max-sm:!max-w-none max-sm:!rounded-none',
+        'sm:!w-[calc(100vw-1rem)] sm:!max-w-[1200px] sm:h-[min(88dvh,900px)]',
+        surfaces.scope,
+        surfaces.panel,
+      )}>
       {snapshot ? (
         <SchedulingWorkspace snapshot={snapshot} initialProposal={initialProposal} loading={loading || checking}
           error={verificationError || error} onRetry={retry} onClose={onClose} onChoose={(proposal) => { void choose(proposal); }}

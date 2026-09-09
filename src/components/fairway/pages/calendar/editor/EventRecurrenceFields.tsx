@@ -17,6 +17,7 @@ import { Button as UiButton } from '@/components/ui/button';
 import { Input as UiInput } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { FormSection } from '@/components/fairway/forms/FormSection';
+import { sectionCardCls, sectionTitle } from './sectionChrome';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { DateChooser } from '@/components/fairway/pages/calendar/EventWhenFields';
 import type { GolfEventFormData, RecurrenceFrequency } from '@/components/golf/calendar/EventDetailModal';
@@ -65,11 +66,8 @@ export function EventRecurrenceFields({
 
   return (
     <FormSection
-      title={
-        <span className="inline-flex items-center gap-1.5">
-          <Repeat className="h-4 w-4 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
-        </span>
-      }
+      title={sectionTitle(Repeat, isSeriesRoot ? 'Series pattern' : 'Repeat')}
+      className={sectionCardCls}
     >
       {/* Visible chips, not a dropdown. The whole pattern is legible
           at a glance and it matches the two pill rows this modal

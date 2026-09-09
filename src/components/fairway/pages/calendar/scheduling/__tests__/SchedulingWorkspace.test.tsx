@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ScheduleSnapshot } from '@/lib/calendar/scheduling-contracts';
 import { SchedulingWorkspace } from '../SchedulingWorkspace';
 
@@ -71,8 +71,14 @@ describe('SchedulingWorkspace', () => {
     expect(screen.getByLabelText('Date')).toHaveValue('2026-09-08');
     expect(screen.getByLabelText('Start time')).toBeVisible();
     expect(screen.getByRole('slider', { name: 'Move selected time window' })).toHaveAttribute('aria-valuetext', '1:00 PM–2:00 PM');
-    expect(screen.getByText('60-min windows')).toBeVisible();
     expect(screen.getByText('Everyone is available')).toBeVisible();
+    // The timeline card is a direct child of the scrollable body: it must
+    // never be a shrinkable flex item, or `overflow-hidden` lets the flex
+    // algorithm collapse it to 0px on a phone (the grid rendered but was
+    // clipped away — verified live 2026-09-09).
+    const timelineCard = screen.getByTestId('scheduling-timeline').parentElement!;
+    expect(timelineCard.className).toMatch(/\bshrink-0\b/);
+    expect(screen.getByTestId('scheduling-lens')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open Alex Player schedule' })).toBeVisible();
     expect(screen.getByTestId('scheduling-workspace')).toHaveAttribute('data-testid', 'scheduling-workspace');
   });
@@ -105,7 +111,7 @@ describe('SchedulingWorkspace', () => {
       />,
     );
 
-    expect(screen.getByText('2 of 3 required free · 1 unverified')).toBeVisible();
+    expect(screen.getByText('2 of 3 available · 1 unverified')).toBeVisible();
     expect(screen.getAllByText('Not verified').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Use this time' })).toBeDisabled();
     expect(onChoose).not.toHaveBeenCalled();
@@ -171,6 +177,63 @@ describe('SchedulingWorkspace', () => {
 
     restorePointerCapture();
     Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true, writable: true });
+  });
+
+  it('opens on the first window where everyone is free when no proposal is given', () => {
+    // 12:00 is the first slot at/after 9 AM in the fixture's UTC window, but
+    // the viewer is busy 12:00-13:00 — a fresh workspace must not open on a
+    // slot the coach cannot choose.
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('slider', { name: 'Move selected time window' })).toHaveAttribute('aria-valuetext', '1:00 PM–2:00 PM');
+  });
+
+  it('drags the band from where it was grabbed, follows the finger freely, and settles on the slot at release', async () => {
+    const restorePointerCapture = stubPointerCapture();
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    const timeline = screen.getByTestId('scheduling-timeline');
+    timeline.getBoundingClientRect = () => ({
+      left: 0, top: 0, right: 1056, bottom: 0, width: 1056, height: 0, x: 0, y: 0, toJSON() {},
+    });
+    Object.defineProperty(timeline, 'scrollWidth', { value: 1056, configurable: true });
+    Object.defineProperty(timeline, 'clientWidth', { value: 1056, configurable: true });
+    Object.defineProperty(timeline, 'scrollLeft', { value: 0, configurable: true, writable: true });
+    const nameHeader = timeline.querySelector('[aria-hidden="true"]') as HTMLElement;
+    Object.defineProperty(nameHeader, 'offsetWidth', { value: 96, configurable: true });
+
+    const handle = screen.getByRole('slider', { name: 'Move selected time window' });
+    const band = screen.getByTestId('scheduling-lens');
+    // Track is 960px for 32 slots (30px each); 13:00 starts at 120px, so a
+    // finger landing 30px inside the band (clientX 96 + 150) must NOT move it.
+    fireEvent.pointerDown(band, { clientX: 246, pointerId: 1, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '1:00 PM–2:00 PM');
+    expect(timeline).toHaveAttribute('data-dragging', 'true');
+
+    // Two slots to the right: the band follows (free offset set) and the
+    // snapped selection commits once the frame lands.
+    fireEvent.pointerMove(band, { clientX: 306, pointerId: 1, pointerType: 'touch' });
+    await waitFor(() => expect(handle).toHaveAttribute('aria-valuetext', '1:30 PM–2:30 PM'));
+    expect(band.style.getPropertyValue('--lens-free')).not.toBe('');
+
+    fireEvent.pointerUp(band, { clientX: 306, pointerId: 1, pointerType: 'touch' });
+    expect(band.style.getPropertyValue('--lens-free')).toBe('');
+    expect(timeline).not.toHaveAttribute('data-dragging');
+    expect(handle).toHaveAttribute('aria-valuetext', '1:30 PM–2:30 PM');
+    restorePointerCapture();
   });
 
   it('draws a static "Current" reference band distinct from the movable selected band, and hides the date field when asked', () => {

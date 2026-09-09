@@ -322,7 +322,7 @@ export function FairwayAgendaView({
 
   // ── Populated agenda ───────────────────────────────────────────────────────
   return (
-    <div className={cn('flex flex-col gap-7', className)}>
+    <div className={cn('flex flex-col gap-6', className)}>
       {/*
         Past days are COLLAPSED behind an explicit affordance in range mode.
         The agenda's fetch window runs from three months back (deliberately —
@@ -386,22 +386,23 @@ export function FairwayAgendaView({
             }}
           >
             {/* Day header — eyebrow rule + count. */}
-            <div className="mb-3 flex items-center gap-3">
+            <div className="mb-2.5 flex items-center gap-3 pl-0.5">
               <p
                 className={cn(
-                  'font-fw-display text-eyebrow uppercase tracking-[0.12em]',
-                  bucketIsToday ? 'text-accent-700' : 'text-text-tertiary',
+                  'font-fw-display text-body-sm font-semibold tracking-[-0.01em]',
+                  bucketIsToday ? 'text-accent-700' : 'text-text-primary',
                 )}
               >
+                {bucketIsToday ? 'Today · ' : ''}
                 {bucket.label}
               </p>
               <span aria-hidden className="h-px flex-1 bg-border-subtle" />
-              <span className="font-fw-mono text-eyebrow uppercase tabular-nums tracking-[0.1em] text-text-tertiary">
+              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
                 {bucket.events.length} {bucket.events.length === 1 ? 'event' : 'events'}
               </span>
             </div>
 
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
               {bucket.events.map((ev, index) => (
                 <FairwayEventCard
                   key={ev.id}

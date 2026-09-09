@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { Button, IconButton, Surface, Inset } from '@/components/fairway';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { formatShortDate } from '@/lib/golf/format-date';
+import surfaces from '../CalendarSurfaces.module.css';
 import type { CalendarFeedRow, CalendarFeedType } from './types';
 
 /** Masks the token segment of a feed URL: keeps the origin + path visible
@@ -85,10 +86,10 @@ export function FeedRow({ label, description, feed, busy, disabled, error, onCre
   }
 
   return (
-    <Surface padding="none" elevation="border" className="overflow-hidden">
+    <Surface padding="none" elevation="border" className={cn('overflow-hidden rounded-card border-transparent', surfaces.paper)}>
       <div className="flex items-start gap-3 p-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-md bg-surface-sunken text-text-secondary ring-1 ring-border-subtle">
-          <Icon className="h-5 w-5" aria-hidden />
+        <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+          <Icon className="h-4 w-4" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-fw-sans text-body font-medium text-text-primary">{label}</p>
@@ -153,7 +154,7 @@ export function FeedRow({ label, description, feed, busy, disabled, error, onCre
           ) : (
             <div className="mt-3 flex items-center justify-between gap-2">
               <p className="font-fw-sans text-caption text-text-tertiary">Not added yet</p>
-              <Button variant="secondary" size="sm" busy={busy} disabled={disabled} onClick={onCreate}>
+              <Button variant="primary" size="sm" busy={busy} disabled={disabled} onClick={onCreate} className={surfaces.glow}>
                 Create link
               </Button>
             </div>

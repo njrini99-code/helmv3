@@ -25,9 +25,9 @@ import {
 import { Button as UiButton } from '@/components/ui/button';
 import { Input as UiInput, Textarea as UiTextarea } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { FormSection } from '@/components/fairway/forms/FormSection';
 import type { GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { fieldCls } from './fieldStyles';
+import surfaces from '../CalendarSurfaces.module.css';
 
 type EventType = GolfEventFormData['eventType'];
 
@@ -49,11 +49,11 @@ export interface EventEssentialsFieldsProps {
 export function EventEssentialsFields({ formData, onChange, disabled }: EventEssentialsFieldsProps) {
   return (
     <div className="flex flex-col gap-5">
-      {/* Title — with a green editorial spine. The wrapper carries the
-          visible focus cue (WCAG 2.4.7) since the input itself is a
-          bare editorial field with no border. */}
-      <div className="flex items-center gap-3 rounded-fw-md transition-shadow focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-2 focus-within:ring-offset-canvas">
-        <span aria-hidden className="h-7 w-1 flex-shrink-0 rounded-full bg-accent-500" />
+      {/* Title — a large display field with a green editorial spine. The
+          wrapper carries the visible focus cue (WCAG 2.4.7) since the input
+          itself is a bare editorial field with no border. */}
+      <div className="flex items-center gap-3 rounded-fw-md py-1 transition-shadow focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-4 focus-within:ring-offset-canvas">
+        <span aria-hidden className="h-9 w-1 flex-shrink-0 rounded-full bg-accent-600" />
         <UiInput
           type="text"
           value={formData.title}
@@ -61,13 +61,15 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
           disabled={disabled}
           placeholder="Event name…"
           aria-label="Event title"
-          className="w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-auto w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h2 font-medium tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary focus-visible:ring-0 focus-visible:ring-offset-0"
           required
         />
       </div>
 
-      {/* Event type */}
-      <div className="flex flex-wrap gap-2">
+      {/* Event type — glass chips at rest, the emerald selected fill when
+          active. Same icon in both states so the choice never loses its
+          glyph. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Event type">
         {EVENT_TYPES.map(({ type, label, icon: Icon }) => {
           const active = formData.eventType === type;
           return (
@@ -79,7 +81,7 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
               disabled={disabled}
               aria-pressed={active}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
+                'inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-2 font-fw-sans text-caption font-semibold transition-colors',
                 // UiButton's base style hardcodes `ring-offset-white`
                 // (src/components/ui/button.tsx); twMerge only dedupes
                 // within the same ring-offset-* group, so the color
@@ -88,63 +90,54 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
                 // this explicit override, matching FairwayDayStrip /
                 // FairwayEventCard's own `ring-offset-canvas` convention.
                 'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
+                surfaces.press,
                 active
-                  ? 'bg-accent-650 text-text-on-accent shadow-flat'
-                  : 'border border-border-subtle bg-surface-sunken text-text-secondary hover:bg-surface-tint',
+                  ? cn('border border-transparent text-text-on-accent hover:text-text-on-accent', surfaces.selected)
+                  : cn('text-text-secondary hover:text-text-primary', surfaces.float),
               )}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-3.5 w-3.5" aria-hidden />
               {label}
             </UiButton>
           );
         })}
       </div>
 
-      {/* Location — one FormSection per field-group, same primitive as
-          every other section below (finding: this form used to mix four
-          different section treatments — label-above-input here, a
-          tinted no-header panel for RSVP, a header+count row for
-          invitees, and a tinted panel WITH a header for Repeat — with no
-          rule for which earned a tint. FormSection (already the modal
-          section primitive — see FocusAreaModal) replaces all four. */}
-      <FormSection
-        title={
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-4 w-4 text-accent-700" /> Location
+      {/* Location + Notes — one card, one icon disc per row. */}
+      <div className={cn('flex flex-col divide-y divide-border-subtle rounded-card px-4', surfaces.paper)}>
+        <label htmlFor="ev-location" className="flex items-center gap-3 py-3">
+          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+            <MapPin className="h-4 w-4" aria-hidden />
           </span>
-        }
-      >
-        <UiInput
-          id="ev-location"
-          type="text"
-          value={formData.location || ''}
-          onChange={(e) => onChange({ ...formData, location: e.target.value || null })}
-          disabled={disabled}
-          placeholder="Course, facility, or address"
-          aria-label="Location"
-          className={fieldCls}
-        />
-      </FormSection>
-
-      {/* Notes */}
-      <FormSection
-        title={
-          <span className="inline-flex items-center gap-1.5">
-            <AlignLeft className="h-4 w-4 text-accent-700" /> Notes
+          <span className="sr-only">Location</span>
+          <UiInput
+            id="ev-location"
+            type="text"
+            value={formData.location || ''}
+            onChange={(e) => onChange({ ...formData, location: e.target.value || null })}
+            disabled={disabled}
+            placeholder="Course, facility, or address"
+            aria-label="Location"
+            className={cn(fieldCls, 'border-none bg-transparent px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0')}
+          />
+        </label>
+        <label htmlFor="ev-desc" className="flex items-start gap-3 py-3">
+          <span aria-hidden className={cn('mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+            <AlignLeft className="h-4 w-4" aria-hidden />
           </span>
-        }
-      >
-        <UiTextarea
-          id="ev-desc"
-          value={formData.description || ''}
-          onChange={(e) => onChange({ ...formData, description: e.target.value || null })}
-          disabled={disabled}
-          rows={2}
-          placeholder="Details for the team…"
-          aria-label="Notes"
-          className={cn(fieldCls, 'resize-none')}
-        />
-      </FormSection>
+          <span className="sr-only">Notes</span>
+          <UiTextarea
+            id="ev-desc"
+            value={formData.description || ''}
+            onChange={(e) => onChange({ ...formData, description: e.target.value || null })}
+            disabled={disabled}
+            rows={2}
+            placeholder="Details for the team…"
+            aria-label="Notes"
+            className={cn(fieldCls, 'resize-none border-none bg-transparent px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0')}
+          />
+        </label>
+      </div>
     </div>
   );
 }

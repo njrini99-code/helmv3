@@ -215,7 +215,7 @@ export function BusyTimeEditor({
           allDay={allDay}
         />
 
-        <div className="space-y-3 rounded-fw-md border border-border-subtle p-3">
+        <div className={cn('space-y-3 rounded-card p-4', styles.paper)}>
           <Switch checked={repeatOn} onCheckedChange={handleRepeatToggle} label="Repeat weekly" aria-label="Repeat weekly" disabled={disabled} />
           {repeatOn ? (
             <>
@@ -277,9 +277,9 @@ export function BusyTimeEditor({
         </InlineNotice>
       </div>
 
-      <div className={cn('flex shrink-0 items-center justify-between gap-3 border-t border-border-subtle px-4 py-3 sm:px-6', styles.dock)}>
+      <div className={cn('flex shrink-0 items-center justify-between gap-3 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6', styles.dock)}>
         {initial && onDelete ? (
-          <Button type="button" variant="danger" size="sm" busy={deleting} disabled={disabled || saving} onClick={onDelete}>
+          <Button type="button" variant="ghost" size="sm" busy={deleting} disabled={disabled || saving} onClick={onDelete} className="text-fw-danger-ink hover:bg-fw-danger-bg hover:text-fw-danger-ink">
             Delete
           </Button>
         ) : (
@@ -289,7 +289,7 @@ export function BusyTimeEditor({
           <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="sm" busy={saving} disabled={disabled || deleting}>
+          <Button type="submit" variant="primary" size="md" busy={saving} disabled={disabled || deleting} className={styles.glow}>
             Save
           </Button>
         </div>

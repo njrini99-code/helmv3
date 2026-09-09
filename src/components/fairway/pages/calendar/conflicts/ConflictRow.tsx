@@ -19,6 +19,7 @@
  * schedule could not be read this pass — never folded into "checked".
  * ========================================================================== */
 
+import * as React from 'react';
 import { AlertTriangle, ChevronRight, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, Button } from '@/components/fairway';
@@ -36,6 +37,12 @@ function timeRange(startIso: string, endIso: string, timeZone: string): string {
 function weekdayTimeRange(startIso: string, endIso: string, timeZone: string): string {
   const weekday = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'long' }).format(new Date(startIso));
   return `${weekday} ${timeRange(startIso, endIso, timeZone)}`;
+}
+
+/** "Tue, Sep 8 · 2:00 – 4:00 PM" — the visible when-line. */
+function dayTimeLine(startIso: string, endIso: string, timeZone: string): string {
+  const day = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(startIso));
+  return `${day} · ${timeRange(startIso, endIso, timeZone)}`;
 }
 
 /** Minutes of real overlap between the base event and one conflicting
@@ -79,6 +86,12 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect, enter
   const shownAvatars = group.overlaps.slice(0, MAX_AVATARS);
   const overflow = Math.max(0, group.overlaps.length - MAX_AVATARS);
 
+  const hasUnverified = unverifiedCount > 0;
+  const summary = [
+    overlapCount > 0 ? `${overlapCount} ${overlapCount === 1 ? 'overlap' : 'overlaps'}${minutes > 0 ? ` · ${minutes} min` : ''}` : null,
+    hasUnverified ? `${unverifiedCount} unverified` : null,
+  ].filter(Boolean).join(' · ');
+
   return (
     <Button
       type="button"
@@ -87,40 +100,45 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect, enter
       aria-pressed={selected}
       aria-label={conflictRowLabel(group, timeZone)}
       className={cn(
-        'flex h-auto w-full min-h-[64px] items-center justify-start gap-3 rounded-fw-lg p-3 text-left font-normal',
-        surfaces.paper,
+        'flex h-auto w-full min-h-[64px] items-center justify-start gap-3 rounded-fw-lg py-3 pl-4 pr-3 text-left font-normal',
+        'hover:bg-transparent hover:text-text-primary',
+        surfaces.row,
         surfaces.press,
+        surfaces.rise,
         enterIndex !== undefined && surfaces.enter,
-        selected && 'ring-2 ring-accent-500',
+        selected && 'ring-2 ring-accent-600',
       )}
-      style={enterStyle(enterIndex)}
+      style={{
+        ...enterStyle(enterIndex),
+        '--row-tint': 'var(--fw-color-warning)',
+        '--row-tint-bg': 'var(--fw-color-warning-bg)',
+      } as React.CSSProperties}
     >
-      <div className="w-16 shrink-0 text-right">
-        <p className="font-fw-mono text-caption font-semibold tabular-nums text-text-primary">
-          {timeRange(group.event.start, group.event.end, timeZone)}
-        </p>
-      </div>
+      <span
+        aria-hidden="true"
+        className={cn(
+          'grid h-8 w-8 shrink-0 place-items-center rounded-full',
+          hasUnverified ? surfaces.hatch : surfaces.rowIcon,
+        )}
+        style={hasUnverified ? undefined : ({ '--row-tint': 'var(--fw-color-warning-ink)' } as React.CSSProperties)}
+      >
+        <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+      </span>
 
       <div className="min-w-0 flex-1">
         <p className="truncate font-fw-sans text-body-sm font-semibold text-text-primary">
           {group.event.title || 'Event'}
         </p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          {overlapCount > 0 ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-fw-warning-bg px-2 py-0.5 font-fw-sans text-microbadge font-semibold text-fw-warning-ink">
-              <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-              {overlapCount} {overlapCount === 1 ? 'overlap' : 'overlaps'}{minutes > 0 ? ` · ${minutes} min` : ''}
-            </span>
-          ) : null}
-          {unverifiedCount > 0 ? (
-            <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 font-fw-sans text-microbadge font-semibold', surfaces.hatch)}>
-              {unverifiedCount} unverified
-            </span>
-          ) : null}
-          <span className="font-fw-sans text-microbadge font-medium uppercase tracking-[0.08em] text-text-tertiary">
+        <p className="mt-0.5 font-fw-mono text-caption tabular-nums text-text-secondary">
+          {dayTimeLine(group.event.start, group.event.end, timeZone)}
+        </p>
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 font-fw-sans text-caption text-text-tertiary">
+          {summary ? <span className="font-medium text-fw-warning-ink">{summary}</span> : null}
+          {summary ? <span aria-hidden="true">·</span> : null}
+          <span className="font-fw-sans text-microbadge font-medium uppercase tracking-[0.08em]">
             {group.verification === 'partial' ? 'Partially checked' : 'Checked'}
           </span>
-        </div>
+        </p>
       </div>
 
       {shownAvatars.length > 0 ? (

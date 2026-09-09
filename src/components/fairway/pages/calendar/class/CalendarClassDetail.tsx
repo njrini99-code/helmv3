@@ -131,7 +131,9 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
     <div className="space-y-3">
       {location ? (
         <div className={cn('flex items-start gap-3 rounded-fw-md p-3', surfaces.paper)}>
-          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent-700" aria-hidden />
+          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+            <MapPin className="h-4 w-4" aria-hidden />
+          </span>
           <div className="min-w-0">
             <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">Location</p>
             <p className="font-fw-sans text-body-sm text-text-primary">{location}</p>
@@ -140,7 +142,9 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
       ) : null}
       {data.instructor ? (
         <div className={cn('flex items-start gap-3 rounded-fw-md p-3', surfaces.paper)}>
-          <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-accent-700" aria-hidden />
+          <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+            <GraduationCap className="h-4 w-4" aria-hidden />
+          </span>
           <div className="min-w-0">
             <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">Instructor</p>
             <p className="font-fw-sans text-body-sm text-text-primary">{data.instructor}</p>
@@ -202,10 +206,10 @@ export function CalendarClassDetail({
   const primaryAction = (() => {
     if (!data) return null;
     if (viewer === 'owner' && onEditClass) {
-      return <Button className="w-full" onClick={() => onEditClass(data.classId)}>Edit class</Button>;
+      return <Button size="lg" fullWidth className={surfaces.glow} onClick={() => onEditClass(data.classId)}>Edit class</Button>;
     }
     if (viewer === 'coach' && onCompareSchedules) {
-      return <Button className="w-full" onClick={onCompareSchedules}>Compare schedules</Button>;
+      return <Button size="lg" fullWidth className={surfaces.glow} onClick={onCompareSchedules}>Compare schedules</Button>;
     }
     return null;
   })();
@@ -217,29 +221,34 @@ export function CalendarClassDetail({
       side={isDesktop ? 'right' : 'bottom'}
       title={data ? `${code ? `${code} — ` : ''}${name}` : 'Class'}
       hideTitle
-      className={cn(isDesktop && 'w-[360px]')}
+      className={cn(surfaces.scope, surfaces.panel, isDesktop && 'w-[360px]')}
     >
       <div className="flex h-full min-h-0 flex-col">
         {isLoading ? <HeaderSkeleton /> : null}
 
         {data && meetingKind ? (
           <>
-            <header className={cn('shrink-0 border-b px-4 py-4 sm:px-5', surfaces.chrome)}>
-              <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
-                {code || 'Class'}{data.semester ? ` · ${data.semester}` : ''}
-              </p>
-              <h2 id={headingId} className="mt-0.5 font-fw-display text-title font-semibold tracking-[-0.02em] text-text-primary">
-                {name}
-              </h2>
-              <p className="mt-1 flex items-center gap-1.5 font-fw-mono text-caption tabular-nums text-text-secondary">
-                <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span aria-label={occurrenceDateTimeAriaLabel(data, timeZone)}>
-                  {occurrenceTimeLabel(data, timeZone)}
-                </span>
-              </p>
-              {data.days && data.days.length > 0 ? (
-                <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{data.days.join(' · ')}</p>
-              ) : null}
+            <header className={cn('flex shrink-0 items-start gap-3 border-b px-4 py-4 sm:px-5', surfaces.chrome)}>
+              <span className={cn('mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full', surfaces.class)}>
+                <BookOpen className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+                  {code || 'Class'}{data.semester ? ` · ${data.semester}` : ''}
+                </p>
+                <h2 id={headingId} className="mt-0.5 font-fw-display text-title font-semibold tracking-[-0.02em] text-text-primary">
+                  {name}
+                </h2>
+                <p className="mt-1 flex items-center gap-1.5 font-fw-mono text-caption tabular-nums text-text-secondary">
+                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span aria-label={occurrenceDateTimeAriaLabel(data, timeZone)}>
+                    {occurrenceTimeLabel(data, timeZone)}
+                  </span>
+                </p>
+                {data.days && data.days.length > 0 ? (
+                  <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{data.days.join(' · ')}</p>
+                ) : null}
+              </div>
             </header>
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
@@ -260,7 +269,7 @@ export function CalendarClassDetail({
             </div>
 
             {primaryAction ? (
-              <footer className={cn('shrink-0 border-t px-4 py-3 sm:px-5', surfaces.chrome)}>{primaryAction}</footer>
+              <footer className={cn('shrink-0 rounded-t-fw-lg border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5', surfaces.dock)}>{primaryAction}</footer>
             ) : null}
           </>
         ) : null}

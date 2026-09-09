@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { ExternalLink, FileText, Paperclip, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import surfaces from '../CalendarSurfaces.module.css';
 import { Button, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
 import { getEventDocuments, detachDocumentFromEvent, type EventDocumentRow } from '@/app/golf/actions/event-documents';
 import { EventFilePicker } from './EventFilePicker';
@@ -98,11 +99,16 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
   };
 
   return (
-    <div>
-      <div className="mb-2.5 flex items-center justify-between gap-3">
-        <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
-          Files{state.status === 'loaded' ? ` · ${rows.length}` : ''}
-        </p>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+            <Paperclip className="h-4 w-4" aria-hidden />
+          </span>
+          <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
+            Files{state.status === 'loaded' ? ` · ${rows.length}` : ''}
+          </p>
+        </div>
         {isCoach && state.status !== 'failed' ? (
           <Button
             variant="ghost"
@@ -116,7 +122,7 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
       </div>
 
       {detachError ? (
-        <div className="mb-2">
+        <div>
           <InlineNotice tone="danger" dismissible onDismiss={() => setDetachError(null)}>
             {detachError}
           </InlineNotice>
@@ -124,14 +130,14 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
       ) : null}
 
       {state.status === 'loading' ? (
-        <div className="space-y-1.5" aria-hidden>
+        <div className="space-y-2" aria-hidden>
           {[0, 1].map((i) => (
             <Skeleton key={i} className="h-14 rounded-fw-md" />
           ))}
         </div>
       ) : state.status === 'failed' ? (
-        <div className="flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-4 py-3">
-          <p className="font-fw-sans text-body-sm text-text-secondary">{state.error}</p>
+        <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-4 py-3', surfaces.attention)}>
+          <p className="font-fw-sans text-body-sm">{state.error}</p>
           <Button variant="secondary" size="sm" onClick={load} leftIcon={<RefreshCw className="h-3.5 w-3.5" aria-hidden />}>
             Retry
           </Button>
@@ -153,11 +159,11 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
           <p className="font-fw-sans text-body-sm text-text-tertiary">No files attached.</p>
         )
       ) : (
-        <ul className="flex flex-col gap-1.5">
+        <ul className="flex flex-col gap-2">
           {rows.map(({ document, attachedAt, note }) => (
             <li
               key={document.id}
-              className="flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3.5 py-2.5"
+              className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-2', surfaces.row, surfaces.rise)}
             >
               <a
                 href={document.file_url}
@@ -169,7 +175,9 @@ export function EventFilesSection({ eventId, teamId, isCoach, active }: EventFil
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
                 )}
               >
-                <FileText className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+                <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+                  <FileText className="h-4 w-4" aria-hidden />
+                </span>
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5 truncate font-fw-sans text-body-sm font-medium text-text-primary">
                     {document.title}

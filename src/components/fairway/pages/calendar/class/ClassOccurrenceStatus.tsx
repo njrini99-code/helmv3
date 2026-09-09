@@ -39,7 +39,7 @@ export function ClassOccurrenceStatus({ kind, exclusion }: ClassOccurrenceStatus
   if (kind === 'scheduled') {
     return (
       <div className={cn('flex items-center gap-2 rounded-fw-md px-3 py-2.5', surfaces.paper)}>
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fw-success-bg text-fw-success-ink">
+        <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', surfaces.check)}>
           <CalendarCheck2 className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">

@@ -16,6 +16,8 @@
 import * as React from 'react';
 import { CalendarClock, RefreshCw, Search, UsersRound } from 'lucide-react';
 import { ModalShell, Button, Input, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
+import { cn } from '@/lib/utils';
+import surfaces from '../CalendarSurfaces.module.css';
 import { getAttendanceReport, type AttendanceRecord } from '@/app/golf/actions/attendance';
 import { AttendanceRow } from './AttendanceRow';
 import { useAttendanceDraft, type DraftMark } from './useAttendanceDraft';
@@ -142,7 +144,7 @@ export function CalendarAttendanceScreen({
       onOpenChange={onOpenChange}
       size="full"
       title={`Attendance · ${eventTitle}`}
-      className="flex h-[min(44rem,calc(100dvh-2rem))] flex-col"
+      className={cn('flex h-[min(44rem,calc(100dvh-2rem))] flex-col', surfaces.scope, surfaces.panel)}
     >
       <ModalShell.Body className="flex min-h-0 flex-1 flex-col gap-4">
         {state.status === 'loading' ? (
@@ -186,8 +188,8 @@ export function CalendarAttendanceScreen({
             ) : null}
 
             {viewerIsCoach && draft.selected.size > 0 ? (
-              <div className="flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3.5 py-2.5">
-                <span className="font-fw-sans text-body-sm text-text-secondary">
+              <div className={cn('flex items-center justify-between gap-3 rounded-fw-md px-3.5 py-2.5', surfaces.float)}>
+                <span className="font-fw-sans text-body-sm font-medium text-text-primary">
                   {draft.selected.size} selected
                 </span>
                 <div className="flex gap-2">
@@ -279,7 +281,7 @@ export function CalendarAttendanceScreen({
       </ModalShell.Body>
 
       {viewerIsCoach && loaded && visibleRows.length > 0 ? (
-        <ModalShell.Footer className="flex items-center justify-between gap-3 border-t border-border-subtle px-6 py-4">
+        <ModalShell.Footer className={cn('flex flex-row items-center justify-between gap-3 border-t px-6 pt-4', surfaces.dock)}>
           <p
             role="status"
             aria-live="polite"
@@ -290,6 +292,8 @@ export function CalendarAttendanceScreen({
           </p>
           <Button
             variant="primary"
+            size="lg"
+            className={surfaces.glow}
             busy={draft.saving}
             disabled={draft.pendingCount === 0 || isOffline}
             onClick={async () => {

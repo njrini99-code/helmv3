@@ -31,6 +31,8 @@ import {
   ArrowRight,
   UserRound,
   ClipboardCheck,
+  AlignLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, Inset, Readout, Button, StatusPill } from '@/components/fairway';
@@ -276,6 +278,25 @@ export function FairwayEventDetailDrawer({
     }
   };
 
+  /** Tinted 32px icon disc used at the head of every detail row. */
+  const rowIcon = (Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, tint?: 'warning' | 'success') => (
+    <span
+      aria-hidden
+      className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}
+      style={
+        tint === 'warning'
+          ? ({ '--row-tint': 'var(--fw-color-warning-ink)', '--row-tint-bg': 'var(--fw-color-warning-bg)' } as React.CSSProperties)
+          : tint === 'success'
+            ? ({ '--row-tint': 'var(--fw-color-success-ink)', '--row-tint-bg': 'var(--fw-color-success-bg)' } as React.CSSProperties)
+            : undefined
+      }
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </span>
+  );
+
+  const showDock = isCoach && Boolean(onEdit);
+
   return (
     <Sheet
       open={open}
@@ -284,16 +305,28 @@ export function FairwayEventDetailDrawer({
       title={event?.title ?? 'Event'}
       hideTitle
       className={cn(
-        side === 'bottom' ? cn('sm:mx-auto sm:max-w-xl', surfaces.panel) : surfaces.inspector,
+        surfaces.scope,
+        // The shell's own X is an absolute sibling after the body; lift it
+        // over the sticky glass header so it stays tappable while scrolled.
+        '[&>button[aria-label=Close]]:z-30',
+        side === 'bottom'
+          ? cn('sm:mx-auto sm:max-w-xl', surfaces.panel)
+          : cn('w-[400px] max-w-full', surfaces.inspector),
       )}
     >
       {event ? (
-        <Sheet.Body className="flex flex-col gap-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          {/* Header — type pill (+ cancelled badge) + title + date/time line,
-              plus the anchored "More" menu for destructive actions (§2.10).
-              Cancelled events render DISTINCTLY (badge + strike) instead of
-              disappearing — soft-cancel lifecycle. */}
-          <div className={cn("flex flex-col gap-3 rounded-card p-5", surfaces.paper)}>
+        <Sheet.Body className="flex flex-col px-0 py-0 first:pt-0 last:pb-0">
+          {/* Sticky glass header — type pill (+ cancelled badge), title,
+              date/time line, plus the anchored "More" menu for destructive
+              actions (§2.10). Cancelled events render DISTINCTLY (badge +
+              strike) instead of disappearing — soft-cancel lifecycle. The
+              header stays pinned while the sections below scroll under it. */}
+          <header
+            className={cn(
+              'sticky top-0 z-20 flex flex-col gap-2.5 border-b px-5 pb-4 pr-14 pt-5',
+              surfaces.chrome,
+            )}
+          >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <StatusPill tone={meta.tone} size="sm" dot={false}>
@@ -322,85 +355,84 @@ export function FairwayEventDetailDrawer({
             >
               {event.title}
             </h2>
-            <p className="flex items-center gap-1.5 font-fw-sans text-body-sm text-text-tertiary">
+            <p className="flex items-center gap-1.5 font-fw-mono text-caption tabular-nums text-text-secondary">
               <Clock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
               <span>{formatDateLine(event, timezone)}</span>
             </p>
-          </div>
+          </header>
 
-          {/* Coach: edit this event — moved up next to the header (finding
-              #52), the primary action for a coach preparing the event
-              (§18 "Event detail: progressive depth"). */}
-          {isCoach && onEdit ? (
-            <Button
-              variant="primary"
-              size="md"
-              fullWidth
-              leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
-              onClick={() => onEdit(event)}
-            >
-              Edit event
-            </Button>
-          ) : null}
-
-          {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent.
-              GATED: hidden for non-RSVP events; LOCKED (read-only) for past /
-              post-deadline / cancelled events (audit finding #16). Sits in
-              the same "response or Edit" slot as the coach's Edit button
-              above (§2.10/§18 order: header, response-or-edit, location) —
-              this was previously placed after location/owner_label, which
-              pushed it below the fold on a 320px screen. */}
+          <div className={cn('flex flex-col gap-4 px-5 pt-4', showDock ? 'pb-4' : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]')}>
+          {/* Player RSVP — 3 large selectable cards wired to the existing
+              respondToEvent. GATED: hidden for non-RSVP events; LOCKED
+              (read-only) for past / post-deadline / cancelled events (audit
+              finding #16). Sits directly under the header (§2.10/§18 order:
+              header, response-or-edit, location). */}
           {!isCoach && onRespond && requiresRsvp ? (
             rsvpLocked ? (
-              <div className="rounded-fw-md bg-surface-sunken px-4 py-3">
-                <p className="flex items-center gap-2 font-fw-sans text-body-sm font-medium text-text-secondary">
-                  <Lock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
-                  {lockReason}
-                </p>
-                <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
-                  Your response: {displayedResponse ? RSVP_STATUS_LABEL[displayedResponse] : '—'}
-                </p>
+              <div className={cn('flex items-center gap-3 rounded-card p-4', surfaces.paper)}>
+                {rowIcon(Lock)}
+                <div className="min-w-0">
+                  <p className="font-fw-sans text-body-sm font-medium text-text-primary">{lockReason}</p>
+                  <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
+                    Your response: {displayedResponse ? RSVP_STATUS_LABEL[displayedResponse] : '—'}
+                  </p>
+                </div>
               </div>
             ) : (
-              <div>
-                <p className="mb-2.5 font-fw-sans text-body-sm font-medium text-text-secondary">
+              <div className={cn('flex flex-col gap-3 rounded-card p-4', surfaces.paper)}>
+                <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
                   Your response
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {RSVP_OPTIONS.map((opt) => {
                     const isSelected = displayedResponse === opt.value;
+                    const Icon = opt.value === 'accepted' ? Check : opt.value === 'declined' ? X : CalendarClock;
                     return (
                       <Button
                         key={opt.value}
-                        variant={opt.value === 'accepted' ? 'primary' : 'secondary'}
+                        variant="ghost"
                         size="md"
                         fullWidth
                         busy={pendingStatus === opt.value}
                         disabled={pendingStatus !== null}
                         aria-pressed={isSelected}
-                        className={isSelected ? 'ring-2 ring-border-focus ring-offset-2 ring-offset-canvas' : undefined}
-                        leftIcon={opt.icon}
                         onClick={() => handleRespond(opt.value)}
+                        className={cn(
+                          'h-auto min-h-[84px] flex-col gap-2 rounded-fw-md px-2 py-3 font-fw-sans text-body-sm font-semibold',
+                          'text-text-primary hover:bg-transparent hover:text-text-primary',
+                          surfaces.float,
+                          surfaces.press,
+                          isSelected && 'ring-2 ring-accent-600 ring-offset-2 ring-offset-surface',
+                        )}
                       >
+                        <span
+                          aria-hidden
+                          className={cn(
+                            'grid h-8 w-8 place-items-center rounded-full',
+                            isSelected ? surfaces.check : surfaces.rowIcon,
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </span>
                         {opt.label}
                       </Button>
                     );
                   })}
                 </div>
                 {savedResponse ? (
-                  <p role="status" className="mt-2.5 flex items-center gap-1.5 font-fw-sans text-body-sm text-accent-700">
+                  <p role="status" className="flex items-center gap-1.5 font-fw-sans text-body-sm text-accent-700">
                     <Check className="h-4 w-4" aria-hidden />
                     Response saved · {RSVP_STATUS_LABEL[savedResponse]}
                   </p>
                 ) : null}
                 {deadlineLabel ? (
-                  <p className="mt-2.5 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+                  <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
                     <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
                     <span suppressHydrationWarning>Respond by {deadlineLabel}</span>
                   </p>
                 ) : null}
                 {error ? (
-                  <p className="mt-2.5 font-fw-sans text-caption text-fw-danger-ink" role="alert">
+                  <p className="font-fw-sans text-caption text-fw-danger-ink" role="alert">
                     {error}
                   </p>
                 ) : null}
@@ -414,89 +446,99 @@ export function FairwayEventDetailDrawer({
             </p>
           ) : null}
 
-          {/* Whose class this is. Only ever set on synced class meetings, and
-              the one place the FULL name is shown — the chips elsewhere are
-              abbreviated to fit. */}
-          {event.owner_label && event.owner_player_id ? (
-            <div className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-3">
-              <UserRound className="h-5 w-5 shrink-0 text-text-tertiary" aria-hidden />
-              <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {event.owner_label}
-              </span>
+          {/* Details card — owner, location, description, linked trip. Each
+              is a 44px row with a tinted icon disc; rows that navigate carry
+              a chevron / external-link glyph. */}
+          {(event.owner_label && event.owner_player_id) || event.location || stripClassTag(event.description) || linkedTrip ? (
+            <div className={cn('flex flex-col rounded-card px-4 py-1', surfaces.paper)}>
+              {/* Whose class this is. Only ever set on synced class meetings,
+                  and the one place the FULL name is shown — the chips
+                  elsewhere are abbreviated to fit. */}
+              {event.owner_label && event.owner_player_id ? (
+                <div className="flex min-h-11 items-center gap-3 py-2">
+                  {rowIcon(UserRound)}
+                  <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                    {event.owner_label}
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Location — taps through to Maps. */}
+              {event.location ? (
+                <a
+                  href={mapsHref(event.location)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${event.location} in Google Maps (opens in a new tab)`}
+                  className={cn(
+                    'flex min-h-11 items-center justify-between gap-3 rounded-fw-md py-2',
+                    'outline-none transition-colors [transition-duration:180ms] hover:text-accent-700',
+                    'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+                  )}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    {rowIcon(MapPin)}
+                    <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                      {event.location}
+                    </span>
+                  </span>
+                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
+                </a>
+              ) : null}
+
+              {/* Description. The `[class:<id>]` ownership marker is internal
+                  plumbing, not prose — it was rendering verbatim to coaches
+                  under a class's instructor and credits. */}
+              {stripClassTag(event.description) ? (
+                <div className="flex items-start gap-3 py-2.5">
+                  {rowIcon(AlignLeft)}
+                  <p className="min-w-0 whitespace-pre-wrap pt-1.5 font-fw-sans text-body-sm leading-[1.5] text-text-secondary">
+                    {stripClassTag(event.description)}
+                  </p>
+                </div>
+              ) : null}
+
+              {/* Linked travel itinerary (P440) — only when this event has a
+                  trip in golf_travel_itineraries pointing back at it. Deep-
+                  links to the SPECIFIC trip (?trip=<id>) so Travel HQ auto-
+                  selects it. Honest: hidden when the event has no linked trip. */}
+              {linkedTrip ? (
+                <Link
+                  href={`/golf/dashboard/travel?trip=${linkedTrip.id}`}
+                  className={cn(
+                    'group flex min-h-11 items-center gap-3 rounded-fw-md py-2',
+                    'font-fw-sans text-body-sm text-text-secondary transition-colors hover:text-accent-700',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40',
+                  )}
+                >
+                  {rowIcon(Plane)}
+                  <span className="min-w-0 flex-1 truncate">
+                    View itinerary:{' '}
+                    <span className="font-medium text-text-primary">
+                      {linkedTrip.destination || linkedTrip.event_name || 'travel itinerary'}
+                    </span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-accent-700" aria-hidden />
+                </Link>
+              ) : null}
             </div>
-          ) : null}
-
-          {/* Location — taps through to Maps. */}
-          {event.location ? (
-            <a
-              href={mapsHref(event.location)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Open ${event.location} in Google Maps (opens in a new tab)`}
-              className={cn(
-                'flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-4 py-3',
-                'outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint',
-                'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-              )}
-            >
-              <span className="flex min-w-0 items-center gap-2.5">
-                <MapPin className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
-                <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                  {event.location}
-                </span>
-              </span>
-              <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
-            </a>
-          ) : null}
-
-          {/* Description. The `[class:<id>]` ownership marker is internal
-              plumbing, not prose — it was rendering verbatim to coaches under
-              a class's instructor and credits. */}
-          {stripClassTag(event.description) ? (
-            <p className="whitespace-pre-wrap font-fw-sans text-body-sm leading-[1.5] text-text-secondary">
-              {stripClassTag(event.description)}
-            </p>
-          ) : null}
-
-          {/* Linked travel itinerary (P440) — only when this event has a trip in
-              golf_travel_itineraries pointing back at it. Deep-links to the
-              SPECIFIC trip (?trip=<id>) so Travel HQ auto-selects it, mirroring
-              the reverse "View on calendar" affordance on FairwayTripDetail
-              (which deep-links with ?event=<id>). Honest: hidden when the event
-              has no linked trip. */}
-          {linkedTrip ? (
-            <Link
-              href={`/golf/dashboard/travel?trip=${linkedTrip.id}`}
-              className={cn(
-                'group flex items-center gap-2.5 rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5',
-                'font-fw-sans text-body-sm text-text-secondary transition-colors hover:border-accent-500 hover:bg-surface',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40',
-              )}
-            >
-              <Plane className="h-4 w-4 shrink-0 text-accent-700" aria-hidden />
-              <span className="min-w-0 flex-1 truncate">
-                View itinerary:{' '}
-                <span className="font-medium text-text-primary">
-                  {linkedTrip.destination || linkedTrip.event_name || 'travel itinerary'}
-                </span>
-              </span>
-              <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-accent-700" aria-hidden />
-            </Link>
           ) : null}
 
           {/* Coach aggregate — 4 Readouts, tabular-nums, 0 rendered as 0.
               Sits directly above the per-person People list below: one
               summary, one roster, not two disconnected counts. */}
           {isCoach && rsvpSummary ? (
-            <div>
-              <p className="mb-2.5 font-fw-sans text-body-sm font-medium text-text-secondary">
-                Responses · {rsvpSummary.total} invited
-              </p>
+            <div className={cn('flex flex-col gap-3 rounded-card p-4', surfaces.paper)}>
+              <div className="flex items-center gap-3">
+                {rowIcon(ClipboardCheck)}
+                <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
+                  Responses · {rsvpSummary.total} invited
+                </p>
+              </div>
               {/* 2-up on phone, 4-up from `sm`. Readout's label is
                   `uppercase tracking-[0.14em]`, so "ACCEPTED" / "PENDING"
                   need far more than the ~80px a 4-column grid leaves at
-                  390pt: they spilled across their tiles and clipped at the
-                  screen edge (owner device report, 2026-08-26). */}
+                  390pt (owner device report, 2026-08-26). */}
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
                   { label: 'Accepted', value: rsvpSummary.accepted },
@@ -520,40 +562,72 @@ export function FairwayEventDetailDrawer({
           ) : null}
 
           {/* People — who is involved and their status (§2.10, §18). */}
-          <EventPeopleSection eventId={event.id} active={open} />
+          <div className={cn('rounded-card p-4', surfaces.paper)}>
+            <EventPeopleSection eventId={event.id} active={open} />
+          </div>
 
           {/* Files (§2.6) — attach-from-library, count in the heading. */}
           {event.team_id ? (
-            <EventFilesSection
-              eventId={event.id}
-              teamId={event.team_id}
-              isCoach={isCoach}
-              active={open}
-            />
+            <div className={cn('rounded-card p-4', surfaces.paper)}>
+              <EventFilesSection
+                eventId={event.id}
+                teamId={event.team_id}
+                isCoach={isCoach}
+                active={open}
+              />
+            </div>
           ) : null}
 
           {/* Attendance (§2.5) — opens the dedicated screen. Prominent
               (primary-styled) for a coach starting one hour before the
-              event's start; a quiet secondary entry otherwise. Players see
-              their own recorded status only (S5 branches on the server's
+              event's start; a quiet row otherwise. Players see their own
+              recorded status only (S5 branches on the server's
               `viewerIsCoach`/`viewerPlayerId`, never on this button). */}
           {event.team_id ? (
-            <div>
-              <p className="mb-2.5 font-fw-sans text-body-sm font-medium text-text-secondary">
-                Attendance
-              </p>
+            <Button
+              variant={attendanceProminent ? 'primary' : 'ghost'}
+              size="md"
+              fullWidth
+              onClick={() => setAttendanceOpen(true)}
+              className={cn(
+                'h-auto min-h-[60px] justify-start gap-3 rounded-card px-4 py-3 text-left font-fw-sans text-body-sm font-semibold',
+                !attendanceProminent && cn('text-text-primary hover:bg-transparent hover:text-text-primary', surfaces.row, surfaces.press, surfaces.rise),
+              )}
+              style={{ '--row-tint': 'var(--fw-color-accent-600)' } as React.CSSProperties}
+            >
+              {attendanceProminent ? (
+                <ClipboardCheck className="h-4 w-4" aria-hidden />
+              ) : (
+                rowIcon(ClipboardCheck)
+              )}
+              <span className="min-w-0 flex-1">{isCoach ? 'Record attendance' : 'View my attendance'}</span>
+              {!attendanceProminent ? <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden /> : null}
+            </Button>
+          ) : null}
+          </div>
+
+          {/* Coach dock — the ONE primary action for a coach preparing the
+              event (§18 "Event detail: progressive depth"). Pinned to the
+              bottom of the sheet so it never scrolls away. */}
+          {showDock && onEdit ? (
+            <div
+              className={cn(
+                'sticky bottom-0 z-20 mt-auto flex border-t px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-end',
+                surfaces.dock,
+              )}
+            >
               <Button
-                variant={attendanceProminent ? 'primary' : 'secondary'}
-                size="md"
+                variant="primary"
+                size="lg"
                 fullWidth
-                leftIcon={<ClipboardCheck className="h-4 w-4" aria-hidden />}
-                onClick={() => setAttendanceOpen(true)}
+                leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
+                onClick={() => onEdit(event)}
+                className={cn('sm:w-auto', surfaces.glow)}
               >
-                {isCoach ? 'Record attendance' : 'View my attendance'}
+                Edit event
               </Button>
             </div>
           ) : null}
-
         </Sheet.Body>
       ) : null}
 

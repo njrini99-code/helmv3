@@ -49,6 +49,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
+import { cn } from '@/lib/utils';
 import {
   format,
   startOfWeek as startOfWeekFn,
@@ -59,8 +60,8 @@ import {
   addMonths,
   isSameDay,
 } from 'date-fns';
-import { AlertTriangle, CalendarClock, CalendarPlus, RefreshCw, ScanLine } from 'lucide-react';
-import { Segmented, Sheet, Button as FwButton, fairwayToast } from '@/components/fairway';
+import { AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
+import { Sheet, Button as FwButton, fairwayToast } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
@@ -73,6 +74,7 @@ import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
 import { FairwayCalendarHero } from './FairwayCalendarHero';
+import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
@@ -736,15 +738,24 @@ export function FairwayCalendar({
   //    screen while refreshing and never shows a cached one as a fresh all-clear.
   const [conflictsOpen, setConflictsOpen] = React.useState(false);
   const online = useIsOnline();
+  // Coaches read the 14-day inbox on Calendar home too (once, then again
+  // whenever the sheet opens) so the attention row can show a REAL count.
+  // Players only read it when they open the sheet.
   const conflictRequest = React.useMemo<ConflictInboxRequest | null>(() => {
-    if (!conflictsOpen || !teamId) return null;
+    if (!teamId) return null;
+    if (!conflictsOpen && !isCoach) return null;
     return { teamId, from: dayKeyInZone(nowRef, teamTimezone), to: dayKeyInZone(addDays(nowRef, 14), teamTimezone) };
-  }, [conflictsOpen, teamId, nowRef, teamTimezone]);
+  }, [conflictsOpen, isCoach, teamId, nowRef, teamTimezone]);
   const loadConflictInbox = React.useCallback(async (request: ConflictInboxRequest): Promise<ConflictInboxResult> => {
     const { getConflictInbox } = await import('@/app/golf/actions/conflict-inbox');
     return getConflictInbox(request);
   }, []);
   const conflictInbox = useConflictInbox(conflictRequest, loadConflictInbox);
+  const homeConflictCount = React.useMemo<number | null>(() => {
+    const groups = conflictInbox.snapshot?.groups;
+    if (!groups) return null;
+    return groups.filter((group) => group.overlaps.length > 0).length;
+  }, [conflictInbox.snapshot]);
   const handleReviewNewTime = React.useCallback((group: ConflictGroup, proposal: ScheduleProposal) => {
     const event = events.find((candidate) => candidate.id === group.event.id);
     if (!event) {
@@ -1107,7 +1118,7 @@ export function FairwayCalendar({
   const isDay = view === 'day';
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-2 md:gap-6 md:px-6">
+    <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-6 pt-2 md:gap-5 md:px-6", surfaces.scope, surfaces.ground)}>
       {/* ── ONE HERO (plinth + day strip) ────────────────────────────────────── */}
       <FairwayCalendarHero
         focusDate={focusDate}
@@ -1125,67 +1136,38 @@ export function FairwayCalendar({
         onPrimaryAction={primaryAction}
         primaryActionLabel={primaryActionLabel}
         teamTimezone={teamTimezone}
+        view={view}
+        viewOptions={VIEW_OPTIONS}
+        onViewChange={setView}
+        onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
+        onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
+        onSubscribe={() => setSubscribeOpen(true)}
+        onAvailability={() => setAvailabilityOpen(true)}
+        conflictCount={homeConflictCount}
       />
 
-      {/* ── View toggle (default Agenda) + Subscribe entry point ─────────────── */}
-      {/* "Add to phone" is reachable for BOTH roles, including mobile — the
-          flagship "team schedule in my phone" path was previously desktop-
-          coach-only (audit finding #10). Stacks (Segmented full-width, then
-          the button at its natural size) below `sm`; on `sm`+ it's the
-          original side-by-side row. `flex-wrap` alone (Segmented shrinking
-          via `min-w-0 flex-1` + its own internal scroll-fade) left the two
-          controls sharing one line at phone widths, where the button's
-          `whitespace-nowrap` label floors it at its natural width and
-          crowds/overlaps the segmented control's clipped tail — the same
-          stack-then-row idiom used elsewhere in Fairway (e.g. ViewHeader,
-          FairwayQualifierDetail) sidesteps that shrink math entirely. */}
-      <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
-          <Segmented<ViewId>
-            options={VIEW_OPTIONS}
-            value={view}
-            onValueChange={setView}
-            // `lg` = 44px segments — this is the single most-used calendar
-            // control on mobile; it must clear the WCAG 2.2 AA touch target.
-            size="lg"
-            fullWidth
-            aria-label="Calendar view"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <FwButton
-            variant="secondary"
-            size="sm"
-            leftIcon={<CalendarPlus className="h-4 w-4" aria-hidden />}
-            onClick={() => setSubscribeOpen(true)}
-          >
-            Add to phone
-          </FwButton>
-          {teamId ? (
-            <FwButton
-              variant="secondary"
-              size="sm"
-              leftIcon={<AlertTriangle className="h-4 w-4" aria-hidden />}
-              onClick={() => setConflictsOpen(true)}
-            >
-              Conflicts
-            </FwButton>
-          ) : null}
-          <FwButton
-            variant="secondary"
-            size="sm"
-            leftIcon={<CalendarClock className="h-4 w-4" aria-hidden />}
-            onClick={() => setAvailabilityOpen(true)}
-          >
-            My availability
-          </FwButton>
-        </div>
-      </div>
-
-      {teamId && isCoach ? <div className="flex items-center justify-between gap-3 rounded-fw-lg border border-border-subtle bg-surface px-4 py-3">
-        <div><p className="font-semibold text-text-primary">Find your next shared opening</p><p className="text-sm text-text-secondary">Compare your schedule with the team.</p></div>
-        <FwButton variant="secondary" leftIcon={<ScanLine className="h-4 w-4" />} onClick={() => openScheduling()}>Find a time</FwButton>
-      </div> : null}
+      {/* ── ONE attention row (DESIGN-PLAN §18): the most urgent actionable
+          item, only when there is one. Real count from the inbox; never a
+          global red alert for every soft overlap. */}
+      {homeConflictCount && homeConflictCount > 0 ? (
+        <FwButton
+          variant="ghost"
+          onClick={() => setConflictsOpen(true)}
+          className={cn(
+            'flex h-auto min-h-[48px] w-full items-center justify-between gap-3 rounded-fw-md px-4 py-3 text-left font-normal hover:bg-transparent',
+            surfaces.attention,
+            surfaces.press,
+          )}
+        >
+          <span className="flex min-w-0 items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
+            <span className="truncate font-fw-sans text-body-sm font-semibold">
+              {homeConflictCount} scheduling {homeConflictCount === 1 ? 'conflict' : 'conflicts'}
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 flex-shrink-0" aria-hidden />
+        </FwButton>
+      ) : null}
 
       {/* ── Range-fetch affordances (loading + retryable error ≠ empty) ──────── */}
       {isLoadingRange ? (
@@ -1430,7 +1412,8 @@ export function FairwayCalendar({
         onOpenChange={setConflictsOpen}
         side="bottom"
         title="Conflicts"
-        className="sm:mx-auto sm:max-w-3xl"
+        hideTitle
+        className={cn("sm:mx-auto sm:max-w-3xl", surfaces.scope)}
       >
         <Sheet.Body className="flex h-[min(85dvh,720px)] min-h-0 flex-col p-0">
           <ConflictCenter

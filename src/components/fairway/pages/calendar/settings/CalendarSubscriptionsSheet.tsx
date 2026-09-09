@@ -26,6 +26,8 @@
 
 import * as React from 'react';
 import { Sheet, Button, Skeleton, InlineNotice } from '@/components/fairway';
+import { cn } from '@/lib/utils';
+import surfaces from '../CalendarSurfaces.module.css';
 import { FeedRow } from './FeedRow';
 import { SubscriptionSteps } from './SubscriptionSteps';
 import { useIsOnline } from '../availability/useIsOnline';
@@ -181,7 +183,7 @@ export function FairwayCalendarSubscriptionsSheet({ open, onOpenChange, canManag
       side="bottom"
       title="Add to your calendar app"
       description="One-way — Helm stays the source of truth. Changes made in Apple Calendar, Google Calendar, or Outlook never sync back."
-      className="sm:mx-auto sm:max-w-xl"
+      className={cn('sm:mx-auto sm:max-w-xl', surfaces.scope, surfaces.panel)}
     >
       <Sheet.Body className="flex flex-col gap-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         {!online ? (

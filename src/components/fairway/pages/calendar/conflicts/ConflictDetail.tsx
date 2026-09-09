@@ -102,6 +102,48 @@ function checkedAtLabel(checkedAt: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(checkedAt));
 }
 
+function dayLine(startIso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(startIso));
+}
+
+function clockLabel(ms: number, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(ms));
+}
+
+function hourLabel(ms: number, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric' }).format(new Date(ms));
+}
+
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+const CHART_HOUR_PX = 48;
+const MAX_CHART_COLUMNS = 3;
+
+/** The chart window: the event ±1h, snapped outward to whole hours so the
+ * axis labels land on round times. Uses the event's own instants — never a
+ * re-derived local day — so DST edges can't shift the band. */
+function chartRange(startIso: string, endIso: string): { start: number; end: number } {
+  const start = Date.parse(startIso);
+  const end = Date.parse(endIso);
+  const from = Math.floor((start - HOUR_MS) / HOUR_MS) * HOUR_MS;
+  const to = Math.ceil((end + HOUR_MS) / HOUR_MS) * HOUR_MS;
+  return { start: from, end: Math.max(to, from + HOUR_MS) };
+}
+
+function bandStyle(startIso: string, endIso: string, range: { start: number; end: number }): React.CSSProperties | null {
+  const start = Math.max(Date.parse(startIso), range.start);
+  const end = Math.min(Date.parse(endIso), range.end);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const total = range.end - range.start;
+  return {
+    top: `${((start - range.start) / total) * 100}%`,
+    height: `${((end - start) / total) * 100}%`,
+  };
+}
+
 export interface ConflictDetailProps {
   group: ConflictGroup;
   timeZone: string;
@@ -132,21 +174,31 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
   const visibleOverlaps = expanded ? namedOverlaps : namedOverlaps.slice(0, 3);
   const hiddenCount = namedOverlaps.length - visibleOverlaps.length;
 
+  const range = React.useMemo(() => chartRange(group.event.start, group.event.end), [group.event.end, group.event.start]);
+  const hourTicks = React.useMemo(() => {
+    const ticks: number[] = [];
+    for (let t = range.start; t <= range.end; t += HOUR_MS) ticks.push(t);
+    return ticks;
+  }, [range]);
+  const chartOverlaps = namedOverlaps.slice(0, MAX_CHART_COLUMNS);
+  const chartHiddenCount = namedOverlaps.length - chartOverlaps.length;
+  const eventBand = bandStyle(group.event.start, group.event.end, range);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className={cn('flex shrink-0 items-start gap-3 border-b px-4 py-4 sm:px-5', surfaces.chrome)}>
+      <header className={cn('sticky top-0 z-20 flex shrink-0 items-start gap-3 border-b px-4 py-4 sm:px-5', surfaces.chrome)}>
         {onClose ? (
           <Button variant="ghost" size="sm" aria-label="Close conflict detail" onClick={onClose} className="mt-0.5 shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">Conflict</p>
+          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-fw-warning-ink">Resolve conflict</p>
           <h2 className="mt-0.5 truncate font-fw-display text-title font-semibold tracking-[-0.02em] text-text-primary">
             {group.event.title || 'Event'}
           </h2>
           <p className="mt-1 font-fw-mono text-caption tabular-nums text-text-secondary">
-            {timeRange(group.event.start, group.event.end, timeZone)}
+            {dayLine(group.event.start, timeZone)} · {timeRange(group.event.start, group.event.end, timeZone)}
           </p>
         </div>
       </header>
@@ -158,6 +210,26 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
           </InlineNotice>
         ) : null}
 
+        {/* The event card — what is being moved. */}
+        <div className={cn('flex items-center gap-3 rounded-card p-4', surfaces.paper, surfaces.enter)}>
+          <span
+            aria-hidden="true"
+            className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}
+            style={{ '--row-tint': 'var(--fw-color-warning-ink)', '--row-tint-bg': 'var(--fw-color-warning-bg)' } as React.CSSProperties}
+          >
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-fw-sans text-body-sm font-semibold text-text-primary">{group.event.title || 'Event'}</p>
+            <p className="mt-0.5 font-fw-sans text-caption text-text-secondary">
+              {namedOverlaps.length > 0
+                ? `${namedOverlaps.length} ${namedOverlaps.length === 1 ? 'overlap' : 'overlaps'}`
+                : 'No confirmed overlap'}
+              {unverifiedCount > 0 ? ` · ${unverifiedCount} unverified` : ''}
+            </p>
+          </div>
+        </div>
+
         {namedOverlaps.length > 0 ? (
           <section aria-labelledby="conflict-affected-heading">
             <div className="mb-2 flex items-center justify-between gap-3">
@@ -168,13 +240,19 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
             </div>
             <ul className="space-y-2">
               {visibleOverlaps.map((overlap) => (
-                <li key={overlap.playerId} className={cn('rounded-fw-md p-3', surfaces.paper)}>
-                  <p className="font-fw-sans text-body-sm font-semibold text-text-primary">{overlap.name}</p>
-                  <p className="mt-0.5 font-fw-sans text-caption text-text-secondary">
-                    {overlap.conflictingEvent.access === 'free_busy'
-                      ? `Busy · ${timeRange(overlap.conflictingEvent.start, overlap.conflictingEvent.end, timeZone)}`
-                      : `${overlap.conflictingEvent.title || (overlap.conflictingEvent.type === 'class' ? 'Class' : 'Busy')} · ${timeRange(overlap.conflictingEvent.start, overlap.conflictingEvent.end, timeZone)}`}
-                  </p>
+                <li
+                  key={overlap.playerId}
+                  className={cn('flex items-center gap-3 rounded-fw-md py-2.5 pl-4 pr-3', surfaces.row)}
+                  style={{ '--row-tint': 'var(--fw-color-warning)', '--row-tint-bg': 'var(--fw-color-warning-bg)' } as React.CSSProperties}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-fw-sans text-body-sm font-semibold text-text-primary">{overlap.name}</p>
+                    <p className="mt-0.5 font-fw-sans text-caption text-text-secondary">
+                      {overlap.conflictingEvent.access === 'free_busy'
+                        ? `Busy · ${timeRange(overlap.conflictingEvent.start, overlap.conflictingEvent.end, timeZone)}`
+                        : `${overlap.conflictingEvent.title || (overlap.conflictingEvent.type === 'class' ? 'Class' : 'Busy')} · ${timeRange(overlap.conflictingEvent.start, overlap.conflictingEvent.end, timeZone)}`}
+                    </p>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -197,6 +275,86 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
           </InlineNotice>
         ) : null}
 
+        {/* The overlap chart — the event's own band on the left, each
+            affected person's conflicting interval on the right, on one
+            vertical hour axis (the event ±1h). Purely presentational: the
+            same facts as the list above, drawn once, never a new claim. */}
+        {chartOverlaps.length > 0 && eventBand ? (
+          <div className={cn('rounded-card p-4', surfaces.paper)}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">Scheduling conflict</h3>
+              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                {hourLabel(range.start, timeZone)} – {hourLabel(range.end, timeZone)}
+              </span>
+            </div>
+            <div className="flex gap-2" aria-hidden="true">
+              <div className="relative w-12 shrink-0" style={{ height: `${(hourTicks.length - 1) * CHART_HOUR_PX}px` }}>
+                {hourTicks.map((tick, index) => (
+                  <span
+                    key={tick}
+                    className="absolute right-0 -translate-y-1/2 font-fw-mono text-microbadge tabular-nums text-text-tertiary"
+                    style={{ top: `${(index / (hourTicks.length - 1)) * 100}%` }}
+                  >
+                    {hourLabel(tick, timeZone)}
+                  </span>
+                ))}
+              </div>
+              <div
+                className="relative flex flex-1 gap-1.5 overflow-hidden rounded-fw-md"
+                style={{
+                  height: `${(hourTicks.length - 1) * CHART_HOUR_PX}px`,
+                  backgroundImage: `repeating-linear-gradient(180deg, var(--cal-grid-line) 0 1px, transparent 1px ${CHART_HOUR_PX}px)`,
+                }}
+              >
+                <div className="relative flex-1">
+                  <div
+                    className={cn('absolute inset-x-0 flex flex-col justify-center rounded-fw-sm px-2 py-1', surfaces.team)}
+                    style={eventBand}
+                  >
+                    <span className="truncate font-fw-sans text-caption font-semibold">{group.event.title || 'Event'}</span>
+                    <span className="truncate font-fw-mono text-microbadge tabular-nums opacity-80">
+                      {timeRange(group.event.start, group.event.end, timeZone)}
+                    </span>
+                  </div>
+                </div>
+                <div className="relative flex flex-1 gap-1">
+                  {chartOverlaps.map((overlap) => {
+                    const band = bandStyle(overlap.conflictingEvent.start, overlap.conflictingEvent.end, range);
+                    const what = overlap.conflictingEvent.access === 'free_busy'
+                      ? 'Busy'
+                      : overlap.conflictingEvent.title || (overlap.conflictingEvent.type === 'class' ? 'Class' : 'Busy');
+                    return (
+                      <div key={overlap.playerId} className="relative min-w-0 flex-1">
+                        {band ? (
+                          <div
+                            className={cn('absolute inset-x-0 flex flex-col justify-center rounded-fw-sm px-2 py-1', surfaces.overlap)}
+                            style={band}
+                          >
+                            <span className="truncate font-fw-sans text-caption font-semibold">{firstName(overlap.name)}</span>
+                            <span className="truncate font-fw-sans text-microbadge">
+                              {what} until {clockLabel(Date.parse(overlap.conflictingEvent.end), timeZone)}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <p className="sr-only">
+              {chartOverlaps.map((overlap) => (
+                `${firstName(overlap.name)} · ${overlap.conflictingEvent.access === 'free_busy' ? 'Busy' : overlap.conflictingEvent.title || 'Busy'} until ${clockLabel(Date.parse(overlap.conflictingEvent.end), timeZone)}`
+              )).join('; ')}
+            </p>
+            {chartHiddenCount > 0 ? (
+              <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+                +{chartHiddenCount} more in the list above.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         {participants.length > 0 ? (
           // A plain rounded/bordered frame — NOT `.inspector` (that class is
           // the desktop right-PANEL's own slide-in entrance, and would
@@ -212,6 +370,7 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
               showDatePicker={false}
               primaryActionLabel="Review new time"
               disablePrimaryAction={isOffline}
+              embedded
             />
           </div>
         ) : (
@@ -226,11 +385,15 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
               variant="primary"
               disabled={isOffline}
               onClick={() => onReviewNewTime({ start: group.event.start, end: group.event.end })}
+              className={surfaces.glow}
             >
               Open Find a time
             </Button>
           </div>
         )}
+        {/* No attendee count is returned by getConflictInbox (only the
+            overlapping people and a bare unverified count), so no
+            "N attendees will be notified" caption is asserted here. */}
       </div>
     </div>
   );

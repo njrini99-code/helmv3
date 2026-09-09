@@ -37,6 +37,7 @@
 import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import surfaces from './CalendarSurfaces.module.css';
 import { Button } from '@/components/ui/button';
 import type { TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
@@ -177,7 +178,7 @@ export function FairwayCalendarMemberRail({
           role="group"
           aria-label="Team availability filter"
           className={cn(
-            'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
+            'flex items-start gap-1.5 overflow-x-auto scrollbar-hide pb-0.5',
             // Reserve the chevron's own 28px gutter, and only while that
             // chevron is actually shown — otherwise the overlay paints on top
             // of the last avatar chip (audit L2). scroll-p* keeps
@@ -203,7 +204,7 @@ export function FairwayCalendarMemberRail({
         >
           <span
             className={cn(
-              'flex h-9 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
+              'flex h-8 items-center rounded-full px-3 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
               isAllSelected
                 ? 'bg-accent-650 text-text-on-accent shadow-flat'
                 : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
@@ -231,7 +232,7 @@ export function FairwayCalendarMemberRail({
                 haptic="none"
                 className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
               >
-                <span className="flex h-9 items-center rounded-full border border-border-subtle bg-surface-sunken px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary transition-colors group-hover:bg-surface-tint">
+                <span className="flex h-8 items-center rounded-full border border-border-subtle bg-surface-sunken px-3 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary transition-colors group-hover:bg-surface-tint">
                   Compare
                 </span>
               </Button>
@@ -259,14 +260,17 @@ export function FairwayCalendarMemberRail({
               onClick={() => onOpenPerson?.(m.id)}
               aria-label={`Open ${fullName(m)}'s schedule${selected ? ' — included in comparison' : ''}`}
               title={fullName(m)}
-              className="group relative flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-center justify-center overflow-visible rounded-full p-0 transition-transform hover:bg-transparent active:bg-transparent"
+              className={cn(
+                'group relative flex h-auto min-h-[44px] w-[60px] min-w-[60px] flex-shrink-0 flex-col items-center justify-start gap-1 overflow-visible rounded-fw-md px-0 py-1 transition-transform hover:bg-transparent active:bg-transparent',
+                surfaces.press,
+              )}
             >
               {/* Visible avatar chip — fixed 36x36 (h-9 w-9), unchanged from
                   before the fix. The Button around it is the 44x44 touch
                   target; only the invisible padding grows. */}
               <span
                 className={cn(
-                  'relative grid h-9 w-9 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform group-hover:ring-border-strong',
+                  'relative grid h-11 w-11 place-items-center overflow-visible rounded-full font-fw-sans text-body-sm font-semibold ring-2 ring-surface shadow-flat transition-transform group-hover:ring-border-strong',
                   indexColor && 'scale-[1.06] text-white ring-0',
                   // Selected past the cap: no palette color to carry the
                   // "selected" cue, so an accent ring does that job instead
@@ -283,7 +287,7 @@ export function FairwayCalendarMemberRail({
                 }
               >
                 {m.avatar_url ? (
-                  <img src={m.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                  <img src={m.avatar_url} alt="" className="h-11 w-11 rounded-full object-cover" />
                 ) : (
                   <span>{initials(m)}</span>
                 )}
@@ -296,6 +300,15 @@ export function FairwayCalendarMemberRail({
                     {idx + 1}
                   </span>
                 )}
+              </span>
+              <span
+                aria-hidden
+                className={cn(
+                  'w-full truncate text-center font-fw-sans text-caption leading-tight',
+                  selected ? 'font-semibold text-text-primary' : 'text-text-secondary',
+                )}
+              >
+                {m.first_name}
               </span>
             </Button>
           );
@@ -335,36 +348,7 @@ export function FairwayCalendarMemberRail({
             Clear
           </Button>
         </div>
-      ) : (
-        // DEFAULT (nothing selected) — the row above is otherwise nine
-        // unlabelled two-letter chips: an accessible name + `title` tooltip
-        // exist per-chip (finding: "unlabelled initials"), but neither is
-        // visible at rest, and `title` never fires on touch (no hover). This
-        // quiet key uses the SAME tint each avatar already renders with
-        // (tintFor) so identifying a chip doesn't require hovering or
-        // selecting it first.
-        //
-        // PHONE ONLY (< md): hidden. On phone this key is a straight
-        // re-listing of the exact roster the avatar rail above already shows
-        // — same person, same tint color, avatar initials standing in for
-        // the name — and it was costing real height in front of the agenda
-        // (mobile-density audit). It stays on desktop, where there's room and
-        // a hover/title path already exists; on phone each avatar's
-        // `aria-label`/`title` still carries the full name, so nothing here
-        // is uniquely accessible-only information being removed, only the
-        // always-visible duplicate.
-        <div className="hidden flex-wrap items-center gap-x-3 gap-y-1.5 md:flex">
-          {teamMembers.map((m) => {
-            const tint = tintFor(m.id);
-            return (
-              <span key={m.id} className="flex items-center gap-1.5">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tint.text }} />
-                <span className="font-fw-sans text-caption text-text-tertiary">{m.first_name}</span>
-              </span>
-            );
-          })}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
