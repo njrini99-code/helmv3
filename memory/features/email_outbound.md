@@ -20,9 +20,10 @@ below.
 `isCustomerEmailEnabled()` reads `HELM_CUSTOMER_EMAIL_ENABLED` and is `true`
 ONLY for the exact string `'true'` — unset, empty, `'TRUE'`, `'1'`, anything
 else is OFF. When disabled, `gateCustomerEmail()` records one throttled
-`admin_events` row (`event_type: 'email.suppressed'`, severity info, kind +
-source + recipientCount only — no addresses, ever) via
-`logEmailSuppressed()` (`src/lib/admin-logger.ts`), then returns
+`admin_events` row (`event_type: 'email.suppressed'`, severity info,
+`source: 'system'`, kind + caller origin (`metadata.origin`) + recipientCount
+only — no addresses, ever) via `logEmailSuppressed()`
+(`src/lib/admin-logger.ts`), then returns
 `{ allowed: false, reason: 'customer_email_disabled' }`. Repeated
 suppressions from the same `(kind, source)` pair collapse into one row per
 60s window (`src/lib/admin/emit-throttle.ts`) so a fanned-out send (e.g. a
