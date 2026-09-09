@@ -2,33 +2,55 @@
 
 import surfaces from './CalendarSurfaces.module.css';
 
-/** Event details with role-specific actions and persistent RSVP confirmation. */
+/**
+ * Event details with role-specific actions and persistent RSVP confirmation.
+ *
+ * §18 section order (SCREEN-BUILD-PLAN §2.10): header -> response/Edit ->
+ * location -> Description -> People -> Files -> Attendance (prominent for
+ * coaches from one hour before start). History is omitted entirely — it is
+ * gated on G2 (SCREEN-BUILD-PLAN §5) and has no honest content to show yet.
+ * Destructive actions live in the anchored `EventActionsMenu` "More" menu,
+ * not inline. Desktop (>=1024px) renders as a right-side inspector; mobile
+ * keeps the bottom sheet — both are the SAME `Sheet`, just a different
+ * `side`, so every section below is identical on both.
+ */
 
 import * as React from 'react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Check, X, MapPin, Clock, ExternalLink, Pencil, Lock, CalendarClock, Plane, ArrowRight, UserRound } from 'lucide-react';
+import {
+  Check,
+  X,
+  MapPin,
+  Clock,
+  ExternalLink,
+  Pencil,
+  Lock,
+  CalendarClock,
+  Plane,
+  ArrowRight,
+  UserRound,
+  ClipboardCheck,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, Inset, Readout, Button, StatusPill, SkeletonCard } from '@/components/fairway';
-import type { FwStatusTone } from '@/components/fairway';
+import { Sheet, Inset, Readout, Button, StatusPill } from '@/components/fairway';
+import type { FwStatusTone, SheetSide } from '@/components/fairway';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { rsvpLockMessage } from '@/hooks/useRSVP';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { formatEventTime, formatEventDateLabel } from '@/lib/calendar/timezone';
 import { stripClassTag } from '@/lib/calendar/class-events';
+import { EventPeopleSection } from './detail/EventPeopleSection';
+import { EventActionsMenu } from './detail/EventActionsMenu';
+import { EventFilesSection } from './files/EventFilesSection';
+import { CalendarAttendanceScreen } from './attendance/CalendarAttendanceScreen';
 
-// Coach-only roll-call panel — code-split so players never download it.
-const AttendancePanel = dynamic(
-  () =>
-    import('@/components/golf/calendar/AttendancePanel').then((m) => m.AttendancePanel),
-  {
-    loading: () => (
-      <SkeletonCard className="h-24" label="Loading attendance" />
-    ),
-  },
-);
+/** One hour, in ms — the window before an event's start at which the
+ * Attendance entry becomes the prominent (primary-styled) action for a
+ * coach, per SCREEN-BUILD-PLAN §2.10. Never affects server permissions. */
+const ATTENDANCE_PROMINENT_WINDOW_MS = 60 * 60 * 1000;
 
 const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
   practice: { label: 'Practice', tone: 'accent' },
@@ -83,6 +105,16 @@ export interface FairwayEventDetailDrawerProps {
    * (audit W1: cal-tz).
    */
   timezone?: string | null;
+  /**
+   * Destructive actions surfaced through the "More" menu (§2.10). Each is
+   * OPTIONAL and independently gated: a handler not passed simply hides
+   * that menu item rather than showing a fake/disabled affordance. None are
+   * wired from the calendar orchestrator yet — see the handoff note in this
+   * pass's summary for the integration this needs.
+   */
+  onCancelEvent?: (event: CalendarEvent) => Promise<{ success: boolean; error?: string }>;
+  onRestoreEvent?: (event: CalendarEvent) => Promise<{ success: boolean; error?: string }>;
+  onDeletePermanently?: (event: CalendarEvent) => Promise<{ success: boolean; error?: string }>;
 }
 
 /** Player-facing copy for the current response in locked states. */
@@ -124,6 +156,9 @@ export function FairwayEventDetailDrawer({
   onRespond,
   onEdit,
   timezone,
+  onCancelEvent,
+  onRestoreEvent,
+  onDeletePermanently,
 }: FairwayEventDetailDrawerProps) {
   const [pendingStatus, setPendingStatus] = React.useState<RSVPStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -135,12 +170,23 @@ export function FairwayEventDetailDrawer({
   const [linkedTrip, setLinkedTrip] = React.useState<
     { id: string; event_name: string; destination: string } | null
   >(null);
+  // S5 — the attendance screen (§2.10 "Attendance" section opens it).
+  const [attendanceOpen, setAttendanceOpen] = React.useState(false);
+
+  // §2.10: >=1024px renders the SAME Sheet as a right-side inspector instead
+  // of a bottom sheet. `useMediaQuery` server-snapshots `false` (mobile-first,
+  // see the hook's own doc comment), so SSR/first paint is always the bottom
+  // sheet — correct, since the desktop grid it would sit beside isn't the one
+  // rendering on a phone anyway.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const side: SheetSide = isDesktop ? 'right' : 'bottom';
 
   React.useEffect(() => {
     responseRequest.current += 1;
     setPendingStatus(null);
     setSavedResponse(null);
     setError(null);
+    setAttendanceOpen(false);
     return () => { responseRequest.current += 1; };
   }, [open, event?.id]);
 
@@ -202,6 +248,12 @@ export function FairwayEventDetailDrawer({
   const deadlineLabel =
     deadlineMs !== null && Number.isFinite(deadlineMs) ? format(new Date(deadlineMs), "EEE, MMM d 'at' h:mm a") : null;
 
+  // §2.10: the Attendance entry becomes the prominent (primary) action for a
+  // coach starting one hour before the event's start — a visual affordance
+  // only, never a server-permission change.
+  const attendanceProminent =
+    isCoach && Number.isFinite(startMs) && startMs - nowMs <= ATTENDANCE_PROMINENT_WINDOW_MS;
+
   const displayedResponse = savedResponse ?? rsvpStatus;
   const handleRespond = async (status: RSVPStatus) => {
     if (!onRespond || !event || pendingStatus !== null) return;
@@ -228,25 +280,38 @@ export function FairwayEventDetailDrawer({
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      side="bottom"
+      side={side}
       title={event?.title ?? 'Event'}
       hideTitle
-      className={cn("sm:mx-auto sm:max-w-xl", surfaces.panel)}
+      className={cn(
+        side === 'bottom' ? cn('sm:mx-auto sm:max-w-xl', surfaces.panel) : surfaces.inspector,
+      )}
     >
       {event ? (
         <Sheet.Body className="flex flex-col gap-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          {/* Header — type pill (+ cancelled badge) + title + date/time line.
+          {/* Header — type pill (+ cancelled badge) + title + date/time line,
+              plus the anchored "More" menu for destructive actions (§2.10).
               Cancelled events render DISTINCTLY (badge + strike) instead of
               disappearing — soft-cancel lifecycle. */}
           <div className={cn("flex flex-col gap-3 rounded-card p-5", surfaces.paper)}>
-            <div className="flex items-center gap-2">
-              <StatusPill tone={meta.tone} size="sm" dot={false}>
-                {meta.label}
-              </StatusPill>
-              {isCancelled ? (
-                <StatusPill tone="danger" size="sm" dot={false}>
-                  Cancelled
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <StatusPill tone={meta.tone} size="sm" dot={false}>
+                  {meta.label}
                 </StatusPill>
+                {isCancelled ? (
+                  <StatusPill tone="danger" size="sm" dot={false}>
+                    Cancelled
+                  </StatusPill>
+                ) : null}
+              </div>
+              {isCoach ? (
+                <EventActionsMenu
+                  event={event}
+                  onCancelEvent={onCancelEvent}
+                  onRestoreEvent={onRestoreEvent}
+                  onDeletePermanently={onDeletePermanently}
+                />
               ) : null}
             </div>
             <h2
@@ -264,9 +329,8 @@ export function FairwayEventDetailDrawer({
           </div>
 
           {/* Coach: edit this event — moved up next to the header (finding
-              #52). A long roster in AttendancePanel below could push this
-              action below the fold on a coach's first scroll, so it no
-              longer waits at the very bottom of the drawer's content. */}
+              #52), the primary action for a coach preparing the event
+              (§18 "Event detail: progressive depth"). */}
           {isCoach && onEdit ? (
             <Button
               variant="primary"
@@ -279,44 +343,13 @@ export function FairwayEventDetailDrawer({
             </Button>
           ) : null}
 
-          {/* Whose class this is. Only ever set on synced class meetings, and
-              the one place the FULL name is shown — the chips elsewhere are
-              abbreviated to fit. */}
-          {event.owner_label && event.owner_player_id ? (
-            <div className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-3">
-              <UserRound className="h-5 w-5 shrink-0 text-text-tertiary" aria-hidden />
-              <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {event.owner_label}
-              </span>
-            </div>
-          ) : null}
-
-          {/* Location — taps through to Maps. */}
-          {event.location ? (
-            <a
-              href={mapsHref(event.location)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Open ${event.location} in Google Maps (opens in a new tab)`}
-              className={cn(
-                'flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-4 py-3',
-                'outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint',
-                'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-              )}
-            >
-              <span className="flex min-w-0 items-center gap-2.5">
-                <MapPin className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
-                <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                  {event.location}
-                </span>
-              </span>
-              <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
-            </a>
-          ) : null}
-
           {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent.
               GATED: hidden for non-RSVP events; LOCKED (read-only) for past /
-              post-deadline / cancelled events (audit finding #16). */}
+              post-deadline / cancelled events (audit finding #16). Sits in
+              the same "response or Edit" slot as the coach's Edit button
+              above (§2.10/§18 order: header, response-or-edit, location) —
+              this was previously placed after location/owner_label, which
+              pushed it below the fold on a 320px screen. */}
           {!isCoach && onRespond && requiresRsvp ? (
             rsvpLocked ? (
               <div className="rounded-fw-md bg-surface-sunken px-4 py-3">
@@ -381,6 +414,41 @@ export function FairwayEventDetailDrawer({
             </p>
           ) : null}
 
+          {/* Whose class this is. Only ever set on synced class meetings, and
+              the one place the FULL name is shown — the chips elsewhere are
+              abbreviated to fit. */}
+          {event.owner_label && event.owner_player_id ? (
+            <div className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-3">
+              <UserRound className="h-5 w-5 shrink-0 text-text-tertiary" aria-hidden />
+              <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                {event.owner_label}
+              </span>
+            </div>
+          ) : null}
+
+          {/* Location — taps through to Maps. */}
+          {event.location ? (
+            <a
+              href={mapsHref(event.location)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${event.location} in Google Maps (opens in a new tab)`}
+              className={cn(
+                'flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-4 py-3',
+                'outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint',
+                'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-2.5">
+                <MapPin className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
+                <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                  {event.location}
+                </span>
+              </span>
+              <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
+            </a>
+          ) : null}
+
           {/* Description. The `[class:<id>]` ownership marker is internal
               plumbing, not prose — it was rendering verbatim to coaches under
               a class's instructor and credits. */}
@@ -416,7 +484,9 @@ export function FairwayEventDetailDrawer({
             </Link>
           ) : null}
 
-          {/* Coach attendance — 4 Readouts, tabular-nums, 0 rendered as 0. */}
+          {/* Coach aggregate — 4 Readouts, tabular-nums, 0 rendered as 0.
+              Sits directly above the per-person People list below: one
+              summary, one roster, not two disconnected counts. */}
           {isCoach && rsvpSummary ? (
             <div>
               <p className="mb-2.5 font-fw-sans text-body-sm font-medium text-text-secondary">
@@ -449,17 +519,59 @@ export function FairwayEventDetailDrawer({
             </div>
           ) : null}
 
-          {/* Roll-call. Coach: full invitee roster with RSVP + check-in marks.
-              Player: read-only "your attendance" card — AttendancePanel
-              already branches on `canManage` for this (PlayerSelfView), but
-              was previously mounted for coaches only, so a player standing
-              on the range had no way to see whether they'd been checked in.
-              (AttendancePanel contract: { eventId, teamId, canManage }.) */}
+          {/* People — who is involved and their status (§2.10, §18). */}
+          <EventPeopleSection eventId={event.id} active={open} />
+
+          {/* Files (§2.6) — attach-from-library, count in the heading. */}
           {event.team_id ? (
-            <AttendancePanel eventId={event.id} teamId={event.team_id} canManage={isCoach} />
+            <EventFilesSection
+              eventId={event.id}
+              teamId={event.team_id}
+              isCoach={isCoach}
+              active={open}
+            />
+          ) : null}
+
+          {/* Attendance (§2.5) — opens the dedicated screen. Prominent
+              (primary-styled) for a coach starting one hour before the
+              event's start; a quiet secondary entry otherwise. Players see
+              their own recorded status only (S5 branches on the server's
+              `viewerIsCoach`/`viewerPlayerId`, never on this button). */}
+          {event.team_id ? (
+            <div>
+              <p className="mb-2.5 font-fw-sans text-body-sm font-medium text-text-secondary">
+                Attendance
+              </p>
+              <Button
+                variant={attendanceProminent ? 'primary' : 'secondary'}
+                size="md"
+                fullWidth
+                leftIcon={<ClipboardCheck className="h-4 w-4" aria-hidden />}
+                onClick={() => setAttendanceOpen(true)}
+              >
+                {isCoach ? 'Record attendance' : 'View my attendance'}
+              </Button>
+            </div>
           ) : null}
 
         </Sheet.Body>
+      ) : null}
+
+      {event?.team_id ? (
+        <CalendarAttendanceScreen
+          // Remounts the whole screen (and its useAttendanceDraft instance)
+          // whenever the drawer is pointed at a different event. Without
+          // this, switching events while the drawer stays open lets one
+          // event's staged marks/search/selection survive into the next
+          // event's roster — a coach's unsaved mark for a player on event A
+          // could get saved against event B instead.
+          key={event.id}
+          open={attendanceOpen}
+          onOpenChange={setAttendanceOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+          isCoach={isCoach}
+        />
       ) : null}
     </Sheet>
   );
