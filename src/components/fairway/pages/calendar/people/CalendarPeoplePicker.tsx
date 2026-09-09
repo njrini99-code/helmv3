@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
-import { Button, Input, EmptyState, Avatar, Segmented, Skeleton } from '@/components/fairway';
+import { Button, Input, EmptyState, Avatar, PressTarget, Segmented, Skeleton } from '@/components/fairway';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { usePeopleSelection, type PeoplePickerPerson } from './usePeopleSelection';
 import surfaces from '../CalendarSurfaces.module.css';
@@ -203,9 +203,7 @@ function PickerBody({
               const selected = selection.isSelected(person.id);
               return (
                 <div key={person.id} className={cn('rounded-fw-md', selected && 'bg-accent-50/60 ring-1 ring-accent-600/40')}>
-                  <Button
-                    type="button"
-                    variant="ghost"
+                  <PressTarget
                     role="option"
                     aria-selected={selected}
                     tabIndex={index === activeIndex ? 0 : -1}
@@ -213,11 +211,8 @@ function PickerBody({
                     onFocus={() => setActiveIndex(index)}
                     onClick={() => toggleRow(person.id)}
                     className={cn(
-                      'flex h-auto w-full items-center justify-start gap-3 rounded-fw-md px-2 py-1.5 text-left font-normal',
+                      'flex w-full items-center gap-3 rounded-fw-md px-2 py-1.5 text-left hover:bg-surface-sunken',
                       ROW_HEIGHT_CLASS,
-                      surfaces.buttonRow,
-                      surfaces.press,
-                      'hover:bg-surface-sunken',
                     )}
                   >
                     <Avatar src={person.avatarUrl ?? undefined} name={person.name} size="sm" />
@@ -238,7 +233,7 @@ function PickerBody({
                     >
                       <Check className="h-3.5 w-3.5" />
                     </span>
-                  </Button>
+                  </PressTarget>
                   {mode === 'compare' && selected ? (
                     <div className="flex items-center justify-end px-2 pb-2">
                       <Segmented

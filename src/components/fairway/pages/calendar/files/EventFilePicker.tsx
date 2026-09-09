@@ -11,7 +11,7 @@ import * as React from 'react';
 import { Search, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import surfaces from '../CalendarSurfaces.module.css';
-import { ModalShell, Button, Input, Segmented, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
+import { ModalShell, Button, Input, PressTarget, Segmented, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
 import { getDocuments } from '@/app/golf/actions/documents';
 import { attachDocumentToEvent } from '@/app/golf/actions/event-documents';
 import type { GolfDocument } from '@/lib/types/golf';
@@ -146,22 +146,13 @@ export function EventFilePicker({
           <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto p-0.5">
             {filtered.map((doc) => (
               <li key={doc.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
+                <PressTarget
                   onClick={() => handleAttach(doc.id)}
                   disabled={attachingId !== null}
-                  className={cn(
-                    'flex h-auto w-full min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3 text-left font-normal',
-                    surfaces.buttonRow,
-                    'hover:bg-transparent hover:text-text-primary disabled:opacity-60',
-                    surfaces.row,
-                    surfaces.press,
-                    surfaces.rise,
-                  )}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface py-2 pl-4 pr-3 text-left [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken"
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+                    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken text-text-secondary">
                       <Paperclip className="h-4 w-4" aria-hidden />
                     </span>
                     <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
@@ -171,7 +162,7 @@ export function EventFilePicker({
                   <span className="shrink-0 font-fw-sans text-caption text-text-tertiary">
                     {attachingId === doc.id ? 'Attaching…' : doc.category ?? ''}
                   </span>
-                </Button>
+                </PressTarget>
               </li>
             ))}
           </ul>

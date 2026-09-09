@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateSchedule, suggestScheduleTimes } from './evaluate';
+import { acceptProposal, evaluateSchedule, suggestScheduleTimes } from './evaluate';
 import type { ScheduleSnapshot } from '../scheduling-contracts';
 
 const snapshot: ScheduleSnapshot = {
@@ -27,5 +27,31 @@ describe('scheduling evaluation', () => {
     expect(suggestions[0]?.start).toBe('2026-09-08T19:00:00.000Z');
     expect(suggestions.every((slot) => evaluateSchedule(snapshot, slot).allAvailable)).toBe(true);
     expect(suggestScheduleTimes(snapshot, Number.NaN)).toEqual([]);
+  });
+  it('accepts a time with an optional participant busy, and the dialog and workspace agree on it', () => {
+    // An optional person with an overlap: `allAvailable` is false (someone
+    // has an overlap) but the acceptance rule passes (every required person
+    // free, everything verified). Before this rule existed the workspace
+    // enabled "Use this time" on its own predicate and the dialog's final
+    // recheck rejected the same selection on `allAvailable`.
+    const withOptional: ScheduleSnapshot = {
+      ...snapshot,
+      participants: [
+        ...snapshot.participants,
+        { id: 'optional', kind: 'player', name: 'Optional', avatarUrl: null, isViewer: false, required: false, verification: 'complete',
+          intervals: [{ id: 'busy', type: 'blocked', start: '2026-09-08T19:00:00Z', end: '2026-09-08T20:00:00Z' }] },
+      ],
+    };
+    const evaluation = evaluateSchedule(withOptional, { start: '2026-09-08T19:00:00Z', end: '2026-09-08T20:00:00Z' });
+    expect(evaluation.allAvailable).toBe(false);
+    expect(evaluation.optionalFree).toBe(0);
+    expect(acceptProposal(evaluation)).toEqual({ ok: true, reason: 'accepted' });
+  });
+  it('refuses unverified, required-busy, and empty evaluations with a reason', () => {
+    const partial = { ...snapshot, participants: snapshot.participants.map((person) => ({ ...person, verification: 'partial' as const })) };
+    expect(acceptProposal(evaluateSchedule(partial, { start: '2026-09-08T19:00:00Z', end: '2026-09-08T20:00:00Z' }))).toEqual({ ok: false, reason: 'unverified' });
+    expect(acceptProposal(evaluateSchedule(snapshot, { start: '2026-09-08T18:00:00Z', end: '2026-09-08T19:00:00Z' }))).toEqual({ ok: false, reason: 'required_busy' });
+    expect(acceptProposal(evaluateSchedule(snapshot, { start: 'bad', end: 'bad' }))).toEqual({ ok: false, reason: 'unverified' });
+    expect(acceptProposal(evaluateSchedule({ ...snapshot, participants: [] }, snapshot.window))).toEqual({ ok: false, reason: 'nobody' });
   });
 });

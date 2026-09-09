@@ -43,18 +43,15 @@ import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Button } from '@/components/fairway/controls/button';
 import { fwHaptic } from '@/lib/fairway/haptics';
-import { getZonedDateParts } from '@/lib/calendar/timezone';
+import { eventDaySpan } from '@/lib/calendar/timezone';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 /** Same `yyyy-MM-dd` shape as `format(day, 'yyyy-MM-dd')` on the local pill
  *  Dates below, but derived from the event's ISO instant AS SEEN in
  *  `timezone` rather than the calling process's own ambient zone. */
-function zonedDayKey(iso: string, timezone: string | null | undefined): string {
-  const { year, month, day } = getZonedDateParts(iso, timezone);
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
 const WEEK_STARTS_ON = 0 as const;
+/** Longest multi-day span a single event may mark (guards a bad end date). */
+const MAX_SPAN_DAYS = 62;
 
 /** event_type → density-dot tint, same tone vocabulary as FairwayEventCard. */
 const TYPE_DOT_CLASS: Record<string, string> = {
@@ -157,15 +154,22 @@ export function FairwayDayStrip({
 
   // Bucket events by yyyy-MM-dd (team-timezone calendar day, not raw UTC) for
   // O(1) per-pill lookup — see the file-header DENSITY-DOT BUCKETING note.
+  // A commitment occupies EVERY day it runs (`eventDaySpan`, the same
+  // interpretation the agenda and month overview use), so a three-day
+  // tournament marks three pills, not just the day it starts.
   const eventsByDay = React.useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
     for (const ev of events) {
-      const iso = ev.start_date || ev.start_time;
-      if (!iso) continue;
-      const key = zonedDayKey(iso, teamTimezone);
-      const list = map.get(key);
-      if (list) list.push(ev);
-      else map.set(key, [ev]);
+      const span = eventDaySpan(ev, teamTimezone);
+      if (!span) continue;
+      let cursor = span.first;
+      for (let i = 0; i < MAX_SPAN_DAYS && cursor <= span.last; i++) {
+        const key = format(cursor, 'yyyy-MM-dd');
+        const list = map.get(key);
+        if (list) list.push(ev);
+        else map.set(key, [ev]);
+        cursor = addDays(cursor, 1);
+      }
     }
     return map;
   }, [events, teamTimezone]);

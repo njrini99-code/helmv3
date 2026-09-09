@@ -3,9 +3,7 @@
 import * as React from 'react';
 import surfaces from '../CalendarSurfaces.module.css';
 import {
-  AlertTriangle,
   ArrowLeft,
-  ArrowRight,
   CalendarDays,
   Check,
   ChevronDown,
@@ -22,6 +20,7 @@ import {
   Button,
   IconButton,
   Input,
+  PressTarget,
   Select,
 } from '@/components/fairway';
 import type {
@@ -31,11 +30,14 @@ import type {
   ScheduleEvaluation,
   ScheduleSnapshot,
 } from '@/lib/calendar/scheduling-contracts';
-import { evaluateSchedule, suggestScheduleTimes } from '@/lib/calendar/scheduling/evaluate';
+import { acceptProposal, evaluateSchedule, suggestScheduleTimes } from '@/lib/calendar/scheduling/evaluate';
+import { SchedulingTaskBoard } from './SchedulingTaskBoard';
 
 const SLOT_MINUTES = 15;
 const DEFAULT_DURATION = 60;
 const DURATION_OPTIONS = [30, 60, 90, 120] as const;
+/** A finger that moves further than this between down and up is a pan, not a tap. */
+const TAP_SLOP_PX = 8;
 
 type ParticipantState = 'available' | 'busy' | 'unknown';
 
@@ -78,7 +80,7 @@ export interface SchedulingWorkspaceProps {
    * that explains the overlap" instead of every invited person. A "Show
    * everyone" control reveals the rest.
    *
-   * Evaluation (`evaluateSelection`, `canChoose`, suggestions) always runs
+   * Evaluation (`evaluateSelection`, `acceptProposal`, suggestions) always runs
    * against the FULL `snapshot.participants` regardless of this filter —
    * only which ROWS render changes. Hiding a person's row must never make a
    * proposed time look safer than it is.
@@ -96,7 +98,7 @@ export interface SchedulingWorkspaceProps {
   /** Footer CTA label. Default "Use this time"; conflict detail passes
    * "Review new time" — same `onChoose` wiring, different call to action. */
   primaryActionLabel?: string;
-  /** Disables the footer CTA regardless of `canChoose` — conflict detail
+  /** Disables the board's confirm action regardless of acceptance — conflict detail
    * sets this while offline ("Resolve disabled", §2.8's offline state),
    * without borrowing `loading` (which would also relabel the button
    * "Publishing…"). Default false. */
@@ -295,8 +297,7 @@ export function SchedulingWorkspace({
     if (initialProposal?.start) return initialProposal.start;
     const wanted = durationBetween(undefined);
     const free = suggestScheduleTimes(snapshot, wanted, firstSlot).find((proposal) => {
-      const result = evaluateSelection(snapshot, proposal.start, addMinutes(proposal.start, wanted));
-      return result.unknown === 0 && result.requiredFree === result.requiredTotal;
+      return acceptProposal(evaluateSelection(snapshot, proposal.start, addMinutes(proposal.start, wanted))).ok;
     });
     return free?.start ?? firstSlot;
   });
@@ -370,11 +371,8 @@ export function SchedulingWorkspace({
   const windowMs = Math.max(1, windowEndMs - windowStartMs);
   const lensLeft = 100 * (Date.parse(selectedStart) - windowStartMs) / windowMs;
   const lensWidth = 100 * duration * 60_000 / windowMs;
-  /** Whether a start would be choosable: every required person free, nothing unverified. */
-  const canChooseAt = (start: string) => {
-    const result = evaluateSelection(snapshot, start, addMinutes(start, duration));
-    return result.unknown === 0 && result.requiredFree === result.requiredTotal;
-  };
+  /** Whether a start would be choosable — the shared acceptance rule. */
+  const canChooseAt = (start: string) => acceptProposal(evaluateSelection(snapshot, start, addMinutes(start, duration))).ok;
 
   const validStarts = React.useMemo(
     () => slots.filter((slot) => safeDate(addMinutes(slot.start, duration))! <= safeDate(snapshot.window.end)!),
@@ -463,13 +461,18 @@ export function SchedulingWorkspace({
     labelRef.current?.style.setProperty('--lens-free', `${(100 * labelPx) / metrics.trackWidth}%`);
   };
 
-  const commitSnapped = (startPx: number) => {
+  /** The valid start a track position snaps to, or null when there is none. */
+  const snappedStart = (startPx: number): string | null => {
     const metrics = trackMetrics();
-    if (!metrics || validStarts.length === 0) return;
+    if (!metrics || validStarts.length === 0) return null;
     const fraction = Math.max(0, Math.min(0.999, startPx / metrics.trackWidth));
     const nextIndex = Math.min(validStarts.length - 1, Math.round(fraction * slots.length));
-    const next = validStarts[nextIndex];
-    if (next && next.start !== selectedStart) setSelectedStart(next.start);
+    return validStarts[nextIndex]?.start ?? null;
+  };
+
+  const commitSnapped = (startPx: number) => {
+    const next = snappedStart(startPx);
+    if (next && next !== selectedStart) setSelectedStart(next);
   };
 
   const selectFromPointer = (clientX: number) => {
@@ -487,11 +490,19 @@ export function SchedulingWorkspace({
     });
   };
 
-  const endDrag = () => {
+  /** Finish the gesture. The release position (or, on cancel, the last
+   * position a frame was queued for) is committed synchronously: a pending
+   * animation frame is cancelled, never dropped, so the snapped time always
+   * reflects where the finger actually let go — not the previous frame. */
+  const endDrag = (finalX?: number) => {
+    let pending: number | null = null;
     if (dragRef.current.frame !== null) {
       cancelAnimationFrame(dragRef.current.frame);
       dragRef.current.frame = null;
+      pending = dragRef.current.lastX;
     }
+    const commitX = finalX ?? pending;
+    if (commitX !== null && commitX !== undefined) selectFromPointer(commitX);
     // Clear the free offset: React's snapped `left` takes over and `.settle`
     // eases the band onto the slot.
     lensRef.current?.style.removeProperty('--lens-free');
@@ -516,10 +527,36 @@ export function SchedulingWorkspace({
     if (dragging) scheduleFollow(event.clientX);
   };
 
-  const handlePointerUp = () => {
+  const cancelDrag = () => {
+    if (dragging) endDrag();
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging) return;
-    endDrag();
-    fwHaptic(canChooseAt(selectedStart) ? 'success' : 'selection');
+    // Read the landing slot from the release position, not from `selectedStart`
+    // (state — one render behind the commit endDrag is about to make).
+    const landed = snappedStart(trackX(event.clientX) - dragRef.current.grabOffsetPx) ?? selectedStart;
+    endDrag(event.clientX);
+    fwHaptic(canChooseAt(landed) ? 'success' : 'selection');
+  };
+
+  // Lane taps: a pointer that goes down and comes up in the same place
+  // places the window there. A pan (scrolling the schedule sideways, or the
+  // page vertically) also ends in pointerup and must not.
+  const tapRef = React.useRef<{ id: number; x: number; y: number } | null>(null);
+  const handleLanePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    tapRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  };
+  const handleLanePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const tap = tapRef.current;
+    tapRef.current = null;
+    if (dragging || !tap || tap.id !== event.pointerId) return;
+    if (Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > TAP_SLOP_PX) return;
+    placeAtPointer(event.clientX);
+  };
+  const handleLanePointerCancel = () => {
+    tapRef.current = null;
   };
 
   React.useEffect(() => () => {
@@ -568,7 +605,15 @@ export function SchedulingWorkspace({
       : `${evaluation.requiredFree} of ${evaluation.requiredTotal} available`;
 
   const selectedWindowText = `${formatTime(selectedStart, snapshot.timeZone)}–${formatTime(selectedEnd, snapshot.timeZone)}`;
-  const canChoose = evaluation.unknown === 0 && evaluation.requiredFree === evaluation.requiredTotal;
+  // ONE acceptance rule (shared with the dialog's final recheck) drives the
+  // board's state and the confirm action — see acceptProposal.
+  const acceptance = acceptProposal(evaluation);
+  const busyNames = snapshot.participants
+    .filter((participant) => participant.required && evaluation.states.get(participant.id) === 'busy')
+    .map(participantLabel);
+  const unverifiedNames = snapshot.participants
+    .filter((participant) => evaluation.states.get(participant.id) === 'unknown')
+    .map(participantLabel);
 
 
   // Rows: the viewer first, then everyone else in snapshot order.
@@ -595,7 +640,7 @@ export function SchedulingWorkspace({
   ];
 
   const datePill = showDatePicker ? (
-    <label className={cn('relative flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 font-fw-sans text-body-sm font-medium text-text-primary', surfaces.float, surfaces.press)}>
+    <label className="relative flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-border-subtle bg-surface px-3.5 font-fw-sans text-body-sm font-medium text-text-primary">
       <CalendarDays className="h-4 w-4 text-text-secondary" aria-hidden="true" />
       <span className="whitespace-nowrap">{dateLabel}</span>
       <ChevronDown className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
@@ -617,7 +662,7 @@ export function SchedulingWorkspace({
       data-testid="scheduling-workspace"
     >
       {!embedded ? (
-        <header className={cn('sticky top-0 z-30 flex shrink-0 items-center gap-3 border-b px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-5', surfaces.chrome)}>
+        <header className="fw-glass-chrome sticky top-0 z-30 flex shrink-0 items-center gap-3 border-b px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-5">
           <IconButton variant="ghost" size="md" aria-label="Close scheduling workspace" onClick={onClose} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </IconButton>
@@ -637,20 +682,9 @@ export function SchedulingWorkspace({
         className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 pb-6 sm:px-5 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6"
       >
         <div className="flex min-w-0 shrink-0 flex-col gap-4">
-          {error ? (
-            <div role="alert" className="flex shrink-0 items-start gap-3 rounded-card border border-fw-danger/30 bg-fw-danger-bg px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-fw-danger-ink" aria-hidden="true" />
-              <div className="min-w-0 flex-1">
-                <p className="font-fw-sans text-body-sm font-medium text-fw-danger-ink">Schedule could not be checked</p>
-                <p className="mt-1 font-fw-sans text-caption text-fw-danger-ink/90">{error}</p>
-              </div>
-              {onRetry ? <Button variant="secondary" size="sm" onClick={onRetry}>Retry</Button> : null}
-            </div>
-          ) : null}
-
-          {/* Controls: duration and start time as two glass pills. */}
+          {/* Controls: duration and start time, two quiet bordered groups. */}
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <div className={cn('flex h-11 items-center gap-1.5 rounded-full pl-3.5 pr-1', surfaces.float)}>
+            <div className="flex h-11 items-center gap-1.5 rounded-full border border-border-subtle bg-surface pl-3.5 pr-1">
               <Clock3 className="h-4 w-4 text-text-secondary" aria-hidden="true" />
               <span className="font-fw-sans text-caption font-medium text-text-secondary">Duration</span>
               <Select
@@ -662,7 +696,7 @@ export function SchedulingWorkspace({
                 className="min-w-[84px] border-0 bg-transparent px-1 shadow-none"
               />
             </div>
-            <div className={cn('flex h-11 items-center gap-0.5 rounded-full p-1', surfaces.float)}>
+            <div className="flex h-11 items-center gap-0.5 rounded-full border border-border-subtle bg-surface p-1">
               <IconButton variant="ghost" size="sm" aria-label="Earlier time" onClick={() => moveSelection(-1)}>
                 <ChevronLeft className="h-4 w-4" />
               </IconButton>
@@ -686,7 +720,7 @@ export function SchedulingWorkspace({
               <p className="font-fw-sans text-caption text-text-tertiary">
                 {showEveryone ? 'Showing everyone invited.' : 'Showing only the people this overlap affects.'}
               </p>
-              <Button variant="ghost" size="sm" aria-pressed={showEveryone} onClick={toggleShowEveryone} className={surfaces.press}>
+              <Button variant="ghost" size="sm" aria-pressed={showEveryone} onClick={toggleShowEveryone}>
                 {showEveryone
                   ? `Show affected only (${affectedParticipantIds!.length})`
                   : `Show everyone (${snapshot.participants.length})`}
@@ -695,7 +729,7 @@ export function SchedulingWorkspace({
           ) : null}
 
           {/* ── The timeline: aligned rows under one selection lens ─────────── */}
-          <div className={cn('shrink-0 overflow-hidden rounded-card', surfaces.paper)}>
+          <div className="shrink-0 overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
             <div
               ref={timelineRef}
               data-testid="scheduling-timeline"
@@ -721,7 +755,7 @@ export function SchedulingWorkspace({
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
-                    onPointerCancel={endDrag}
+                    onPointerCancel={cancelDrag}
                     ref={labelRef}
                     className={cn(
                       '!absolute top-1.5 z-30 flex h-9 w-max min-w-[88px] -translate-x-1/2 cursor-grab touch-none select-none items-center justify-center gap-1 rounded-full px-3.5 font-fw-sans text-body-sm font-semibold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-border-focus active:cursor-grabbing',
@@ -743,10 +777,7 @@ export function SchedulingWorkspace({
                   const selected = slot.start >= selectedStart && slot.start < selectedEnd;
                   const isHour = slot.minuteOfDay % 60 === 0;
                   return (
-                    <Button
-                      variant="ghost"
-                      size="md"
-                      type="button"
+                    <PressTarget
                       key={slot.start}
                       aria-label={`Choose ${formatTime(slot.start, snapshot.timeZone)} start`}
                       aria-pressed={selected}
@@ -756,56 +787,47 @@ export function SchedulingWorkspace({
                         setStart(slot.start);
                       }}
                       className={cn(
-                        'relative h-8 min-h-0 w-full !rounded-none !border-0 border-b border-border-subtle px-0 font-fw-mono text-caption text-text-tertiary transition-colors hover:bg-surface-tint focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+                        'relative h-8 w-full border-b border-border-subtle px-0 font-fw-mono text-caption text-text-tertiary hover:bg-surface-sunken focus-visible:z-30 focus-visible:ring-inset focus-visible:ring-offset-0',
                         isHour && 'border-l border-l-border-subtle',
                         selected && 'text-accent-700',
                       )}
                     >
                       {isHour ? <span className="absolute left-1.5 top-1/2 -translate-y-1/2 whitespace-nowrap">{formatTime(slot.start, snapshot.timeZone).replace(':00', '')}</span> : null}
-                    </Button>
+                    </PressTarget>
                   );
                 })}
 
                 {/* Rows 3+: one person per row. */}
                 {orderedParticipants.map((participant, rowIndex) => (
                   <React.Fragment key={participant.id}>
-                    <Button
-                      variant="ghost"
-                      size="md"
-                      type="button"
+                    <PressTarget
                       style={{ gridColumn: 1, gridRow: rowIndex + 3 }}
                       onClick={(event) => {
                         event.stopPropagation();
                         onPersonClick?.(participant.id);
                       }}
-                      className={cn(
-                        'sticky left-0 z-20 flex h-auto min-h-[60px] w-full !justify-start !rounded-none !border-0 border-b border-r border-border-subtle bg-surface px-2.5 text-left hover:bg-surface-tint focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus md:min-h-[64px]',
-                        surfaces.buttonRow,
-                      )}
+                      className="sticky left-0 z-20 flex min-h-[60px] w-full items-center gap-2 border-b border-r border-border-subtle bg-surface px-2.5 text-left hover:bg-surface-sunken focus-visible:z-30 focus-visible:ring-inset focus-visible:ring-offset-0 md:min-h-[64px]"
                       aria-label={`Open ${participantLabel(participant)} schedule`}
                     >
-                      <span className="flex w-full min-w-0 items-center gap-2">
-                        <Avatar
-                          src={participant.avatarUrl ?? undefined}
-                          name={participant.avatarUrl ? participantLabel(participant) : null}
-                          alt={participantLabel(participant)}
-                          fallback={<UserRound className="h-4 w-4" />}
-                          size="sm"
-                        />
-                        <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">{participantLabel(participant)}</span>
-                      </span>
-                    </Button>
+                      <Avatar
+                        src={participant.avatarUrl ?? undefined}
+                        name={participant.avatarUrl ? participantLabel(participant) : null}
+                        alt={participantLabel(participant)}
+                        fallback={<UserRound className="h-4 w-4" />}
+                        size="sm"
+                      />
+                      <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">{participantLabel(participant)}</span>
+                    </PressTarget>
                     <div
                       className={cn('relative min-h-[60px] border-b border-border-subtle md:min-h-[64px]', surfaces.laneGrid)}
                       style={{ gridColumn: `2 / span ${slots.length}`, gridRow: rowIndex + 3, ['--cal-slot' as string]: hourPercent }}
+                      data-testid="scheduling-lane"
                       // Pointer-only convenience: tapping empty lane space
                       // centres the window there. The keyboard/AT path is the
                       // slider handle above; this adds no second control.
-                      onPointerUp={(event) => {
-                        if (event.pointerType === 'mouse' && event.button !== 0) return;
-                        if (dragging) return;
-                        placeAtPointer(event.clientX);
-                      }}
+                      onPointerDown={handleLanePointerDown}
+                      onPointerUp={handleLanePointerUp}
+                      onPointerCancel={handleLanePointerCancel}
                     >
                       {participant.verification !== 'complete' ? (
                         <div className={cn('absolute inset-2 flex items-center rounded-fw-sm px-3 font-fw-sans text-caption', surfaces.hatch)}>Not verified</div>
@@ -865,7 +887,7 @@ export function SchedulingWorkspace({
                       onPointerDown={handleBandPointerDown}
                       onPointerMove={handlePointerMove}
                       onPointerUp={handlePointerUp}
-                      onPointerCancel={endDrag}
+                      onPointerCancel={cancelDrag}
                       className={cn(
                         'pointer-events-auto absolute inset-y-0 cursor-grab touch-none select-none rounded-sm active:cursor-grabbing',
                         surfaces.lens,
@@ -894,32 +916,8 @@ export function SchedulingWorkspace({
               {referenceInterval ? (
                 <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.reference)} aria-hidden="true" /> {referenceInterval.label ?? 'Current'}</span>
               ) : null}
+              <span className="basis-full text-text-tertiary sm:ml-auto sm:basis-auto">{checkedLine}</span>
             </div>
-          </div>
-
-          {/* Status: verified-green only from a complete result. */}
-          <div role="status" className="flex shrink-0 items-start gap-3">
-            {evaluation.allAvailable ? (
-              <>
-                <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full', surfaces.check)}>
-                  <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-fw-display text-body-lg font-semibold leading-tight text-text-primary">Everyone is available</p>
-                  <p className="mt-0.5 font-fw-sans text-caption text-text-secondary">{checkedLine}</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full', evaluation.unknown ? 'bg-fw-warning-bg text-fw-warning-ink' : 'bg-fw-danger-bg text-fw-danger-ink')}>
-                  <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-fw-display text-body-lg font-semibold leading-tight text-text-primary">{availableSummary}</p>
-                  <p className="mt-0.5 font-fw-sans text-caption text-text-secondary">{checkedLine}</p>
-                </div>
-              </>
-            )}
           </div>
         </div>
 
@@ -932,27 +930,20 @@ export function SchedulingWorkspace({
           {suggestionCards.length > 0 ? (
             <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:flex lg:flex-col">
               {suggestionCards.map(({ slot, evaluation: candidate, current }) => (
-                <Button
-                  variant="ghost"
-                  size="md"
-                  type="button"
+                <PressTarget
                   key={slot.start}
                   aria-pressed={current}
                   onClick={() => { if (!current) setStart(slot.start); }}
                   className={cn(
-                    'group flex h-auto min-h-[64px] w-full !justify-start !rounded-card items-center gap-3 px-4 py-3 text-left font-normal hover:bg-surface',
-                    surfaces.buttonRow,
-                    surfaces.paper,
-                    surfaces.press,
-                    surfaces.rise,
-                    current && 'bg-accent-50/60 ring-1 ring-accent-300',
+                    'group flex min-h-[64px] w-full items-center gap-3 rounded-fw-md border border-border-subtle bg-surface px-4 py-3 text-left [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken',
+                    current && 'border-accent-650 ring-1 ring-inset ring-accent-650',
                   )}
                 >
                   <span
                     aria-hidden="true"
                     className={cn(
                       'grid h-8 w-8 shrink-0 place-items-center rounded-full',
-                      current ? surfaces.check : 'border-2 border-border-strong bg-surface',
+                      current ? 'bg-accent-650 text-text-on-accent' : 'border-2 border-border-strong bg-surface',
                     )}
                   >
                     {current ? <Check className="h-4 w-4" strokeWidth={2.5} /> : null}
@@ -962,7 +953,7 @@ export function SchedulingWorkspace({
                     <span className="mt-0.5 block font-fw-sans text-caption text-text-secondary">{candidate.requiredFree} of {candidate.requiredTotal} available{candidate.unknown ? ` · ${candidate.unknown} unverified` : ''}</span>
                   </span>
                   <ChevronRight className="h-5 w-5 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
-                </Button>
+                </PressTarget>
               ))}
             </div>
           ) : (
@@ -974,25 +965,27 @@ export function SchedulingWorkspace({
         </aside>
       </div>
 
-      <footer className={cn('sticky bottom-0 z-30 shrink-0 rounded-t-[28px] border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-3 sm:rounded-none sm:px-6 sm:pb-4', surfaces.dock)}>
-        <div className="mx-auto flex max-w-5xl flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <p className="truncate text-center font-fw-sans text-caption text-text-secondary sm:text-left">
-            Selected · <span className="font-medium text-text-primary">{dateLabel} · {lensText}</span>
-          </p>
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            busy={loading}
-            disabled={!canChoose || loading || disablePrimaryAction}
-            onClick={() => onChoose({ start: selectedStart, end: selectedEnd })}
-            rightIcon={<ArrowRight className="h-5 w-5" aria-hidden="true" />}
-            className={cn('sm:w-auto sm:min-w-[240px]', surfaces.glow)}
-          >
-            {primaryActionLabel}
-          </Button>
-        </div>
-      </footer>
+      {/* The frame reserves the board's space below the scrolling body, so the
+          board floats over nothing it could hide. */}
+      <div className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-2 sm:px-5 sm:pb-4">
+        <SchedulingTaskBoard
+          className="mx-auto max-w-5xl"
+          dateLabel={dateLabel}
+          windowLabel={lensText}
+          acceptance={acceptance}
+          summary={availableSummary}
+          busyNames={busyNames}
+          unverifiedNames={unverifiedNames}
+          error={error}
+          onRetry={onRetry}
+          nextOpen={suggestions[0] ? { start: suggestions[0].slot.start, label: formatWindowShort(suggestions[0].slot.start, addMinutes(suggestions[0].slot.start, duration), snapshot.timeZone) } : null}
+          onJumpTo={setStart}
+          primaryActionLabel={primaryActionLabel}
+          onConfirm={() => onChoose({ start: selectedStart, end: selectedEnd })}
+          loading={loading}
+          disablePrimaryAction={disablePrimaryAction}
+        />
+      </div>
     </section>
   );
 }

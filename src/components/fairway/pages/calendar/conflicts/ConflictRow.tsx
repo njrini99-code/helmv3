@@ -19,10 +19,9 @@
  * schedule could not be read this pass — never folded into "checked".
  * ========================================================================== */
 
-import * as React from 'react';
 import { AlertTriangle, ChevronRight, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar, Button } from '@/components/fairway';
+import { Avatar, PressTarget } from '@/components/fairway';
 import type { ConflictGroup } from '@/app/golf/actions/conflict-inbox';
 import surfaces from '../CalendarSurfaces.module.css';
 import { enterStyle } from '../motion';
@@ -93,35 +92,26 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect, enter
   ].filter(Boolean).join(' · ');
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
+    <PressTarget
       onClick={onSelect}
       aria-pressed={selected}
       aria-label={conflictRowLabel(group, timeZone)}
       className={cn(
-        'flex h-auto w-full min-h-[64px] items-center justify-start gap-3 rounded-fw-lg py-3 pl-4 pr-3 text-left font-normal',
-        surfaces.buttonRow,
-        'hover:bg-transparent hover:text-text-primary',
-        surfaces.row,
-        surfaces.press,
-        surfaces.rise,
+        // One distinct row: a bordered Surface with the shared press response.
+        // Identity comes from the title, the amber icon and the summary — no
+        // colored edge, no wash.
+        'flex min-h-[64px] w-full items-center gap-3 rounded-fw-lg border border-border-subtle bg-surface py-3 pl-4 pr-3 text-left [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken',
         enterIndex !== undefined && surfaces.enter,
-        selected && 'ring-2 ring-accent-600',
+        selected && 'border-accent-650 ring-1 ring-inset ring-accent-650',
       )}
-      style={{
-        ...enterStyle(enterIndex),
-        '--row-tint': 'var(--fw-color-warning)',
-        '--row-tint-bg': 'var(--fw-color-warning-bg)',
-      } as React.CSSProperties}
+      style={enterStyle(enterIndex)}
     >
       <span
         aria-hidden="true"
         className={cn(
           'grid h-8 w-8 shrink-0 place-items-center rounded-full',
-          hasUnverified ? surfaces.hatch : surfaces.rowIcon,
+          hasUnverified ? surfaces.hatch : 'bg-fw-warning-bg text-fw-warning-ink',
         )}
-        style={hasUnverified ? undefined : ({ '--row-tint': 'var(--fw-color-warning-ink)' } as React.CSSProperties)}
       >
         <AlertTriangle className="h-4 w-4" aria-hidden="true" />
       </span>
@@ -164,7 +154,7 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect, enter
       ) : null}
 
       <ChevronRight className="h-5 w-5 shrink-0 text-text-tertiary" aria-hidden="true" />
-    </Button>
+    </PressTarget>
   );
 }
 

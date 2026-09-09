@@ -150,7 +150,31 @@ choice immediately before returning it to the event editor, so a stale visual
 snapshot cannot be used as a confirmation.
 
 The workspace is read-only. Creating or editing an event remains in the
-existing event actions and reuses `checkScheduleConflicts`. A valid
+existing event actions and reuses `checkScheduleConflicts`.
+
+Acceptance rule (2026-09-09): `acceptProposal(evaluation)` in
+`src/lib/calendar/scheduling/evaluate.ts` is the ONE rule for whether a
+proposed time may be chosen — every schedule verified and every REQUIRED
+person free; optional participants may be busy. `SchedulingWorkspace` uses it
+for the task board and the confirm action, and `CalendarSchedulingDialog`
+uses it for the final recheck, so an enabled action is never rejected by the
+same unchanged selection. `allAvailable` (nobody has an overlap) remains the
+stricter signal for wording and for `suggestScheduleTimes`.
+
+Workspace composition: the contextual action lives in `SchedulingTaskBoard`
+(Fairway `Elevated`, one floating object) whose content follows the task —
+accepted / required person busy (names + "Next open time") / unverified
+(names + Retry) / fetch or recheck failure ("Could not verify schedules",
+Retry, confirm disabled). The frame reserves the board's space below the
+scrolling body. `CalendarSchedulingDialog` opens `ModalShell` with
+`presentation="workspace"` (phone: edge-to-edge full height, keyboard-aware;
+`sm`+: a wide stage) instead of per-dialog `!important` geometry.
+
+Gesture contract: releasing a drag commits the RELEASE position (a pending
+animation frame is cancelled and its coordinate flushed, never dropped); a
+lane tap places the window only when the pointer stayed within 8px between
+down and up, so horizontal pans and page scrolls never move the selection.
+Dragging proposes; nothing is saved until the confirm action. A valid
 `golf_coach_blocked_time.recurrence_rule` is authoritative; writes keep its
 legacy `is_recurring` flag in sync for older consumers.
 
@@ -257,33 +281,46 @@ selected date stays visible after selection and resize. Phone hero padding and d
 compact, with a matching route skeleton. The schedule card uses the same touch-sized day rail and
 keeps its date separate from the return-to-today action.
 
-## Calendar material contract (2026-09-09 makeover)
+## Calendar composition contract (2026-09-09, redirected)
 
-- `src/components/fairway/pages/calendar/CalendarSurfaces.module.css` is the one
-  material vocabulary for every calendar surface: `.scope` declares the
-  calendar-only colours (busy periwinkle, class, team, lens, overlap, ground
-  wash, chrome tint) once with dark overrides; `.ground` paints the page wash
-  the glass refracts; `.chrome`, `.dock`, `.float` are the frosted champagne
-  glass (token blur, `--fw-blur-mobile` at ≤768px); `.paper`, `.well`,
-  `.row` are matte content planes; `.selected`, `.glow`, `.check`, `.lens`
-  are the emerald focused plane. Reduced motion switches off every
-  animated/transitioned class and reduced transparency makes chrome and docks
-  opaque — `__tests__/CalendarSurfaces.reducedMotion.test.ts` enforces both.
-- The calendar hero (`FairwayCalendarHero`) is sticky glass chrome: it sits at
-  `--golf-mobile-header-offset` plus `--fw-hub-subnav-offset` (AppShell
-  publishes the second one as `2.5rem` when a hub sub-nav is part of its
-  sticky unit, else `0px`) so agenda rows, the member rail and the grids
-  scroll under it. It owns the view `Segmented` control, prev/today/next, the
-  ONE primary action, and the secondary actions (Find a time, Conflicts, My
-  availability, Add to phone) as ghost pills at md+ or a More menu on phone.
-- Agenda rows are time-gutter + ivory `.row` cards with a type-tinted icon
-  disc. Cards carry NO colored left edge/rule (owner ban, 2026-09-09): the
-  type reads from the `.rowIcon` disc and the card is distinguished by
-  material (specular rim, hairline, layered grounded shadow). `.pending`
-  is an amber wash + ring for the same reason. The "Show N earlier events"
-  control is a `.chipFloat` sand chip (no hairline, grounded shadow). The
-  conflict count on the home is a real inbox count (`null` while unknown,
-  never a fabricated zero).
-- Phone home: the month title is a toggle between agenda and the compact
-  month grid (chevron rotates, week strip hides in month mode); the member
-  rail leads with a Team chip and ends with Compare (dashed `UserPlus`).
+- Compose with Fairway primitives, not a calendar-local material system.
+  Rows that carry several children (event rows, people rows, conflict rows,
+  busy-time rows, document rows, the attendance disclosure, the scheduling
+  name column and suggestion cards) are `PressTarget` with their own layout;
+  `Button` is only for labeled actions and is never reached into (no
+  `[&>span]`, no `.buttonRow`). A distinct row = a bordered `bg-surface`
+  Surface with `--fw-shadow-card`, `hover:bg-surface-sunken`, and a
+  selected state of `border-accent-650` + inset ring. Colored left edges on
+  cards remain banned (owner, 2026-09-09).
+- `CalendarSurfaces.module.css` keeps only functional calendar vocabulary:
+  `.scope` colours, lane/day grid hairlines, busy/class/team/personal blocks,
+  `.hatch` (unverified), `.reference`, the selection lens and its
+  follow/settle/dragging motion, `.enter` stagger, and the reduced-motion /
+  reduced-transparency blocks. Removed: `.ground`, `.chipFloat`,
+  `.avatarChip`, `.teamChip`, `.buttonRow`. Still present for remaining
+  consumers and slated for removal as they migrate: `.panel`, `.paper`,
+  `.chrome`, `.dock`, `.float`, `.row`, `.rowIcon`, `.glow`, `.press`,
+  `.rise`, `.check`.
+- Hero (`FairwayCalendarHero`): shared `fw-glass-chrome` material, sticky at
+  `--golf-mobile-header-offset` + `--fw-hub-subnav-offset`. Row 1 = title
+  (`MMMM yyyy`, or `EEEE, MMMM d` in Day) · Today (only when away) · More
+  (below xl) · the coach's ONE primary action. Row 2 = the explicit view
+  `Segmented` (opt-in `quiet` presentation, added to the shared control) ·
+  prev/next. Row 3 = the week strip in Day view only. Secondary actions are
+  ghost pills at xl+, a More menu below. No header counters.
+- People entry (`FairwayCalendarMemberRail`): AvatarGroup + "Team schedule"
+  / "Comparing N" summary; a People menu (Everyone / open a schedule) and
+  the existing `CalendarPeoplePicker` behind "Compare". Three distinct
+  actions — team schedule, open a person, include in a comparison — never
+  one avatar meaning all three. Wraps to two lines below md.
+- Agenda: a day heading and ONE grouped Surface of rows divided by
+  hairlines; "Show N earlier events" is a ghost action with the real count.
+  Phone Month view is `CalendarSurface` (DayPicker, event-day dots from
+  `eventDaySpan`) with the selected day's events beneath; a day tap never
+  switches view. Desktop month keeps a single day target per cell. The week
+  strip marks every day a multi-day event runs (same `eventDaySpan`).
+- Player: "Needs your reply → Respond" is a contextual row next to the
+  schedule, not a header CTA.
+- Not yet done (Phase C): month title as a date-jump, month-scoped agenda
+  period, availability failure ≠ empty, detail-drawer / person dialog /
+  editor propagation, desktop context rail, event-to-detail continuity.

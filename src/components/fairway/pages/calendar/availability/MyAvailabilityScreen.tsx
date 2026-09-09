@@ -32,6 +32,7 @@ import { ArrowLeft, CalendarClock, Plus, Repeat, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Button,
+  PressTarget,
   Segmented,
   Skeleton,
   EmptyState,
@@ -178,7 +179,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
             description="Add personal blocks so schedule comparisons account for your time honestly."
             action={
               !online ? undefined : (
-                <Button variant="primary" size="sm" onClick={() => setSelection({ kind: 'new' })} className={surfaces.glow}>
+                <Button variant="primary" size="sm" onClick={() => setSelection({ kind: 'new' })}>
                   Add busy time
                 </Button>
               )
@@ -200,23 +201,15 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
                 const rowPending = pendingIds.has(block.id);
                 return (
                   <li key={block.id} className={cn(index < 8 && surfaces.enter)} style={index < 8 ? { animationDelay: `${index * 30}ms` } : undefined}>
-                    <Button
-                      type="button"
-                      variant="ghost"
+                    <PressTarget
                       onClick={() => setSelection({ kind: 'edit', id: block.id })}
                       disabled={rowPending}
                       className={cn(
-                        'flex h-auto w-full min-h-12 items-center justify-start gap-3 rounded-fw-md py-2.5 pl-4 pr-3 text-left font-normal',
-                        surfaces.buttonRow,
-                        surfaces.row,
-                        surfaces.press,
-                        surfaces.rise,
-                        'hover:bg-transparent hover:text-text-primary disabled:opacity-60',
-                        selection.kind === 'edit' && selection.id === block.id && 'ring-2 ring-accent-600',
+                        'flex min-h-12 w-full items-center gap-3 rounded-fw-md border border-border-subtle bg-surface py-2.5 pl-4 pr-3 text-left [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken',
+                        selection.kind === 'edit' && selection.id === block.id && 'border-accent-650 ring-1 ring-inset ring-accent-650',
                       )}
-                      style={{ '--row-tint': 'var(--cal-personal-edge)', '--row-tint-bg': 'var(--cal-personal-bg)' } as React.CSSProperties}
                     >
-                      <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', surfaces.rowIcon)}>
+                      <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken text-text-secondary">
                         {rule ? <Repeat className="h-4 w-4" aria-hidden /> : <CalendarClock className="h-4 w-4" aria-hidden />}
                       </span>
                       <span className="min-w-0 flex-1">
@@ -232,7 +225,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
                           {rule ? ` · ${describeRecurrenceRule(rule)}` : ''}
                         </span>
                       </span>
-                    </Button>
+                    </PressTarget>
                   </li>
                 );
               })}

@@ -32,3 +32,27 @@ export function suggestScheduleTimes(snapshot: ScheduleSnapshot, durationMinutes
   }
   return result;
 }
+
+export type ScheduleAcceptance =
+  | { ok: true; reason: 'accepted' }
+  | { ok: false; reason: 'nobody' | 'unverified' | 'required_busy' };
+
+/**
+ * The ONE acceptance rule for a proposed time. The workspace's status line,
+ * its confirm action and the dialog's final recheck all call this, so an
+ * enabled action can never be rejected by the same, unchanged selection.
+ *
+ * Rule: every schedule verified, every REQUIRED person free. Optional
+ * participants may be busy (the contract supports them; `allAvailable`
+ * stays the stricter "nobody has an overlap" signal used for wording and
+ * for suggestions). An invalid or out-of-window proposal counts every
+ * person as unknown in `evaluateSchedule`, so it lands on `unverified`.
+ */
+export type ScheduleAcceptanceInput = Pick<ScheduleEvaluation, 'requiredFree' | 'requiredTotal' | 'optionalTotal' | 'unknown'>;
+
+export function acceptProposal(evaluation: ScheduleAcceptanceInput): ScheduleAcceptance {
+  if (evaluation.requiredTotal + evaluation.optionalTotal === 0) return { ok: false, reason: 'nobody' };
+  if (evaluation.unknown > 0) return { ok: false, reason: 'unverified' };
+  if (evaluation.requiredFree < evaluation.requiredTotal) return { ok: false, reason: 'required_busy' };
+  return { ok: true, reason: 'accepted' };
+}

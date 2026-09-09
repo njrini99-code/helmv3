@@ -35,7 +35,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, Inset, Readout, Button, StatusPill } from '@/components/fairway';
+import { Sheet, Inset, Readout, Button, PressTarget, StatusPill } from '@/components/fairway';
 import type { FwStatusTone, SheetSide } from '@/components/fairway';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -584,26 +584,28 @@ export function FairwayEventDetailDrawer({
               recorded status only (S5 branches on the server's
               `viewerIsCoach`/`viewerPlayerId`, never on this button). */}
           {event.team_id ? (
-            <Button
-              variant={attendanceProminent ? 'primary' : 'ghost'}
-              size="md"
-              fullWidth
-              onClick={() => setAttendanceOpen(true)}
-              className={cn(
-                'h-auto min-h-[60px] justify-start gap-3 rounded-card px-4 py-3 text-left font-fw-sans text-body-sm font-semibold',
-                surfaces.buttonRow,
-                !attendanceProminent && cn('text-text-primary hover:bg-transparent hover:text-text-primary', surfaces.row, surfaces.press, surfaces.rise),
-              )}
-              style={{ '--row-tint': 'var(--fw-color-accent-600)' } as React.CSSProperties}
-            >
-              {attendanceProminent ? (
-                <ClipboardCheck className="h-4 w-4" aria-hidden />
-              ) : (
-                rowIcon(ClipboardCheck)
-              )}
-              <span className="min-w-0 flex-1">{isCoach ? 'Record attendance' : 'View my attendance'}</span>
-              {!attendanceProminent ? <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden /> : null}
-            </Button>
+            attendanceProminent ? (
+              // A labeled action: the shared Button, nothing reaching into it.
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                leftIcon={<ClipboardCheck className="h-4 w-4" aria-hidden />}
+                onClick={() => setAttendanceOpen(true)}
+              >
+                {isCoach ? 'Record attendance' : 'View my attendance'}
+              </Button>
+            ) : (
+              // A quiet disclosure row: the unstyled pressable with its own layout.
+              <PressTarget
+                onClick={() => setAttendanceOpen(true)}
+                className="flex min-h-[60px] w-full items-center gap-3 rounded-card border border-border-subtle bg-surface px-4 py-3 text-left font-fw-sans text-body-sm font-semibold text-text-primary [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken"
+              >
+                {rowIcon(ClipboardCheck)}
+                <span className="min-w-0 flex-1">{isCoach ? 'Record attendance' : 'View my attendance'}</span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+              </PressTarget>
+            )
           ) : null}
           </div>
 

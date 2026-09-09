@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ScheduleSnapshot } from '@/lib/calendar/scheduling-contracts';
 import { SchedulingWorkspace } from '../SchedulingWorkspace';
 
@@ -111,7 +111,8 @@ describe('SchedulingWorkspace', () => {
       />,
     );
 
-    expect(screen.getByText('2 of 3 available · 1 unverified')).toBeVisible();
+    // The board names who could not be checked, not just how many.
+    expect(screen.getByText('2 of 3 available · 1 unverified · not verified: Unverified Player')).toBeVisible();
     expect(screen.getAllByText('Not verified').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Use this time' })).toBeDisabled();
     expect(onChoose).not.toHaveBeenCalled();
@@ -234,6 +235,136 @@ describe('SchedulingWorkspace', () => {
     expect(timeline).not.toHaveAttribute('data-dragging');
     expect(handle).toHaveAttribute('aria-valuetext', '1:30 PM–2:30 PM');
     restorePointerCapture();
+  });
+
+  it('commits the release position even when the last move\'s frame has not run yet', () => {
+    // A move queues a frame; a release before that frame runs used to cancel
+    // it and keep the PREVIOUS frame\'s slot. The release position must win.
+    const restorePointerCapture = stubPointerCapture();
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    const timeline = screen.getByTestId('scheduling-timeline');
+    timeline.getBoundingClientRect = () => ({
+      left: 0, top: 0, right: 1056, bottom: 0, width: 1056, height: 0, x: 0, y: 0, toJSON() {},
+    });
+    Object.defineProperty(timeline, 'scrollWidth', { value: 1056, configurable: true });
+    Object.defineProperty(timeline, 'clientWidth', { value: 1056, configurable: true });
+    Object.defineProperty(timeline, 'scrollLeft', { value: 0, configurable: true, writable: true });
+    const nameHeader = timeline.querySelector('[aria-hidden="true"]') as HTMLElement;
+    Object.defineProperty(nameHeader, 'offsetWidth', { value: 96, configurable: true });
+
+    const handle = screen.getByRole('slider', { name: 'Move selected time window' });
+    const band = screen.getByTestId('scheduling-lens');
+    fireEvent.pointerDown(band, { clientX: 246, pointerId: 1, pointerType: 'touch' });
+    fireEvent.pointerMove(band, { clientX: 306, pointerId: 1, pointerType: 'touch' });
+    // Release one more slot along, synchronously — before any frame fires.
+    fireEvent.pointerUp(band, { clientX: 336, pointerId: 1, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '1:45 PM–2:45 PM');
+    expect(band.style.getPropertyValue('--lens-free')).toBe('');
+    expect(timeline).not.toHaveAttribute('data-dragging');
+    restorePointerCapture();
+  });
+
+  it('places the window on a lane tap, but not after a pan', () => {
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    const timeline = screen.getByTestId('scheduling-timeline');
+    timeline.getBoundingClientRect = () => ({
+      left: 0, top: 0, right: 1056, bottom: 0, width: 1056, height: 0, x: 0, y: 0, toJSON() {},
+    });
+    Object.defineProperty(timeline, 'scrollWidth', { value: 1056, configurable: true });
+    Object.defineProperty(timeline, 'clientWidth', { value: 1056, configurable: true });
+    Object.defineProperty(timeline, 'scrollLeft', { value: 0, configurable: true, writable: true });
+    const nameHeader = timeline.querySelector('[aria-hidden="true"]') as HTMLElement;
+    Object.defineProperty(nameHeader, 'offsetWidth', { value: 96, configurable: true });
+
+    const handle = screen.getByRole('slider', { name: 'Move selected time window' });
+    const lane = screen.getAllByTestId('scheduling-lane')[0]!;
+
+    // A finger that stays put: the 60-minute window centres under it.
+    // clientX 500 → 404px on the track, minus half the 120px band = 344px →
+    // slot 11 of 32 → 2:45 PM.
+    fireEvent.pointerDown(lane, { clientX: 500, clientY: 10, pointerId: 2, pointerType: 'touch' });
+    fireEvent.pointerUp(lane, { clientX: 500, clientY: 10, pointerId: 2, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '2:45 PM–3:45 PM');
+
+    // A sideways pan (scrolling the schedule) ends in pointerup too — it must
+    // not move the selection.
+    fireEvent.pointerDown(lane, { clientX: 300, clientY: 10, pointerId: 3, pointerType: 'touch' });
+    fireEvent.pointerUp(lane, { clientX: 360, clientY: 10, pointerId: 3, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '2:45 PM–3:45 PM');
+
+    // So must a vertical page scroll that started on a lane.
+    fireEvent.pointerDown(lane, { clientX: 300, clientY: 10, pointerId: 4, pointerType: 'touch' });
+    fireEvent.pointerUp(lane, { clientX: 302, clientY: 80, pointerId: 4, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '2:45 PM–3:45 PM');
+  });
+
+  it('lets a coach choose a time where only an OPTIONAL participant is busy, with the board saying so', () => {
+    const onChoose = vi.fn();
+    const snapshot: ScheduleSnapshot = {
+      ...SNAPSHOT,
+      participants: [
+        ...SNAPSHOT.participants,
+        {
+          id: 'optional-1',
+          kind: 'player',
+          name: 'Sam Optional',
+          avatarUrl: null,
+          isViewer: false,
+          required: false,
+          verification: 'complete',
+          intervals: [{ id: 'busy-o', start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z', type: 'event', title: 'Class' }],
+        },
+      ],
+    };
+    render(
+      <SchedulingWorkspace
+        snapshot={snapshot}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={onChoose}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    // Not "everyone" — but every required person is free and verified.
+    expect(screen.queryByText('Everyone is available')).not.toBeInTheDocument();
+    expect(within(screen.getByTestId('scheduling-task-board')).getByText('2 of 2 available')).toBeVisible();
+    const confirm = screen.getByRole('button', { name: 'Use this time' });
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onChoose).toHaveBeenCalledWith({ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' });
+  });
+
+  it('names who is busy and offers the next open time when a required person has a conflict', () => {
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T12:00:00.000Z', end: '2026-09-08T13:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('1 of 2 available · busy: You')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Use this time' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /^Next open time/ }));
+    expect(screen.getByRole('slider', { name: 'Move selected time window' })).toHaveAttribute('aria-valuetext', '1:00 PM–2:00 PM');
+    expect(screen.getByRole('button', { name: 'Use this time' })).toBeEnabled();
   });
 
   it('draws a static "Current" reference band distinct from the movable selected band, and hides the date field when asked', () => {

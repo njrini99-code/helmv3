@@ -9,7 +9,7 @@ import surfaces from './CalendarSurfaces.module.css';
 import { SchedulingWorkspace } from './scheduling/SchedulingWorkspace';
 import { useScheduleWindow } from '@/hooks/golf/use-schedule-window';
 import { getScheduleWindow } from '@/app/golf/actions/scheduling';
-import { evaluateSchedule } from '@/lib/calendar/scheduling/evaluate';
+import { acceptProposal, evaluateSchedule } from '@/lib/calendar/scheduling/evaluate';
 import type { ScheduleWindowRequest, ScheduleProposal } from '@/lib/calendar/scheduling-contracts';
 
 export function CalendarSchedulingDialog({ request, initialProposal, onChange, onChoose, onClose, onOpenPerson }: {
@@ -37,9 +37,17 @@ export function CalendarSchedulingDialog({ request, initialProposal, onChange, o
       const result = await getScheduleWindow(selectedRequest);
       if (currentGeneration !== generation.current || requestRef.current !== selectedRequest) return;
       if (!result.success) { setVerificationError(result.error); return; }
-      const evaluation = evaluateSchedule(result.data, proposal);
-      if (!evaluation.allAvailable) {
-        setVerificationError(evaluation.unknown ? 'Some schedules could not be verified. Refresh before choosing this time.' : 'Availability changed. Review the updated overlaps before choosing a time.');
+      // The SAME acceptance rule the workspace used to enable the action —
+      // never a stricter private predicate that rejects an unchanged selection.
+      const acceptance = acceptProposal(evaluateSchedule(result.data, proposal));
+      if (!acceptance.ok) {
+        setVerificationError(
+          acceptance.reason === 'unverified'
+            ? 'Some schedules could not be verified. Refresh before choosing this time.'
+            : acceptance.reason === 'nobody'
+              ? 'No one is left to check for this time.'
+              : 'Availability changed. Review the updated overlaps before choosing a time.',
+        );
         retry(); return;
       }
       onChoose(proposal);
@@ -47,15 +55,12 @@ export function CalendarSchedulingDialog({ request, initialProposal, onChange, o
     finally { if (currentGeneration === generation.current) setChecking(false); }
   };
   return (
-    <ModalShell open={Boolean(request)} onOpenChange={(open) => { if (!open) onClose(); }} title="Find a time" hideTitle hideClose size="full"
-      className={cn(
-        // Phone: the workspace IS the screen — full height, square corners, no
-        // gutter. Tablet and up: a wide comparison canvas.
-        'max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-full max-sm:!max-w-none max-sm:!rounded-none',
-        'sm:!w-[calc(100vw-1rem)] sm:!max-w-[1200px] sm:h-[min(88dvh,900px)]',
-        surfaces.scope,
-        surfaces.panel,
-      )}>
+    <ModalShell open={Boolean(request)} onOpenChange={(open) => { if (!open) onClose(); }} title="Find a time" hideTitle hideClose
+      // The shell owns the workspace geometry (phone: the whole screen;
+      // tablet and up: a wide stage) including safe areas and the keyboard —
+      // no per-dialog !important overrides.
+      presentation="workspace"
+      className={cn(surfaces.scope, surfaces.panel)}>
       {snapshot ? (
         <SchedulingWorkspace snapshot={snapshot} initialProposal={initialProposal} loading={loading || checking}
           error={verificationError || error} onRetry={retry} onClose={onClose} onChoose={(proposal) => { void choose(proposal); }}
