@@ -1,18 +1,15 @@
 import Link from 'next/link';
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchSloDashboard } from '@/lib/admin/slo/fetch';
 import type { FeatureErrorBudget } from '@/lib/reliability/error-budget';
 import type { JourneyHealth } from '@/lib/admin/slo/golden-path-health';
 import type { FeatureSilence } from '@/lib/admin/slo/silence-detection';
 import type { WorkflowFunnel } from '@/lib/admin/slo/trace-funnels';
-import { Surface, StatusPill, Badge, InlineNotice, Eyebrow, type FwStatusTone } from '@/components/fairway';
-import { PanelBoundary } from '../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../_components/PanelSkeletons';
-import { PanelNoData } from '../_components/PanelStates';
-import { AutoRefresh } from '../_components/AutoRefresh';
-import { LocalTime } from '../_components/LocalTime';
-
-export const dynamic = 'force-dynamic';
+import { Surface, StatusPill, Badge, InlineNotice, type FwStatusTone } from '@/components/fairway';
+import { PanelBoundary } from '../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
+import { PanelNoData } from '../../_components/PanelStates';
+import { AutoRefresh } from '../../_components/AutoRefresh';
+import { LocalTime } from '../../_components/LocalTime';
 
 /**
  * Helm Bridge — SLO / Error Budget Center (Bridge Control Plane Phase D).
@@ -26,8 +23,18 @@ export const dynamic = 'force-dynamic';
  * comment. A source failing degrades ONLY its own section; the others keep
  * rendering.
  *
- * Executable invariants render on `/admin/health`'s Invariant Lattice
- * (Bridge Premium Phase 3), not duplicated here — this page links to it.
+ * WAS `/admin/slo`, its own Triage tab. Every one of the four reads is a
+ * read of FEATURE HEALTH — budgets are per feature, golden paths roll up the
+ * same budgets, silence detection reads `get_feature_health()`'s own heartbeat
+ * signal — so the tab was a second place to ask a question `/admin/health`
+ * already owned. It is now `/admin/health?view=budgets`, beside the
+ * `heartbeats` view that carries the Invariant Lattice this page used to link
+ * across to.
+ *
+ * FOUR SECTIONS, KEPT AS FOUR. `budgets` is the view's URL token, not a claim
+ * that error budgets are all this shows — the rail's description names all
+ * four, because compressing four independent read models under a name that
+ * describes one is the sprawl this consolidation removes, running backwards.
  */
 
 const STATE_TONE: Record<'ok' | 'amber' | 'red' | 'unknown', FwStatusTone> = {
@@ -311,31 +318,22 @@ async function TraceFunnelsBody() {
   );
 }
 
-export default async function SloPage() {
-  await requireSuperAdmin();
-
+export async function BudgetsView() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <div>
-        <Eyebrow as="p" tone="accent">
-          SLO / Error Budget Center
-        </Eyebrow>
-        <h1 className="mt-1 text-h3 font-semibold text-warm-900 md:text-2xl">
-          Error budgets, golden-path health, silence detection, trace funnels
-        </h1>
-        <p className="mt-1 hidden max-w-2xl text-sm text-warm-500 md:block">
-          Four independent read models over the reliability collector, feature health, and the flight recorder — see{' '}
-          <Link href="/admin/health" className="underline decoration-dotted">
-            Feature Health
-          </Link>{' '}
-          for the Invariant Lattice and Heartbeat Matrix, and{' '}
-          <Link href="/admin/reliability" className="underline decoration-dotted">
-            Reliability
-          </Link>{' '}
-          for the underlying correlated signal feed.
-        </p>
-      </div>
+      <p className="hidden max-w-2xl text-sm text-warm-500 md:block">
+        Four independent read models over the reliability collector, feature health, and the flight recorder — the
+        Invariant Lattice and Heartbeat Matrix are one view over at{' '}
+        <Link href="/admin/health?view=heartbeats" className="underline decoration-dotted">
+          Heartbeats
+        </Link>
+        , and the correlated signal feed underneath all of it is{' '}
+        <Link href="/admin/errors?view=sources" className="underline decoration-dotted">
+          Incidents · Sources
+        </Link>
+        .
+      </p>
 
       <Surface padding="sm">
         <SectionLabel>Error budget</SectionLabel>

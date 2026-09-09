@@ -126,6 +126,22 @@ describe('retired Bridge routes', () => {
     expect(detail).toBeLessThan(directory);
   });
 
+  it('the Reliability redirect carries ?feature= rather than dropping it', () => {
+    // /admin/reliability?feature=<key> selected a constellation node. A single
+    // blanket rule would land on /admin/errors?view=sources with nothing
+    // selected — a redirect that appears to work and silently loses the one
+    // thing the link was carrying. Next matches in array order, so the
+    // param-carrying rule must come first.
+    const featureRule =
+      /\{\s*source:\s*'\/admin\/reliability'\s*,\s*has:\s*\[\s*\{\s*type:\s*'query'\s*,\s*key:\s*'feature'\s*\}\s*\]\s*,\s*destination:\s*'([^']+)'\s*,\s*permanent:\s*false/;
+    const match = config.match(featureRule);
+    expect(match, 'No has:[query feature] redirect for /admin/reliability').not.toBeNull();
+    expect(match![1]).toBe('/admin/errors?view=sources&feature=:feature');
+    expect(config.indexOf("has: [{ type: 'query', key: 'feature' }]")).toBeLessThan(
+      config.indexOf("{ source: '/admin/reliability', destination:"),
+    );
+  });
+
   it('the fingerprint route is never retired', () => {
     // /admin/errors/<fingerprint> is stored in rca_analysis rows and matched by
     // repair-link.ts's PR-body regex. It does not move.

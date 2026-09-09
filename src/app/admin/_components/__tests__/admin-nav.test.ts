@@ -18,10 +18,7 @@ describe('ADMIN_NAV', () => {
       '/admin/errors',
       '/admin/health',
       '/admin/jobs',
-      '/admin/reliability',
-      '/admin/slo',
       '/admin/database',
-      '/admin/self-heal',
       '/admin/traces',
       '/admin/teams',
       '/admin/users',
@@ -39,7 +36,7 @@ describe('ADMIN_NAV', () => {
       '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', '3', '0', '8', 'R', 'O', 'X', 'S', 'F', 'T', '7',
+      '1', '3', '0', '8', 'X', 'F', 'T', '7',
       '2', 'U', '5', '6', 'L', '9', 'K', '4', 'W', 'Z', 'V', 'B',
     ]);
   });

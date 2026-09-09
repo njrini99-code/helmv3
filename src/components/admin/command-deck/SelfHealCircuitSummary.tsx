@@ -51,7 +51,7 @@ function StageCard({ stage, isActive }: { stage: CircuitStage; isActive: boolean
       </dl>
       {stage.activeIncident ? (
         <Link
-          href={stage.activeIncident.href ?? '/admin/self-heal'}
+          href={stage.activeIncident.href ?? '/admin/errors?view=loop'}
           className="truncate text-caption text-accent-700 underline"
         >
           {stage.activeIncident.title}

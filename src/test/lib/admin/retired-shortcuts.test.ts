@@ -46,7 +46,13 @@ describe('retired keyboard shortcuts', () => {
 
   it('no retired key collides with a reserved local shortcut', () => {
     for (const [key] of entries) {
-      expect(RESERVED_LOCAL_SHORTCUTS.has(key.toLowerCase())).toBe(false);
+      // The KEY as written, not its lowercase form. RESERVED_LOCAL_SHORTCUTS
+      // holds plain 'r' (refresh); ADMIN_NAV's Reliability shortcut was
+      // Shift+'R', and those are deliberately different events — the uppercase
+      // convention exists precisely so a letter tab can never collide with a
+      // plain-key local action. Lowercasing here would have rejected 'R', the
+      // one shortcut most likely to be in an operator's fingers.
+      expect(RESERVED_LOCAL_SHORTCUTS.has(key)).toBe(false);
       // Uppercase (Shift+letter) form only, same convention as ADMIN_NAV.
       expect(key).toMatch(/^[A-Z0-9]$/);
     }

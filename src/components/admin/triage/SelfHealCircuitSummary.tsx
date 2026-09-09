@@ -2,7 +2,7 @@
  * Bridge Premium Phase 3 — the "full Self-Heal Circuit" summary strip.
  *
  * A compact, per-stage counts view sitting above the existing detailed
- * `SelfHealCircuit` (`src/app/admin/self-heal/_components/SelfHealCircuit.tsx`,
+ * `SelfHealCircuit` (`src/app/admin/errors/_components/loop/SelfHealCircuit.tsx`,
  * which stays as the drill-down — this is deliberately NOT a second circuit
  * diagram, see the brief's §44 "no second self-heal lifecycle"). It answers
  * the one question the existing page splits across two sections: what is
@@ -14,7 +14,7 @@
  * this PR (branch not yet pushed); this is a local, minimal implementation
  * following the page's own existing `rounded-fw-md bg-surface-sunken`
  * card idiom (see `ThroughputStep`/`LocalRunnerStage` in
- * `src/app/admin/self-heal/page.tsx`) rather than introducing a new one.
+ * `src/app/admin/errors/_components/loop/LoopView.tsx`) rather than introducing a new one.
  */
 import { formatWait } from '@/lib/admin/selfheal-flow';
 import { StatusPill, InlineNotice } from '@/components/fairway';

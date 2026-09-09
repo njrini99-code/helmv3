@@ -13,6 +13,17 @@
 > feature's correlated signals in as evidence) and `memory/features/
 > admin-selfheal.md` (the Diagnose stage this feature's snapshots feed).
 
+> **UI ownership moved 2026-09-08 (30→19 consolidation).** `/admin/reliability`
+> is retired; its page is now the `sources` view of `/admin/errors`
+> (`src/app/admin/errors/_components/sources/`), owned in `registry.yml` by
+> `admin_incidents` — one route, one routes owner. Everything else here is
+> unchanged: the 3-hourly collector, its read models under
+> `src/lib/admin/reliability/**` and `src/lib/reliability/**`, and the
+> `reliability-triage` cron all still belong to this feature. `/admin/
+> reliability?feature=<key>` redirects to `/admin/errors?view=sources&
+> feature=<key>` — the param is preserved because `?feature=` is the same
+> FeatureKey vocabulary on both surfaces.
+
 ## Status
 
 - active

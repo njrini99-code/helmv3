@@ -87,6 +87,27 @@ export const RETIRED_ADMIN_ROUTES: readonly RetiredRoute[] = [
     reason:
       'Qualifiers are a golf feature (golf_qualifiers, golf rounds, memory/features/qualifiers.md). "Are the qualifier rules holding?" is a question about golf, asked from the golf destination.',
   },
+  {
+    from: '/admin/reliability',
+    to: '/admin/errors',
+    view: 'sources',
+    reason:
+      'incidents/types.ts already called reliability a LENS over the one incident model ("Reliability stopped being a competing incident list the moment it became a lens") — and then a competing tab shipped beside it anyway. It is the per-source evidence behind the queue.',
+  },
+  {
+    from: '/admin/self-heal',
+    to: '/admin/errors',
+    view: 'loop',
+    reason:
+      'Self-healing is what happens TO the incidents on this page. Watching the loop from a different destination than the queue it drains meant answering "is this being worked?" took two tabs and a fingerprint held in your head.',
+  },
+  {
+    from: '/admin/slo',
+    to: '/admin/health',
+    view: 'budgets',
+    reason:
+      'Every one of its four read models is a read of FEATURE HEALTH — budgets are per feature, golden paths roll up the same budgets, silence detection reads get_feature_health()\'s own heartbeat signal. A second place to ask a question /admin/health already owned.',
+  },
 ];
 
 /**
@@ -106,6 +127,9 @@ export const RETIRED_SHORTCUTS: Readonly<Record<string, string>> = {
   D: '/admin/users',
   Y: '/admin/work?view=proof',
   Q: '/admin/golf?view=qualifiers',
+  R: '/admin/errors?view=sources',
+  S: '/admin/errors?view=loop',
+  O: '/admin/health?view=budgets',
 };
 
 /** The full destination for a retired route, including its `?view=`. */

@@ -390,6 +390,25 @@ const nextConfig = {
       // and Qualifier Logic, which is a golf rules question.
       { source: '/admin/work-log', destination: '/admin/work?view=proof', permanent: false },
       { source: '/admin/qualifiers', destination: '/admin/golf?view=qualifiers', permanent: false },
+
+      // Step 5. Reliability and Self-heal fold into Incidents as views.
+      //
+      // The `?feature=` rule MUST come first (Next matches in array order).
+      // /admin/reliability?feature=<key> selected a constellation node; a
+      // blanket rule would drop the param and land on the queue with nothing
+      // selected — a redirect that appears to work and silently loses the one
+      // thing the link was carrying. `?feature=` is shared vocabulary on
+      // /admin/errors (parseErrorsFilters reads the same FeatureKey), so the
+      // param still means what it meant.
+      {
+        source: '/admin/reliability',
+        has: [{ type: 'query', key: 'feature' }],
+        destination: '/admin/errors?view=sources&feature=:feature',
+        permanent: false,
+      },
+      { source: '/admin/reliability', destination: '/admin/errors?view=sources', permanent: false },
+      { source: '/admin/self-heal', destination: '/admin/errors?view=loop', permanent: false },
+      { source: '/admin/slo', destination: '/admin/health?view=budgets', permanent: false },
     ];
   },
 

@@ -6,8 +6,8 @@ import { RUN_PROVENANCE_LABEL, type StageRunOutcome } from '@/lib/admin/selfheal
 import type { SelfHealStageDetail, StageRunRecord } from '@/lib/admin/data/selfheal';
 import type { CapabilityState, LoopVerdict } from '@/lib/admin/selfheal-capability';
 import { VERDICT_TONE } from '@/lib/admin/triage/self-heal-circuit';
-import { PanelNoData } from '../../_components/PanelStates';
-import { LocalTime } from '../../_components/LocalTime';
+import { PanelNoData } from '../../../_components/PanelStates';
+import { LocalTime } from '../../../_components/LocalTime';
 
 /**
  * The self-healing circuit, rendered so the two facts it exists to keep apart

@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchReliabilitySnapshot, queryRelAnalyses, type ReliabilityRunRow } from '@/lib/admin/data/reliability';
-import { RcaAnalysisView } from '../errors/_components/RcaAnalysisView';
+import { RcaAnalysisView } from '../RcaAnalysisView';
 import type { RcaAnalysis } from '@/lib/admin/rca';
 import {
   Surface,
@@ -16,15 +15,15 @@ import {
 } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { KpiTile } from '../_components/KpiTile';
-import { PanelBoundary } from '../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../_components/PanelSkeletons';
-import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStates';
-import { AutoRefresh } from '../_components/AutoRefresh';
-import { CaptureQualityPanel } from '../_components/CaptureQuality';
+import { KpiTile } from '../../../_components/KpiTile';
+import { PanelBoundary } from '../../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../../_components/PanelSkeletons';
+import { PanelNoData, PanelAllClear, PanelStale } from '../../../_components/PanelStates';
+import { AutoRefresh } from '../../../_components/AutoRefresh';
+import { CaptureQualityPanel } from '../../../_components/CaptureQuality';
 import { fetchCaptureQuality } from '@/lib/admin/data/capture-quality';
-import { RailRow, RowHead, FactLine, RowFoot, StateChip } from '../_components/Row';
-import { LocalTime } from '../_components/LocalTime';
+import { RailRow, RowHead, FactLine, RowFoot, StateChip } from '../../../_components/Row';
+import { LocalTime } from '../../../_components/LocalTime';
 import type { CorrelatedSignal, SourceStatus } from '@/lib/reliability/types';
 import { fetchFeatureHealth } from '@/lib/admin/data/feature-health';
 import { buildFeatureConstellation } from '@/lib/admin/triage/feature-constellation';
@@ -664,7 +663,13 @@ async function ReliabilityPanel() {
  * PanelBoundary — a feature-health or trace-store failure here must not take
  * the reliability collector panel above it down.
  */
-async function FeatureConstellationSection({ selectedKey }: { selectedKey: string | null }) {
+async function FeatureConstellationSection({
+  selectedKey,
+  hrefForKey,
+}: {
+  selectedKey: string | null;
+  hrefForKey: (key: string) => string;
+}) {
   const { features, degraded, degradedReason } = await fetchFeatureHealth();
   if (degraded) {
     return <PanelStale label="Feature health pipeline degraded" error={degradedReason ?? undefined} />;
@@ -695,7 +700,7 @@ async function FeatureConstellationSection({ selectedKey }: { selectedKey: strin
 
   return (
     <div className="space-y-4">
-      <FeatureConstellationGrid view={constellation} selectedKey={resolvedKey} />
+      <FeatureConstellationGrid view={constellation} selectedKey={resolvedKey} hrefForKey={hrefForKey} />
       {braid ? (
         <div className="mt-4 border-t border-warm-200 pt-4">
           <Eyebrow as="h3" tone="tertiary">
@@ -714,28 +719,37 @@ async function FeatureConstellationSection({ selectedKey }: { selectedKey: strin
   );
 }
 
-export default async function ReliabilityPage({
-  searchParams,
+/**
+ * The SOURCES view of Incidents — what Sentry, Supabase and Vercel each say,
+ * correlated every 3 hours.
+ *
+ * WAS `/admin/reliability`, its own Triage tab beside Incidents. The
+ * `UnifiedIncident` model already treats reliability as a LENS over one list —
+ * `src/lib/admin/incidents/types.ts` says so outright ("Reliability stopped
+ * being a competing incident list the moment it became a lens") — but the tab
+ * shipped anyway, so the console had a lens AND a competing tab for the same
+ * idea. This is the per-source evidence behind the same incidents the `list`
+ * view shows: the feature constellation, the correlated signal feed and
+ * capture quality. It reports; it does not fix.
+ *
+ * `selectedKey` is the retired route's `?feature=` param, still honoured —
+ * `/admin/reliability?feature=X` redirects to `/admin/errors?view=sources&
+ * feature=X`, and a preserved param that nothing reads is worse than none.
+ */
+export async function SourcesView({
+  selectedKey,
+  hrefForFeature,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  selectedKey: string | null;
+  /** Built by the host page so a node click keeps `?view=sources` — see the
+   *  same note on `FeatureConstellationGrid.hrefForKey`. */
+  hrefForFeature: (key: string) => string;
 }) {
-  await requireSuperAdmin();
-  const params = await searchParams;
-  const featureParam = params.feature;
-  const selectedKey = typeof featureParam === 'string' ? featureParam : null;
-
   return (
     <div className="space-y-5">
       {/* Matches the collection cadence closely enough to stay current without
           hammering the table — the data only changes every 3 hours. */}
       <AutoRefresh intervalMs={180_000} />
-      <div>
-        <h1 className="text-lg font-semibold text-warm-900">Reliability</h1>
-        <p className="mt-0.5 max-w-2xl text-sm text-warm-600">
-          What Sentry, Supabase and Vercel agree on, correlated every 3 hours.
-          This tab reports; it does not fix.
-        </p>
-      </div>
       <Surface>
         <Inset>
           <Eyebrow as="h2">Feature constellation</Eyebrow>
@@ -745,7 +759,7 @@ export default async function ReliabilityPage({
           </p>
           <div className="mt-3">
             <PanelBoundary title="Feature constellation" skeleton={<PanelPageSkeleton rows={4} />}>
-              <FeatureConstellationSection selectedKey={selectedKey} />
+              <FeatureConstellationSection selectedKey={selectedKey} hrefForKey={hrefForFeature} />
             </PanelBoundary>
           </div>
         </Inset>

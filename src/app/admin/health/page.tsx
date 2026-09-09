@@ -3,7 +3,7 @@ import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/fea
 import type { FeatureHealth } from '@/lib/admin/data/feature-health';
 import { fetchFeatureHealthDetail } from '@/lib/admin/data/feature-health-detail';
 import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
-import { Eyebrow, Skeleton, Surface } from '@/components/fairway';
+import { Eyebrow, Skeleton } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -11,13 +11,10 @@ import { FeatureDotGrid } from '../_components/FeatureDotGrid';
 import { LocalTime } from '../_components/LocalTime';
 import { AttributionCoveragePanel } from './_components/AttributionCoveragePanel';
 import { FeatureHealthDetailPanel } from './_components/FeatureHealthDetailPanel';
-import { fetchJobsTab } from '@/lib/admin/data/jobs';
-import { fetchQualifierLogic } from '@/lib/admin/data/qualifier-logic';
-import { fetchReliabilitySnapshot } from '@/lib/admin/data/reliability';
-import { buildHeartbeatMatrix } from '@/lib/admin/triage/heartbeat-matrix';
-import { buildInvariantLattice } from '@/lib/admin/triage/invariant-lattice';
-import { HeartbeatMatrixGrid } from '@/components/admin/triage/HeartbeatMatrixGrid';
-import { InvariantLatticeGrid } from '@/components/admin/triage/InvariantLatticeGrid';
+import { BudgetsView } from './_components/BudgetsView';
+import { HeartbeatsView } from './_components/HeartbeatsView';
+import { ViewRail } from '../_components/ViewRail';
+import { parseView, type AdminViewOf } from '@/lib/admin/views';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,8 +61,14 @@ const DETAIL_SKELETON = (
  * RPC gates on auth.uid() via is_super_admin() — service_role would be
  * Forbidden, same rule as W3's get_active_sessions).
  */
-export default async function FeatureHealthPage() {
+export default async function FeatureHealthPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireSuperAdmin();
+  const params = (await searchParams) ?? {};
+  const view = parseView('/admin/health', params.view);
 
   async function Body() {
     const { features, generatedAt, degraded, degradedReason } = await fetchFeatureHealth();
@@ -189,61 +192,6 @@ export default async function FeatureHealthPage() {
     );
   }
 
-  /**
-   * Heartbeat Matrix + Invariant Lattice (Bridge Premium Phase 3, extended
-   * by Control Plane Phase D.4.3). One `fetchJobsTab()` call feeds the
-   * matrix AND the integrity half of the lattice — never a second,
-   * duplicate 21-query board read for the same refresh. The round-graph
-   * invariants come from the reliability collector's own latest snapshot
-   * (recorded every 3h, never re-run at request time — same rule this
-   * whole panel already follows for qualifiers/integrity). Failures on any
-   * one source degrade that source's rows to `unknown`, never the whole
-   * section.
-   */
-  async function HeartbeatAndInvariantsBody() {
-    const [jobs, qualifierLogic, reliability] = await Promise.allSettled([
-      fetchJobsTab(),
-      fetchQualifierLogic(),
-      fetchReliabilitySnapshot(),
-    ]);
-
-    const jobsTab = jobs.status === 'fulfilled' ? jobs.value : null;
-    const qualifierRes = qualifierLogic.status === 'fulfilled' ? qualifierLogic.value : null;
-    const reliabilityRes = reliability.status === 'fulfilled' ? reliability.value : null;
-    const roundGraphChecks =
-      reliabilityRes && reliabilityRes.status === 'ok' && reliabilityRes.data
-        ? (reliabilityRes.data.latest?.run?.invariants?.checks ?? null)
-        : null;
-
-    const heartbeat = jobsTab ? buildHeartbeatMatrix(jobsTab, Date.now()) : null;
-    const lattice = buildInvariantLattice({
-      qualifierInvariants: qualifierRes && qualifierRes.status === 'ok' && qualifierRes.data ? qualifierRes.data.invariants : null,
-      integrityRows: jobsTab ? jobsTab.integrity : null,
-      roundGraphChecks,
-    });
-
-    return (
-      <div className="space-y-4">
-        <div>
-          <Eyebrow as="h3" tone="tertiary">
-            Heartbeat matrix
-          </Eyebrow>
-          {heartbeat ? (
-            <HeartbeatMatrixGrid view={heartbeat} />
-          ) : (
-            <p className="text-sm text-warm-500">Could not read the job board this refresh.</p>
-          )}
-        </div>
-        <div>
-          <Eyebrow as="h3" tone="tertiary">
-            Invariant lattice
-          </Eyebrow>
-          <InvariantLatticeGrid view={lattice} />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <AutoRefresh />
@@ -260,46 +208,63 @@ export default async function FeatureHealthPage() {
         <h1 className="mt-1 text-h3 font-semibold text-warm-900 md:text-2xl">
           Every GolfHelm, CoachHelm, and BaseballHelm feature, at a glance
         </h1>
-        <p className="mt-1 hidden max-w-2xl text-sm text-warm-500 md:block">
-          Computed from get_feature_health() with 2-window hysteresis — a single blip never flips a dot. Features with
-          no feature-tagged data yet render neutral, never red or fake-green. Baseball client errors are promoted into
-          feature tags before they reach this board.
-        </p>
       </div>
-      <PanelBoundary title="AI availability" skeleton={AI_SKELETON}>
-        <AiBody />
-      </PanelBoundary>
-      <PanelBoundary title="Feature Health" skeleton={HEALTH_SKELETON}>
-        <Body />
-      </PanelBoundary>
-      <div>
-        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Feature Health — Detail
-        </h2>
-        <p className="mt-2 hidden max-w-2xl text-sm text-warm-500 md:block">
-          Trailing-7d error/warning counts and true last-event recency per feature, straight from admin_events —
-          ranked so a feature failing right now always outranks a louder one that has already gone quiet.
-        </p>
-        <div className="mt-3">
-          <PanelBoundary title="Feature Health — Detail" skeleton={DETAIL_SKELETON}>
-            <DetailBody />
-          </PanelBoundary>
-        </div>
-      </div>
-      <Surface padding="sm">
-        <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Heartbeat &amp; invariants
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-warm-500">
-          Did every critical job run on schedule, and is the data it maintains still consistent — read from what has
-          already been recorded, never from re-running a check at request time.
-        </p>
-        <div className="mt-3">
-          <PanelBoundary title="Heartbeat &amp; invariants" skeleton={<Skeleton className="h-40 w-full rounded-xl" />}>
-            <HeartbeatAndInvariantsBody />
-          </PanelBoundary>
-        </div>
-      </Surface>
+      <ViewRail
+        host="/admin/health"
+        active={view}
+        ariaLabel="Health view"
+        searchParams={params}
+        labels={{ features: 'Features', budgets: 'Budgets', heartbeats: 'Heartbeats' }}
+        descriptions={{
+          features:
+            'Computed from get_feature_health() with 2-window hysteresis — a single blip never flips a dot. A feature with no tagged data yet renders neutral, never red or fake-green.',
+          // Names all four read models on purpose: `budgets` is the URL token,
+          // not a claim that error budgets are all this view holds.
+          budgets: 'Error budgets, golden-path health, silence detection, trace funnels.',
+          heartbeats:
+            'Did every critical job run on schedule, and is the data it maintains still consistent — read from what was recorded, never re-run at request time.',
+        }}
+      />
+      {renderView()}
     </div>
   );
+
+  /** One branch per registered view — see `src/lib/admin/views.ts`. */
+  function renderView() {
+    switch (view as AdminViewOf<'/admin/health'>) {
+      case 'budgets':
+        return <BudgetsView />;
+      case 'heartbeats':
+        return (
+          <PanelBoundary title="Heartbeat &amp; invariants" skeleton={<Skeleton className="h-40 w-full rounded-xl" />}>
+            <HeartbeatsView />
+          </PanelBoundary>
+        );
+      case 'features':
+        return (
+          <div className="space-y-4">
+            <PanelBoundary title="AI availability" skeleton={AI_SKELETON}>
+              <AiBody />
+            </PanelBoundary>
+            <PanelBoundary title="Feature Health" skeleton={HEALTH_SKELETON}>
+              <Body />
+            </PanelBoundary>
+            <div>
+              <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
+                Feature Health — Detail
+              </h2>
+              <p className="mt-2 hidden max-w-2xl text-sm text-warm-500 md:block">
+                Trailing-7d error/warning counts and true last-event recency per feature, straight from admin_events —
+                ranked so a feature failing right now always outranks a louder one that has already gone quiet.
+              </p>
+              <div className="mt-3">
+                <PanelBoundary title="Feature Health — Detail" skeleton={DETAIL_SKELETON}>
+                  <DetailBody />
+                </PanelBoundary>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  }
 }

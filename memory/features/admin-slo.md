@@ -10,6 +10,16 @@
 > own record, `get_feature_health()`, and the golf-round flight recorder —
 > it introduces no new writer and no new table.
 
+> **UI ownership moved 2026-09-08 (30→19 consolidation).** `/admin/slo` is
+> retired; its page is now the `budgets` view of `/admin/health`
+> (`src/app/admin/health/_components/BudgetsView.tsx`), because every one of
+> its four read models is a read of FEATURE HEALTH — budgets are per feature,
+> golden paths roll up the same budgets, silence detection reads
+> `get_feature_health()`'s own heartbeat signal. All four sections are kept as
+> four: `budgets` is the URL token, and the view rail's description names all
+> of them. The read models under `src/lib/admin/slo/**` are unchanged and still
+> owned here. Shift+O still reaches the view.
+
 ## Status
 
 - active

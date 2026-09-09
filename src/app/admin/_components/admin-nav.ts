@@ -4,10 +4,7 @@ type AdminHref =
   | '/admin/errors'
   | '/admin/traces'
   | '/admin/engineering'
-  | '/admin/reliability'
-  | '/admin/slo'
   | '/admin/database'
-  | '/admin/self-heal'
   | '/admin/auth'
   | '/admin/golf'
   | '/admin/baseball'
@@ -48,30 +45,18 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // /admin/errors/<fp> reference, and the repair contract's PR-body join,
   // and buys nothing an operator can see.
   { label: 'Incidents', href: '/admin/errors', key: '3', section: 'Triage', description: 'One incident per cause, with every source that saw it', meta: 'trace' },
-  { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health across every app', meta: 'map' },
+  // Three views: the feature dot grid, ?view=budgets (error budgets, golden
+  // paths, silence detection, trace funnels — was the SLO Center tab, and
+  // every one of those four reads is a read of feature health) and
+  // ?view=heartbeats (the Heartbeat Matrix and Invariant Lattice).
+  { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health, budgets, heartbeats', meta: 'map' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Triage', description: 'Crons, guards, integrity checks' },
-  // The 3-hourly collector's correlated view. Distinct from Errors: that tab
-  // shows each source's incidents, this one shows what MORE THAN ONE source
-  // agrees on, plus which sources were readable at all.
-  { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
-  // Error budgets/golden-path health/silence detection/trace funnels —
-  // Bridge Control Plane Phase D. Distinct from Reliability above: that tab
-  // is the 3-hourly correlated SIGNAL feed; this rolls the same tier
-  // vocabulary up into a rolling-window BUDGET, a golden-path rollup, a
-  // heartbeat-staleness read, and a fleet view of the flight recorder.
-  { label: 'SLO Center', href: '/admin/slo', key: 'O', section: 'Triage', description: 'Error budgets, golden paths, silence detection, trace funnels', meta: 'slo' },
-  // Database/Postgres-layer signal, distinct from Reliability: that tab
-  // correlates APPLICATION-level signals across three sources every 3
-  // hours; this tab is the DATABASE's own state — connections, deduped
+  // Database/Postgres-layer signal, distinct from the Incidents `sources`
+  // view: that correlates APPLICATION-level signals across three sources
+  // every 3 hours; this tab is the DATABASE's own state — connections, deduped
   // Supabase/PostgREST failures, query-performance deltas — read from the
   // zero-cost collectors every 5-15 minutes.
   { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres health, deduped DB errors, query deltas', meta: '5m' },
-  // The self-healing circuit as a thing that can be watched. Distinct from
-  // Jobs & Integrity, which answers "did the crons run": this answers "is the
-  // loop alive, and has each stage ever actually produced its output" — a
-  // stage can heartbeat healthily for a week while never once doing its job,
-  // which is exactly what Repair did.
-  { label: 'Self-heal', href: '/admin/self-heal', key: 'S', section: 'Triage', description: 'Collect, Diagnose, Repair, Close — runtime and capability', meta: 'loop' },
   // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
   // being the one cross-sport board built to answer "who needs attention" —
   // 30-day activity/error EKG with four triage sorts.

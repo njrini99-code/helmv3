@@ -3,19 +3,18 @@ import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
 import { summarizeFlow, selectStalled, STALL_CYCLES } from '@/lib/admin/selfheal-flow';
-import { SelfHealFlowStrip, StalledIncidentList } from '../_components/SelfHealFlow';
-import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
+import { SelfHealFlowStrip, StalledIncidentList } from '../../../_components/SelfHealFlow';
 import { fetchSelfHealBoard, type SelfHealStageDetail } from '@/lib/admin/data/selfheal';
 import type { CapabilityEvidence } from '@/lib/admin/selfheal-capability';
 import { SELFHEAL_RUNNER_LABEL } from '@/lib/admin/selfheal-registry';
 import { Surface, InlineNotice, Eyebrow } from '@/components/fairway';
 import { buildSelfHealCircuit } from '@/lib/admin/triage/self-heal-circuit';
 import { SelfHealCircuitSummary } from '@/components/admin/triage/SelfHealCircuitSummary';
-import { PanelBoundary } from '../_components/PanelBoundary';
-import { PanelPageSkeleton } from '../_components/PanelSkeletons';
-import { PanelStale } from '../_components/PanelStates';
-import { AutoRefresh } from '../_components/AutoRefresh';
-import { LocalTime } from '../_components/LocalTime';
+import { PanelBoundary } from '../../../_components/PanelBoundary';
+import { PanelPageSkeleton } from '../../../_components/PanelSkeletons';
+import { PanelStale } from '../../../_components/PanelStates';
+import { AutoRefresh } from '../../../_components/AutoRefresh';
+import { LocalTime } from '../../../_components/LocalTime';
 import { getReplayCoverage } from '@/lib/admin/replay/coverage';
 import { ReplayCoveragePanel } from '@/components/admin/replay/ReplayCoveragePanel';
 import {
@@ -23,7 +22,7 @@ import {
   RunHistoryHeatmap,
   formatStageAge,
   deriveSchedulePosition,
-} from './_components/SelfHealCircuit';
+} from './SelfHealCircuit';
 
 export const dynamic = 'force-dynamic';
 
@@ -317,19 +316,19 @@ async function SelfHealBody() {
   );
 }
 
-export default async function SelfHealPage() {
-  await requireSuperAdmin();
-
+/**
+ * The LOOP view of Incidents — collect → diagnose → repair → close, and whether
+ * each stage has ever actually produced its output, not just whether it ran.
+ *
+ * WAS `/admin/self-heal`, its own Triage tab. Self-healing is what HAPPENS to
+ * the incidents on this page; watching the loop from a different destination
+ * than the queue it drains meant answering "is this incident being worked?"
+ * required two tabs and a fingerprint held in your head.
+ */
+export async function LoopView() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <div>
-        <h1 className="text-lg font-semibold text-warm-900">Self-heal</h1>
-        <p className="mt-0.5 max-w-2xl text-sm text-warm-600">
-          Error to diagnosis to repair to closure — and whether each stage has ever actually produced its output,
-          not just whether it ran.
-        </p>
-      </div>
       <PanelBoundary title="Self-heal" skeleton={<PanelPageSkeleton rows={6} />}>
         <SelfHealBody />
       </PanelBoundary>
