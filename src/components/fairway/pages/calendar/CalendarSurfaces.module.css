@@ -332,6 +332,17 @@
     inset 0 0 0 1px oklch(0 0 0 / 0.04),
     0 1px 2px oklch(0.3 0.035 70 / 0.08);
 }
+/* Row buttons: the Fairway Button wraps children in one bare <span>, so a
+ * multi-element row inside it would stack. This makes that span the row and
+ * lets it inherit the button's own gap, alignment and justification. */
+.buttonRow > span {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  gap: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+}
 /* Sand chip that floats above the agenda — a soft grounded shadow and no
  * hairline, so it reads as a lifted control rather than a divider. */
 .chipFloat {

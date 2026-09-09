@@ -215,6 +215,7 @@ function PickerBody({
                     className={cn(
                       'flex h-auto w-full items-center justify-start gap-3 rounded-fw-md px-2 py-1.5 text-left font-normal',
                       ROW_HEIGHT_CLASS,
+                      surfaces.buttonRow,
                       surfaces.press,
                       'hover:bg-surface-sunken',
                     )}

@@ -591,6 +591,7 @@ export function FairwayEventDetailDrawer({
               onClick={() => setAttendanceOpen(true)}
               className={cn(
                 'h-auto min-h-[60px] justify-start gap-3 rounded-card px-4 py-3 text-left font-fw-sans text-body-sm font-semibold',
+                surfaces.buttonRow,
                 !attendanceProminent && cn('text-text-primary hover:bg-transparent hover:text-text-primary', surfaces.row, surfaces.press, surfaces.rise),
               )}
               style={{ '--row-tint': 'var(--fw-color-accent-600)' } as React.CSSProperties}

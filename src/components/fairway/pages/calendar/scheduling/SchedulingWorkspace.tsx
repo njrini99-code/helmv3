@@ -778,7 +778,10 @@ export function SchedulingWorkspace({
                         event.stopPropagation();
                         onPersonClick?.(participant.id);
                       }}
-                      className="sticky left-0 z-20 flex h-auto min-h-[60px] w-full !justify-start !rounded-none !border-0 border-b border-r border-border-subtle bg-surface px-2.5 text-left hover:bg-surface-tint focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus md:min-h-[64px]"
+                      className={cn(
+                        'sticky left-0 z-20 flex h-auto min-h-[60px] w-full !justify-start !rounded-none !border-0 border-b border-r border-border-subtle bg-surface px-2.5 text-left hover:bg-surface-tint focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus md:min-h-[64px]',
+                        surfaces.buttonRow,
+                      )}
                       aria-label={`Open ${participantLabel(participant)} schedule`}
                     >
                       <span className="flex w-full min-w-0 items-center gap-2">
@@ -938,6 +941,7 @@ export function SchedulingWorkspace({
                   onClick={() => { if (!current) setStart(slot.start); }}
                   className={cn(
                     'group flex h-auto min-h-[64px] w-full !justify-start !rounded-card items-center gap-3 px-4 py-3 text-left font-normal hover:bg-surface',
+                    surfaces.buttonRow,
                     surfaces.paper,
                     surfaces.press,
                     surfaces.rise,

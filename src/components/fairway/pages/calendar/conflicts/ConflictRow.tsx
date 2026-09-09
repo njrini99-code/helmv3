@@ -101,6 +101,7 @@ export function ConflictRow({ group, timeZone, selected = false, onSelect, enter
       aria-label={conflictRowLabel(group, timeZone)}
       className={cn(
         'flex h-auto w-full min-h-[64px] items-center justify-start gap-3 rounded-fw-lg py-3 pl-4 pr-3 text-left font-normal',
+        surfaces.buttonRow,
         'hover:bg-transparent hover:text-text-primary',
         surfaces.row,
         surfaces.press,

@@ -207,6 +207,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
                       disabled={rowPending}
                       className={cn(
                         'flex h-auto w-full min-h-12 items-center justify-start gap-3 rounded-fw-md py-2.5 pl-4 pr-3 text-left font-normal',
+                        surfaces.buttonRow,
                         surfaces.row,
                         surfaces.press,
                         surfaces.rise,

@@ -153,6 +153,7 @@ export function EventFilePicker({
                   disabled={attachingId !== null}
                   className={cn(
                     'flex h-auto w-full min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3 text-left font-normal',
+                    surfaces.buttonRow,
                     'hover:bg-transparent hover:text-text-primary disabled:opacity-60',
                     surfaces.row,
                     surfaces.press,
