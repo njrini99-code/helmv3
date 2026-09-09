@@ -82,8 +82,8 @@ export function EventPeopleSection({ eventId, active }: EventPeopleSectionProps)
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
-          <Users className="h-4 w-4" aria-hidden />
+        <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-accent-700">
+          <Users className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
           People{state.status === 'loaded' ? ` · ${attendees.length}` : ''}

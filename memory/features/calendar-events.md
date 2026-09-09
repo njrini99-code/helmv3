@@ -303,12 +303,14 @@ keeps its date separate from the return-to-today action.
   `.rise`. Their consumers use Tailwind tokens directly (`fw-glass-chrome`
   for chrome, bordered `bg-surface` for rows, `bg-accent-650
   text-text-on-accent` for a checked state, `fw-warning-*` for attention).
-- Detail drawer (`FairwayEventDetailDrawer`): row icons are bare glyphs in
-  `text-text-secondary` (a cream disc on a cream card washed out — owner,
-  2026-09-09); only semantic warning/success discs keep a fill. Responses is
-  ONE centred `dl` strip — figure over label, hairline dividers, labels
-  Accepted / Maybe / No / Pending — not four sunken tiles. The date line is
-  the sans body-sm face, not mono.
+- Detail drawer (`FairwayEventDetailDrawer`, `EventPeopleSection`): row
+  icons are bare emerald glyphs (`text-accent-700`) — a cream disc on a
+  cream card washed out, and the owner asked for the green as the accent
+  (2026-09-09); only semantic warning/success discs keep a fill. Responses
+  is ONE centred `dl` strip — figure over label, hairline dividers, labels
+  Accepted / Maybe / No / Pending — not four sunken tiles; the Accepted count
+  carries the accent when above zero. The date line is the sans body-sm face
+  with an emerald clock, not mono.
 - Hero (`FairwayCalendarHero`): shared `fw-glass-chrome` material, sticky at
   `--golf-mobile-header-offset` + `--fw-hub-subnav-offset`. Row 1 = title
   (`MMMM yyyy`, or `EEEE, MMMM d` in Day) — the title is the date-jump: a

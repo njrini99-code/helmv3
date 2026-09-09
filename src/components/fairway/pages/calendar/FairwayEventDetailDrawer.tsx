@@ -278,9 +278,10 @@ export function FairwayEventDetailDrawer({
     }
   };
 
-  /** Icon at the head of a detail row: a bare glyph in a 32px alignment box
-   *  (a cream disc on a cream card washes out), or a semantic-tone disc when
-   *  the tone carries meaning. */
+  /** Icon at the head of a detail row: a bare emerald glyph in a 32px
+   *  alignment box (a cream disc on a cream card washes out; the accent is
+   *  the drawer's one colour — owner, 2026-09-09), or a semantic-tone disc
+   *  when the tone carries meaning. */
   const rowIcon = (Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, tint?: 'warning' | 'success') => (
     <span
       aria-hidden
@@ -290,7 +291,7 @@ export function FairwayEventDetailDrawer({
           ? 'bg-fw-warning-bg text-fw-warning-ink'
           : tint === 'success'
             ? 'bg-fw-success-bg text-fw-success-ink'
-            : 'text-text-secondary',
+            : 'text-accent-700',
       )}
     >
       <Icon className="h-[18px] w-[18px]" aria-hidden />
@@ -358,7 +359,7 @@ export function FairwayEventDetailDrawer({
               {event.title}
             </h2>
             <p className="flex items-center gap-1.5 font-fw-sans text-body-sm tabular-nums text-text-secondary">
-              <Clock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
+              <Clock className="h-3.5 w-3.5 flex-shrink-0 text-accent-700" aria-hidden />
               <span>{formatDateLine(event, timezone)}</span>
             </p>
           </header>
@@ -541,13 +542,21 @@ export function FairwayEventDetailDrawer({
                   left-aligned figures read off-centre (owner, 2026-09-09). */}
               <dl className="grid grid-cols-4 divide-x divide-border-subtle">
                 {[
-                  { label: 'Accepted', value: rsvpSummary.accepted },
-                  { label: 'Maybe', value: rsvpSummary.tentative },
-                  { label: 'No', value: rsvpSummary.declined },
-                  { label: 'Pending', value: rsvpSummary.pending },
+                  { label: 'Accepted', value: rsvpSummary.accepted, accent: true },
+                  { label: 'Maybe', value: rsvpSummary.tentative, accent: false },
+                  { label: 'No', value: rsvpSummary.declined, accent: false },
+                  { label: 'Pending', value: rsvpSummary.pending, accent: false },
                 ].map((stat) => (
                   <div key={stat.label} className="flex min-w-0 flex-col items-center gap-0.5 px-1 py-1 text-center">
-                    <dd className="font-fw-sans text-h3 font-semibold tabular-nums leading-none text-text-primary">{stat.value}</dd>
+                    <dd
+                      className={cn(
+                        'font-fw-sans text-h3 font-semibold tabular-nums leading-none',
+                        // The accepted count is the figure that matters; it carries the accent.
+                        stat.accent && stat.value > 0 ? 'text-accent-700' : 'text-text-primary',
+                      )}
+                    >
+                      {stat.value}
+                    </dd>
                     <dt className="truncate font-fw-sans text-caption font-medium text-text-secondary">{stat.label}</dt>
                   </div>
                 ))}
