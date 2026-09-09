@@ -17,11 +17,40 @@ client-side Supabase call.
 |---|---|---|---|
 | Changed since yesterday | `helm_debug.db_analysis_samples` (`latest` vs. window ~24h before it) | `db-table-health` cron | hourly |
 | Slow statements | `helm_debug.db_statement_samples` | `db-stat-delta` cron | 15 min |
-| Index suggestions | `helm_debug.db_analysis_samples`, category `index_suggestion` | `db-table-health` cron | hourly |
+| Index suggestions | `helm_debug.db_analysis_samples`, category `index_suggestion` — **renders a `note` row only; suggestions are not computed** (see below) | `db-table-health` cron | hourly |
 | Unused indexes | `helm_debug.db_analysis_samples`, category `unused_index` | `db-table-health` cron | hourly |
 | Bloat | `helm_debug.db_analysis_samples`, category `bloat` | `db-table-health` cron | hourly |
 | Coverage | `helm_debug.db_analysis_samples`, category `rls_coverage`, plus `scripts/db/rls-coverage.mjs` for the third finding | `db-table-health` cron (two of three findings) + manual/CI script run (third) | hourly + on demand |
 | Drift | Mission Control's health-sample timestamp, plus a best-effort `supabase/migrations` directory count | `db-health-sampler` cron (timestamp only) | 5 min |
+
+### Index suggestions are disabled — `index_advisor` runs `DEALLOCATE ALL`
+
+`extensions.index_advisor(query text)` executes `DEALLOCATE ALL` (twice —
+verified against production `pg_proc.prosrc`). `helm_debug_db_analysis_snapshot()`
+is invoked **over PostgREST** as `service_role` by the `db-table-health` cron, so
+that `DEALLOCATE ALL` lands on a PostgREST backend connection and wipes every
+prepared statement PostgREST holds on it. PostgREST names its prepared statements
+with an integer counter and keeps reusing them, so every subsequent request routed
+onto that pooled connection failed with SQLSTATE 26000,
+`prepared statement "N" does not exist`.
+
+Measured 2026-09-09: migration `20260906120100` was applied to production at
+12:47:44Z; the first 26000 error in the preceding 60 hours appeared at 13:07 — the
+first `7 * * * *` run after the function existed. Every later burst starts at :07
+past the hour. 303 `admin_events` rows / 646 `postgres_logs` rows in 72h, 9
+distinct affected users, across `auth.verifyPlayerAccess`, the CoachHelm v3
+generator fleet, messaging, player hub, stats, `savePartialRound`,
+`/api/jobs/consume` and `/api/admin/log-event`.
+
+`20260909230000_helm_debug_analysis_drop_index_advisor.sql` removes the call. The
+`index_suggestion` category degrades to the single `note` row
+`flattenAnalysisSnapshot` already handles for the "extension not installed" case,
+so no TypeScript change was needed and the section still renders.
+
+**Nothing PostgREST invokes may call `index_advisor`.** To restore suggestions,
+compute them from a `pg_cron` job — a background-worker connection PostgREST does
+not reuse — writing straight into `helm_debug.db_analysis_samples`, and have the
+snapshot function only read them.
 
 ## Migrations (all HELD — see `supabase/migrations/HELD.md`)
 
