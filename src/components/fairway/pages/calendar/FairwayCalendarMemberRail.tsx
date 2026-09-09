@@ -35,7 +35,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, UserPlus, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import surfaces from './CalendarSurfaces.module.css';
 import { Button } from '@/components/ui/button';
@@ -187,60 +187,42 @@ export function FairwayCalendarMemberRail({
             canScrollRight && 'pr-7 scroll-pr-7',
           )}
         >
-        {/* ALL — instantly overlays every roster member's schedule (bypassing
-            the 8-color cap, see `useInitialsOnlyColoring`), or clears back to
-            the plain team calendar if everyone is already selected. This is
-            the one-tap shortcut; "Compare" (below) is the deliberate,
-            searchable path for a specific subset. Visible pill stays h-9
-            (36px); the Button itself floors at the 44px touch target and
-            centers the pill inside, so only the invisible hit area grows. */}
+        {/* "Team" — instantly overlays every roster member's schedule
+            (bypassing the 8-color cap, see `useInitialsOnlyColoring`), or
+            clears back to the plain team calendar if everyone is already
+            selected. Reads as the first portrait in the row (reference:
+            Cole · Alexis · Jordan · Team); the accessible name stays "All". */}
         <Button
           type="button"
           variant="ghost"
           onClick={() => onSelect(isAllSelected ? [] : teamMembers.map((m) => m.id))}
           aria-pressed={isAllSelected}
+          aria-label="All"
           haptic="none"
-          className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
+          className={cn(
+            'group relative flex h-auto min-h-[44px] w-[68px] min-w-[68px] flex-shrink-0 flex-col items-center justify-start gap-1.5 overflow-visible rounded-fw-md px-0 py-1 hover:bg-transparent active:bg-transparent',
+            surfaces.press,
+          )}
         >
           <span
+            aria-hidden
             className={cn(
-              'flex h-8 items-center rounded-full px-3 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
-              isAllSelected
-                ? 'bg-accent-650 text-text-on-accent shadow-flat'
-                : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
+              'grid h-14 w-14 place-items-center rounded-full transition-transform',
+              isAllSelected ? cn('text-text-on-accent', surfaces.selected) : cn(surfaces.teamChip, surfaces.avatarChip),
             )}
           >
-            All
+            <Users className="h-6 w-6" strokeWidth={2.2} />
+          </span>
+          <span
+            aria-hidden
+            className={cn(
+              'w-full truncate text-center font-fw-sans text-caption leading-tight',
+              isAllSelected ? 'font-semibold text-text-primary' : 'text-text-secondary',
+            )}
+          >
+            Team
           </span>
         </Button>
-
-        {onOpenPerson ? (
-          <CalendarPeoplePicker
-            open={pickerOpen}
-            onOpenChange={setPickerOpen}
-            mode="compare"
-            people={pickerPeople}
-            selectedIds={selectedPlayerIds}
-            title="Compare schedules"
-            doneLabel="Compare selected"
-            onApply={(ids) => onSelect(ids)}
-            emptyMessage="No players on this team yet."
-            trigger={
-              <Button
-                type="button"
-                variant="ghost"
-                haptic="none"
-                className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
-              >
-                <span className="flex h-8 items-center rounded-full border border-border-subtle bg-surface-sunken px-3 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary transition-colors group-hover:bg-surface-tint">
-                  Compare
-                </span>
-              </Button>
-            }
-          />
-        ) : null}
-
-        <span aria-hidden className="h-6 w-px flex-shrink-0 bg-border-subtle" />
 
         {teamMembers.map((m) => {
           const idx = selectedPlayerIds.indexOf(m.id);
@@ -261,7 +243,7 @@ export function FairwayCalendarMemberRail({
               aria-label={`Open ${fullName(m)}'s schedule${selected ? ' — included in comparison' : ''}`}
               title={fullName(m)}
               className={cn(
-                'group relative flex h-auto min-h-[44px] w-[60px] min-w-[60px] flex-shrink-0 flex-col items-center justify-start gap-1 overflow-visible rounded-fw-md px-0 py-1 transition-transform hover:bg-transparent active:bg-transparent',
+                'group relative flex h-auto min-h-[44px] w-[68px] min-w-[68px] flex-shrink-0 flex-col items-center justify-start gap-1.5 overflow-visible rounded-fw-md px-0 py-1 transition-transform hover:bg-transparent active:bg-transparent',
                 surfaces.press,
               )}
             >
@@ -270,31 +252,32 @@ export function FairwayCalendarMemberRail({
                   target; only the invisible padding grows. */}
               <span
                 className={cn(
-                  'relative grid h-11 w-11 place-items-center overflow-visible rounded-full font-fw-sans text-body-sm font-semibold ring-2 ring-surface shadow-flat transition-transform group-hover:ring-border-strong',
-                  indexColor && 'scale-[1.06] text-white ring-0',
+                  'relative grid h-14 w-14 place-items-center overflow-visible rounded-full font-fw-sans text-body font-semibold transition-transform',
+                  selected ? surfaces.avatarChipSelected : surfaces.avatarChip,
+                  indexColor && 'scale-[1.04] text-white',
                   // Selected past the cap: no palette color to carry the
                   // "selected" cue, so an accent ring does that job instead
                   // (the tint background/text stays the same as unselected —
                   // it's the person's fixed id-hash color either way).
-                  selected && !indexColor && 'scale-[1.06] ring-2 ring-accent-650',
+                  selected && !indexColor && 'scale-[1.04]',
                 )}
                 style={
                   indexColor
-                    ? { backgroundColor: indexColor.bg, color: '#fff', boxShadow: `0 0 0 2px ${indexColor.border}` }
+                    ? { backgroundColor: indexColor.bg, color: '#fff' }
                     : m.avatar_url
                       ? undefined
                       : { backgroundColor: tint.bg, color: tint.text }
                 }
               >
                 {m.avatar_url ? (
-                  <img src={m.avatar_url} alt="" className="h-11 w-11 rounded-full object-cover" />
+                  <img src={m.avatar_url} alt="" className="h-14 w-14 rounded-full object-cover" />
                 ) : (
                   <span>{initials(m)}</span>
                 )}
                 {indexColor && (
                   <span
                     aria-hidden
-                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-canvas text-microbadge font-bold text-white"
+                    className="absolute -right-0.5 -top-0.5 grid h-5 w-5 place-items-center rounded-full border-2 border-surface text-microbadge font-bold text-white shadow-flat"
                     style={{ backgroundColor: indexColor.bg }}
                   >
                     {idx + 1}
@@ -313,6 +296,41 @@ export function FairwayCalendarMemberRail({
             </Button>
           );
         })}
+
+        {onOpenPerson ? (
+          <CalendarPeoplePicker
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            mode="compare"
+            people={pickerPeople}
+            selectedIds={selectedPlayerIds}
+            title="Compare schedules"
+            doneLabel="Compare selected"
+            onApply={(ids) => onSelect(ids)}
+            emptyMessage="No players on this team yet."
+            trigger={
+              <Button
+                type="button"
+                variant="ghost"
+                haptic="none"
+                className={cn(
+                  'group relative flex h-auto min-h-[44px] w-[68px] min-w-[68px] flex-shrink-0 flex-col items-center justify-start gap-1.5 overflow-visible rounded-fw-md px-0 py-1 hover:bg-transparent active:bg-transparent',
+                  surfaces.press,
+                )}
+              >
+                <span
+                  aria-hidden
+                  className="grid h-14 w-14 place-items-center rounded-full border-2 border-dashed border-border-strong bg-surface/60 text-text-secondary transition-colors group-hover:border-accent-500 group-hover:text-accent-700"
+                >
+                  <UserPlus className="h-5 w-5" />
+                </span>
+                <span className="w-full truncate text-center font-fw-sans text-caption leading-tight text-text-secondary">
+                  Compare
+                </span>
+              </Button>
+            }
+          />
+        ) : null}
         </div>
       </div>
 

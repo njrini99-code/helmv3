@@ -277,5 +277,13 @@ keeps its date separate from the return-to-today action.
   ONE primary action, and the secondary actions (Find a time, Conflicts, My
   availability, Add to phone) as ghost pills at md+ or a More menu on phone.
 - Agenda rows are time-gutter + ivory `.row` cards with a type-tinted icon
-  disc; the conflict count on the home is a real inbox count (`null` while
-  unknown, never a fabricated zero).
+  disc. Cards carry NO colored left edge/rule (owner ban, 2026-09-09): the
+  type reads from the `.rowIcon` disc and the card is distinguished by
+  material (specular rim, hairline, layered grounded shadow). `.pending`
+  is an amber wash + ring for the same reason. The "Show N earlier events"
+  control is a `.chipFloat` sand chip (no hairline, grounded shadow). The
+  conflict count on the home is a real inbox count (`null` while unknown,
+  never a fabricated zero).
+- Phone home: the month title is a toggle between agenda and the compact
+  month grid (chevron rotates, week strip hides in month mode); the member
+  rail leads with a Team chip and ends with Compare (dashed `UserPlus`).

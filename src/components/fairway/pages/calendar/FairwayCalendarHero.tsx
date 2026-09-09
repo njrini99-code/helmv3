@@ -33,6 +33,8 @@ import {
   AlertTriangle,
   CalendarClock,
   CalendarPlus,
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
@@ -166,7 +168,10 @@ export function FairwayCalendarHero({
         // Sticky chrome: the agenda, rail and grids scroll UNDER this glass.
         // Sits just below the top bar + hub sub-nav (AppShell publishes both
         // offsets) and beneath the sub-nav's z-raised.
-        'sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9] overflow-hidden rounded-fw-lg border px-3 pb-2.5 pt-3 md:p-4',
+        'sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9] overflow-hidden',
+        // Phone: a full-bleed glass band under the app chrome (hairline
+        // below, no card frame). md+: the framed instrument.
+        '-mx-4 border-b px-4 pb-3 pt-3 md:mx-0 md:rounded-fw-lg md:border md:p-4',
         surfaces.chrome,
         surfaces.enter,
       )}
@@ -177,12 +182,41 @@ export function FairwayCalendarHero({
         className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-accent-500/10 blur-3xl"
       />
 
-      <div className="relative flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:gap-4">
+      <div className="relative flex flex-row items-start gap-2 md:flex-row md:flex-wrap md:items-center md:gap-4">
         {/* Title column — month + honest status line. `md:min-w-[260px]` gives
             the row something to wrap AROUND at tablet widths so the control
             cluster drops to its own line instead of squeezing the title. */}
-        <div className="flex min-w-0 flex-col gap-0.5 md:min-w-[260px]">
-          <h1 className="font-fw-display text-[1.5rem] font-semibold leading-[1.1] tracking-[-0.02em] text-text-primary md:text-h2 [text-wrap:balance]">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-initial md:min-w-[260px]">
+          {hasViews ? (
+            // Phone: the month title is the way into (and out of) the month
+            // grid — the segmented switcher is a desktop-only control.
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onViewChange!(isMonthView ? 'agenda' : 'month')}
+              aria-expanded={isMonthView}
+              aria-label={isMonthView ? `${monthTitle} — back to agenda` : `${monthTitle} — show month grid`}
+              className={cn(
+                '-ml-1 h-auto min-h-0 w-auto max-w-full justify-start gap-1 rounded-fw-sm px-1 py-0 text-left hover:bg-transparent active:bg-transparent md:hidden',
+                '[&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-1',
+                surfaces.press,
+              )}
+            >
+              <span className="min-w-0 truncate font-fw-display text-[1.25rem] font-semibold leading-[1.15] tracking-[-0.02em] text-text-primary">
+                {monthTitle}
+              </span>
+              <ChevronDown
+                aria-hidden
+                className={cn('h-4 w-4 flex-shrink-0 text-text-tertiary transition-transform motion-reduce:transition-none', isMonthView && 'rotate-180')}
+              />
+            </Button>
+          ) : null}
+          <h1
+            className={cn(
+              'font-fw-display text-[1.375rem] font-semibold leading-[1.15] tracking-[-0.02em] text-text-primary md:text-h2 [text-wrap:balance]',
+              hasViews && 'sr-only md:not-sr-only',
+            )}
+          >
             {monthTitle}
           </h1>
           {upcomingCount > 0 ? (
@@ -191,10 +225,36 @@ export function FairwayCalendarHero({
               {' upcoming · '}
               <span className="font-fw-mono tabular-nums">{windowCount}</span>
               {` ${windowLabel}`}
+              {!focusIsToday ? (
+                <>
+                  {' · '}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onNavigate('today')}
+                    className="inline h-auto min-h-0 w-auto rounded-none border-0 p-0 align-baseline font-fw-sans text-caption font-semibold text-accent-700 hover:bg-transparent hover:underline md:hidden"
+                  >
+                    Today
+                  </Button>
+                </>
+              ) : null}
             </p>
           ) : (
             <p className="font-fw-sans text-caption leading-[1.4] text-text-tertiary">
               No upcoming events
+              {!focusIsToday ? (
+                <>
+                  {' · '}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onNavigate('today')}
+                    className="inline h-auto min-h-0 w-auto rounded-none border-0 p-0 align-baseline font-fw-sans text-caption font-semibold text-accent-700 hover:bg-transparent hover:underline md:hidden"
+                  >
+                    Today
+                  </Button>
+                </>
+              ) : null}
             </p>
           )}
         </div>
@@ -202,13 +262,31 @@ export function FairwayCalendarHero({
         {/* Control cluster — nav, the ONE primary action, and (phone) the
             anchored More menu. Flush right at md+ whether it shares the title
             row or wraps below it. */}
-        <div className="flex flex-shrink-0 items-center gap-1.5 md:ml-auto md:flex md:gap-2">
+        <div className="ml-auto flex flex-shrink-0 items-center gap-0 md:ml-auto md:flex md:gap-2">
+          <IconButton
+            variant="ghost"
+            size="sm"
+            aria-label="Previous"
+            onClick={() => onNavigate('prev')}
+            className={cn('md:hidden', surfaces.press)}
+          >
+            <ChevronLeft />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            aria-label="Next"
+            onClick={() => onNavigate('next')}
+            className={cn('md:hidden', surfaces.press)}
+          >
+            <ChevronRight />
+          </IconButton>
           <IconButton
             variant="secondary"
             size="md"
             aria-label="Previous"
             onClick={() => onNavigate('prev')}
-            className={surfaces.press}
+            className={cn('hidden md:inline-flex', surfaces.press)}
           >
             <ChevronLeft />
           </IconButton>
@@ -217,7 +295,7 @@ export function FairwayCalendarHero({
             size="sm"
             onClick={() => onNavigate('today')}
             aria-pressed={focusIsToday}
-            className={surfaces.press}
+            className={cn('hidden md:inline-flex', surfaces.press)}
           >
             Today
           </Button>
@@ -226,14 +304,12 @@ export function FairwayCalendarHero({
             size="md"
             aria-label="Next"
             onClick={() => onNavigate('next')}
-            className={surfaces.press}
+            className={cn('hidden md:inline-flex', surfaces.press)}
           >
             <ChevronRight />
           </IconButton>
 
-          <span className="flex-1 md:hidden" />
-
-          {secondaryActions.length > 0 ? (
+          {secondaryActions.length > 0 || hasViews ? (
             <PopoverPanel
               open={moreOpen}
               onOpenChange={setMoreOpen}
@@ -243,8 +319,8 @@ export function FairwayCalendarHero({
               ariaLabel="More calendar actions"
               trigger={
                 <IconButton
-                  variant="secondary"
-                  size="md"
+                  variant="ghost"
+                  size="sm"
                   aria-label="More calendar actions"
                   className={cn('md:hidden', surfaces.press)}
                 >
@@ -252,6 +328,28 @@ export function FairwayCalendarHero({
                 </IconButton>
               }
             >
+              {hasViews ? (
+                <>
+                  <PopoverPanel.Header>View</PopoverPanel.Header>
+                  {viewOptions!.map((option) => (
+                    <PopoverPanel.Item
+                      key={option.value}
+                      role="menuitemradio"
+                      aria-checked={option.value === view}
+                      onClick={() => {
+                        setMoreOpen(false);
+                        onViewChange!(option.value);
+                      }}
+                    >
+                      <span className="flex w-full items-center justify-between gap-2.5">
+                        {option.label}
+                        {option.value === view ? <Check className="h-4 w-4 text-accent-700" aria-hidden /> : null}
+                      </span>
+                    </PopoverPanel.Item>
+                  ))}
+                  {secondaryActions.length > 0 ? <PopoverPanel.Separator /> : null}
+                </>
+              ) : null}
               {secondaryActions.map((action) => (
                 <PopoverPanel.Item
                   key={action.key}
@@ -279,7 +377,7 @@ export function FairwayCalendarHero({
                   size="md"
                   aria-label={ctaLabel}
                   onClick={onPrimaryAction}
-                  className={cn('md:hidden', surfaces.selected, surfaces.press)}
+                  className={cn('ml-1 md:hidden', surfaces.glow, surfaces.press)}
                 >
                   <Plus />
                 </IconButton>
@@ -288,7 +386,7 @@ export function FairwayCalendarHero({
                   variant="primary"
                   size="sm"
                   onClick={onPrimaryAction}
-                  className={cn('md:hidden', surfaces.selected, surfaces.press)}
+                  className={cn('ml-1 md:hidden', surfaces.glow, surfaces.press)}
                 >
                   {ctaLabel}
                 </Button>
@@ -309,7 +407,7 @@ export function FairwayCalendarHero({
 
       {/* Week strip — the second row of the instrument. On a phone the month
           grid already shows every day, so the strip steps aside there. */}
-      <div className={cn('relative mt-3', isMonthView && 'max-md:hidden')}>
+      <div className={cn('relative mt-2.5 md:mt-3', isMonthView && 'max-md:hidden')}>
         <FairwayDayStrip
           focusDate={focusDate}
           selectedDate={selectedDate}
@@ -324,7 +422,7 @@ export function FairwayCalendarHero({
       {/* Third row — the view switcher (every width) and, at md+, the
           secondary actions as quiet labelled pills. */}
       {hasViews || secondaryActions.length > 0 ? (
-        <div className="relative mt-3 flex items-center gap-2">
+        <div className="relative mt-3 hidden items-center gap-2 md:flex">
           {hasViews ? (
             <div className="min-w-0 flex-1 md:flex-none">
               <Segmented<FairwayCalendarViewId>

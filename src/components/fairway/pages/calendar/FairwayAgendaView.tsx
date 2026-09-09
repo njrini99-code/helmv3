@@ -28,6 +28,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { eventDaySpan } from '@/lib/calendar/timezone';
 import { FairwayEventCard } from './FairwayEventCard';
+import surfaces from './CalendarSurfaces.module.css';
 
 export interface FairwayAgendaViewProps {
   events: CalendarEvent[];
@@ -357,10 +358,15 @@ export function FairwayAgendaView({
         <div className="flex justify-center">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
+            className={cn(
+              'min-h-10 px-4 font-fw-sans text-body-sm font-semibold tracking-[0.01em] text-text-primary hover:bg-surface-sunken active:bg-surface-sunken',
+              surfaces.chipFloat,
+              surfaces.press,
+            )}
           >
             {showPast
               ? 'Hide earlier events'

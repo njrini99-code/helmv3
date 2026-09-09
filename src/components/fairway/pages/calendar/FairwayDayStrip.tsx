@@ -222,8 +222,8 @@ export function FairwayDayStrip({
                 : ' — no events'
             }`}
             className={cn(
-              'group relative block h-auto min-h-[56px] w-full border-0 font-normal md:min-h-[68px]',
-              'rounded-fw-md px-1 py-1.5 md:px-2 md:py-2',
+              'group relative block h-auto min-h-[60px] w-full border-0 font-normal md:min-h-[68px]',
+              'rounded-fw-md px-0.5 py-1 md:px-2 md:py-2',
               'transition-[background-color,box-shadow,transform,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'motion-reduce:transition-none',
@@ -238,11 +238,11 @@ export function FairwayDayStrip({
               {/* Day-of-week eyebrow. */}
               <span
                 className={cn(
-                  'font-fw-display text-eyebrow uppercase leading-none tracking-[0.12em]',
+                  'font-fw-sans text-caption font-medium leading-none tracking-[0.01em]',
                   dayIsSelected
-                    ? 'text-accent-700'
+                    ? 'font-semibold text-accent-700'
                     : dayIsToday
-                      ? 'text-accent-700'
+                      ? 'font-semibold text-accent-700'
                       : // PAST: quieted by ROLE, not by alpha. `text-text-tertiary/60`
                         // resolved to #5b5854 on the sunken well — 2.72:1, well under
                         // AA. text-tertiary is already the dimmest AA-safe ink token
@@ -259,11 +259,14 @@ export function FairwayDayStrip({
                   Selected = the emerald fill; today = a quiet ring. */}
               <span
                 className={cn(
-                  'grid h-8 w-8 place-items-center rounded-full font-fw-mono text-body-lg font-semibold leading-none tabular-nums transition-colors',
+                  // A 40px rounded square: the reference's selected-day tile.
+                  'grid h-10 w-10 place-items-center rounded-lg font-fw-sans text-[1.0625rem] font-semibold leading-none tabular-nums transition-[background-color,color,transform] motion-reduce:transition-none',
                   dayIsSelected && cn('text-text-on-accent', surfaces.selected),
-                  !dayIsSelected && dayIsToday && 'ring-2 ring-accent-400',
+                  !dayIsSelected && dayIsToday && 'text-accent-700',
                   dayIsSelected
                     ? 'text-text-on-accent'
+                    : dayIsToday
+                      ? 'text-accent-700'
                     : dayIsPast
                       ? // The DATE is the data in this cell, so it must outrank its
                         // own weekday label. At tertiary/70 (3.43:1) it was landing

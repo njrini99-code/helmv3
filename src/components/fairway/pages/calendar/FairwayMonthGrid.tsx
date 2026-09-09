@@ -226,7 +226,7 @@ export function FairwayMonthGrid({
               key={key}
               className={cn(
                 'relative flex h-full flex-col gap-1 overflow-hidden p-1.5',
-                inMonth ? 'bg-surface' : 'bg-surface-sunken/50',
+                inMonth ? 'bg-surface' : 'bg-surface-sunken/40',
               )}
             >
               {/* Phone: the whole cell is the tap target (the 44px day
@@ -268,7 +268,7 @@ export function FairwayMonthGrid({
                 <span
                   aria-hidden
                   className={cn(
-                    'flex h-6 w-6 items-center justify-center rounded-full font-fw-mono text-caption font-medium tabular-nums transition-colors',
+                    'flex h-6 w-6 items-center justify-center rounded-full font-fw-sans text-caption font-semibold tabular-nums transition-colors',
                     isToday
                       ? 'bg-accent-650 text-text-on-accent'
                       : inMonth

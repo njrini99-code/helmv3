@@ -176,6 +176,11 @@ export function FairwayEventCard({
   const isCancelled = event.status === 'cancelled';
 
   const Icon = TYPE_ICON[(event.event_type || 'other').toLowerCase()] ?? CalendarDays;
+  // "9:00 AM" → { clock: "9:00", meridiem: "AM" }; "All day" stays whole.
+  const startParts = (() => {
+    const match = /^(\d{1,2}:\d{2})\s*([AP]M)$/i.exec(start);
+    return match ? { clock: match[1]!, meridiem: match[2]!.toUpperCase() } : { clock: start, meridiem: '' };
+  })();
   const tint = TYPE_TINT[(event.event_type || 'other').toLowerCase()] ?? TYPE_TINT.other!;
 
   return (
@@ -201,28 +206,38 @@ export function FairwayEventCard({
       )}
       style={enterStyle(enterIndex)}
     >
-      {/* Time gutter — outside the card, Fragment-Mono tabular-nums. */}
-      <span className="flex w-[60px] flex-shrink-0 flex-col items-start justify-center gap-0.5 whitespace-nowrap pl-0.5 md:w-[76px]">
-        <span className="font-fw-mono text-body-sm font-semibold tabular-nums leading-tight text-text-primary">
+      {/* Time gutter — outside the card. Phone: "9:00" over "AM" like the
+          reference; md+: start over end in mono. */}
+      <span className="flex w-[52px] flex-shrink-0 flex-col items-start justify-center gap-0.5 whitespace-nowrap pl-0.5 md:w-[76px]">
+        <span className="font-fw-sans text-body font-semibold tabular-nums leading-tight text-text-primary md:hidden">
+          {startParts.clock}
+        </span>
+        {startParts.meridiem ? (
+          <span className="font-fw-sans text-caption font-medium tabular-nums leading-tight text-text-secondary md:hidden">
+            {startParts.meridiem}
+          </span>
+        ) : null}
+        <span className="hidden font-fw-mono text-body-sm font-semibold tabular-nums leading-tight text-text-primary md:block">
           {start}
         </span>
         {end ? (
-          <span className="font-fw-mono text-caption tabular-nums leading-tight text-text-tertiary">
+          <span className="hidden font-fw-mono text-caption tabular-nums leading-tight text-text-tertiary md:block">
             {end}
           </span>
         ) : null}
       </span>
 
-      {/* The card — a lifted cream row with a type-tinted rule and icon disc. */}
+      {/* The card — lifted ivory paper; the type reads from the icon disc. */}
       <span
         className={cn(
-          'flex min-w-0 flex-1 items-center gap-3 rounded-card py-3 pl-4 pr-3',
+          'flex min-w-0 flex-1 items-center gap-3 rounded-card py-3 pl-3 pr-3',
           surfaces.row,
           surfaces.rise,
           'group-hover:shadow-soft',
         )}
         style={tint as React.CSSProperties}
       >
+        {/* Type icon on a soft tinted disc — the card's identity mark. */}
         <span
           aria-hidden
           className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-full', surfaces.rowIcon)}
