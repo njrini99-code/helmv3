@@ -56,7 +56,10 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // every 3 hours; this tab is the DATABASE's own state — connections, deduped
   // Supabase/PostgREST failures, query-performance deltas — read from the
   // zero-cost collectors every 5-15 minutes.
-  { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres health, deduped DB errors, query deltas', meta: '5m' },
+  // Three views over what was a nineteen-section scroll: posture (is it
+  // healthy), performance (what is slow), schema (is it safe). A ?incident=
+  // deep link renders above the rail under every one of them.
+  { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres posture, performance, schema', meta: '5m' },
   // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
   // being the one cross-sport board built to answer "who needs attention" —
   // 30-day activity/error EKG with four triage sorts.
