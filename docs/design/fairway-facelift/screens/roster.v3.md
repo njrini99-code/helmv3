@@ -518,3 +518,109 @@ band (see below), so no client-only breakpoint state remains on this screen.
   need to move from wherever it currently renders (the deleted `AttentionPanel`)
   to the new ledger/masthead render site. Whoever builds this should update or
   delete those specific assertions rather than discover the breakage blind.
+
+## Result
+
+Built against this spec. Deviations, in the order a reviewer would hit them:
+
+- **Loader change landed** (the Risks section's `newFields`): `roster/page.tsx`'s
+  round select now pulls `id, course_name` plus the real to-par column — which is
+  named `score_to_par` in `golf_rounds`, not `total_to_par` as this spec's Risks
+  section names it (verified against `dashboard-data.ts`'s own select/mapping,
+  which reads `score_to_par` and renames it to `total_to_par` only on the
+  client-facing shape). Every player's full round history now reaches the client
+  as `RosterPlayer.rounds: RosterPlayerRound[]` (`id`, `date`, `score`, `toPar`,
+  `courseName`), unpaginated, oldest→newest, excluding any round missing a date
+  or a to-par value rather than defaulting the gap to 0/E. The loader also now
+  forwards `recent_trend_delta` (previously computed at the same call site and
+  discarded) and a server-computed `today` (`YYYY-MM-DD`) and `roundsUnavailable`
+  boolean. Every stage bar, the table's Trend magnitude, and the masthead's
+  strokes clauses are real numbers from this change, not fabricated.
+- **Trend is never re-classified on the client.** The Risks section's suggested
+  fix ("re-run the classifier client-side… the magnitude survives") was NOT
+  taken as written — instead the server's already-computed `recent_trend_delta`
+  is forwarded and reused directly everywhere (stage, table, masthead). A
+  client-side re-run of `computeScoringTrendFromRounds` only agrees with the
+  server's own result if the most-recent-first sort order matches exactly
+  (same-day rounds can swap across the split-half boundary otherwise), and this
+  screen's own Attention ledger depends on the server's `recent_trend` for its
+  flagging — a client re-derivation that ever disagreed with it would put two
+  regions of the same page in visible contradiction. Forwarding the one
+  server-computed number instead makes that impossible by construction.
+- **Ledger split moved from `lg` to `xl`.** This spec's "The ledger row" section
+  says `divide-x` on `lg` / `lg:grid-cols-12`; LANGUAGE.md (lines 47-52) and
+  IMPLEMENTING.md's own load-bearing rule are explicit that every side-by-side
+  split belongs at `xl`, and LANGUAGE.md states it is the document that decides
+  composition when the two disagree. Built as `xl:grid-cols-12 xl:divide-x`,
+  `md:grid-cols-2` as the intermediate two-up state, single column with a
+  horizontal hairline (`border-t`) below `md`. Table column hiding
+  (`hidden md:table-cell` / `hidden lg:table-cell`) is unaffected — untouched
+  from the spec.
+- **Window control defaults to `90D`, not `All`.** The stage section says
+  default `All`; the Risks section's own "All-window density" item flags this as
+  unresolved and offers "default 90D, keep All as an explicit opt-in" as the
+  alternative, deferring the choice to build time. Took that alternative: at
+  `All`, a multi-season player's full history packs into one fixed-height row at
+  a few pixels per bar, which fails the "reviewed at full size" bar for any
+  roster with real history. `All` is one Segmented/Menu click away.
+- **The stage ships without the Focus column.** The spec's one "additive,
+  backward-compatible" instrument change (`ScoreFieldRow.focus`,
+  `ScoreFieldProps.showFocusColumn`) requires edits to
+  `modules/types.ts`/`modules/ScoreField.tsx`, both reserved to the facelift
+  lead to avoid cross-agent commit races. Sent the lead the exact 2-line-plus-
+  rendering diff before starting the rest of the build; no response had landed
+  by commit time. Not worked around with a shadow type on this file — the
+  table's own Focus column (present, per spec) carries the same number per
+  player, so no data is missing from the page, only the one stage cell. Wire
+  `showFocusColumn`/`row.focus` into the `<ScoreField>` call in
+  `FairwayCoachRoster.tsx` once the lead lands the primitive change.
+- **Player cell link differs from "the exact pattern `RoundsLedgerTable`
+  already uses."** `RoundsLedgerTable` wraps a plain name string in `<Link>`; it
+  doesn't use `PlayerIdentity` at all. `PlayerIdentity` is deliberately
+  non-interactive (renders no link of its own — "a parent owns the
+  interaction"), so there's no literal version of "PlayerIdentity + a linked
+  name" to copy. Built as: the whole avatar+name `PlayerIdentity` block wrapped
+  in one `<Link>` (closest keyboard/no-JS equivalent), with `FairwayYearBadge`
+  rendered as a flex sibling OUTSIDE that anchor rather than as `PlayerIdentity`'s
+  `nameAddon` — inside the anchor, the badge's own visible text ("'27") would
+  fold into the link's accessible name alongside the player's, breaking
+  exact-name a11y queries and screen-reader clarity alike.
+- **No presence/online dot on the table row.** Neither this spec's Player-cell
+  column description nor "What this deletes" names the online indicator the
+  pre-facelift board carried. Left it off rather than guess; the Player cell was
+  already avatar + name + year badge + intent pill, and re-adding a `Date.now()`
+  -based online dot would also reintroduce the exact client-only-clock
+  mount-guard pattern the old file carried specifically to dodge a hydration
+  mismatch.
+- **Toolbar is not `sticky`.** The pre-facelift board's `Toolbar` pinned below
+  the top bar with a glass-on-stuck treatment. Nothing in roster.v3.md's "The
+  table" section calls for stickiness, and LANGUAGE.md's page anatomy doesn't
+  mention a pinned toolbar for any screen. Built as a plain, non-sticky strip.
+- **`recent_scores` kept, unused.** `RosterPlayer.recent_scores` (last 10,
+  18-hole-normalized scores) is no longer read by this page — the stage draws
+  from the real, unnormalized `rounds` field instead — but the field and its
+  loader computation are left in place rather than removed, since it's a
+  shared, exported type other code may still construct or expect.
+- Everything else matches the spec as written: masthead template and every
+  clause's missing/present branching, the readouts' four items and their
+  breakdown text, both ledger columns' caps/empty states, the table's columns/
+  hidden-below breakpoints/row-count-with-no-cap, and the phone rules.
+
+**Verification actually run**, in IMPLEMENTING.md's order: guarded `tsc --noEmit`
+(clean for every file this build touches; the only remaining errors are
+pre-existing, in `pages/rounds/*`, owned by another agent); `eslint` on every
+changed file (zero errors, zero warnings, after fixing one real a11y warning —
+a `div onClick` stopPropagation wrapper around the inline intent pill — with
+the same `eslint-disable-next-line` convention already used elsewhere in this
+codebase for that exact pattern); one vitest run at a time (`roster-logic.test.ts`,
+28 new/updated assertions, plus `FairwayCoachRoster.test.tsx` rewritten in place
+— not deleted — to match the new composition; `FairwayPlayerCard.test.tsx` also
+re-run to confirm the additive type fields didn't regress it); desktop + phone
+captures via `capture-golf-facelift.mjs`, viewed directly; 1024 and 1440 via
+`.route-probe.tmp.mjs`, both 0px horizontal overflow. The 1024/1440 probe caught
+one real bug before commit: the table's `min-w-[720px]` forced a horizontal
+scroll on phone that hid the Avg/Trend columns entirely behind the fold, despite
+0px page-level overflow (the scroll was inside the table's own
+`overflow-x-auto`, not the page) — fixed to `md:min-w-[720px]` so it only
+engages once the `md:table-cell` columns exist to need the width, re-captured
+and re-probed clean.
