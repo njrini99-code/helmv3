@@ -37,7 +37,8 @@ Also seen in the captures: the coach home desktop first paint had the trend char
 knip + import-graph + per-file `rg` verification. Routes: no unreachable `page.tsx` under golf — `/hub`, `/patterns`, `/insights`, `/my-insights`, `/my-development`, `/my-game-profile`, `/my-standing`, `/alerts`, `/development` are documented redirect shims with `legacy: true, hidden: true` registry entries; `/fairway-preview` and `/vizlab` are deliberate direct-URL / dev-only surfaces; `/dev/haptics` is linked from Settings.
 
 | Path | Why | LOC | Action |
-| --- | --- | --- | --- || `hooks/golf/use-offline-sync.ts` | guarded by a must-not-import test | 508 | delete |
+| --- | --- | --- | --- |
+| `hooks/golf/use-offline-sync.ts` | guarded by a must-not-import test | 508 | delete |
 | `app/golf/actions/v3/llm.ts` | zero references | 536 | delete |
 | `app/golf/actions/v3/{practice-rx,team-practice-rx,focus-area-progress,goal-progress}.ts` | zero references | 295 | delete |
 | `app/golf/actions/player-effectiveness.ts`, `…/analytics/coachhelm/EffectivenessRetryButton.tsx`, `team-sg-baseline.ts` | zero references | 417 | delete |
@@ -49,6 +50,8 @@ knip + import-graph + per-file `rg` verification. Routes: no unreachable `page.t
 | `components/golf/calendar/**` | dead for golf, live for baseball via PremiumCalendarClient | — | keep until baseball moves |
 | legacy `StandingBar` (golf/coachhelm/v3), `StandingStrip`, `StandingTrack` | replaced by `charts/StandingBars` | — | delete once no consumer remains |
 | `fairway/pages/dashboard/DaySchedule.tsx` component | coach home folds the schedule into Today; only the exported `dayKeyInTz`/`dayLabel` helpers are still imported | — | move the helpers, delete the component |
+
+Landed: every `delete` row above except `stats.ts` (human review), `components/golf/calendar/**` (baseball), the legacy StandingBar trio (StandingTrack is out of the modules barrel; StandingBar and StandingStrip stay deprecated until their last consumer moves) and DaySchedule (home-polish owns it) went out in 83d72a570: 40 files, 7,352 lines. That commit's subject reads as a docs change because the staged deletions rode along with a markdownlint fix; the content is this table. The admin feature registry and the coverage-contract tests that named the deleted action files are being repointed in a follow-up commit.
 
 Legacy stragglers: ui/input and the three ui/confirm-dialog consumers inside Fairway pages are migrated (file-local ModalShell confirms; a shared overlays confirm is the follow-up), ChartTooltip and the command glass surface use tokens and the canonical GlassSurface. Still legacy: four ui/button uses in new round entry that need `haptic="none"` (Fairway Button gap), PlayersGridView, FairwayGolfClasses and FairwayExpenseList on ui/confirm-dialog, and the join/admin/onboarding loading screens, which `.claude/rules/design-system.md` keeps on the legacy skeleton on purpose.
 
