@@ -270,3 +270,41 @@ export interface ScoringHistogramProps { buckets: ScoringBucket[] }
  *  documented simplification (renders centered, never a guessed side). */
 export interface DrivingDotHole { n: number; fairwayHit: boolean | null; missSide: 'left' | 'right' | null }
 export interface DrivingDotStripProps { holes: DrivingDotHole[] }
+
+// ── ScoreField (LANGUAGE.md: the home and roster stage instrument) ─────────
+/** One plotted round on a player's strip. `date` is a `YYYY-MM-DD` day. */
+export interface ScoreFieldRound {
+  id: string;
+  date: string;
+  score: number;
+  toPar: number;
+  /** Spoken and hovered description, e.g. "Aug 31, QA Test Course, 73 (+1)". */
+  label: string;
+  href?: string;
+}
+export interface ScoreFieldTrend {
+  /** Split-half delta in strokes, signed the way the score moved (negative = better). */
+  delta: number;
+  direction: 'improving' | 'declining' | 'stable';
+}
+export interface ScoreFieldRow {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+  href?: string;
+  /** Oldest to newest; the strip positions them by `date` on the shared axis. */
+  rounds: ScoreFieldRound[];
+  avg: number | null;
+  trend?: ScoreFieldTrend | null;
+}
+export interface ScoreFieldProps {
+  rows: ScoreFieldRow[];
+  /** Shared date axis, `YYYY-MM-DD` inclusive. */
+  domain: { start: string; end: string };
+  /** Strokes over/under par that reach full bar height. Derived from the data (4 to 12) when omitted. */
+  cap?: number;
+  /** Row heading column, e.g. "Player". */
+  rowsLabel?: string;
+  ariaLabel?: string;
+  className?: string;
+}

@@ -1,30 +1,23 @@
 /**
- * ============================================================================
- * FairwayCoachDashboard — the cockpit composition (home.v2.md)
- * ----------------------------------------------------------------------------
- * Locks the structural fact THIS pass exists to deliver: Today and Who-needs-
- * attention share one operations row, Team performance is promoted to its
- * own full-width instrument band BELOW that row (not beside Today anymore —
- * that repositioning is the direct fix for the nested-card / 340px-hole
- * defects REVIEW.md flagged on this exact screen), and the ledger row
- * (Recent rounds | Activity) comes last. Queries by accessible name
- * (`role="region"` via `aria-label`), not by class name or DOM position
- * alone, so the assertion survives a pure styling/token change but still
- * catches a regression that reorders the sections or drops one of them.
- * ========================================================================== */
+ * FairwayCoachDashboard composition (docs/design/fairway-facelift/LANGUAGE.md).
+ * The home is a field sheet: masthead with the verdict, the Score field
+ * stage, the ledger row (Today, Attention, Latest), then the recent rounds
+ * table. These tests pin the anatomy and the retirement of the old tiles.
+ */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-
+import { render, screen, within } from '@testing-library/react';
 import { FairwayCoachDashboard } from './FairwayCoachDashboard';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import type { CoachDashboardPayload } from '@/app/golf/actions/dashboard-data';
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 
-// The Activity section (`NotificationsLatestModule`, `frame="bare"`) self-
-// fetches and renders NOTHING while loading or genuinely empty — the DOM-
-// order assertion below needs it to actually mount its region, so this
-// resolves one item rather than leaving the real server action to run
-// (and fail, silently, the same honest way) in a unit test.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
+}));
+
 vi.mock('@/app/golf/actions/unified-notifications', () => ({
   getUnifiedNotifications: vi.fn(async () => ({
     success: true,
@@ -46,42 +39,60 @@ vi.mock('@/app/golf/actions/unified-notifications', () => ({
   markNotificationRead: vi.fn(async () => ({ success: true })),
 }));
 
+function round(id: string, playerId: string, name: string, date: string, score: number, toPar: number): CoachDashboardData['recentRounds'][number] {
+  return {
+    id,
+    player_id: playerId,
+    player_name: name,
+    player_avatar_url: null,
+    course_name: 'pebble beach',
+    total_score: score,
+    total_to_par: toPar,
+    round_date: date,
+    round_type: 'qualifier',
+    total_putts: 30,
+    total_fairways_hit: 8,
+    total_fairways: 14,
+    total_gir: 11,
+    total_gir_possible: 18,
+  };
+}
+
+const ROUNDS = [
+  round('r1', 'p1', 'Alex Player', '2026-08-01', 71, -1),
+  round('r2', 'p1', 'Alex Player', '2026-08-10', 75, 3),
+  round('r3', 'p2', 'Sam Second', '2026-08-12', 78, 6),
+];
+
 function baseData(overrides: Partial<CoachDashboardData> = {}): CoachDashboardData {
   return {
     coach: { id: 'coach-1', full_name: 'Pat Coach' } as CoachDashboardData['coach'],
     team: { id: 'team-1', name: 'Rini University', join_code: 'ABC123' } as CoachDashboardData['team'],
-    stats: {
-      rosterSize: 8,
-      upcomingEvents: 0,
-      activeQualifiers: 0,
-      teamScoringAverage: 74,
-    },
-    recentRounds: [],
-    topPlayers: [],
+    stats: { rosterSize: 3, upcomingEvents: 0, activeQualifiers: 0, teamScoringAverage: 74 },
+    recentRounds: ROUNDS,
+    topPlayers: [
+      { id: 'p1', name: 'Alex Player', avg_score: 73, rounds: 2 },
+      { id: 'p2', name: 'Sam Second', avg_score: 78, rounds: 1 },
+    ],
     calendarEvents: [],
     teamScoringTrend: undefined,
     ...overrides,
-  } as CoachDashboardData;
+  };
 }
 
 function basePayload(overrides: Partial<CoachDashboardPayload> = {}): CoachDashboardPayload {
   return {
     todayEvents: [],
     todayScheduleError: false,
-    stats: {
-      rosterSize: 8,
-      upcomingEvents: 0,
-      activeQualifiers: 0,
-      teamScoringAverage: 74,
-      previousAverage: null,
-    },
+    teamStatsUnavailable: false,
+    stats: { rosterSize: 3, upcomingEvents: 0, activeQualifiers: 0, teamScoringAverage: 74, previousAverage: null },
     sparklines: {
-      scoringAvg: { label: 'Team Scoring Avg', value: 74, sparkline: [] },
-      girPct: { label: 'Team GIR%', value: null, sparkline: [] },
-      puttsPerRound: { label: 'Team Putts/Rd', value: null, sparkline: [] },
-      rosterSize: { label: 'Roster Size', value: 8, sparkline: [] },
+      scoringAvg: { label: 'Team Scoring Avg', value: 74.6, sparkline: [76, 75, 74, 74, 73] },
+      girPct: { label: 'Team GIR%', value: 61.1, sparkline: [55, 60, 61, 64, 66], suffix: '%' },
+      puttsPerRound: { label: 'Team Putts/Rd', value: 31.4, sparkline: [] },
+      rosterSize: { label: 'Roster Size', value: 3, sparkline: [] },
     },
-    teamPulse: { improving: 2, stable: 1, declining: 0, roundsThisWeek: 3 },
+    teamPulse: { improving: 1, stable: 1, declining: 1, roundsThisWeek: 2 },
     actionItems: [],
     recentRounds: [],
     topPlayers: [],
@@ -90,96 +101,77 @@ function basePayload(overrides: Partial<CoachDashboardPayload> = {}): CoachDashb
     teamName: 'Rini University',
     joinCode: 'ABC123',
     timezone: 'America/New_York',
+    roster: [
+      { id: 'p1', name: 'Alex Player', avatar_url: null },
+      { id: 'p2', name: 'Sam Second', avatar_url: null },
+      { id: 'p3', name: 'Quiet Third', avatar_url: null },
+    ],
+    windowStart: null,
+    today: '2026-09-10',
     ...overrides,
-  } as CoachDashboardPayload;
+  };
 }
 
-describe('FairwayCoachDashboard — home.v2.md composition', () => {
-  it('renders Today, Who needs attention, Team performance, Recent rounds and Latest notifications as named regions, in that DOM order', async () => {
-    render(
-      <FairwayCoachDashboard
-        data={baseData({
-          topPlayers: [{ id: 'p1', name: 'Alex Player', avg_score: 72.5, rounds: 5 }],
-        })}
-        enhancedData={basePayload()}
-        joinRequests={[]}
-      />,
-    );
+describe('FairwayCoachDashboard, the field sheet composition', () => {
+  it('renders the verdict, the Score field stage, Today, Attention, Latest and Recent rounds, in that DOM order', () => {
+    render(<FairwayCoachDashboard data={baseData()} enhancedData={basePayload()} joinRequests={[]} greeting="Good morning" todayLabel="Thursday, September 10" />);
 
+    const stage = screen.getByRole('region', { name: 'Score field' });
     const today = screen.getByRole('region', { name: "Today's schedule" });
-    const whoNeedsAttention = screen.getByRole('region', { name: 'Who needs attention' });
-    const teamPerformance = screen.getByRole('region', { name: 'Team performance' });
-    const recentRounds = screen.getByRole('region', { name: 'Recent rounds' });
-    // Async: NotificationsLatestModule self-fetches before it mounts its region.
-    const latestNotifications = await screen.findByRole('region', { name: 'Latest notifications' });
+    const attention = screen.getByRole('region', { name: 'Who needs attention' });
+    const rounds = screen.getByRole('region', { name: 'Recent rounds' });
+    const verdict = document.querySelector('[data-slot="verdict"]');
+    expect(verdict).not.toBeNull();
 
-    // Operations row (home.v2.md §4): Today precedes Who-needs-attention,
-    // same row, left-to-right reading order.
-    expect(today.compareDocumentPosition(whoNeedsAttention) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    // Instrument band (home.v2.md §5): the operations row precedes the
-    // full-width Team performance cockpit — it is no longer a column
-    // beside Today, it is its own row below both operations-row columns.
-    expect(whoNeedsAttention.compareDocumentPosition(teamPerformance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    // Ledger row (home.v2.md §6): the instrument band precedes Recent
-    // rounds, which precedes Activity — same row, left-to-right.
-    expect(teamPerformance.compareDocumentPosition(recentRounds) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(recentRounds.compareDocumentPosition(latestNotifications) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const order = [verdict!, stage, today, attention, rounds];
+    for (let i = 1; i < order.length; i += 1) {
+      expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Good morning, Pat.');
   });
 
-  it('never renders the removed containers, and the "Team pulse" name is fully retired', () => {
-    render(
-      <FairwayCoachDashboard
-        data={baseData({
-          topPlayers: [{ id: 'p1', name: 'Alex Player', avg_score: 72.5, rounds: 5 }],
-        })}
-        enhancedData={basePayload()}
-        joinRequests={[]}
-      />,
-    );
-
-    // The old page-level "WINDOW" eyebrow band is gone — the range control
-    // now lives in the sticky Toolbar (Segmented on desktop, a Menu on
-    // phone), not a standalone page-level band.
-    expect(screen.queryByText('Window')).not.toBeInTheDocument();
-    // The old standalone "Schedule" card and "Top Performers" card heading
-    // are gone — merged into Today and Who-needs-attention respectively.
-    expect(screen.queryByRole('heading', { name: 'Schedule' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Top Performers' })).not.toBeInTheDocument();
-    // The section drifted to "Team pulse" in the shipped code; home.v2.md
-    // corrects it back to "Who needs attention" — no heading OR region
-    // should still carry the old name.
-    expect(screen.queryByRole('heading', { name: 'Team pulse' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Team pulse' })).not.toBeInTheDocument();
+  it('draws one Score field row per roster player, with a bar per round and a note for a player without rounds', () => {
+    render(<FairwayCoachDashboard data={baseData()} enhancedData={basePayload()} joinRequests={[]} />);
+    const field = screen.getByRole('table', { name: /rounds by player/i });
+    const rows = within(field).getAllByRole('row').filter((r) => within(r).queryByRole('rowheader'));
+    expect(rows.map((r) => within(r).getByRole('rowheader').textContent)).toEqual(['APAlex Player', 'SSSam Second', 'QTQuiet Third']);
+    expect(within(rows[0]!).getAllByRole('link', { name: /Pebble Beach/ })).toHaveLength(2);
+    expect(within(rows[2]!).getByText('No rounds in this window')).toBeInTheDocument();
+    expect(within(field).getByText('Today')).toBeInTheDocument();
   });
 
-  it('renders the verdict line and the sticky toolbar', () => {
-    render(
-      <FairwayCoachDashboard
-        data={baseData({
-          topPlayers: [{ id: 'p1', name: 'Alex Player', avg_score: 72.5, rounds: 5 }],
-        })}
-        enhancedData={basePayload({
-          todayEvents: [
-            {
-              id: 'e1',
-              title: 'Practice',
-              event_type: 'practice',
-              start_time: '2026-09-10T14:00:00.000Z',
-              end_time: '2026-09-10T15:00:00.000Z',
-              location: null,
-            },
-          ],
-        })}
-        joinRequests={[]}
-      />,
-    );
+  it('puts the team readouts inside the stage and the leader in the verdict', () => {
+    render(<FairwayCoachDashboard data={baseData()} enhancedData={basePayload()} joinRequests={[]} />);
+    const stage = screen.getByRole('region', { name: 'Score field' });
+    expect(within(stage).getByText('Scoring avg')).toBeInTheDocument();
+    expect(within(stage).getByText('74.6')).toBeInTheDocument();
+    expect(within(stage).getByText('61.1')).toBeInTheDocument();
+    const verdict = document.querySelector('[data-slot="verdict"]')!;
+    expect(verdict).toHaveTextContent('Alex Player leads at 73.0.');
+    expect(within(verdict as HTMLElement).getByRole('link', { name: 'Alex Player' })).toHaveAttribute('href', '/golf/dashboard/roster/p1');
+  });
 
-    // "1 event on today's schedule." — singular, and the pulse clause
-    // (2 improving, 0 declining — `tracked` = improving+stable+declining =
-    // 3 > 0) both present in one sentence.
-    expect(screen.getByText(/event on today's schedule\./)).toBeInTheDocument();
-    expect(screen.getByRole('toolbar', { name: 'Dashboard toolbar' })).toBeInTheDocument();
+  it('renders the recent rounds as a table with signed to-par ink and never the retired tiles', () => {
+    render(<FairwayCoachDashboard data={baseData()} enhancedData={basePayload()} joinRequests={[]} />);
+    const rounds = screen.getByRole('region', { name: 'Recent rounds' });
+    const table = within(rounds).getByRole('table');
+    expect(within(table).getAllByRole('row')).toHaveLength(1 + ROUNDS.length);
+    expect(within(table).getByText('+6')).toBeInTheDocument();
+    expect(within(table).getByText('−1')).toBeInTheDocument();
+
+    expect(screen.queryByText('Team performance')).not.toBeInTheDocument();
+    expect(screen.queryByText('Performance Trend')).not.toBeInTheDocument();
+    expect(screen.queryByText('Team pulse')).not.toBeInTheDocument();
+    expect(screen.queryByRole('toolbar')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-slot="ticker-strip"]')).toBeNull();
+    expect(document.querySelector('[data-slot="metric-card"]')).toBeNull();
+  });
+
+  it('keeps the honest empty state when the window has no rounds and offers the wider window', () => {
+    render(<FairwayCoachDashboard data={baseData({ recentRounds: [] })} enhancedData={basePayload({ windowStart: '2026-09-03' })} dateRange="7d" joinRequests={[]} />);
+    const stage = screen.getByRole('region', { name: 'Score field' });
+    expect(within(stage).getByText('No rounds in this window')).toBeInTheDocument();
+    expect(within(stage).getByRole('button', { name: 'Show all time' })).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="verdict"]')).toHaveTextContent('No rounds in this window.');
   });
 });
