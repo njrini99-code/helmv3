@@ -32,7 +32,8 @@ import {
   Compass,
 } from 'lucide-react';
 
-import { Surface, Inset } from '@/components/fairway/surfaces/surface';
+import { Surface } from '@/components/fairway/surfaces/surface';
+import { InsetGroup } from '@/components/fairway/surfaces/inset-group';
 import { Button } from '@/components/fairway/controls/button';
 import { GenomeRadar, type GenomeAxis } from '@/components/fairway/charts/GenomeRadar';
 import { cn } from '@/lib/utils';
@@ -141,82 +142,77 @@ export function TodayCard({
     ? `${actionItems.length} update${actionItems.length === 1 ? '' : 's'} total`
     : "You're caught up";
 
+  // ONE container of seam rows (player-home.mobile.md #5): header, the event
+  // and task rows divided by hairlines, a footer row — instead of tinted
+  // Insets stacked inside a padded card (a card inside a card).
   return (
-    <Surface padding="md" className="flex h-full flex-col">
-      <Surface.Header
-        title="Today"
-        subtitle={nothingToday ? "You're all caught up" : 'Your next event and task'}
-      />
+    <Surface padding="none" className="flex h-full flex-col overflow-hidden">
+      <div className="px-4 pt-4">
+        <Surface.Header
+          title="Today"
+          subtitle={nothingToday ? "You're all caught up" : 'Your next event and task'}
+        />
+      </div>
 
-      <div className="flex flex-1 flex-col gap-2.5">
+      <div className="flex flex-1 flex-col divide-y divide-border-subtle border-t border-border-subtle">
         {/* Next event row */}
         {nextEvent ? (
-          <Inset padding="sm" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
-              <CalendarClock aria-hidden className="h-4 w-4" />
+          <InsetGroup.Row icon={<CalendarClock aria-hidden />} align="start">
+            <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
+              {nextEvent.title}
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {nextEvent.title}
-              </p>
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                {formatEventTime(nextEvent.start_time, timezone)}
-                {nextEvent.location ? ` · ${nextEvent.location}` : ''}
-              </p>
-            </div>
-          </Inset>
+            <span className="block font-fw-sans text-caption text-text-tertiary">
+              {formatEventTime(nextEvent.start_time, timezone)}
+              {nextEvent.location ? ` · ${nextEvent.location}` : ''}
+            </span>
+          </InsetGroup.Row>
         ) : null}
 
         {/* Lead task row (overdue first) */}
         {leadTask ? (
-          <Inset padding="sm" className="flex items-center gap-3">
+          <InsetGroup.Row
+            align="start"
+            icon={
+              leadTask.overdue ? (
+                <AlertCircle aria-hidden className="text-fw-warning-ink" />
+              ) : (
+                <ClipboardList aria-hidden className="text-text-tertiary" />
+              )
+            }
+          >
+            <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
+              {leadTask.title}
+            </span>
             <span
               className={cn(
-                'grid h-9 w-9 shrink-0 place-items-center rounded-fw-md',
-                leadTask.overdue
-                  ? 'bg-fw-warning-bg text-fw-warning-ink'
-                  : 'bg-surface text-text-tertiary',
+                'block font-fw-sans text-caption',
+                leadTask.overdue ? 'text-fw-warning-ink' : 'text-text-tertiary',
               )}
             >
-              {leadTask.overdue ? (
-                <AlertCircle aria-hidden className="h-4 w-4" />
-              ) : (
-                <ClipboardList aria-hidden className="h-4 w-4" />
-              )}
+              {leadTask.overdue ? 'Overdue' : 'Open'}
+              {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {leadTask.title}
-              </p>
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                {leadTask.overdue ? 'Overdue' : 'Open'}
-                {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
-              </p>
-            </div>
-          </Inset>
+          </InsetGroup.Row>
         ) : null}
 
         {nothingToday ? (
-          <Inset
-            padding="md"
-            className="flex flex-1 flex-col items-center justify-center gap-1 text-center"
-          >
+          <div className="flex flex-1 flex-col items-center justify-center gap-1 px-4 py-6 text-center">
             <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
               Nothing scheduled
             </p>
             <p className="font-fw-sans text-caption text-text-tertiary">
               Check the full calendar for trips and upcoming events.
             </p>
-          </Inset>
+          </div>
         ) : null}
       </div>
 
-      <Surface.Footer className="mt-3">
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-subtle py-1.5 pl-4 pr-2">
         <span className="font-fw-sans text-caption text-text-tertiary">{footerLabel}</span>
         <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
           <Link href="/golf/dashboard/calendar">Full calendar</Link>
         </Button>
-      </Surface.Footer>
+      </div>
     </Surface>
   );
 }
@@ -254,8 +250,13 @@ export function GenomeFingerprintTeaser({
   // otherwise the radar collapses to a degenerate/near-null vector, so fall
   // back to GenomeRadar's honest insufficient-data state instead of plotting it.
   const hasShape = axes.length >= 3;
+  // Below `md` the radar's own ChartFrame is the only card (player-home.mobile.md
+  // #3); the Surface chrome returns from `md`, where the teaser sits in a grid.
   return (
-    <Surface padding="md" className="flex h-full flex-col">
+    <Surface
+      padding="md"
+      className="flex h-full flex-col max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:[box-shadow:none]"
+    >
       <Surface.Header
         title="Strokes-gained shape"
         subtitle="Where your strokes come from across the four scoring zones"
@@ -395,7 +396,7 @@ export function RecentRoundsList({
  * discoverability bug). Honest: shows a calm prompt rather than a fake number.
  * ──────────────────────────────────────────────────────────────────────── */
 
-export function StandingCard({ ready }: { ready: boolean }) {
+export function StandingCard({ ready, className }: { ready: boolean; className?: string }) {
   return (
     <Surface
       as={Link}
@@ -404,7 +405,7 @@ export function StandingCard({ ready }: { ready: boolean }) {
       {...({ href: '/golf/dashboard/my-standing' } as { href: string })}
       interactive
       padding="md"
-      className="flex h-full flex-col justify-between"
+      className={cn('flex h-full flex-col justify-between', className)}
     >
       <div className="flex items-start justify-between gap-3">
         <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">

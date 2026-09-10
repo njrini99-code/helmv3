@@ -37,7 +37,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
-import { Plus, TrendingUp, Target, Activity, Trophy, Flag } from 'lucide-react';
+import { Plus, TrendingUp, Target, Activity, Trophy, Flag, Compass, ChevronRight } from 'lucide-react';
 
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/dashboard/index.ts) from
@@ -46,7 +46,9 @@ import { Plus, TrendingUp, Target, Activity, Trophy, Flag } from 'lucide-react';
 import { ViewHeader } from '@/components/fairway/view-header';
 import { Button } from '@/components/fairway/controls';
 import { MetricCard, InsightCard } from '@/components/fairway/cards-insight';
-import { Surface, Inset } from '@/components/fairway/surfaces';
+import { Surface, Inset, InsetGroup } from '@/components/fairway/surfaces';
+import { StatMatrix } from '@/components/fairway/modules/StatMatrix';
+import { cn } from '@/lib/utils';
 import { InlineNotice, EmptyState, Skeleton } from '@/components/fairway/feedback';
 import { Sparkline } from '@/components/fairway/charts';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
@@ -54,7 +56,7 @@ import { Sparkline } from '@/components/fairway/charts';
 // single call, so the two can never classify the same series two different
 // ways again. Direct-file import (not the barrel) mirrors how MetricCard
 // itself imports its trend classifier.
-import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
+import { computeSeriesTrend, type SeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { getGreeting, getTimeOfDay } from '@/lib/utils/time-of-day';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
@@ -336,6 +338,43 @@ export function FairwayPlayerDashboard({
   const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
   const handicapDelta = computeSeriesTrend(handicapSeries, { goodDirection: 'down' });
 
+  // Phone KPI matrix (player-home.mobile.md #1): the same eight numbers the
+  // MetricCard grids show from `md`, as ONE StatMatrix below it. Same honesty
+  // rules — a null metric is "—", never a fake 0; the hint is the same
+  // split-half delta the desktop chip shows, toned by its verdict.
+  const kpiValue = (v: number | null | undefined, decimals: number, suffix = '') =>
+    v == null ? '—' : `${Number(v).toFixed(decimals)}${suffix}`;
+  const kpiHint = (t: SeriesTrend | null, decimals: number, suffix = '') =>
+    t ? (
+      <span
+        className={cn(
+          'tabular-nums',
+          t.direction === 'improving'
+            ? 'text-fw-success-ink'
+            : t.direction === 'declining'
+              ? 'text-fw-warning-ink'
+              : 'text-text-tertiary',
+        )}
+      >
+        {t.value > 0 ? '+' : ''}
+        {t.value.toFixed(decimals)}
+        {suffix} · {seriesDeltaLabel(t.points)}
+      </span>
+    ) : undefined;
+  const scoringValue = sparklines?.scoringAvg.value ?? stats.scoringAverage ?? null;
+  const handicapValue = sparklines?.handicap.value ?? stats.handicap ?? null;
+  const bestRoundValue = secondary?.bestRound ?? stats.bestRound ?? null;
+  const kpiItems = [
+    { label: 'Scoring avg', value: kpiValue(scoringValue, 1), hint: kpiHint(scoringDelta, 1), tone: scoringValue == null ? 'muted' : 'neutral' },
+    { label: 'GIR', value: kpiValue(sparklines?.girPct.value, 0, '%'), hint: kpiHint(girDelta, 0, '%'), tone: sparklines?.girPct.value == null ? 'muted' : 'neutral' },
+    { label: 'Putts / round', value: kpiValue(sparklines?.puttsPerRound.value, 1), hint: kpiHint(puttsDelta, 1), tone: sparklines?.puttsPerRound.value == null ? 'muted' : 'neutral' },
+    { label: 'Handicap', value: kpiValue(handicapValue, 1), hint: kpiHint(handicapDelta, 1), tone: handicapValue == null ? 'muted' : 'neutral' },
+    { label: 'FIR', value: kpiValue(secondary?.firPct, 0, '%'), tone: secondary?.firPct == null ? 'muted' : 'neutral' },
+    { label: 'Scrambling', value: kpiValue(secondary?.scramblingPct, 0, '%'), tone: secondary?.scramblingPct == null ? 'muted' : 'neutral' },
+    { label: 'Birdies / round', value: kpiValue(secondary?.birdiesPerRound, 1), tone: secondary?.birdiesPerRound == null ? 'muted' : 'neutral' },
+    { label: 'Best round', value: kpiValue(bestRoundValue, 0), tone: bestRoundValue == null ? 'muted' : 'neutral' },
+  ] as const;
+
   // DaySchedule feed (WAVE — action-items → schedule): merge today's events
   // with the upcoming-beyond-today events (dashboard-data.ts additive field),
   // deduped by id and sorted ascending. Both arrays already come from the
@@ -382,7 +421,7 @@ export function FairwayPlayerDashboard({
           disableAnimation
           eyebrow={team?.name ?? 'Your team'}
           title={`${timeWord}, ${firstName}`}
-          description="Your game at a glance — trend, standing, and what's next."
+          description="Your game at a glance."
           primaryAction={stats.roundsPlayed === 0 ? undefined : newRoundCta}
           className="mb-8 md:mb-10"
         />
@@ -422,6 +461,9 @@ export function FairwayPlayerDashboard({
           events={scheduleEvents}
           timezone={enhancedData?.timezone}
           viewAllHref="/golf/dashboard/calendar"
+          // The card sat flush against whatever followed it (the KPI grid or
+          // the first-round hero): give it the page's section rhythm.
+          className="mb-8"
         />
 
         {!hasRounds ? (
@@ -490,7 +532,13 @@ export function FairwayPlayerDashboard({
 
             {/* ── KPI row: matte MetricCards (honest insufficient-data) + standing */}
             <section>
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {/* Phone: one matte StatMatrix (2×4). The MetricCard grids below
+                  are `hidden md:grid`; both are CSS-gated so there is no
+                  media-query flip after hydration. */}
+              <div className="md:hidden">
+                <StatMatrix variant="matte" columns={4} items={kpiItems} />
+              </div>
+              <div className="hidden grid-cols-2 gap-3 md:grid lg:grid-cols-4">
                 <MetricCard
                   // labelLines={2}: these labels truncated at <=390 ("Scoring avg" lost
                   // 21px, "Putts / round" 35px, and at 320 they rendered "SCO...").
@@ -623,7 +671,7 @@ export function FairwayPlayerDashboard({
 
               {/* Collapsed secondary stats under the primary row */}
               {secondary ? (
-                <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="mt-3 hidden grid-cols-2 gap-3 md:grid lg:grid-cols-4">
                   <MetricCard
                     labelLines={2}
                     label="FIR"
@@ -666,7 +714,9 @@ export function FairwayPlayerDashboard({
                 <SectionTitle action={{ label: 'All stats', href: '/golf/dashboard/stats' }}>
                   Scoring trend
                 </SectionTitle>
-                <Surface padding="md">
+                {/* ChartFrame is already the card — no Surface around it
+                    (player-home.mobile.md #2: card-in-card on both viewports). */}
+                <div>
                   {/* title omitted (audit #169): the SectionTitle above already
                       renders "Scoring trend" as the page-level heading — passing
                       the SAME text into ChartFrame's own `truncate`-d h3 gave the
@@ -682,12 +732,30 @@ export function FairwayPlayerDashboard({
                     takeaway="Lower is better — your scores over your most recent rounds."
                     valueFormatter={(v) => String(Math.round(v))}
                   />
-                </Surface>
+                </div>
               </div>
 
               {/* Standing teaser */}
               <div className="flex flex-col gap-6">
-                <StandingCard ready={hasRounds} />
+                {/* Desktop keeps the card in the 3-column grid; below `lg` the
+                    same deep link is ONE seam row (player-home.mobile.md #4). */}
+                <StandingCard ready={hasRounds} className="hidden lg:flex" />
+                <InsetGroup variant="matte" className="lg:hidden">
+                  <InsetGroup.Row
+                    as={Link}
+                    href="/golf/dashboard/my-standing"
+                    icon={<Compass aria-hidden />}
+                    trailing={<ChevronRight aria-hidden />}
+                    align="start"
+                  >
+                    <span className="block font-fw-sans text-body-sm font-medium text-text-primary">My Standing</span>
+                    <span className="block font-fw-sans text-caption text-text-tertiary">
+                      {hasRounds
+                        ? 'Every metric vs your team and the PGA percentile.'
+                        : 'Log a few rounds to compare against your team and the PGA baseline.'}
+                    </span>
+                  </InsetGroup.Row>
+                </InsetGroup>
               </div>
             </section>
 
