@@ -393,8 +393,8 @@ export function FairwayCoachDashboard({
             </Menu>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_15rem] lg:divide-x lg:divide-border-subtle">
-          <div className="order-2 min-w-0 px-5 py-4 md:px-6 md:py-5 lg:order-1">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="order-2 min-w-0 px-5 py-4 md:px-6 md:py-5 xl:order-1">
             {teamStatsUnavailable ? (
               <InlineNotice tone="warning" title="Couldn’t load the team’s rounds">
                 Something went wrong reading this team’s rounds. Refresh to try again; nothing has been lost.
@@ -424,15 +424,15 @@ export function FairwayCoachDashboard({
               <ScoreField rows={fieldRows} domain={domain} cap={cap} />
             )}
           </div>
-          <div className="order-1 border-b border-border-subtle px-5 py-4 md:px-6 md:py-5 lg:order-2 lg:border-b-0">
+          <div className="order-1 border-b border-border-subtle px-5 py-4 md:px-6 md:py-5 xl:order-2 xl:border-b-0">
             <FieldReadouts items={readouts} />
           </div>
         </div>
       </Surface>
 
       {/* ── 3 · The ledger row ────────────────────────────────────────────── */}
-      <div className="mt-12 grid grid-cols-1 gap-y-10 lg:grid-cols-12 lg:gap-y-0 lg:divide-x lg:divide-border-subtle">
-        <div className="lg:col-span-5 lg:pr-8">
+      <div className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+        <div className="xl:col-span-5 xl:pr-8">
           <TodayPanel
             todayEvents={enhancedData?.todayEvents ?? []}
             scheduleEvents={scheduleEvents}
@@ -440,10 +440,10 @@ export function FairwayCoachDashboard({
             timezone={enhancedData?.timezone}
           />
         </div>
-        <div className="lg:col-span-3 lg:px-8">
+        <div className="xl:col-span-3 xl:px-8">
           <AttentionLedger pulse={enhancedData?.teamPulse} rows={attentionRows} unavailable={teamStatsUnavailable} />
         </div>
-        <div className="lg:col-span-4 lg:pl-8">
+        <div className="md:col-span-2 xl:col-span-4 xl:pl-8">
           <NotificationsLatestModule frame="bare" />
         </div>
       </div>

@@ -53,8 +53,8 @@ export function FairwayDashboardSkeleton() {
           </div>
           <Skeleton className="h-8 w-56 max-w-full rounded-full" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_15rem] lg:divide-x lg:divide-border-subtle">
-          <div className="order-2 flex flex-col px-5 py-4 md:px-6 md:py-5 lg:order-1">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="order-2 flex flex-col px-5 py-4 md:px-6 md:py-5 xl:order-1">
             {ROW_WIDTHS.map((w, i) => (
               <div key={i} className="flex items-center gap-3 border-b border-border-subtle py-2 last:border-b-0 md:py-1.5">
                 <Skeleton circle className="h-6 w-6 shrink-0" />
@@ -73,9 +73,9 @@ export function FairwayDashboardSkeleton() {
               <Skeleton className="h-2.5 w-10" />
             </div>
           </div>
-          <div className="order-1 grid grid-cols-2 gap-x-6 border-b border-border-subtle px-5 py-4 md:px-6 md:py-5 lg:order-2 lg:flex lg:flex-col lg:divide-y lg:divide-border-subtle lg:border-b-0">
+          <div className="order-1 grid grid-cols-2 gap-x-6 border-b border-border-subtle px-5 py-4 md:grid-cols-4 md:px-6 md:py-5 xl:order-2 xl:flex xl:grid-cols-none xl:flex-col xl:divide-y xl:divide-border-subtle xl:border-b-0">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-2 py-2 lg:py-3.5 lg:first:pt-0 lg:last:pb-0">
+              <div key={i} className="flex flex-col gap-2 py-2 xl:py-3.5 xl:first:pt-0 xl:last:pb-0">
                 <Skeleton className="h-2.5 w-20" />
                 <div className="flex items-end justify-between gap-3">
                   <Skeleton className="h-7 w-16" />
@@ -89,12 +89,12 @@ export function FairwayDashboardSkeleton() {
       </div>
 
       {/* Ledger row: three bare columns. */}
-      <div aria-hidden="true" className="mt-12 grid grid-cols-1 gap-y-10 lg:grid-cols-12 lg:gap-y-0 lg:divide-x lg:divide-border-subtle">
-        {/* Static class strings: Tailwind cannot extract an interpolated `lg:col-span-${n}`. */}
+      <div aria-hidden="true" className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+        {/* Static class strings: Tailwind cannot extract an interpolated `xl:col-span-${n}`. */}
         {[
-          'lg:col-span-5 lg:pr-8',
-          'lg:col-span-3 lg:px-8',
-          'lg:col-span-4 lg:pl-8',
+          'xl:col-span-5 xl:pr-8',
+          'xl:col-span-3 xl:px-8',
+          'md:col-span-2 xl:col-span-4 xl:pl-8',
         ].map((span, col) => (
           <div key={col} className={`flex flex-col gap-3 ${span}`}>
             <div className="flex items-center justify-between">
