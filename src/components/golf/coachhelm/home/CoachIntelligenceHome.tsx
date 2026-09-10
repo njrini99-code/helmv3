@@ -119,7 +119,7 @@ export function CoachIntelligenceHome({
         <Surface padding="md">
           <InlineNotice
             tone="danger"
-            title="Couldn't load team intelligence — retry"
+            title="Couldn't load team intelligence"
             action={
               <Button
                 variant="secondary"

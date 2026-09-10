@@ -133,7 +133,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
     );
 
     expect(screen.queryByText('No active players yet')).not.toBeInTheDocument();
-    expect(screen.getByText("Couldn't load team intelligence — retry")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load team intelligence")).toBeInTheDocument();
     expect(screen.getByText('Query timed out')).toBeInTheDocument();
     expect(screen.getByTestId('triage-desk')).toBeInTheDocument();
   });
@@ -154,7 +154,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
       />,
     );
 
-    expect(screen.getByText("Couldn't load team intelligence — retry")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load team intelligence")).toBeInTheDocument();
     expect(screen.getByTestId('triage-desk')).toBeInTheDocument();
   });
 });

@@ -342,7 +342,7 @@ export function TriageDesk({
     return null;
   }, [groups]);
   const leakBandExplanation = categoryBandData
-    ? `Team health is ${categoryBandData.teamHealth} of 100 — see the category band above for where to look next.`
+    ? `Team health is ${categoryBandData.teamHealth} of 100. Check the category leak band for where to look next.`
     : undefined;
 
   function handleScan() {
@@ -358,7 +358,7 @@ export function TriageDesk({
             `Scan finished with ${res.playersFailed} player${res.playersFailed === 1 ? '' : 's'} needing another pass.`,
           );
         } else {
-          fairwayToast.success('Scan complete — team signals refreshed.');
+          fairwayToast.success('Scan complete. Team signals refreshed.');
         }
         router.refresh();
       } catch {
@@ -450,32 +450,42 @@ export function TriageDesk({
   return (
     <div className="flex flex-col gap-6">
       <ViewHeader
-        eyebrow={`CoachHelm · ${teamName}`}
-        title="CoachHelm"
+        // Facelift (2026-09, REVIEW.md item 3): the program name used to
+        // appear here AND on the Spine's own eyebrow below — at most once per
+        // screen, and the Spine (identity: team + date) is where it stays.
+        // This eyebrow now carries scan freshness instead.
+        eyebrow={lastScanLabel}
+        // Matches the breadcrumb leaf for this route (`surfaceName('brief')`
+        // === "Brief") rather than a hardcoded "CoachHelm" that disagreed
+        // with the nav/breadcrumb's own name for the same screen.
+        title={surfaceName('brief')}
         secondaryActions={
-          <>
-            <IconButton aria-label="Refresh" onClick={() => router.refresh()}>
-              <RotateCw className="h-4 w-4" strokeWidth={2} aria-hidden />
-            </IconButton>
-            <Menu
-              trigger={
-                <IconButton aria-label="More options">
-                  <MoreHorizontal className="h-4 w-4" strokeWidth={2} aria-hidden />
-                </IconButton>
-              }
-              align="end"
+          // One overflow Menu, not a standalone Refresh icon beside it — on
+          // phone, ViewHeader's action cluster drops to its own row under
+          // the title; two icon buttons there read as a large, empty gap.
+          // Folding Refresh into the Menu also leaves one primary action
+          // (Scan team) rather than three competing icons/items.
+          <Menu
+            trigger={
+              <IconButton aria-label="More options">
+                <MoreHorizontal className="h-4 w-4" strokeWidth={2} aria-hidden />
+              </IconButton>
+            }
+            align="end"
+          >
+            <Menu.Item icon={<Sparkles className="h-4 w-4" aria-hidden />} onSelect={() => handleScan()}>
+              Scan team
+            </Menu.Item>
+            <Menu.Item icon={<RotateCw className="h-4 w-4" aria-hidden />} onSelect={() => router.refresh()}>
+              Refresh
+            </Menu.Item>
+            <Menu.Item
+              icon={<MessageCircle className="h-4 w-4" aria-hidden />}
+              onSelect={() => router.push(surfaceHref('ask'))}
             >
-              <Menu.Item icon={<Sparkles className="h-4 w-4" aria-hidden />} onSelect={() => handleScan()}>
-                Scan team
-              </Menu.Item>
-              <Menu.Item
-                icon={<MessageCircle className="h-4 w-4" aria-hidden />}
-                onSelect={() => router.push(surfaceHref('ask'))}
-              >
-                {surfaceName('ask')}
-              </Menu.Item>
-            </Menu>
-          </>
+              {surfaceName('ask')}
+            </Menu.Item>
+          </Menu>
         }
       />
 
@@ -508,7 +518,7 @@ export function TriageDesk({
                 Urgent
               </p>
               <p className="mt-1.5 font-fw-sans text-body-sm font-medium text-text-on-accent">
-                {urgentSignal.group.playerId ? `${urgentSignal.group.playerName} — ` : ''}
+                {urgentSignal.group.playerId ? `${urgentSignal.group.playerName}: ` : ''}
                 {urgentSignal.signal.title}
               </p>
             </div>
@@ -518,7 +528,7 @@ export function TriageDesk({
         <div className="flex min-w-0 flex-col gap-4">
           {isScanning ? (
             <InlineNotice tone="info" title="Scanning the team">
-              Refreshing signals — panes stay put while this finishes.
+              Refreshing signals. Panes stay put while this finishes.
             </InlineNotice>
           ) : null}
 
@@ -567,7 +577,7 @@ export function TriageDesk({
             groupsError ? (
               <InlineNotice
                 tone="danger"
-                title="Couldn't load signals — retry"
+                title="Couldn't load signals"
                 action={
                   <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
                     Try again
