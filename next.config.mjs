@@ -183,6 +183,15 @@ const nextConfig = {
     // hook above and docs/operations/GATES.md).
     cpus: 3,
     webpackMemoryOptimizations: true,
+    // Client router cache. Next defaults `dynamic` to 0, so every tab tap on
+    // the (fully dynamic, cookie-reading) dashboard layout refetched the page
+    // and repainted its loading.tsx skeleton — even bouncing between two tabs.
+    // 60s keeps a visited tab's payload for the hop back; server actions that
+    // `revalidatePath` and any `router.refresh()` still purge it immediately.
+    staleTimes: {
+      dynamic: 60,
+      static: 300,
+    },
     // Enable server actions.
     // bodySizeLimit must cover the largest Server Action payload. Recruit
     // document uploads pass the File as an action arg (see

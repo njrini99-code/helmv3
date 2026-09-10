@@ -3220,13 +3220,18 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
   animation: fw-message-actions-out 120ms ease-in forwards;
 }
 
-/* Navigation and message controls share one fixed glass treatment. */
+/* Navigation and message controls share one fixed glass treatment.
+   2026-09-10: this is now an ALIAS of the Fairway Frost subtle tier (same
+   tint, saturation, blur and edge light as `.fw-frost-subtle`) so the 19
+   existing consumers stop carrying a second recipe. It deliberately sets only
+   paint properties (no `position`/`isolation`) so consumer layout is
+   untouched. New chrome uses `.fw-frost fw-frost-subtle` or GlassSurface. */
 .fw-glass-chrome {
-  background-color: var(--fw-glass-bg-strong);
-  background-image: linear-gradient(160deg, var(--fw-glass-highlight), transparent 48%);
-  border-color: var(--fw-glass-border);
-  -webkit-backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
-  backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
+  background: var(--fw-frost-bg-subtle);
+  border-color: var(--fw-frost-rim);
+  -webkit-backdrop-filter: blur(var(--fw-frost-blur-sm)) saturate(var(--fw-frost-saturate));
+  backdrop-filter: blur(var(--fw-frost-blur-sm)) saturate(var(--fw-frost-saturate));
+  box-shadow: inset 0 1px 0 0 var(--fw-frost-edge-top);
 }
 
 /* ── FAIRWAY FROST — the floating material (design-tokens.css, "FAIRWAY FROST").
