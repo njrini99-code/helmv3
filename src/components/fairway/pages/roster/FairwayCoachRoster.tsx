@@ -3,14 +3,23 @@
 /**
  * ============================================================================
  * Fairway · Roster · FairwayCoachRoster (C2/C3/C4/C5/C9/C10) — coach roster
- * board (facelift — docs/design/fairway-facelift/screens/roster.md)
+ * board (facelift v2 — docs/design/fairway-facelift/screens/roster.v2.md)
  * ----------------------------------------------------------------------------
- * Replaces the eight-card player gallery + two health cards + loose
- * search/sort/export row with ONE instrument: a header Surface (StatMatrix +
- * a "who needs your attention" seam list), a Toolbar, and a MatrixBoard with
- * one row per player. A row expands an inline detail band (goals, intent,
- * message via the actions menu, "Open profile") in place — no navigation for
- * a coach's daily scan, no per-card "View player" button.
+ * v2 (2026-09-10): the old header `Surface` (a `StatMatrix` strip + the
+ * "who needs your attention" seam list, boxed together) is replaced by a
+ * Performance Stage on hairline seams — a zero-centered `DivergingBars` plot
+ * of the WHOLE roster's SG:Total (not the toolbar's filtered `board`) beside
+ * the same "who needs your attention" list, now carrying a priority numeral
+ * + year badge per row. `MatrixBoard.kpis` (previously `[]`) now carries the
+ * team totals, two of the four reframed as honest ratios ("4 of 8") instead
+ * of the old bare counts that looked like a second player count. The row
+ * inspector gains a bare `StandingBars` (player vs. team vs. field/tour for
+ * sg_total) ahead of the existing Goals/intent content.
+ *
+ * Below the stage: a Toolbar, and a MatrixBoard with one row per player. A
+ * row expands an inline detail band (standing, goals, intent, message via
+ * the actions menu, "Open profile") in place — no navigation for a coach's
+ * daily scan, no per-card "View player" button.
  *
  * `computeRosterHealth`/`computeNeedsAttention` (`roster-health.ts`, a sibling
  * of the now-deleted `RosterHealthHeader.tsx` JSX component — it had no
@@ -40,18 +49,20 @@ import { FilterPill } from '@/components/fairway/controls/filter-pill';
 import { SearchField } from '@/components/fairway/command/search-field';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
-import { Surface } from '@/components/fairway/surfaces/surface';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { InsetGroup } from '@/components/fairway/surfaces';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { Toolbar } from '@/components/fairway/controls/Toolbar';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
-import { StatMatrix } from '@/components/fairway/modules/StatMatrix';
 import { SignalChip } from '@/components/fairway/modules/SignalChip';
 import { MatrixBoard } from '@/components/fairway/modules/MatrixBoard';
-import type { MatrixColumn, MatrixBoardRow, SignalTone } from '@/components/fairway/modules/types';
+import { DivergingBars } from '@/components/fairway/modules/DivergingBars';
+import type { MatrixColumn, MatrixBoardRow, SignalTone, DivergingRow } from '@/components/fairway/modules/types';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { TrendGlyph } from '@/components/fairway/charts/TrendChip';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
+import { Readout } from '@/components/fairway/instrument/Readout';
+import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { TrendVerdict } from '@/lib/coachhelm/trend';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
@@ -275,6 +286,43 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
     [sorted, attentionFilter, attentionIds],
   );
 
+  // ── Performance stage plot — the WHOLE roster's SG:Total, zero-centered,
+  // worst first (roster.v2.md §3). Computed from `players`, never from
+  // `board`/`sorted`/`filtered`, so a coach mid-search or mid-filter still
+  // sees the whole team's shape. A player with no `sg_total` (no rounds yet)
+  // is honestly excluded and counted in the caption, never drawn as a false
+  // zero. ─────────────────────────────────────────────────────────────────
+  const plotRows: DivergingRow[] = React.useMemo(
+    () =>
+      players
+        .filter((p): p is RosterPlayer & { sg_total: number } => p.sg_total != null)
+        .slice()
+        .sort((a, b) => a.sg_total - b.sg_total)
+        .map((p) => ({
+          label: p.last_name?.trim() || playerName(p),
+          delta: p.sg_total,
+          display: formatSgTotal(p.sg_total),
+        })),
+    [players],
+  );
+  const teamMeanSgTotal =
+    plotRows.length > 0 ? plotRows.reduce((sum, r) => sum + r.delta, 0) / plotRows.length : null;
+  // The metric's own real [-2, 2] floor (metric-config.ts), widened only for
+  // a genuine outlier — eight tightly-clustered bars never fake a
+  // broken-chart full-width read.
+  const plotMax = React.useMemo(
+    () =>
+      plotRows.reduce(
+        (max, r) => Math.max(max, Math.abs(r.delta)),
+        METRIC_RENDER_CONFIG.sg_total.default_scale.max,
+      ),
+    [plotRows],
+  );
+  const stageCaption =
+    plotRows.length > 0
+      ? `SG:Total against the field average of zero. Team average ${formatSgTotal(teamMeanSgTotal ?? 0)} across ${plotRows.length} of ${players.length} player${players.length === 1 ? '' : 's'} with a number.`
+      : 'SG:Total against the field average of zero. No player has a logged SG:Total yet.';
+
   // The player behind the phone Sheet, looked up from `board` (the same
   // list the visible rows come from) rather than the full `players` array,
   // since `sheetPlayerId` can only ever be set from a row that's currently
@@ -428,38 +476,54 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
         />
       ) : (
         <>
-          {/* Header Surface — StatMatrix (Players · Active focus · Completed ·
-              With recent rounds) left, "who needs your attention" seam rows
-              right. Replaces the old two health cards + 4-number block
-              (roster.md CONTAINERS TO REMOVE #2). The "Did the coaching
-              land?" outcome-mix band is intentionally NOT ported here — it's
-              dropped from this page per that same spec item, and (as of the
-              `RosterHealthHeader.tsx` JSX component's deletion — it had no
-              render call sites left anywhere) that band doesn't render on
-              any page anymore; only its pure math survives, in
-              `roster-health.ts`. */}
-          <Surface elevation="border" padding="none" className="mb-6 overflow-hidden">
-            {/* One column at every width: the four numbers run as a strip
-                across the top (the same instrument the rounds library opens
-                with), the attention rows sit under a hairline. The old
-                side-by-side split parked one row of numbers in a half-panel
-                that ran 250px of empty cream under them at 1440 while the
-                attention list filled the other half. */}
-            <div className="flex flex-col">
-              <div className="border-b border-border-subtle p-5 md:px-6 md:py-5">
-                {/* No `label`: the ViewHeader eyebrow above already says
-                    Roster (REVIEW.md: one eyebrow per screen). */}
-                <StatMatrix
-                  variant="plain"
-                  columns={4}
-                  items={[
-                    { label: 'Players', value: rosterHealth.totalPlayers },
-                    { label: 'Active focus', value: rosterHealth.activeAreas },
-                    { label: 'Completed', value: rosterHealth.completedAreas },
-                    { label: 'With recent rounds', value: rosterHealth.playersWithRounds },
-                  ]}
-                />
-              </div>
+          {/* Performance stage (roster.v2.md §3) — the team-wide verdict, on
+              hairline seams, not a card. Replaces the old header `Surface`
+              (a StatMatrix strip boxed together with the seam list — the
+              capture's "8 Players" beside "8 Active focus" false-twin,
+              rosters.v2.md's opening complaint). Left: a zero-centered
+              `DivergingBars` plot of the WHOLE roster's real SG:Total
+              (`plotRows`, computed from `players`, never the toolbar's
+              filtered `board`). Right: the SAME "who needs your attention"
+              instrument as before (heading/verdict/list/empty branches all
+              pinned + reused verbatim), now with a priority numeral + year
+              badge per row. The "Did the coaching land?" outcome-mix band
+              stays dropped, as it has been since `RosterHealthHeader.tsx`'s
+              deletion — only its pure math survives, in `roster-health.ts`. */}
+          <div className="mb-6 grid grid-cols-1 border-y border-border-subtle py-6 lg:grid-cols-12 lg:gap-x-6">
+            <div className="lg:col-span-7">
+              <p className="mb-3 font-fw-sans text-body-sm text-text-secondary">{stageCaption}</p>
+              {plotRows.length > 0 ? (
+                <>
+                  {/* Desktop: 96px label column, matching this file's own
+                      96px Sparkline track (`TREND_SPARKLINE_WIDTH`) so the
+                      plot's label column and the board's trend column read
+                      at one consistent scale. Phone: 64px so a longer last
+                      name still fits the narrower rail. CSS-gated, both
+                      always in the DOM — no mounted-flag JS branch. */}
+                  <div className="hidden lg:block">
+                    <DivergingBars
+                      rows={plotRows}
+                      max={plotMax}
+                      labelWidth={96}
+                      referenceTick={teamMeanSgTotal != null ? { value: teamMeanSgTotal } : undefined}
+                    />
+                  </div>
+                  <div className="lg:hidden">
+                    <DivergingBars
+                      rows={plotRows}
+                      max={plotMax}
+                      labelWidth={64}
+                      referenceTick={teamMeanSgTotal != null ? { value: teamMeanSgTotal } : undefined}
+                    />
+                  </div>
+                </>
+              ) : (
+                <p className="font-fw-sans text-body-sm text-text-tertiary">
+                  Log rounds to see the team&apos;s SG:Total shape.
+                </p>
+              )}
+            </div>
+            <div className="mt-6 border-t border-border-subtle pt-6 lg:col-span-5 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
               <AttentionPanel
                 health={rosterHealth}
                 needs={needsAttention}
@@ -467,7 +531,7 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
                 onShowMore={() => setAttentionFilter(true)}
               />
             </div>
-          </Surface>
+          </div>
 
           {/* Toolbar — search · sort · "Needs attention" filter · export.
               `sticky`: matte at rest, earns the shared cream glass once
@@ -566,7 +630,25 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
             />
           ) : (
             <MatrixBoard
-              kpis={[]}
+              // The board's own top strip now carries the team totals (was
+              // `[]` — the page's kpi numbers used to live only in the
+              // removed header StatMatrix). Two of the four are reframed as
+              // honest ratios instead of the old bare counts: the capture's
+              // "8 Active focus" next to "8 Players" was a count of open
+              // focus AREAS, not of players, coincidentally equal for this
+              // roster — roster.v2.md §5.
+              kpis={[
+                { label: 'Players', value: rosterHealth.totalPlayers },
+                {
+                  label: 'With focus area',
+                  value: `${rosterHealth.playersWithActive} of ${rosterHealth.totalPlayers}`,
+                },
+                { label: 'Completed', value: rosterHealth.completedAreas },
+                {
+                  label: 'With recent rounds',
+                  value: `${rosterHealth.playersWithRounds} of ${rosterHealth.totalPlayers}`,
+                },
+              ]}
               columns={COLUMNS}
               rows={rows}
               // Clamped to `null` when not desktop even though this file
@@ -660,14 +742,18 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
 }
 
 /* ---------------------------------------------------------------------------
- * AttentionPanel — the header Surface's right half. Honest copy branches
- * (no roster / no rounds / genuinely covered) are ported VERBATIM from the
- * old RosterHealthHeader.tsx JSX component (deleted; see roster-health.ts)
- * so this page can't reintroduce the two production incidents that copy's
- * comments documented (a vacuously-true all-clear on a zero-round roster;
- * every real player flagged on a program with no focus areas yet). Only the
- * presentation differs (seam rows under the Surface's stat strip
- * instead of an InstrumentCluster panel).
+ * AttentionPanel — the performance stage's right pane (roster.v2.md §3).
+ * Honest copy branches (no roster / no rounds / genuinely covered) are
+ * ported VERBATIM from the old RosterHealthHeader.tsx JSX component
+ * (deleted; see roster-health.ts) so this page can't reintroduce the two
+ * production incidents that copy's comments documented (a vacuously-true
+ * all-clear on a zero-round roster; every real player flagged on a program
+ * with no focus areas yet). No padding of its own — the stage's outer grid
+ * (border-l + `lg:pl-6` on desktop, border-t + `pt-6` on phone) supplies the
+ * seam spacing; this is a hairline pane, not a boxed panel. v2 adds a
+ * two-digit priority numeral + `FairwayYearBadge` per shown row, matching
+ * the board row's own year badge so a player reads identically in both
+ * places.
  * ------------------------------------------------------------------------- */
 function AttentionPanel({
   health,
@@ -691,7 +777,7 @@ function AttentionPanel({
   const remaining = needs.length - shown.length;
 
   return (
-    <div className="p-5 md:p-6">
+    <div>
       <h3 className="mb-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
         Who needs your attention
       </h3>
@@ -709,13 +795,20 @@ function AttentionPanel({
             </span>
           </div>
           <ul className="flex flex-col">
-            {shown.map(({ row, reason }) => (
-              <li key={row.player.id} className="border-t border-border-subtle py-2.5 first:border-t-0">
-                <div data-sentry-mask="">
+            {shown.map(({ row, reason }, i) => (
+              <li key={row.player.id} className="flex items-start gap-3 border-t border-border-subtle py-2.5 first:border-t-0">
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 shrink-0 font-fw-mono text-caption tabular-nums text-text-tertiary"
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="min-w-0 flex-1" data-sentry-mask="">
                   <PlayerIdentity
                     name={playerName(row.player)}
                     avatarUrl={row.player.avatar_url}
                     size="sm"
+                    nameAddon={<FairwayYearBadge year={row.player.graduation_year} />}
                     meta={<span className="font-fw-sans text-caption font-medium text-fw-warning-ink">{reason}</span>}
                     trailing={
                       <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
@@ -776,6 +869,13 @@ function AttentionPanel({
  * lives in the row's own `MatrixBoardRow.actions` slot instead (see the
  * `rows` memo above), a real sibling of the row's press-target button, so
  * it's reachable at every width without opening this detail band first.
+ *
+ * v2 (roster.v2.md §6) adds, in order: a bare `StandingBars` row for
+ * sg_total (player vs. team vs. field/tour — the newly-threaded
+ * `sg_team_*`/`sg_pga_*` fields), gated on a real standing row existing for
+ * this player so a cold player never gets a fabricated tour benchmark; then
+ * the existing Goals/intent row, now paired with a compact `Readout` for
+ * handicap; then the unchanged "Open profile" CTA.
  * ------------------------------------------------------------------------- */
 function RowDetail({
   player,
@@ -792,28 +892,68 @@ function RowDetail({
    *  the phone Sheet, whose Footer owns the CTA (none rendered here). */
   host?: 'band' | 'sheet';
 }) {
+  // A standing row needs a real tour reference to compare against — a
+  // player with no `golf_player_standing` row yet (sg_pga_value null) gets
+  // no fabricated benchmark, not a zero-filled one.
+  const hasStanding = player.sg_total != null && player.sg_pga_value != null;
+
+  const hasScore = Boolean(player.avg_score && player.avg_score > 0);
+  const hasHandicap = player.handicap != null;
+  const handicapReadout =
+    hasScore && hasHandicap
+      ? `${(player.avg_score ?? 0).toFixed(1)} avg off a ${(player.handicap ?? 0).toFixed(1)} handicap`
+      : hasScore
+        ? `${(player.avg_score ?? 0).toFixed(1)} avg score`
+        : hasHandicap
+          ? `${(player.handicap ?? 0).toFixed(1)} handicap`
+          : null;
+
   return (
-    <div data-sentry-mask="" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="min-w-0">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Goals</p>
-          <p className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
-            {player.active_goals ? `${player.active_goals} active` : 'None yet'}
-          </p>
-        </div>
-        <FairwayIntentControl
-          playerId={player.id}
-          playerName={name}
-          current={intent}
+    <div data-sentry-mask="" className="flex flex-col gap-4">
+      {hasStanding ? (
+        <StandingBars
+          frame="bare"
+          layout="compact"
           size="sm"
-          onSaved={onIntentSaved}
+          metric_id="sg_total"
+          metric_label={METRIC_RENDER_CONFIG.sg_total.display_label}
+          player_value={player.sg_total as number}
+          team_avg={player.sg_team_avg ?? null}
+          team_n={player.sg_team_n ?? 0}
+          team_pct={player.sg_team_pct ?? null}
+          pga_value={player.sg_pga_value as number}
+          pga_omitted={player.sg_pga_omitted}
+          is_womens={player.sg_is_womens}
+          direction={METRIC_RENDER_CONFIG.sg_total.direction}
+          unit={METRIC_RENDER_CONFIG.sg_total.unit}
+          scale={METRIC_RENDER_CONFIG.sg_total.default_scale}
+          viewer_context="coach"
+          player_name={name}
         />
-      </div>
-      {host === 'band' ? (
-        <Button asChild variant="secondary" size="sm" shape="block" fullWidth className="sm:w-auto">
-          <Link href={`/golf/dashboard/roster/${player.id}`}>Open profile</Link>
-        </Button>
       ) : null}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="min-w-0">
+            <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Goals</p>
+            <p className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
+              {player.active_goals ? `${player.active_goals} active` : 'None yet'}
+            </p>
+          </div>
+          <FairwayIntentControl
+            playerId={player.id}
+            playerName={name}
+            current={intent}
+            size="sm"
+            onSaved={onIntentSaved}
+          />
+          {handicapReadout ? <Readout size="sm" label="Handicap" display={handicapReadout} /> : null}
+        </div>
+        {host === 'band' ? (
+          <Button asChild variant="secondary" size="sm" shape="block" fullWidth className="sm:w-auto">
+            <Link href={`/golf/dashboard/roster/${player.id}`}>Open profile</Link>
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

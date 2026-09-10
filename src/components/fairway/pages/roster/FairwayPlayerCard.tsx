@@ -57,6 +57,23 @@ export interface RosterPlayer {
    * so this card's own render is unaffected.
    */
   recent_scores?: number[];
+  // ── Team/tour standing for sg_total (roster.v2.md stage + row inspector,
+  // 2026-09-10) — the SAME `PlayerStanding` row `standing_tier` above is
+  // already derived from (roster/page.tsx's `standingByPlayer`), threaded
+  // through in full instead of collapsed to one caption string. All
+  // additive/optional; every existing consumer of this type is unaffected. ──
+  /** Team average sg_total. Null when cold-start (team_n < 5) or no row yet. */
+  sg_team_avg?: number | null;
+  /** Teammates contributing to `sg_team_avg`; <5 is cold-start (StandingBars' own gate). */
+  sg_team_n?: number;
+  /** Team percentile (0-100) for sg_total. Null in cold-start. */
+  sg_team_pct?: number | null;
+  /** PGA/LPGA Tour reference value for sg_total — present iff a standing row exists. */
+  sg_pga_value?: number | null;
+  /** True when no credible cohort anchor exists for this player (gender-anchor omission). */
+  sg_pga_omitted?: boolean;
+  /** True when this player's team is a women's program (labels the reference "LPGA"). */
+  sg_is_womens?: boolean;
 }
 
 /** SG:Total deadzone — |value| at or below this reads as neutral (matches

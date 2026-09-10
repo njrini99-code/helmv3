@@ -395,7 +395,7 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
 
     let label: string;
     if (tone === 'hot') {
-      label = isTopPerformer ? 'Top performer' : p.id === mostImprovedId ? '▲ Most improved' : 'Improving';
+      label = isTopPerformer ? 'Top performer' : p.id === mostImprovedId ? 'Most improved' : 'Improving';
     } else if (tone === 'watch') {
       const worstCategory = worstCategoryLabel(ranks);
       label = worstCategory ? `${worstCategory} slump` : (p.topInsightTitle ?? 'Needs attention');

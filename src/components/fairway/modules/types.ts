@@ -151,7 +151,35 @@ export interface RailBarRow {
 export interface RailBarsProps { rows: RailBarRow[]; labelWidth?: number }
 
 export interface DivergingRow { label: string; delta: number; display: string }
-export interface DivergingBarsProps { rows: DivergingRow[]; max: number }
+export interface DivergingBarsProps {
+  rows: DivergingRow[];
+  max: number;
+  /**
+   * Pixel width of the label column. Default `40`, matching the previously
+   * hardcoded `grid-cols-[40px_1fr_42px]` — mirrors the precedent already
+   * set by `RailBarsProps.labelWidth` (2026-09-10, roster.v2.md).
+   */
+  labelWidth?: number;
+  /**
+   * Which side of zero reads as "good." Default `'lower'`, preserving every
+   * existing caller's current color mapping exactly: a positive delta stays
+   * on the right in `fw-warning`, a negative delta stays on the left in
+   * `accent-500`. Passing `'higher'` flips ONLY which side's color reads as
+   * good, never the geometry or the sign — a positive delta still renders on
+   * the right, now in `accent-500`; a negative delta still renders on the
+   * left, now in `fw-warning`. `row.display` is always the honest signed
+   * value regardless of this prop.
+   */
+  goodDirection?: 'higher' | 'lower';
+  /**
+   * A single shared reference (e.g. a team mean), drawn as one additional
+   * thin tick on every row's rail, distinct from the existing fixed
+   * zero-line marker. `label`, when given, is announced once (not per row)
+   * for assistive tech — the visible caption above the chart is expected to
+   * carry the same number for sighted readers.
+   */
+  referenceTick?: { value: number; label?: string };
+}
 
 export interface RampCell { value: string; n?: string; band: 0 | 1 | 2 | 3 | 4 }
 export interface RampMatrixProps {
@@ -233,6 +261,18 @@ export interface MatrixBoardProps {
    * own floors for the remaining width instead of yielding to them first).
    */
   identityTrack?: string;
+  /**
+   * Selected/expanded row accent. `'stripe'` (default) is byte-identical to
+   * today: a 3px inset accent stripe on the row + its expand band, on top
+   * of the flat `bg-accent-50` wash / sunken `bg-surface-sunken` background
+   * both variants already carry. `'flat'` drops the stripe and keeps only
+   * that wash/sunken background — team-stats.v2.md Region 3 Fix 1 flags the
+   * stripe as a side-stripe border (hard-banned verbatim by the facelift
+   * design rules) and opts THAT board into `'flat'`; Roster and CoachHelm's
+   * players board (the primitive's other two consumers) keep the default so
+   * their own selected-row look never changes as a side effect of this fix.
+   */
+  selectionAccent?: 'stripe' | 'flat';
 }
 export interface MatrixBoardRow {
   id: string;

@@ -362,4 +362,30 @@ describe('MatrixBoard', () => {
       expect(board.style.getPropertyValue('--mtx-desktop').split(' ')[0]).toBe('minmax(160px,2.4fr)');
     });
   });
+
+  describe('selectionAccent', () => {
+    it('defaults to the stripe shadow on an expanded row and its expand band, byte-identical to before the prop existed', () => {
+      const { container } = render(
+        <MatrixBoard kpis={[]} columns={columns} rows={[rowWithExpand]} />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Mason Rivers, expandable row' }));
+      const rowEl = container.querySelector('[data-slot="matrix-row"]') as HTMLElement;
+      const expandEl = container.querySelector('[data-slot="matrix-expand"]') as HTMLElement;
+      expect(rowEl.className).toContain('shadow-[inset_3px_0_0_var(--fw-color-accent-500)]');
+      expect(expandEl.className).toContain('shadow-[inset_3px_0_0_var(--fw-color-accent-300)]');
+    });
+
+    it('drops both inset stripe shadows when selectionAccent="flat", keeping the flat wash + sunken background', () => {
+      const { container } = render(
+        <MatrixBoard kpis={[]} columns={columns} rows={[rowWithExpand]} selectionAccent="flat" />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Mason Rivers, expandable row' }));
+      const rowEl = container.querySelector('[data-slot="matrix-row"]') as HTMLElement;
+      const expandEl = container.querySelector('[data-slot="matrix-expand"]') as HTMLElement;
+      expect(rowEl.className).not.toContain('shadow-[inset_3px_0_0_var(--fw-color-accent-500)]');
+      expect(rowEl.className).toContain('bg-accent-50');
+      expect(expandEl.className).not.toContain('shadow-[inset_3px_0_0_var(--fw-color-accent-300)]');
+      expect(expandEl.className).toContain('bg-surface-sunken');
+    });
+  });
 });

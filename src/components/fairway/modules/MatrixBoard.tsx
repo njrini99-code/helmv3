@@ -105,6 +105,7 @@ export function MatrixBoard({
   onRowSelect,
   selectedId,
   identityTrack = DEFAULT_IDENTITY_TRACK,
+  selectionAccent = 'stripe',
 }: MatrixBoardProps) {
   const hidden = hiddenColumnKeys(hideOnMobile);
   const gridVars = {
@@ -153,6 +154,7 @@ export function MatrixBoard({
             onExpandedRowChange={onExpandedRowChange}
             onRowSelect={onRowSelect}
             selectedId={selectedId}
+            selectionAccent={selectionAccent}
           />
         ))}
       </div>
@@ -195,6 +197,7 @@ function MatrixRow({
   onExpandedRowChange,
   onRowSelect,
   selectedId,
+  selectionAccent,
 }: {
   row: MatrixBoardRowData;
   columns: MatrixColumn[];
@@ -206,6 +209,7 @@ function MatrixRow({
   onExpandedRowChange?: (rowId: string | null) => void;
   onRowSelect?: (row: MatrixBoardRowData) => void;
   selectedId?: string | null;
+  selectionAccent: 'stripe' | 'flat';
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const hasExpand = row.expand != null;
@@ -242,7 +246,8 @@ function MatrixRow({
         className={cn(
           'flex items-stretch transition-colors duration-150',
           'hover:bg-surface-tint',
-          (open || isSelected) && 'bg-accent-50 shadow-[inset_3px_0_0_var(--fw-color-accent-500)]',
+          (open || isSelected) && 'bg-accent-50',
+          (open || isSelected) && selectionAccent === 'stripe' && 'shadow-[inset_3px_0_0_var(--fw-color-accent-500)]',
           !(isLast && !hasExpand) && 'border-b border-border-subtle',
         )}
       >
@@ -277,17 +282,32 @@ function MatrixRow({
           </div>
         ) : null}
       </div>
-      {hasExpand && open ? <MatrixExpand id={expandId}>{row.expand}</MatrixExpand> : null}
+      {hasExpand && open ? (
+        <MatrixExpand id={expandId} selectionAccent={selectionAccent}>
+          {row.expand}
+        </MatrixExpand>
+      ) : null}
     </div>
   );
 }
 
-function MatrixExpand({ id, children }: { id?: string; children: ReactNode }) {
+function MatrixExpand({
+  id,
+  selectionAccent,
+  children,
+}: {
+  id?: string;
+  selectionAccent: 'stripe' | 'flat';
+  children: ReactNode;
+}) {
   return (
     <div
       id={id}
       data-slot="matrix-expand"
-      className="border-b border-border-subtle bg-surface-sunken px-5 py-4 shadow-[inset_3px_0_0_var(--fw-color-accent-300)]"
+      className={cn(
+        'border-b border-border-subtle bg-surface-sunken px-5 py-4',
+        selectionAccent === 'stripe' && 'shadow-[inset_3px_0_0_var(--fw-color-accent-300)]',
+      )}
     >
       {children}
     </div>

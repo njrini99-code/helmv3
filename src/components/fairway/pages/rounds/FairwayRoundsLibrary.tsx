@@ -36,13 +36,19 @@
  *      falls back to the static per-role title + the unchanged meta line.
  *   2. (player) FairwayUnfinishedBanner, ABOVE the Cockpit, when in-progress
  *      rounds exist.
- *   3. COCKPIT — an `InstrumentCluster` (focal `RadialGauge` "% under par" +
- *      a two-item Readout rail: avg score / avg to par, each with its own
- *      delta line gated on the SAME 6-scored-round honesty threshold + a
- *      four-up tertiary foot row of counts) replaces the five equal
- *      StatMatrix boxes. Starved (<3 rounds): the dial shows its own built-in
- *      honest "awaiting signal" gauge and both rail Readouts swap to
- *      `state="awaiting"` — never a fabricated 0.0.
+ *   3. COCKPIT — an `InstrumentCluster` replaces the five equal StatMatrix
+ *      boxes. PRIMARY: one accent `InstrumentPanel` holding a "% under par"
+ *      Readout above a monthly avg-to-par `TrendChart` (x = calendar month,
+ *      benchmark = the season average, a marker on the latest month) — the
+ *      same month bucketing the ledger's `grouped` uses, over the full
+ *      unfiltered season. SECONDARY: ONE `InstrumentPanel` holding two
+ *      Readouts (avg score / avg to par) separated by a plain hairline, each
+ *      with its own delta gated on the SAME 6-scored-round honesty threshold
+ *      — not two bordered boxes. TERTIARY: ONE `variant="plain"` `StatMatrix`
+ *      (Rounds, Best round, Practice, Tournament) — hairline seams, no card.
+ *      Starved (<3 rounds): the Readout swaps to `state="awaiting"` and the
+ *      trend chart is skipped entirely — never a fabricated 0.0 or a
+ *      two-point "trend".
  *   4. SPREAD — a borderless footnote (one top hairline, no Surface):
  *      `DivergingBars` showing each round type's avg score-to-par against
  *      the field average. A type with zero rounds in scope is omitted, never
@@ -88,6 +94,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import { Check, ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -107,16 +114,33 @@ import {
   InstrumentCluster,
   InstrumentPanel,
   Readout,
-  RadialGauge,
   DivergingBars,
   RankCell,
   Elevated,
   Avatar,
   StatusPill,
+  StatMatrix,
+  InsufficientData,
+  Skeleton,
   type DivergingRow,
 } from '@/components/fairway';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
+
+// Fairway TrendChart, lazy + ssr:false (mirrors FairwayCoachDashboard's Team
+// Scoring chart, home.v2). recharts' ResponsiveContainer has no real size to
+// measure during SSR and falls back to a 1px-wide render; on hydration the
+// container is re-measured and the chart re-renders at its real width — that
+// resize would restart the Area/Line entrance reveal (a clip-path keyed off
+// the on-screen point positions) from its 0%-revealed start. Skipping SSR for
+// this chart avoids that guaranteed first-load resize/re-reveal.
+const TrendChart = nextDynamic(
+  () => import('@/components/fairway').then((m) => ({ default: m.TrendChart })),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[240px] w-full rounded-card" />,
+  },
+);
 import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
 import { scoreToParTone, formatToPar } from './FairwayRoundCard';
@@ -313,6 +337,14 @@ function monthSummary(rounds: RoundLibraryRound[]) {
 function seriesDelta(series: ReadonlyArray<number>): number | null {
   if (series.length < 2) return null;
   return series[series.length - 1]! - series[0]!;
+}
+
+/** "+3.6" / "−2.1" / "0.0" — signDisplay:exceptZero, one decimal. Shared by
+ *  the rail's "Avg to par" Readout and the Cockpit trend chart's benchmark
+ *  line + tick/tooltip formatting, so the same average never prints two
+ *  different strings in the same cluster. */
+function signedToPar(value: number): string {
+  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
 }
 
 /** Rows revealed per "Show 30 more" click. A season's worth of team rounds
@@ -631,6 +663,42 @@ export function FairwayRoundsLibrary({
   const scoreDelta = React.useMemo(() => seriesDelta(scoreSeries), [scoreSeries]);
   const toParDelta = React.useMemo(() => seriesDelta(toParSeries), [toParSeries]);
 
+  // Cockpit PRIMARY — the season's month-by-month avg-to-par trend. Bucketed
+  // by calendar month using the SAME `parseDateOnly` Y/M key the ledger's own
+  // `grouped` month branch uses, over the full `rounds` prop — never
+  // `scopedRounds`/`filteredRounds`: like `stats`, the Cockpit is a fixed
+  // whole-season instrument, not narrowed by the coach's player filter or
+  // search. Chronological oldest→newest (a trend chart reads left-to-right in
+  // time) — the opposite order from `grouped`'s newest-first seam headers.
+  const monthlyToParTrend = React.useMemo(() => {
+    const buckets = new Map<string, { year: number; month: number; sum: number; count: number }>();
+    for (const r of rounds) {
+      if (r.score_to_par === null) continue;
+      const parts = parseDateOnly(r.round_date);
+      if (!parts) continue;
+      const key = `${parts.year}-${String(parts.month).padStart(2, '0')}`;
+      const bucket = buckets.get(key) ?? { year: parts.year, month: parts.month, sum: 0, count: 0 };
+      bucket.sum += r.score_to_par;
+      bucket.count += 1;
+      buckets.set(key, bucket);
+    }
+    const ordered = Array.from(buckets.entries()).sort(([a], [b]) => (a < b ? -1 : 1));
+    // Only spell out the year in each tick when the season actually crosses
+    // one — a single-year season repeating "2026" on every point is noise.
+    const multiYear = new Set(ordered.map(([, b]) => b.year)).size > 1;
+    return ordered.map(([, b], i) => ({
+      x: dateOnlyToUtcDate({ year: b.year, month: b.month, day: 1 }).toLocaleDateString('en-US', {
+        month: 'short',
+        year: multiYear ? 'numeric' : undefined,
+        timeZone: 'UTC',
+      }),
+      y: b.sum / b.count,
+      // The latest month earns a marker — the point the verdict sentence is
+      // about ("… where the season started" vs. now).
+      marker: i === ordered.length - 1 ? { label: 'Latest' } : undefined,
+    }));
+  }, [rounds]);
+
   // ── Masthead copy + honest meta ────────────────────────────────────────--
   const eyebrow = isCoach ? 'Team Rounds' : 'Your Rounds';
   const title = isCoach ? 'The library.' : 'Your rounds.';
@@ -662,16 +730,15 @@ export function FairwayRoundsLibrary({
   const hasToParTrend =
     !starved && stats?.trend != null && stats?.avgToPar !== null && toParDelta !== null;
 
-  // "+3.6" / "−2.1" / "0.0" — signDisplay:exceptZero, one decimal. Kept as a
-  // plain helper (not `formatToPar`, which prints a bare "E" at level par and
-  // a strokes-only integer) so this cell's precision matches its prior
-  // StatTile rendering exactly.
-  const avgToParDisplay =
-    stats?.avgToPar != null
-      ? stats.avgToPar > 0
-        ? `+${stats.avgToPar.toFixed(1)}`
-        : stats.avgToPar.toFixed(1)
-      : null;
+  // The Cockpit primary's trend chart needs at least two distinct months to
+  // draw a LINE, not a dot — same starved gate as the rail (a two-round,
+  // two-month season is not a trustworthy trend either).
+  const hasMonthlyTrend = !starved && monthlyToParTrend.length >= 2;
+
+  // "+3.6" / "−2.1" / "0.0" — not `formatToPar`, which prints a bare "E" at
+  // level par and a strokes-only integer, so this cell's precision matches
+  // its prior StatTile rendering exactly.
+  const avgToParDisplay = stats?.avgToPar != null ? signedToPar(stats.avgToPar) : null;
 
   // ── Masthead verdict sentence ─────────────────────────────────────────────
   // Reuses `hasScoreTrend` (same 6-scored-round threshold `stats.trend`
@@ -725,29 +792,52 @@ export function FairwayRoundsLibrary({
       )}
 
       {/* ── COCKPIT — a ranked InstrumentCluster replaces the five equal
-          StatMatrix boxes: a focal RadialGauge, a two-item Readout rail
-          (each delta-gated on the same 6-scored-round honesty threshold the
-          old "Scoring trend" pill used), a four-up tertiary count row.
-          Rendered even with zero completed rounds — every instrument owns
-          its own honest starved/awaiting swap, never a fabricated 0.0. ───--*/}
+          StatMatrix boxes. PRIMARY: one accent panel, a "% under par"
+          Readout above a monthly avg-to-par TrendChart (never a floating
+          dial in dead space). SECONDARY: ONE panel, two Readouts on a plain
+          hairline — not two bordered boxes. TERTIARY: ONE plain StatMatrix —
+          hairline seams, no card. Rendered even with zero completed rounds —
+          every instrument owns its own honest starved/awaiting swap, never a
+          fabricated 0.0. ─────────────────────────────────────────────────--*/}
       <InstrumentCluster
         ariaLabel="Round summary instrument cluster"
         balance="focal"
         primary={
-          <RadialGauge
-            size="md"
-            title="% under par"
-            overline="SEASON"
-            readoutLabel="of scored rounds"
-            value={starved ? undefined : stats!.underParPct / 100}
-            awaiting={starved}
-            samples={stats?.totalRounds}
-            minSamples={3}
-            unit="rounds"
-          />
+          <InstrumentPanel tone="accent" depth="raised" eyebrow="SEASON SCORING">
+            <Readout
+              size="lg"
+              label="Under par"
+              unit="%"
+              value={starved ? undefined : stats!.underParPct}
+              state={starved ? 'awaiting' : 'live'}
+              samples={starved ? { have: stats?.totalRounds ?? 0, need: 3 } : undefined}
+            />
+            {!starved ? (
+              <div className="mt-5">
+                {hasMonthlyTrend ? (
+                  <TrendChart
+                    title="Scoring trend"
+                    overline="Avg to par by month"
+                    data={monthlyToParTrend}
+                    valueFormatter={signedToPar}
+                    benchmark={
+                      stats?.avgToPar != null
+                        ? { value: stats.avgToPar, label: 'Season avg' }
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <InsufficientData
+                    title="Trend appears as rounds build"
+                    description="A trend needs rounds spread across more than one month."
+                  />
+                )}
+              </div>
+            ) : null}
+          </InstrumentPanel>
         }
         secondary={[
-          <InstrumentPanel key="avg-score" depth="base" padding="md">
+          <InstrumentPanel key="scoring-rail" depth="base" padding="md" className="flex flex-col gap-5">
             {starved ? (
               <Readout size="lg" label="Avg score" state="awaiting" />
             ) : (
@@ -767,49 +857,50 @@ export function FairwayRoundsLibrary({
                 }
               />
             )}
-          </InstrumentPanel>,
-          <InstrumentPanel key="avg-to-par" depth="base" padding="md">
-            {starved || avgToParDisplay === null ? (
-              <Readout size="lg" label="Avg to par" unit="strokes" state="awaiting" />
-            ) : (
-              <Readout
-                size="lg"
-                label="Avg to par"
-                unit="strokes"
-                display={avgToParDisplay}
-                delta={
-                  hasToParTrend
-                    ? {
-                        value: toParDelta!,
-                        direction: toParDelta! < 0 ? 'up' : toParDelta! > 0 ? 'down' : 'flat',
-                      }
-                    : undefined
-                }
-              />
-            )}
+            <div className="border-t border-border-subtle pt-5">
+              {starved || avgToParDisplay === null ? (
+                <Readout size="lg" label="Avg to par" unit="strokes" state="awaiting" />
+              ) : (
+                <Readout
+                  size="lg"
+                  label="Avg to par"
+                  unit="strokes"
+                  display={avgToParDisplay}
+                  delta={
+                    hasToParTrend
+                      ? {
+                          value: toParDelta!,
+                          direction: toParDelta! < 0 ? 'up' : toParDelta! > 0 ? 'down' : 'flat',
+                        }
+                      : undefined
+                  }
+                />
+              )}
+            </div>
           </InstrumentPanel>,
         ]}
         tertiary={[
-          <InstrumentPanel key="rounds" depth="base" padding="md">
-            {starved ? (
-              <Readout size="sm" label="Rounds" state="awaiting" />
-            ) : (
-              <Readout size="sm" label="Rounds" display={stats!.totalRounds} />
-            )}
-          </InstrumentPanel>,
-          <InstrumentPanel key="best" depth="base" padding="md">
-            {starved ? (
-              <Readout size="sm" label="Best round" state="awaiting" />
-            ) : (
-              <Readout size="sm" label="Best round" display={stats!.best} />
-            )}
-          </InstrumentPanel>,
-          <InstrumentPanel key="practice" depth="base" padding="md">
-            <Readout size="sm" label="Practice" display={filterCounts.practice} />
-          </InstrumentPanel>,
-          <InstrumentPanel key="tournament" depth="base" padding="md">
-            <Readout size="sm" label="Tournament" display={filterCounts.tournament} />
-          </InstrumentPanel>,
+          <StatMatrix
+            key="footer-stats"
+            variant="plain"
+            columns={4}
+            items={[
+              {
+                label: 'Rounds',
+                value: starved ? '—' : stats!.totalRounds,
+                hint: starved ? 'Awaiting signal' : undefined,
+                tone: starved ? 'muted' : 'neutral',
+              },
+              {
+                label: 'Best round',
+                value: starved ? '—' : stats!.best,
+                hint: starved ? 'Awaiting signal' : undefined,
+                tone: starved ? 'muted' : 'neutral',
+              },
+              { label: 'Practice', value: filterCounts.practice },
+              { label: 'Tournament', value: filterCounts.tournament },
+            ]}
+          />,
         ]}
       />
 
@@ -843,7 +934,10 @@ export function FairwayRoundsLibrary({
             <p className="mb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
               Against par, by type
             </p>
-            <DivergingBars rows={spreadRows} max={max} />
+            {/* labelWidth widened from the 40px default — "Practice" /
+                "Qualifier" / "Tournament" all clear a 76px column without
+                truncating (the longest, "Qualifier", is 9 characters). */}
+            <DivergingBars rows={spreadRows} max={max} labelWidth={76} />
           </div>
         );
       })()}

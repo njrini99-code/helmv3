@@ -72,6 +72,16 @@ interface PlayerWithStats {
    * (`Math.round(total_score * (18 / holes_played))`).
    */
   recent_scores?: number[];
+  // ── Team/tour standing for sg_total (roster.v2.md, 2026-09-10) — the SAME
+  // `standingByPlayer` map already read below for `standing_tier`, threaded
+  // through in full instead of collapsed to one caption string. No new
+  // query; see `sgStandingByPlayer` below. ──────────────────────────────────
+  sg_team_avg?: number | null;
+  sg_team_n?: number;
+  sg_team_pct?: number | null;
+  sg_pga_value?: number | null;
+  sg_pga_omitted?: boolean;
+  sg_is_womens?: boolean;
 }
 
 // `formatHandicap` was removed in the 2026-05-28 IA trim — the roster card
@@ -504,9 +514,15 @@ export default async function GolfRosterPage() {
   }
 
   const standingTierByPlayer: Record<string, string | null> = {};
+  // The full sg_total standing row per player — read once here alongside the
+  // caption-only `standingTierByPlayer` loop above, then threaded onto each
+  // player's payload below (roster.v2.md's stage plot + row inspector). Same
+  // `standingByPlayer` map; no second fetch.
+  const sgStandingByPlayer: Record<string, PlayerStanding | undefined> = {};
   for (const pid of playerIds) {
     const standing = standingByPlayer.get(pid)?.get('sg_total');
     standingTierByPlayer[pid] = standing ? teamCohortText(standing.team_pct, standing.team_n) || null : null;
+    sgStandingByPlayer[pid] = standing;
   }
 
   const activeFocusAreasByPlayer: Record<string, number> = {};
@@ -564,6 +580,8 @@ export default async function GolfRosterPage() {
       .map((r) => Math.round((r.total_score as number) * (18 / (r.holes_played ?? 18))))
       .reverse();
 
+    const sgStanding = sgStandingByPlayer[player.id];
+
     return {
       ...player,
       rounds_count: roundsCount,
@@ -575,6 +593,12 @@ export default async function GolfRosterPage() {
       active_focus_areas: activeFocusAreasByPlayer[player.id] ?? 0,
       active_goals: goalsByPlayerMap.get(player.id)?.length ?? 0,
       recent_scores: recentScores,
+      sg_team_avg: sgStanding?.team_avg ?? null,
+      sg_team_n: sgStanding?.team_n ?? 0,
+      sg_team_pct: sgStanding?.team_pct ?? null,
+      sg_pga_value: sgStanding?.pga_value ?? null,
+      sg_pga_omitted: sgStanding?.pga_omitted ?? false,
+      sg_is_womens: sgStanding?.is_womens ?? false,
     };
   });
 
