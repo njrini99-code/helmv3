@@ -212,3 +212,59 @@ describe('FairwayRoundsLibrary — facelift: single ledger Surface for every gro
     expect(surfaces[0]!.textContent).toContain('July 2026');
   });
 });
+
+/**
+ * ============================================================================
+ * Facelift follow-up — ledger pagination (owner-reported lag on accounts
+ * with a lot of history: a real ledger can be 90+ rounds, ~8,300px of page,
+ * rendered eagerly in one pass)
+ * ----------------------------------------------------------------------------
+ * Only the first page of rows renders across ALL groups (never per group);
+ * a "Show 30 more" Button grows it. Row count is asserted via each row's own
+ * `<a href="/golf/dashboard/rounds/:id">` link, since that's the one DOM node
+ * FairwayRoundRow always renders exactly once per round.
+ * ========================================================================== */
+describe('FairwayRoundsLibrary — pagination for long ledgers', () => {
+  function makeManyRounds(count: number): RoundLibraryRound[] {
+    return Array.from({ length: count }, (_, i) => {
+      const month = 1 + Math.floor(i / 28);
+      const day = (i % 28) + 1;
+      return makeRound({
+        id: `r${i}`,
+        round_date: `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      });
+    });
+  }
+
+  it('paints only the first 30 rows across groups, then reveals 30 more per click', () => {
+    const { container } = render(
+      <FairwayRoundsLibrary
+        rounds={makeManyRounds(100)}
+        inProgressRounds={[]}
+        userRole="coach"
+        stats={null}
+      />,
+    );
+    const rowLinks = () => container.querySelectorAll('a[href^="/golf/dashboard/rounds/"]');
+
+    expect(rowLinks()).toHaveLength(30);
+
+    const showMore = screen.getByRole('button', { name: 'Show 30 more' });
+    fireEvent.click(showMore);
+
+    expect(rowLinks()).toHaveLength(60);
+  });
+
+  it('hides the "Show more" control once every row is on the page', () => {
+    render(
+      <FairwayRoundsLibrary
+        rounds={makeManyRounds(20)}
+        inProgressRounds={[]}
+        userRole="coach"
+        stats={null}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Show 30 more' })).not.toBeInTheDocument();
+  });
+});
