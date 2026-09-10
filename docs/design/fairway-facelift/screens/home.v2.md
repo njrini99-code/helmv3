@@ -199,3 +199,33 @@ Rewrite `FairwayCoachDashboard.composition.test.tsx`'s region assertions:
 Add/extend: `AgendaStrip.test.tsx` (new, above); one or two new cases in `TickerStrip`'s existing test file for `tone` rendering and for the no-`tone` fallback staying byte-identical (protects `FairwayRoundsLibrary.tsx`'s untouched call site); one new case in `NotificationsLatestModule`'s test coverage (if none exists today, add a minimal one) for `frame="bare"` skipping the `Surface`, and confirm the player dashboard's call site is left on the `'card'` default.
 
 One line acknowledging scope overlap: `home-polish` owns several of the same open REVIEW.md rows on this exact screen (the 340px hole, the TickerStrip clipping, the phone Segmented-to-Menu demotion), this spec resolves all of them as part of the same composition change, so implementation should be coordinated with (or handed to) that lane rather than done twice.
+
+## Result (shipped 2026-09-10)
+
+Implemented as specified, region by region:
+
+- **Stage** — masthead unchanged. The verdict line is a new `useMemo` in `FairwayCoachDashboard.tsx`, three optionally-present clauses (today's event count, the improving/sliding pulse split gated on `tracked > 0`, the CoachHelm signals count gated on `badges.coachhelm > 0`) joined into one sentence.
+- **Toolbar** — sticky, bare `Toolbar` with the signals `StatusPill` in `leading` (rendered only when `badges.coachhelm > 0`) and the performance window as a `Segmented` (desktop) / `Menu` (phone) pair in `viewToggle`, both always in the DOM, CSS-gated. Wrapped in its own `<div>` — see Deviations.
+- **Operations row** — `TodayPanel` (`lg:col-span-7`) beside `WhoNeedsAttentionBoard` (`lg:col-span-5`, renamed from `TeamPulseBoard`), `lg:items-start` so neither column stretches to match the other's height. `TodayPanel`'s outer `Surface` is removed; a new `AgendaStrip` hour rail renders above the event rows whenever `sortedToday.length > 0`. `WhoNeedsAttentionBoard`'s outer `Surface` is removed; `MatrixBoard` supplies its own ruled-grid chrome directly under a heading + accent hairline.
+- **Instrument band** — a new `TeamPerformanceCluster` function renders a full-width `InstrumentCluster`: a focal `InstrumentPanel tone="accent" depth="raised"` (Readout + benchmarked `TrendChart`, benchmark = `stats.previousAverage ?? stats.teamScoringAverage`), a secondary rail of two `depth="base"` panels (GIR, Putts/round), and a tertiary foot row (Rounds logged, Signals, Rounds this week — the last omitted when the count is `null`, never rendered as a fake 0).
+- **Ledger row** — Recent Rounds (`lg:col-span-8`, still the row's one boxed `Surface`) beside `NotificationsLatestModule frame="bare"` (`lg:col-span-4`). The `TickerStrip` now colors each bar by to-par sign (`good`/`even`/`over`) instead of one bar highlighted among identical dim ones.
+
+New primitive: `AgendaStrip` (`src/components/fairway/modules/AgendaStrip.tsx`) — a labeled hour rail with tone-filled event pills, an optional "now" tick, dual desktop/phone tick-label density (CSS-gated, both always in the DOM), and a `sr-only` list carrying the same content for assistive tech. Registered in `registry.ts` (archetype A, replaces "a plain seam list as the only reading of today").
+
+### Deviations from the written plan above
+
+- **Toolbar wrapper div (new, not in the original plan).** `Toolbar` returns a two-element fragment when `sticky` (a zero-height intersection sentinel ahead of the row). Rendered as a direct child of this page's `gap-8`/`gap-10` flex column, the sentinel and the row each became their own flex item and each earned a full flex gap, opening an ~80px blank band between the verdict line and the toolbar's controls. Fixed by wrapping the `Toolbar` call in a plain `<div>`, the same mitigation `FairwayCalendarHero.tsx` already uses around its own sticky `Toolbar`. Confirmed by direct DOM measurement (sentinel and row bounding boxes were 40px apart before the fix, adjacent after) and by the desktop capture.
+- **`InstrumentPanel tone="accent"`'s bezel is a quiet green hairline border, not a filled or glowing bezel.** This is the primitive's own documented design (`instrument-panel.module.css`: "a quiet green hairline. Nothing more (no ring, no glow)"), not a gap introduced here. It reads as intended: restrained, not a hero-metric treatment.
+- **`AgendaStrip` is not visible in the captured screenshots.** The demo coach account (`Nick Rini` / Demo University Golf) has a clear schedule today (verdict line: "Nothing on today's schedule…"), and `AgendaStrip` only mounts when `sortedToday.length > 0` (a rail with zero events is dead space, so a genuinely clear day stays the existing quiet sentence). The component itself is covered by 5 passing unit tests (`AgendaStrip.test.tsx`) exercising the sr-only list, tone-fill mapping, now-tick gating, and reduced-motion behavior; it has not been visually confirmed in situ against real "today" events, since seeding one would mean writing to shared account data outside this task's scope.
+- **Tertiary foot row renders as one bordered "grouped ledger" on phone**, not bare micro-readouts. This is `InstrumentCluster`'s own documented phone-tier behavior (`TERTIARY_PHONE_GROUP`, the fix for an earlier Mobile Doctrine rule-11 violation where each tertiary readout became its own full-width card) — confirmed correct, not something this pass changed.
+
+### Verification
+
+- `eslint` on every changed/created file: 0 errors, 0 warnings (two initial warnings — two `text-[10px]` arbitrary values in `AgendaStrip.tsx`, one unused `signedDelta` helper in `FairwayCoachDashboard.tsx` — fixed).
+- `npx vitest run --maxWorkers=1 src/components/fairway/pages/dashboard src/components/fairway/charts src/components/fairway/modules src/test/static`: 41 files / 382 tests passed, 0 failed (a transient failure from a concurrent session's own in-progress registry entries resolved itself by the final run).
+- `npx tsc --noEmit -p tsconfig.json`: 0 errors in any file this pass owns. Two `TS2724` errors remain in `src/components/golf/coachhelm/round-review/ReviewBreakdown.tsx` / `ReviewHero.tsx`, a different concurrent session's own mid-refactor state, outside this pass's files.
+- Visual capture (`scripts/ui-intelligence/capture-golf-facelift.mjs --persona=coach --only=home`), both viewports, iterated once after the initial capture surfaced the Toolbar-gap and TickerStrip-tone issues above:
+  - `ui-intelligence/facelift/captures/coach/home__desktop__fold.png`
+  - `ui-intelligence/facelift/captures/coach/home__desktop__full.png`
+  - `ui-intelligence/facelift/captures/coach/home__phone__fold.png`
+  - `ui-intelligence/facelift/captures/coach/home__phone__full.png`

@@ -1,20 +1,50 @@
 /**
  * ============================================================================
- * FairwayCoachDashboard — facelift composition (coach-home.md)
+ * FairwayCoachDashboard — the cockpit composition (home.v2.md)
  * ----------------------------------------------------------------------------
- * Locks the ONE structural fact the facelift pass exists to deliver: a 7/5
- * asymmetric grid with Today as the dominant object, never the twelve-card
- * stack it replaced. Queries by accessible name (`role="region"` via
- * `aria-label`), not by class name or DOM position alone, so the assertion
- * survives a pure styling/token change but still catches a regression that
- * reorders the sections or drops one of them.
+ * Locks the structural fact THIS pass exists to deliver: Today and Who-needs-
+ * attention share one operations row, Team performance is promoted to its
+ * own full-width instrument band BELOW that row (not beside Today anymore —
+ * that repositioning is the direct fix for the nested-card / 340px-hole
+ * defects REVIEW.md flagged on this exact screen), and the ledger row
+ * (Recent rounds | Activity) comes last. Queries by accessible name
+ * (`role="region"` via `aria-label`), not by class name or DOM position
+ * alone, so the assertion survives a pure styling/token change but still
+ * catches a regression that reorders the sections or drops one of them.
  * ========================================================================== */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 import { FairwayCoachDashboard } from './FairwayCoachDashboard';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import type { CoachDashboardPayload } from '@/app/golf/actions/dashboard-data';
+import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
+
+// The Activity section (`NotificationsLatestModule`, `frame="bare"`) self-
+// fetches and renders NOTHING while loading or genuinely empty — the DOM-
+// order assertion below needs it to actually mount its region, so this
+// resolves one item rather than leaving the real server action to run
+// (and fail, silently, the same honest way) in a unit test.
+vi.mock('@/app/golf/actions/unified-notifications', () => ({
+  getUnifiedNotifications: vi.fn(async () => ({
+    success: true,
+    data: {
+      items: [
+        {
+          id: 'n1',
+          source: 'notifications',
+          category: 'messages',
+          title: 'Jordan Lee sent a message',
+          body: 'See you at practice',
+          action_url: null,
+          created_at: '2026-09-01T15:00:00.000Z',
+          read_at: null,
+        } as UnifiedNotificationItem,
+      ],
+    },
+  })),
+  markNotificationRead: vi.fn(async () => ({ success: true })),
+}));
 
 function baseData(overrides: Partial<CoachDashboardData> = {}): CoachDashboardData {
   return {
@@ -31,7 +61,7 @@ function baseData(overrides: Partial<CoachDashboardData> = {}): CoachDashboardDa
     calendarEvents: [],
     teamScoringTrend: undefined,
     ...overrides,
-  };
+  } as CoachDashboardData;
 }
 
 function basePayload(overrides: Partial<CoachDashboardPayload> = {}): CoachDashboardPayload {
@@ -64,8 +94,8 @@ function basePayload(overrides: Partial<CoachDashboardPayload> = {}): CoachDashb
   } as CoachDashboardPayload;
 }
 
-describe('FairwayCoachDashboard — 7/5 asymmetric grid (coach-home.md)', () => {
-  it('renders Today, Team performance, Team pulse and Recent rounds as named regions, with Today ahead of Team pulse in DOM order', () => {
+describe('FairwayCoachDashboard — home.v2.md composition', () => {
+  it('renders Today, Who needs attention, Team performance, Recent rounds and Latest notifications as named regions, in that DOM order', async () => {
     render(
       <FairwayCoachDashboard
         data={baseData({
@@ -76,31 +106,29 @@ describe('FairwayCoachDashboard — 7/5 asymmetric grid (coach-home.md)', () => 
       />,
     );
 
-    // The four aria-labelled regions the 7/5 composition requires — a
-    // regression that drops or renames one of these fails here first.
     const today = screen.getByRole('region', { name: "Today's schedule" });
+    const whoNeedsAttention = screen.getByRole('region', { name: 'Who needs attention' });
     const teamPerformance = screen.getByRole('region', { name: 'Team performance' });
-    const teamPulse = screen.getByRole('region', { name: 'Team pulse' });
     const recentRounds = screen.getByRole('region', { name: 'Recent rounds' });
+    // Async: NotificationsLatestModule self-fetches before it mounts its region.
+    const latestNotifications = await screen.findByRole('region', { name: 'Latest notifications' });
 
-    // Today (row 1, 7/12) must precede Team performance (row 1, 5/12) — same
-    // row, left-to-right reading order.
-    expect(today.compareDocumentPosition(teamPerformance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Operations row (home.v2.md §4): Today precedes Who-needs-attention,
+    // same row, left-to-right reading order.
+    expect(today.compareDocumentPosition(whoNeedsAttention) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-    // Today is the dominant object (SCREEN "Dominant object" — coach-home.md):
-    // it must precede Team pulse, which only appears in row 2. A regression
-    // that puts the pulse board (or anything from row 2) ahead of Today would
-    // resurrect the old "answered fourth and ninth" ordering problem the
-    // facelift was written to fix.
-    expect(today.compareDocumentPosition(teamPulse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Instrument band (home.v2.md §5): the operations row precedes the
+    // full-width Team performance cockpit — it is no longer a column
+    // beside Today, it is its own row below both operations-row columns.
+    expect(whoNeedsAttention.compareDocumentPosition(teamPerformance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-    // Row 1 (Today | Team performance) precedes row 2 (Team pulse | Latest),
-    // which precedes row 3 (Recent rounds).
-    expect(teamPerformance.compareDocumentPosition(teamPulse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(teamPulse.compareDocumentPosition(recentRounds) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Ledger row (home.v2.md §6): the instrument band precedes Recent
+    // rounds, which precedes Activity — same row, left-to-right.
+    expect(teamPerformance.compareDocumentPosition(recentRounds) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(recentRounds.compareDocumentPosition(latestNotifications) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('never renders the removed containers: no page-level Window band, no MetricCard KPI grid, no separate Schedule/Performance Trend/Top Performers cards', () => {
+  it('never renders the removed containers, and the "Team pulse" name is fully retired', () => {
     render(
       <FairwayCoachDashboard
         data={baseData({
@@ -111,16 +139,47 @@ describe('FairwayCoachDashboard — 7/5 asymmetric grid (coach-home.md)', () => 
       />,
     );
 
-    // The old page-level "WINDOW" eyebrow band (CONTAINERS TO REMOVE #2) is
-    // gone — the Segmented now lives inside Team performance's own header.
+    // The old page-level "WINDOW" eyebrow band is gone — the range control
+    // now lives in the sticky Toolbar (Segmented on desktop, a Menu on
+    // phone), not a standalone page-level band.
     expect(screen.queryByText('Window')).not.toBeInTheDocument();
     // The old standalone "Schedule" card and "Top Performers" card heading
-    // (CONTAINERS TO REMOVE #4/#5) are gone — merged into Today and Team
-    // pulse respectively. (The Performance Trend chart itself keeps its own
-    // <h3> title — it just no longer owns a separate top-level card; that's
-    // covered by the region-order assertion above, which finds it nested
-    // inside "Team performance".)
+    // are gone — merged into Today and Who-needs-attention respectively.
     expect(screen.queryByRole('heading', { name: 'Schedule' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Top Performers' })).not.toBeInTheDocument();
+    // The section drifted to "Team pulse" in the shipped code; home.v2.md
+    // corrects it back to "Who needs attention" — no heading OR region
+    // should still carry the old name.
+    expect(screen.queryByRole('heading', { name: 'Team pulse' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Team pulse' })).not.toBeInTheDocument();
+  });
+
+  it('renders the verdict line and the sticky toolbar', () => {
+    render(
+      <FairwayCoachDashboard
+        data={baseData({
+          topPlayers: [{ id: 'p1', name: 'Alex Player', avg_score: 72.5, rounds: 5 }],
+        })}
+        enhancedData={basePayload({
+          todayEvents: [
+            {
+              id: 'e1',
+              title: 'Practice',
+              event_type: 'practice',
+              start_time: '2026-09-10T14:00:00.000Z',
+              end_time: '2026-09-10T15:00:00.000Z',
+              location: null,
+            },
+          ],
+        })}
+        joinRequests={[]}
+      />,
+    );
+
+    // "1 event on today's schedule." — singular, and the pulse clause
+    // (2 improving, 0 declining — `tracked` = improving+stable+declining =
+    // 3 > 0) both present in one sentence.
+    expect(screen.getByText(/event on today's schedule\./)).toBeInTheDocument();
+    expect(screen.getByRole('toolbar', { name: 'Dashboard toolbar' })).toBeInTheDocument();
   });
 });

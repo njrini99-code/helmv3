@@ -24,7 +24,21 @@ import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notific
 
 const LATEST_LIMIT = 5;
 
-export function NotificationsLatestModule() {
+export interface NotificationsLatestModuleProps {
+  /**
+   * Chrome around the row list (home.v2.md §6 "Activity", additive). `'card'`
+   * (default) is byte-identical to before — the module's internal
+   * `<Surface elevation="border" padding="none">` wraps the rows, unchanged
+   * for the player dashboard's existing call site. `'bare'` skips that
+   * Surface: the rows render as bare seam rows under the CALLER's own
+   * heading + hairline instead, so a page pairing this module with another
+   * bare section (e.g. coach home's Today) reads as two matching seam
+   * sections rather than one bare and one boxed.
+   */
+  frame?: 'card' | 'bare';
+}
+
+export function NotificationsLatestModule({ frame = 'card' }: NotificationsLatestModuleProps = {}) {
   const router = useRouter();
   const badges = useNotificationBadges();
   const { setOpen } = useNotificationPanel();
@@ -125,15 +139,25 @@ export function NotificationsLatestModule() {
       {/* Section hairline — the same "more-green ruling" every other home
           section band uses (Recent Rounds, etc.). */}
       <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-      <Surface elevation="border" padding="none">
-        <ul className="divide-y divide-border-subtle">
+      {frame === 'bare' ? (
+        <ul className="flex flex-col divide-y divide-border-subtle">
           {items.map((item) => (
             <li key={`${item.source}:${item.id}`}>
               <NotificationRow item={item} onClick={handleItemClick} density="compact" now={now} />
             </li>
           ))}
         </ul>
-      </Surface>
+      ) : (
+        <Surface elevation="border" padding="none">
+          <ul className="divide-y divide-border-subtle">
+            {items.map((item) => (
+              <li key={`${item.source}:${item.id}`}>
+                <NotificationRow item={item} onClick={handleItemClick} density="compact" now={now} />
+              </li>
+            ))}
+          </ul>
+        </Surface>
+      )}
     </section>
   );
 }

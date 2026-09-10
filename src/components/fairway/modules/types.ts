@@ -160,7 +160,21 @@ export interface RampMatrixProps {
   legend?: { band: 1 | 2 | 3 | 4; label: string }[];
 }
 
-export interface TickerItem { label: string; heightPct: number; emphasis?: boolean }
+export interface TickerItem {
+  label: string;
+  heightPct: number;
+  emphasis?: boolean;
+  /**
+   * Sign-colored fill (home.v2.md §6 "Recent rounds") — `good` (better than
+   * even, bg-accent-500), `over` (worse than even, bg-fw-warning), `even`
+   * (exactly even, bg-surface-sunken). Additive: when omitted (the Rounds
+   * library's own `TickerStrip` call, its only other consumer), rendering
+   * falls back to the existing `emphasis`-only behavior unchanged — this
+   * turns the strip from "one bar highlighted, the rest identical dim wash"
+   * into a form line that reads by sign without touching that call site.
+   */
+  tone?: 'good' | 'even' | 'over';
+}
 export interface TickerStripProps { items: TickerItem[] }
 
 export interface RingGaugeProps { value: number; size?: number }   // value 0–100
@@ -240,3 +254,19 @@ export interface FilmstripProps {
   activeHole?: number;
   onScrub?: (hole: FilmstripHole) => void;
 }
+
+/** One bar in `ScoringHistogram` (round-review.v2.md R2) — `tone` reuses
+ *  `TickerItem['tone']`'s exact sign vocabulary ('good' = better than par,
+ *  'even' = par, 'over' = worse than par) rather than inventing a parallel
+ *  one. */
+export interface ScoringBucket { label: string; count: number; tone: 'good' | 'even' | 'over' }
+export interface ScoringHistogramProps { buckets: ScoringBucket[] }
+
+/** One hole in `DrivingDotStrip` (round-review.v2.md R6-01). `fairwayHit`
+ *  is `null` for a hole with no fairway target at all (par-3) — a distinct
+ *  state from a miss, never coerced to `false`. `missSide` is `null` for a
+ *  hit, for a hole with no target, AND for a miss whose logged direction
+ *  isn't left/right (short/long/unparsed) — that last case is a deliberate,
+ *  documented simplification (renders centered, never a guessed side). */
+export interface DrivingDotHole { n: number; fairwayHit: boolean | null; missSide: 'left' | 'right' | null }
+export interface DrivingDotStripProps { holes: DrivingDotHole[] }

@@ -5,6 +5,7 @@ export * from './Bento';
 export * from './BentoCell';
 export * from './MatrixBoard';
 export * from './Filmstrip';
+export * from './AgendaStrip';
 export * from './Spine';
 export * from './PriorityList';
 export * from './SpineLedger';
