@@ -57,23 +57,23 @@ variant is normative, the player variant is noted inline.
     mirroring `buildVerdict`'s pattern (`coach-home-logic.ts:170,178`). Task
     titles and counts are plain mono, not links; the rule only binds names.
   - **Missing facts, in order of precedence:**
-    - `tasksError` set → `Couldn't load tasks.` (echoes the existing
+    - `tasksError` set renders `Couldn't load tasks.` (echoes the existing
       `InlineNotice` copy, `FairwayTasks.tsx:425-434`) so the verdict never
       quotes a number the page is simultaneously reporting as unreliable.
-    - `tasks.length === 0` → `No tasks yet.`
-    - `overdueCount === 0` → `Nothing overdue. {activeCount} open,
+    - `tasks.length === 0` renders `No tasks yet.`
+    - `overdueCount === 0` renders `Nothing overdue. {activeCount} open,
       {stats.completion_rate}% of all tasks done.`
     - `overdueCount > 0` but every overdue task has `assignments.length === 0`
       (a real, common shape: `createTask` only inserts assignment rows when
       `assignToPlayerIds` is non-empty, `tasks.ts:347`, so a team-wide task
-      has none) → no player to name, so:
+      has none) leaves no player to name, so the verdict falls back to:
       `{overdueCount} {tasks/task} overdue, all team-wide with no single
       assignee to flag. {activeCount} still open,
       {stats.completion_rate}% of all tasks done.` Never invent a name.
   - **Player role**: same shape, first person, no third-party name to link
     (there is none to name): `{overdueCount} of yours {is/are} overdue,
     worst is {worstDays} days late on "{worstTask.title}." {activeCount}
-    left, {stats.completion_rate}% done.` `0` tasks →
+    left, {stats.completion_rate}% done.` `0` tasks renders
     `Nothing assigned yet.`
 - **Facts line**, mono caption (pattern: `FairwayCoachDashboard.tsx:330-337`):
   `{tasks.length} total · {categories.length} categories`, both real
@@ -108,8 +108,13 @@ rule as `attentionOrder`, `coach-home-logic.ts:121-125`), and, unlike
 
 One **terminal lane, "Team-wide, no assignee,"** always last, below a
 `border-border-strong` hairline, holding every open dated task with
-`assignments.length === 0`. This is real, common data (`tasks.ts:347`, cited
-above) and it can never be silently empty while dated team-wide tasks exist:
+`assignments.length === 0`. This lane follows the same existence rule as a
+player lane above: it renders only when at least one open, dated,
+no-assignee task exists to plot. An undated team-wide task does not summon
+an empty strip on its own; it is fully accounted for by the "No due date"
+ledger column and readout instead, never lost, only never drawn as a lane
+with nothing in it. This is real, common data (`tasks.ts:347`, cited
+above) and, once it renders, it can never be silently empty while dated team-wide tasks exist:
 "six overdue tasks nobody owns" is exactly the pattern a per-player-only
 view would hide. Its identity cell is plain bold text, no `Link`, no `Avatar`
 (mirrors `ScoreField`'s `row.href ?  <Link>… : <span>…` fallback,
@@ -159,8 +164,17 @@ magnitude the way a golf score has an under-par value):
   amber bar height through the same staggered entrance transition described
   above, so it reads as the instrument arriving, not correcting itself. The
   ledger's "Overdue now" column and the stage's "Worst late" numeral
-  (below) wait on the same tick, so nothing else on the page looks overdue
-  before the stage does.
+  (below) read the same component `now`, so those two can never disagree
+  with the marks or with each other. The Overdue **readout** (above) is the
+  one exception, not covered by this tick: it reads `stats.overdue_tasks`,
+  sourced from the hook's own fetch-time `now`
+  (`use-task-realtime.ts:227,346`) and already resolved on first paint, so
+  for that one tick the readout can show a nonzero overdue count while every
+  mark on the stage is still drawn neutral. This is the "Two different
+  `now`s" risk (below), visible here specifically at page load; see
+  `newFields` for the `is_overdue` threading change that would let the stage
+  classify overdue on first paint too, matching the readout instead of
+  trailing it.
 
 **Row-end columns** (mirrors `ScoreField`'s Avg/Trend pair,
 `ScoreField.tsx:246-251`), mono tabular, no arrow glyphs (banned; the
@@ -177,13 +191,36 @@ are not to be repeated here):
   always sits beside it, the same division of labor as `TrendMark` carrying
   the delta next to `ScoreField`'s bars.
 
+Both figures read `assignment` rows, which the terminal "Team-wide, no
+assignee" lane by definition has none of (`assignments.length === 0`). For
+that lane only, both are read off its own tasks directly instead: **Open**
+is the count of open team-wide tasks in view, dated or not (the same
+workload-vs-dated-slice distinction as a player lane: an undated team-wide
+task still counts here even though it draws no mark), and **Worst late** is
+the largest `daysLate` among that lane's own currently-overdue tasks,
+computed from each task's own `due_date`/`status` rather than a nonexistent
+assignment row.
+
 **What a mark links to.** There is no `/golf/dashboard/tasks/[id]` route
 (confirmed: no such directory exists under `src/app/golf/(dashboard)/dashboard/tasks`).
 A mark is a real button, not a routed `Link`: clicking it opens the exact
 same inline detail (`DrillPanel` on desktop, `Sheet` on phone; see Phone,
 below, for how the desktop/phone choice itself is fixed) that a table row
 opens for that task, with the same body (description, assignees, due,
-category, `FairwayTasks.tsx:895-962`).
+category, `FairwayTasks.tsx:895-962`). Not every task clears that bar:
+`canExpand` (`FairwayTasks.tsx:790`, `!!task.description || !!task.reminder_at
+|| (role === 'coach' && hasAssignments)`) is false for a bare task with only
+a title and a due date, and a team-wide task is `hasAssignments === false`
+by definition, so this is the *default* state for the terminal lane above,
+not a rare edge case. The existing row already disables its own affordance
+rather than opening an empty panel in that case; a mark for such a task
+follows the same rule and renders as a plain, non-interactive tick with only
+a `title` tooltip (mirrors `ScoreField`'s own non-`Link` fallback for a round
+with no `href`, `ScoreField.tsx:187-192`), never a button that opens nothing.
+Every mark, expandable or not, carries a composed label string built the
+same way `rollupPlayers` builds `plotted[].label` (`coach-home-logic.ts:93`:
+date, title, due-date reading, days late), so the tooltip and screen-reader
+text still deliver the fact even when no panel opens.
 
 **Degrade.**
 - **One lane.** Renders exactly like any other lane, nothing special:
@@ -227,11 +264,19 @@ fast.
 
 ## Readouts
 
-At most four, in the stage's right column on desktop (`FieldReadouts`,
-`coach-home-parts.tsx:102-134`, reused verbatim: its `note`-only branch,
-already exercised by Home's `Rounds` readout with no series,
-`FairwayCoachDashboard.tsx:210-216`, is exactly the shape every readout below
-needs, since none has a historical series to sparkline).
+At most four, in the stage's right column on desktop. The stage's outer
+container is Home's own split, reused verbatim, never a new breakpoint: `grid
+grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x
+xl:divide-border-subtle` (`FairwayCoachDashboard.tsx:396`), so the instrument
+never shares a row with a starved 15rem column below `xl`. `FieldReadouts`
+itself (`coach-home-parts.tsx:102-134`, reused verbatim) already carries the
+anatomy's own fallback inside that one component: `grid-cols-2` below `md`,
+a `md:grid-cols-4` four-across band from `md` to `xl`, and the right-column
+`xl:flex xl:flex-col xl:divide-y` stack at `xl` and above
+(`coach-home-parts.tsx:113`). Its `note`-only branch, already exercised by
+Home's `Rounds` readout with no series, `FairwayCoachDashboard.tsx:210-216`,
+is exactly the shape every readout below needs, since none has a historical
+series to sparkline.
 
 | Readout | Source field | Delta |
 |---|---|---|
@@ -242,19 +287,35 @@ needs, since none has a historical series to sparkline).
 
 ## The ledger row
 
-Three bare columns divided by vertical hairlines, `5 / 4 / 3` on a 12-column
-grid (`lg:grid-cols-12`, `divide-x divide-border-subtle`). Filters (search,
-status, category; see The table) do not narrow these columns; they always
-reflect the full current dataset, the same way the stage does.
+Three bare columns, `5 / 4 / 3` of a 12-column grid at rest, built on the same
+breakpoint shape as Home's own ledger row (`FairwayCoachDashboard.tsx:434`:
+`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 xl:divide-x
+xl:divide-border-subtle`), never `lg:`: at 1024 a three-column split this
+narrow would squeeze "By category" and "No due date" down to a character or
+two, exactly the failure `LANGUAGE.md:47-52` names for this width. Below
+`md`: one column, stacked, hairlines run horizontal (see Phone). From `md` to
+`xl`: two columns, "Overdue now" and "By category" side by side, "No due
+date" spanning both beneath them (`md:col-span-2`, the same
+third-column-spans-both shape as Home's own `NotificationsLatestModule`,
+`FairwayCoachDashboard.tsx:446`). At `xl` and above: the true `5 / 4 / 3`
+split (`xl:col-span-5` / `xl:col-span-4` / `xl:col-span-3`), vertical
+hairlines return. Filters (search, status, category; see The table) do not
+narrow these columns; they always reflect the full current dataset, the same
+way the stage does.
 
 1. **Overdue now** (5). Every task where `isOverdue` (the shared predicate,
    `FairwayTasks.tsx:771-781`), sorted worst-first. Each row: title (button,
    opens the same inline detail as a stage mark/table row, see above), days
-   late in mono amber (a `MicroBar`, `registry.ts:216`, "a signed per-row
-   stat inside a dense ledger/table row," is the right primitive for the
-   magnitude beside it), category as plain trailing text when present. This
-   is the one place the specific overdue *tasks* are named; the stage only
-   shows aggregate bar height per lane, never a title.
+   late as a plain mono amber numeral (e.g. `9d`), category as plain trailing
+   text when present. No bar widget in this row: `MicroBar` (`registry.ts:216`)
+   is a zero-centered, bidirectional comparison primitive, fill growing left
+   or right of a real zero baseline depending on sign. "Days late" is a
+   one-sided magnitude with no such baseline; every value here would push the
+   bar the same direction and its left half would never fill, a mechanism
+   doing nothing, which is the "decoration wearing an instrument's name"
+   failure this pass exists to remove. The numeral alone is the honest,
+   sufficient read. This is the one place the specific overdue *tasks* are
+   named; the stage only shows aggregate bar height per lane, never a title.
 2. **By category** (4). `tasks` filtered to `status !== 'completed'`, grouped
    by `category` (including the `UNCATEGORIZED` sentinel bucket,
    `FairwayTasks.tsx:221,281-296`, recomputed here on the open subset rather
@@ -357,6 +418,12 @@ Same order, one column.
   (`FairwayTasks.tsx:467-505`) as an independent page region: its search/
   status/category controls survive verbatim but move to sit directly above
   the table as its control row, since they now scope only the table.
+- The existing `ViewHeader` meta string `{tasks.length} open`
+  (`FairwayTasks.tsx:417`): `tasks.length` is every task regardless of
+  `status`, so that copy has always overclaimed. Do not carry the string
+  forward; the facts line above already gets the label right (`{tasks.length}
+  total`), and the Open readout separately gets the true open count
+  (`tasks.filter(t => t.status === 'active').length`).
 
 Unchanged: the create-task modal, the templates `Sheet`, the header overflow
 `Menu`, the reminder/delete actions, the player `Mark complete` flow, and the
@@ -373,29 +440,40 @@ was part of the card problem.
   ledger and table specified here all read the **component's** `now` for
   internal consistency with each other, but that value can drift from the
   hook's fetch-time `now` if the page is left open across a day boundary
-  before the next realtime refetch — the readout's `stats.overdue_tasks`
+  before the next realtime refetch; the readout's `stats.overdue_tasks`
   and the stage's own overdue marks could disagree for that window. Worth a
   short-lived clock refresh (e.g. re-run the `now` effect on an interval) if
   this proves visible in practice; not fixed by this spec.
 - **`FairwayTaskPlayer` has no `avatar_url`** (`FairwayTasks.tsx:140-144`,
   `loadPlayers`'s select at `page.tsx:126` only pulls `id, first_name,
-  last_name`) — every lane's `Avatar` renders initials only, unlike Home's
+  last_name`), so every lane's `Avatar` renders initials only, unlike Home's
   roster rows which do carry a photo. Cosmetic, not a defect; see
   `newFields` if a photo is wanted later.
 - **Lane population depends on `assignments`, which is per-task, not
-  per-player-cached** — a large team with many tasks re-derives lanes from
+  per-player-cached**: a large team with many tasks re-derives lanes from
   scratch on every `tasks` change (already the shape of `rollupPlayers` on
   Home, `coach-home-logic.ts:57-108`; same cost profile, not new).
-- **`newFields`**, both genuinely absent today:
-  - `FairwayTaskPlayer.avatar_url` — would need `avatar_url` added to
-    `loadPlayers`'s `.select(...)` (`page.tsx:126`) and to the
-    `FairwayTaskPlayer` interface (`FairwayTasks.tsx:140-144`);
+- **The verdict's "every task the team has ever had" is an overclaim today.**
+  The coach-view `golf_tasks` query (`use-task-realtime.ts:289-293`) is a
+  plain `.select(TASK_COLUMNS)` with no row cap handling, while the sibling
+  `golf_task_assignments` query right next to it explicitly wraps itself in
+  `fetchAllRowsResult` (`use-task-realtime.ts:306-310`) to get past Supabase's
+  default row cap. A team old enough to clear that cap on tasks alone would
+  have `stats.completion_rate` silently computed over a truncated set, not
+  the lifetime total the masthead and readout both claim. Not a rendering
+  change this spec makes; the honest fix is giving `golf_tasks` the same
+  `fetchAllRowsResult` treatment its sibling query already has.
+- **`newFields`**, both genuinely absent today and neither a blocker: the
+  composition above is complete without them.
+  - `FairwayTaskPlayer.avatar_url` (not required by this spec): would need
+    `avatar_url` added to `loadPlayers`'s `.select(...)` (`page.tsx:126`) and
+    to the `FairwayTaskPlayer` interface (`FairwayTasks.tsx:140-144`);
     `golf_players.avatar_url` already exists and is read elsewhere
-    (`RosterEntry`, `coach-home-logic.ts:14`), so this is a query/type change
-    only, not a schema change.
-  - **A stored daily snapshot of task stats** — the only way any readout
-    above could honestly carry a delta/trend. `computeTaskStats`
-    (`use-task-realtime.ts:103-126`) produces a live snapshot every fetch
-    but nothing persists it; without a new stored series, every readout here
-    stays a bare number, which is the correct, honest choice made in this
-    spec rather than a gap to route around.
+    (`RosterEntry`, `coach-home-logic.ts:14,99`), so this is a query/type
+    change only, not a schema change.
+  - **A stored daily snapshot of task stats** (not required by this spec):
+    the only way any readout above could honestly carry a delta/trend.
+    `computeTaskStats` (`use-task-realtime.ts:103-126`) produces a live
+    snapshot every fetch but nothing persists it; without a new stored
+    series, every readout here stays a bare number, which is the correct,
+    honest choice made in this spec rather than a gap to route around.

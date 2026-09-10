@@ -45,8 +45,10 @@ Home's `!team` branch at `FairwayCoachDashboard.tsx:233-266`).
     `"{improvingCount} improving, {decliningCount} sliding."` (both counts are
     `players.filter(p => p.recent_trend === 'improving'|'declining').length`, real,
     client-derivable from the same field). **Missing:** no player has a trend read
-    yet → `"Trends appear once players have rounds to compare."` (verbatim reuse of
-    the honest empty line already shipped at `coach-home-parts.tsx:176-178`).
+    yet → `"Trends appear once players have five rounds to compare against five
+    before."` (verbatim, `coach-home-parts.tsx:177` — the exact sentence, not a
+    paraphrase; it names the real split, `TREND_WINDOW_SIZE = 5`
+    (`src/lib/coachhelm/trend.ts:41`), that `computeScoringTrendFromRounds` uses).
   - `leadClause`: only when `improvingCount > 0`. Names the single biggest improver —
     the same symmetric selection Home's verdict makes on the other side
     (`coach-home-logic.ts:123` `improving` sort, ascending delta so the largest gain
@@ -64,12 +66,21 @@ Home's `!team` branch at `FairwayCoachDashboard.tsx:233-266`).
     `decliningCount === 0`, the clause is omitted entirely (never "0 sliding").
   - `attentionClause`, from `computeNeedsAttention` (`roster-health.ts:104-122`,
     already called at `FairwayCoachRoster.tsx:264-267`): if `needsAttention.length >
-    0` → `"{N} need a look, {topName} first."`, `topName` = `needsAttention[0].row.player`
-    (the list's own top-priority row, `roster-health.ts:117-121`), linked.
+    0` → `"{N} need a look, {topName} first."`, `topName` =
+    `playerName(needsAttention[0].row.player)` — `row.player` is a
+    `PlayersGridPlayer` (`first_name`/`last_name`, no `name` field,
+    `PlayersGridView.tsx:124-133`), so it has to go through the same `playerName()`
+    helper this file already uses for every other name on the page
+    (`FairwayCoachRoster.tsx:123-125`), not print the object raw. `needsAttention[0]`
+    is the list's own top-priority row (`roster-health.ts:117-121`), linked.
     **Missing:** `needsAttention.length === 0` and `rosterHealth.playersWithRounds >
-    0` → `"Roster's covered."` (verbatim, `FairwayCoachRoster.tsx:752`);
-    `playersWithRounds === 0` → `"Nothing to assess yet."` (verbatim,
-    `FairwayCoachRoster.tsx:750-751`).
+    0` → `"Roster's covered."` — the first clause of the honest branch already at
+    `FairwayCoachRoster.tsx:752` (full text: "Roster's covered — everyone with
+    rounds has a focus area and no one's trending down."), cut short here because
+    the source sentence's em dash is exactly what LANGUAGE.md's copy ban forbids,
+    not because the clause is a verbatim quote of the whole line; `playersWithRounds
+    === 0` → `"Nothing to assess yet."`, the same cut of the em-dash sentence at
+    `FairwayCoachRoster.tsx:751`.
 
 - Facts line, `font-fw-mono text-caption tabular-nums`, same treatment as Home's
   (`FairwayCoachDashboard.tsx:330-337`): `"{activeCount} active"` always,
@@ -101,33 +112,70 @@ leaves the server (`roster/page.tsx:561-565`); `id`, `total_to_par`, `course_nam
 are never selected at all. This spec's stage is blocked on the loader change in
 Risks — every bar on this page depends on it, not just a plumbing detail.
 
-**Rounds shorter than 18 holes**: `computeScoringTrendFromRounds` already treats
-every round as 18 holes for the trend read (`page.tsx:555` passes `holes_played:
-18` regardless of the real value — the same simplification Home's `rollupPlayers`
-makes, `coach-home-logic.ts:81`). The stage keeps that convention for consistency
-with Home and with the table's own Avg column: bars plot raw `total_to_par` for
-every round, 9-hole included, with no separate normalization. This slightly
-understates how bad a 9-hole blowup looks next to an 18-hole one at the same
-`to_par`; flagged, not fixed, since normalizing here would put the stage out of
-step with the trend classifier and the Avg column it sits beside.
+**`avg_score` is a zero sentinel, not null.** `ScoreFieldRow.avg: number | null`
+must not be mapped from the raw field: `page.tsx:548` computes
+`totalHoles > 0 ? (totalStrokes / totalHoles) * 18 : 0` — a player with zero
+rounds gets `0`, not `null`. `ScoreField.tsx`'s own `formatAvg`
+(`ScoreField.tsx:108-110`) only guards `avg == null`, so a raw `0` would print as
+`"0.0"` next to a strip reading "No rounds in this window" — a real zero score
+is impossible in golf, so this reads as broken, not empty. Map it the same way
+the table's own Avg column must (see "the table" below):
+`p.avg_score && p.avg_score > 0 ? p.avg_score : null`, the exact guard
+`FairwayCoachRoster.tsx:304`'s `hasScore` already applies.
+
+**Rounds shorter than 18 holes**: two different things are true here and an
+earlier draft of this spec conflated them. The roster loader's own trend read is
+correctly hole-normalized — `computeScoringTrendFromRounds` divides by each
+round's real `holes_played` (defaulting to 18 only when the value is missing,
+`scoring-trend.ts:36`), and `page.tsx:555` passes it the real per-round value,
+not a hardcoded 18; the table's own Avg column is normalized too
+(`(totalStrokes / totalHoles) * 18`, `page.tsx:548`). It's Home's client-side
+rollup, not the roster loader, that hardcodes the simplification (`holes_played:
+18` regardless of the real value, `coach-home-logic.ts:81`). What the stage
+actually inherits is Home's `ScoreField` bar convention: `toPar` is plotted as
+the round's raw `total_to_par` with no holes-based scaling at all
+(`coach-home-logic.ts:92`, `toPar: r.total_to_par`) — bars aren't normalized on
+Home either. The roster stage keeps that same convention (raw `total_to_par`,
+9-hole included) for consistency with the one instrument it's reusing, not with
+this page's own Avg column, which — unlike the bars — really is normalized. This
+still slightly understates how bad a 9-hole blowup looks next to an 18-hole one
+at the same `to_par`; flagged, not fixed, since normalizing bars here would put
+the stage out of step with `ScoreField` everywhere else it's used.
 
 **Row order — sorted by trend, not standing** (this is what LANGUAGE.md's per-page
 table means by "ScoreField sorted by trend"; Home's stage sorts by average instead,
 `sortByStanding`, `coach-home-logic.ts:111-118`). Decliners first (largest delta
 first, worst on top), then stable (alphabetical), then improvers (largest
 improvement first), then players with no trend read yet (alphabetical, sunk to the
-bottom) — the same grouping `attentionOrder` already does
-(`coach-home-logic.ts:120-125`), applied to every roster row instead of a capped
-top-5, since here every player needs a row.
+bottom). **New function required (`newFields`):** `attentionOrder`
+(`coach-home-logic.ts:120-125`) cannot supply this directly — its own docblock
+says so ("Flat and unread players are left out.", line 120) — and it drops the
+`stable` and no-signal rows before its `limit` slice ever runs, so calling it with
+`rows.length` still returns only sliders and improvers, silently omitting every
+flat or unread player from a stage where every player needs a row. A sibling
+function is needed (e.g. `rosterTrendOrder`, next to `attentionOrder` or beside
+`buildRosterVerdict`): reuse `attentionOrder`'s two real sub-sorts verbatim for the
+declining/improving buckets, then append
+`rows.filter(r => r.trend?.direction === 'stable').sort(byName)` and
+`rows.filter(r => r.trend == null).sort(byName)` — both real states already on
+`ScoreFieldTrend`/`PlayerRollup` (`coach-home-logic.ts:45`, `types.ts:285-288`), no
+new field, just a function nobody has written yet.
 
 **Window control**, in the stage's header row at the right (LANGUAGE.md: "the view
 control at the right"), same CSS-gated `Segmented`/`Menu` pair Home's range control
-uses (`FairwayCoachDashboard.tsx:375-394`): `30D` / `90D` / `All`, default `All`. No
-`Season` option — unlike Home, roster's loader has no season-boundary concept to
-borrow, and inventing one here would be exactly the fabrication the honesty rule
-forbids. All three windows are a pure client-side filter of the same real,
-already-fully-fetched round history (`page.tsx:410-420` fetches every round for
-every player, unpaginated) — no new query for the window control itself.
+uses (`FairwayCoachDashboard.tsx:375-394`): `30D` / `90D` / `All`, default `90D`
+(not `All` — see below). No `Season` option — unlike Home, roster's loader has no
+season-boundary concept to borrow, and inventing one here would be exactly the
+fabrication the honesty rule forbids. All three windows are a pure client-side
+filter of the same real, already-fully-fetched round history (`page.tsx:410-420`
+fetches every round for every player, unpaginated) — no new query for the window
+control itself. Default is `90D`, not `All`: unlike Home (which windows
+server-side via `dateRange` and only defaults to `all` because that request is
+already scoped), roster's `page.tsx:412-420` fetches every round any player has
+ever logged, unpaginated. A 20-player roster (`rosterFull`'s own ceiling,
+`FairwayCoachDashboard.tsx:270`) with multi-season players on `All` by default
+would put dozens of bars on some rows at first paint; `90D` keeps the stage
+legible on load, and `All` stays one click away in the same control.
 
 **Cap**: `scoreFieldCap(rows)`, reused verbatim (`ScoreField.tsx:49-53`).
 
@@ -149,11 +197,23 @@ today, `types.ts:290-310`):
   text-body-sm tabular-nums`, `text-accent-700` when `> 0` else `text-text-tertiary`
   — the same tone convention the file already uses for Avg/Trend.
 
-**Degrade, one row**: unchanged — `ScoreField` already renders one row correctly
-(ticks depend only on `domain`, not row count). **Degrade, zero rows**: never
-reached here — the page's own `empty` branch (`FairwayCoachRoster.tsx:414-428`)
-returns a full-page `EmptyState` before any player exists. **Degrade, players exist
-but none have a round in the selected window**: reuse Home's exact branch
+**Degrade, a metrics read failed (not just empty) — `newFields`, see Risks**:
+checked first, the same order Home uses (`FairwayCoachDashboard.tsx:398-401`
+checks `teamStatsUnavailable` before its own zero-rows/zero-rounds branches).
+Today `page.tsx:443-458` already detects this exact case — the rounds,
+stats-cache and focus-area reads are each checked and logged — but folds every
+failure to `?? []` before the response ever reaches the client
+(`FairwayCoachRosterProps`, `FairwayCoachRoster.tsx:76-88`, carries no such
+field), so a broken read and a genuinely quiet roster render identically. Once
+forwarded (see Risks), the stage shows the same `InlineNotice` Home's stage shows
+for the analogous case — "Couldn't load the team's rounds"
+(`FairwayCoachDashboard.tsx:398-401`) — replacing the bars, not layered under
+them. **Degrade, one row**: unchanged — `ScoreField` already renders one row
+correctly (ticks depend only on `domain`, not row count). **Degrade, zero rows**:
+never reached here — the page's own `empty` branch
+(`FairwayCoachRoster.tsx:414-428`) returns a full-page `EmptyState` before any
+player exists. **Degrade, players exist but none have a round in the selected
+window** (reads succeeded, honestly empty): reuse Home's exact branch
 (`FairwayCoachDashboard.tsx:409-422`) — "No rounds in this window" with a "Show all
 time" action when the window isn't `All`, else "No rounds logged yet."
 
@@ -177,8 +237,12 @@ roster's loader has no per-metric historical series, and inventing one would be 
 fabricated series.
 
 1. **Roster** — value: `rosterHealth.totalPlayers` (`roster-health.ts:19-21,47`).
-   Note: `"{activeCount} active"` (`FairwayCoachRoster.tsx:226`). No delta: a
-   headcount, not a trend.
+   No note: the active/inactive breakdown already runs once, in the masthead's
+   facts line (`"{activeCount} active"` / `"{inactiveCount} inactive"` above);
+   repeating it here would be the same-number-twice-in-adjacent-regions Home's
+   own facts line and readouts avoid (roster size/events/qualifiers vs.
+   scoring/GIR/putts/rounds share no figure, `FairwayCoachDashboard.tsx:272-276`
+   vs. `:177-217`). No delta: a headcount, not a trend.
 2. **Needs attention** — value: `needsAttention.length` (`roster-health.ts:104-122`).
    Note: a reason breakdown built from `NeedRow.priority`
    (`roster-health.ts:110-114`) — `"{n3} down & uncoached, {n2} down, {n1}
@@ -205,14 +269,20 @@ readout #2, and the rows below enumerate the same players; a third render of the
 same number would be the kind of overlap Home's readouts and ledger avoid. Rows: the
 same ranked list `computeNeedsAttention` already produces
 (`roster-health.ts:104-122`, currently rendered by the `AttentionPanel` local
-component being retired — see What this deletes), capped at 6, `"+N more. Filter
-the board."` below the cap (verbatim copy, `FairwayCoachRoster.tsx:737`, wired to
-the table's "Needs attention" `FilterPill`). Each row: player name + the real
-reason text (`NeedRow.reason`, e.g. "Trending down · no focus area",
-`roster-health.ts:111-114`). Row link: player name → `/golf/dashboard/roster/{id}`.
-Each row also carries the existing "Add focus area" action button
-(`FairwayCoachRoster.tsx:287-292`, unchanged target). Empty (`needsAttention.length
-=== 0`): the same two honest branches already at `FairwayCoachRoster.tsx:750-751`.
+component being retired — see What this deletes), capped at 6, `"+N more
+player{s}. Filter the board."` below the cap — the exact pattern already at
+`FairwayCoachRoster.tsx:737` (`+{remaining} more player{remaining === 1 ? '' :
+'s'}. Filter the board.`), not the shorter "+N more." an earlier draft of this
+spec misquoted it as. Each row: player name + the real reason text
+(`NeedRow.reason`, e.g. "Trending down · no focus area", `roster-health.ts:111-114`).
+Row link: player name → `/golf/dashboard/roster/{id}`. Each row also carries the
+existing "Add focus area" action button (`FairwayCoachRoster.tsx:287-292`,
+unchanged target). Degrade, a metrics read failed (`newFields`, see Risks — the
+SAME flag the stage checks, not a second one): the same `InlineNotice` shape
+Home's `AttentionLedger` shows, "Couldn't load team trends"
+(`coach-home-parts.tsx:171-174`), in place of the list. Empty
+(`needsAttention.length === 0`, reads succeeded): the same two honest branches
+already at `FairwayCoachRoster.tsx:750-751`.
 
 **Column 2 — Focus outcomes (5/12).** This is the one number the stage genuinely
 cannot show: not how many focus areas are open (the stage's Focus column already
@@ -266,6 +336,23 @@ as ink (green under, amber over):
 | Focus | right | `active_focus_areas` (`roster/page.tsx:575`) | `md` |
 | Handicap | right | `handicap`, via `formatHandicap` (`roster-helpers.ts:48-54`) | `lg` |
 | (actions) | right, icon-only | `FairwayPlayerActionsMenu` (`FairwayCoachRoster.tsx:382-384`), `stopPropagation` so it doesn't trigger the row link | always visible |
+
+**Null cells, three columns.** Avg: the same zero-sentinel guard as the stage
+(see "the stage" above) — `p.avg_score && p.avg_score > 0 ? p.avg_score.toFixed(1)
+: '–'`, not the raw field, so a roundless player reads "–" instead of a
+golf-impossible "0.0". SG:Total: `sg_total` is `null` until the stats cache has a
+row for that player (`roster/page.tsx:56-58`); render `'–'` in that case — the
+guard the code being replaced already applies (`FairwayCoachRoster.tsx:360`,
+`p.sg_total != null ? formatSgTotal(p.sg_total) : '—'`), using this table's own en
+dash convention there, not that line's em dash. `sgTone`'s green
+(`text-fw-success-ink` → `--fw-color-accent-800`, `design-tokens.css:196`) is the
+same accent-green family as every other green ink on the page, not a third data
+color — confirmed, not changed. Handicap: `formatHandicap(null)` returns an em
+dash (`'—'`, `roster-helpers.ts:49`), the one character LANGUAGE.md's copy ban
+forbids and the only glyph on this table that would break its own "–" convention;
+since the helper itself can't be edited from this spec, guard at the call site
+instead — render `'–'` directly when `handicap == null` and call `formatHandicap`
+only for the non-null branch, where it never emits the dash at all.
 
 **Row link**: the whole `<tr>` navigates to `/golf/dashboard/roster/{id}` on click,
 with the name also wrapped in a real `<Link>` for keyboard/no-JS access — the exact
@@ -374,6 +461,24 @@ band (see below), so no client-only breakpoint state remains on this screen.
   column and the masthead's slide clause must use the direction-only fallbacks
   described above — they are two call sites of the same gap, not two separate
   risks.
+- **`newFields`, second gap: read failures render as an empty roster, not a
+  broken one.** `page.tsx:443-458` already detects and logs three independent
+  read failures (rounds, stats-cache, focus areas) but folds each to `?? []`
+  before `playersWithStats` is built, and `FairwayCoachRosterProps`
+  (`FairwayCoachRoster.tsx:76-88`) has no field carrying that failure forward —
+  so today a broken read and a genuinely quiet team render identically: every
+  player shows 0 rounds, a blank/zero average, "no read" trend, either way. Home
+  guards the identical case with `teamStatsUnavailable`
+  (`dashboard-data.ts:110`, computed at `:844` as `rosterFetchError ||
+  roundsFetchError`), consumed by the stage's `InlineNotice`
+  (`FairwayCoachDashboard.tsx:398-401`) and the ledger's `AttentionLedger`
+  `unavailable` prop (`coach-home-parts.tsx:171-174`). Loader change: `page.tsx`
+  should fold its three existing `.error` checks (already read individually at
+  lines 444-446) into one `metricsUnavailable: boolean`, add it to
+  `FairwayCoachRosterProps`, and pass it through to both the stage's degrade
+  branch and the ledger's Attention column (see both sections above) — one
+  flag, two consumers, the same shape Home already threads its single
+  `teamStatsUnavailable` through to two places.
 - `VerdictLine`, `FieldReadouts`, and `SectionHead` (`coach-home-parts.tsx`) are
   generic over their own prop types and have no dashboard-specific coupling, but
   they physically live under `pages/dashboard/`. Importing them cross-page for
@@ -396,14 +501,14 @@ band (see below), so no client-only breakpoint state remains on this screen.
   width. Verify against the longest real player name and a full 20-player roster
   before shipping, so the Player cell's name + year badge + intent pill doesn't
   crowd the numeric columns off a standard laptop width.
-- **`All`-window density**: with the loader change landed, a multi-season player
-  on the `All` window plots every round they have ever logged on one row at a
-  fixed row height, unlike Home's stage which windows to 30D/90D/season by
-  default. A player with, say, 40+ rounds on file would pack that many bars into
-  one row at only a few pixels each. Mitigation, to decide during build, not
-  invented here: either cap plotted rounds per row (most recent N within the
-  window, matching `scoreFieldCap`'s spirit at `ScoreField.tsx:49-53`) or default
-  the control to `90D` instead of `All` and keep `All` as an explicit opt-in.
+- **`All`-window density, resolved above, not left open**: with the loader
+  change landed, a multi-season player on the `All` window still plots every
+  round they have ever logged on one row at a fixed row height — a player with,
+  say, 40+ rounds on file packs that many bars into one row at only a few
+  pixels each. This spec decides it rather than deferring it: the stage
+  defaults to `90D`, not `All` (see "Window control"), so this density only
+  appears once a coach explicitly opts into `All`; no separate per-row cap is
+  layered on top of that default.
 - **This redesign breaks pinned test strings.** `roster.v2.md:102` lists
   assertions the current `FairwayCoachRoster.test.tsx` suite pins: "Who needs your
   attention" (this spec's ledger heading is "Attention," not that phrase), and

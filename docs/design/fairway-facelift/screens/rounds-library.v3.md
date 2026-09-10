@@ -46,19 +46,31 @@ into; the masthead stays the constant, zoomed-out headline).
 
 Template (full data):
 
-> "{roundsCount} rounds since {firstMonth}. {absShots} shot{s} {better|worse|even} than where the season started, led by {LeaderName} at {avgToParSigned}."
+> "Since {firstMonth} the team is {absShots} shot{s} {better|worse|even} than where the season started, led by {LeaderName} at {avgToParSigned}."
+
+This deliberately never states a round count: Readout 1 below
+(`scopedSummary.count`) already owns that number, and in the default,
+untouched-Select state `scopedSummary.count === rounds.length` — the exact
+digit the verdict would otherwise be repeating one region below itself. That
+is the same "no region repeats a number another region already shows" rule
+this spec applies to the ledger and table elsewhere (see "The table"'s
+grouping note); LANGUAGE.md:90 mandates a round count as a *readout* for this
+page, not as part of the verdict sentence, so the readout wins and the
+verdict yields.
 
 Field substitution, every one an existing computation:
-- `roundsCount` = `rounds.length` (existing prop, `FairwayRoundsLibrary.tsx:349`).
 - `firstMonth` = `firstMonthLabel(rounds)` (existing function, `FairwayRoundsLibrary.tsx:285-293`).
 - `absShots` / `better|worse|even` = `Math.abs(Math.round(scoreDelta))` and its sign, exactly the phrase already assembled at `FairwayRoundsLibrary.tsx:733-737` (`scoreDelta` computed `FairwayRoundsLibrary.tsx:644-652`, oldest-vs-newest normalized score over the full team).
 - `LeaderName` / `avgToParSigned` = the top entry of `playerSeasonStats` **unscoped** — the same sort `leaderboardEntries` already performs (`FairwayRoundsLibrary.tsx:521-526`) but without its player-select pre-filter (`FairwayRoundsLibrary.tsx:523-524`), i.e. `Array.from(playerSeasonStats.entries()).sort((a,b) => a[1].avgToPar - b[1].avgToPar)[0]`. `playerSeasonStats` itself is the existing per-player avg-`score_to_par` memo, min 2 scored rounds to qualify (`FairwayRoundsLibrary.tsx:407-426`). `avgToParSigned` uses the exact `+`/plain-decimal format already defined at `FairwayRoundsLibrary.tsx:710-715`, applied to this player's `avgToPar` instead of `stats.avgToPar`.
 
-Missing-fact fallbacks, applied in order:
+Missing-fact fallbacks, applied in order — each keeps whichever clauses still
+have data, giving the surviving clause its own subject so the sentence never
+reads as a dangling fragment:
 - `rounds.length === 0` — the verdict line does not render at all; the page is already in its top-level `EmptyState` branch (`FairwayRoundsLibrary.tsx:934-951`). Title stays "The library." alone, exactly today's fallback.
-- `scoreDelta === null` (fewer than 2 scored rounds team-wide, `seriesDelta`'s own gate, `FairwayRoundsLibrary.tsx:330-333`) — drop the shots clause: `"{roundsCount} round{s} since {firstMonth}"`, then append the leader clause (below) if one exists, else a bare period.
-- `firstMonth === null` (no parseable date, an edge case) — drop the "since" clause entirely: `"{roundsCount} rounds recorded."`, then the leader clause if present.
-- No qualifying leader (every player has fewer than 2 scored rounds — `playerSeasonStats` empty) — drop `", led by … at …"` entirely; the sentence ends after the shots clause (or the bare round count).
+- `scoreDelta === null` (fewer than 2 scored rounds team-wide, `seriesDelta`'s own gate, `FairwayRoundsLibrary.tsx:330-333`) — drop the shots clause, giving the remainder its own subject: `"The season started {firstMonth}."`, then append the leader clause (`", led by {LeaderName} at {avgToParSigned}"`) if one exists.
+- `firstMonth === null` (no parseable date, an edge case) — drop the "since {firstMonth}" framing only, keeping the shots clause with its own subject: `"The team is {absShots} shot{s} {better|worse|even} than where the season started."`, then the leader clause if present.
+- No qualifying leader (every player has fewer than 2 scored rounds — `playerSeasonStats` empty) — drop `", led by … at …"` entirely; the sentence ends after whichever clause above survived.
+- Every clause above unavailable at once (`scoreDelta === null` AND `firstMonth === null` AND no qualifying leader, with `rounds.length > 0`) — the verdict line does not render; title stays alone, same fallback as the zero-rounds case.
 
 **Names/links**: `LeaderName` is styled `font-fw-mono` today, **not a link** —
 `RoundLibraryRound.player` carries only `first_name`/`last_name`/`avatar_url`
@@ -67,14 +79,17 @@ point at. LANGUAGE.md's own rule allows "links **or** mono" for names
 (`LANGUAGE.md:30`); once the `player.id` field exists (see Risks/newFields)
 this becomes a `Link` to `/golf/dashboard/roster/{id}`, matching how
 `VerdictLine` already links names on Home (`coach-home-logic.ts:170,178`).
-Numbers (`roundsCount`, `absShots`, `avgToParSigned`) are always
-`font-fw-mono tabular-nums`, never links.
+Numbers (`absShots`, `avgToParSigned`) are always `font-fw-mono tabular-nums`,
+never links.
 
 ## The stage
 
-**One instrument, `RoundField`**: every round in view plotted as a mark on a
-shared date axis, height and color encoding its score to par, with the
-scoped average drawn as a line across it. New page-local component
+**One instrument, `RoundField`**: every **scored** round in view plotted as a
+mark on a shared date axis, height and color encoding its score to par, with
+the scoped average drawn as a line across it. (A round with no recorded
+`score_to_par` has no y-position to plot and is excluded from the marks — see
+the first Geometry bullet below for exactly what still counts it.) New
+page-local component
 (`src/components/fairway/pages/rounds/RoundField.tsx`) — no registered
 primitive matches "every round as its own event on a date axis with a
 benchmark line" (`ScoreField` plots per-*player* rows, not per-*round*
@@ -102,9 +117,9 @@ searched/typed slice of it.
 - Overline: `"THE SEASON · {scope}"` where `scope` is `"every player"` when
   `playerFilter === 'all'`, else the selected player's name.
 - Title, `text-h2`: `"Round scatter"`.
-- One-line legend, `text-caption text-text-tertiary`: `"Every round in view,
-  plotted by date. Dots rise over par in amber and drop under in green;
-  bigger dots are qualifiers and tournaments; the dashed line is the
+- One-line legend, `text-caption text-text-tertiary`: `"Every scored round in
+  view, plotted by date. Dots rise over par in amber and drop under in
+  green; bigger dots are qualifiers and tournaments; the dashed line is the
   average to par."`
 - View control, right: the existing coach player `Select`
   (`FairwayRoundsLibrary.tsx:984-994`), relocated from the Toolbar into this
@@ -118,6 +133,14 @@ same approach `ScoreField.tsx:12-13` documents, and the same reason
 `ScoreField` itself never branches a size constant on viewport width: a
 `HALF_HEIGHT_PX`-style split would be a client-only breakpoint read):
 
+- **Null `score_to_par`**: a round with no recorded `score_to_par` is
+  excluded from the plotted marks entirely — there is no y-position to place
+  it at, and no `round.score_to_par` value for the color/height rules below
+  to read. It is still counted in `scopedSummary.count` and in the
+  Qualifier-share readout (both depend on the round existing and its
+  `round_type`, never on having a score), so "Rounds" and "{n} scored" are
+  two different, independently honest numbers whenever any round in scope is
+  missing a score — never silently reconciled to look the same.
 - Container height: `h-[168px] md:h-[208px]` (CSS only — no JS reads a
   breakpoint anywhere in this instrument). Baseline (par, `score_to_par ===
   0`) is a `border-strong` hairline at `top: 50%` — identical treatment to
@@ -178,8 +201,8 @@ same approach `ScoreField.tsx:12-13` documents, and the same reason
   `starved` (`FairwayRoundsLibrary.tsx:696`, which counts rounds with a
   usable `total_score`): the line draws `avgToPar`, so its own honesty gate
   counts non-null `score_to_par` values specifically, mirroring the exact
-  asymmetry `page.tsx:196` (`scoredRounds`, filtered on `total_score`) and
-  `page.tsx:198,210` (`toParScores`, filtered on `score_to_par`) already
+  asymmetry `page.tsx:195` (`scoredRounds`, filtered on `total_score`) and
+  `page.tsx:196,212` (`toParScores`, filtered on `score_to_par`) already
   keep as two separate arrays with two separate counts, never one shared
   denominator.
 
@@ -199,7 +222,7 @@ same approach `ScoreField.tsx:12-13` documents, and the same reason
     `rounds-instruments.tsx:52-58`) over the `scoredCount` rounds, `null` if
     `scoredCount === 0`.
   - `avgToPar` = mean `score_to_par` over the `toParCount` rounds, `null` if
-    `toParCount === 0` (mirrors `page.tsx:210`).
+    `toParCount === 0` (mirrors `page.tsx:212`).
   - `best` = min `normalizedScore()` over the `scoredCount` rounds, `null` if
     `scoredCount === 0`.
   - `qualifierCount` = rounds in scope typed `qualifier`/`tournament` —
@@ -211,16 +234,21 @@ same approach `ScoreField.tsx:12-13` documents, and the same reason
   the average line at `avgToPar = NaN`; under `toParCount >= 3` it correctly
   stays hidden.
 - **Link**: each mark is a `Link` to `/golf/dashboard/rounds/{round.id}`
-  (existing field, `FairwayRoundsLibrary.tsx:151`), `aria-label` built from
+  (existing field, `FairwayRoundsLibrary.tsx:150`), `aria-label` built from
   player name + course + score + to-par + date — the same convention
   `ScoreField`'s own bars use (`ScoreField.tsx:177-186`, label assembled the
   way `coach-home-logic.ts:93` already does it for player rounds).
-- **Entrance motion**: identical semantics to `ScoreField`'s bars —
+- **Entrance motion**: same timing and guard as `ScoreField`'s bars, one
+  deliberate divergence in which transform property animates —
   `initial={reduced ? false : { scale: 0, opacity: 0 }}`, `animate={{ scale:
   1, opacity: 1 }}`, `transition={{ duration: DURATION.short, delay:
   Math.min(index, 16) * 0.012, ease: EASE_CINEMATIC }}`, guarded by the same
-  `useReducedMotionGuard()` hook — the exact constants and guard
-  `ScoreField.tsx:19-22,30-31,157-173,207` already use.
+  `useReducedMotionGuard()` hook. `ScoreField.tsx:158-160` animates `scaleY`
+  (a bar growing from its baseline edge, `transformOrigin: 'bottom'`/`'top'`)
+  — a dot has no baseline edge to grow from, so `RoundField` uses uniform
+  `scale` instead (popping from its own center). The duration/delay/easing
+  constants and the reduced-motion guard itself are the exact values reused
+  verbatim from `ScoreField.tsx:207` (guard) and its stagger constants.
 - **Trend gate for the readouts' delta arrows** (not the average line):
   `scopedSummary.scoredCount >= 6`, re-deriving the same `>= 6` rule that
   produces `stats.trend` (`page.tsx:218`, itself gated on
@@ -291,12 +319,18 @@ with what `RoundField` is plotting.
    `hasScoreTrend` already encodes (`FairwayRoundsLibrary.tsx:808`).
 3. **Best** — `scopedSummary.best` (min normalized score in scope), same
    `scoredCount >= 1` gate and `"—"` fallback as Avg. No delta. Caption names
-   the record round: the lowest-`score_to_par` round within
-   `playerScopedRounds` (the same tie-break `bestOfScope` already uses,
-   `FairwayRoundsLibrary.tsx:503-513`, computed here over the narrower
-   scope), rendered `"{name}, {course}"`, linked to
+   the record round on the **same basis as the number itself**: the round in
+   `playerScopedRounds` whose `normalizedScore()` equals `scopedSummary.best`
+   (ties broken by earliest date). This is deliberately **not**
+   `bestOfScope`'s tie-break (`FairwayRoundsLibrary.tsx:503-513`, which picks
+   by lowest `score_to_par`) — par varies round to round, so the
+   lowest-normalized-score round and the lowest-to-par round can be two
+   different rounds (e.g. a 71 at par 70 beats a 73 at par 74 on score but
+   loses on to-par). Naming the to-par pick here while printing the
+   normalized-score number would caption the readout with a round that isn't
+   the one the number describes. Rendered `"{name}, {course}"`, linked to
    `/golf/dashboard/rounds/{id}` — a real link today, `round.id` already
-   exists (`FairwayRoundsLibrary.tsx:151`).
+   exists (`FairwayRoundsLibrary.tsx:150`).
 4. **Qualifier share** — `scopedSummary.qualifierCount / scopedSummary.count`
    as a percent. No delta (a share, not a trend — there is no historical
    qualifier-share series to compare against). Caption:
@@ -312,7 +346,13 @@ Two bare columns inside a `grid-cols-12 lg:divide-x lg:divide-border-subtle`
 row (LANGUAGE.md item 3), **7 / 5** — the exact unequal split LANGUAGE.md
 itself lists as an example (`LANGUAGE.md:42`). Both columns use the existing
 `SectionHead` primitive for their heading + green rule
-(`coach-home-parts.tsx:48-76`), matching Home's ledger exactly.
+(`coach-home-parts.tsx:48-76`), matching Home's ledger exactly. `SectionHead
+title="Leaders" count={playerSeasonStats.size}` (no `action`) — the count is
+the total number of qualifying players team-wide, so a coach can tell the
+5 rows below are a top-5 slice rather than the whole roster whenever
+`playerSeasonStats.size > 5`. `SectionHead title="Score bands"` with neither
+`count` nor `action` — five fixed bands are always fully listed, there is
+nothing to truncate or link onward to.
 
 **Leaders** (`col-span-7 lg:pr-8`) — the page's own listed ledger content for
 Rounds (`LANGUAGE.md:90`). Rows are the **unscoped** top 5 of
@@ -358,9 +398,20 @@ mono. **Link**: clicking a row sets a new local `bandFilter` client state
 (mirroring the existing `filter`/`playerFilter` pattern,
 `FairwayRoundsLibrary.tsx:350-357`) that narrows the table below to rounds
 in that band — new page-local state, not a data/loader change (listed under
-Risks as a build item). This column states a fact the stage cannot: the
-scatter shows continuous position and color, never a discrete binned count
-with a share.
+Risks as a build item). Clicking the already-selected band's row calls
+`setBandFilter(null)`, clearing it back out — the same toggle-off behavior
+the Leaders column's row click gets above, so the two ledger columns behave
+identically as filters. `bandFilter` is wired into the existing
+`isNarrowed`/`resetFilters` pair (`FairwayRoundsLibrary.tsx:528-534`) exactly
+like `filter`/`playerFilter`/`search` already are: `isNarrowed` becomes
+`filter !== 'all' || playerFilter !== 'all' || search.trim() !== '' ||
+bandFilter !== null`, and `resetFilters` additionally calls
+`setBandFilter(null)`. Without this, a band click that empties the table
+would render the table's *non*-narrowed empty copy ("No rounds to show.")
+with no "Clear filters" action — a dead end a coach can only escape by
+re-clicking the same band row. This column states a fact the stage cannot:
+the scatter shows continuous position and color, never a discrete binned
+count with a share.
 
 Phone: the two columns stack, `divide-x` becomes a horizontal hairline
 between them (LANGUAGE.md item 3's phone rule), Leaders first, Score bands
@@ -372,12 +423,24 @@ A dense `<table>` — replacing the current `<div role="table">`
 pseudo-markup (`FairwayRoundRow.tsx`, `FairwayRoundsLibrary.tsx:1119-1263`)
 with a real table, per LANGUAGE.md item 4. Column set and typography mirror
 the reference table on Home exactly (`RoundsLedgerTable`,
-`coach-home-parts.tsx:239-289`). The whole grouped table stays wrapped in
-exactly one `Surface`, never one per month/week group — the same invariant
-`FairwayRoundsLibrary.test.tsx:190-214` already pins by asserting a single
-`[data-slot="surface"]` node containing every group's label text; nothing
-in this table change touches that wrapper, so that test continues to pass
-unmodified.
+`coach-home-parts.tsx:239-289`).
+
+**Bare on the canvas, no `Surface`.** Today's implementation wraps the
+grouped rows in one ledger `Surface` (`FairwayRoundsLibrary.tsx:1113-1118`);
+v3 drops that wrapper. LANGUAGE.md is explicit that the stage is "**the one**
+`Surface` on the page" (`LANGUAGE.md:32`) and "Canvas is the ground. Only the
+stage is a `Surface`" (`LANGUAGE.md:60`); item 4's table description carries
+no `Surface` at all. The reference table confirms the pattern:
+`RoundsLedgerTable` itself is a bare `<div className="overflow-x-clip">`
+wrapping a plain `<table>` (`coach-home-parts.tsx:246-247`) — zero Surfaces.
+This table keeps that same bare `<div className="overflow-x-clip">` wrapper
+for the identical reason the current code documents
+(`FairwayRoundsLibrary.tsx:1113-1118`): `overflow-clip` clips rounded corners
+without making the div its own scroll container, which would break the
+group header `<td>`'s `position: sticky` (see "Grouping stays" below) — it
+just does that clipping on bare canvas instead of inside a `Surface`. With
+this change the stage is the page's only `Surface`; see Risks for the two
+existing tests this rewrites as a result.
 
 | Column | Source | Align | Hidden |
 |---|---|---|---|
@@ -397,6 +460,18 @@ new `bandFilter` when set. Above the table, unchanged from today: the
 round-type `FilterPill`s (the player Select has moved into the stage header
 above, so it is not duplicated here) plus the Month/Week grouping
 `Segmented`/`Menu`.
+
+**Zero matching rows**: when `filteredRounds` narrowed by `bandFilter`
+renders no groups, a bare `EmptyState variant="search"` renders directly on
+the canvas in the table's place — no `Surface` around it either, consistent
+with the table having none. Same copy and behavior the current code already
+has (`FairwayRoundsLibrary.tsx:1093-1111`): title "No rounds in this view,"
+description `"No rounds match the current filters."` when `isNarrowed`
+(now inclusive of `bandFilter`, see "The ledger row") else `"No rounds to
+show."`, with a `"Clear filters"` action calling `resetFilters()` only in
+the narrowed case. A fetch failure never reaches this branch — the loader
+throws on any Supabase error (`page.tsx`'s route-level error boundary), so
+an empty table always means zero rows matched, never a masked failure.
 
 Grouping stays: each month or week renders as one spanning header `<tr>`
 containing a single `<td colSpan={8}>` carrying the group's label and its
@@ -425,9 +500,14 @@ cell's own `Link`, to `/golf/dashboard/rounds/{round.id}` — the exact
 dual-target pattern `RoundsLedgerTable` already uses
 (`coach-home-parts.tsx:265-273`). Exactly one `<a href="/golf/dashboard/
 rounds/{id}">` per row (the Player cell's `Link`) — no second anchor
-anywhere else in the row — preserving the existing pagination test's
-row-counting method, which counts `a[href^="/golf/dashboard/rounds/"]`
-nodes 1:1 against rendered rounds (`FairwayRoundsLibrary.test.tsx:248`).
+anywhere else in the row. This preserves the pagination test's counting
+method *within the table*, but not container-wide: the stage's own
+`RoundField` marks are themselves `Link`s to the same `/golf/dashboard/
+rounds/{id}` pattern (see "The stage" → Link), so the existing
+`FairwayRoundsLibrary.test.tsx:248` assertion — which counts
+`a[href^="/golf/dashboard/rounds/"]` across the whole rendered container —
+now also counts every scored mark in the stage, not just table rows. That
+test needs a rewrite, not a pass-through; see Risks.
 
 **Row count / "view all"**: this page has no external "view all" target —
 it already is the full library, unlike Home's 10-row preview that points
@@ -477,7 +557,9 @@ client-only breakpoint branch, no hydration flip.
   (`FairwayRoundsLibrary.tsx:860-893`). LANGUAGE.md's fixed anatomy has no
   third analytical region beyond the two-column ledger row; its
   "which round type costs us strokes" signal is not reproduced 1:1 — see
-  Risks.
+  Risks. Its backing memo, `typeAvgToPar` (`FairwayRoundsLibrary.tsx:467-487`),
+  is retired with it — the same "no remaining caller" treatment this list
+  already gives `leaderboardEntries` below.
 - The Leaders rail: the coach-only sticky `Elevated` spotlight card +
   `RankCell` leaderboard sidebar, and its phone `Sheet` trigger
   (`LeadersRailPanel`, `FairwayRoundsLibrary.tsx:1298-1386`, mounted at
@@ -549,16 +631,42 @@ client-only breakpoint branch, no hydration flip.
   this app targets, but sticky-table-anything has historically been the
   more fragile corner of layout support in older engines; verify in the
   actual build rather than assuming from this spec alone.
-- **Existing test needs rewriting, not just deleting** —
-  `FairwayRoundsLibrary.test.tsx`'s `"coach: the cockpit cluster renders and
-  the stage does not"` case (lines 307-313) asserts
-  `getByLabelText('Round summary instrument cluster')` (the Cockpit's own
-  `aria-label`) is present for `userRole="coach"`. Deleting the Cockpit
-  makes that assertion fail outright; it needs to be rewritten to assert
-  the new stage's own labelling instead (e.g. a `region` named for
-  `RoundField`, mirroring how the adjacent player-branch case in the same
-  test already asserts `getByRole('region', { name: 'Scoring' })`). The
-  file's other suites (date-grouping, in-progress dedup, the single-Surface
-  invariant, pagination) are untouched by this spec and need no changes.
+- **Three existing tests need rewriting, not just one, and not "no changes"**
+  — `FairwayRoundsLibrary.test.tsx` has three assertions this spec breaks,
+  none of which survive as a pass-through:
+  - The `"coach: the cockpit cluster renders and the stage does not"` case
+    (lines 307-313) asserts `getByLabelText('Round summary instrument
+    cluster')` (the Cockpit's own `aria-label`) is present for
+    `userRole="coach"`. Deleting the Cockpit makes that assertion fail
+    outright; rewrite it to assert the new stage's own labelling instead
+    (e.g. a `region` named for `RoundField`, mirroring how the adjacent
+    player-branch case in the same test already asserts `getByRole('region',
+    { name: 'Scoring' })`).
+  - The single-Surface invariant (lines 190-214) asserts exactly one
+    `[data-slot="surface"]` node and that it contains both rendered month
+    labels. Today that one Surface is the table's ledger wrapper
+    (`FairwayRoundsLibrary.tsx:1119`); this spec moves the page's only
+    Surface to the stage (see "The table" → "Bare on the canvas") and the
+    stage renders unconditionally (it reads `scopedSummary`, not the
+    `stats` prop the test passes as `null`). The count assertion still
+    passes by coincidence — one Surface either way — but "`surfaces[0]`
+    contains both month labels" does not: those labels now live in the bare
+    table, not in the stage. Rewrite it to assert the one Surface is the
+    stage (e.g. by its `RoundField`/`region` labelling) and check the month
+    labels directly in the document instead of inside `surfaces[0]`.
+  - The pagination test (line 248) counts
+    `a[href^="/golf/dashboard/rounds/"]` across the whole container and
+    expects exactly 30, then 60, rows' worth. `RoundField`'s marks are
+    themselves `Link`s to that same href pattern (see "The stage" → Link),
+    and its own fixture, `makeManyRounds` (line 228), builds every round
+    from `makeRound`'s default `score_to_par: 2` — every one of the 100
+    rounds is scored and therefore plotted as a mark. This test breaks
+    outright, not subtly: with the stage rendering ~100 additional matching
+    anchors on top of the table's paginated 30, the very first assertion
+    (`toHaveLength(30)`) fails. Rewrite it to scope the selector to the
+    table body specifically (e.g. a `data-slot` on the table, or querying
+    within a `role="table"`/`<tbody>` boundary) so it counts table rows only,
+    independent of how many marks the stage renders.
+
   `rounds-instruments.test.tsx` covers only player-branch functions and
-  components and is entirely unaffected.
+  components and remains entirely unaffected.

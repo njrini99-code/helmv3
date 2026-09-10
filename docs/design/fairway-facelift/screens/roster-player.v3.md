@@ -25,7 +25,7 @@ bars cannot show, and the table is the paper trail underneath all of it.
 
 Unboxed identity, exactly the LANGUAGE.md masthead — no card, no chrome.
 
-- **Identity row**: `Avatar` (`src/components/fairway/controls/avatar.tsx:27`,
+- **Identity row**: `Avatar` (`src/components/fairway/controls/avatar.tsx:101`,
   imported the same way `ScoreField.tsx:23` does — `import { Avatar } from
   '../controls/avatar'`) at `size="md"`, replacing the hand-rolled
   `<span style={{backgroundColor:...}}>{initials}</span>` block at
@@ -47,15 +47,25 @@ Unboxed identity, exactly the LANGUAGE.md masthead — no card, no chrome.
 
   1. **SG headline.** Source: `standingRows.find(r => r.metric_id === 'sg_total')`
      (`FairwayPlayerProfile.tsx:195-198`, from `standingRows` prop, itself
-     `getPlayerStandingRows(id)` at `page.tsx:141`). If `player_value != null`:
-     `"Gaining {formatSgSigned} strokes per round on the field."` when ≥ 0,
-     else `"{formatSgSigned} strokes per round vs the field."` — the exact
-     sign branch and copy already written at `buildStatsViewModel.ts:267-269`,
-     using `formatSgSigned` (`buildStatsViewModel.ts:198-203`). If
-     `player_value == null`: fall back to the exact string already in the
-     codebase for this case — `"Strokes-gained standing fills in after 5+
-     rounds with shot detail."` (`buildStatsViewModel.ts:266`) — and stop; no
-     further clauses.
+     `getPlayerStandingRows(id)` at `page.tsx:141`). Three branches, checked
+     in this order, and each one stops the sentence — nothing after this
+     item ever runs unless the first branch below fires:
+     - `standingUnavailable` (new loader flag — see newFields in Risks; the
+       fetch itself failed): `"Strokes-gained standing couldn't load."` and
+       stop. Deliberately not the same string as the next branch: a request
+       that failed is not the same story as a real player who doesn't have
+       5 rounds yet, and the current loader collapses both into the same
+       empty array today (see Risks) — this page does not repeat that.
+     - `player_value != null` (fetch succeeded, row exists): `"Gaining
+       {formatSgSigned} strokes per round on the field."` when ≥ 0, else
+       `"{formatSgSigned} strokes per round vs the field."` — the exact sign
+       branch and copy already written at `buildStatsViewModel.ts:268-271`,
+       using `formatSgSigned` (`buildStatsViewModel.ts:198-203`).
+     - Otherwise (fetch succeeded, `player_value == null` — this player
+       genuinely has under 5 rounds with shot detail): fall back to the
+       exact string already in the codebase for this case —
+       `"Strokes-gained standing fills in after 5+ rounds with shot
+       detail."` (`buildStatsViewModel.ts:267`).
   2. **Leak clause**, appended only when (1) resolved to a real value. Find
      the worst of the four SG sub-metric rows by `team_pct` — `standingRows
      .filter(r => ['sg_ott','sg_approach','sg_around_green','sg_putting']
@@ -81,20 +91,23 @@ Unboxed identity, exactly the LANGUAGE.md masthead — no card, no chrome.
      is the same shape that dead parameter was always meant to receive.
   3. **Trend clause**, appended only when a scoring trend has signal (see
      Readouts §1 for the exact computation — same `computeScoringTrendFromRounds`
-     call, so the verdict and the readout can never disagree). When
-     `hasSignal`: `" Trending {better|worse} by {|delta|.toFixed(1)} strokes
-     over the last 5 rounds"` — plain words, no dash and no glyph, matching
-     the copy style `buildVerdict` already uses elsewhere in the same
-     sentence family (`coach-home-logic.ts:179`: `` ` the most at
-     ${x.toFixed(1)} strokes.` ``, no arrow, no dash). With **"the last 5
-     rounds" linking to `#rounds`** (an in-page anchor on the table below —
-     see The table). When `!hasSignal` (fewer than 5-vs-3 rounds on file):
-     omit the clause entirely, matching the honest-omission pattern
+     call, so the verdict and the readout can never disagree, and so the
+     verdict never restates a number the readout already owns). When
+     `hasSignal`: `" Trending {better|worse} over the last 5 rounds"` — plain
+     words, no dash and no glyph, direction only. The magnitude
+     (`{|delta|.toFixed(1)}` strokes) is deliberately left out of this
+     sentence: Readout §1's caption already states it in mono (`"▲/▼
+     {|delta|.toFixed(1)} last 5 vs prior 5"`), so one region owns that
+     number and the masthead only points at where to find it. With **"the
+     last 5 rounds" linking to `#rounds`** (an in-page anchor on the table
+     below — see The table). When `!hasSignal` (fewer than 5-vs-3 rounds on
+     file): omit the clause entirely, matching the honest-omission pattern
      `rollupPlayers` (`coach-home-logic.ts:83-85`) already uses for the same
      trend function. (The readouts' own trend caption, §1 below, keeps the
      ▲/▼ glyph — that is a mono data glyph in a data column, the same
      precedent `TrendMark` sets at `ScoreField.tsx:112-134`, not prose; this
-     display-type sentence is prose and stays glyph-free.)
+     display-type sentence is prose and stays glyph-free and, now, number-
+     free too.)
 
   No part of this sentence links the player's own name to
   `/golf/dashboard/roster/{id}` — that is the page already open, and a
@@ -103,18 +116,45 @@ Unboxed identity, exactly the LANGUAGE.md masthead — no card, no chrome.
   actually go to act on the sentence.
 
 - **Deletes**: the Message button, overflow Menu, and back-to-Roster link
-  stay (they are actions, not cards) but the back link text becomes
-  `"Roster"` with no arrow glyph, replacing `<ArrowLeft/>Roster` at
-  `FairwayPlayerProfile.tsx:219-227` — arrows in copy are banned; the button
-  itself (chrome, not text) may keep its directionality conveyed some other
-  way if the design system requires it, but nothing in the *text* points.
+  stay (they are actions, not cards). The link text is already plain
+  `"Roster"` (`FairwayPlayerProfile.tsx:226`) — no wording change needed.
+  What changes is the icon: the `leftIcon={<ArrowLeft className="h-4
+  w-4" />}` prop at `FairwayPlayerProfile.tsx:223` is dropped, so the
+  control carries no arrow at all. (Arrows in copy were already absent; this
+  removes the one arrow the control had in chrome.)
 
 ## The stage
 
 One `Surface`, one instrument: a full-width, single-row score strip —
 **RoundStrip** — beside the readouts column, exactly the two-region stage
-`FairwayCoachDashboard.tsx:366-431` uses for `ScoreField` + `FieldReadouts`,
+`FairwayCoachDashboard.tsx:379-444` uses for `ScoreField` + `FieldReadouts`,
 just with one row instead of the roster's many.
+
+**Rhythm.** `mt-10` (40px) from the masthead's verdict down to this stage,
+`mt-12` (48px) from this stage down to the ledger row, `mt-10` (40px) from
+the ledger down to the table — LANGUAGE.md's documented page rhythm
+(masthead→stage 40, stage→ledger 48, ledger→table 40), not a uniform
+24px grid.
+
+**Header row.** Per LANGUAGE.md's stage anatomy — overline, title, one-line
+legend, view control at the right — mirroring
+`FairwayCoachDashboard.tsx:380-388`'s header block exactly, minus the view
+control: this page has no range picker, so nothing sits at the right.
+  - Overline (`OVERLINE` class): `"Round history · last {n} rounds"`, where
+    `{n}` is the live count returned by the widened fetch (`rounds.length`,
+    capped at 12 by the query below) — not a hardcoded "12," so a player
+    with fewer rounds on file shows their true count.
+  - Title (`font-fw-display text-h2 text-text-primary`, same classes as
+    `FairwayCoachDashboard.tsx:383`): `"Round strip"` — names the
+    instrument, the same way the reference stage's title names its own
+    (`"Score field"`).
+  - Legend (`font-fw-sans text-caption text-text-tertiary`, same slot as
+    `FairwayCoachDashboard.tsx:384-386`): `"Each bar is one round against
+    par, oldest to today. Amber rises over par, green drops under; par is
+    the line, scale ±{cap}."` — `{cap}` is the live return of
+    `scoreFieldCap([thisPlayerRow])` (see Geometry below), the same
+    interpolation `FairwayCoachDashboard.tsx:385` already does for its own
+    legend.
 
 **What it plots.** Every fetched round (see newFields — the query widens from
 4 to 12 rows) as one mark on a shared date axis. Baseline is par
@@ -198,14 +238,25 @@ per-mark links added:
 
 **What a mark links to.** Each bar is a `Link` to `/golf/dashboard/rounds/{round.id}`
 (the round detail route — the exact href pattern already used for round
-marks at `coach-home-logic.ts:94` and for table rows at
-`coach-home-parts.tsx:262` (`RoundsLedgerTable`'s `const href` line), with the
+marks at `coach-home-logic.ts:94` and for table rows inside
+`RoundsLedgerTable` (`coach-home-parts.tsx:265`), with the
 same `title`/`aria-label` round summary line ScoreField's `Bar` already
 builds (`ScoreField.tsx:177-186`). A round with no `href` case does not
 arise here — every plotted round has an `id`.
 
 **Degrade behavior.**
-  - **Zero rounds**: do not render the strip at all. Render `InsufficientData`
+  - **Rounds fetch failed** (`roundsUnavailable`, a new loader flag — see
+    newFields in Risks): render `InlineNotice tone="warning" title="Couldn't
+    load this player's rounds"` with body "Something went wrong reading
+    their rounds. Refresh to try again; nothing has been lost." — the same
+    component and tone `FairwayCoachDashboard.tsx:412-413` already uses for
+    the equivalent team-wide failure, reworded for one player. This is a
+    distinct state from Zero rounds below on purpose: a failure must never
+    render as the same empty-state shape as an honestly-empty player, or a
+    coach reads "no data" as "this kid hasn't played" when the real story is
+    "the page broke."
+  - **Zero rounds** (fetch succeeded, `rounds.length === 0`): do not render
+    the strip at all. Render `InsufficientData`
     (already imported in `FairwayPlayerProfile.tsx:44`) with title "No scored
     rounds yet" in the stage's instrument slot — the same component this page
     already uses for the cold-start Standing case
@@ -224,22 +275,36 @@ arise here — every plotted round has an `id`.
 ## Readouts
 
 Four, in a `<dl>` in the stage's right column — hairline rows, not tiles:
-`FieldReadouts`'s own structure (`coach-home-parts.tsx:100-119`) — a `<dl>`
-with `xl:divide-y xl:divide-border-subtle` between items, no per-item border,
-no box, label as an eyebrow (`dt`, `OVERLINE` class, `coach-home-parts.tsx:105`),
-value as a large tabular-mono number (`dd`, `coach-home-parts.tsx:107-110`),
-one caption line below for delta or note (`coach-home-parts.tsx:113-119`).
-This page reuses that exact structural pattern rather than inventing a tile —
-four numbers with small labels and no shared rule between them is the named
-"big number with a small label as a tile" failure; a divided `<dl>` sharing
-one rule and one column is not.
+`FieldReadouts`'s own structure (`coach-home-parts.tsx:111`, the
+`FieldReadouts` function) — a `<dl>` with `xl:divide-y
+xl:divide-border-subtle` between items, no per-item border, no box. Each
+item is one block with three children in order: a `dt` styled as the
+`OVERLINE` eyebrow (the label), a first `dd` holding the large tabular-mono
+value, and a second `dd` holding one caption line for delta or note. This
+page reuses that exact three-line structural pattern rather than inventing
+a tile — four numbers with small labels and no shared rule between them is
+the named "big number with a small label as a tile" failure; a divided
+`<dl>` sharing one rule and one column is not.
+
+**Missing values share one glyph.** Every item below treats a null, failed,
+or not-yet-available number as `item.value = null` so `FieldReadouts`' own
+`value ?? '–'` fallback (an en dash) renders it — never
+`formatOne`/`formatPct`'s own native `'—'` em-dash fallback
+(`FairwayPlayerProfile.tsx:136-142`), which would put a banned em dash on
+the page and would disagree with the GIR% readout's own missing-row dash
+two lines below it. `formatOne`/`formatPct` are used here only to stringify
+a number that is actually present.
 
 1. **Scoring avg · career** — value: `detailedStats.scoringAverage`
    (`golf-stats-calculator-shots.ts:94`, from `getDetailedStats(id,'overall')`
    at `page.tsx:133` — this call already returns career totals despite the
    *current* code mislabeling the whole block "Season" at
    `FairwayPlayerProfile.tsx:279`; that mislabel does not carry forward here).
-   Formatted 1 decimal (`formatOne`, `FairwayPlayerProfile.tsx:140-142`).
+   Formatted 1 decimal (`formatOne`, `FairwayPlayerProfile.tsx:140-142`). When
+   `detailedStats` is `null` — the exact failure case `page.tsx:133-139`'s
+   `.catch` already returns and logs today (`headline stats read failed`):
+   value is `null` (renders as `'–'` per the glyph rule above), never `0`, so
+   a failed request never displays as a real zero.
    Delta: `computeScoringTrendFromRounds` (`src/lib/golf/scoring-trend.ts:31-45`)
    over the widened round fetch (12 rows, newest-first, each `{total_score,
    holes_played}` — `holes_played` is a newField, see below), same call
@@ -252,7 +317,11 @@ one rule and one column is not.
    anyway. When `hasSignal`: `"▲/▼ {|delta|.toFixed(1)} last 5 vs prior 5"`
    (the arrow convention from `TrendMark`, `ScoreField.tsx:112-134`, spelled
    out in words here since this is a caption line, not a column with a
-   labeled header next to it). When not: `"not enough rounds yet"`. Note
+   labeled header next to it). When `!hasSignal` because the fetch itself
+   returned fewer rounds than the window needs: `"not enough rounds yet"`.
+   When `roundsUnavailable` (the fetch failed — see The stage): `"couldn't
+   load"` instead — a different caption for a different cause, so a failed
+   request is never read as a short career. Note
    explicitly: the **value** above is career-wide; the **delta** is a
    5-vs-5-round window — the two are not the same span, and the label
    distinguishes them ("career" on the value, "last 5 vs prior 5" on the
@@ -270,22 +339,32 @@ one rule and one column is not.
    (`src/components/golf/coachhelm/v3/StandingBar/utils.ts:171-186`) —
    `"Above team average"` / `"Below team average"` / `"Matches team
    average"`, or empty when `team_avg` is null (cold-start team, handled
-   inside that function already). **Missing-row path**: `standingRows` gates
+   inside that function already). **When `standingUnavailable`** (the
+   `getPlayerStandingRows(id)` fetch itself failed — see newFields in
+   Risks): value `null` (renders `'–'` per the glyph rule above), caption
+   `"couldn't load"` — the same failure wording the masthead's SG headline
+   uses, so the two regions reading `standingRows` agree on what a broken
+   fetch looks like. **Missing-row path** (fetch succeeded, row genuinely
+   absent): `standingRows` gates
    on "5+ rounds with shot detail" the same way the masthead's SG headline
    does — a less-tracked player on the roster will have no `gir_pct` row at
-   all. When absent, this readout renders `value = '–'` with an empty
-   caption, the same `item.value ?? '–'` fallback `FieldReadouts` already
-   applies to every readout (`coach-home-parts.tsx:108`) — it does not fall
+   all. When absent (and not `standingUnavailable`), this readout renders
+   `value = null` (per the glyph rule above) with an empty
+   caption — it does not fall
    back to `detailedStats.girPercentage`, for the same pipeline-mixing reason
    given above.
 3. **Putts/rd · career** — value: `detailedStats.puttsPerRound`
-   (`golf-stats-calculator-shots.ts:233`), `formatOne`. Delta: **none** —
-   there is no canonical `putts_per_round` metric id in the 35-id registry
-   (`src/lib/coachhelm/v3/metrics/registry.ts:34-84`), so there is no team
+   (`golf-stats-calculator-shots.ts:233`), `formatOne` — `null` when
+   `detailedStats` is `null` (same failure case as Scoring avg above).
+   Delta: **none** —
+   there is no canonical `putts_per_round` metric id in the 28-id registry
+   (`src/lib/coachhelm/v3/metrics/registry.ts:35-81`), so there is no team
    comparison to draw honestly. Caption is blank rather than a fabricated
    comparison.
 4. **Rounds · career** — value: `detailedStats.roundsPlayed`
-   (`golf-stats-calculator-shots.ts:90`), plain integer, no unit. Caption:
+   (`golf-stats-calculator-shots.ts:90`), plain integer, no unit — `null`
+   when `detailedStats` is `null` (same failure case as Scoring avg above,
+   caption reads "couldn't load" instead of the strip note below). Caption:
    `"strip shows the last {n plotted}"` (a static clarifying note, not a
    delta) — this is the one place the readouts intentionally show a number
    the stage does *not*: the strip only plots the widened-but-still-bounded
@@ -294,15 +373,24 @@ one rule and one column is not.
 
 ## The ledger row
 
-Two bare columns on a 12-col grid, unequal width (7 / 5) — no card, no box,
-just a hairline top rule per LANGUAGE.md's ledger treatment
-(`SectionHead`'s `h-px w-full bg-accent-300` rule, `coach-home-parts.tsx:69`,
-reused per column). Neither column repeats a number the stage or readouts
+Two bare columns, unequal width (7 / 5), divided by a vertical hairline at
+`xl` and up — no card, no box. Grid classes mirror
+`FairwayCoachDashboard.tsx:452`'s own ledger wrapper: `grid-cols-1
+md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:divide-x
+xl:divide-border-subtle` on the row, each column heading carrying
+`SectionHead`'s own green ruling (`coach-home-parts.tsx:48`, the
+`SectionHead` function — a 1px `bg-accent-300` rule under the heading).
+Below `xl` the two columns run side by side at plain `md:grid-cols-2` (even
+halves — LANGUAGE.md's documented intermediate state); the unequal 7/5 split
+and the vertical divider both start at `xl` (1280), the breakpoint
+LANGUAGE.md reserves for side-by-side splits, never `lg` — verified at 1024
+(still even 2-up, nothing squeezed) and 1280 (unequal, divided). Neither
+column repeats a number the stage or readouts
 already show — the stage is score-to-par by date, the readouts are four
 scalar career/window numbers; this row is strokes-gained *shape* and open
 coaching work, both currently loaded and currently unused past the masthead.
 
-- **Standing** (`col-span-12 lg:col-span-7`): one bare row per SG sub-metric
+- **Standing** (`xl:col-span-7 xl:pr-8`): one bare row per SG sub-metric
   — `sg_ott`, `sg_approach`, `sg_around_green`, `sg_putting`, in that order
   — from the *same* `standingRows` array the masthead's leak clause reads
   (`page.tsx:141`, `PlayerStandingRow[]`). Today only `sg_total` is ever
@@ -314,8 +402,13 @@ coaching work, both currently loaded and currently unused past the masthead.
   e.g. "Top quartile on your team" / "Below team average") as a caption
   line under the label. The whole row links to
   `/golf/dashboard/players/{id}/game` (see Risks — all four currently
-  resolve to the same URL, no per-category anchor exists yet).
-- **Focus** (`col-span-12 lg:col-span-5`): the `focusAreas` prop, already
+  resolve to the same URL, no per-category anchor exists yet). **When
+  `standingUnavailable`** (see newFields in Risks): this column renders one
+  `InlineNotice tone="warning"` in place of the four rows — "Couldn't load
+  strokes-gained standing. Refresh to try again." — rather than a column
+  that quietly shows nothing, which would read as "no data exists" instead
+  of "this failed."
+- **Focus** (`xl:col-span-5 xl:pl-8`): the `focusAreas` prop, already
   loaded (`page.tsx:149-155`, up to 3 non-completed, newest first) — one bare
   row per area, title left (`fa.title ?? fa.area_type`,
   `FairwayPlayerProfile.tsx:317`), status chip right
@@ -323,29 +416,48 @@ coaching work, both currently loaded and currently unused past the masthead.
   links to `/golf/dashboard/players/{id}/genome` (the Genome tab, which the
   current empty-state copy already names as where a focus area is added —
   `FairwayPlayerProfile.tsx:322-324`). Zero-row case keeps that same copy,
-  bare, not boxed: "No open focus areas. Add one from the Genome tab."
+  bare, not boxed: "No open focus areas. Add one from the Genome tab." If
+  the focus-areas query itself fails, today's loader already collapses that
+  into the same empty array a real zero-focus-areas player gets
+  (`focusAreasResult.data ?? []`, `page.tsx:189`, only the error is logged,
+  `page.tsx:165-171`) — this spec keeps that existing behavior unchanged
+  rather than adding a third flag for a pre-existing, low-stakes gap; the
+  zero-row copy above honestly covers both cases with the same words.
 
 ## The table
 
 Rounds, in a real `<table>` — mirrors `RoundsLedgerTable`'s structure
-(`coach-home-parts.tsx:230-284`) with the **Player column dropped** (a
-single-player page has no use for it) and everything else kept:
+(`coach-home-parts.tsx:265`, the `RoundsLedgerTable` function) with the
+**Player column dropped** (a single-player page has no use for it) and
+everything else kept:
 
 | Column | Align | Below md | Below lg | Source |
 |---|---|---|---|---|
 | Date | left | shown | shown | `round_date`, `shortDay()` (`coach-home-logic.ts:20-24`) |
 | Course | left | **hidden** | shown | `course_name`, `titleCase()` (`coach-home-logic.ts:26-38`) |
-| Type | left | **hidden** | **hidden** | `round_type` (newField), `roundTypeLabel()` (`coach-home-parts.tsx:225-231`) |
+| Type | left | **hidden** | **hidden** | `round_type` (newField), `roundTypeLabel()` (`coach-home-parts.tsx:256`) |
 | Score | right, mono | shown | shown | `total_score` |
-| To par | right, mono, toned | shown | shown | `score_to_par`, `formatToPar` (`src/lib/golf/format-to-par.ts:14`), green/amber tone by sign (`coach-home-parts.tsx:265`) |
+| To par | right, mono, toned | shown | shown | `score_to_par`, `formatToPar` (`src/lib/golf/format-to-par.ts:14`), green/amber tone by sign (inside `RoundsLedgerTable`, `coach-home-parts.tsx:265`) |
 | Putts | right, mono | **hidden** | shown | `total_putts` (newField) |
 | GIR | right, mono | **hidden** | shown | `total_gir`/`total_gir_possible` (newFields), `"{gir}/{possible}"` |
 
-Row: whole `<tr>` clickable to `/golf/dashboard/rounds/{id}`
-(`coach-home-parts.tsx:258-278` pattern, `router.push` on row click, `Link`
-on the primary cell for keyboard/middle-click), `hover:bg-surface-hover`.
-Row count: all 12 fetched rounds (the same widened query the stage and
-readouts read — one fetch, three consumers). `id="rounds"` on the section
+Row: whole `<tr>` clickable to `/golf/dashboard/rounds/{id}` (the pattern
+`RoundsLedgerTable` already uses, `coach-home-parts.tsx:265` —
+`router.push` on row click, `Link` on the primary cell for
+keyboard/middle-click), `hover:bg-surface-hover`.
+Row count: all 12 fetched rounds — a deliberate departure from
+LANGUAGE.md's default "ten rows and a View all N link," because this table
+is not sliced independently the way `RoundsLedgerTable rounds=
+{recentRounds.slice(0, 10)}` is on the coach home dashboard
+(`FairwayCoachDashboard.tsx:481`). Here the stage, the readouts, and the
+table all read the *same* fetch (one fetch, three consumers, per newFields
+below); truncating the table to ten while the stage plots up to twelve
+would desync what the two regions show for the same window. Twelve stays
+the shared number; the "View all" link below still exists for anything
+past it. When `roundsUnavailable`: the table body is replaced by the same
+`InlineNotice` the stage uses, not an empty `<table>` with a header and no
+rows — an empty table reads as "no rounds," not "this failed to load."
+`id="rounds"` on the section
 wrapper is the anchor the masthead's trend clause links to.
 
 **View all** action (`SectionHead`-style `action={{label:'View all', href}}`,
@@ -356,19 +468,23 @@ Flagged in Risks: this is not yet a working filter — see below.
 
 CSS-only breakpoint gating throughout, no client-only measurement:
 - Readouts run three bands, exactly `FieldReadouts`' existing responsive
-  classes (`coach-home-parts.tsx:101`) reused unchanged: `grid-cols-2` (two-up)
+  classes on its `<dl>` (`coach-home-parts.tsx:111`) reused unchanged:
+  `grid-cols-2` (two-up)
   below `md`, `md:grid-cols-4` (one row of four) from `md` to `xl`, then
   `xl:flex xl:flex-col` — a single divided column beside the RoundStrip — from
   `xl` up.
 - The RoundStrip stays full-width and single-row at every size (it has no
   identity/avg/trend side-columns to collapse — that complexity was
   `ScoreField`'s multi-player problem, not this page's).
-- Ledger columns stack `col-span-12` on mobile, `lg:col-span-7`/`lg:col-span-5`
-  from `lg` up — plain Tailwind grid classes, no `useMediaQuery`, no
-  `window.innerWidth` read.
+- Ledger columns run `grid-cols-1` on mobile, `md:grid-cols-2` (even halves)
+  from `md`, then `xl:grid-cols-12` with `xl:col-span-7`/`xl:col-span-5` and
+  a vertical `xl:divide-x` hairline from `xl` up (see The ledger row) —
+  plain Tailwind grid classes, no `useMediaQuery`, no `window.innerWidth`
+  read.
 - Table: Type hidden below `lg`, Course/Putts/GIR hidden below `md`, matching
   `RoundsLedgerTable`'s existing `hidden md:table-cell` / `hidden
-  lg:table-cell` classes (`coach-home-parts.tsx:249-253`) — `[hidden]` is a
+  lg:table-cell` classes (`coach-home-parts.tsx:265`, the
+  `RoundsLedgerTable` function) — `[hidden]` is a
   CSS attribute selector, resolved at paint, never a hook.
 - There is no view-control (no range picker, no tab switcher) on this page to
   collapse into a Menu at narrow width — unlike the coach home dashboard,
@@ -395,9 +511,10 @@ CSS-only breakpoint gating throughout, no client-only measurement:
   real capability loss, not a pure simplification.
 - The hand-rolled avatar `<span>` (`FairwayPlayerProfile.tsx:233-242`) —
   replaced by the shared `Avatar` control.
-- The `←` glyph on the back-to-Roster button (`FairwayPlayerProfile.tsx:223`)
-  — text becomes "Roster" with no arrow; the button may keep a chrome-level
-  affordance, but the copy does not point.
+- The `←` glyph on the back-to-Roster button — the `leftIcon={<ArrowLeft
+  className="h-4 w-4" />}` prop at `FairwayPlayerProfile.tsx:223` is
+  dropped; the link text was already plain "Roster"
+  (`FairwayPlayerProfile.tsx:226`) and is unchanged.
 - The plain-string verdict paragraph and its non-linking `buildVerdict` call
   (`FairwayPlayerProfile.tsx:203-206, 260`) — replaced by the linked
   `VerdictPart[]` sentence above.
@@ -465,14 +582,35 @@ CSS-only breakpoint gating throughout, no client-only measurement:
     `dashboard-data.ts:499`.
   - `round_type` — needed by the table's Type column. Confirmed at
     `dashboard-data.ts:484`, already labeled by the reusable
-    `roundTypeLabel()` (`coach-home-parts.tsx:220-231`).
+    `roundTypeLabel()` (`coach-home-parts.tsx:256`).
   - `total_putts`, `total_gir`, `total_gir_possible` — needed by the table's
     Putts/GIR columns. Confirmed at `dashboard-data.ts:484, 499`, already
-    selected and rendered identically at `game/page.tsx:221` and
-    `coach-home-parts.tsx:281-283`.
+    selected and rendered identically at `game/page.tsx:221` and inside
+    `RoundsLedgerTable` (`coach-home-parts.tsx:265`).
   - The query's `.limit(4)` (`page.tsx:162`) needs to rise to `12` — enough
     rows for the stage's date-axis shape, the trend delta's 5-vs-5-with-≥3-previous
     minimum, and a table worth calling a table, in one fetch.
+  - `roundsUnavailable` / `standingUnavailable` — two boolean flags this
+    page needs and does not have today. Confirmed by reading `page.tsx` in
+    full: when the rounds query errors, that error is only logged
+    (`page.tsx:172-177`) and the result then collapses into the same empty
+    array a legitimate zero-rounds player gets (`recentRounds=
+    {roundsResult.data ?? []}`, `page.tsx:190`). The same collapse happens
+    for standing: `getPlayerStandingRows(id)` failing is caught into `null`
+    (`page.tsx:141-148`) and then folded into the same `[]` a real
+    cold-start player gets (`const standingRows = standingResult?.success ?
+    (standingResult.data ?? []) : [];`, `page.tsx:180`). That means, today,
+    a broken request and an honestly-empty player reach the component
+    looking identical — but this spec's stage, Readout §1, the table, the
+    masthead's SG headline, the GIR% readout, and the Standing ledger
+    column all need to tell those two states apart (see Degrade behavior,
+    and the Masthead/Readouts/Ledger sections above). The fix is the same
+    shape the coach home dashboard already ships as `teamStatsUnavailable`
+    (`FairwayCoachDashboard.tsx:93`): carry
+    `roundsUnavailable = Boolean(roundsResult.error)` and
+    `standingUnavailable = standingResult == null` as their own booleans
+    alongside the arrays, instead of folding the failure away, and pass
+    both down to this page's replacement component.
 - **Two SG pipelines are not assumed to agree.** The GIR% readout
   deliberately sources both its value and its delta from the same
   `standingRows` row rather than pairing `detailedStats.girPercentage` (a

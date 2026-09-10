@@ -47,10 +47,26 @@ current `ViewHeader` (`TriageDesk.tsx:456-494`).
   return a plain string with no `href`s — the gap this spec closes).
 
   **Template** (branches mirror `buildBriefVerdict`'s own cascade,
-  `buildTriageViewModel.ts:203-222`, verbatim except for the added links):
+  `buildTriageViewModel.ts:203-222`, verbatim except for the added links).
+  `groupsError` (non-null when `getSignalGroups` itself failed —
+  `page.tsx`'s `signalGroupsResult.success ? signalGroupsResult.groups : []`
+  forces `groups` to `[]` on that path, the identical shape a genuinely
+  empty queue has) is checked BEFORE any of these: branch A's "all clear" is
+  only honest when the queue is actually empty, never when it is merely
+  unknown. See Risks, "an honest failure state," for what this gates below
+  the masthead too.
 
-  - **A — all clear** (`groups.length === 0`): "All clear. No open signals
-    right now." (verbatim, `:205`) — no links, nothing to link to.
+  - **E — load failure** (`groupsError` non-null): "Couldn't load signals.
+    Try again." — no links; `counts` and `topPlayerGroup` are both derived
+    from a `groups` array that is `[]` for a reason unrelated to how many
+    signals exist, so neither is trustworthy enough to print.
+    `outcomesAwaiting` is a separate, unaffected read
+    (`effectivenessDrillProps`/`getInsightEffectiveness`, independent of
+    `getSignalGroups`), so the **Append** rule below still applies on top
+    of branch E exactly as it does on top of B/C/D.
+  - **A — all clear** (`groupsError` is null and `groups.length === 0`):
+    "All clear. No open signals right now." (verbatim, `:205`) — no links,
+    nothing to link to.
   - **B — urgent signals open** (`counts.urgent > 0`): "{urgent} urgent
     {signal|signals} need review across {playersFlagged} {player|players}.
     {topPlayerGroup.playerName} needs the most attention right now."
@@ -85,6 +101,12 @@ current `ViewHeader` (`TriageDesk.tsx:456-494`).
 **Instrument: `RailBars`** (`src/components/fairway/modules/RailBars.tsx`,
 registered `registry.ts:209`, `bestFor: 'rate vs benchmark, several rows'`) —
 one row per raw signal category, ranked by strokes at risk.
+
+**Overline / Title** (LANGUAGE.md's stage-header slot — the two lines above
+the legend, matching `FairwayCoachDashboard.tsx:369-370`'s own "The team ·
+{range}" / "Score field" precedent): overline "The team · by category";
+title "Leak ranking". Both are structural chrome, not a data value — no
+field citation applies, the same as Home's own overline text.
 
 **Data**: a new pure aggregation, `aggregateCategoryLeaks(groups)`, over
 fields that exist today — not a new fact, a new sum of existing ones:
@@ -145,7 +167,14 @@ green "gained" side — see Risks.
 `?filter=category:{category}` — the existing `QueueFilterKey` category
 branch (`matchesFilter`, `buildTriageViewModel.ts:100`), the exact value the
 Toolbar's Category `FilterMenu` already builds (`TriageDesk.tsx:558-570`) —
-pre-filtering the ledger's Queue column and the table below to that category.
+pre-filtering the ledger's Queue column and the table below to that
+category. **This is a new capability, not an existing one**: neither
+`RailBarRow` nor `RailBars` carries a link today (`modules/types.ts:131-151`;
+`RailBars.tsx` renders each row as a plain `<m.div>`, no `<Link>`/`onClick`
+anywhere in the file). `PlayerHomeBento.tsx:35-36`'s own docstring confirms
+this directly — it lists `RailBars` among the primitives it reuses
+specifically because "none render a `<button>`." See Risks for the additive
+fix this depends on.
 
 **Order and cap**: descending by `strokesAtRisk`; categories with no
 measured impact sort after every measured one, by `signalCount` descending,
@@ -154,10 +183,23 @@ cardinality ceiling — overflow categories are not hidden, only de-prioritized
 off the rail; every signal in an overflow category still appears in the
 table.
 
-**Degradation**:
-- **Zero categories** (`groups.length === 0`, all clear): no `RailBars` at
-  all — one line, the same precedent `ScoreField`'s own degrade uses
-  (`FairwayCoachDashboard.tsx:409-422`): "No open signals. Nothing to rank."
+**Degradation** (after the load-failure check — see Risks, "an honest
+failure state," which this stage defers to when `groupsError` is set):
+- **Zero categories** (`groupsError` is null and
+  `aggregateCategoryLeaks(groups).length === 0`): no `RailBars` at all — one
+  line, the same precedent `ScoreField`'s own degrade uses
+  (`FairwayCoachDashboard.tsx:409-422`). This is reachable two different
+  ways and each gets its own honest line, not a shared one:
+  - **`groups.length === 0`** (a genuine all clear, masthead branch A): "No
+    open signals. Nothing to rank."
+  - **`groups.length > 0` but every signal in every group is `kind ===
+    'team_synthesis'`** (masthead branch D): the aggregation's own
+    exclusion above empties the bucket even though real signals exist, so
+    "No open signals" would be false here. Instead: "No per-player leaks to
+    rank. {teamSynthesisCount} team-level {signal|signals} in the table
+    below," linked to `#signals-table` — `{teamSynthesisCount}` is the same
+    count Column 1's own branch-D empty line below uses, and this mirrors
+    Column 2's existing branch-D empty precedent the same way.
 - **One category**: a single `RailBars` row, tick omitted (see above).
 - **Every category unmeasured** (`maxKnown === 0`): every row renders
   `pct=0`, `dim=true`, "Not measured" — a truthful zero-width rendering, not
@@ -191,9 +233,20 @@ segmented hairline bar, one segment per `SignalSeverity`
 (`SEVERITY_ORDER`, `signal-grouping.ts:58`), sized by its share of
 `groups.flatMap(g => g.signals).filter(s => s.kind !== 'team_synthesis')`,
 built the same way `AttentionLedger`'s segmented mix bar already is
-(`coach-home-parts.tsx:182-195`). Colors match `SEVERITY_DOT`
-(`SignalRow.tsx:21-26`): urgent/high `bg-fw-danger`, medium `bg-fw-warning`,
-low `bg-text-tertiary/50`. The urgent+high segment links to `?filter=urgent`
+(`coach-home-parts.tsx:182-195`). Colors deliberately do NOT match
+`SEVERITY_DOT`'s red `bg-fw-danger` for urgent/high (`SignalRow.tsx:21-26`)
+— LANGUAGE.md's materials rule allows exactly two hues on a coach page
+(green ink, amber leak/decline), and the reference implementation never
+spends a third: `AttentionLedger`'s own three-bucket mix bar
+(`coach-home-parts.tsx:164-166`) colors improving/flat/declining as
+`bg-accent-500` / `bg-warm-300` / `bg-fw-warning`, never red. This legend
+follows that same palette instead: urgent+high `bg-fw-warning` (solid — the
+same fill the rail itself uses for a leak), medium `bg-warm-300` (the same
+neutral-warm tone `AttentionLedger` already uses for its middle bucket),
+low `bg-text-tertiary/50` (unchanged from `SEVERITY_DOT`). See Risks for the
+matching fix `SeverityChip` itself still needs before the ledger's Queue
+column and the table's Severity column stop rendering that same red. The
+urgent+high segment links to `?filter=urgent`
 (the only severity chip that exists, `BASE_QUEUE_FILTERS`,
 `buildTriageViewModel.ts:79-83`); medium/low are unlinked — no chip exists
 for them and inventing one is out of scope.
@@ -218,7 +271,10 @@ stage's own legend above. These four are different kinds of fact:
 3. **Outcomes awaiting** — `outcomesAwaiting` (`TriageDesk.tsx:312`,
    null-safe via `summarizeAdoption`'s `generated=0, actedUpon=0` degrade).
    Fewer is better — it means prescriptions are getting acted on. Links to
-   `?view=effectiveness`. No numeric delta today.
+   `?view=effectiveness`. No numeric delta today. Reads
+   `effectivenessDrillProps`/`getInsightEffectiveness`, wholly independent of
+   `getSignalGroups` — stays visible and correct even while the stage's own
+   `groupsError` failure state (see Risks) is showing in place of the rail.
 4. **Last scan** — `lastScanLabel` (`formatRelativeScanTime`,
    `buildTriageViewModel.ts:244-256`). More recent is better — a stale scan
    means every number above it may already be stale. Degrades to "No scans
@@ -236,11 +292,22 @@ Three bare columns, `divide-x divide-border-subtle` on `lg`, unequal widths
 own ledger row uses, matching LANGUAGE.md's per-page table cell for
 Intelligence ("Triage queue"). None of the three repeats a category-level
 number the stage shows — the stage aggregates by category; each column below
-aggregates by something else (signal, player, prescription).
+aggregates by something else (signal, player, prescription). Columns 1 and 2
+read the same `groups` the stage does, so like it they assume `groupsError`
+is null — see Risks, "an honest failure state," for what replaces them when
+it isn't. Column 3 reads a separate loader
+(`playersDrillProps`/`focusAreasError`, `page.tsx:305`), independent of
+`groupsError` — see Risks, "Focus areas needs its own failure state," for
+what it shows when `playersDrillProps.loadError` is set instead.
 
 **Column 1 — Queue (5/12)**, id `ledger-queue`. Rows: the top 6 signals
-across every group, in the same worst-first, most-recoverable-first order
-`groupSignals` already produces (`signal-grouping.ts:255-276`) — no re-sort.
+across every group, EXCLUDING `kind === 'team_synthesis'` (the same
+exclusion the stage's aggregation makes, and the same gate
+`SignalDossier.tsx:223` already applies before rendering its action row — a
+roster roll-up is a fact worth reading, not a queue item worth reviewing
+individually; it still surfaces in the full Signals table below), in the
+same worst-first, most-recoverable-first order `groupSignals` already
+produces (`signal-grouping.ts:255-276`) — filtered, not re-sorted.
 Each row: a `SeverityChip` (`SignalRow.tsx:30-37`) + player name or "Team"
 (`group.playerName`) + the claim, one line, truncated
 (`toCoachVoice`, `SignalRow.tsx:19`). Row link: opens the `DrillPanel` for
@@ -248,8 +315,16 @@ that signal (same canonical detail surface the table's rows open — see
 below, not a second one). Header count: total open signals — the same
 number Readout 1 shows, which is fine (`SectionHead`'s own convention
 already restates a count in its header; the rule against repetition is
-about the stage's per-category numbers, not a section title). Empty: "All
-clear. No open signals." (branch A verbatim).
+about the stage's per-category numbers, not a section title). Empty: the
+same two cases as the stage's own zero-categories branch above, each with
+its own line rather than one shared "empty" copy —
+**`groups.length === 0`** (branch A): "All clear. No open signals."
+(verbatim). **`groups.length > 0` but every signal is `kind ===
+'team_synthesis'`** (branch D, the same case Column 2's own empty copy below
+already names): "No player-level signals. {teamSynthesisCount} team-level
+{signal|signals} below" (`teamSynthesisCount =
+groups.flatMap(g => g.signals).filter(s => s.kind === 'team_synthesis').length`),
+linked to `#signals-table`.
 
 **Column 2 — Players (3/12)**, id `ledger-players`. Rows:
 `groups.filter(g => g.playerId !== null)`, already attention-ordered
@@ -268,11 +343,19 @@ or the stage carry. Row link: `?view=players&player={id}&playersTab=areas`
 (the exact `navigate` call the current Prescribe action already makes,
 `TriageDesk.tsx:424`). Header count: `activeFocusAreaCount`
 (`TriageDesk.tsx:313-315`, the value the retired Spine's ledger row showed
-as "Focus areas active"). Empty: "No active focus areas."
+as "Focus areas active"). Empty: "No active focus areas." Failure
+(`playersDrillProps.loadError` non-null — `page.tsx:305`'s
+`playersError || focusAreasError`, a read wholly independent of
+`getSignalGroups`/`groupsError`): its own `InlineNotice` ("Couldn't load
+focus areas. Try again.") replaces the column's rows in place of the empty
+copy above — this column can fail while the stage and Columns 1-2 load
+fine, and vice versa, so it needs its own honest state rather than
+inheriting theirs. See Risks.
 
 ## The table
 
-"Signals" — dense, full-width `<table>`, id `signals-table`, uppercase
+"Signals" (when `groupsError` is null — see Risks, "an honest failure
+state") — dense, full-width `<table>`, id `signals-table`, uppercase
 caption header over a `border-strong` rule, hairline rows, matching
 `RoundsLedgerTable`'s construction (`coach-home-parts.tsx:243-289`). Mono
 numerals right-aligned; the strokes column colors amber when a value is
@@ -410,6 +493,79 @@ by this spec):
 
 ## Risks
 
+- **An honest failure state, scoped to exactly what `getSignalGroups`
+  feeds — not the whole page.** `getSignalGroups` failing (`page.tsx`'s
+  `signalGroupsResult.success ? signalGroupsResult.groups : []`) forces
+  `groups` to `[]` and sets `groupsError` to a non-null string — the exact
+  same shape a genuinely empty, all-clear queue has. Every empty-state
+  branch keyed on `groups`/`groups.length` (masthead Verdict branch A, the
+  stage's "Zero categories," Column 1 and Column 2's own empty copy, the
+  table) cannot tell "zero" from "unknown," so none is safe to reach while
+  `groupsError` is set. `groupsError` therefore gates exactly the parts that
+  read `groups`: the masthead verdict (falls back to branch E), the
+  `RailBars` instrument and its legend inside the stage, Ledger Columns 1
+  and 2, and the Signals table. One `InlineNotice` (tone `danger`, title
+  "Couldn't load signals," a Try again button calling `router.refresh()`)
+  replaces the rail + legend and spans below it in place of Columns 1-2 and
+  the table, the exact treatment `TriageDesk.tsx:580-592` already gives this
+  same condition today (there, in place of the `ResizableWorkspace`). Two
+  parts of the page are deliberately left alone by this notice because
+  neither reads `getSignalGroups`, and blanking them too would hide real,
+  successfully-loaded data — the mirror-image mistake this fix exists to
+  prevent: **Column 3** (Focus areas — `playersDrillProps`/`focusAreasError`,
+  see the next Risk bullet for its own, separate failure state) and
+  **Readout 3** (Outcomes awaiting — `effectivenessDrillProps`/
+  `getInsightEffectiveness`, see Readouts above). Readout 4 (Last scan)
+  keeps rendering too: `getSignalGroups`'s own failure path already returns
+  `scannedAt: null` explicitly, so "No scans yet" during a load failure is
+  still an honest read of that real null, not a fabrication. This mirrors
+  two precedents already shipped in the reference implementation —
+  `FairwayCoachDashboard`'s own `teamStatsUnavailable` stage branch
+  (`FairwayCoachDashboard.tsx:398-401`) and its `AttentionLedger`'s
+  `unavailable` branch (`coach-home-parts.tsx:171-174`) — both of which
+  treat a read failure as materially different from zero real rows, never
+  as an empty state, and both scoped to only the region whose own read
+  failed.
+- **Focus areas needs its own failure state, independent of `groupsError`.**
+  `page.tsx:305` already computes `playersLoadError` (`playersError ||
+  focusAreasError`) and passes it through as `playersDrillProps.loadError` —
+  a real field, already wired, that nothing in today's ledger reads. Column
+  3 above adds the missing branch: `playersDrillProps.loadError` non-null
+  shows its own `InlineNotice` ("Couldn't load focus areas. Try again.")
+  in place of the column's rows, distinct from its "No active focus areas."
+  empty copy. Without this, a failed focus-area read would render
+  identically to a coach who has genuinely prescribed nothing — the same
+  failure-as-empty-state bug the bullet above fixes for signals, left open
+  here otherwise.
+- **`RailBars` needs a per-row link.** No existing `RailBarRow` field or
+  `RailBars` render path makes a row clickable (`modules/types.ts:131-151`,
+  `RailBars.tsx:29-80`) — every current call site renders it read-only;
+  `PlayerHomeBento.tsx:35-36`'s own docstring lists `RailBars` among the
+  primitives it reuses specifically because "none render a `<button>`."
+  This spec depends on a small, additive fix parallel to the `tone` prop
+  below: an optional `href?: string` on `RailBarRow`, and `RailBars.tsx`
+  wrapping the row in a `Link` when it's present (falling back to today's
+  plain `<m.div>` when it's not, so every existing read-only call site —
+  `PlayerHomeBento`, `TeamStatsBoard`, the stats drills — is unaffected).
+  Flagged here rather than silently assuming the row already navigates.
+- **`SeverityChip` needs its own tone fix.** Reused verbatim in the ledger's
+  Queue column and the table's Severity column (`SignalRow.tsx:30-37`), it
+  still resolves `urgent`/`high` to Badge's `danger` tone
+  (`SignalRow.tsx:31`) — the same red the stage's own Legend deliberately
+  avoids (see The stage). `SeverityChip` is used nowhere outside this
+  route's own Triage feature (`SignalQueue.tsx`, `SignalRow.tsx`,
+  `SignalDossier.tsx` — all three inside this spec's own scope), so the fix
+  is small and local: change `SignalRow.tsx:31`'s ternary from `'danger'`
+  to `'warning'` for `urgent`/`high`. Severity stays legible by its text
+  label ("Urgent"/"High"/"Medium"/"Low"); only the swatch color changes.
+  This is an intended consequence, not a side effect to catch in review:
+  `urgent`, `high`, and `medium` now all resolve to the same `warning`
+  tone, so the chip's color alone no longer separates those three — only
+  the text label does; `low` remains the one visually distinct (neutral)
+  swatch. That is what the two-hue rule requires once a third color is off
+  the table: a four-grade severity chip cannot be carried by two hues, so
+  the finer grades move to text, the same tradeoff the stage's own Legend
+  makes one section up.
 - **`strokeImpact` sign risk (load-bearing)**. `evidence.strokes_impact` is
   documented as "Magnitude only — sign just indicates direction"
   (`src/lib/coachhelm/v3/ranking/score.ts:76-77`), and the codebase's own
