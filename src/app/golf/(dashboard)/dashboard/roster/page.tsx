@@ -63,6 +63,15 @@ interface PlayerWithStats {
   active_focus_areas?: number;
   /** Count of active v3 goals (golf_goals, state='active'). */
   active_goals?: number;
+  /**
+   * Last-10 rounds, 18-hole normalized, oldest→newest — feeds the roster
+   * MatrixBoard's trend Sparkline. Derived below from the SAME
+   * `roundsByPlayer`/`mostRecentFirst` data already fetched for
+   * `recent_trend` — no new query. Normalization matches
+   * stats/team/page.tsx's `recent_scores` exactly
+   * (`Math.round(total_score * (18 / holes_played))`).
+   */
+  recent_scores?: number[];
 }
 
 // `formatHandicap` was removed in the 2026-05-28 IA trim — the roster card
@@ -545,6 +554,16 @@ export default async function GolfRosterPage() {
     );
     const trendResult = computeScoringTrendFromRounds(mostRecentFirst);
 
+    // Roster MatrixBoard trend Sparkline — last 10 rounds, 18-hole
+    // normalized, oldest→newest (the query already filters
+    // `total_score is not null`; the extra guard here is just type safety).
+    // Same normalization as stats/team/page.tsx's `recent_scores`.
+    const recentScores = mostRecentFirst
+      .filter((r) => r.total_score !== null)
+      .slice(0, 10)
+      .map((r) => Math.round((r.total_score as number) * (18 / (r.holes_played ?? 18))))
+      .reverse();
+
     return {
       ...player,
       rounds_count: roundsCount,
@@ -555,6 +574,7 @@ export default async function GolfRosterPage() {
       standing_tier: standingTierByPlayer[player.id] ?? null,
       active_focus_areas: activeFocusAreasByPlayer[player.id] ?? 0,
       active_goals: goalsByPlayerMap.get(player.id)?.length ?? 0,
+      recent_scores: recentScores,
     };
   });
 

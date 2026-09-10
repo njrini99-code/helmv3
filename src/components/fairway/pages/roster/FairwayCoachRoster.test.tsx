@@ -97,18 +97,19 @@ describe('FairwayCoachRoster — roster-health header band', () => {
   });
 
   /**
-   * GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1 (HIGH) — at 810×1080 tablet
-   * portrait and 844×390 mobile landscape, `md:grid-cols-2` (768px) put the
-   * player grid into 2 columns while the app shell's sidebar still left only
-   * a ~550px content column, so each card was ~265px: too narrow for a name
-   * + year badge + hometown + the SG:Total/Focus/Goals row, and "Cole
-   * Bennett" rendered as "C...". The grid now steps to 2-up at `lg` (1024px)
-   * instead, so tablet/mobile-landscape widths get a full single column.
+   * Facelift (docs/design/fairway-facelift/screens/roster.md) replaced the
+   * per-player card gallery with a MatrixBoard — one row per player, not a
+   * responsive card grid. The `lg:grid-cols-2` / `md:grid-cols-2` assertion
+   * this test used to make (GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1)
+   * guarded a card-grid-too-narrow defect that no longer exists now that the
+   * card gallery is gone; MatrixBoard owns its own internal breakpoint
+   * (940px, in MatrixBoard.tsx) instead. Replaced below by
+   * "renders one row per player" and the attention-filter test.
    */
-  it('sizes the player grid at lg (1024px), not md (768px), so tablet/mobile-landscape width is not squeezed into 2 narrow columns', () => {
-    const { container } = render(
+  it('renders one MatrixBoard row per player', () => {
+    render(
       <FairwayCoachRoster
-        players={[makePlayer()]}
+        players={[makePlayer({ id: 'p1', first_name: 'Jordan', last_name: 'Lee' }), makePlayer({ id: 'p2', first_name: 'Casey', last_name: 'Kim', recent_trend: 'improving' })]}
         teamName="Helm Golf"
         inviteCode="ABC123"
         intents={{}}
@@ -116,8 +117,43 @@ describe('FairwayCoachRoster — roster-health header band', () => {
         focusAreas={[]}
       />,
     );
-    expect(container.innerHTML).toMatch(/\blg:grid-cols-2\b/);
-    expect(container.innerHTML).not.toMatch(/\bmd:grid-cols-2\b/);
+    // Each MatrixBoard row is an expandable button carrying the player's row aria-label.
+    expect(screen.getByRole('button', { name: /Jordan Lee, expandable row/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Casey Kim, expandable row/ })).toBeInTheDocument();
+  });
+
+  it('filters the board to only the flagged players when the "Needs attention" control is used', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    const flagged = makePlayer({ id: 'p1', first_name: 'Jordan', last_name: 'Lee', recent_trend: 'declining' });
+    const onTrack = makePlayer({
+      id: 'p2',
+      first_name: 'Casey',
+      last_name: 'Kim',
+      recent_trend: 'improving',
+      active_focus_areas: 1,
+    });
+    const focusAreas: PlayersGridFocusArea[] = [
+      { id: 'fa1', area_type: 'general', title: null, player_id: 'p2', status: 'active' },
+    ];
+    render(
+      <FairwayCoachRoster
+        players={[flagged, onTrack]}
+        teamName="Helm Golf"
+        inviteCode="ABC123"
+        intents={{}}
+        joinRequests={[]}
+        focusAreas={focusAreas}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Jordan Lee, expandable row/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Casey Kim, expandable row/ })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Needs attention/ }));
+
+    expect(screen.getByRole('button', { name: /Jordan Lee, expandable row/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Casey Kim, expandable row/ })).toBeNull();
   });
 
   it('reflects a covered, non-flagged roster as the honest "covered" state', () => {

@@ -48,17 +48,29 @@ export interface RosterPlayer {
   active_focus_areas?: number;
   /** Active v3 goals count. */
   active_goals?: number;
+  /**
+   * Last-10 rounds, 18-hole normalized, oldest→newest — for the roster
+   * MatrixBoard's trend Sparkline (FairwayCoachRoster.tsx). Derived in
+   * roster/page.tsx from the SAME `roundsByPlayer` data already fetched for
+   * `recent_trend`, via the identical `Math.round(score * (18/holes))`
+   * normalization stats/team/page.tsx uses — no new query. Additive/optional
+   * so this card's own render is unaffected.
+   */
+  recent_scores?: number[];
 }
 
 /** SG:Total deadzone — |value| at or below this reads as neutral (matches
  *  the "roughly even" honesty band the rest of the SG rendering uses). */
 const SG_TONE_DEADZONE = 0.15;
 
-function formatSgTotal(value: number): string {
+// Exported (in addition to this card's own use) so FairwayCoachRoster's
+// MatrixBoard "SG:Total" column formats/tones the SAME number the same way —
+// one source of truth for this specific formatting, not a second copy.
+export function formatSgTotal(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
 
-function sgTone(value: number): string {
+export function sgTone(value: number): string {
   if (value > SG_TONE_DEADZONE) return 'text-fw-success-ink';
   if (value < -SG_TONE_DEADZONE) return 'text-fw-warning-ink';
   return 'text-text-primary';

@@ -1,29 +1,70 @@
 'use client';
 
-/** Fairway · Roster · FairwayCoachRoster (C2/C3/C4/C5/C9/C10) — coach roster shell. */
+/**
+ * ============================================================================
+ * Fairway · Roster · FairwayCoachRoster (C2/C3/C4/C5/C9/C10) — coach roster
+ * board (facelift — docs/design/fairway-facelift/screens/roster.md)
+ * ----------------------------------------------------------------------------
+ * Replaces the eight-card player gallery + two health cards + loose
+ * search/sort/export row with ONE instrument: a header Surface (StatMatrix +
+ * a "who needs your attention" seam list), a Toolbar, and a MatrixBoard with
+ * one row per player. A row expands an inline detail band (goals, intent,
+ * message via the actions menu, "Open profile") in place — no navigation for
+ * a coach's daily scan, no per-card "View player" button.
+ *
+ * `computeRosterHealth`/`computeNeedsAttention` (RosterHealthHeader.tsx) are
+ * reused VERBATIM — this file composes NEW header JSX from their data, but
+ * never re-derives the coverage/priority math itself, and never edits or
+ * re-renders `RosterHealthHeader`'s own JSX (still used unmodified by
+ * CoachHelm elsewhere).
+ *
+ * Deviations from the literal screen spec (reported to team-lead, see PR/task
+ * notes): the per-row overflow menu and the desktop/phone drill surface are
+ * both constrained by MatrixBoard.tsx, which this file may not edit — see the
+ * comments at COLUMNS and RowDetail below.
+ * ========================================================================== */
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Download } from 'lucide-react';
 
-import { Segmented } from '@/components/fairway/controls/segmented';
-import { Button } from '@/components/fairway/controls/button';
+import { cn, pluralize } from '@/lib/utils';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { Chip } from '@/components/fairway/controls/badge';
+import { FilterPill } from '@/components/fairway/controls/filter-pill';
 import { SearchField } from '@/components/fairway/command/search-field';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
+import { Surface } from '@/components/fairway/surfaces/surface';
+import { Toolbar } from '@/components/fairway/controls/Toolbar';
+import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
+import { StatMatrix } from '@/components/fairway/modules/StatMatrix';
+import { SignalChip } from '@/components/fairway/modules/SignalChip';
+import { MatrixBoard } from '@/components/fairway/modules/MatrixBoard';
+import type { MatrixColumn, MatrixBoardRow, SignalTone } from '@/components/fairway/modules/types';
+import { Sparkline } from '@/components/fairway/charts/Sparkline';
+import { TrendGlyph } from '@/components/fairway/charts/TrendChip';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
+import type { TrendVerdict } from '@/lib/coachhelm/trend';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import { exportRosterCSV } from '@/components/golf/roster/RosterToolbar';
 import type { PlayersGridFocusArea, PlayersGridStats, RosterRow } from '@/components/fairway/pages/coachhelm/PlayersGridView';
-import {
-  RosterHealthHeader,
-  computeRosterHealth,
-  computeNeedsAttention,
-} from '@/components/fairway/pages/coachhelm/RosterHealthHeader';
-import { FairwayPlayerCard, type RosterPlayer } from './FairwayPlayerCard';
+import { computeRosterHealth, computeNeedsAttention } from '@/components/fairway/pages/coachhelm/RosterHealthHeader';
+// FairwayPlayerCard.tsx is no longer RENDERED on this page (roster.md: "stop
+// using it here") — the component itself still ships (other importers keep
+// working; see FairwayPlayerCard.test.tsx / sentry-replay-privacy.test.ts).
+// Only its `RosterPlayer` type and its two pure SG:Total helpers are reused
+// here, so the board's SG:Total column formats/tones the SAME number the
+// same way instead of forking that math.
+import type { RosterPlayer } from './FairwayPlayerCard';
+import { formatSgTotal, sgTone } from './FairwayPlayerCard';
 import { FairwayInvitePlayerButton } from './FairwayInvitePlayerButton';
 import { FairwayJoinRequests } from './FairwayJoinRequests';
+import { FairwayYearBadge } from './FairwayYearBadge';
+import { FairwayIntentControl } from './FairwayIntentControl';
+import { FairwayPlayerActionsMenu } from './FairwayPlayerActionsMenu';
+import { isUserOnline } from './roster-helpers';
 
 export interface FairwayCoachRosterProps {
   players: RosterPlayer[];
@@ -33,9 +74,8 @@ export interface FairwayCoachRosterProps {
   joinRequests: JoinRequestData[];
   /**
    * Minimal PlayersGridFocusArea-shaped rows (status + outcome_status) for
-   * the ported "Who needs your attention" roster-health header — id/
-   * area_type/title are honest placeholders unused by that instrument's
-   * coverage/outcome math. See roster/page.tsx.
+   * the roster-health header — id/area_type/title are honest placeholders
+   * unused by that math. See roster/page.tsx.
    */
   focusAreas: PlayersGridFocusArea[];
 }
@@ -48,10 +88,70 @@ const SORT_OPTIONS = [
   { value: 'rounds', label: 'Rounds' },
 ] as const;
 
+/** Up to this many "needs a look" rows show as seams in the header; the rest
+ *  collapse into a "+N more" control that filters the board instead. */
+const ATTENTION_ROWS_CAP = 3;
+
+/** The Sparkline/TrendGlyph trend cell needs at least this many normalized
+ *  rounds before it draws a real line/verdict — STRICTER than Sparkline's own
+ *  built-in <2-point honesty gate, per the roster board spec (an honest
+ *  em-dash for a 2- or 3-round sample is still misleadingly confident here). */
+const TREND_MIN_POINTS = 4;
+
+function playerName(p: Pick<RosterPlayer, 'first_name' | 'last_name'>): string {
+  return `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
+}
+
+/**
+ * Row signal — trending down / no intent set / on track. Presentation-only
+ * derivation for the MatrixBoard's Signal column; distinct from (and doesn't
+ * fork) the roster-health "needs attention" priority math above, which
+ * drives the header list, not this per-row chip.
+ */
+function deriveSignal(
+  trend: TrendVerdict | null | undefined,
+  hasIntent: boolean,
+): { tone: SignalTone; full: string; compact: string } {
+  if (trend === 'declining') return { tone: 'watch', full: 'Trending down', compact: 'Down' };
+  if (!hasIntent) return { tone: 'watch', full: 'No intent', compact: 'No plan' };
+  return { tone: 'quiet', full: 'On track', compact: 'OK' };
+}
+
+/*
+ * ── MatrixBoard column keys — a deliberate deviation, reported to team-lead ──
+ * MatrixBoard.tsx (not editable here) hides columns keyed literally 'scor' /
+ * 'composite' / 'trend' / 'signal' below its 940px breakpoint (HIDE_ON_MOBILE)
+ * and gives ONLY the literal 'trend' / 'signal' keys a wider custom track.
+ * The spec wants SG:Total + Focus HIDDEN on phone (so 'scor'/'composite' are
+ * reused verbatim for those two columns to get that behavior) but Trend +
+ * Signal VISIBLE on phone (the opposite of what the literal 'trend'/'signal'
+ * keys would do) — so those two columns use non-matching keys ('trendline',
+ * 'sig') and fall back to the default track width instead of the wider
+ * custom one. No visible column key ever renders as text, so this is a pure
+ * wiring detail, not a user-facing change.
+ */
+const COLUMNS: MatrixColumn[] = [
+  { key: 'player', label: 'Player' },
+  { key: 'avg', label: 'Avg', align: 'center' },
+  { key: 'trendline', label: 'Trend', align: 'center' },
+  { key: 'scor', label: 'SG:Total', align: 'center' },
+  { key: 'composite', label: 'Focus' },
+  { key: 'sig', label: 'Signal' },
+];
+
 export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joinRequests, focusAreas }: FairwayCoachRosterProps) {
   const router = useRouter();
   const [sort, setSort] = React.useState<SortField>('name');
   const [query, setQuery] = React.useState('');
+  const [attentionFilter, setAttentionFilter] = React.useState(false);
+
+  // Presence dots read `Date.now()` (roster-helpers.ts `isUserOnline`) —
+  // deferring that read to after mount (instead of during the SSR render
+  // MatrixBoard now runs once per row) avoids a server/client online-status
+  // hydration mismatch, mirroring FairwayJoinRequests' own
+  // `formatDate(dateStr, now)` client-only-clock pattern in this directory.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   // P253 — name search/filter. A roster is a list surface, so a coach overseeing
   // a large dev squad needs a way to find a player beyond scrolling (Nielsen
@@ -59,9 +159,7 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return players;
-    return players.filter((p) =>
-      `${p.first_name ?? ''} ${p.last_name ?? ''}`.toLowerCase().includes(q),
-    );
+    return players.filter((p) => playerName(p).toLowerCase().includes(q));
   }, [players, query]);
 
   const sorted = React.useMemo(() => {
@@ -84,13 +182,10 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
   const activeCount = players.filter((p) => p.status === 'active' || p.status === null).length;
   const empty = players.length === 0;
 
-  // ── "Who needs your attention" roster-health header (Wave 2 port from
-  // PlayersGridView) — built from the SAME `players`/`focusAreas` props
-  // already on the page, via the extracted pure computations so the Roster
-  // list and the Players sub-tab can never disagree on what "needs a look"
-  // means. `PlayersGridStats`/`RosterRow` are the same shapes
-  // RosterHealthHeader already expects — RosterPlayer already carries every
-  // field PlayersGridPlayer requires, so no remapping is needed there. ─────
+  // ── "Who needs your attention" header data — SAME pure computations
+  // RosterHealthHeader.tsx exports (do not fork this math). RosterPlayer
+  // already carries every field PlayersGridPlayer requires, so no remapping
+  // is needed. ────────────────────────────────────────────────────────────
   const playerStatsForHealth = React.useMemo(() => {
     const rec: Record<string, PlayersGridStats> = {};
     for (const p of players) {
@@ -126,11 +221,110 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
     () => computeNeedsAttention(rosterRowsForHealth),
     [rosterRowsForHealth],
   );
+  const attentionIds = React.useMemo(
+    () => new Set(needsAttention.map((n) => n.row.player.id)),
+    [needsAttention],
+  );
+
+  const board = React.useMemo(
+    () => (attentionFilter ? sorted.filter((p) => attentionIds.has(p.id)) : sorted),
+    [sorted, attentionFilter, attentionIds],
+  );
+
+  const handleAddFocusArea = React.useCallback(
+    (playerId?: string) => {
+      router.push(`/golf/dashboard/intelligence?view=players${playerId ? `&player=${playerId}` : ''}&playersTab=areas`);
+    },
+    [router],
+  );
+
+  const handleExport = React.useCallback(() => {
+    exportRosterCSV(sorted as unknown as Parameters<typeof exportRosterCSV>[0]);
+  }, [sorted]);
+
+  const rows: MatrixBoardRow[] = React.useMemo(
+    () =>
+      board.map((p) => {
+        const name = playerName(p);
+        const scores = p.recent_scores ?? [];
+        const hasTrendSignal = scores.length >= TREND_MIN_POINTS;
+        const hasScore = Boolean(p.avg_score && p.avg_score > 0);
+        const online = mounted ? isUserOnline(p.last_seen) : undefined;
+        const signal = deriveSignal(p.recent_trend, Boolean(intents[p.id]));
+
+        return {
+          id: p.id,
+          ariaLabel: `${name}, expandable row`,
+          cells: [
+            <div key="player" data-sentry-mask="" className="min-w-0">
+              <PlayerIdentity
+                name={name}
+                avatarUrl={p.avatar_url}
+                size="sm"
+                status={online === undefined ? undefined : online ? 'online' : 'offline'}
+                nameAddon={<FairwayYearBadge year={p.graduation_year} />}
+                meta={pluralize(p.rounds_count ?? 0, 'round')}
+              />
+            </div>,
+            <span
+              key="avg"
+              className={cn(
+                'font-fw-mono text-body-sm tabular-nums',
+                hasScore ? 'text-text-primary' : 'text-text-tertiary',
+              )}
+            >
+              {hasScore ? (p.avg_score ?? 0).toFixed(1) : '—'}
+            </span>,
+            <div key="trendline">
+              <span className="hidden min-[940px]:inline-flex">
+                {hasTrendSignal ? (
+                  <Sparkline data={scores} goodDirection="down" label={`${name} scoring trend`} />
+                ) : (
+                  <span className="font-fw-mono text-body-sm text-text-tertiary">—</span>
+                )}
+              </span>
+              <span className="min-[940px]:hidden">
+                {hasTrendSignal && p.recent_trend ? (
+                  <TrendGlyph direction={p.recent_trend} className="text-caption" />
+                ) : (
+                  <span className="font-fw-mono text-body-sm text-text-tertiary">—</span>
+                )}
+              </span>
+            </div>,
+            <span
+              key="scor"
+              className={cn(
+                'font-fw-mono text-body-sm font-semibold tabular-nums',
+                p.sg_total != null ? sgTone(p.sg_total) : 'text-text-tertiary',
+              )}
+            >
+              {p.sg_total != null ? formatSgTotal(p.sg_total) : '—'}
+            </span>,
+            <span key="composite" className="font-fw-mono text-body-sm tabular-nums text-text-primary">
+              {p.active_focus_areas ? p.active_focus_areas : '—'}
+            </span>,
+            <SignalChip key="sig" tone={signal.tone}>
+              <span className="hidden min-[940px]:inline">{signal.full}</span>
+              <span className="min-[940px]:hidden">{signal.compact}</span>
+            </SignalChip>,
+          ],
+          expand: (
+            <RowDetail
+              player={p}
+              name={name}
+              intent={intents[p.id] ?? null}
+              onIntentSaved={() => router.refresh()}
+            />
+          ),
+        };
+      }),
+    [board, mounted, intents, router],
+  );
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
-      {/* Masthead — the one canonical ViewHeader primitive (eyebrow + title +
-          description + primary CTA), pixel-identical to every other feature page. */}
+      {/* Masthead — the one canonical ViewHeader primitive. Invite stays the
+          ONE primary action on this screen (brief §12). */}
       <ViewHeader
         className="mb-6"
         eyebrow="Roster"
@@ -143,7 +337,7 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
         primaryAction={<FairwayInvitePlayerButton teamName={teamName} joinCode={inviteCode} />}
       />
 
-      {/* Join requests */}
+      {/* Join requests — a quiet row above the board, only when > 0. */}
       <FairwayJoinRequests requests={joinRequests} />
 
       {empty ? (
@@ -163,93 +357,282 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
         />
       ) : (
         <>
-          {/* "Who needs your attention" roster-health header band (Wave 2 —
-              ported from PlayersGridView, formerly orphaned behind the
-              hidden ?view=players route). "Add focus area" from a needs-
-              attention row has no in-page modal here, so it hands off to the
-              canonical prescribe flow scoped to that player. */}
-          <div className="mb-6">
-            <RosterHealthHeader
-              health={rosterHealth}
-              needs={needsAttention}
-              onAdd={(playerId) =>
-                router.push(
-                  `/golf/dashboard/intelligence?view=players${playerId ? `&player=${playerId}` : ''}&playersTab=areas`,
-                )
-              }
-            />
-          </div>
+          {/* Header Surface — StatMatrix (Players · Active focus · Completed ·
+              With recent rounds) left, "who needs your attention" seam rows
+              right. Replaces the old two health cards + 4-number block
+              (roster.md CONTAINERS TO REMOVE #2). The "Did the coaching
+              land?" outcome-mix band is intentionally NOT ported here — it's
+              dropped from this page per that same spec item; it still lives
+              on CoachHelm via RosterHealthHeader, unmodified. */}
+          <Surface elevation="border" padding="none" className="mb-6 overflow-hidden">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+              <div className="p-5 md:p-6">
+                <StatMatrix
+                  label="Roster"
+                  variant="plain"
+                  columns={4}
+                  items={[
+                    { label: 'Players', value: rosterHealth.totalPlayers },
+                    { label: 'Active focus', value: rosterHealth.activeAreas },
+                    { label: 'Completed', value: rosterHealth.completedAreas },
+                    { label: 'With recent rounds', value: rosterHealth.playersWithRounds },
+                  ]}
+                />
+              </div>
+              <AttentionPanel
+                health={rosterHealth}
+                needs={needsAttention}
+                onAdd={handleAddFocusArea}
+                onShowMore={() => setAttentionFilter(true)}
+              />
+            </div>
+          </Surface>
 
-          {/* Search (P253) — find a player by name without scrolling. */}
-          <div className="mb-3 mt-2 max-w-md">
-            <SearchField
-              size="sm"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onClear={() => setQuery('')}
-              placeholder="Search players by name"
-              aria-label="Search players"
-            />
-          </div>
-
-          {/* Toolbar */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            {/* P249 — the Segmented pill is a fixed inline-flex strip that can
-                exceed a ~360px viewport with four labels. Wrap it in a
-                horizontally scrollable rail (negative-margin gutter so the scroll
-                area reaches the page edge) so all four sort options stay
-                reachable without forcing horizontal scroll on the whole page. */}
-            <div className="-mx-4 max-w-full overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <Segmented<SortField>
+          {/* Toolbar — search · sort · "Needs attention" filter · export.
+              NOT `sticky`: Toolbar's `stickyTop` is a plain number, so it
+              can't carry the shared `--golf-mobile-header-offset` calc()
+              (which bakes in `env(safe-area-inset-top)`) that every other
+              sticky-under-the-top-bar strip in this app pins to — see
+              FairwayRoundsLibrary.tsx's seam headers, which thread that var
+              by hand for the same reason instead of using this prop. A bare
+              `sticky` here would pin at viewport top:0, directly underneath
+              FairwayTopBar's own `sticky top-0` 4rem-tall bar, and disappear
+              behind it on scroll. roster.md's sticky note is a parenthetical,
+              not one of the numbered build steps, so matte-always is the
+              correct, safe reading here. */}
+          <Toolbar
+            className="mb-4"
+            aria-label="Roster filters and actions"
+            search={
+              <SearchField
                 size="sm"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onClear={() => setQuery('')}
+                placeholder="Search players by name"
+                aria-label="Search players"
+              />
+            }
+            viewToggle={
+              <Toolbar.ViewToggle<SortField>
                 aria-label="Sort players"
                 value={sort}
                 onValueChange={setSort}
                 options={SORT_OPTIONS as unknown as { value: SortField; label: string }[]}
               />
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<Download className="h-4 w-4" />}
-              onClick={() => exportRosterCSV(sorted as unknown as Parameters<typeof exportRosterCSV>[0])}
-            >
-              Export
-            </Button>
-          </div>
+            }
+            filters={
+              <FilterPill
+                selected={attentionFilter}
+                count={needsAttention.length > 0 ? needsAttention.length : undefined}
+                onClick={() => setAttentionFilter((v) => !v)}
+              >
+                Needs attention
+              </FilterPill>
+            }
+            primaryAction={
+              <IconButton
+                variant="secondary"
+                size="md"
+                aria-label="Export roster as CSV"
+                onClick={handleExport}
+                disabled={sorted.length === 0}
+              >
+                <Download className="h-4 w-4" aria-hidden />
+              </IconButton>
+            }
+          />
 
-          {/* Grid */}
-          {sorted.length === 0 ? (
+          {/* Board */}
+          {board.length === 0 ? (
             <EmptyState
               variant="search"
-              title="No players match your search"
-              description={`No players on ${teamName} match “${query.trim()}”.`}
+              title={attentionFilter && !query.trim() ? 'Nobody needs a look right now' : 'No players match your search'}
+              description={
+                attentionFilter && !query.trim()
+                  ? 'Every player either has a focus area or is trending fine.'
+                  : `No players on ${teamName} match “${query.trim()}”.`
+              }
               action={
-                <Button variant="secondary" size="sm" onClick={() => setQuery('')}>
-                  Clear search
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setQuery('');
+                    setAttentionFilter(false);
+                  }}
+                >
+                  Clear filters
                 </Button>
               }
             />
           ) : (
-            /* GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1 (HIGH) — at the
-               md breakpoint (768px) the app shell's sidebar leaves only a
-               ~550px content column, so a 2-col grid gave each card ~265px:
-               too narrow for a name + year badge + hometown + a 3-up
-               SG:Total/Focus/Goals row, so "Cole Bennett" rendered as
-               "C..." (measured at 810×1080 and again at 844×390 landscape,
-               where the same md:grid-cols-2 was still active). Stepping the
-               breakpoint to lg (1024px) keeps 2-up for genuinely wide
-               viewports and gives tablet/mobile-landscape a full-width
-               single column instead. FairwayPlayerCard's name and mini-stat
-               row were also made wrap-safe so this isn't the only guard. */
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
-              {sorted.map((p) => (
-                <FairwayPlayerCard key={p.id} player={p} intent={intents[p.id] ?? null} />
-              ))}
-            </div>
+            <MatrixBoard kpis={[]} columns={COLUMNS} rows={rows} />
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * AttentionPanel — the header Surface's right half. Honest copy branches
+ * (no roster / no rounds / genuinely covered) are ported VERBATIM from
+ * RosterHealthHeader.tsx so this page can't reintroduce the two production
+ * incidents that copy's comments document (a vacuously-true all-clear on a
+ * zero-round roster; every real player flagged on a program with no focus
+ * areas yet). Only the presentation differs (seam rows in a Surface half
+ * instead of an InstrumentCluster panel).
+ * ------------------------------------------------------------------------- */
+function AttentionPanel({
+  health,
+  needs,
+  onAdd,
+  onShowMore,
+}: {
+  health: ReturnType<typeof computeRosterHealth>;
+  needs: ReturnType<typeof computeNeedsAttention>;
+  onAdd: (playerId?: string) => void;
+  onShowMore: () => void;
+}) {
+  const { totalPlayers, playersWithActive, activeAreas, completedAreas, playersWithRounds } = health;
+  const areasPrescribed = activeAreas + completedAreas;
+  const noAreasYet = areasPrescribed === 0;
+  const coveredText =
+    totalPlayers > 0
+      ? `${playersWithActive} of ${totalPlayers} player${totalPlayers === 1 ? '' : 's'} have an active focus area`
+      : 'No players on the roster yet';
+  const shown = needs.slice(0, ATTENTION_ROWS_CAP);
+  const remaining = needs.length - shown.length;
+
+  return (
+    <div className="border-t border-border-subtle p-5 lg:border-l lg:border-t-0 md:p-6">
+      <h3 className="mb-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+        Who needs your attention
+      </h3>
+
+      {needs.length > 0 ? (
+        <>
+          <div className="mb-3 flex flex-wrap items-end gap-x-3 gap-y-1">
+            <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
+              {needs.length}
+            </span>
+            <span className="mb-1 font-fw-sans text-body-sm text-text-secondary">
+              {noAreasYet
+                ? `ready for a focus area — none set on this roster yet.`
+                : `to look at — trending down or without a focus area.`}
+            </span>
+          </div>
+          <ul className="flex flex-col">
+            {shown.map(({ row, reason }) => (
+              <li key={row.player.id} className="border-t border-border-subtle py-2.5 first:border-t-0">
+                <div data-sentry-mask="">
+                  <PlayerIdentity
+                    name={playerName(row.player)}
+                    avatarUrl={row.player.avatar_url}
+                    size="sm"
+                    meta={<span className="font-fw-sans text-caption font-medium text-fw-warning-ink">{reason}</span>}
+                    trailing={
+                      <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
+                        Add focus area
+                      </Button>
+                    }
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+          {remaining > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onShowMore}
+              className="mt-1 h-auto justify-start px-0 py-0 font-fw-sans text-caption font-medium text-accent-700 hover:underline"
+            >
+              +{remaining} more player{remaining === 1 ? '' : 's'} — filter the board
+            </Button>
+          ) : null}
+          <p className="mt-3 font-fw-sans text-caption text-text-tertiary">{coveredText}.</p>
+        </>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
+            {totalPlayers > 0 && playersWithRounds > 0 ? '0' : '—'}
+          </span>
+          <span className="font-fw-sans text-body-sm text-text-secondary">
+            {totalPlayers === 0
+              ? 'Awaiting roster — add players to start tracking who needs attention.'
+              : playersWithRounds === 0
+                ? 'Nothing to assess yet — attention flags appear once players start logging rounds.'
+                : 'Roster’s covered — everyone with rounds has a focus area and no one’s trending down.'}
+          </span>
+          <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * RowDetail — the board row's expand content.
+ *
+ * Two deviations from the literal spec, both forced by MatrixBoard.tsx (not
+ * editable here) and reported to team-lead:
+ *
+ *  1. Not wrapped in <DrillPanel>: that component's `onBack`/`backLabel`
+ *     imply a real close affordance, but MatrixRow keeps its `open` state
+ *     fully internal with no exposed close callback — a DrillPanel back-chip
+ *     here would be a non-functional, dishonest affordance. Plain JSX
+ *     instead, following TeamStatsBoard's `ExpandBand` precedent (the only
+ *     other real MatrixBoard consumer in the codebase).
+ *  2. One expand body at every width, not a desktop inline band + a phone
+ *     Sheet: MatrixRow's row button has exactly one onClick (its own
+ *     open/close toggle) with no `onRowActivate`/controlled-open hook to
+ *     drive a separate Sheet, and no per-row slot outside the row button to
+ *     mount a second trigger safely. The "Open profile" CTA still becomes a
+ *     full-width block button below the row's own single-column breakpoint,
+ *     matching the spec's intent for the phone reading of this content.
+ *
+ * The overflow menu (FairwayPlayerActionsMenu, which already has its own
+ * "Message" item) lives here rather than as a row cell for the same reason:
+ * cells render INSIDE the row's real <button> (PressTarget), so a second
+ * interactive trigger there would nest <button> in <button> — invalid HTML
+ * that breaks hydration. This band renders as a DOM sibling of that button
+ * (confirmed safe by the same TeamStatsBoard precedent), so the menu's own
+ * IconButton trigger is safe here.
+ * ------------------------------------------------------------------------- */
+function RowDetail({
+  player,
+  name,
+  intent,
+  onIntentSaved,
+}: {
+  player: RosterPlayer;
+  name: string;
+  intent: CoachPlayerIntent | null;
+  onIntentSaved: () => void;
+}) {
+  return (
+    <div data-sentry-mask="" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="min-w-0">
+          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Goals</p>
+          <p className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
+            {player.active_goals ? `${player.active_goals} active` : 'None yet'}
+          </p>
+        </div>
+        <FairwayIntentControl
+          playerId={player.id}
+          playerName={name}
+          current={intent}
+          size="sm"
+          onSaved={onIntentSaved}
+        />
+        <FairwayPlayerActionsMenu playerId={player.id} playerName={name} currentStatus={player.status} />
+      </div>
+      <Button asChild variant="secondary" size="sm" shape="block" fullWidth className="sm:w-auto">
+        <Link href={`/golf/dashboard/roster/${player.id}`}>Open profile</Link>
+      </Button>
     </div>
   );
 }
