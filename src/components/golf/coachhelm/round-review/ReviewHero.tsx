@@ -37,6 +37,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Filmstrip, GradeDots } from '@/components/fairway/modules';
 import { PressTarget, Skeleton } from '@/components/fairway';
@@ -227,6 +228,14 @@ export interface ReviewHeroProps {
   holeMeta: Map<number, ReviewHoleMeta>;
   /** `null` while the shot ledger is still loading. */
   shotsByHole: Map<number, ReviewShotInput[]> | null;
+  /** False for a scorecard-only round (no `golf_holes`/`golf_shots` rows at
+   *  all — `filmstripHoles.length === 0`). The filmstrip strip and its hover
+   *  hint have nothing real to show in that case (rendering them produced a
+   *  visibly empty strip plus "Tap or hover over a hole to see what
+   *  happened." for a round with no holes to tap), so this collapses the
+   *  hero to a single column and swaps in an honest "enter holes to unlock
+   *  this view" line instead. */
+  hasHoleData: boolean;
   /** The reviewed player's id — used ONLY to fetch their SEASON putt make%
    *  by distance band (`round-review-shots.ts`'s `fetchPlayerPuttMakePct`)
    *  for `PuttingZoom`'s tooltip context line (Wave D, see that module's
@@ -247,6 +256,7 @@ export function ReviewHero({
   filmstripHoles,
   holeMeta,
   shotsByHole,
+  hasHoleData,
   playerId,
 }: ReviewHeroProps) {
   const router = useRouter();
@@ -362,7 +372,10 @@ export function ReviewHero({
   return (
     <div
       data-slot="review-hero"
-      className="grid min-w-0 grid-cols-1 overflow-clip rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise sm:grid-cols-[240px_minmax(0,1fr)]"
+      className={cn(
+        'grid min-w-0 grid-cols-1 overflow-clip rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise',
+        hasHoleData && 'sm:grid-cols-[240px_minmax(0,1fr)]',
+      )}
     >
       {/* Green left panel */}
       <div className="bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 text-text-on-accent sm:p-6">
@@ -386,39 +399,48 @@ export function ReviewHero({
             Mix: <span className="font-fw-mono font-normal text-text-on-accent">{mixLine}</span>
           </p>
         ) : null}
+        {!hasHoleData ? (
+          <p className="mt-4 font-fw-sans text-caption text-ink-on-deep">
+            Scorecard only. Enter holes to unlock the hole-by-hole view.
+          </p>
+        ) : null}
       </div>
 
-      {/* Filmstrip + scrub detail */}
-      <div className="min-w-0 bg-surface p-4 sm:p-5">
-        <Filmstrip
-          holes={filmstripHoles}
-          activeHole={activeHole ?? undefined}
-          onScrub={handleScrub}
-          shotsByHole={shotsByHole}
-        />
-        <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
-          {detail ? (
-            <>
-              <p className="font-fw-mono text-caption font-normal text-text-primary">{detail.header}</p>
-              <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">{detail.body}</p>
-              {canOpenShotPath ? (
-                <PressTarget
-                  onClick={toggleShotPath}
-                  aria-expanded={openHole === activeHole}
-                  className="mt-2 font-fw-sans text-caption font-semibold text-accent-700 transition-colors duration-150 hover:text-fw-success-ink"
-                >
-                  {openHole === activeHole ? 'Hide shot path' : 'Show shot path'}
-                </PressTarget>
-              ) : null}
-            </>
-          ) : (
-            <p className="font-fw-sans text-body-sm text-text-tertiary">
-              Tap or hover over a hole to see what happened.
-            </p>
-          )}
+      {/* Filmstrip + scrub detail — omitted entirely for a scorecard-only
+          round (see `hasHoleData`'s doc): there is no strip to scrub and no
+          hole to hover, so neither the strip nor its hint renders. */}
+      {hasHoleData ? (
+        <div className="min-w-0 bg-surface p-4 sm:p-5">
+          <Filmstrip
+            holes={filmstripHoles}
+            activeHole={activeHole ?? undefined}
+            onScrub={handleScrub}
+            shotsByHole={shotsByHole}
+          />
+          <div className="mt-3 min-h-[40px] border-t border-border-subtle pt-3">
+            {detail ? (
+              <>
+                <p className="font-fw-mono text-caption font-normal text-text-primary">{detail.header}</p>
+                <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">{detail.body}</p>
+                {canOpenShotPath ? (
+                  <PressTarget
+                    onClick={toggleShotPath}
+                    aria-expanded={openHole === activeHole}
+                    className="mt-2 font-fw-sans text-caption font-semibold text-accent-700 transition-colors duration-150 hover:text-fw-success-ink"
+                  >
+                    {openHole === activeHole ? 'Hide shot path' : 'Show shot path'}
+                  </PressTarget>
+                ) : null}
+              </>
+            ) : (
+              <p className="font-fw-sans text-body-sm text-text-tertiary">
+                Tap or hover over a hole to see what happened.
+              </p>
+            )}
+          </div>
+
         </div>
-
-      </div>
+      ) : null}
 
       {openHole != null && openHoleShots && openHoleShots.length > 0 ? (
         <div className="min-w-0 border-t border-border-subtle bg-surface-tint p-4 sm:col-span-2 sm:p-5">

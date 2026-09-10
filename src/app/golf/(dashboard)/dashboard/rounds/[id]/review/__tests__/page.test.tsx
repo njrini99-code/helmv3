@@ -369,6 +369,66 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
   });
 });
 
+describe('RoundReviewPage — scorecard-only round (no hole rows)', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
+  });
+
+  it('hides the filmstrip strip and its hover hint, and never derives "0 pars" from missing data', async () => {
+    // Mirrors the real round this bug was reported against: golf_holes and
+    // golf_shots both have 0 rows (a scorecard-only entry), so the generated
+    // review's holeByHole/scoringDistribution come back empty even though the
+    // round itself has a real total_score/holes_played.
+    const { getRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(getRoundReview).mockResolvedValueOnce({
+      success: true,
+      review: {
+        id: 'review-1',
+        player_id: 'player-1',
+        round_id: 'round-1',
+        review_content: {
+          ...FULL_REVIEW_CONTENT,
+          holeByHole: [],
+          scoringDistribution: { eagles: [], birdies: [], pars: [], bogeys: [], doublePlus: [], holesPlayed: 0 },
+        },
+        generated_at: '2026-06-01T00:00:00Z',
+        ai_model_version: 'test',
+        shared_with_coach: false,
+        shared_at: null,
+        coach_notes: null,
+        coach_viewed_at: null,
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
+        round: {
+          id: 'round-1',
+          player_id: 'player-1',
+          course_name: 'Pinehurst No. 2',
+          round_date: '2026-06-01',
+          total_score: 75,
+          score_to_par: 3,
+          total_putts: null,
+          total_fairways_hit: null,
+          total_fairways: null,
+          total_gir: null,
+          total_gir_possible: null,
+        },
+      },
+    });
+
+    const { findByText, queryByLabelText, queryByText } = renderAsPlayer();
+
+    await findByText('Scorecard only. Enter holes to unlock the hole-by-hole view.');
+
+    // The strip itself (Filmstrip.tsx renders `aria-label="Hole by hole"`)
+    // and its "nothing scrubbed yet" hint both have nothing real to show for
+    // a round with zero hole rows — neither should mount at all.
+    expect(queryByLabelText('Hole by hole')).not.toBeInTheDocument();
+    expect(queryByText('Tap or hover over a hole to see what happened.')).not.toBeInTheDocument();
+    expect(queryByText(/Mix:/)).not.toBeInTheDocument();
+    expect(queryByText(/0 pars/)).not.toBeInTheDocument();
+  });
+});
+
 describe('RoundReviewPage — focus-area prescription (FocusAreaModal migration)', () => {
   beforeEach(() => {
     roundRow = { ...DEFAULT_ROUND_ROW };

@@ -10,10 +10,16 @@
  *
  * Honest-empty: renders nothing for a player when no note exists yet, and an
  * inviting empty state for the coach ("Add a note").
+ *
+ * Renders its OWN header row (Eyebrow + Add note/Edit button) but no longer
+ * wraps itself in a `Surface` — the caller (`FilmstripReview.tsx`) seams this
+ * alongside "The story"/"What to do next" as rows of ONE shared bordered
+ * Surface (round-detail.md: same-size side-by-side cards → hairline-divided
+ * seam sections in the page column), rather than a standalone card.
  */
 
 import { useEffect, useState } from 'react';
-import { Surface, Eyebrow, Button, TextArea } from '@/components/fairway';
+import { Eyebrow, Button, TextArea } from '@/components/fairway';
 import { useToast } from '@/components/ui/sonner';
 import { annotateReview } from '@/app/golf/actions/round-reviews';
 
@@ -22,6 +28,16 @@ export interface CoachNotesSectionProps {
   initialNotes: string | null;
   /** True only for a coach on the player's team viewing someone else's round. */
   canEdit: boolean;
+}
+
+/** Whether `CoachNotesSection` will render anything for this viewer/note
+ *  combination — a player with no note yet renders nothing (see the
+ *  component's own honest-empty guard below). The caller uses this to decide
+ *  whether to include a "Coach notes" row in its seam at all, mirroring
+ *  `hasFrontBackData`/`hasPuttingRampData`'s own exported-predicate pattern
+ *  in `ReviewBreakdown.tsx` — never a padded empty row in the seam. */
+export function hasCoachNotesContent(canEdit: boolean, notes: string | null): boolean {
+  return canEdit || !!notes;
 }
 
 export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNotesSectionProps) {
@@ -77,7 +93,7 @@ export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNote
   }
 
   return (
-    <Surface elevation="border" padding="sm" className="space-y-2.5">
+    <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-3">
         <Eyebrow as="h2">Coach notes</Eyebrow>
         {canEdit && !editing ? (
@@ -119,6 +135,6 @@ export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNote
       ) : (
         <p className="font-fw-sans text-body-sm text-text-tertiary">No coaching note yet.</p>
       )}
-    </Surface>
+    </div>
   );
 }

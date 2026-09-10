@@ -37,7 +37,10 @@ import {
   type FocusAreaModalSubmit,
 } from '@/components/fairway/pages/coachhelm/FocusAreaModal';
 import { createFocusAreaFromReview } from '@/app/golf/actions/development';
-import { CoachNotesSection } from '@/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection';
+import {
+  CoachNotesSection,
+  hasCoachNotesContent,
+} from '@/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection';
 import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
 import { ReviewHero, type ReviewHoleMeta } from './ReviewHero';
 import { ReviewBreakdown, hasFrontBackData, hasPuttingRampData } from './ReviewBreakdown';
@@ -362,6 +365,64 @@ export function FilmstripReview({
     return rows;
   }, [hasAnySG, standingLoading, standingBars]);
 
+  // "The story" / "What to do next" / "Coach notes" seam rows, in that order
+  // — previously three separate same-size cards (two of them side by side in
+  // the `lg:grid-cols-2` grid, per the desktop capture), now one bordered
+  // Surface with a hairline between each present row (round-detail.md: same
+  // pattern as "Where this sits" below). "What to do next" is genuinely
+  // conditional (no practice priority AND no promote suggestion => omitted);
+  // "Coach notes" mirrors `CoachNotesSection`'s own honest-empty guard via
+  // the exported `hasCoachNotesContent` predicate so a player with no note
+  // yet never gets a padded empty row.
+  const contentSectionRows = useMemo(() => {
+    const rows: Array<{ id: string; node: ReactElement }> = [
+      {
+        id: 'story',
+        node: (
+          <div className="space-y-3">
+            <Eyebrow as="h2">The story</Eyebrow>
+            <p className="font-fw-sans text-body leading-relaxed text-text-primary">{narrative}</p>
+          </div>
+        ),
+      },
+    ];
+
+    if (practicePriority || promoteSuggestion) {
+      rows.push({
+        id: 'what-to-do-next',
+        node: (
+          <div className="space-y-3">
+            <Eyebrow as="h2">What to do next</Eyebrow>
+            {practicePriority ? (
+              <p className="font-fw-sans text-body-sm text-text-primary">{practicePriority}</p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {promoteSuggestion ? (
+                <Button variant="secondary" size="sm" onClick={() => setFocusAreaModalOpen(true)}>
+                  {isCoachViewer ? 'Prescribe focus area' : 'Add focus area'}
+                </Button>
+              ) : null}
+              {!isCoachViewer ? (
+                <Button variant="secondary" size="sm" onClick={onShare} disabled={sharedWithCoach}>
+                  {sharedWithCoach ? 'Shared with coach' : 'Share with coach'}
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ),
+      });
+    }
+
+    if (hasCoachNotesContent(isCoachViewer, coachNotes)) {
+      rows.push({
+        id: 'coach-notes',
+        node: <CoachNotesSection reviewId={reviewId} initialNotes={coachNotes} canEdit={isCoachViewer} />,
+      });
+    }
+
+    return rows;
+  }, [narrative, practicePriority, promoteSuggestion, isCoachViewer, onShare, sharedWithCoach, coachNotes, reviewId]);
+
   // Whole-section gate for "Round breakdown" — `hasFrontBackData`/
   // `hasPuttingRampData` mirror `momentum`/`drivingPenaltyLines`/
   // `shortGameRows`'s own honest-empty-array convention, so a scorecard-only
@@ -405,6 +466,7 @@ export function FilmstripReview({
         filmstripHoles={filmstripHoles}
         holeMeta={holeMeta}
         shotsByHole={shotsByHole}
+        hasHoleData={filmstripHoles.length > 0}
         playerId={playerId}
       />
       {shotsError ? (
@@ -413,62 +475,40 @@ export function FilmstripReview({
         </p>
       ) : null}
 
-      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch">
-        {/* ONE AI narrative — V2 composed-review body preferred, V1 rule-based
-            summary as the honest fallback. */}
-        <Surface elevation="border" padding="md" className="h-full space-y-3 overflow-clip">
-          <Eyebrow as="h2">The story</Eyebrow>
-          <p className="font-fw-sans text-body leading-relaxed text-text-primary">{narrative}</p>
-        </Surface>
+      {/* NOTE: the old V1 "Where strokes went" RailBars block was removed
+          (2026-07-23) — it showed a heuristic strokes-lost split (with
+          non-SG buckets like "Course Management") whose numbers CONTRADICTED
+          the authoritative per-shot Strokes-Gained tornado now leading this
+          page (RoundSGSummary). One honest SG breakdown, not two rival ones. */}
 
-        {/* NOTE: the old V1 "Where strokes went" RailBars block was removed
-            (2026-07-23) — it showed a heuristic strokes-lost split (with
-            non-SG buckets like "Course Management") whose numbers CONTRADICTED
-            the authoritative per-shot Strokes-Gained tornado now leading this
-            page (RoundSGSummary). One honest SG breakdown, not two rival ones. */}
+      {/* "The story" / "What to do next" / "Coach notes" — ONE seamed Surface,
+          a hairline between each present row, rather than same-size cards
+          side by side (round-detail.md, from the desktop capture). */}
+      <Surface elevation="border" padding="none" className="divide-y divide-border-subtle overflow-hidden">
+        {contentSectionRows.map((row) => (
+          <div key={row.id} className="p-4 sm:p-5">
+            {row.node}
+          </div>
+        ))}
+      </Surface>
 
-        {/* What to do next — practice priority + add-focus-area + share. */}
-        {(practicePriority || promoteSuggestion) ? (
-          <Surface elevation="shadow" padding="md" className="h-full space-y-3 overflow-clip">
-            <Eyebrow as="h2">What to do next</Eyebrow>
-            {practicePriority ? <p className="font-fw-sans text-body-sm text-text-primary">{practicePriority}</p> : null}
-            <div className="flex flex-wrap items-center gap-2.5">
-              {promoteSuggestion ? (
-                <Button variant="secondary" size="sm" onClick={() => setFocusAreaModalOpen(true)}>
-                  {isCoachViewer ? 'Prescribe focus area' : 'Add focus area'}
-                </Button>
-              ) : null}
-              {!isCoachViewer ? (
-                <Button variant="secondary" size="sm" onClick={onShare} disabled={sharedWithCoach}>
-                  {sharedWithCoach ? 'Shared with coach' : 'Share with coach'}
-                </Button>
-              ) : null}
-            </div>
-          </Surface>
-        ) : null}
-
-        {promoteSuggestion ? (
-          <FocusAreaModal
-            open={focusAreaModalOpen}
-            onOpenChange={setFocusAreaModalOpen}
-            mode={isCoachViewer ? 'coach' : 'player'}
-            players={[{ id: playerId, name: playerName || 'This player' }]}
-            playerStats={{}}
-            playerId={playerId}
-            initial={{
-              player_id: playerId,
-              area_type: promoteSuggestion.areaType,
-              title: promoteSuggestion.title,
-              description: promoteSuggestion.description,
-            }}
-            onSubmit={handlePromoteFocusArea}
-          />
-        ) : null}
-
-        <div className="min-w-0">
-          <CoachNotesSection reviewId={reviewId} initialNotes={coachNotes} canEdit={isCoachViewer} />
-        </div>
-      </div>
+      {promoteSuggestion ? (
+        <FocusAreaModal
+          open={focusAreaModalOpen}
+          onOpenChange={setFocusAreaModalOpen}
+          mode={isCoachViewer ? 'coach' : 'player'}
+          players={[{ id: playerId, name: playerName || 'This player' }]}
+          playerStats={{}}
+          playerId={playerId}
+          initial={{
+            player_id: playerId,
+            area_type: promoteSuggestion.areaType,
+            title: promoteSuggestion.title,
+            description: promoteSuggestion.description,
+          }}
+          onSubmit={handlePromoteFocusArea}
+        />
+      ) : null}
 
       {standingSectionRows.length > 0 ? (
         <section className="space-y-3">

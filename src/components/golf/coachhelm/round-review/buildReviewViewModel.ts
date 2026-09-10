@@ -90,8 +90,18 @@ export function buildGrade(scoreToPar: number): ReviewGrade {
 }
 
 /** "1 birdie · 9 pars · 5 bogeys · 3 doubles+" — skips zero-count buckets
- *  except pars, which always renders (mirrors the approved mockup). */
+ *  except pars, which always renders (mirrors the approved mockup) UNLESS
+ *  every bucket is empty. That all-empty case is a round with no hole rows
+ *  at all (a scorecard-only round the review was generated for without any
+ *  `golf_holes`/`golf_shots` detail) — "0 pars" there isn't a true fact
+ *  about the round's scoring, it's a number derived from data that was
+ *  never entered, so the whole line is honestly omitted instead (the
+ *  desktop capture literally showed "Mix: 0 pars" for exactly this round). */
 export function buildMixLine(dist: RoundReviewContent['scoringDistribution']): string {
+  const totalScored =
+    dist.eagles.length + dist.birdies.length + dist.pars.length + dist.bogeys.length + dist.doublePlus.length;
+  if (totalScored === 0) return '';
+
   const parts: string[] = [];
   if (dist.eagles.length > 0) {
     parts.push(`${dist.eagles.length} eagle${dist.eagles.length > 1 ? 's' : ''}`);

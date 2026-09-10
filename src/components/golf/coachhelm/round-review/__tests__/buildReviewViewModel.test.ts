@@ -86,7 +86,23 @@ describe('buildMixLine', () => {
     expect(line).toBe('1 birdie · 9 pars · 5 bogeys · 3 doubles+');
   });
 
-  it('always renders pars even at zero, and skips zero-count buckets', () => {
+  it('always renders pars even at zero, as long as some other bucket is real', () => {
+    const line = buildMixLine({
+      eagles: [],
+      birdies: [],
+      pars: [],
+      bogeys: Array.from({ length: 18 }, (_, i) => i + 1),
+      doublePlus: [],
+      holesPlayed: 18,
+    });
+    expect(line).toBe('0 pars · 18 bogeys');
+  });
+
+  it('is empty, not "0 pars", when every bucket is empty (no hole rows at all)', () => {
+    // A scorecard-only round with no golf_holes/golf_shots rows — "0 pars"
+    // there isn't a fact about the round, it's a number derived from data
+    // that was never entered (the desktop capture literally showed
+    // "Mix: 0 pars" for exactly this shape of round).
     const line = buildMixLine({
       eagles: [],
       birdies: [],
@@ -95,7 +111,7 @@ describe('buildMixLine', () => {
       doublePlus: [],
       holesPlayed: 0,
     });
-    expect(line).toBe('0 pars');
+    expect(line).toBe('');
   });
 
   it('singularizes a single eagle/birdie/bogey/double', () => {
