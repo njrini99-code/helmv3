@@ -88,6 +88,20 @@ Player opens round review
 
 - Player CoachHelm should explain what changed, why it matters, and what action to take next.
 - My Development should show focus area status, progress, target/current values, and trend in a compact way.
+- The live development view is `components/golf/coachhelm/home/DevelopmentDrill.tsx`
+  (`/coachhelm?view=development`; `/my-development` redirects there).
+  `fairway/pages/coachhelm/FairwayMyDevelopment.tsx` is the same body with page
+  chrome, mounted only by the fairway preview. Both hosts import the shared
+  pieces from `fairway/pages/coachhelm/development-parts.tsx` (log progress
+  Sheet, prescribed card, overview instrument, phone focus-area rows and
+  sheet); never copy those into a host again.
+- Below `md` the development view reads as rows: one StatMatrix for the plan
+  readouts, causal relationships and active focus areas as InsetGroup rows
+  whose tap opens the detail in a Fairway Sheet, suggestions as rows with one
+  Accept. Log progress is a Fairway Sheet (bottom below `md`, docked right
+  above). Phone and desktop branches are CSS-gated; no media-query flip on
+  hydration. Spec and captures: `docs/design/fairway-facelift/screens/
+  player-development.mobile.md`.
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.
 - Standing/goal/intent/hero narrative UI should be polished but not obscure source data or actionability.
 - Mobile views must follow the shared app shell and avoid oversized top-of-screen chrome.
