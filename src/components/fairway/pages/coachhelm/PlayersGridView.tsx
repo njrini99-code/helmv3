@@ -44,12 +44,11 @@
  * ADDITIVE ONLY — imported by nothing live until the route fork; renders inside a
  * `.fairway-ds` scope on a `bg-canvas` page.
  *
- * WAVE 2 — the header instrument described above now LIVES in
- * `RosterHealthHeader.tsx` (component + its pure `computeRosterHealth`/
- * `computeNeedsAttention` computations), imported here unchanged, so the
- * canonical Roster page (`FairwayCoachRoster.tsx`) can port the SAME
- * instrument as its own header band instead of it sitting orphaned behind
- * this hidden `?view=players` route.
+ * WAVE 2 — the header instrument described above moved out of this file; its
+ * pure `computeRosterHealth`/`computeNeedsAttention` computations live in
+ * `roster-health.ts` and the canonical Roster page (`FairwayCoachRoster.tsx`)
+ * renders them as its own header band. The `RosterHealthHeader` JSX component
+ * that briefly hosted them was deleted once nothing rendered it.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -64,9 +63,9 @@ import { type AreaAutoFillStats } from './areaTypes';
 import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 // The instrument cockpit kit — the warm-glass hero header (matches
 // FairwayEffectiveness): ranked cluster, frosted bezels, honest big readouts.
-// (InstrumentCluster/SegmentBar/SegmentBarPart moved to RosterHealthHeader.tsx
-// with the roster-health instrument itself — InstrumentPanel/Readout stay,
-// still used by FocusAreaBoard below.)
+// (InstrumentCluster/SegmentBar/SegmentBarPart left with the roster-health
+// instrument, since deleted; InstrumentPanel/Readout stay, still used by
+// FocusAreaBoard below.)
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
 // that barrel, so importing the barrel back here created an import cycle,
@@ -248,10 +247,9 @@ export interface RosterRow {
   completedCount: number;
 }
 
-// `NeedRow` + the roster-health/needs-attention pure computations and the
-// `RosterHealthHeader` instrument itself now live in `RosterHealthHeader.tsx`
-// (Wave 2) — extracted so the canonical Roster page can port the SAME "Who
-// needs your attention" instrument instead of re-deriving it.
+// `NeedRow` + the roster-health/needs-attention pure computations live in
+// `roster-health.ts` (Wave 2), extracted so the canonical Roster page renders
+// the SAME "Who needs your attention" instrument instead of re-deriving it.
 
 /* ---------------------------------------------------------------------------
  * PlayersGridView
@@ -888,8 +886,8 @@ export function PlayersGridView({
               active) now live in the Triage Desk's Spine ledger one level
               up, and this view can be mounted standalone (via the
               `/development` redirect shim) where that duplication no
-              longer applied either. `RosterHealthHeader.tsx` itself is left
-              in place — `FairwayCoachRoster.tsx` still imports it. ── */}
+              longer applied either. The math survives in `roster-health.ts`,
+              which `FairwayCoachRoster.tsx` imports. ── */}
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (
