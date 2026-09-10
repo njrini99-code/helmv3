@@ -15,7 +15,7 @@
  * — a real duplicate-draft scenario — must collapse to ONE resumable card.
  * ========================================================================== */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 import { FairwayRoundsLibrary } from './FairwayRoundsLibrary';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
@@ -173,5 +173,42 @@ describe('FairwayRoundsLibrary — in-progress round discoverability', () => {
 
     expect(screen.getByText('Pebble Beach Golf Links')).toBeInTheDocument();
     expect(screen.getByText('Augusta National')).toBeInTheDocument();
+  });
+});
+
+/**
+ * ============================================================================
+ * Facelift — ONE ledger Surface for every group (docs/design/fairway-facelift/
+ * screens/rounds-library.md "CONTAINERS TO REMOVE" #3)
+ * ----------------------------------------------------------------------------
+ * The redesign replaced "one Surface per date group" with one matte Surface
+ * holding every group as a sticky seam header + divided rows. `inProgressRounds`
+ * is empty here so the only Surface in the tree is the ledger's own — the
+ * player-only unfinished banner renders a Surface per row (a separate
+ * component, out of scope for this assertion).
+ * ========================================================================== */
+describe('FairwayRoundsLibrary — facelift: single ledger Surface for every group', () => {
+  it('renders exactly one Surface holding every date group, not one per group', () => {
+    const { container } = render(
+      <FairwayRoundsLibrary
+        rounds={[
+          makeRound({ id: 'r1', round_date: '2026-06-15' }),
+          makeRound({ id: 'r2', round_date: '2026-07-02' }),
+        ]}
+        inProgressRounds={[]}
+        userRole="coach"
+        stats={null}
+      />,
+    );
+
+    // Both months' rounds are present…
+    expect(screen.getByText('June 2026')).toBeInTheDocument();
+    expect(screen.getByText('July 2026')).toBeInTheDocument();
+
+    // …inside exactly ONE Surface (the ledger), never one Surface per group.
+    const surfaces = container.querySelectorAll('[data-slot="surface"]');
+    expect(surfaces).toHaveLength(1);
+    expect(surfaces[0]!.textContent).toContain('June 2026');
+    expect(surfaces[0]!.textContent).toContain('July 2026');
   });
 });
