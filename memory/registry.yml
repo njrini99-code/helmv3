@@ -195,6 +195,7 @@ features:
         - supabase/migrations/*helm_debug_db_platform_samples*.sql
         - supabase/migrations/*helm_debug_db_statement_samples*.sql
         - supabase/migrations/*helm_debug_db_analysis_samples*.sql
+        - supabase/migrations/*helm_debug_analysis_drop_index_advisor*.sql
         - supabase/migrations/*helm_debug_db_table_samples*.sql
         - supabase/migrations/*helm_debug_stat_*.sql
         - supabase/migrations/*helm_debug_jobs_health*.sql

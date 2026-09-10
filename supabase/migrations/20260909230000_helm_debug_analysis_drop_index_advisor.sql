@@ -247,6 +247,11 @@ exception
 end;
 $$;
 
--- db:apply — record this file in the ledger, in the same transaction.
+-- db:apply — record this file in the ledger, in the same transaction. The
+-- MCP apply path does not write the ledger itself; the Supabase CLI does, so
+-- under a local `supabase db reset` this row already exists by the time the
+-- file body runs (CI: "duplicate key value violates unique constraint
+-- schema_migrations_pkey"). Idempotent on purpose.
 insert into supabase_migrations.schema_migrations (version, name)
-values ('20260909230000', 'helm_debug_analysis_drop_index_advisor');
+values ('20260909230000', 'helm_debug_analysis_drop_index_advisor')
+on conflict (version) do nothing;
