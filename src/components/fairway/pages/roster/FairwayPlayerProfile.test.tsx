@@ -16,7 +16,6 @@
  * network/router calls, and this file's job is the composition around them,
  * not their internals.
  * ========================================================================== */
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {

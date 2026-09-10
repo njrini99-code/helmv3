@@ -84,7 +84,7 @@ export interface FairwayPlayerProfileFocusArea {
   status: string | null;
   current_value: number | null;
   target_value: number | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface FairwayPlayerProfileRound {
