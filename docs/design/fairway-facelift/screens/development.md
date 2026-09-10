@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD013 -->
 # Development — `/golf/dashboard/development` (coach)
 
-Files: `src/app/golf/(dashboard)/dashboard/development/page.tsx`, `src/components/golf/coachhelm/home/DevelopmentDrill.tsx` (658), `src/components/fairway/pages/coachhelm/{RosterHealthHeader,FocusAreaCard,FairwayGoalCard,GoalsSection}.tsx`.
+Files: `src/app/golf/(dashboard)/dashboard/development/page.tsx`, `src/components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx` (the player stage view; `DevelopmentDrill.tsx` was deleted in the mobile pass), `src/components/fairway/pages/coachhelm/{RosterHealthHeader,FocusAreaCard,FairwayGoalCard,GoalsSection}.tsx`.
 
 ## What the capture shows
 

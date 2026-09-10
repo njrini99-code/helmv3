@@ -17,7 +17,7 @@
  * of those views (plus round-trips back `home`) on ONE mounted instance —
  * exactly the update-render sequence a hooks-order mismatch needs to throw
  * (a fresh mount never has a "previous render" to disagree with).
- * `DevelopmentDrill` and `DeepDiveDrill` are stubbed here only to keep this
+ * `FairwayMyDevelopmentStage` and `DeepDiveDrill` are stubbed here only to keep this
  * file's dependency surface (FocusAreaModal/GoalsSection's own overlays,
  * WhatIfPanel's simulate flow) out of scope — StageRouter's mounting
  * mechanics don't care which component sits behind a given view key, and
@@ -54,8 +54,8 @@ vi.mock('@/app/golf/actions/v3/goals', () => ({
 // real `useStage().home()` back-button (matching every real Drill's
 // `DrillPanel backLabel="Home"` contract) so the round-trip-home step in the
 // test below works uniformly across real AND stubbed views.
-vi.mock('../DevelopmentDrill', () => ({
-  DevelopmentDrill: () => {
+vi.mock('@/components/fairway/pages/coachhelm/FairwayMyDevelopment', () => ({
+  FairwayMyDevelopmentStage: () => {
     const { home } = useStage();
     return (
       <div>

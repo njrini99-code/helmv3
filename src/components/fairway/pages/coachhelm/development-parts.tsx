@@ -4,16 +4,12 @@
  * ============================================================================
  * Fairway · CoachHelm · development-parts — the player development pieces
  * ----------------------------------------------------------------------------
- * ONE home for the sub-components the player's development view is built
- * from, shared by the two hosts that render it:
- *   • `DevelopmentDrill` (components/golf/coachhelm/home) — the LIVE view at
- *     `/coachhelm?view=development`, which `/my-development` redirects to.
- *   • `FairwayMyDevelopment` (this folder) — the page-chrome variant kept for
- *     the fairway preview and the barrel.
- * Before this file each host carried its own verbatim copy of the log
- * progress drawer, the prescribed-area card and the overview instrument
- * (AUDIT.md Mobile: competing implementations); the copies had already
- * drifted (SourceChip on the prescribed card, toast wrappers).
+ * ONE home for the sub-components the player's development view
+ * (`FairwayMyDevelopment`, both hosts: the live stage view at
+ * `/coachhelm?view=development` and the page-chrome preview) is built from.
+ * Before this file the legacy `DevelopmentDrill` carried its own verbatim
+ * copies of the log progress drawer, the prescribed-area card and the
+ * overview instrument, and they had drifted (AUDIT M10); the drill is gone.
  *
  * Exports:
  *   • LogProgressSheet          — the Log progress form as a Fairway Sheet

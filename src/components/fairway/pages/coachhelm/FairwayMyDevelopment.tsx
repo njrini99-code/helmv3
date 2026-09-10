@@ -35,8 +35,13 @@
  *   • A REAL error state distinct from the empty state (mustFix: silent
  *     fall-through bug) via InlineNotice.
  *
- * ADDITIVE + GATED — imported only behind the isRedesignEnabled() fork (Wire
- * phase). Renders inside the `.fairway-ds` scope on a `bg-canvas` page.
+ * HOSTS (AUDIT M10, resolved): `host="stage"` is the LIVE player view, mounted
+ * by PlayerCoachHelmHome's StageRouter at `/coachhelm?view=development` via
+ * `FairwayMyDevelopmentStage` (the stage's DrillPanel is the chrome: back
+ * chip, title, the actions as its chip). `host="page"` (default) wraps the
+ * same body in CoachHelmShell for the fairway preview. The legacy
+ * `components/golf/coachhelm/home/DevelopmentDrill.tsx`, a drifted verbatim
+ * port of this body, is deleted.
  * ========================================================================== */
 
 import { useCallback, useState, useTransition } from 'react';
@@ -54,6 +59,8 @@ import { Surface } from '@/components/fairway/surfaces';
 import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
 import { Eyebrow } from '@/components/fairway/controls/eyebrow';
 import { CoachHelmShell } from './CoachHelmShell';
+import { DrillPanel } from '@/components/fairway/modules/DrillPanel';
+import { useStage } from '@/components/fairway/modules/StageRouter';
 import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
 import {
   ActiveFocusAreaList,
@@ -140,6 +147,14 @@ export interface FairwayMyDevelopmentProps {
    * and GoalsSection renders a "Recent wins" block. Defaults to [].
    */
   achievedGoals?: FairwayGoalCardData[];
+  /**
+   * `page` (default): CoachHelmShell chrome on a bg-canvas page. `stage`: the
+   * body inside a DrillPanel for PlayerCoachHelmHome's StageRouter (no page
+   * scope, no masthead, no max-width column; the stage owns those).
+   */
+  host?: 'page' | 'stage';
+  /** Stage host only: the DrillPanel back chip ("Home"). */
+  onBack?: () => void;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -158,6 +173,8 @@ export function FairwayMyDevelopment({
   standingByMetric = {},
   causalRelationships = [],
   achievedGoals = [],
+  host = 'page',
+  onBack,
 }: FairwayMyDevelopmentProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -318,30 +335,18 @@ export function FairwayMyDevelopment({
         </Button>
       ) : null}
       {canCreateOwn ? (
-        <Button variant="primary" onClick={() => setCreateOpen(true)}>
-          <IconPlus size={16} />
+        // `leftIcon`, never a bare svg child: the preflight makes svg a block,
+        // which stacked "+" above the label inside the button's label span.
+        <Button variant="primary" leftIcon={<IconPlus size={16} />} onClick={() => setCreateOpen(true)}>
           New focus area
         </Button>
       ) : null}
     </div>
   );
 
-  return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
-      <div className="mx-auto w-full max-w-[760px] px-4 py-2 md:px-6">
-        <CoachHelmShell
-          active="players"
-          // eslint-disable-next-line jsx-a11y/aria-role
-          role="player"
-          eyebrow="My Development"
-          title="Your focus areas"
-          description={
-            total > 0
-              ? `${activeAreas.length} active · ${completedAreas.length} completed`
-              : 'Focus areas your coach assigns to track your improvement.'
-          }
-          actions={headerActions}
-        >
+  // The body is host-independent; each host only supplies its chrome.
+  const body = (
+    <>
           {/* ── Error state — distinct from empty (mustFix: silent fall-through).
                 When the focus-area select failed, show ONLY the error — Goals
                 are a separate population but we don't want to imply the page
@@ -416,8 +421,7 @@ export function FairwayMyDevelopment({
                     description="Set your own focus area to track an improvement, or your coach can prescribe one for you to accept."
                     action={
                       canCreateOwn ? (
-                        <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                          <IconPlus size={16} />
+                        <Button variant="primary" leftIcon={<IconPlus size={16} />} onClick={() => setCreateOpen(true)}>
                           New focus area
                         </Button>
                       ) : (
@@ -502,9 +506,11 @@ export function FairwayMyDevelopment({
               ) : null}
             </div>
           )}
-        </CoachHelmShell>
-      </div>
+    </>
+  );
 
+  const overlays = (
+    <>
       {/* Phone: the tapped focus area's full card in a matte Sheet. */}
       <FocusAreaSheet
         area={areaSheet.area}
@@ -532,6 +538,50 @@ export function FairwayMyDevelopment({
           onSubmit={handleCreateSubmit}
         />
       ) : null}
+    </>
+  );
+
+  if (host === 'stage') {
+    return (
+      <>
+        <DrillPanel title="Development" backLabel="Home" onBack={onBack ?? (() => {})} chip={headerActions}>
+          {body}
+        </DrillPanel>
+        {overlays}
+      </>
+    );
+  }
+
+  return (
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <div className="mx-auto w-full max-w-[760px] px-4 py-2 md:px-6">
+        <CoachHelmShell
+          active="players"
+          // eslint-disable-next-line jsx-a11y/aria-role
+          role="player"
+          eyebrow="My Development"
+          title="Your focus areas"
+          description={
+            total > 0
+              ? `${activeAreas.length} active · ${completedAreas.length} completed`
+              : 'Focus areas your coach assigns to track your improvement.'
+          }
+          actions={headerActions}
+        >
+          {body}
+        </CoachHelmShell>
+      </div>
+      {overlays}
     </div>
   );
+}
+
+/**
+ * The stage view PlayerCoachHelmHome mounts for `?view=development`: the same
+ * component with the DrillPanel chrome and the stage's own `home()` as its
+ * back chip. Kept here so the live host and the page host are one file.
+ */
+export function FairwayMyDevelopmentStage(props: Omit<FairwayMyDevelopmentProps, 'host' | 'onBack'>) {
+  const { home } = useStage();
+  return <FairwayMyDevelopment {...props} host="stage" onBack={home} />;
 }

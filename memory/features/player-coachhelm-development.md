@@ -88,13 +88,17 @@ Player opens round review
 
 - Player CoachHelm should explain what changed, why it matters, and what action to take next.
 - My Development should show focus area status, progress, target/current values, and trend in a compact way.
-- The live development view is `components/golf/coachhelm/home/DevelopmentDrill.tsx`
-  (`/coachhelm?view=development`; `/my-development` redirects there).
-  `fairway/pages/coachhelm/FairwayMyDevelopment.tsx` is the same body with page
-  chrome, mounted only by the fairway preview. Both hosts import the shared
-  pieces from `fairway/pages/coachhelm/development-parts.tsx` (log progress
-  Sheet, prescribed card, overview instrument, phone focus-area rows and
-  sheet); never copy those into a host again.
+- The development view is ONE component,
+  `fairway/pages/coachhelm/FairwayMyDevelopment.tsx`. The live host is
+  `host="stage"`: PlayerCoachHelmHome's StageRouter mounts
+  `FairwayMyDevelopmentStage` for `/coachhelm?view=development`
+  (`/my-development` redirects there), with the DrillPanel as chrome and the
+  stage's `home()` as the back chip. `host="page"` (default) is the
+  CoachHelmShell variant the fairway preview renders. Its sub-components live
+  in `fairway/pages/coachhelm/development-parts.tsx` (log progress Sheet,
+  prescribed card, overview instrument, phone focus-area rows and sheet).
+  The legacy `components/golf/coachhelm/home/DevelopmentDrill.tsx` (a drifted
+  verbatim port) is deleted; never copy the body into a host again.
 - Below `md` the development view reads as rows: one StatMatrix for the plan
   readouts, causal relationships and active focus areas as InsetGroup rows
   whose tap opens the detail in a Fairway Sheet, suggestions as rows with one

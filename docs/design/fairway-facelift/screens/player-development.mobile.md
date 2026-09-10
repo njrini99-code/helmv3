@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD013 -->
 # My development — `/golf/dashboard/my-development` → `/coachhelm?view=development` (player) · PHONE
 
-Files: the route redirects into the coachhelm page; the view is `PlayerCoachHelmHome` (legacy, `src/components/golf/coachhelm/home/`) hosting `DevelopmentDrill.tsx` (same folder), which is a verbatim port of `src/components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx` (the Fairway page is only mounted by the fairway preview; the live route never renders it, found during the pass). Shared pieces: `FocusAreaCard`, `GoalsSection`, `CausalWhyPanel`, and now `development-parts.tsx`. `development.md` (the peer's screen) already re-plans FocusAreaCard/FairwayGoalCard as seam rows for the coach route and notes the player view shares FocusAreaCard.
+Files: the route redirects into the coachhelm page; the view is `PlayerCoachHelmHome` (legacy, `src/components/golf/coachhelm/home/`) mounting `FairwayMyDevelopmentStage` from `src/components/fairway/pages/coachhelm/FairwayMyDevelopment.tsx` (`host="stage"`). During the pass the live view turned out to be `DevelopmentDrill.tsx`, a drifted verbatim port of that file; it is deleted (AUDIT M10). Shared pieces: `FocusAreaCard`, `GoalsSection`, `CausalWhyPanel`, and now `development-parts.tsx`. `development.md` (the peer's screen) already re-plans FocusAreaCard/FairwayGoalCard as seam rows for the coach route and notes the player view shares FocusAreaCard.
 
 ## What the phone capture shows (this branch, player, 393×852)
 
