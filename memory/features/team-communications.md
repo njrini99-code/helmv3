@@ -551,6 +551,33 @@ and draws the same chip `display: flex; justify-content: center; padding: 0 0
 16px 0` — in flow, so it structurally cannot collide. The chip's material stays
 Thread's glass, which `audit/DECISIONS.md` froze; only the placement moved.
 
+## Touch: the chips scroll without blur, and the bubble text never highlights (2026-09-09)
+
+Owner report from a phone: the thread scrolls choppily, and a long-press opens
+the reactions row correctly but also starts a text highlight when the hold lands
+on the message text. Two causes, both in `MessageThreadPane.tsx`'s territory.
+
+**Scroll.** G-50a (`audit/DECISIONS.md`) costed the day chip's 22px glass blur
+as "a single ~90×26px element" — one chip pinned at the head of the pane. The
+2026-09-07 change above made it a per-boundary separator in flow, so a
+200-message group thread scrolls dozens of them, and on iOS every
+`backdrop-filter` element inside a scroller is its own compositing layer,
+re-blurred on each frame. The chip now sets `backdrop-filter: none` under
+`(pointer: coarse)` and keeps the tinted ground and pop shadow, the same call
+`globals.css` already makes when it reduces glass blur on mobile. Desktop keeps
+the frozen material. **Rule carried forward: nothing that scrolls inside the
+thread gets a backdrop filter on touch.** The masthead, composer and reactions
+sheet are pinned, so theirs stay.
+
+**Selection.** The bubble turns `user-select` off on coarse pointers, but the
+message text is a `<p>` inside it, and the Capacitor layer in `globals.css`
+re-enables `user-select: text` on every `p` and `span` at `body.capacitor p`
+specificity — higher than a single Tailwind class. Only the native app hits it,
+which is why mobile Safari never showed it. A bubble-scoped
+`body.capacitor [data-message-bubble] p, … span` rule now outranks the
+re-enable; `MessageThreadPane.capacitorSelection.test.ts` pins its shape and
+cascade order. Copy in the reactions row is what replaces selection, as before.
+
 ## Opening a thread at its newest message: arm, then pin (2026-09-07)
 
 Two defects made a thread open at its OLDEST message once it was tall enough to
