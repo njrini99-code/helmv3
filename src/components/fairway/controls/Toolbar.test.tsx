@@ -306,3 +306,28 @@ describe('Toolbar — sticky detection never hands a calc() string to Intersecti
 
   });
 });
+
+describe('Toolbar `leading` slot', () => {
+  it('renders before search, shrinks to content, and is omitted from layout when absent', () => {
+    const { rerender } = render(
+      <Toolbar
+        leading={<button>‹ September 2026 ›</button>}
+        search={<input aria-label="search" />}
+      />,
+    );
+    const row = screen.getByRole('toolbar');
+    const leadingButton = screen.getByRole('button', { name: '‹ September 2026 ›' });
+    const searchInput = screen.getByRole('textbox', { name: 'search' });
+    // leading precedes search in DOM/tab order (no `order` utilities anywhere here).
+    expect(
+      leadingButton.compareDocumentPosition(searchInput) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const leadingWrapper = leadingButton.parentElement;
+    expect(leadingWrapper).not.toBeNull();
+    expect(leadingWrapper!.className).toContain('shrink-0');
+    expect(row.contains(leadingWrapper)).toBe(true);
+
+    rerender(<Toolbar search={<input aria-label="search" />} />);
+    expect(screen.queryByRole('button', { name: '‹ September 2026 ›' })).not.toBeInTheDocument();
+  });
+});

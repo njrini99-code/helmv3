@@ -52,7 +52,7 @@
  * the filter row for space and always lands at a real edge. This is what the
  * Signals surface wires to the (currently dead-coded) alerts.ts bulk actions.
  *
- * Slots:  search · filters · viewToggle · primaryAction · bulkActions
+ * Slots:  leading · search · filters · viewToggle · primaryAction · bulkActions
  * Accessible: role="toolbar" + aria-label, an aria-live count on the bulk bar,
  * keyboardable throughout (every child primitive ships its own focus ring).
  *
@@ -109,6 +109,15 @@ const STUCK_GLASS_STYLE: CSSProperties = {
 export type ToolbarMaterial = 'matte' | 'frost';
 
 export interface ToolbarProps {
+  /**
+   * A leading cluster rendered BEFORE `search` — e.g. a period title with
+   * prev/next stepping (the calendar masthead's "‹ September 2026 ›"
+   * group). Shrinks to fit its own content (`flex-shrink-0`) rather than
+   * competing with `search`/`filters` for growth, and — like every other
+   * slot — wraps onto its own line first on a narrow row. Omit for the
+   * unchanged layout (search first).
+   */
+  leading?: ReactNode;
   /** The inline search slot (typically a <SearchField />). */
   search?: ReactNode;
   /**
@@ -174,6 +183,7 @@ export interface ToolbarProps {
 
 const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
   {
+    leading,
     search,
     filters,
     viewToggle,
@@ -314,6 +324,15 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
             the whole time a coach had rows picked); the bulk bar below is an
             ADDITIONAL, separately-docked element instead of a replacement. */}
         <div className="flex min-h-[44px] flex-wrap items-center gap-3 px-3 py-2">
+          {/* leading — a fixed-content cluster (period title + stepping) ahead
+              of search/filters. Never grows/shrinks the row's other slots;
+              full-width on its own line below `sm` like every other slot. */}
+          {leading ? (
+            <div className="flex min-w-0 basis-full shrink-0 items-center gap-1 sm:basis-auto">
+              {leading}
+            </div>
+          ) : null}
+
           {/* Below `sm` the row re-composes into stacked full-width lines
               (#957 — at phone width, search, three filter pills, a
               segmented view toggle AND the action buttons cannot share
