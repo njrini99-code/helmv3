@@ -316,13 +316,13 @@ describe('Toolbar — sticky detection never hands a calc() string to Intersecti
       />,
     );
     expect(seen).toHaveLength(1);
-    expect(seen[0].rootMargin).toBe('-89px 0px 0px 0px');
+    expect(seen[0]?.rootMargin).toBe('-89px 0px 0px 0px');
   });
 
   it('keeps the plain px arithmetic for a numeric stickyTop', () => {
     const seen = stubObserver();
     render(<Toolbar sticky stickyTop={12} aria-label="Filters and actions" />);
-    expect(seen[0].rootMargin).toBe('-13px 0px 0px 0px');
+    expect(seen[0]?.rootMargin).toBe('-13px 0px 0px 0px');
   });
 
   it('re-resolves the string offset on resize', () => {
