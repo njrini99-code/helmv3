@@ -7,8 +7,7 @@ Evidence: `ui-intelligence/facelift/` captures (2026-09-10) and the read-only au
 ## Competing surfaces (from the captures)
 
 | # | Surfaces | What overlaps | Decision |
-| --- | --- | --- | --- |
-| 1 | `/dashboard` (coach home), `/intelligence` (CoachHelm brief), `/development` | All three open with "Welcome back, Nick", team KPIs, "who needs attention", trend. `/development` repeats the roster health header ("Who needs your attention", "Did the coaching land?", the 4 numbers) verbatim from `/roster`. | Home = operations (today, attention board, pulse, rounds, activity). Intelligence = CoachHelm cockpit (Spine + signals workspace). Development = the players/focus-areas board only; its welcome, pulse and "bleeding strokes" sections are removed (they live in the cockpit). Roster keeps the health header. |
+| --- | --- | --- | --- || 1 | `/dashboard` (coach home), `/intelligence` (CoachHelm brief), `/development` | All three open with "Welcome back, Nick", team KPIs, "who needs attention", trend. `/development` repeats the roster health header ("Who needs your attention", "Did the coaching land?", the 4 numbers) verbatim from `/roster`. | Home = operations (today, attention board, pulse, rounds, activity). Intelligence = CoachHelm cockpit (Spine + signals workspace). Development = the players/focus-areas board only; its welcome, pulse and "bleeding strokes" sections are removed (they live in the cockpit). Roster keeps the health header. |
 | 2 | `/coachhelm` for a coach | Renders a locked card ("This CoachHelm dashboard is the player view… Open Brief"). Direct-URL only: the coach rail, dock and More sheet all point at `/intelligence` (nav-registry). | Keep the in-place card. A session-conditional `redirect()` inside the RSC render is the React #310 crash class pinned by `src/test/static/golf-conditional-redirect.test.ts`; the only safe redirect is pre-render in `src/lib/supabase/middleware.ts`, which today runs no role lookup on golf routes. Follow-up: a pathname-scoped coach lookup for these two exact paths in middleware. |
 | 3 | `/stats` for a coach | Locked card ("Personal stats belong to a player profile… Team Stats"). Direct-URL only: the coach Rounds & Stats hub lands on `/stats/team`. | Same as #2. |
 | 4 | `/analytics/coachhelm` | Redirects to `/intelligence` already; the route folder is a shim. | Keep the redirect, delete the page body if it is only a redirect (dead-code audit confirms). |
@@ -22,8 +21,7 @@ Evidence: `ui-intelligence/facelift/` captures (2026-09-10) and the read-only au
 Static audit, verified by reading each site. "Fix" names the in-repo pattern reused.
 
 | # | File | Pattern | Risk | Fix |
-| --- | --- | --- | --- | --- |
-| 1 | `fairway/pages/messages/MessageThreadPane.tsx` formatDaySeparator | `new Date()` during render | High, live | server-seeded `now` / mount-gated now (FairwayAgendaView `nowRef` pattern) |
+| --- | --- | --- | --- | --- || 1 | `fairway/pages/messages/MessageThreadPane.tsx` formatDaySeparator | `new Date()` during render | High, live | server-seeded `now` / mount-gated now (FairwayAgendaView `nowRef` pattern) |
 | 2 | `fairway/pages/messages/MessageConversationRail.tsx` formatTime | `new Date()` during render | High, live | same |
 | 3 | `fairway/pages/coachhelm/FairwayPlayerInsight.tsx` formatRelativeDate | `new Date()` during render | High, live | same |
 | 4 | `fairway/notifications/time-format.ts` + `NotificationRow.tsx` | `Date.now()` default param; `toLocaleString` without locale/timeZone | Med-high, live on home | `now` passed from a mount-gated state; pin locale + timeZone |
@@ -39,8 +37,7 @@ Also seen in the captures: the coach home desktop first paint had the trend char
 knip + import-graph + per-file `rg` verification. Routes: no unreachable `page.tsx` under golf — `/hub`, `/patterns`, `/insights`, `/my-insights`, `/my-development`, `/my-game-profile`, `/my-standing`, `/alerts`, `/development` are documented redirect shims with `legacy: true, hidden: true` registry entries; `/fairway-preview` and `/vizlab` are deliberate direct-URL / dev-only surfaces; `/dev/haptics` is linked from Settings.
 
 | Path | Why | LOC | Action |
-| --- | --- | --- | --- |
-| `hooks/golf/use-offline-sync.ts` | guarded by a must-not-import test | 508 | delete |
+| --- | --- | --- | --- || `hooks/golf/use-offline-sync.ts` | guarded by a must-not-import test | 508 | delete |
 | `app/golf/actions/v3/llm.ts` | zero references | 536 | delete |
 | `app/golf/actions/v3/{practice-rx,team-practice-rx,focus-area-progress,goal-progress}.ts` | zero references | 295 | delete |
 | `app/golf/actions/player-effectiveness.ts`, `…/analytics/coachhelm/EffectivenessRetryButton.tsx`, `team-sg-baseline.ts` | zero references | 417 | delete |
@@ -60,8 +57,7 @@ Legacy stragglers: ui/input and the three ui/confirm-dialog consumers inside Fai
 User-reported: a data-heavy coach account is slow and laggy, the message and calendar drawers stutter, and every tab tap reloads the page.
 
 | # | Symptom | Cause | Fix |
-| --- | --- | --- | --- |
-| 1 | Every bottom-nav / sidebar tab switch refetches the page and repaints the loading skeleton, even bouncing between two tabs | `next.config.mjs` set no `experimental.staleTimes`; Next 16 defaults `dynamic` to 0, and the dashboard layout is fully dynamic (cookies), so the client router cache never kept a visited tab. Dev mode also disables `<Link prefetch>`, so the dev server shows the worst case. | `staleTimes: { dynamic: 60, static: 300 }` — a visited tab is served from the router cache for the hop back; server actions that `revalidatePath` and `router.refresh()` still purge it. Shell links keep `prefetch`. |
+| --- | --- | --- | --- || 1 | Every bottom-nav / sidebar tab switch refetches the page and repaints the loading skeleton, even bouncing between two tabs | `next.config.mjs` set no `experimental.staleTimes`; Next 16 defaults `dynamic` to 0, and the dashboard layout is fully dynamic (cookies), so the client router cache never kept a visited tab. Dev mode also disables `<Link prefetch>`, so the dev server shows the worst case. | `staleTimes: { dynamic: 60, static: 300 }` — a visited tab is served from the router cache for the hop back; server actions that `revalidatePath` and `router.refresh()` still purge it. Shell links keep `prefetch`. |
 | 2 | Every sheet stutters on open, close and drag | `overlays/Sheet.tsx` puts the frost material (38px blur) on the very node vaul transforms, so the GPU resamples the blur every frame | done 35ddebc17: transformed wrapper without blur, static inner child carries the material |
 | 3 | Every blocking modal stutters the same way | `overlays/ModalShell.tsx` animates the `motion.div` that carries `fw-glass-strong` | done 3389f1ff6: same split |
 | 4 | Sticky in-drawer headers re-blur on every scroll frame on phones | `.fw-glass-chrome` on sticky headers inside scrolling sheet bodies (event drawer, message thread, calendar hero, 7+ more) has no mobile downshift | done e1c849082: mobile downshift (8px) + `.fw-frost-static`; the phone drawer and hero headers are matte (helmv3-20) |
@@ -88,8 +84,7 @@ Owner: helmv3-20 (mobile lane). Evidence: the read-only understand pass over `sr
 ### Competing implementations (mobile)
 
 | # | Surfaces | What overlaps | Decision |
-|---|---|---|---|
-| M1 | `src/components/fairway/pages/calendar/FairwayEventDetailDrawer.tsx` vs `src/components/golf/calendar/MobileEventSheet.tsx` (915 LOC, hand-rolled bottom sheet) | Two event-detail sheets for one event. The golf one is dead for golf but is still reached by baseball through `src/components/shared/calendar/PremiumCalendarClient.ts` (re-exports `@/components/golf/calendar/PremiumCalendarClient`). | Golf uses only the Fairway drawer (now a `Sheet material="frost"`). Leave `golf/calendar/**` alone in this lane: it is the baseball calendar. Moving it is a baseball task. |
+| --- | --- | --- | --- || M1 | `src/components/fairway/pages/calendar/FairwayEventDetailDrawer.tsx` vs `src/components/golf/calendar/MobileEventSheet.tsx` (915 LOC, hand-rolled bottom sheet) | Two event-detail sheets for one event. The golf one is dead for golf but is still reached by baseball through `src/components/shared/calendar/PremiumCalendarClient.ts` (re-exports `@/components/golf/calendar/PremiumCalendarClient`). | Golf uses only the Fairway drawer (now a `Sheet material="frost"`). Leave `golf/calendar/**` alone in this lane: it is the baseball calendar. Moving it is a baseball task. |
 | M2 | Event type presentation: `eventPresentation.ts` (TYPE_META), the drawer's own type map, `FairwayDayStrip.tsx` `TYPE_DOT_CLASS` | Three copies of the same colour/label/icon table drifted independently. | One table in `eventPresentation.ts`; the drawer and the strip import it (done in the calendar mobile pass). |
 | M3 | Legacy `@/components/ui/drawer` (vaul, its own frost) inside Fairway: `pages/coachhelm/FairwayMyDevelopment.tsx`, `pages/rounds-new/FairwayCoursePicker.tsx`, and `app/golf/(dashboard)/dashboard/my-development/LogProgressButton.tsx` | A second bottom-sheet stack next to `fairway/overlays/Sheet`, with its own overlay z-index, blur and safe-area maths. | Migrate each to `Sheet` when its screen gets its mobile pass (rounds → CoursePicker; CoachHelm → MyDevelopment). Not touched by the calendar/dock PR. |
 | M4 | Active-route matching: `FairwayBottomNav.tsx` had its own `matchActive` next to `app-shell/more-nav.ts` `matchActive` | Two segment-boundary matchers that could disagree on which tab lights up vs which row the More sheet marks current. | One matcher (`more-nav.ts`); the dock imports it (done). |
@@ -101,8 +96,7 @@ Owner: helmv3-20 (mobile lane). Evidence: the read-only understand pass over `sr
 Each renders server-side from `Date.now()` / `new Date()` / an undefined-locale `toLocale*`, so the server HTML and the first client render can disagree (a hydration warning at best, a text flash at worst).
 
 | File:line | Pattern | Fix |
-|---|---|---|
-| `src/components/fairway/notifications/time-format.ts:7` (`relativeTimeFrom(iso, nowMs = Date.now())`), `:18`, `:24` (`toLocaleDateString(undefined, …)`) and its consumer `pages/notifications/NotificationRow.tsx` | Relative time and locale formatting computed during render. | Pass `now` from a `useEffect`-set state or `useSyncExternalStore` snapshot (the pattern `FairwayWhatsNew.tsx` already uses), and pin the locale. |
+| --- | --- | --- || `src/components/fairway/notifications/time-format.ts:7` (`relativeTimeFrom(iso, nowMs = Date.now())`), `:18`, `:24` (`toLocaleDateString(undefined, …)`) and its consumer `pages/notifications/NotificationRow.tsx` | Relative time and locale formatting computed during render. | Pass `now` from a `useEffect`-set state or `useSyncExternalStore` snapshot (the pattern `FairwayWhatsNew.tsx` already uses), and pin the locale. |
 | `src/components/fairway/pages/rounds/FairwayUnfinishedBanner.tsx:47` | `Date.now() - new Date(ts)` in render. | Same: compute after mount. Rounds mobile pass. |
 | `src/components/fairway/pages/roster/roster-helpers.ts:35` (`isUserOnline`) | `Date.now()` in a helper called from render. | Take `nowMs` as an argument supplied by the client. Roster mobile pass. |
 | `src/components/fairway/pages/coachhelm/FairwayEffectiveness.tsx:340` (and `:420/:463` `new Date()` inside effects, which are fine) | Relative "refreshed N s ago" computed in render. | Derive from `lastRefreshedAt` state in an interval effect. CoachHelm pass. |
@@ -111,8 +105,7 @@ Each renders server-side from `Date.now()` / `new Date()` / an undefined-locale 
 ### Dead code and drift (mobile)
 
 | Item | Evidence | Decision |
-|---|---|---|
-| `Sheet` keyboard lift | `overlays/ModalShell.tsx:51` and the drawer use `--keyboard-height`; only `CapacitorProvider` publishes it. In a mobile browser the value is always 0px and the sheet footer sits under the software keyboard. | Keep (it is correct in the Capacitor build). For PWA/browser, the block CTA relies on `interactive-widget=resizes-content`; noted, not changed. |
+| --- | --- | --- || `Sheet` keyboard lift | `overlays/ModalShell.tsx:51` and the drawer use `--keyboard-height`; only `CapacitorProvider` publishes it. In a mobile browser the value is always 0px and the sheet footer sits under the software keyboard. | Keep (it is correct in the Capacitor build). For PWA/browser, the block CTA relies on `interactive-widget=resizes-content`; noted, not changed. |
 | `--fw-mobile-nav-height` vs the real dock | Token said 70px + max(); the dock is 60px capsule + 10px padding + `pb-[calc(10px+safe-area)]` = 80px + safe area. Content under the dock lost 10px. | Fixed by the peer in 0d241b70b (`calc(80px + env(safe-area-inset-bottom, 0px))`, AppShell offset 80px). The calendar FAB uses the token, so it moved with it. |
 | Calendar FAB `z-[19]` | `FairwayCalendar.tsx:1140`: an arbitrary z one below the dock. | `z-[var(--fw-z-sticky)]` (10): above the stage, below the dock (`--fw-z-nav` 20). |
 | Availability overlay, Month on phone | `FairwayCalendar.tsx:1296` renders the compact month on phone, but the availability lens still lays out the desktop month grid inside it. | Behaviour gap, unchanged in this pass; a follow-up for the availability lens. |
