@@ -25,7 +25,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { CausalWhyPanel } from './CausalWhyPanel';
+import { CausalWhyPanel, causalStrengthBars } from './CausalWhyPanel';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 
 function row(
@@ -144,5 +144,20 @@ describe('CausalWhyPanel — root-cause chains', () => {
     expect(
       screen.getByText(/Not enough rounds yet to map what's driving scores/i),
     ).toBeInTheDocument();
+  });
+});
+
+describe('causalStrengthBars — the strength bars data', () => {
+  it('orders by strength, encodes strength as a percent and highlights dose-responsive rows', () => {
+    const bars = causalStrengthBars([
+      row('putting', 'total_putts', 'scoring', 'score_to_par', { strength: 0.42 }),
+      row('driving_accuracy', 'total_fairways_hit', 'scoring', 'score_to_par', {
+        strength: 0.81,
+        dose_response: true,
+      }),
+    ]);
+    expect(bars.map((b) => b.value)).toEqual([81, 42]);
+    expect(bars[0]).toMatchObject({ label: 'Fairways to Score', highlight: true });
+    expect(bars[1]).toMatchObject({ label: 'Putting to Score', highlight: false });
   });
 });

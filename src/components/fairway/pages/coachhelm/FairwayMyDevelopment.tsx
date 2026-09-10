@@ -44,11 +44,12 @@
  * port of this body, is deleted.
  * ========================================================================== */
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Clock, CheckCircle2, MessageSquare, Target } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { fairwayScope } from '@/lib/redesign/flag';
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
@@ -57,17 +58,18 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { Button } from '@/components/fairway/controls';
 import { Surface } from '@/components/fairway/surfaces';
 import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
-import { Eyebrow } from '@/components/fairway/controls/eyebrow';
 import { CoachHelmShell } from './CoachHelmShell';
 import { DrillPanel } from '@/components/fairway/modules/DrillPanel';
 import { useStage } from '@/components/fairway/modules/StageRouter';
 import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
 import {
   ActiveFocusAreaList,
-  DevelopmentOverviewInstrument,
   FocusAreaSheet,
+  LeadAreaStage,
   LogProgressSheet,
+  PlanSegmentBar,
   ProposedAreaCard,
+  pickLeadArea,
   useFocusAreaSheet,
   standingForArea,
   type LogProgressState,
@@ -344,7 +346,42 @@ export function FairwayMyDevelopment({
     </div>
   );
 
-  // The body is host-independent; each host only supplies its chrome.
+  // The lead area is derived on every render, never stored, so it cannot
+  // drift while a sheet is open (player-development.v2.md, context rule).
+  const leadArea = useMemo(
+    () => pickLeadArea(activeAreas, causalRelationships),
+    [activeAreas, causalRelationships],
+  );
+  const showPlan = total + proposedAreas.length >= 2;
+  const showFirstRow = leadArea != null || showPlan || proposedAreas.length > 0;
+
+  const prescribed =
+    proposedAreas.length > 0 ? (
+      <section>
+        <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+          <Target className="h-5 w-5 text-accent-600" aria-hidden />
+          Prescribed for you
+          <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
+            {proposedAreas.length} pending
+          </span>
+        </h2>
+        <div className="flex flex-col gap-3">
+          {proposedAreas.map((fa) => (
+            <ProposedAreaCard
+              key={fa.id}
+              focusArea={fa}
+              deciding={decidingId === fa.id}
+              onAccept={() => handleAccept(fa)}
+              onDecline={() => handleDecline(fa)}
+            />
+          ))}
+        </div>
+      </section>
+    ) : null;
+
+  // The body is host-independent; each host only supplies its chrome. Order
+  // (player-development.v2.md): stage · plan · ladder · goals · suggestions
+  // · why · completed, as three 7/5 rows from `md`; one column below it.
   const body = (
     <>
           {/* ── Error state — distinct from empty (mustFix: silent fall-through).
@@ -366,54 +403,42 @@ export function FairwayMyDevelopment({
             </InlineNotice>
           ) : (
             <div className="flex flex-col gap-10">
-              {/* ── Goals — the player-owned primitive, surfaced FIRST and
-                    INDEPENDENT of the focus-area count. GoalsSection owns its own
-                    0-goal / 0-suggestion honest-empty states internally. ── */}
-              <GoalsSection
-                // eslint-disable-next-line jsx-a11y/aria-role
-                role="player"
-                canCreate
-                activeGoals={goals ?? []}
-                suggestions={suggestions ?? []}
-                achievedGoals={achievedGoals ?? []}
-                // ACTIVE areas only — `total` folds in completed ones, and the
-                // copy must name a number the reader can actually see below.
-                focusAreaCount={activeAreas.length}
-              />
-
-              {/* ── Why your scores move — the causal-engine layer, surfaced from
-                    the genuine golf_causal_relationships output. Independent of
-                    focus areas + Goals (renders its own honest-empty state when
-                    there aren't enough rounds to map drivers). ── */}
-              <CausalWhyPanel relationships={causalRelationships} />
-
-              {/* ── Prescribed for you (proposed) — coach-assigned areas awaiting
-                    your accept/decline. Rendered first so they're acted on. ── */}
-              {proposedAreas.length > 0 ? (
-                <section>
-                  <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                    <Target className="h-5 w-5 text-accent-600" aria-hidden />
-                    Prescribed for you
-                    <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                      {proposedAreas.length} pending
-                    </span>
-                  </h2>
-                  <div className="flex flex-col gap-3">
-                    {proposedAreas.map((fa) => (
-                      <ProposedAreaCard
-                        key={fa.id}
-                        focusArea={fa}
-                        deciding={decidingId === fa.id}
-                        onAccept={() => handleAccept(fa)}
-                        onDecline={() => handleDecline(fa)}
-                      />
-                    ))}
-                  </div>
-                </section>
+              {/* ── Row 1: the stage ("Your next stroke", the lead area with
+                    its rail, trend and standing) beside the plan's shape and
+                    any prescribed areas awaiting a decision. With no active
+                    area the prescribed areas take the stage's place. ── */}
+              {showFirstRow ? (
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
+                  {leadArea ? (
+                    <LeadAreaStage
+                      area={leadArea}
+                      standing={standingForArea(leadArea, standingByMetric)}
+                      onOpen={() => areaSheet.openArea(leadArea.id)}
+                      className="md:col-span-7"
+                    />
+                  ) : null}
+                  {showPlan || prescribed ? (
+                    <div
+                      className={cn(
+                        'flex flex-col gap-8',
+                        leadArea ? 'md:col-span-5' : 'md:col-span-12',
+                      )}
+                    >
+                      {showPlan ? (
+                        <PlanSegmentBar
+                          active={activeAreas.length}
+                          completed={completedAreas.length}
+                          proposed={proposedAreas.length}
+                        />
+                      ) : null}
+                      {prescribed}
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
 
               {!hasAnyArea ? (
-                /* ── Genuinely-empty (Goals above still render). The player can
+                /* ── Genuinely-empty (Goals below still render). The player can
                       create their own focus area OR reach out to their coach. ── */
                 <Surface padding="lg">
                   <EmptyState
@@ -434,76 +459,80 @@ export function FairwayMyDevelopment({
                 </Surface>
               ) : null}
 
-              {total > 0 ? (
-                <div className="flex flex-col gap-6 border-t border-border-subtle pt-8">
-                  {/* ── Framing masthead — labels the merged plan + active +
-                        completed zone as ONE section beneath Goals/Causal/
-                        Proposed above. GoalHero (GoalsSection) owns the page's
-                        accent focal point; this stays a quiet compact frame,
-                        never a second hero. ── */}
-                  <Eyebrow>Your plan</Eyebrow>
-
-                  {/* ── The plan instrument — a calm base-density summary
-                        readout of the player's development progress (NOT the
-                        accent focal panel — GoalHero above owns that). The
-                        dense FocusAreaCard rows below stay MATTE + legible. ── */}
-                  <DevelopmentOverviewInstrument
-                    activeCount={activeAreas.length}
-                    completedCount={completedAreas.length}
+              {/* ── Row 2: the progress ladder (every active area, least
+                    progressed first, rails aligned) beside the goals and the
+                    suggestions. GoalsSection owns its own honest empty
+                    states; `variant="inline"` is the seam reading. ── */}
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
+                {activeAreas.length > 0 ? (
+                  <section className="md:col-span-7">
+                    <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+                      <Clock className="h-5 w-5 text-accent-600" aria-hidden />
+                      Active focus areas
+                      <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
+                        {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
+                      </span>
+                    </h2>
+                    {/* Phone: ONE matte group of seam rows, a tap opens the
+                          full card in a Sheet (player-development.mobile.md
+                          #3); md and up: the full cards, in the same order. */}
+                    <ActiveFocusAreaList
+                      areas={activeAreas}
+                      standingByMetric={standingByMetric}
+                      onOpen={areaSheet.openArea}
+                      onLogProgress={handleLogProgress}
+                      onComplete={handleComplete}
+                      completingId={completingId}
+                    />
+                  </section>
+                ) : null}
+                <div className={activeAreas.length > 0 ? 'md:col-span-5' : 'md:col-span-12'}>
+                  <GoalsSection
+                    // eslint-disable-next-line jsx-a11y/aria-role
+                    role="player"
+                    variant="inline"
+                    canCreate
+                    activeGoals={goals ?? []}
+                    suggestions={suggestions ?? []}
+                    achievedGoals={achievedGoals ?? []}
+                    // ACTIVE areas only — `total` folds in completed ones, and the
+                    // copy must name a number the reader can actually see above.
+                    focusAreaCount={activeAreas.length}
                   />
-
-                  {/* ── Active / in-progress ── */}
-                  {activeAreas.length > 0 ? (
-                    <section>
-                      <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                        <Clock className="h-5 w-5 text-accent-600" aria-hidden />
-                        Active focus areas
-                        <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                          {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
-                        </span>
-                      </h2>
-                      {/* Phone: ONE matte group of seam rows, a tap opens the
-                            full card in a Sheet (player-development.mobile.md
-                            #3); md and up: the full cards, unchanged. */}
-                      <ActiveFocusAreaList
-                        areas={activeAreas}
-                        standingByMetric={standingByMetric}
-                        onOpen={areaSheet.openArea}
-                        onLogProgress={handleLogProgress}
-                        onComplete={handleComplete}
-                        completingId={completingId}
-                      />
-                    </section>
-                  ) : null}
-
-                  {/* ── Completed ── */}
-                  {completedAreas.length > 0 ? (
-                    <section>
-                      <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                        <CheckCircle2 className="h-5 w-5 text-text-tertiary" aria-hidden />
-                        Completed
-                        <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                          {completedAreas.length}{' '}
-                          {completedAreas.length === 1 ? 'area' : 'areas'}
-                        </span>
-                      </h2>
-                      <div className="flex flex-col gap-3">
-                        {completedAreas.map((fa, i) => (
-                          <FocusAreaCard
-                            key={fa.id}
-                            focusArea={fa}
-                            // eslint-disable-next-line jsx-a11y/aria-role
-                            role="player"
-                            index={i}
-                            onReopen={handleReopen}
-                            reopening={reopeningId === fa.id}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  ) : null}
                 </div>
-              ) : null}
+              </div>
+
+              {/* ── "Why your scores move" (the causal-engine layer, its own
+                    honest empty state), then the completed areas, both full
+                    width: the completed card's one-line status cluster needs
+                    the whole column (a 7-col cell clipped "Bounce-back" to
+                    "Bounce-ba…" in the capture). ── */}
+              <CausalWhyPanel relationships={causalRelationships} />
+              {completedAreas.length > 0 ? (
+                  <section>
+                    <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+                      <CheckCircle2 className="h-5 w-5 text-text-tertiary" aria-hidden />
+                      Completed
+                      <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
+                        {completedAreas.length}{' '}
+                        {completedAreas.length === 1 ? 'area' : 'areas'}
+                      </span>
+                    </h2>
+                    <div className="flex flex-col gap-3">
+                      {completedAreas.map((fa, i) => (
+                        <FocusAreaCard
+                          key={fa.id}
+                          focusArea={fa}
+                          // eslint-disable-next-line jsx-a11y/aria-role
+                          role="player"
+                          index={i}
+                          onReopen={handleReopen}
+                          reopening={reopeningId === fa.id}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
             </div>
           )}
     </>

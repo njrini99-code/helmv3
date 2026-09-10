@@ -361,9 +361,20 @@ function isActionableStatus(status: string | null | undefined): boolean {
  * the SAME series the card does, and never a second, drifting derivation.
  * ------------------------------------------------------------------------- */
 
-export function focusAreaTrendSeries(
+export interface FocusAreaTrendEntry {
+  /** The reading's day, `YYYY-MM-DD`. */
+  day: string;
+  value: number;
+}
+
+/**
+ * The dated readings behind {@link focusAreaTrendSeries}, oldest to newest.
+ * The development stage's Ribbon needs the day for its x labels and its
+ * "Last: 47.1 · Aug 31" readout; the series below is this list's values.
+ */
+export function focusAreaTrendEntries(
   focusArea: Pick<FocusAreaCardData, 'progressHistory' | 'snapshots'>,
-): number[] {
+): FocusAreaTrendEntry[] {
   const byDay = new Map<string, number>();
   const add = (at: string | null | undefined, value: unknown) => {
     if (!at || typeof value !== 'number' || !Number.isFinite(value)) return;
@@ -375,7 +386,13 @@ export function focusAreaTrendSeries(
   for (const s of snaps) add(s?.date, s?.value);
   return [...byDay.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, v]) => v);
+    .map(([day, value]) => ({ day, value }));
+}
+
+export function focusAreaTrendSeries(
+  focusArea: Pick<FocusAreaCardData, 'progressHistory' | 'snapshots'>,
+): number[] {
+  return focusAreaTrendEntries(focusArea).map((e) => e.value);
 }
 
 /* ---------------------------------------------------------------------------
@@ -452,7 +469,7 @@ export function SourceChip({
  * target value so the card reads "Target: 28.5 by Apr 12".
  * ------------------------------------------------------------------------- */
 
-function formatTimeframe(focusArea: FocusAreaCardData): string | null {
+export function formatTimeframe(focusArea: FocusAreaCardData): string | null {
   if (focusArea.target_kind === 'date' && focusArea.target_date) {
     // Parse the YYYY-MM-DD as a local date (split avoids the UTC-midnight
     // off-by-one that `new Date('2026-04-12')` causes in western timezones).
