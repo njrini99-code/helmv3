@@ -2,11 +2,13 @@
 
 /**
  * ============================================================================
- * StandingTrack — the spine's "you vs. benchmarks" pin track (mockup §01 .track)
+ * StandingTrack — the spine's "you vs. benchmarks" progress rail (mockup §01 .track)
  * ----------------------------------------------------------------------------
  * A single sunken rail on the dark spine surface: a green fill to the
- * subject's percentile, one or more benchmark tick marks (Team / Tour /
- * whatever the caller passes), and a pin marker on top. Renders inside
+ * subject's percentile, and one or more benchmark tick marks (Team / Tour /
+ * whatever the caller passes) on top of it. No separate dot/pin marker —
+ * the fill bar's own leading edge IS the subject's position (the owner
+ * asked to remove every dot-on-a-rail marker, everywhere). Renders inside
  * `Spine` between two hairlines, but is exported standalone so surface
  * compositions can mount it outside the spine shell too.
  *
@@ -15,13 +17,14 @@
  * matching the approved mockup exactly (never `bg-white/N`, which the
  * `no-arbitrary-bg-white` lint rule bans in className).
  *
- * THE LABEL ROW ("where this sits", fixed): the pin and benchmark ticks above
- * ARE positioned by real value (`left:${pct}%`), but the text-label row used
+ * THE LABEL ROW ("where this sits", fixed): the fill bar and benchmark ticks
+ * above ARE positioned by real value (`left:${pct}%` / `width:${pct}%`), but
+ * the text-label row used
  * to be laid out with `flex justify-between` — which evenly spreads N labels
  * across the row width with ZERO relation to the real `pct`s driving the
  * markers above them (You flush-left, Tour flush-right, Team dead-center,
  * regardless of where those values actually sit on the rail). `layoutTrackLabels`
- * below fixes this the same coordinate-space way the pins/ticks already work —
+ * below fixes this the same coordinate-space way the fill/ticks already work —
  * each label is absolutely positioned at ITS OWN marker's clamped `left:%` —
  * plus a minimum-separation nudge so two labels never render on top of each
  * other when their real values land close together (the common case: most SG
@@ -65,7 +68,7 @@ export interface StandingTrackLabelInput {
 export interface StandingTrackLabelPosition {
   key: string;
   /** Final left:% for the label — edge-clamped, then nudged apart from any
-   *  colliding neighbor. The marker/tick/pin it corresponds to is NEVER
+   *  colliding neighbor. The marker/tick it corresponds to is NEVER
    *  moved; only the text label's position is ever adjusted. */
   pct: number;
 }
@@ -167,15 +170,14 @@ export function StandingTrack({
             }}
           />
         ))}
-        <div
-          aria-hidden="true"
-          data-slot="standing-track-pin"
-          className="absolute top-1/2 h-[13px] w-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-accent-400 bg-text-on-accent"
-          style={{ left: `${you}%` }}
-        />
+        {/* No dot/pin marker here on purpose — the owner asked to remove every
+            "dot on a rail" standing visual, everywhere. The subject's
+            position already reads from the `standing-track-fill` bar above;
+            a pin repeated the same value as a separate circle without adding
+            information. (2026-09-10) */}
       </div>
       {/* Each label sits at ITS OWN marker's clamped left:% (same coordinate
-          space as the pin/ticks above), collision-nudged apart from any
+          space as the fill/ticks above), collision-nudged apart from any
           neighbor landing within STANDING_TRACK_MIN_GAP_PCT — replaces the
           old `justify-between` row that ignored the real values entirely. */}
       {/* overflow-clip: a structural containment guarantee — even if a

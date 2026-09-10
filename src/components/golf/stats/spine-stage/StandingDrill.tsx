@@ -5,9 +5,10 @@
  * StandingDrill — `?area=standing` (spec §5.1, "Detailed Standings, promoted")
  * ----------------------------------------------------------------------------
  * Every metric vs PGA Tour and the team, grouped by category, as reused
- * `StandingStrip` cards. ALWAYS visible (no collapsed-by-default toggle — the
- * legacy cockpit hid this behind a disclosure; the stage IS the drill door
- * now, so the content behind it opens straight to the full board).
+ * `StandingBars` cards (bar rows, not the old dot-on-a-rail `StandingStrip`).
+ * ALWAYS visible (no collapsed-by-default toggle — the legacy cockpit hid
+ * this behind a disclosure; the stage IS the drill door now, so the content
+ * behind it opens straight to the full board).
  * ========================================================================== */
 
 import { Fragment } from 'react';
@@ -15,7 +16,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 import { DrillPanel, StandingTrack, useStage } from '@/components/fairway/modules';
-import { StandingStrip } from '@/components/fairway';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { TABULAR_NUMS } from '@/components/fairway/charts/theme';
 import { cn } from '@/lib/utils';
 import { getMetricRenderConfig, type MetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -59,13 +60,14 @@ const SG_INSTRUMENT_HAIRLINE = 'oklch(1 0 0 / 0.14)';
  * StrokesGainedInstrument — the "grouped visually apart from traditional
  * stats" SG cluster: all 4 sg_* rows plus sg_total, in ONE shared CSS grid
  * (so the label / You-value / rail columns align pixel-for-pixel across
- * every row — the plain generic `StandingStrip` cards below can't do this,
+ * every row — the plain generic `StandingBars` cards below can't do this,
  * each is its OWN box with its own internal layout) mounted on the SAME
  * dark accent-gradient surface `Spine` uses for exactly this "you vs
  * benchmarks" read. Each row's You/Team/Tour reference ticks are drawn by
- * the REAL, fixed `StandingTrack` (not a reimplementation) — the component
- * doc on `StandingTrack.tsx` calls out standalone reuse outside `Spine` as
- * the intended pattern.
+ * the REAL, fixed `StandingTrack` (not a reimplementation, and no dot/pin —
+ * the subject reads from its fill bar) — the component doc on
+ * `StandingTrack.tsx` calls out standalone reuse outside `Spine` as the
+ * intended pattern.
  */
 function StrokesGainedInstrument({
   rows,
@@ -193,7 +195,7 @@ export function StandingDrill({
   }
 
   // Strokes Gained renders as its own aligned instrument group (below),
-  // separate from the generic per-category `StandingStrip` grids — excluded
+  // separate from the generic per-category `StandingBars` grids — excluded
   // from `groups` so it's never ALSO rendered as a plain card row.
   const sgRows = byCategory.get('sg') ?? [];
   const groups = CATEGORY_ORDER.filter((g) => (byCategory.get(g.category) ?? []).length > 0);
@@ -228,7 +230,7 @@ export function StandingDrill({
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {rows.map(({ id, row, cfg }) => (
-                    <StandingStrip
+                    <StandingBars
                       key={id}
                       metric_id={id}
                       metric_label={cfg.display_label}
@@ -241,7 +243,6 @@ export function StandingDrill({
                       direction={cfg.direction}
                       unit={cfg.unit}
                       scale={cfg.default_scale}
-                      size="card"
                       viewer_context={standingViewerContext}
                       player_name={playerName}
                     />

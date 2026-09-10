@@ -20,7 +20,7 @@ import { useMemo, useState } from 'react';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
 import { InsightCard, InsightPanel, Eyebrow, type InsightPanelAction, type InsightPriority } from '@/components/fairway';
-import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
 import { CategoryInsightsPanel } from '@/components/golf/coachhelm/insights/CategoryInsightsPanel';
 import { getThemeDef } from '@/lib/coachhelm/v3/themes/taxonomy';
@@ -167,8 +167,9 @@ export function InsightsDrill({
                       {insight.content}
                       {st && cfg ? (
                         <div className="mt-3">
-                          <StandingStrip
-                            size="inline"
+                          <StandingBars
+                            size="sm"
+                            layout="compact"
                             metric_id={m}
                             metric_label={cfg.display_label}
                             player_value={st.player_value}

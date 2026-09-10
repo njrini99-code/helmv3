@@ -252,7 +252,7 @@ describe('StandingTrack (render)', () => {
     expect(Math.abs(tourPct - teamPct)).toBeGreaterThanOrEqual(STANDING_TRACK_MIN_GAP_PCT - 1e-6);
   });
 
-  it('still positions the pin and benchmark ticks at their true, un-nudged percentages', () => {
+  it('still positions the fill bar and benchmark ticks at their true, un-nudged percentages', () => {
     const { container } = render(
       <StandingTrack
         pct={75}
@@ -260,11 +260,22 @@ describe('StandingTrack (render)', () => {
         benchmarks={[{ label: 'Team', pct: 55 }, { label: 'Tour', pct: 50, emphasis: true }]}
       />,
     );
-    const pin = container.querySelector('[data-slot="standing-track-pin"]') as HTMLElement;
-    expect(pin.style.left).toBe('75%');
+    const fill = container.querySelector('[data-slot="standing-track-fill"]') as HTMLElement;
+    expect(fill.style.width).toBe('75%');
     const ticks = Array.from(container.querySelectorAll('[data-slot="standing-track-bench"]')) as HTMLElement[];
     const leftValues = ticks.map((t) => t.style.left).sort();
     expect(leftValues).toEqual(['50%', '55%']);
+  });
+
+  it('renders no dot/pin marker — the subject reads from the fill bar only', () => {
+    const { container } = render(
+      <StandingTrack
+        pct={75}
+        subjectLabel="You"
+        benchmarks={[{ label: 'Team', pct: 55 }, { label: 'Tour', pct: 50, emphasis: true }]}
+      />,
+    );
+    expect(container.querySelector('[data-slot="standing-track-pin"]')).toBeNull();
   });
 
   it('subject "You" uses the sentinel key internally, never colliding with a real benchmark label', () => {

@@ -7,7 +7,7 @@
  * Regression coverage for: (1) all 5 sg_* rows (total + 4 sub-components)
  * render through the SAME aligned instrument group, using the real, fixed
  * `StandingTrack` per row (not a duplicated one-off track), separate from
- * the generic per-category `StandingStrip` grid below it; (2) the "What
+ * the generic per-category `StandingBars` grid below it; (2) the "What
  * CoachHelm sees" section renders through the shared `CategoryInsightStrip`
  * instead of the old bespoke `CauseEffectCard` grid, still showing (at most)
  * the top-3 patterns by |strokeImpact|.
@@ -68,16 +68,18 @@ describe('StandingDrill — Strokes Gained instrument group', () => {
     expect(screen.getByText('+0.20')).toBeInTheDocument();
     expect(screen.getByText('−0.30')).toBeInTheDocument();
 
-    // Real `StandingTrack` mounted once per row (its own fixed pin/label
-    // machinery, not a re-implementation) — 5 pins for 5 rows.
-    const pins = instrument!.querySelectorAll('[data-slot="standing-track-pin"]');
-    expect(pins).toHaveLength(5);
+    // Real `StandingTrack` mounted once per row (its own fixed fill/label
+    // machinery, not a re-implementation) — 5 fills for 5 rows. (No pin: the
+    // owner asked to remove every dot-on-a-rail marker, so `StandingTrack`
+    // now reads the subject's position from the fill bar alone.)
+    const fills = instrument!.querySelectorAll('[data-slot="standing-track-fill"]');
+    expect(fills).toHaveLength(5);
   });
 
-  it('never renders the SG metrics a second time in the generic per-category StandingStrip grid', () => {
+  it('never renders the SG metrics a second time in the generic per-category StandingBars grid', () => {
     render(<StandingDrill standingRows={sgStandingRows()} standingViewerContext="self" />);
     // "SG: Total" appears exactly once (inside the instrument) — the old
-    // behavior rendered every SG metric a second time as a `StandingStrip`
+    // behavior rendered every SG metric a second time as a `StandingBars`
     // card in the generic per-category grid.
     expect(screen.getAllByText('SG: Total')).toHaveLength(1);
   });

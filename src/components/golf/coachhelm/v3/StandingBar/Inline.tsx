@@ -1,4 +1,12 @@
 /**
+ * DEPRECATED 2026-09-10 — replaced by charts/StandingBars; delete when the
+ * dead-code pass confirms no consumers. (Owner: "I've asked repeatedly to
+ * get rid of these slider things. Everywhere... Replace it with an actual
+ * component." This file still renders the dot-on-a-rail marker being
+ * replaced — do not add new consumers.)
+ */
+
+/**
  * StandingBar — `inline` size variant. Mobile chip.
  *
  * Master plan ASCII reference (Part VII.3):

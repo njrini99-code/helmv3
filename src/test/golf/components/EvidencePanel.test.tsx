@@ -61,8 +61,8 @@ describe('EvidencePanel', () => {
 
   // W15: when v2 generators inject `evidence.standing` (W14) and the
   // metric_id resolves to a canonical v3 metric, EvidencePanel renders
-  // the v3 StandingBar instead of the legacy BenchmarkScale.
-  it('renders v3 StandingBar when evidence.standing is present (W15)', () => {
+  // the v3 StandingBars (bar rows) instead of the legacy BenchmarkScale.
+  it('renders v3 StandingBars when evidence.standing is present (W15)', () => {
     const evidence = makeEvidence();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (evidence as any).standing = {
@@ -75,12 +75,17 @@ describe('EvidencePanel', () => {
       pga_delta: 2,
       computed_at: '2026-05-25T00:00:00.000Z',
     };
-    render(<EvidencePanel evidence={evidence} compact />);
-    // StandingBar renders the metric's canonical display_label from metric-config
+    const { container } = render(<EvidencePanel evidence={evidence} compact />);
+    // StandingBars renders the metric's canonical display_label from metric-config
     expect(screen.getByText('Putts Made 10-15 ft')).toBeTruthy();
-    // And the You/PGA values
-    expect(screen.getByText(/You 38%/)).toBeTruthy();
-    expect(screen.getByText(/PGA 36%/)).toBeTruthy();
+    // StandingBars renders label/value as separate cells in labeled bar rows
+    // (not the old inline "You 38%" text) — assert against the figure's
+    // derived aria-label, which carries every value in one accessible string.
+    const figure = container.querySelector('[data-slot="standing-bars"]');
+    expect(figure).toBeTruthy();
+    const ariaLabel = figure!.getAttribute('aria-label') ?? '';
+    expect(ariaLabel).toMatch(/You: 38%/);
+    expect(ariaLabel).toMatch(/PGA Tour: 36%/);
   });
 
   // Defense: an unknown / non-canonical metric_id in evidence.standing

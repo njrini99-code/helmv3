@@ -51,7 +51,8 @@ import { CheckCircle2 } from 'lucide-react';
 // flagged by npm run check:cycles.
 import { Surface } from '@/components/fairway/surfaces';
 import { StatusPill, Button, type StatusPillProps } from '@/components/fairway/controls';
-import { StandingStrip, Sparkline } from '@/components/fairway/charts';
+import { Sparkline } from '@/components/fairway/charts';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { isWindowedMetric } from '@/lib/coachhelm/v3/goals/window-metric-ids';
@@ -333,7 +334,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
           Rendered ONLY when a standing snapshot exists for the goal's metric. */}
       {showStanding ? (
         <div className="mt-4">
-          <StandingStrip
+          <StandingBars
             metric_id={standing.metric_id}
             metric_label={cfg.display_label}
             player_value={standing.player_value}
@@ -345,7 +346,8 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
             direction={cfg.direction}
             unit={cfg.unit}
             scale={cfg.default_scale}
-            size="inline"
+            size="sm"
+            layout="compact"
             show_cohort_text={false}
           />
           {windowed ? (

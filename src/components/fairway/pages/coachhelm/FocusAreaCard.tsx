@@ -72,7 +72,7 @@ import type { FwStatusTone } from '@/components/fairway/controls/_internal';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { TrendChip, type GoodDirection } from '@/components/fairway/charts/TrendChip';
-import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -906,8 +906,9 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 ? (() => {
                     const cfg = getMetricRenderConfig(standing.metric_id);
                     return cfg ? (
-                      <StandingStrip
-                        size="inline"
+                      <StandingBars
+                        size="sm"
+                        layout="compact"
                         metric_id={standing.metric_id}
                         metric_label={cfg.display_label}
                         player_value={standing.player_value}

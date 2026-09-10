@@ -29,7 +29,7 @@ import {
   type RawGolfShotRow,
   type ReviewShotInput,
 } from './round-review-shots';
-import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import {
@@ -81,9 +81,9 @@ export interface FilmstripReviewProps {
   standing: Record<string, PlayerStanding>;
   holes: Array<{ hole_number: number; par: number | null; yardage: number | null; score: number | null }>;
   /** The reviewed player's display name — used ONLY for the coach-facing
-   *  "Where this sits" StandingBar band (`viewer_context: 'coach'` reads the
+   *  "Where this sits" StandingBars band (`viewer_context: 'coach'` reads the
    *  player's name/initials instead of "You"). Omitted/null for a player
-   *  viewing their own review — StandingBar defaults to 'self' -> "You". */
+   *  viewing their own review — StandingBars defaults to 'self' -> "You". */
   playerName?: string | null;
   /** Round-level Strokes Gained cache (`golf_rounds.strokes_gained_*`) —
    *  feeds the `RoundSGSummary` headline. `null` on any field renders that
@@ -267,7 +267,7 @@ export function FilmstripReview({
     // A coach viewing a PLAYER's review must read the player's standing as
     // the player's, not their own — pass viewer context + the player's name
     // through so the Card variant's visible label reads "You" only for the
-    // player's own view (StandingBar's aria label already handled this; the
+    // player's own view (StandingBars' aria label already handled this; the
     // visible label previously hardcoded "You" for every viewer).
     const viewerContext: 'self' | 'coach' = isCoachViewer ? 'coach' : 'self';
     return STANDING_BAND_METRICS.map((mid) => {
@@ -275,9 +275,8 @@ export function FilmstripReview({
       const cfg = getMetricRenderConfig(mid);
       if (!st || !cfg) return null;
       return (
-        <StandingBar
+        <StandingBars
           key={mid}
-          size="card"
           metric_id={mid}
           metric_label={cfg.display_label}
           player_value={st.player_value}

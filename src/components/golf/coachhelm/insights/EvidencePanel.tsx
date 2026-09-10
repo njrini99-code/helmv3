@@ -19,7 +19,7 @@ import type {
   InsightEvidence,
   InsightUnit,
 } from '@/lib/coachhelm/v2/insights/types';
-import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
+import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
 import { DiagnosisPanel } from './DiagnosisPanel';
@@ -27,8 +27,8 @@ import { formatValue } from './format-value';
 
 /**
  * W15: When v2 generators have injected `evidence.standing` (W14), render
- * the v3 StandingBar instead of the legacy BenchmarkScale. v3 carries
- * cohort percentile + team_n cold-start gating + auto a11y label.
+ * StandingBars instead of the legacy BenchmarkScale. It carries cohort
+ * percentile + team_n cold-start gating + auto a11y label.
  *
  * Returns the v3 component when:
  *   - `evidence.standing` is present and well-formed
@@ -43,7 +43,7 @@ function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | nu
   const cfg = getMetricRenderConfig(standing.metric_id);
   if (!cfg) return null;
   return (
-    <StandingBar
+    <StandingBars
       metric_id={standing.metric_id}
       metric_label={cfg.display_label}
       player_value={standing.player_value}
@@ -56,7 +56,6 @@ function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | nu
       direction={cfg.direction}
       unit={cfg.unit}
       scale={cfg.default_scale}
-      size="card"
     />
   );
 }
@@ -316,7 +315,7 @@ export function EvidencePanel({
   // value (stale rows have carried 40+ strokes/round) never reaches the eye.
   const safeImpact = sanitizeStrokesImpact(evidence.strokes_impact);
 
-  // W15: prefer v3 StandingBar when v14 generators have populated
+  // W15: prefer StandingBars when v14 generators have populated
   // evidence.standing AND the metric_id resolves to a canonical v3 metric.
   // Falls through to the legacy BenchmarkScale for v2-only insights.
   const v3Standing = tryRenderV3Standing(evidence);
@@ -430,7 +429,7 @@ export function EvidencePanel({
           />
         </div>
       ) : null}
-      {/* W15: v3 StandingBar above the legacy key/value grid when present. */}
+      {/* W15: StandingBars above the legacy key/value grid when present. */}
       {v3Standing && <div className="mb-3">{v3Standing}</div>}
       <div className="mb-2 text-eyebrow font-medium uppercase tracking-wide text-warm-500">
         {evidence.metric_label}
