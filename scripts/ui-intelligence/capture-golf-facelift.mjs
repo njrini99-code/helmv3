@@ -87,6 +87,7 @@ const COACH = [
 const PLAYER = [
   { slug: 'home', route: '/golf/dashboard', sub: [{ kind: 'more' }] },
   { slug: 'my-development', route: '/golf/dashboard/my-development', sub: [{ kind: 'tabs' }] },
+  { slug: 'coachhelm-development', route: '/golf/dashboard/coachhelm?view=development' },
   { slug: 'my-game-profile', route: '/golf/dashboard/my-game-profile', sub: [{ kind: 'tabs' }] },
   { slug: 'my-insights', route: '/golf/dashboard/my-insights', sub: [{ kind: 'tabs' }] },
   { slug: 'my-qualifiers', route: '/golf/dashboard/my-qualifiers', sub: [{ kind: 'tabs' }] },

@@ -96,16 +96,28 @@ Player opens round review
   stage's `home()` as the back chip. `host="page"` (default) is the
   CoachHelmShell variant the fairway preview renders. Its sub-components live
   in `fairway/pages/coachhelm/development-parts.tsx` (log progress Sheet,
-  prescribed card, overview instrument, phone focus-area rows and sheet).
+  prescribed card, the lead-area stage and `pickLeadArea`, `ladderOrder`,
+  `PlanSegmentBar`, phone focus-area rows and sheet).
   The legacy `components/golf/coachhelm/home/DevelopmentDrill.tsx` (a drifted
   verbatim port) is deleted; never copy the body into a host again.
-- Below `md` the development view reads as rows: one StatMatrix for the plan
-  readouts, causal relationships and active focus areas as InsetGroup rows
-  whose tap opens the detail in a Fairway Sheet, suggestions as rows with one
-  Accept. Log progress is a Fairway Sheet (bottom below `md`, docked right
-  above). Phone and desktop branches are CSS-gated; no media-query flip on
-  hydration. Spec and captures: `docs/design/fairway-facelift/screens/
-  player-development.mobile.md`.
+- The body order is stage · plan · ladder · goals · suggestions · why ·
+  completed. The stage ("Your next stroke") is the lead active area
+  (`pickLeadArea`: highest causal `intervention_potential` for its metric,
+  else least progressed, else oldest): its value with the change since the
+  baseline, a verdict, the progress rail, a `Ribbon` of `focusAreaTrendEntries`
+  with the target dashed once two readings exist, and `StandingBars` when the
+  standing resolves; pressing it opens the same FocusAreaSheet the rows open.
+  The plan is one `SegmentBar` (hidden below two areas); the active areas are
+  a ladder (`ladderOrder`, least progressed first, rails in one column);
+  goals use `GoalsSection variant="inline"` (rows, a goal Sheet, a TrendChart
+  per goal from `md` behind a mounted flag, InlineNotice when empty); the
+  causal layer is chains, then a `BarCompare` of strength, then relationship
+  rows carrying the mechanism. From `md`: stage (7) | plan (5), ladder (7) |
+  goals (5), why and completed full width. Log progress is a Fairway Sheet
+  (bottom below `md`, docked right above). Phone and desktop branches are
+  CSS-gated or behind mounted flags; no media-query flip on hydration. Specs
+  and captures: `docs/design/fairway-facelift/screens/player-development.mobile.md`
+  and `player-development.v2.md`.
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.
 - Standing/goal/intent/hero narrative UI should be polished but not obscure source data or actionability.
 - Mobile views must follow the shared app shell and avoid oversized top-of-screen chrome.

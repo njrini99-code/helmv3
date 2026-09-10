@@ -36,9 +36,12 @@
  * placement) is owned by separate agents; this file owns only the section.
  * ========================================================================== */
 
-import { useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Target, Trophy, X } from 'lucide-react';
+import nextDynamic from 'next/dynamic';
+import { ChevronRight, Sparkles, Target, Trophy, X } from 'lucide-react';
+import { fwHaptic } from '@/lib/fairway/haptics';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
@@ -47,10 +50,15 @@ import { Sparkles, Target, Trophy, X } from 'lucide-react';
 import { Surface } from '@/components/fairway/surfaces';
 import { InsetGroup } from '@/components/fairway/surfaces/inset-group';
 import { Button, IconButton } from '@/components/fairway/controls';
-import { EmptyState } from '@/components/fairway/feedback';
+import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
 import { Sparkline } from '@/components/fairway/charts';
+import type { TrendPoint } from '@/components/fairway/charts/TrendChart';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { ProgressTrack } from './ProgressTrack';
+import { formatDay } from './format-day';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import {
@@ -60,7 +68,7 @@ import {
   acceptGoalSuggestion,
   dismissGoalSuggestion,
 } from '@/app/golf/actions/v3/goals';
-import type { GoalSuggestion } from '@/lib/coachhelm/v3/goals/types';
+import type { Goal, GoalSuggestion } from '@/lib/coachhelm/v3/goals/types';
 import type { Unit } from '@/components/golf/coachhelm/v3/StandingBar';
 
 import {
@@ -115,6 +123,244 @@ export interface GoalsSectionProps {
    * what the reader can see immediately below it.
    */
   focusAreaCount?: number;
+  /**
+   * `default`: the hero panel ("Your one thing" / "Goals in flight"), a card
+   * grid and the tall EmptyState card: the coach board and vizlab keep this.
+   * `inline` (player-development.v2.md #4): a seam section for a page that
+   * already has a stage. One heading line; each goal is a seam row (rail +
+   * sparkline) opening a goal Sheet below `md`, and a TrendChart of its
+   * snapshots from `md`; the empty state is an InlineNotice with "Set a goal".
+   */
+  variant?: 'default' | 'inline';
+}
+
+/**
+ * Recharts loads on the client only, once a goal has snapshots to draw: the
+ * rows paint first, the chart follows. Mounted at `md`+ only (a mounted
+ * flag; the server and the first client paint both render nothing), so the
+ * phone never mounts a hidden chart per goal.
+ */
+const TrendChart = nextDynamic(
+  () => import('@/components/fairway/charts/TrendChart').then((m) => ({ default: m.TrendChart })),
+  { ssr: false, loading: () => <Skeleton className="h-[220px] w-full" aria-hidden /> },
+);
+
+/** Sheet settle fallback where no panel animation runs (reduced motion, jsdom). */
+const GOAL_SHEET_SETTLE_MS = 360;
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Inline variant pieces: the goal row, the goal trend chart, the goal sheet.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** The chart's points: dated snapshots oldest to newest, the last one marked. */
+export function goalTrendPoints(goal: Goal): TrendPoint[] {
+  const snaps = goal.snapshots.filter((s) => typeof s.value === 'number' && Number.isFinite(s.value));
+  return snaps.map((s, i) => ({
+    x: formatDay(s.date),
+    y: s.value,
+    marker: i === snaps.length - 1 ? { label: 'Latest' } : undefined,
+  }));
+}
+
+/** The newest team average the snapshots carry, when any snapshot has one. */
+export function latestTeamAvg(goal: Goal): number | null {
+  for (let i = goal.snapshots.length - 1; i >= 0; i -= 1) {
+    const v = goal.snapshots[i]?.team_avg;
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+  }
+  return null;
+}
+
+function GoalRow({ data, onOpen }: { data: FairwayGoalCardData; onOpen: () => void }) {
+  const { goal } = data;
+  const cfg = getMetricRenderConfig(goal.metric_id);
+  const label = goalDisplayLabel(goal);
+  const pct = progressPct(goal);
+  const notStarted =
+    pct !== null &&
+    goal.current_value !== null &&
+    goal.baseline_value !== null &&
+    Math.abs(goal.current_value - goal.baseline_value) < 1e-6;
+  const trend = goal.snapshots.map((s) => s.value);
+  const goodDirection = cfg?.direction === 'lower_better' ? 'down' : 'up';
+  const fmt = (v: number) => (cfg ? formatValue(v, cfg.unit) : String(v));
+  const ends = `ends ${formatDay(goal.ends_at)}`;
+  const caption =
+    goal.state === 'achieved'
+      ? `Hit · ${provenanceLabel(goal)}`
+      : pct === null
+        ? `Building history · ${ends}`
+        : notStarted
+          ? `Not started, baseline captured · ${ends}`
+          : [
+              goal.current_value !== null ? `now ${fmt(goal.current_value)}` : null,
+              goal.target_value !== null ? `target ${fmt(goal.target_value)}` : null,
+              ends,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+
+  return (
+    <InsetGroup.Row
+      as="button"
+      align="start"
+      icon={goal.state === 'achieved' ? <Trophy size={18} /> : <Target size={18} />}
+      trailing={<ChevronRight aria-hidden />}
+      aria-haspopup="dialog"
+      onClick={onOpen}
+      data-slot="goal-row"
+      data-goal-id={goal.id}
+    >
+      {/* Same ladder layout as the focus-area rows: title line with the
+          sparkline, then a full-width rail with a fixed-width pct label. */}
+      <span className="flex flex-col gap-1.5">
+        <span className="flex items-start gap-3">
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
+              {label}
+            </span>
+            <span className="block truncate font-fw-sans text-caption text-text-tertiary">{caption}</span>
+          </span>
+          {trend.length >= 2 ? (
+            <Sparkline
+              data={trend}
+              goodDirection={goodDirection}
+              width={56}
+              height={18}
+              label={`${label} trajectory`}
+              className="mt-0.5 shrink-0"
+            />
+          ) : null}
+        </span>
+        {pct !== null ? (
+          <span className="flex items-center gap-3">
+            <ProgressTrack
+              pct={pct}
+              size="sm"
+              tone={goal.state === 'achieved' ? 'done' : 'active'}
+              label={`${label} progress`}
+              className="flex-1"
+            />
+            <span className="w-9 shrink-0 text-right font-fw-mono text-caption tabular-nums text-text-secondary">
+              {pct}%
+            </span>
+          </span>
+        ) : null}
+      </span>
+    </InsetGroup.Row>
+  );
+}
+
+/**
+ * One goal's trajectory: the snapshots as a line, the target dashed, the
+ * last snapshot marked, the newest team average in the takeaway. Fewer than
+ * two snapshots: the frame's honest insufficient-data state, never a flat
+ * line.
+ */
+function GoalTrendChart({ data, actions }: { data: FairwayGoalCardData; actions?: ReactNode }) {
+  const { goal } = data;
+  const cfg = getMetricRenderConfig(goal.metric_id);
+  const label = goalDisplayLabel(goal);
+  const fmt = (v: number) => (cfg ? formatValue(v, cfg.unit) : String(v));
+  const points = goalTrendPoints(goal);
+  const pct = progressPct(goal);
+  const teamAvg = latestTeamAvg(goal);
+  const subtitle = [pct !== null ? `${pct}% to target` : null, `${goal.window_days}-day window`, provenanceLabel(goal)]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <TrendChart
+      title={label}
+      subtitle={subtitle}
+      variant="line"
+      height={160}
+      data={points}
+      benchmark={
+        goal.target_value !== null ? { value: goal.target_value, label: `Target ${fmt(goal.target_value)}` } : undefined
+      }
+      valueFormatter={fmt}
+      takeaway={teamAvg != null ? `Team avg ${fmt(teamAvg)}` : undefined}
+      state={points.length >= 2 ? 'ready' : 'insufficient-data'}
+      actions={actions}
+    />
+  );
+}
+
+function useGoalSheet(active: FairwayGoalCardData[], achieved: FairwayGoalCardData[]) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [heldId, setHeldId] = useState<string | null>(null);
+  const openGoal = useCallback((id: string) => {
+    fwHaptic('selection');
+    setHeldId(id);
+    setOpenId(id);
+  }, []);
+  const close = useCallback(() => setOpenId(null), []);
+  const data = heldId
+    ? active.find((d) => d.goal.id === heldId) ?? achieved.find((d) => d.goal.id === heldId) ?? null
+    : null;
+  return { data, open: openId != null, openGoal, close };
+}
+
+/**
+ * The goal Sheet: the full bare goal card and the trend chart mount once the
+ * sheet has settled (owner perf rule: no heavy trees in a sheet before
+ * settle); the open translate animates a light skeleton. `data` is held
+ * through the close animation so the card never swaps to the skeleton
+ * mid-slide. The same settle pattern as FocusAreaSheet.
+ */
+function GoalSheet({
+  data,
+  open,
+  onClose,
+  role,
+}: {
+  data: FairwayGoalCardData | null;
+  open: boolean;
+  onClose: () => void;
+  role: 'coach' | 'player';
+}) {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      setSettled(false);
+      return;
+    }
+    const id = window.setTimeout(() => setSettled(true), GOAL_SHEET_SETTLE_MS);
+    return () => window.clearTimeout(id);
+  }, [open]);
+  const onAnimationEnd = useCallback((e: React.AnimationEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) setSettled(true);
+  }, []);
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      title={data ? goalDisplayLabel(data.goal) : 'Goal'}
+      hideTitle
+      onAnimationEnd={onAnimationEnd}
+    >
+      <Sheet.Body className="px-0 pt-6">
+        {data && settled ? (
+          <div className="flex flex-col">
+            <FairwayGoalCard frame="bare" data={data} role={role} />
+            <div className="px-6 pb-6">
+              <GoalTrendChart data={data} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 p-6" aria-hidden>
+            <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        )}
+      </Sheet.Body>
+    </Sheet>
+  );
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -308,16 +554,23 @@ export function GoalsSection({
   playerNameById,
   achievedGoals = [],
   focusAreaCount = 0,
+  variant = 'default',
 }: GoalsSectionProps) {
   const [createOpen, setCreateOpen] = useState(false);
+  const inline = variant === 'inline';
+  const goalSheet = useGoalSheet(activeGoals, achievedGoals);
+  // Mounted flag for the md+ charts (false on the server and the first client
+  // paint, so there is no hydration flip; the charts appear after mount).
+  const wide = useMediaQuery('(min-width: 768px)');
 
   const activeCount = activeGoals.length;
   const hasGoals = activeCount > 0;
   const hasSuggestions = suggestions.length > 0;
 
   // Player surfaces lead with the single most important goal ("your one thing");
-  // the coach surface (many players) keeps the plain active-goal count.
-  const priority = role === 'player' ? pickPriorityGoal(activeGoals) : null;
+  // the coach surface (many players) keeps the plain active-goal count. The
+  // inline variant has a stage above it and no hero of its own.
+  const priority = role === 'player' && !inline ? pickPriorityGoal(activeGoals) : null;
 
   // Touch target: md (44px min-height) unconditionally — not sm, which is
   // only 44px behind a `(pointer: coarse)` media query (mustFix #194).
@@ -338,7 +591,22 @@ export function GoalsSection({
           EmptyState rendered right below it (mustFix #118/#125). When there
           are zero active goals, this hero is skipped entirely and the
           EmptyState below is the ONE honest empty-state read. */}
-      {priority ? (
+      {inline ? (
+        <div className="flex items-center gap-2 px-1">
+          <Target className="h-5 w-5 shrink-0 text-accent-600" aria-hidden />
+          <h2 className="font-fw-display text-h3 font-medium text-text-primary">Goals</h2>
+          {hasGoals ? (
+            <span className="ml-auto font-fw-sans text-body-sm text-text-tertiary">
+              {activeCount} active
+            </span>
+          ) : null}
+          {hasGoals && canCreate ? (
+            <Button variant="secondary" onClick={() => setCreateOpen(true)}>
+              Set a goal
+            </Button>
+          ) : null}
+        </div>
+      ) : priority ? (
         <GoalHero
           data={priority}
           totalActive={activeCount}
@@ -365,8 +633,33 @@ export function GoalsSection({
         </InstrumentPanel>
       ) : null}
 
-      {/* Active goals — grid, or an honest empty state */}
-      {hasGoals ? (
+      {/* Active goals — inline: seam rows below `md` (a tap opens the goal
+          Sheet) and one TrendChart per goal from `md`; default: the card
+          grid. Empty: an InlineNotice (inline) or the EmptyState card. */}
+      {hasGoals && inline ? (
+        <>
+          <InsetGroup variant="matte" className="md:hidden" aria-label="Active goals">
+            {activeGoals.map((data) => (
+              <GoalRow key={data.goal.id} data={data} onOpen={() => goalSheet.openGoal(data.goal.id)} />
+            ))}
+          </InsetGroup>
+          {wide ? (
+            <div className="hidden flex-col gap-4 md:flex">
+              {activeGoals.map((data) => (
+                <GoalTrendChart
+                  key={data.goal.id}
+                  data={data}
+                  actions={
+                    <Button variant="ghost" onClick={() => goalSheet.openGoal(data.goal.id)}>
+                      Details
+                    </Button>
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
+        </>
+      ) : hasGoals ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {activeGoals.map((data) => (
             <FairwayGoalCard
@@ -377,6 +670,19 @@ export function GoalsSection({
             />
           ))}
         </div>
+      ) : inline ? (
+        <InlineNotice
+          tone="info"
+          icon={Target}
+          title={focusAreaCount > 0 ? 'No goals set yet' : 'No active goals yet'}
+          action={canCreate ? setGoalButton : undefined}
+        >
+          {focusAreaCount > 0
+            ? `A goal puts a number on one stat. You have ${focusAreaCount} focus ${
+                focusAreaCount === 1 ? 'area' : 'areas'
+              } above; set a goal on one of them.`
+            : 'Set a goal to track a stat you want to improve, or accept one CoachHelm suggests below.'}
+        </InlineNotice>
       ) : (
         <Surface padding="lg">
           <EmptyState
@@ -404,7 +710,24 @@ export function GoalsSection({
 
       {/* Recent wins — achieved goals (the active loader drops these, so the
           validated-win moment would otherwise vanish). Player view only. */}
-      {role === 'player' && achievedGoals.length > 0 ? (
+      {role === 'player' && achievedGoals.length > 0 && inline ? (
+        <section className="flex flex-col gap-3" aria-label="Recent wins">
+          <div className="flex items-center gap-2 px-1">
+            <Trophy className="h-4 w-4 text-fw-success-ink" aria-hidden />
+            <h3 className="font-fw-display text-body-lg font-medium text-text-primary">
+              Recent wins
+            </h3>
+            <span className="ml-auto font-fw-sans text-caption text-text-tertiary">
+              {achievedGoals.length} hit
+            </span>
+          </div>
+          <InsetGroup variant="matte">
+            {achievedGoals.map((data) => (
+              <GoalRow key={data.goal.id} data={data} onOpen={() => goalSheet.openGoal(data.goal.id)} />
+            ))}
+          </InsetGroup>
+        </section>
+      ) : role === 'player' && achievedGoals.length > 0 ? (
         <Surface padding="md">
           <div className="mb-3 flex items-center gap-2">
             <Trophy className="h-4 w-4 text-fw-success-ink" aria-hidden />
@@ -447,6 +770,11 @@ export function GoalsSection({
             ))}
           </InsetGroup>
         </section>
+      ) : null}
+
+      {/* Inline variant: the tapped goal's full card and trend in a Sheet. */}
+      {inline ? (
+        <GoalSheet data={goalSheet.data} open={goalSheet.open} onClose={goalSheet.close} role={role} />
       ) : null}
 
       {/* Player creation overlay — the shipped flow, reused as an overlay. */}
