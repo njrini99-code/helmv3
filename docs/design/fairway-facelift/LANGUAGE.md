@@ -44,12 +44,30 @@ and everything else is typeset around it.
    aligned, signed values colored as ink (green under, amber over), one row
    is one link. Ten rows and a "View all N" link.
 
-Breakpoints. The side-by-side splits belong to `xl` (1280), not `lg` (1024):
-at 1024 a 15rem readouts column starves the instrument beside it and a
-three-column ledger squeezes names to a single character. Between `md` and
-`xl` the readouts sit as a four-across band above the instrument and the
-ledger runs two columns with the third spanning both. Verify every screen at
-1024, 1280 and 1440, not just 1440 and phone.
+Breakpoints. The rule is not a number, it is a floor: **a split is legal only
+at the width where every column still holds its content whole.** A column that
+clips a player's name, an event's title or an axis label has failed, whatever
+breakpoint it happens at.
+
+Two failures make that floor concrete, and both are cheap to inherit.
+
+- **A fixed rail beside a flexible instrument may not split before `xl`
+  (1280).** At 1024 a 15rem readouts column left the instrument beside it about
+  70px wide, wrapped its own heading over four lines and collided the axis
+  labels. The rail's width is constant, so every pixel the row loses comes out
+  of the instrument. Between `md` and `xl` those readouts sit as a four-across
+  band above the instrument instead.
+- **A fractional split may sit lower, and still has to be measured there.** A
+  7/5 or 8/4 grid shares the loss, so it can be legal at `md` — but a 5/12
+  column at 768 is about 300px, which is under the floor for most real
+  instruments. Capture it at that width before believing it.
+
+Unequal column spans are the intended reading rhythm, not a requirement at
+every width. The coach home's ledger runs even thirds at `xl` and takes its
+5/3/4 shape only from `2xl`, because at 1280 the 3-span column clipped every
+name in it. Rhythm loses to whole words.
+
+Verify every screen at 768, 1024, 1280 and 1440, not just 1440 and phone.
 
 Rhythm: masthead 40px above the stage, 48px between the stage and the
 ledger, 40px to the table. Inside regions use 12 to 16px. Vary it; a page
