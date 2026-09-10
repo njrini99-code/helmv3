@@ -217,7 +217,7 @@ export function FairwayCalendarMemberRail({
                 size="sm"
                 aria-label="Compare"
                 leftIcon={<UserSearch className="h-4 w-4" aria-hidden />}
-                className="shrink-0 px-2.5 [box-shadow:var(--fw-shadow-card)] md:px-3.5"
+                className="shrink-0 px-2.5 md:px-3.5"
               >
                 <span className="hidden md:inline">Compare</span>
               </Button>

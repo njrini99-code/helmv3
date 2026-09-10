@@ -297,7 +297,7 @@ export function FairwayCalendarHero({
             size="sm"
             onClick={() => onNavigate('today')}
             leftIcon={<TodayGlyph day={nowRef.getDate()} />}
-            className="px-2.5 [box-shadow:var(--fw-shadow-card)]"
+            className="px-2.5"
           >
             Today
           </Button>
@@ -315,7 +315,7 @@ export function FairwayCalendarHero({
                 variant="secondary"
                 size="sm"
                 aria-label="More calendar actions"
-                className="[box-shadow:var(--fw-shadow-card)] xl:hidden"
+                className="xl:hidden"
               >
                 <MoreHorizontal />
               </IconButton>

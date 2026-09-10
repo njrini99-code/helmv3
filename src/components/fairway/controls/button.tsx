@@ -11,7 +11,8 @@
  *
  * Variants: primary | secondary | ghost | danger
  * Sizes:    sm | md | lg  (+ IconButton: sm | md | lg, always >=44px touch)
- * States:   default · hover (tint + shadow-soft + 1px lift) · focus-visible
+ * States:   default (raised: lit top edge + resting shadow on primary/secondary)
+ *           · hover (tint + shadow-soft + 1px lift) · focus-visible
  *           (green ring) · active (translate-y-[0.5px]) · disabled (opacity-50)
  *           · busy (inline spinner, label stays, aria-busy)
  *
@@ -87,16 +88,25 @@ const variantStyles: Record<FwButtonVariant, string> = {
   // both themes instead of inverting direction at night.
   //
   // accent-500 remains the brand green for decorative fills, strokes and dots.
+  //
+  // DEPTH (2026-09-09): filled and matte buttons now sit ON the page at rest —
+  // a lit top edge plus the resting card whisper — instead of lying flat in it.
+  // Flat controls read as disabled chips beside the raised Fairway cards and
+  // the Segmented switcher's floating thumb; the owner called them out on the
+  // calendar and asked for the same depth everywhere. Hover lifts a step
+  // (soft), press settles back to flat. Ghost stays chrome-light by contract.
   primary: cn(
-    'border-transparent bg-accent-650 text-text-on-accent shadow-flat',
-    'hover:bg-accent-750 hover:shadow-soft hover:-translate-y-px',
-    'active:bg-accent-750 active:shadow-flat active:-translate-y-0',
+    'border-transparent bg-accent-650 text-text-on-accent',
+    '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-flat)]',
+    'hover:bg-accent-750 hover:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)] hover:-translate-y-px',
+    'active:bg-accent-750 active:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.12),var(--fw-shadow-flat)] active:-translate-y-0',
   ),
-  // Matte surface with a warm hairline (border OR shadow at rest — border here).
+  // Matte surface with a warm hairline AND the card material (lit top edge +
+  // resting whisper — the same recipe Surface uses, light-cards-only safe).
   secondary: cn(
-    'border-border-subtle bg-surface text-text-primary shadow-flat',
-    'hover:bg-surface-tint hover:border-border-strong hover:shadow-soft',
-    'active:shadow-flat',
+    'border-border-subtle bg-surface text-text-primary [box-shadow:var(--fw-shadow-card)]',
+    'hover:bg-surface-tint hover:border-border-strong hover:shadow-soft hover:-translate-y-px',
+    'active:shadow-flat active:-translate-y-0',
   ),
   // Chrome-light: no fill at rest, warm tint wash on hover.
   ghost: cn(
@@ -106,7 +116,7 @@ const variantStyles: Record<FwButtonVariant, string> = {
   ),
   // Destructive — canonical danger, tinted-soft at rest, fills on hover.
   danger: cn(
-    'border-transparent bg-fw-danger-bg text-fw-danger-ink',
+    'border-transparent bg-fw-danger-bg text-fw-danger-ink shadow-flat',
     'hover:bg-fw-danger hover:text-text-on-accent hover:shadow-soft',
     'active:shadow-flat',
   ),
@@ -252,13 +262,19 @@ const iconVariantStyles: Record<FwIconButtonVariant, string> = {
   // primary IconButton beside a primary Button in a different green reads as a
   // rendering bug, and "matches Button primary" is the contract this variant
   // exists to hold. See the Button primary note above for the full reasoning.
+  //
+  // Same resting depth as Button (see the DEPTH note above): lit top edge +
+  // resting whisper, a step up on hover, settled on press.
   primary: cn(
     'border-transparent bg-accent-650 text-text-on-accent',
-    'hover:bg-accent-750 hover:shadow-soft',
+    '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-flat)]',
+    'hover:bg-accent-750 hover:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
+    'active:bg-accent-750 active:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.12),var(--fw-shadow-flat)]',
   ),
   secondary: cn(
-    'border-border-subtle bg-surface text-text-primary',
-    'hover:bg-surface-tint hover:border-border-strong',
+    'border-border-subtle bg-surface text-text-primary [box-shadow:var(--fw-shadow-card)]',
+    'hover:bg-surface-tint hover:border-border-strong hover:shadow-soft',
+    'active:shadow-flat',
   ),
   ghost: cn(
     'border-transparent bg-transparent',
