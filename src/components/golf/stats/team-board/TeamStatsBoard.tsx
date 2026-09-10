@@ -12,8 +12,9 @@
  * inside `MatrixBoard` itself (`kpis={[]}` below disables that band) — it's
  * sticky on desktop so the coach keeps the team read while scrolling a long
  * roster. Below it, the player `MatrixBoard` is the dominant object: five
- * `RankCell`s (green-ramp, darker = stronger), a composite `RingGauge`, a
- * scoring-trend `Sparkline`, and a `SignalChip` per row; a row click expands
+ * `RankCell`s (green-ramp, darker = stronger), a leading number + `Meter`
+ * for the composite score, a scoring-trend `Sparkline`, and a `SignalChip`
+ * per row; a row click expands
  * an inline detail band in place (worst metric / SG putt / last round +
  * triage links) — no navigation for a coach's daily scan.
  *
@@ -26,22 +27,35 @@
  * (`overline` used to) so a cell shows one heading, not two. Cold-start
  * renders the board immediately — the tornado/leak-map charts never block it.
  *
- * Reuse: `MatrixBoard`/`RankCell`/`RingGauge`/`SignalChip` (module kit),
+ * Reuse: `MatrixBoard`/`RankCell`/`SignalChip` (module kit),
  * `StatMatrix`/`Bento`/`BentoCell` (module kit), `Menu`/`InsufficientData`,
- * `Sparkline`/`StrokesGainedTornado`/`LeakMap`/`InstrumentPanel`/
+ * `Sparkline`/`StrokesGainedTornado`/`LeakMap`/`InstrumentPanel`/`Meter`/
  * `ViewHeader`/`InlineNotice`/`Button`/`IconButton` (Fairway primitives +
  * charts). All ranking/tone/formatting logic lives in
  * `buildTeamBoardViewModel` — this file only composes JSX.
+ *
+ * The composite column used to be a bare `RingGauge` (a 30px SVG ring —
+ * a 16px arc on the actual capture) with no number visible beside it; a
+ * coach scanning the board at 1440px could not read a composite score from
+ * it. It's now a leading tabular number beside a `Meter size="sm"` linear
+ * bar (facelift REVIEW.md "Team stats, desktop") — the column is hidden
+ * below 940px by `MatrixBoard`'s own `HIDE_ON_MOBILE`, so this is a
+ * desktop-only cell either way. Column headers ("Tee"/"App"/"Shrt"/"Putt"/
+ * "Scor") likewise switch to full words ("Tee"/"Approach"/"Short game"/
+ * "Putting"/"Scoring") at that SAME 940px point, via `useMediaQuery` — kept
+ * in step with `MatrixBoard`'s own breakpoint rather than Tailwind's `md`
+ * so the header text and the columns it labels change together.
  * ========================================================================== */
 
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Download, MoreVertical } from 'lucide-react';
+import { Download, MoreVertical, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-import { ViewHeader, StrokesGainedTornado, type SGCategory, LeakMap, type LeakMapBucket, InstrumentPanel, InsufficientData, Menu, Button, IconButton, InlineNotice, Sparkline, fairwayToast } from '@/components/fairway';
-import { MatrixBoard, RankCell, RailBars, RingGauge, SignalChip, Bento, BentoCell, StatMatrix } from '@/components/fairway/modules';
+import { ViewHeader, StrokesGainedTornado, type SGCategory, LeakMap, type LeakMapBucket, InstrumentPanel, InsufficientData, Menu, Button, IconButton, InlineNotice, Sparkline, Meter, fairwayToast } from '@/components/fairway';
+import { MatrixBoard, RankCell, RailBars, SignalChip, Bento, BentoCell, StatMatrix } from '@/components/fairway/modules';
 import type { MatrixColumn, MatrixBoardRow as MatrixBoardRowData, RailBarRow, StatMatrixItem } from '@/components/fairway/modules';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -49,7 +63,7 @@ import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/tea
 import type { TeamLeakMaps, LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 
 import { buildTeamBoardViewModel, fmtSg, TREND_SIGNAL_MIN_ROUNDS, weightedMean, type TeamBoardPlayerInput, type TeamBoardRowViewModel } from './buildTeamBoardViewModel';
-import { formatTeamStatsFreshness, type TeamStatsFreshness } from './teamStatsFreshness';
+import { formatTeamStatsFreshness, formatTeamStatsFreshnessHeadline, type TeamStatsFreshness } from './teamStatsFreshness';
 
 // ============================================================================
 // PROPS — same shapes the route already resolves (page.tsx reuses its
@@ -157,20 +171,29 @@ function buildBoardCsv(rows: TeamBoardRowViewModel[]): string {
   return lines.join('\n');
 }
 
-const COLUMNS: MatrixColumn[] = [
-  { key: 'who', label: 'Player' },
-  { key: 'tee', label: 'Tee', align: 'center' },
-  { key: 'app', label: 'App', align: 'center' },
-  { key: 'short', label: 'Shrt', align: 'center' },
-  { key: 'putt', label: 'Putt', align: 'center' },
-  { key: 'scor', label: 'Scor', align: 'center' },
-  { key: 'composite', label: 'Composite' },
-  { key: 'trend', label: 'Trend' },
-  { key: 'signal', label: 'Signal' },
-];
-
 export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d, freshness }: TeamStatsBoardProps) {
   const router = useRouter();
+
+  // Full words from 940px up (MatrixBoard's own desktop threshold — the same
+  // width Scor/Composite/Trend/Signal themselves appear at); abbreviated
+  // below it, where Player/Tee/App/Shrt/Putt are already tight on a phone
+  // (facelift REVIEW.md "Team stats, desktop" — phone abbreviations read
+  // as noise once there's room for the real words).
+  const isBoardWide = useMediaQuery('(min-width: 940px)');
+  const columns: MatrixColumn[] = React.useMemo(
+    () => [
+      { key: 'who', label: 'Player' },
+      { key: 'tee', label: 'Tee', align: 'center' },
+      { key: 'app', label: isBoardWide ? 'Approach' : 'App', align: 'center' },
+      { key: 'short', label: isBoardWide ? 'Short game' : 'Shrt', align: 'center' },
+      { key: 'putt', label: isBoardWide ? 'Putting' : 'Putt', align: 'center' },
+      { key: 'scor', label: isBoardWide ? 'Scoring' : 'Scor', align: 'center' },
+      { key: 'composite', label: 'Composite' },
+      { key: 'trend', label: 'Trend' },
+      { key: 'signal', label: 'Signal' },
+    ],
+    [isBoardWide],
+  );
 
   const boardInput = React.useMemo(() => {
     const boardPlayers: TeamBoardPlayerInput[] = players.map((p) => ({
@@ -324,9 +347,14 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
       <RankOrDash key="putt" rank={row.ranks.putt} />,
       <RankOrDash key="scor" rank={row.ranks.scoring} />,
       row.composite !== null ? (
-        <RingGauge key="composite" value={row.composite} />
+        <div key="composite" className="flex w-full items-center gap-2">
+          <span className="w-6 flex-shrink-0 text-right font-fw-sans text-body-sm font-semibold tabular-nums text-text-primary">
+            {Math.round(row.composite)}
+          </span>
+          <Meter value={row.composite} min={0} max={100} size="sm" label={`${row.name} composite score`} className="min-w-0 flex-1" />
+        </div>
       ) : (
-        <span key="composite" className="font-fw-mono text-body-sm text-text-tertiary">
+        <span key="composite" className="font-fw-sans text-body-sm text-text-tertiary">
           —
         </span>
       ),
@@ -372,10 +400,12 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
     <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
       {/* ── MASTHEAD ────────────────────────────────────────────────────────── */}
       <ViewHeader
-        eyebrow="Team Stats"
+        // No eyebrow — it would just repeat the "Team Stats" title verbatim
+        // (facelift REVIEW.md "Team stats, phone": drop the eyebrow when it
+        // equals the title).
         title="Team Stats"
-        description={`Every player on ${teamName}'s roster: ranked, tracked, and measured against Tour.`}
-        meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshness(freshness)}</p>}
+        description={`Every player on ${teamName}, ranked against Tour.`}
+        meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshnessHeadline(freshness)}</p>}
         primaryAction={
           <Button asChild variant="primary" size="md">
             <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
@@ -413,6 +443,12 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
               <Menu.Item onSelect={handleExport} disabled={vm.rows.length === 0}>
                 Export as CSV
               </Menu.Item>
+              {/* The full multi-source freshness sentence (raw UTC stats-cache/
+                  rank-snapshot/oldest-signal-insight timestamps) — a coach
+                  reads none of that at a glance, so the masthead only shows
+                  the ONE relative headline above; this is the detail behind
+                  a Menu item the brief calls for. */}
+              <Menu.Item onSelect={() => fairwayToast.info('Data freshness', { description: formatTeamStatsFreshness(freshness) })}>Freshness details</Menu.Item>
             </Menu>
           </div>
         }
@@ -446,7 +482,7 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
             <p className="font-fw-sans text-body-sm text-text-secondary">No players on your roster yet.</p>
           </InstrumentPanel>
         ) : (
-          <MatrixBoard kpis={[]} columns={COLUMNS} rows={rows} />
+          <MatrixBoard kpis={[]} columns={columns} rows={rows} />
         )}
       </section>
 
@@ -539,16 +575,29 @@ function RankOrDash({ rank }: { rank: { rank: number; of: number } | null }) {
   return <RankCell rank={rank.rank} of={rank.of} />;
 }
 
+// KPI display face matches StatMatrix's own `dd` (font-fw-sans + tabular-nums,
+// StatMatrix.tsx:110) — the wide monospace these used before read as a
+// terminal readout, not a scoreboard number (facelift REVIEW.md "Team
+// stats, phone").
 function TeamSgKpi({ display }: { display: string }) {
-  return <span className="font-fw-mono text-h2 tracking-[-0.02em] tabular-nums text-text-primary">{display}</span>;
+  return <span className="font-fw-sans text-h2 font-semibold tracking-[-0.02em] tabular-nums text-text-primary">{display}</span>;
 }
 
 function TrajectoryKpi({ trajectory }: { trajectory: { improving: number; steady: number; declining: number } }) {
   return (
-    <span className="inline-flex items-baseline gap-2.5 font-fw-mono text-h3 tabular-nums">
-      <span className="text-accent-600">{trajectory.improving}▲</span>
-      <span className="text-text-tertiary">{trajectory.steady}→</span>
-      <span className="text-fw-warning-ink">{trajectory.declining}▼</span>
+    <span className="inline-flex items-baseline gap-2.5 font-fw-sans text-h3 font-semibold tabular-nums">
+      <span className="inline-flex items-center gap-0.5 text-accent-600">
+        {trajectory.improving}
+        <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+      </span>
+      <span className="inline-flex items-center gap-0.5 text-text-tertiary">
+        {trajectory.steady}
+        <Minus className="h-3.5 w-3.5" aria-hidden />
+      </span>
+      <span className="inline-flex items-center gap-0.5 text-fw-warning-ink">
+        {trajectory.declining}
+        <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+      </span>
     </span>
   );
 }

@@ -23,16 +23,18 @@ const SKELETON_ROW_COUNT = 6;
  *   putts-by-distance (1×1), approach proximity (1×1) as a single gapless
  *   matte sheet with hairline seams — not four separate cards.
  *
- * Eyebrow + h1 are real static text (matching `<ViewHeader eyebrow="Team
- * Stats" title="Team Stats" />`), not `<Skeleton>` blocks; the description
- * needs the fetched roster/team name, so it stays a Skeleton.
+ * The h1 is real static text (matching `<ViewHeader title="Team Stats" />`),
+ * not a `<Skeleton>` block — no eyebrow above it, since ViewHeader no longer
+ * renders one here (it would just repeat the title verbatim; facelift
+ * REVIEW.md "Team stats, phone"). The description needs the fetched roster/
+ * team name, so it stays a Skeleton.
  *
  * Board row shape verified against the module kit: `RankCell` (Tee/App/
  * Shrt/Putt/Scor) is a `rounded-fw-sm` badge, NOT a circle (RankCell.tsx:
- * 24-29); only `RingGauge` (Composite) is actually circular (RingGauge.tsx:
- * 16-41); the "who" cell is name + subtitle text with no avatar. Scor/
- * Composite/Trend/Signal hide below 940px exactly like MatrixBoard's own
- * columns (MatrixBoard.tsx:29, `HIDE_ON_MOBILE`).
+ * 24-29); Composite is a leading number + a linear `Meter size="sm"` bar,
+ * not a ring (TeamStatsBoard.tsx); the "who" cell is name + subtitle text
+ * with no avatar. Scor/Composite/Trend/Signal hide below 940px exactly like
+ * MatrixBoard's own columns (MatrixBoard.tsx:29, `HIDE_ON_MOBILE`).
  */
 export default function TeamStatsLoading() {
   return (
@@ -44,7 +46,6 @@ export default function TeamStatsLoading() {
               primary action · Export icon (sm+) · overflow-menu icon ── */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-3">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">Team Stats</p>
             <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">Team Stats</h1>
             <Skeleton className="h-4 w-64 max-w-full" />
           </div>
@@ -84,11 +85,13 @@ export default function TeamStatsLoading() {
             </div>
 
             {/* Board rows. The "who" cell is name + subtitle only — no avatar.
-                Tee/App/Shrt/Putt are `RankCell`, a rounded-fw-sm badge
-                (RankCell.tsx:24-29), NOT a circle — only `RingGauge`
-                (composite) is actually circular (RingGauge.tsx:16-41).
-                Scor/Composite/Trend/Signal hide below 940px like the real
-                columns (MatrixBoard.tsx:29). */}
+                Tee/App/Shrt/Putt/Scor are `RankCell`, a rounded-fw-sm badge
+                (RankCell.tsx:24-29). Composite is a leading number + a
+                linear `Meter size="sm"` bar (TeamStatsBoard.tsx), not a
+                ring — a bare arc read as unreadable noise at 1440px
+                (facelift REVIEW.md "Team stats, desktop"). Scor/Composite/
+                Trend/Signal hide below 940px like the real columns
+                (MatrixBoard.tsx:29). */}
             {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
               <div key={i} className={cn('flex items-center justify-between gap-4 px-5 py-2.5', i < SKELETON_ROW_COUNT - 1 && 'border-b border-border-subtle')}>
                 <div className="min-w-0 flex-1 space-y-1.5">
@@ -100,7 +103,10 @@ export default function TeamStatsLoading() {
                     <Skeleton key={j} className="h-[26px] w-[34px]" />
                   ))}
                   <Skeleton className="hidden h-[26px] w-[34px] min-[940px]:block" />
-                  <Skeleton circle className="hidden h-[30px] w-[30px] min-[940px]:block" />
+                  <div className="hidden items-center gap-2 min-[940px]:flex">
+                    <Skeleton className="h-3 w-4" />
+                    <Skeleton className="h-1.5 w-12 rounded-full" />
+                  </div>
                   <Skeleton className="hidden h-6 w-16 min-[940px]:block" />
                   <Skeleton className="hidden h-6 w-20 rounded-full min-[940px]:block" />
                 </div>
