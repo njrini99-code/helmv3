@@ -1,4 +1,4 @@
-import { Cloud, Laptop, Server, type LucideIcon } from 'lucide-react';
+import { Cloud, Laptop, Server, Workflow, type LucideIcon } from 'lucide-react';
 import { StatusPill, Badge, type FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { SELFHEAL_RUNNER_LABEL, type SelfHealRunner } from '@/lib/admin/selfheal-registry';
@@ -108,6 +108,7 @@ export function formatStageAge(iso: string): string {
 const RUNNER_ICON: Record<SelfHealRunner, LucideIcon> = {
   'vercel-cron': Server,
   'cloud-routine': Cloud,
+  'github-actions': Workflow,
   'local-agent': Laptop,
 };
 
@@ -116,6 +117,7 @@ const RUNNER_ICON: Record<SelfHealRunner, LucideIcon> = {
 const RUNNER_REACH: Record<SelfHealRunner, string> = {
   'vercel-cron': 'In this deployment — a failure raises here.',
   'cloud-routine': 'Outside this deployment — only its heartbeat is visible.',
+  'github-actions': 'In GitHub Actions — its heartbeat links the run, and a failed run has a log.',
   'local-agent': "On the owner's laptop — silence is indistinguishable from sleep.",
 };
 
