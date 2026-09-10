@@ -16,7 +16,7 @@
  * the desktop-tier leftover space to `filters` instead.
  * ========================================================================== */
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Toolbar } from './Toolbar';
 
 describe('Toolbar — search stops competing with filters for growth at lg+', () => {
@@ -233,5 +233,76 @@ describe('Toolbar `material` prop', () => {
     render(<Toolbar sticky aria-label="Filters and actions" />);
     const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
     expect(row.style.top).toBe('0px');
+  });
+});
+
+describe('Toolbar — sticky detection never hands a calc() string to IntersectionObserver', () => {
+  // rootMargin accepts only px or %; a calc()/var() expression throws inside
+  // the effect and takes the whole route to its error boundary (seen on the
+  // roster and round review pages). The string offset must be resolved to px.
+  const originalIO = globalThis.IntersectionObserver;
+  const originalGCS = window.getComputedStyle;
+  afterEach(() => {
+    globalThis.IntersectionObserver = originalIO;
+    window.getComputedStyle = originalGCS;
+  });
+
+  function stubObserver() {
+    const seen: IntersectionObserverInit[] = [];
+    class FakeIO {
+      constructor(_cb: IntersectionObserverCallback, init?: IntersectionObserverInit) {
+        const margin = init?.rootMargin ?? '';
+        // Mirror the browser's validation so a regression fails loudly here too.
+        if (!/^(-?\d+(\.\d+)?(px|%)\s*){1,4}$/.test(margin)) {
+          throw new SyntaxError("Failed to construct 'IntersectionObserver': rootMargin must be specified in pixels or percent.");
+        }
+        seen.push(init ?? {});
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    globalThis.IntersectionObserver = FakeIO as unknown as typeof IntersectionObserver;
+    return seen;
+  }
+
+  it('resolves a calc() stickyTop through the row\'s computed top and observes with a px rootMargin', () => {
+    const seen = stubObserver();
+    window.getComputedStyle = ((el: Element) => {
+      const base = originalGCS(el);
+      return el.getAttribute('role') === 'toolbar' ? ({ ...base, top: '88px' } as CSSStyleDeclaration) : base;
+    }) as typeof window.getComputedStyle;
+    render(
+      <Toolbar
+        sticky
+        stickyTop="calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))"
+        aria-label="Filters and actions"
+      />,
+    );
+    expect(seen).toHaveLength(1);
+    expect(seen[0].rootMargin).toBe('-89px 0px 0px 0px');
+  });
+
+  it('keeps the plain px arithmetic for a numeric stickyTop', () => {
+    const seen = stubObserver();
+    render(<Toolbar sticky stickyTop={12} aria-label="Filters and actions" />);
+    expect(seen[0].rootMargin).toBe('-13px 0px 0px 0px');
+  });
+
+  it('re-resolves the string offset on resize', () => {
+    const seen = stubObserver();
+    let top = '88px';
+    window.getComputedStyle = ((el: Element) => {
+      const base = originalGCS(el);
+      return el.getAttribute('role') === 'toolbar' ? ({ ...base, top } as CSSStyleDeclaration) : base;
+    }) as typeof window.getComputedStyle;
+    render(<Toolbar sticky stickyTop="calc(1px + 2px)" aria-label="Filters and actions" />);
+    top = '104px';
+    window.dispatchEvent(new Event('resize'));
+    expect(seen.map((s) => s.rootMargin)).toEqual(['-89px 0px 0px 0px', '-105px 0px 0px 0px']);
+
   });
 });

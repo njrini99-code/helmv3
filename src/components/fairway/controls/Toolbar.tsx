@@ -64,9 +64,11 @@ import {
   type ReactNode,
   type CSSProperties,
   forwardRef,
+  useCallback,
   useEffect,
   useRef,
   useState,
+  type MutableRefObject,
 } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -192,6 +194,15 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
 ) {
   const reduceMotion = useReducedMotion();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const setRowRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      rowRef.current = el;
+      if (typeof ref === 'function') ref(el);
+      else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = el;
+    },
+    [ref],
+  );
   const [stuck, setStuck] = useState(false);
   const hasSelection = selectedCount > 0;
   // Premium scroll-edge fade for the (horizontally scrollable) filter cluster —
@@ -208,22 +219,40 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
     }
     const node = sentinelRef.current;
     if (!node || typeof IntersectionObserver === 'undefined') return;
+    let io: IntersectionObserver | null = null;
     // Shrink the intersection root by the sticky offset (+1px tolerance) so
     // the sentinel reads "out of view" exactly when it passes beneath the
-    // pinned row, not the raw viewport edge. A numeric `stickyTop` keeps the
-    // original plain-px arithmetic; a string offset (e.g. a `calc()` var
-    // expression) is negated via a wrapping `calc()` — a valid CSS
-    // <length-percentage>, which is all rootMargin requires.
-    const rootMarginTop =
-      typeof stickyTop === 'number' ? `${-(stickyTop + 1)}px` : `calc(-1px - (${stickyTop}))`;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry) setStuck(!entry.isIntersecting);
-      },
-      { threshold: 0, rootMargin: `${rootMarginTop} 0px 0px 0px` },
-    );
-    io.observe(node);
-    return () => io.disconnect();
+    // pinned row, not the raw viewport edge. rootMargin accepts only px or %
+    // (a calc()/var() string throws "rootMargin must be specified in pixels
+    // or percent" and takes the whole route down), so a string `stickyTop`
+    // is resolved to px through the row's computed `top` — the browser has
+    // already evaluated the expression there — and re-resolved on resize,
+    // when safe-area and header offsets can change.
+    const connect = () => {
+      io?.disconnect();
+      let offsetPx = 0;
+      if (typeof stickyTop === 'number') {
+        offsetPx = stickyTop;
+      } else {
+        const row = rowRef.current;
+        const resolved = row ? Number.parseFloat(getComputedStyle(row).top) : Number.NaN;
+        offsetPx = Number.isFinite(resolved) ? resolved : 0;
+      }
+      io = new IntersectionObserver(
+        ([entry]) => {
+          if (entry) setStuck(!entry.isIntersecting);
+        },
+        { threshold: 0, rootMargin: `${-(Math.round(offsetPx) + 1)}px 0px 0px 0px` },
+      );
+      io.observe(node);
+    };
+    connect();
+    if (typeof stickyTop === 'number') return () => io?.disconnect();
+    window.addEventListener('resize', connect);
+    return () => {
+      window.removeEventListener('resize', connect);
+      io?.disconnect();
+    };
   }, [sticky, stickyTop]);
 
   const isFrost = material === 'frost';
@@ -253,7 +282,7 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
       {sticky ? <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" /> : null}
 
       <div
-        ref={ref}
+        ref={setRowRef}
         role="toolbar"
         aria-label={ariaLabel}
         data-slot={dataSlot}
