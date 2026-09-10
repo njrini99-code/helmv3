@@ -90,9 +90,11 @@ describe('TeamCategoryLeakBand', () => {
     expect(screen.getByText('Where the team is bleeding strokes')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Composite 74 of 100' })).toBeInTheDocument();
     expect(screen.getByText('Putting')).toBeInTheDocument();
-    expect(screen.getByText('31.2 PPR')).toBeInTheDocument();
+    expect(screen.getByText('31.2')).toBeInTheDocument();
+    expect(screen.getByText('PPR')).toBeInTheDocument();
     expect(screen.getByText('Approach')).toBeInTheDocument();
-    expect(screen.getByText('62% GIR')).toBeInTheDocument();
+    expect(screen.getByText('62%')).toBeInTheDocument();
+    expect(screen.getByText('GIR')).toBeInTheDocument();
   });
 
   it('surfaces the worst-offender player(s) flagged needsAttention', () => {

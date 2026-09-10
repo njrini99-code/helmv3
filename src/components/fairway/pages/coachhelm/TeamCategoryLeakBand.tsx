@@ -48,9 +48,16 @@ export interface TeamCategoryLeakBandProps {
   className?: string;
 }
 
+/** "35% Scramble" → ["35%", "Scramble"]; "+3.8 vs par" → ["+3.8", "vs par"]; "42" → ["42", null]. */
+function splitAvgLabel(label: string): [string, string | null] {
+  const i = label.indexOf(' ');
+  return i > 0 ? [label.slice(0, i), label.slice(i + 1)] : [label, null];
+}
+
 function CategorySegment({ category }: { category: TeamCategory }) {
   const scored = category.players.length;
   const hasData = scored > 0;
+  const [avgValue, avgUnit] = hasData ? splitAvgLabel(category.teamAvgLabel) : [category.teamAvgLabel, null];
 
   // Worst-first: `players` is already sorted best→worst by the source
   // action, so reversing + filtering to the flagged (>1 stddev off-average)
@@ -65,7 +72,7 @@ function CategorySegment({ category }: { category: TeamCategory }) {
     .slice(0, 2);
 
   return (
-    // Equal-share columns (`flex-1` from a 0 basis) with a 152px floor: when
+    // Equal-share columns (`flex-1` from a 0 basis) with a 144px floor: when
     // the band has room every category gets the same width and the row fills
     // the panel edge to edge; when it doesn't (five categories in a ~500px
     // stage) the floor pushes the row into the horizontal scroller above
@@ -73,7 +80,7 @@ function CategorySegment({ category }: { category: TeamCategory }) {
     // max-w-[220px] shrink-0` pair could never fill the panel and, with the
     // cockpit's three panes at 1440, left the fourth column half inside the
     // scroll fade reading as text cut mid-word (facelift REVIEW.md item 6).
-    <div className="flex h-full min-w-[152px] flex-1 flex-col gap-3 px-4 py-3.5 first:pl-0 last:pr-0">
+    <div className="flex h-full min-w-[144px] flex-1 flex-col gap-3 px-4 py-3.5 first:pl-0 last:pr-0">
       {/* flex-wrap: on tight phone widths (long label + long trend word,
           e.g. APPROACH + Declining) the glyph must wrap under the label —
           with shrink-0 alone it escapes past the card edge (iOS 2026-07-24). */}
@@ -84,8 +91,14 @@ function CategorySegment({ category }: { category: TeamCategory }) {
         <TrendGlyph direction={category.trend} className="shrink-0 text-caption" />
       </div>
 
-        <p className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
-          {category.teamAvgLabel}
+        {/* Value and unit as two type sizes on one baseline ("35%" + "Scramble")
+            rather than one h3 string: at the band's column floor a mono
+            "35% Scramble" wrapped to two lines and pushed that column's tick
+            rail below its siblings'. The unit is whatever follows the first
+            space in the formatted label; a label with no space renders whole. */}
+        <p className="flex items-baseline gap-1.5 whitespace-nowrap">
+          <span className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">{avgValue}</span>
+          {avgUnit ? <span className="text-caption text-text-tertiary">{avgUnit}</span> : null}
         </p>
 
         {hasData ? (
