@@ -6,7 +6,7 @@
  * Mounts `Spine` with a hero + priorities fixture and asserts the hero value
  * renders and the priority rows render in rank order (01 first, 03 last).
  * ========================================================================== */
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Spine } from '../Spine';
 import type { PriorityItem, SpineProps } from '../types';
@@ -66,5 +66,78 @@ describe('Spine — render smoke', () => {
     render(<Spine {...fixture} cta={{ label: 'Ask CoachHelm', href: '/golf/dashboard/coachhelm' }} />);
     const cta = screen.getByRole('link', { name: 'Ask CoachHelm' });
     expect(cta).toHaveAttribute('href', '/golf/dashboard/coachhelm');
+  });
+});
+
+/**
+ * `readouts` and `urgent` — 2026-09-10 primitives follow-up (REVIEW.md
+ * decisions: "one verdict string and no multi-readout slot" / "the urgent
+ * signal renders after the ledger [via children]"). Both are additive: a
+ * fixture with neither renders exactly as the smoke tests above already
+ * prove.
+ */
+describe('Spine — readouts (multi-fact ledger under the verdict)', () => {
+  it('renders each readout row and omits the slot entirely when not provided', () => {
+    const { container: without } = render(<Spine {...fixture} />);
+    // `ledger` alone (from the base fixture) already renders one SpineLedger.
+    expect(without.querySelectorAll('[data-slot="spine-ledger"]')).toHaveLength(1);
+
+    const { container: withReadouts } = render(
+      <Spine
+        {...fixture}
+        readouts={[
+          { label: 'Needs attention', value: '4 players' },
+          { label: 'Outcomes awaiting', value: '2' },
+        ]}
+      />,
+    );
+    expect(within(withReadouts).getByText('Needs attention')).toBeInTheDocument();
+    expect(within(withReadouts).getByText('4 players')).toBeInTheDocument();
+    // A second SpineLedger (readouts + the base fixture's own ledger).
+    expect(withReadouts.querySelectorAll('[data-slot="spine-ledger"]')).toHaveLength(2);
+  });
+
+  it('renders directly under the verdict, before the standing readout', () => {
+    const { container } = render(
+      <Spine {...fixture} readouts={[{ label: 'Needs attention', value: '4 players' }]} />,
+    );
+    const html = container.innerHTML;
+    const verdictIdx = html.indexOf(fixture.verdict);
+    const readoutIdx = html.indexOf('Needs attention');
+    const standingIdx = html.indexOf('SG: Total');
+    expect(verdictIdx).toBeGreaterThan(-1);
+    expect(readoutIdx).toBeGreaterThan(verdictIdx);
+    expect(standingIdx).toBeGreaterThan(readoutIdx);
+  });
+
+  it('accepts a ReactNode value, not just a string', () => {
+    render(<Spine {...fixture} readouts={[{ label: 'Status', value: <strong>Active</strong> }]} />);
+    expect(screen.getByText('Active').tagName).toBe('STRONG');
+  });
+});
+
+describe('Spine — urgent (marked row before the ledger and before children)', () => {
+  it('omits the urgent row entirely when not provided', () => {
+    const { container } = render(<Spine {...fixture} />);
+    expect(container.querySelector('[data-slot="spine-urgent"]')).toBeNull();
+  });
+
+  it('renders a marked row before the ledger and before children', () => {
+    const { container } = render(
+      <Spine {...fixture} urgent={<span>3 overdue tasks</span>}>
+        <div>Trailing note</div>
+      </Spine>,
+    );
+    const urgentEl = container.querySelector('[data-slot="spine-urgent"]');
+    expect(urgentEl).not.toBeNull();
+    expect(screen.getByText('3 overdue tasks')).toBeInTheDocument();
+
+    const html = container.innerHTML;
+    const urgentIdx = html.indexOf('data-slot="spine-urgent"');
+    const ledgerIdx = html.indexOf('data-slot="spine-ledger"');
+    const childrenIdx = html.indexOf('Trailing note');
+    expect(urgentIdx).toBeGreaterThan(-1);
+    expect(urgentIdx).toBeLessThan(ledgerIdx);
+    expect(urgentIdx).toBeLessThan(childrenIdx);
   });
 });

@@ -6,10 +6,23 @@
  * ----------------------------------------------------------------------------
  * The "always visible, never scrolls away" half of the Spine & Stage
  * pattern: an eyebrow, a huge mono hero figure + verdict sentence, an
- * optional bare `StandingBars` readout, an optional `PriorityList`, an
- * optional `SpineLedger`, a free-form `children` escape hatch for
- * surface-specific rows, and a pill CTA that renders as a real `<a>` when
- * `cta.href` is given, else a real `<button>`.
+ * optional `readouts` ledger, an optional bare `StandingBars` readout, an
+ * optional `PriorityList`, an optional `urgent` marked row, an optional
+ * `SpineLedger`, a free-form `children` escape hatch for surface-specific
+ * rows, and a pill CTA that renders as a real `<a>` when `cta.href` is
+ * given, else a real `<button>`.
+ *
+ * `readouts` vs `ledger` (2026-09-10, primitives follow-up — REVIEW.md: "one
+ * verdict string and no multi-readout slot"): both render the SAME
+ * `SpineLedger` visual, but `readouts` sits right under the verdict (for
+ * facts that used to get folded into the verdict sentence for lack of a
+ * slot) while `ledger` keeps its original position, last, right before
+ * `children`/the CTA.
+ *
+ * `urgent` (same follow-up — REVIEW.md: "the urgent signal renders after the
+ * ledger [via the children slot]") renders as a marked row BEFORE `ledger`
+ * and BEFORE `children`, so a consumer currently pushing urgent content
+ * through `children` can move it here to fix that ordering.
  *
  * The standing readout used to be `StandingTrack` (a dot-on-a-rail pin) —
  * replaced 2026-09-10 (owner: "get rid of these slider things... replace it
@@ -39,9 +52,27 @@ import type { SpineProps } from './types';
 
 const HAIRLINE_COLOR = 'oklch(1 0 0 / 0.14)';
 const CTA_BORDER_COLOR = 'oklch(1 0 0 / 0.25)';
+/** `urgent`'s marked-row background — a translucent white lift matching the
+ *  file's own inline-oklch convention (no `bg-surface-*` token exists for
+ *  this dark gradient), paired with the same accent-300 inset bar
+ *  `SpineLedger` uses for a "good" delta so the marker reads as the spine's
+ *  own attention color, not a new one. */
+const URGENT_BG_COLOR = 'oklch(1 0 0 / 0.06)';
 
 function SpineHairline() {
   return <hr aria-hidden="true" className="my-5 border-t" style={{ borderTopColor: HAIRLINE_COLOR }} />;
+}
+
+function SpineUrgentRow({ children }: { children: ReactNode }) {
+  return (
+    <div
+      data-slot="spine-urgent"
+      style={{ backgroundColor: URGENT_BG_COLOR }}
+      className="rounded-fw-sm px-3 py-2.5 shadow-[inset_3px_0_0_var(--fw-color-accent-300)]"
+    >
+      {children}
+    </div>
+  );
 }
 
 function SpineEyebrow({ children }: { children: ReactNode }) {
@@ -56,8 +87,10 @@ export function Spine({
   eyebrow,
   hero,
   verdict,
+  readouts,
   standing,
   priorities,
+  urgent,
   ledger,
   cta,
   children,
@@ -89,6 +122,13 @@ export function Spine({
 
       <p className="mt-2.5 font-fw-sans text-body-sm text-ink-on-deep">{verdict}</p>
 
+      {readouts && readouts.length > 0 ? (
+        <>
+          <SpineHairline />
+          <SpineLedger rows={readouts} />
+        </>
+      ) : null}
+
       {standing ? (
         <>
           <SpineHairline />
@@ -103,6 +143,13 @@ export function Spine({
             <SpineEyebrow>Priorities</SpineEyebrow>
           </div>
           <PriorityList items={priorities} />
+        </>
+      ) : null}
+
+      {urgent ? (
+        <>
+          <SpineHairline />
+          <SpineUrgentRow>{urgent}</SpineUrgentRow>
         </>
       ) : null}
 
