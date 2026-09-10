@@ -12,13 +12,12 @@
  * inviting empty state for the coach ("Add a note").
  *
  * Renders its OWN header row (Eyebrow + Add note/Edit button) but no longer
- * wraps itself in a `Surface` — the caller (`FilmstripReview.tsx`) seams this
- * alongside "The story"/"What to do next" as rows of ONE shared bordered
- * Surface (round-detail.md: same-size side-by-side cards → hairline-divided
- * seam sections in the page column), rather than a standalone card.
+ * wraps itself in a `Surface` — the caller (`RoundReviewFieldSheet.tsx`) sets
+ * this under the story on a hairline, as bare type in the ledger's first
+ * column (round-review.v3.md), rather than a standalone card.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Eyebrow, Button, TextArea } from '@/components/fairway';
 import { useToast } from '@/components/ui/sonner';
 import { annotateReview } from '@/app/golf/actions/round-reviews';
@@ -28,6 +27,12 @@ export interface CoachNotesSectionProps {
   initialNotes: string | null;
   /** True only for a coach on the player's team viewing someone else's round. */
   canEdit: boolean;
+  /** A counter the caller increments to open the editor from elsewhere on the
+   *  page — the masthead's "Add note" primary action (round-review.v3.md).
+   *  Ignored for a viewer who cannot edit, so a player's page can never be
+   *  nudged into an editor the server would reject, and the first render
+   *  never opens it. */
+  editSignal?: number;
 }
 
 /** Whether `CoachNotesSection` will render anything for this viewer/note
@@ -40,12 +45,13 @@ export function hasCoachNotesContent(canEdit: boolean, notes: string | null): bo
   return canEdit || !!notes;
 }
 
-export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNotesSectionProps) {
+export function CoachNotesSection({ reviewId, initialNotes, canEdit, editSignal = 0 }: CoachNotesSectionProps) {
   const { addToast } = useToast();
   const [notes, setNotes] = useState(initialNotes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(initialNotes ?? '');
   const [saving, setSaving] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Keep local state in sync if the parent re-fetches a different review
   // (e.g. navigating between rounds without a full remount).
@@ -53,6 +59,19 @@ export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNote
     setNotes(initialNotes);
     setDraft(initialNotes ?? '');
   }, [initialNotes, reviewId]);
+
+  // The masthead's "Add note" action: open the editor here and bring it into
+  // view, so the primary action reaches the one place a note is actually
+  // written instead of duplicating the editor at the top of the page.
+  const openedFor = useRef(editSignal);
+  useEffect(() => {
+    if (editSignal === openedFor.current) return;
+    openedFor.current = editSignal;
+    if (!canEdit) return;
+    setDraft(notes ?? '');
+    setEditing(true);
+    containerRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [editSignal, canEdit, notes]);
 
   // Nothing to show: a player with no note, or a coach view that hasn't been
   // granted edit rights (defensive — the page only mounts this with
@@ -93,7 +112,7 @@ export function CoachNotesSection({ reviewId, initialNotes, canEdit }: CoachNote
   }
 
   return (
-    <div className="space-y-2.5">
+    <div ref={containerRef} className="space-y-2.5">
       <div className="flex items-center justify-between gap-3">
         <Eyebrow as="h2">Coach notes</Eyebrow>
         {canEdit && !editing ? (

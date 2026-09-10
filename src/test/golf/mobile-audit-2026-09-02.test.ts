@@ -67,9 +67,15 @@ describe('mobile audit 2026-09-02', () => {
     expect(src).toMatch(/status === 'error' && \([\s\S]*?Save failed[\s\S]*?\)/);
   });
 
-  it('copy: no desktop-only "Hover" verb in the round-review hint', () => {
-    const src = read('src/components/golf/coachhelm/round-review/ReviewHero.tsx');
-    expect(src).not.toContain('Hover or tap a hole');
-    expect(src).toContain('Tap or hover over a hole to see what happened.');
+  it('copy: no desktop-only "Hover" verb in the round-review hole affordance', () => {
+    // The v3 field sheet retired the filmstrip and its hint line with it: a
+    // hole is now a real press target in the instrument AND a pressable row in
+    // the hole table, so the affordance is the control itself rather than a
+    // sentence telling a phone to hover. Assert that, not the retired copy.
+    const shape = read('src/components/golf/coachhelm/round-review/RoundShape.tsx');
+    expect(shape).not.toContain('Hover or tap a hole');
+    expect(shape).toContain('<PressTarget');
+    const parts = read('src/components/golf/coachhelm/round-review/round-review-parts.tsx');
+    expect(parts).toContain('<PressTarget');
   });
 });

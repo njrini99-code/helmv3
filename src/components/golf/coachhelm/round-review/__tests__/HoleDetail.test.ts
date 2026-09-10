@@ -1,15 +1,16 @@
 /**
- * ReviewHero — pure-function tests.
+ * HoleDetail — pure-function tests.
  *
  * Scope: `formatHoleSgNarrative`, the per-hole "expected vs actual" line
- * (Wave D, 2026-07-23). `ReviewHero` itself is a full client component
- * (router/searchParams/dynamic-imported framer-motion children) — this
- * suite exercises the pure narrative formatter directly rather than
- * rendering the component tree, mirroring `buildReviewViewModel.test.ts`'s
- * pure-adapter testing style for the rest of this surface.
+ * (Wave D, 2026-07-23), which moved here with the hole detail panel when
+ * Round review became the field sheet (round-review.v3.md). `HoleDetail`
+ * itself is a full client component (dynamic-imported framer-motion
+ * children) — this suite exercises the pure narrative formatter directly
+ * rather than rendering the component tree, mirroring
+ * `buildReviewViewModel.test.ts`'s pure-adapter style for this surface.
  */
 import { describe, it, expect } from 'vitest';
-import { formatHoleSgNarrative } from '../ReviewHero';
+import { formatHoleSgNarrative } from '../HoleDetail';
 import type { HoleStrokesGainedByCategory } from '../shot-strokes-gained';
 
 function sg(overrides: Partial<HoleStrokesGainedByCategory> = {}): HoleStrokesGainedByCategory {

@@ -133,3 +133,110 @@ Same order, one column.
 - The cumulative line and the bars share a box but not a scale. The line gets
   its own right-edge label so the reader is never asked to read it off the
   bars' axis.
+
+## Result
+
+Built on `agent/frost-facelift`. The composition is the four regions the spec
+asks for: a bare masthead, one `Surface` holding the new page-local
+`RoundShape` instrument beside a readouts column, a three-column ledger on
+vertical hairlines, and the hole-by-hole table.
+
+Files added under `src/components/golf/coachhelm/round-review/`:
+`round-shape.ts` (pure logic), `RoundShape.tsx` (the instrument),
+`round-review-parts.tsx` (verdict, readouts, ledger columns, table),
+`RoundReviewFieldSheet.tsx` (the composition root), `HoleDetail.tsx` (the hole
+panel lifted out of `ReviewHero`), `FullBreakdownPanel.tsx`. `ReviewHero.tsx`
+and `FilmstripReview.tsx` are deleted. `RoundShape` is page-local: it is not
+in the shared fairway barrel or registry.
+
+### Deviations, and why
+
+1. **The readouts' deltas do not come from the trend series.**
+   `RoundReviewTrendRow` carries only `id`, `round_date` and `score_to_par`,
+   so putts, greens and fairways have no comparison figure in it and three of
+   the four readouts would have had to invent one. They read
+   `getStatAverages(playerId)` instead — the player's own last 20 completed
+   rounds (`avgScoreToPar`, `avgPutts`, `avgGirPct`, `avgFairwayPct`), fetched
+   in its own effect with its own absence handling. Because the window is
+   "recent rounds" and not the season, the caption says so: "1.0 worse than
+   recent". When the read fails or returns nothing, every readout renders its
+   number with no delta line at all.
+
+2. **The verdict's stretch clause is reworded for grammar.**
+   `{best stretch} was the round: {n} under through holes {a} to {b}` renders
+   as `Holes {a} to {b} were the round: {n} under.` A stretch that is level
+   rather than under par cannot honestly say "0 under", so it reads
+   `The round held through holes {a} to {b}, {k} holes without a dropped
+   shot.` A run shorter than two holes is not a stretch and the clause is
+   dropped. Ties on run length break toward the run furthest under par, then
+   the earlier start, so the sentence is deterministic.
+
+3. **The worst three-hole window gets its own clause.** The spec requires it
+   to be computed but the sentence template had no slot for it, which would
+   have left it dead. It renders as `Holes {c} to {d} cost {m} shots.` only
+   when the window is at least two over and is not inside the best stretch.
+
+4. **The cost clause reads the largest opportunity, not literally
+   `strokesToGain[0]`.** The stored array is not guaranteed sorted, so it is
+   ranked by `potentialStrokes` first.
+
+5. **The degraded stage reuses `RoundShape` rather than `TrendChart`.**
+   `buildRoundTrendSeries` only yields points at four rounds or more and
+   returns a chart series; plotting the trajectory through the same instrument
+   keeps ONE instrument on the page. It draws from two rounds up. Below that,
+   and while the fetch is in flight, the stage carries a skeleton and then one
+   honest line — never an empty state, never a fabricated series.
+
+6. **Scorecard-only is detected from `holeByHole.length === 0`, and the hole
+   deltas are gated on the same test.** A stored review that still carries
+   `momentumData` for a round whose holes were removed therefore produces no
+   stretch and no cost clause, only the scorecard-only sentence.
+
+7. **The bar scale is 30px per half, not 20px.** The box the bars and the
+   cumulative line share is 88px tall so the line has real amplitude; at 20px
+   the bars read as ticks inside it. The cap is the specced
+   `max(3, max |scoreToPar|)`.
+
+8. **The par row prints its label once.** "Par 4" on the first column and bare
+   numerals after it, the way a scorecard prints a row header, rather than
+   repeating the word eighteen times.
+
+9. **The upper label row is desktop-only.** At phone width a date or a par
+   cannot print in an eighteenth of the screen without truncating to an
+   ellipsis, so only the lower row shows there, every third column.
+
+10. **`RoundSGSummary` and `ReviewBreakdown` moved behind "Full breakdown".**
+    Neither has a slot among the four regions, and both render real computed
+    data, so they sit in `FullBreakdownPanel` behind the masthead's overflow
+    action alongside `RoundStatsPanel` rather than being deleted or given a
+    fifth inline block. `RoundStatsPanel.tsx` therefore stays imported.
+
+11. **The masthead primary action depends on the viewer.** `Add note` for a
+    coach, which opens the coach-note editor in ledger column 1 through a new
+    `editSignal` prop on `CoachNotesSection`. A player cannot write a coach
+    note, so their primary is `Share with coach` — the real action this page
+    already had. The focus-area flow keeps its place as a secondary button
+    under the story.
+
+12. **Club names are humanized.** `golf_shots.club_type` stores `driver` /
+    `non_driver`; the table printed the raw token, so `humanizeClub` maps it
+    to "Driver" / "Non-driver".
+
+13. **One test outside this screen's files had to move with the code.**
+    `src/test/golf/mobile-audit-2026-09-02.test.ts` read `ReviewHero.tsx` to
+    assert the hole hint did not lead with a desktop-only "Hover" verb. The
+    filmstrip and its hint line are both retired, so the test now reads
+    `RoundShape.tsx` and `round-review-parts.tsx` and asserts the affordance
+    that replaced the sentence: a hole is a `PressTarget` in the instrument and
+    a pressable row in the table. Coverage is repointed, not deleted.
+
+### Known limitations
+
+- At the specced 3/12 width, `StandingBars` truncates its reference row label
+  to "Fiel…" in the third ledger column. That truncation is inside
+  `src/components/fairway/charts/StandingBars.tsx`, which another session owns.
+- On a scorecard-only round the story column shows the stored V1 summary,
+  which reads "Shot 75 (+3) at QA Test Course. 0 pars." That "0 pars" is
+  generated in `src/app/golf/actions/round-review-content.ts` from holes that
+  were never entered. The page renders the stored narrative faithfully; the
+  fix belongs in the generator, outside this pass's files.

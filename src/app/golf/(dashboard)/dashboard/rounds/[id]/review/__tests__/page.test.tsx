@@ -1,15 +1,21 @@
 /**
- * Round Review page — integration tests (Task 10 filmstrip rebuild).
+ * Round Review page — integration tests (round-review.v3.md field sheet).
  *
- * Covers: auth-gated round fetch + course-name casing (#109, carried over
- * from the pre-filmstrip page), and that `FilmstripReview` actually mounts
- * with the hero (score/to-par/scoring histogram), the strokes-lost section, the
- * Share-with-Coach CTA, and the always-visible round breakdown wired to a
- * complete `RoundReviewContent` fixture without a redundant nested view.
+ * Covers: the auth-gated round fetch + course-name casing (#109, carried over
+ * from the pre-facelift page), and that `RoundReviewFieldSheet` actually
+ * mounts the four regions the v3 composition promises — a bare masthead whose
+ * verdict is built from this round's own fields, the one stage holding
+ * `RoundShape` beside its readouts, the three-column ledger, and the
+ * hole-by-hole table — wired to a complete `RoundReviewContent` fixture.
+ *
+ * The honesty rules get their own cases: a scorecard-only round degrades the
+ * stage instead of drawing a fabricated hole series, and a round with no
+ * comparison averages renders its readouts with no delta at all.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
 
 // --- Mocks (must precede the page import) ---------------------------------
@@ -243,6 +249,10 @@ vi.mock('@/app/golf/actions/round-review-system', () => ({
   // default, so existing tests that don't care about the trend chart see it
   // stay omitted rather than needing to know about this fetch at all.
   getRoundReviewTrend: vi.fn(async () => []),
+  // The stage readouts' only honest delta source. Absent by default, so the
+  // readouts render their numbers with no comparison caption — the branch
+  // that must never invent one.
+  getStatAverages: vi.fn(async () => ({ success: true })),
   shareRoundReviewWithCoach: vi.fn(async () => ({ success: true })),
 }));
 
@@ -284,78 +294,160 @@ function renderAsPlayer() {
   );
 }
 
-describe('RoundReviewPage — course-name casing (#109)', () => {
+/** Opens the masthead's "More actions" overflow menu, where Full breakdown,
+ *  Open scorecard and Recompute live in the v3 composition. */
+async function openOverflowMenu() {
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: /more actions/i }));
+  await screen.findByRole('menu');
+  return user;
+}
+
+describe('RoundReviewPage — masthead identity and course-name casing (#109)', () => {
   beforeEach(() => {
     roundRow = { ...DEFAULT_ROUND_ROW };
   });
 
-  it('title-cases an all-lowercase course name like every sibling course row', async () => {
+  it('titles the masthead with the reviewed player and puts the course on the eyebrow', async () => {
     roundRow = { ...DEFAULT_ROUND_ROW, course_name: 'pine lakes' };
 
-    const { getByRole } = renderAsPlayer();
+    const { container, getByRole } = renderAsPlayer();
 
-    // The ViewHeader title (an <h1>, present on both the loading and loaded
-    // surfaces) is the round's identity line — "{weekday} at {course} ·
-    // {player} · {date}" — built from the display-cased course name, never
-    // the raw lowercase value stored on the round. 2026-06-01 is a Monday;
-    // the player is 'Player' per `renderAsPlayer`'s GolfUserProvider fixture.
+    // v3 masthead: the <h1> is the PLAYER (round-review.v3.md), and the
+    // course/date ride the eyebrow row above it. The player is 'Player' per
+    // `renderAsPlayer`'s GolfUserProvider fixture.
     await waitFor(() => {
-      expect(getByRole('heading', { level: 1 }).textContent).toBe('Monday at Pine Lakes · Player · Jun 1');
+      expect(getByRole('heading', { level: 1 }).textContent).toBe('Player');
     });
-  });
-});
 
-describe('RoundReviewPage — FilmstripReview mount', () => {
-  beforeEach(() => {
-    roundRow = { ...DEFAULT_ROUND_ROW };
-  });
-
-  it('renders the hero score/to-par and the scoring histogram', async () => {
-    const { findAllByText, getByText, container } = renderAsPlayer();
-
-    // Scoped to the hero on purpose. The front/back breakdown legitimately
-    // shows the same figure — the front nine is also 38 in this fixture — and
-    // it became a separate text node when that row stopped being a
-    // `min-w-[420px]` horizontal scroller and became a labelled metric grid.
-    // A bare getByText('38') is therefore ambiguous, and relaxing it to
-    // "some element says 38" would no longer test that the HERO says it.
-    const hero = (await findAllByText('38')).find((el) => el.className.includes('text-stat-lg'));
-    expect(hero, 'the hero should render the score at stat-lg').toBeDefined();
-    expect(getByText('+2')).toBeInTheDocument();
-
-    // The old plain-text "3 pars · 6 bogeys" mix line was replaced by the
-    // ScoringHistogram module (round-review.v2.md R2) — five labelled bars,
-    // one per bucket, each with its own count cell. The fixture's
-    // `scoringDistribution` carries 3 pars and 6 bogeys.
-    const histogram = await waitFor(() => {
-      const el = container.querySelector('[data-slot="scoring-histogram"]');
+    // The course is still display-cased, never the raw lowercase value stored
+    // on the round. 2026-06-01 is a Monday.
+    const eyebrow = await waitFor(() => {
+      const el = container.querySelector('[data-slot="masthead-eyebrow"]');
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });
-    expect(within(histogram).getByText('Par')).toBeInTheDocument();
-    expect(within(histogram).getByText('Bogey')).toBeInTheDocument();
-    const parRow = within(histogram).getByText('Par').closest('div');
-    expect(parRow, 'the Par row should contain its own count').not.toBeNull();
-    expect(within(parRow as HTMLElement).getByText('3')).toBeInTheDocument();
-    const bogeyRow = within(histogram).getByText('Bogey').closest('div');
-    expect(bogeyRow, 'the Bogey row should contain its own count').not.toBeNull();
-    expect(within(bogeyRow as HTMLElement).getByText('6')).toBeInTheDocument();
+    expect(eyebrow.textContent).toContain('Round review');
+    expect(eyebrow.textContent).toContain('Pine Lakes · Mon, Jun 1');
+    expect(eyebrow.textContent).not.toContain('pine lakes');
+  });
+});
+
+describe('RoundReviewPage — the field sheet mounts its four regions', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
   });
 
-  it('collapses to one notice, not the RoundSGSummary instrument, when SG is not computed', async () => {
+  it('builds the masthead verdict and facts line from this round’s own fields', async () => {
+    const { container } = renderAsPlayer();
+
+    const verdict = await waitFor(() => {
+      const el = container.querySelector('[data-slot="verdict"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    // Score, to-par and course, then the biggest computed opportunity. Every
+    // clause comes from a field on the fixture; nothing is guessed.
+    expect(verdict.textContent).toContain('38 (+2) at Pinehurst No. 2.');
+    expect(verdict.textContent).toContain('Putting cost 1.2 strokes.');
+  });
+
+  it('draws one stage column per hole, each an openable press target', async () => {
+    const { container } = renderAsPlayer();
+
+    const shape = await waitFor(() => {
+      const el = container.querySelector('[data-slot="round-shape"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    // The fixture's `holeByHole` carries nine holes.
+    expect(within(shape).getAllByRole('button')).toHaveLength(9);
+    expect(within(shape).getByRole('button', { name: /^Hole 1, par 4, scored 4/ })).toBeInTheDocument();
+  });
+
+  it('renders the stage readouts with NO delta when no comparison averages came back', async () => {
+    const { container } = renderAsPlayer();
+
+    const readouts = await waitFor(() => {
+      const el = container.querySelector('[data-slot="stage-readouts"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    expect(within(readouts).getByText('Greens in regulation')).toBeInTheDocument();
+    // 4 of 9 greens and 3 of 7 fairways, straight off the round row.
+    expect(within(readouts).getByText('4/9')).toBeInTheDocument();
+    expect(within(readouts).getByText('3/7')).toBeInTheDocument();
+    // `getStatAverages` resolved with no `playerAvg`, so there is nothing
+    // honest to compare against and no caption is invented.
+    expect(within(readouts).queryByText(/better than recent/)).not.toBeInTheDocument();
+    expect(within(readouts).queryByText(/worse than recent/)).not.toBeInTheDocument();
+  });
+
+  it('captions each readout once real comparison averages arrive', async () => {
+    const { getStatAverages } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(getStatAverages).mockResolvedValueOnce({
+      success: true,
+      playerAvg: { avgScore: 42, avgScoreToPar: 6, avgPutts: 18, avgGirPct: 30, avgFairwayPct: 60 },
+    });
+
+    const { container } = renderAsPlayer();
+
+    const readouts = await waitFor(() => {
+      const el = container.querySelector('[data-slot="stage-readouts"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    // +2 against a 6-over average is four shots better; 16 putts against 18
+    // is two better; 4 of 9 greens (44.4%) against 30% is 14.4 points
+    // better; 3 of 7 fairways (42.9%) against 60% is 17.1 points worse.
+    await waitFor(() => {
+      expect(within(readouts).getByText('4.0 better than recent')).toBeInTheDocument();
+    });
+    expect(within(readouts).getByText('2.0 better than recent')).toBeInTheDocument();
+    expect(within(readouts).getByText('14.4 pts better than recent')).toBeInTheDocument();
+    expect(within(readouts).getByText('17.1 pts worse than recent')).toBeInTheDocument();
+  });
+
+  it('puts the strokes-to-gain numbers in the ledger and only there', async () => {
+    const { container, findByText } = renderAsPlayer();
+
+    await findByText('Where it went');
+    const leaks = container.querySelector('[data-slot="leak-ledger"]') as HTMLElement;
+    expect(leaks).toBeTruthy();
+    expect(within(leaks).getByText('Putting')).toBeInTheDocument();
+    expect(within(leaks).getByText('1.2')).toBeInTheDocument();
+    expect(within(leaks).getByText('3 three-jacks cost ~1.2 strokes')).toBeInTheDocument();
+  });
+
+  it('lists every hole in the hole-by-hole table', async () => {
+    const { container, findByText } = renderAsPlayer();
+
+    await findByText('Hole by hole');
+    const table = container.querySelector('[data-slot="hole-ledger"]') as HTMLElement;
+    expect(table).toBeTruthy();
+    // Nine holes plus the header row.
+    expect(within(table).getAllByRole('row')).toHaveLength(10);
+  });
+
+  it('says strokes gained was not computed rather than showing standing rows', async () => {
     // `roundRow` carries no `strokes_gained_*` fields by default (undefined —
-    // same shape as a round predating the SG cache). round-detail.md
-    // CONTAINERS TO REMOVE #2: the empty "Strokes gained: This round" + "By
-    // category" cards collapse to nothing, replaced by one line in the
-    // standing surface — RoundSGSummary's own "This round" instrument must
-    // NOT mount at all in this case.
+    // same shape as a round predating the SG cache). The "Against the field"
+    // ledger column then carries one honest line and nothing else, and the
+    // round-level SG instrument must not mount anywhere on the page.
     const { findByText, queryByText } = renderAsPlayer();
 
-    await findByText('SG not computed for this round.');
+    await findByText('Strokes gained was not computed for this round.');
     expect(queryByText('This round')).not.toBeInTheDocument();
   });
 
-  it('renders the round-level Strokes Gained summary section when SG IS computed', async () => {
+  it('renders a working Share-with-Coach CTA wired to shareRoundReviewWithCoach', async () => {
+    const { findByRole } = renderAsPlayer();
+
+    const shareButton = await findByRole('button', { name: 'Share with coach' });
+    expect(shareButton).toBeEnabled();
+  });
+
+  it('moves the round breakdown and the SG rollup behind the masthead’s Full breakdown action', async () => {
     roundRow = {
       ...DEFAULT_ROUND_ROW,
       strokes_gained_total: 1.4,
@@ -367,44 +459,21 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
 
     const { findByText, queryByText } = renderAsPlayer();
 
-    // The V1 heuristic "Where strokes went" RailBars block was removed
-    // (2026-07-23) — it contradicted the authoritative per-shot Strokes Gained
-    // rollup (RoundSGSummary) that now leads the review body.
-    await findByText('This round');
-    expect(queryByText('SG not computed for this round.')).not.toBeInTheDocument();
-  });
-
-  it('renders a working Share-with-Coach CTA wired to shareRoundReviewWithCoach', async () => {
-    const { findByRole } = renderAsPlayer();
-
-    const shareButton = await findByRole('button', { name: 'Share with coach' });
-    expect(shareButton).toBeEnabled();
-  });
-
-  it('shows one inline round breakdown without a nested review level', async () => {
-    const { findByText, queryByRole } = renderAsPlayer();
-
-    await findByText('Round breakdown');
-    expect(queryByRole('button', { name: 'Full breakdown →' })).not.toBeInTheDocument();
-    expect(queryByRole('button', { name: 'Back to summary' })).not.toBeInTheDocument();
-  });
-
-  it('opens RoundStatsPanel/RoundStatReport in a Sheet from the header "Full breakdown" button (R7)', async () => {
-    // `RoundStatReport` used to always rest inline at the page's end; R7
-    // moves it behind this Sheet instead. Asserted structurally via vaul's
-    // own portal marker (mirrors Sheet.test.tsx) rather than the report's
-    // content, since that content depends on an unmocked stats fetch this
-    // suite doesn't stub.
-    const { findByRole } = renderAsPlayer();
-
-    const trigger = await findByRole('button', { name: 'Full breakdown' });
+    // The v3 page is four regions; the breakdown instruments are real data
+    // with no slot among them, so they live behind the overflow action
+    // rather than as another inline card.
+    await findByText('The story');
+    expect(queryByText('Round breakdown')).not.toBeInTheDocument();
     expect(document.body.querySelector('[data-vaul-drawer]')).not.toBeInTheDocument();
 
-    trigger.click();
+    const user = await openOverflowMenu();
+    await user.click(await screen.findByRole('menuitem', { name: 'Full breakdown' }));
 
     await waitFor(() => {
       expect(document.body.querySelector('[data-vaul-drawer]')).toBeInTheDocument();
     });
+    // The round-level Strokes Gained rollup rides in with it.
+    expect(await findByText('This round')).toBeInTheDocument();
   });
 });
 
@@ -413,7 +482,7 @@ describe('RoundReviewPage — scorecard-only round (no hole rows)', () => {
     roundRow = { ...DEFAULT_ROUND_ROW };
   });
 
-  it('hides the filmstrip strip and its hover hint, and never derives "0 pars" from missing data', async () => {
+  it('degrades the stage honestly and never derives "0 pars" from missing data', async () => {
     // Mirrors the real round this bug was reported against: golf_holes and
     // golf_shots both have 0 rows (a scorecard-only entry), so the generated
     // review's holeByHole/scoringDistribution come back empty even though the
@@ -454,17 +523,60 @@ describe('RoundReviewPage — scorecard-only round (no hole rows)', () => {
       },
     });
 
-    const { findByText, queryByLabelText, queryByText } = renderAsPlayer();
+    const { container, findByText, queryByText } = renderAsPlayer();
 
-    await findByText('Scorecard only. Enter holes to unlock the hole-by-hole view.');
+    // `getRoundReviewTrend` resolves `[]` by default, so there is no
+    // trajectory to draw either — the stage says so in one line instead of
+    // rendering an empty instrument or a blank state.
+    await findByText(/not enough other rounds yet to draw a trajectory/);
 
-    // The strip itself (Filmstrip.tsx renders `aria-label="Hole by hole"`)
-    // and its "nothing scrubbed yet" hint both have nothing real to show for
-    // a round with zero hole rows — neither should mount at all.
-    expect(queryByLabelText('Hole by hole')).not.toBeInTheDocument();
-    expect(queryByText('Tap or hover over a hole to see what happened.')).not.toBeInTheDocument();
+    // The verdict collapses to the scorecard-only sentence and stops there.
+    const verdict = container.querySelector('[data-slot="verdict"]') as HTMLElement;
+    expect(verdict.textContent).toBe(
+      '38 (+2) at Pinehurst No. 2. Scorecard only, so there is no hole-by-hole read yet.',
+    );
+
+    // No fabricated hole series anywhere: no stage columns, no hole table.
+    expect(container.querySelector('[data-slot="round-shape"]')).toBeNull();
+    expect(container.querySelector('[data-slot="hole-ledger"]')).toBeNull();
+    expect(queryByText('Hole by hole')).not.toBeInTheDocument();
     expect(queryByText(/Mix:/)).not.toBeInTheDocument();
     expect(queryByText(/0 pars/)).not.toBeInTheDocument();
+  });
+
+  it('plots the player’s recent rounds, with this one marked, when there are enough of them', async () => {
+    const { getRoundReview, getRoundReviewTrend } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(getRoundReview).mockResolvedValueOnce({
+      success: true,
+      review: {
+        id: 'review-1',
+        player_id: 'player-1',
+        round_id: 'round-1',
+        review_content: {
+          ...FULL_REVIEW_CONTENT,
+          holeByHole: [],
+          momentumData: [],
+          scoringDistribution: { eagles: [], birdies: [], pars: [], bogeys: [], doublePlus: [], holesPlayed: 0 },
+        },
+      },
+    } as unknown as Awaited<ReturnType<typeof getRoundReview>>);
+    vi.mocked(getRoundReviewTrend).mockResolvedValueOnce([
+      { id: 'round-1', round_date: '2026-06-01', score_to_par: 2 },
+      { id: 'round-0', round_date: '2026-05-20', score_to_par: 7 },
+    ]);
+
+    const { container, findByText } = renderAsPlayer();
+
+    await findByText('Season trajectory');
+    const shape = await waitFor(() => {
+      const el = container.querySelector('[data-slot="round-shape"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    // Oldest first, and the reviewed round is the one labelled as such.
+    expect(within(shape).getByText('May 20')).toBeInTheDocument();
+    expect(within(shape).getByText('Jun 1')).toBeInTheDocument();
+    expect(within(shape).getByText(/this round/)).toBeInTheDocument();
   });
 });
 
@@ -516,7 +628,17 @@ describe('RoundReviewPage — focus-area prescription (FocusAreaModal migration)
 
 describe('RoundReviewPage — perf fix (AUDIT row 15): review no longer waits on standing', () => {
   beforeEach(() => {
-    roundRow = { ...DEFAULT_ROUND_ROW };
+    // Strokes Gained IS computed here, so the "Against the field" ledger
+    // column reaches its standing states rather than the one-line
+    // not-computed branch — that column is the thing under test.
+    roundRow = {
+      ...DEFAULT_ROUND_ROW,
+      strokes_gained_total: 1.4,
+      strokes_gained_tee: 0.5,
+      strokes_gained_approach: 0.3,
+      strokes_gained_around_green: 0.1,
+      strokes_gained_putting: 0.5,
+    };
   });
 
   it('shows review content while the season-standing fetch is still pending', async () => {
@@ -537,8 +659,8 @@ describe('RoundReviewPage — perf fix (AUDIT row 15): review no longer waits on
     // doing.
     await findByText('The story');
 
-    // "Where this sits" carries its own pending state instead of the review
-    // waiting on it.
+    // "Against the field" carries its own pending state instead of the
+    // review waiting on it.
     expect(await findByText('Loading season standing…')).toBeInTheDocument();
 
     resolveStanding({});
@@ -557,17 +679,19 @@ describe('RoundReviewPage — review-generation failure surfaces inline, not pag
     // `{ success: false }`, no `error` message).
     vi.mocked(getRoundReview).mockResolvedValueOnce({ success: false });
 
-    const { findByText, findByRole, queryByText } = renderAsPlayer();
+    const { container, findByText, findByRole, queryByText } = renderAsPlayer();
 
     // This text only exists on the new inline-retry path — the OLD code
     // never produced it; a generation failure there set the page-level
     // `error` and rendered "We couldn't load this review" instead.
     await findByText("We couldn't generate this review");
 
-    // The page shell — the round's own identity header — is still up
-    // around it; this is NOT the whole-page error surface.
+    // The page shell — the masthead with the reviewed player and the round's
+    // course on the eyebrow — is still up around it; this is NOT the
+    // whole-page error surface.
     const heading = await findByRole('heading', { level: 1 });
-    expect(heading.textContent).toContain('Pinehurst No. 2');
+    expect(heading.textContent).toBe('Player');
+    expect(container.querySelector('[data-slot="masthead-eyebrow"]')?.textContent).toContain('Pinehurst No. 2');
     expect(queryByText("We couldn't load this review")).not.toBeInTheDocument();
 
     const retry = await findByRole('button', { name: 'Try again' });
