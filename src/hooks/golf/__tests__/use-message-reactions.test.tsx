@@ -10,6 +10,11 @@ const state = vi.hoisted(() => ({
   events: [] as (() => void)[],
   deletes: [] as Record<string, string>[],
   reads: 0,
+  /** How many times `client.channel(...)` was called — i.e. how many times
+   *  the realtime subscription was (re)created. Row 6 (perf audit): this must
+   *  stay 1 for the life of a conversation even as the visible id set grows. */
+  channelCreates: 0,
+  removeChannelCalls: 0,
   /** null models the moment a call fires before the session is attached
    *  (or after it expired) — the 42501 case this hook now gates against. */
   session: { access_token: 'jwt', user: { id: 'me' } } as { access_token: string; user: { id: string } } | null,
@@ -44,10 +49,11 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
     return query;
   },
   channel: () => {
+    state.channelCreates += 1;
     const channel = { on: (_: string, _filter: unknown, cb: () => void) => { state.events.push(cb); return channel; }, subscribe: () => channel };
     return channel;
   },
-  removeChannel: vi.fn(),
+  removeChannel: () => { state.removeChannelCalls += 1; },
   auth: {
     getSession: async () => ({ data: { session: state.session }, error: null }),
     onAuthStateChange: (cb: (event: string) => void) => {
@@ -66,6 +72,8 @@ beforeEach(() => {
   state.events = [];
   state.deletes = [];
   state.reads = 0;
+  state.channelCreates = 0;
+  state.removeChannelCalls = 0;
   state.session = { access_token: 'jwt', user: { id: 'me' } };
   state.authListeners = [];
 });
@@ -144,6 +152,28 @@ describe('message reactions', () => {
     await act(async () => { state.authListeners.forEach((l) => l('SIGNED_IN')); });
     await waitFor(() => expect(result.current.rows).toHaveLength(1));
     expect(state.reads).toBeGreaterThan(0);
+  });
+
+  it('does not tear down the realtime channel when a new message id appears, but does refetch', async () => {
+    // Row 6 (perf audit): the whole finding was that EVERY incoming message
+    // tore down and rebuilt the reactions channel, because the subscribe
+    // effect used to depend on `refresh`, and `refresh` changes identity
+    // whenever the visible id set grows. The channel must now depend only on
+    // the conversation.
+    const { rerender } = renderHook(
+      ({ ids }: { ids: string[] }) => useMessageReactions('group', ids, 'me'),
+      { initialProps: { ids: ['message-a'] } },
+    );
+    await waitFor(() => expect(state.reads).toBeGreaterThan(0));
+    expect(state.channelCreates).toBe(1);
+    const readsBeforeArrival = state.reads;
+
+    // A new message arrives — the id set grows, which is exactly what used to
+    // tear the channel down.
+    await act(async () => { rerender({ ids: ['message-a', 'message-b'] }); });
+    await waitFor(() => expect(state.reads).toBeGreaterThan(readsBeforeArrival));
+    expect(state.channelCreates).toBe(1);
+    expect(state.removeChannelCalls).toBe(0);
   });
 
   it('refuses to write a reaction without a live session', async () => {

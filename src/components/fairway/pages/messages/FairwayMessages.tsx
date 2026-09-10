@@ -112,7 +112,23 @@ export function FairwayMessages() {
     sendTypingStatus,
     currentUserId,
   } = useGolfMessages(selectedConversationId || '');
-  const reactions = useMessageReactions(selectedConversationId ?? '', messages.filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed).map((message) => message.id), currentUserId ?? userId);
+  // Row 6 (perf audit) — a stable id array. `messages` gets a new reference on
+  // every incoming/edited message, and a naive `.filter().map()` inline at the
+  // call site would too, on every render regardless of whether the VISIBLE id
+  // set actually changed. useMemo here means the reactions hook only sees a
+  // new array when the underlying ids genuinely differ; combined with the
+  // hook's own content-keyed memo (JSON.stringify/parse) this keeps
+  // `use-message-reactions`'s `refresh` callback — and therefore its refetch
+  // effect — from firing on renders that don't touch this conversation's
+  // message set (e.g. an unrelated conversation's inbox update).
+  const visibleMessageIds = React.useMemo(
+    () =>
+      messages
+        .filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed)
+        .map((message) => message.id),
+    [messages, selectedConversationId],
+  );
+  const reactions = useMessageReactions(selectedConversationId ?? '', visibleMessageIds, currentUserId ?? userId);
 
   // ── UNCHANGED hook: attachment send ─────────────────────────────────────────
   const { sendMessageWithAttachments } = useMessageAttachments();
