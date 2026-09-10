@@ -59,7 +59,7 @@ import {
   Plus,
   ScanLine,
 } from 'lucide-react';
-import { Button, IconButton, PopoverPanel, PressTarget, Segmented, Toolbar } from '@/components/fairway';
+import { Button, IconButton, Menu, PopoverPanel, PressTarget, Segmented, Toolbar } from '@/components/fairway';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -593,7 +593,12 @@ export function FairwayCalendarToolbar({
             <IconButton variant="ghost" size="sm" aria-label={`Next ${stepLabel}`} onClick={() => onNavigate('next')}>
               <ChevronRight />
             </IconButton>
-            <h1 className="min-w-0 font-fw-sans text-h3 text-text-primary">
+            {/* shrink-0: the period is the page's name and must never be
+                clipped. As a shrinkable flex item beside a PressTarget capped
+                at max-w-full, it resolved 16px narrower than its own text and
+                rendered "September 2..." with a third of the row empty. The
+                toolbar row wraps, so refusing to shrink costs nothing. */}
+            <h1 className="w-max min-w-0 shrink-0 font-fw-sans text-h3 text-text-primary">
               <PopoverPanel
                 open={jumpOpen}
                 onOpenChange={setJumpOpen}
@@ -602,8 +607,8 @@ export function FairwayCalendarToolbar({
                 width="auto"
                 ariaLabel="Jump to a date"
                 trigger={
-                  <PressTarget className="-mx-2 inline-flex min-h-9 max-w-full items-center gap-1 whitespace-nowrap rounded-fw-sm px-2 py-1 text-left [@media(hover:hover)]:hover:bg-surface-sunken">
-                    <span className="truncate">
+                  <PressTarget className="-mx-2 inline-flex min-h-9 items-center gap-1 whitespace-nowrap rounded-fw-sm px-2 py-1 text-left [@media(hover:hover)]:hover:bg-surface-sunken">
+                    <span className="whitespace-nowrap">
                       {title.main}
                       {title.quiet ? <span className="font-medium text-text-tertiary">{title.quiet}</span> : null}
                     </span>
@@ -654,12 +659,38 @@ export function FairwayCalendarToolbar({
         }
         filters={
           secondaryActions.length > 0 ? (
+            /* Four labelled ghost buttons plus the period title, the view
+               Segmented and the primary CTA do not fit one row until about
+               1536px: at 1440 the row clipped both the title ("September
+               2...") and the last action ("Subs..."). Below 2xl they collapse
+               into one overflow Menu. Both branches stay in the DOM and CSS
+               decides which paints, so there is no client-only breakpoint
+               state and nothing can disagree between server and client. */
             <>
-              {secondaryActions.map((action) => (
-                <Button key={action.key} variant="ghost" size="sm" leftIcon={action.icon} onClick={action.run}>
-                  {action.label}
-                </Button>
-              ))}
+              <div className="hidden items-center gap-1 2xl:flex">
+                {secondaryActions.map((action) => (
+                  <Button key={action.key} variant="ghost" size="sm" leftIcon={action.icon} onClick={action.run}>
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex 2xl:hidden">
+                <Menu
+                  ariaLabel="Calendar actions"
+                  align="end"
+                  trigger={
+                    <IconButton variant="ghost" size="sm" aria-label="Calendar actions">
+                      <MoreHorizontal className="h-4 w-4" aria-hidden />
+                    </IconButton>
+                  }
+                >
+                  {secondaryActions.map((action) => (
+                    <Menu.Item key={action.key} icon={action.icon} onSelect={action.run}>
+                      {action.label}
+                    </Menu.Item>
+                  ))}
+                </Menu>
+              </div>
             </>
           ) : undefined
         }
