@@ -91,10 +91,8 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
         'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
       )}
     >
-      {/* Best-of-month accent rail */}
-      {isBestOfPeriod && (
-        <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px] bg-accent-500" />
-      )}
+      {/* #rounds-polish row 28: the "Best" Badge below already carries this —
+          no side-stripe accent (banned in the facelift). */}
 
       {/* Date */}
       <div className="w-12 flex-shrink-0 leading-tight">
