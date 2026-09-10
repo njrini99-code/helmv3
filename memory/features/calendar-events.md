@@ -311,34 +311,64 @@ keeps its date separate from the return-to-today action.
   Accepted / Maybe / No / Pending — not four sunken tiles; the Accepted count
   carries the accent when above zero. The date line is the sans body-sm face
   with an emerald clock, not mono.
-- Hero (`FairwayCalendarHero`): shared `fw-glass-chrome` material, sticky at
-  `--golf-mobile-header-offset` + `--fw-hub-subnav-offset`. Row 1 = title
-  (`MMMM yyyy`, or `EEEE, MMMM d` in Day) — the title is the date-jump: a
-  `PressTarget` trigger opening a `PopoverPanel` with the shared
-  `CalendarSurface` (frameless inside the panel); picking a day calls
-  `onSelectDate` and closes it — · Today (only when away) · More
-  (below xl) · the coach's ONE primary action. Row 2 = the explicit view
-  `Segmented` (opt-in `quiet` presentation, added to the shared control) ·
-  prev/next. Row 3 = the week strip in Day view only. Secondary actions are
-  ghost pills at xl+, a More menu below. No header counters.
-- People entry (`FairwayCalendarMemberRail`): AvatarGroup + "Team schedule"
-  / "Comparing N" summary; a People menu (Everyone / open a schedule) and
-  the existing `CalendarPeoplePicker` behind "Compare". Three distinct
-  actions — team schedule, open a person, include in a comparison — never
-  one avatar meaning all three. Wraps to two lines below md.
+- Masthead (`FairwayCalendarHero`): shared `fw-glass-chrome` material with a
+  warm bottom rim + the resting whisper (it floats over the list), sticky at
+  `--golf-mobile-header-offset` + `--fw-hub-subnav-offset`; it publishes its
+  own height as `--fw-calendar-hero-h` on the page column (ResizeObserver).
+  Row 1 = the period as a large title (`MMMM` with the year quiet beside it,
+  `weekRangeTitleParts` in Week, `EEEE, MMMM d` in Day) — the title is the
+  date-jump: a `PressTarget` trigger opening a `PopoverPanel` with the shared
+  `CalendarSurface`; picking a day calls `onSelectDate` and closes it — ·
+  Today (secondary pill, only when away; carries today's number in a
+  decorative calendar glyph outside the name) · More (secondary disc, below
+  xl) · the coach's ONE primary action as a labelled button from md up.
+  Row 2 = the full-width view `Segmented` in its shared depth presentation ·
+  prev/next from md up only. Row 3 = the week strip in Day view only. A
+  range fetch in flight is a 2px progress line along the masthead's bottom
+  edge (`busy`, with the sr-only live text), not a banner in the list.
+- Phone navigation: no arrows. The schedule body (`data-testid="calendar-body"`)
+  swipes horizontally (≥56px, ≤40px drift, touch/pen only) to step the
+  period; ←/→/T keys and the title's date-jump still work. The body is
+  re-keyed per `view|period` and slides in from the direction of time
+  (derived from the period keys, so arrows, swipes, strip taps and jumps all
+  turn the page the right way; a view change is a cut; reduced motion
+  disables it). The coach's phone primary action is a 56px floating `+`
+  (`IconButton` primary, lit top edge + `--fw-shadow-raise`) fixed above the
+  tab bar (`--fw-mobile-nav-height` + 1rem), rendered by `FairwayCalendar`.
+- People entry (`FairwayCalendarMemberRail`): ONE raised row
+  (`rounded-[16px]`, hairline, `--fw-shadow-card`): the summary
+  (AvatarGroup max 2 · "Team schedule" / "Comparing N" · detail · chevron) is
+  a `PressTarget` that IS the People menu trigger (`aria-label="People"`);
+  Clear while comparing; Compare as a secondary control (icon only on a
+  phone, labelled from md; always named "Compare") — the People menu also
+  offers "Compare schedules…" so the icon is never the only way in. Three
+  distinct actions — team schedule, open a person, include in a comparison —
+  never one avatar meaning all three.
 - Agenda: month-scoped — its visible window is the title's calendar month
   and prev/next step by month (`Previous month` / `Next month`); the empty
-  state names the period ("Nothing in September 2026"). Week view titles its
+  state names the period ("Nothing in September 2026") in a compact
+  (`subtle`) EmptyState, never a full-screen card. Week view titles its
   exact Sunday-start range ("Sep 6 – 12, 2026", `weekRangeTitle`) and its
-  empty state names the week. Day headings within the coming week carry a
-  quiet "in N days" cue (Today / Tomorrow / Yesterday are the heading).
+  empty state names the week. Day headings pin under the masthead while
+  their day scrolls (`sticky`, top = bar offsets + `--fw-calendar-hero-h`,
+  translucent canvas + blur, opaque under reduced transparency); Today /
+  Tomorrow carry their calendar date beside the heading, days within the
+  coming week a quiet "in N days" cue. Each day is ONE raised group card
+  (`rounded-[16px]`, lit top edge + `--fw-shadow-soft`) of rows divided by
+  hairlines (0.5px on 2x screens). Today's group carries a now-line
+  (`role="separator"`, "Now, 3:30 PM" in the team zone) at its sorted
+  position — after what has started, before what is next — seeded from
+  `nowRef` and ticking by the minute only after mount. Rows show the start
+  with its meridiem and the end time beneath on every width; a touch press
+  tints the row.
 - Scheduling name column: 116px on phones showing the first name whole
   (full name from `sm` and in the accessible label), 120px from md. A day heading and
   ONE grouped Surface of rows divided by hairlines; "Show N earlier events"
   is a ghost action with the real count.
   Phone Month view is `CalendarSurface` (DayPicker, event-day dots from
-  `eventDaySpan`) with the selected day's events beneath; a day tap never
-  switches view. Desktop month keeps a single day target per cell. The week
+  `eventDaySpan`) as one raised card with sans tabular day numbers (never the
+  mono face), the selected day's events beneath; a day tap never switches
+  view. Desktop month keeps a single day target per cell. The week
   strip marks every day a multi-day event runs (same `eventDaySpan`).
 - Player: "Needs your reply → Respond" is a contextual row next to the
   schedule, not a header CTA.

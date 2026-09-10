@@ -14,10 +14,16 @@
  * The month caption and chevrons are hidden: the calendar toolbar above
  * already names the month and steps it. Selecting a day only changes the
  * selected date; it never switches the display mode.
+ *
+ * One lifted card (the same raised material as the agenda's day groups) with
+ * the day numbers in the same sans face (tabular figures) as the day strip
+ * and the agenda rows — never the mono face the desktop grid uses for dense
+ * cells.
  * ========================================================================== */
 
 import * as React from 'react';
 import { startOfMonth } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { CalendarSurface } from '@/components/fairway/calendar';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { eventDaySpan } from '@/lib/calendar/timezone';
@@ -75,7 +81,13 @@ export function FairwayMonthOverview({
       glass={false}
       hideNavigation
       showOutsideDays
-      className={className}
+      className={cn(
+        // THE card, lifted: hairline plus the lit top edge and the raised whisper.
+        'rounded-card border-border-subtle bg-surface [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]',
+        // The same sans, tabular figures as every other date in the calendar.
+        '[&_.rdp-day_button]:font-fw-sans [&_.rdp-day_button]:font-medium [&_.rdp-day_button]:text-body-lg',
+        className,
+      )}
       classNames={{
         // The toolbar above already names and steps the month.
         month_caption: 'sr-only',

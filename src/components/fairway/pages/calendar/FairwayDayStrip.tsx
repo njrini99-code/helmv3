@@ -262,7 +262,7 @@ export function FairwayDayStrip({
                   // One date-state vocabulary shared with the month grid:
                   // selected = solid accent fill; today = a quiet accent ring.
                   'grid h-9 w-9 place-items-center rounded-full font-fw-sans text-body font-semibold leading-none tabular-nums transition-[background-color,color] motion-reduce:transition-none',
-                  dayIsSelected && 'bg-accent-650 text-text-on-accent',
+                  dayIsSelected && 'bg-accent-650 text-text-on-accent [box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
                   !dayIsSelected && dayIsToday && 'ring-1 ring-inset ring-accent-650 text-accent-700',
                   dayIsSelected
                     ? 'text-text-on-accent'

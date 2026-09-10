@@ -2,20 +2,32 @@
 
 /**
  * ============================================================================
- * Fairway · Calendar · FairwayCalendarHero — the calendar's toolbar
+ * Fairway · Calendar · FairwayCalendarHero — the calendar's masthead
  * ----------------------------------------------------------------------------
- * Two quiet rows on the shared chrome material, sticky under the app header:
+ * One native-feeling header on the shared chrome material, sticky under the
+ * app bar and the hub sub-nav:
  *
- *   1. Title row   — month/date context (the title is also the date-jump:
- *                    it opens a CalendarSurface to pick any day) · "Today"
- *                    (only when away from it) · More (phone) · the ONE
- *                    primary action.
- *   2. Control row — the explicit view selector (Fairway Segmented) and the
- *                    previous / next pair. At xl+ (a wide desktop stage) the secondary actions sit
- *                    here as quiet ghost pills instead of behind More.
+ *   1. Title row   — the period as a large title: the month word with the year
+ *                    quiet beside it, the exact range in Week, the day in Day.
+ *                    The title is also the date-jump (a CalendarSurface in a
+ *                    PopoverPanel). Right cluster: "Today" (only when away
+ *                    from it, carrying today's number the way a calendar
+ *                    glyph does) · More (below xl) · the ONE primary action
+ *                    (from md up; on a phone the parent floats it above the
+ *                    tab bar so the row breathes).
+ *   2. Control row — the full-width Fairway Segmented in its shared depth
+ *                    presentation (sunken track, floating thumb). Previous / next sit
+ *                    beside it from md up. On a phone the period turns like a
+ *                    page — the schedule below swipes — the way iOS Calendar,
+ *                    Fantastical and Google Calendar all do it, so the
+ *                    switcher keeps the whole row and nothing is squeezed.
  *   3. Day strip   — Day view only, where a week of nearby dates is exactly
- *                    the scope on screen. Agenda, Week and Month do not show
- *                    a strip that would misstate their scope.
+ *                    the scope on screen.
+ *
+ * The masthead measures itself and publishes `--fw-calendar-hero-h` on the
+ * page column so the schedule's sticky day headings pin exactly beneath it.
+ * A range fetch in flight is a 2px line along the masthead's bottom edge
+ * (`busy`), not a banner between the header and the list.
  *
  * Material comes from the shell (`fw-glass-chrome`, with its own opaque
  * reduced-transparency fallback). Nothing here glows, washes or floats on
@@ -31,6 +43,7 @@
 
 import * as React from 'react';
 import { endOfWeek, format, isSameDay, isSameMonth, isSameYear, startOfWeek } from 'date-fns';
+import { motion } from 'framer-motion';
 import { CalendarSurface } from '@/components/fairway/calendar';
 import {
   AlertTriangle,
@@ -44,11 +57,16 @@ import {
   ScanLine,
 } from 'lucide-react';
 import { Button, IconButton, PopoverPanel, PressTarget, Segmented } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayDayStrip } from './FairwayDayStrip';
+import surfaces from './CalendarSurfaces.module.css';
 
 export type FairwayCalendarViewId = 'day' | 'week' | 'month' | 'agenda';
+
+/** The CSS custom property the masthead publishes on its host column. */
+export const CALENDAR_HERO_HEIGHT_VAR = '--fw-calendar-hero-h';
 
 export interface FairwayCalendarHeroProps {
   focusDate: Date;
@@ -83,17 +101,42 @@ export interface FairwayCalendarHeroProps {
   onAvailability?: () => void;
   /** Real count of open conflicts (badge on the Conflicts action). `null` = unknown. */
   conflictCount?: number | null;
+  /** A range fetch is in flight: a thin progress line along the bottom edge. */
+  busy?: boolean;
 }
 
-/** Week view names its exact scope: "Sep 6 – 12, 2026", "Aug 30 – Sep 5, 2026",
- *  "Dec 27, 2026 – Jan 2, 2027". Sunday-start weeks, matching the parent's
- *  visible window. */
-export function weekRangeTitle(focusDate: Date): string {
+/** Week view names its exact scope, split so the year can sit quiet:
+ *  "Sep 6 – 12" + ", 2026"; "Aug 30 – Sep 5" + ", 2026"; a week that crosses
+ *  the year keeps both years in the main run ("Dec 27, 2026 – Jan 2, 2027").
+ *  Sunday-start weeks, matching the parent's visible window. */
+export function weekRangeTitleParts(focusDate: Date): { main: string; quiet: string } {
   const start = startOfWeek(focusDate, { weekStartsOn: 0 });
   const end = endOfWeek(focusDate, { weekStartsOn: 0 });
-  if (!isSameYear(start, end)) return `${format(start, 'MMM d, yyyy')} – ${format(end, 'MMM d, yyyy')}`;
-  if (!isSameMonth(start, end)) return `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`;
-  return `${format(start, 'MMM d')} – ${format(end, 'd, yyyy')}`;
+  if (!isSameYear(start, end)) {
+    return { main: `${format(start, 'MMM d, yyyy')} – ${format(end, 'MMM d, yyyy')}`, quiet: '' };
+  }
+  const main = isSameMonth(start, end)
+    ? `${format(start, 'MMM d')} – ${format(end, 'd')}`
+    : `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`;
+  return { main, quiet: `, ${format(end, 'yyyy')}` };
+}
+
+export function weekRangeTitle(focusDate: Date): string {
+  const { main, quiet } = weekRangeTitleParts(focusDate);
+  return `${main}${quiet}`;
+}
+
+/** The little calendar page the "Today" control carries — today's number
+ *  under a thick top rule, the way the system calendar glyph draws it. */
+function TodayGlyph({ day }: { day: number }) {
+  return (
+    <span
+      aria-hidden
+      className="grid h-[18px] w-[18px] place-items-center rounded-sm border-[1.5px] border-t-[4px] border-current pt-px text-eyebrow font-bold leading-none tracking-normal tabular-nums"
+    >
+      {day}
+    </span>
+  );
 }
 
 export function FairwayCalendarHero({
@@ -116,12 +159,18 @@ export function FairwayCalendarHero({
   onSubscribe,
   onAvailability,
   conflictCount = null,
+  busy = false,
 }: FairwayCalendarHeroProps) {
+  const reduceMotion = useReducedMotionGuard();
+  // The separator lives in the main run (a trailing space), not at the head of
+  // the quiet span: accessible-name computation drops a nested span's leading
+  // whitespace, which would announce "July2026".
   const title = isDayView
-    ? format(focusDate, 'EEEE, MMMM d')
+    ? { main: format(focusDate, 'EEEE, MMMM d'), quiet: '', short: format(focusDate, 'EEE, MMM d') }
     : view === 'week'
-      ? weekRangeTitle(focusDate)
-      : format(focusDate, 'MMMM yyyy');
+      ? weekRangeTitleParts(focusDate)
+      : { main: `${format(focusDate, 'MMMM')} `, quiet: format(focusDate, 'yyyy') };
+  const titleText = `${title.main}${title.quiet}`;
   const focusIsToday = isSameDay(focusDate, nowRef);
   const ctaLabel = primaryActionLabel ?? 'New event';
   const hasViews = Boolean(view && viewOptions && onViewChange);
@@ -151,20 +200,42 @@ export function FairwayCalendarHero({
   // what the button does -- an AT user cannot see the strip to infer it.
   const stepLabel = view === 'month' || view === 'agenda' ? 'month' : 'week';
 
+  // Publish the masthead's height on the host column so the schedule's sticky
+  // day headings can pin exactly under it (the strip in Day view changes it).
+  const sectionRef = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    const section = sectionRef.current;
+    const host = section?.parentElement;
+    if (!section || !host) return;
+    const publish = () => host.style.setProperty(CALENDAR_HERO_HEIGHT_VAR, `${section.offsetHeight}px`);
+    publish();
+    if (typeof ResizeObserver === 'undefined') return () => host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    const observer = new ResizeObserver(publish);
+    observer.observe(section);
+    return () => {
+      observer.disconnect();
+      host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    };
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       aria-label="Calendar controls"
       className={cn(
         // Sticky under the app header + hub sub-nav (AppShell publishes both
         // offsets). The shell's chrome material keeps scrolled rows from
         // reading as ghost text behind the controls.
         'fw-glass-chrome sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9]',
-        '-mx-4 border-b px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3',
+        // A warm rim along the bottom edge plus the resting whisper: the
+        // masthead sits ON the list, the way a native bar floats over content.
+        '-mx-4 px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3',
+        '[box-shadow:0_1px_0_var(--fw-glass-border-bot),var(--fw-shadow-flat)]',
       )}
     >
-      {/* Row 1 — title and the primary action. */}
-      <div className="flex items-center gap-1.5 md:gap-2">
-        <h1 className="min-w-0 flex-1 truncate font-fw-sans text-h3 font-semibold text-text-primary md:text-h2">
+      {/* Row 1 — the period, and the primary action. */}
+      <div className="flex min-h-11 items-center gap-1 md:gap-2">
+        <h1 className="min-w-0 flex-1 truncate font-fw-sans text-h2 text-text-primary">
           {/* The title is the date-jump: same headless CalendarSurface the
               DatePicker uses, in a PopoverPanel, behind an unstyled press. */}
           <PopoverPanel
@@ -175,8 +246,30 @@ export function FairwayCalendarHero({
             width="auto"
             ariaLabel="Jump to a date"
             trigger={
-              <PressTarget className="-mx-1.5 inline-flex max-w-full items-center gap-1 rounded-fw-sm px-1.5 py-0.5 text-left hover:bg-surface-sunken">
-                <span className="truncate">{title}</span>
+              <PressTarget className="-mx-2 inline-flex max-w-full items-center gap-1 rounded-fw-sm px-2 py-1 text-left [@media(hover:hover)]:hover:bg-surface-sunken">
+                {/* Re-keyed on change so a new period settles in rather than
+                    snapping — one quiet rise, no exit choreography. */}
+                <motion.span
+                  key={titleText}
+                  initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="truncate"
+                >
+                  {'short' in title && title.short ? (
+                    <>
+                      {/* Phone: the short day beside a strip that already names
+                          it; the full form stays the accessible text. */}
+                      <span aria-hidden className="md:hidden">{title.short}</span>
+                      <span className="sr-only md:not-sr-only">{title.main}</span>
+                    </>
+                  ) : (
+                    title.main
+                  )}
+                  {title.quiet ? (
+                    <span className="font-medium text-text-tertiary">{title.quiet}</span>
+                  ) : null}
+                </motion.span>
                 <span className="sr-only">, jump to a date</span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
               </PressTarget>
@@ -199,7 +292,13 @@ export function FairwayCalendarHero({
           </PopoverPanel>
         </h1>
         {!focusIsToday ? (
-          <Button variant="ghost" size="sm" onClick={() => onNavigate('today')}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onNavigate('today')}
+            leftIcon={<TodayGlyph day={nowRef.getDate()} />}
+            className="px-2.5 [box-shadow:var(--fw-shadow-card)]"
+          >
             Today
           </Button>
         ) : null}
@@ -212,7 +311,12 @@ export function FairwayCalendarHero({
             width="sm"
             ariaLabel="More calendar actions"
             trigger={
-              <IconButton variant="ghost" size="sm" aria-label="More calendar actions" className="xl:hidden">
+              <IconButton
+                variant="secondary"
+                size="sm"
+                aria-label="More calendar actions"
+                className="[box-shadow:var(--fw-shadow-card)] xl:hidden"
+              >
                 <MoreHorizontal />
               </IconButton>
             }
@@ -234,30 +338,23 @@ export function FairwayCalendarHero({
           </PopoverPanel>
         ) : null}
         {onPrimaryAction && isCoach ? (
-          <>
-            <IconButton
-              variant="primary"
-              size="md"
-              aria-label={ctaLabel}
-              onClick={onPrimaryAction}
-              className="md:hidden"
-            >
-              <Plus />
-            </IconButton>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={onPrimaryAction}
-              leftIcon={<Plus />}
-              className="hidden md:inline-flex"
-            >
-              {ctaLabel}
-            </Button>
-          </>
+          // From md up the primary action is a labelled button in the bar. On a
+          // phone it floats above the tab bar instead (the parent renders that
+          // one), so the title row keeps its air.
+          <Button
+            variant="primary"
+            size="md"
+            onClick={onPrimaryAction}
+            leftIcon={<Plus />}
+            className="hidden md:inline-flex"
+          >
+            {ctaLabel}
+          </Button>
         ) : null}
       </div>
 
-      {/* Row 2 — the explicit view selector and stepping. */}
+      {/* Row 2 — the explicit view selector; stepping from md up (a phone
+          swipes the schedule instead, and the title jumps anywhere). */}
       <div className="mt-2 flex items-center gap-2">
         {hasViews ? (
           <div className="min-w-0 flex-1 md:flex-none">
@@ -265,15 +362,14 @@ export function FairwayCalendarHero({
               options={viewOptions!}
               value={view!}
               onValueChange={onViewChange!}
-              size="sm"
+              size="md"
               fullWidth
-              quiet
               aria-label="Calendar view"
               className="md:w-auto"
             />
           </div>
         ) : null}
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="hidden shrink-0 items-center gap-0.5 md:flex">
           <IconButton variant="ghost" size="sm" aria-label={`Previous ${stepLabel}`} onClick={() => onNavigate('prev')}>
             <ChevronLeft />
           </IconButton>
@@ -304,6 +400,15 @@ export function FairwayCalendarHero({
             onSelectDate={onSelectDate}
             onSwipe={(direction) => onNavigate(direction)}
           />
+        </div>
+      ) : null}
+
+      {/* A range fetch in flight: a hairline of progress along the bottom
+          edge, where a native bar shows it, never a banner in the list. */}
+      {busy ? (
+        <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-0 -bottom-px h-[2px] overflow-hidden">
+          <span className="sr-only">Loading events for this date range…</span>
+          <span aria-hidden className={cn('block h-full w-1/3 rounded-full bg-accent-500', surfaces.indeterminate)} />
         </div>
       ) : null}
     </section>

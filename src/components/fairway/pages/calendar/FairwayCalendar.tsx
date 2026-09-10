@@ -59,8 +59,11 @@ import {
   addDays,
   addMonths,
 } from 'date-fns';
-import { AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
-import { Sheet, Button as FwButton, PressTarget, fairwayToast } from '@/components/fairway';
+import { AlertTriangle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Sheet, Button as FwButton, IconButton, PressTarget, fairwayToast } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
@@ -1056,6 +1059,48 @@ export function FairwayCalendar({
   const isAgenda = view === 'agenda';
   const isDay = view === 'day';
 
+  // ── The schedule turns like a page ──────────────────────────────────────────
+  // On a phone the masthead has no arrows: a horizontal swipe across the
+  // schedule steps the period (same thresholds as the day strip's gesture;
+  // vertical drags stay the page scroll). The body re-keys on the period it
+  // shows, so a turn slides the new period in from the side it came from.
+  const reduceMotion = useReducedMotionGuard();
+  const swipeRef = React.useRef<{ x: number; y: number; id: number } | null>(null);
+  const handleSwipeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse') return;
+    swipeRef.current = { x: event.clientX, y: event.clientY, id: event.pointerId };
+  };
+  const handleSwipeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start || start.id !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < 56 || Math.abs(dy) > 40) return;
+    fwHaptic('light');
+    navigate(dx < 0 ? 'next' : 'prev');
+  };
+  const periodKey =
+    view === 'month' || view === 'agenda'
+      ? format(focusDate, 'yyyy-MM')
+      : view === 'week'
+        ? format(startOfWeekFn(focusDate, { weekStartsOn: 0 }), 'yyyy-MM-dd')
+        : format(focusDate, 'yyyy-MM-dd');
+  // Which way did the period move? Derived from the keys themselves (they are
+  // ISO-ordered strings), so an arrow, a swipe, a day-strip tap and a date
+  // jump all turn the page in the direction of time. A view change is a cut.
+  const prevPeriodRef = React.useRef<{ view: ViewId; key: string } | null>(null);
+  const prevPeriod = prevPeriodRef.current;
+  const travel: 1 | -1 | 0 =
+    prevPeriod && prevPeriod.view === view && prevPeriod.key !== periodKey
+      ? periodKey > prevPeriod.key
+        ? 1
+        : -1
+      : 0;
+  React.useEffect(() => {
+    prevPeriodRef.current = { view, key: periodKey };
+  });
+
   return (
     <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-6 md:gap-5 md:px-6", surfaces.scope)}>
       {/* ── The toolbar: title, view selector, stepping, primary action ─────── */}
@@ -1079,7 +1124,30 @@ export function FairwayCalendar({
         onSubscribe={() => setSubscribeOpen(true)}
         onAvailability={() => setAvailabilityOpen(true)}
         conflictCount={homeConflictCount}
+        busy={isLoadingRange}
       />
+
+      {/* ── Phone: the coach's ONE primary action floats above the tab bar,
+          where a thumb already is; the masthead carries it from md up. ──── */}
+      {isCoach && primaryAction ? (
+        <IconButton
+          variant="primary"
+          size="lg"
+          aria-label={primaryActionLabel}
+          data-testid="calendar-fab"
+          onClick={primaryAction}
+          className={cn(
+            'fixed right-4 z-[19] h-14 w-14 md:hidden [&_svg]:h-6 [&_svg]:w-6',
+            // Lit from above and lifted well off the page: this is the one
+            // element on the screen that genuinely floats.
+            '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.28),var(--fw-shadow-raise)]',
+            'active:scale-[0.96] active:[transition-duration:110ms] motion-reduce:active:scale-100',
+          )}
+          style={{ bottom: 'calc(var(--fw-mobile-nav-height, 64px) + 1rem)' }}
+        >
+          <Plus />
+        </IconButton>
+      ) : null}
 
       {/* ── ONE attention row (DESIGN-PLAN §18): the most urgent actionable
           item, only when there is one. Real count from the inbox; never a
@@ -1115,19 +1183,8 @@ export function FairwayCalendar({
         </div>
       ) : null}
 
-      {/* ── Range-fetch affordances (loading + retryable error ≠ empty) ──────── */}
-      {isLoadingRange ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-2.5"
-        >
-          <span className="h-2 w-2 animate-pulse rounded-full bg-accent-500" aria-hidden />
-          <span className="font-fw-sans text-caption text-text-tertiary">
-            Loading events for this date range…
-          </span>
-        </div>
-      ) : null}
+      {/* ── Range-fetch error (retryable ≠ empty). A fetch in flight is the
+          masthead's progress line, not a banner here. ─────────────────────── */}
       {rangeError && !isLoadingRange ? (
         <div className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-2.5">
           <span className="font-fw-sans text-caption text-fw-danger-ink">{rangeError}</span>
@@ -1155,7 +1212,19 @@ export function FairwayCalendar({
         />
       ) : null}
 
-      {/* ── BODY ─────────────────────────────────────────────────────────────── */}
+      {/* ── BODY — swipes between periods on a phone; slides in from the side
+          it came from. Re-keyed per period, so the new schedule mounts fresh. ── */}
+      <motion.div
+        key={`${view}|${periodKey}`}
+        data-testid="calendar-body"
+        onPointerDown={handleSwipeStart}
+        onPointerUp={handleSwipeEnd}
+        onPointerCancel={() => { swipeRef.current = null; }}
+        initial={reduceMotion || travel === 0 ? false : { opacity: 0, x: travel * 24 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col gap-4 md:gap-5 [touch-action:pan-y_pinch-zoom]"
+      >
       {availabilityMode ? (
         // ── Coach availability overlay — selected players' schedules, color-coded
         //    (their team events + classes + blocked). Month → grid overlay; other
@@ -1284,6 +1353,7 @@ export function FairwayCalendar({
           isLoadingRange={isLoadingRange}
         />
       )}
+      </motion.div>
 
       {/* ── DETAIL DRAWER — the single event-detail surface for every view ────── */}
       <FairwayEventDetailDrawer

@@ -103,13 +103,16 @@ export function FairwayEventCard({
         // One row inside the day's Surface (FairwayAgendaView owns the frame
         // and the dividers). Rounded only so the focus ring follows the row.
         'group flex w-full items-stretch gap-3 rounded-none bg-surface px-3 py-2.5 text-left focus-visible:z-10 focus-visible:ring-inset focus-visible:ring-offset-0',
-        '[@media(hover:hover)]:hover:bg-surface-sunken',
+        // Hover on a pointer; a real press tint on touch (the press response
+        // itself is PressTarget's), then back to rest.
+        '[@media(hover:hover)]:hover:bg-surface-sunken active:bg-surface-sunken',
         'md:gap-4 md:px-4 md:py-3',
         className,
       )}
     >
-      {/* Time column — a stable width so titles align down the list. */}
-      <span className="flex w-[52px] shrink-0 flex-col justify-center whitespace-nowrap md:w-[64px]">
+      {/* Time column — a stable width so titles align down the list: the start
+          with its meridiem, and the end time beneath it on every width. */}
+      <span className="flex w-[60px] shrink-0 flex-col justify-center whitespace-nowrap md:w-[72px]">
         <span
           className={cn(
             'font-fw-sans text-body font-semibold tabular-nums leading-tight',
@@ -117,15 +120,15 @@ export function FairwayEventCard({
           )}
         >
           {startParts.clock}
+          {startParts.meridiem ? (
+            <span className="ml-0.5 font-fw-sans text-eyebrow font-medium tabular-nums text-text-tertiary">
+              {startParts.meridiem}
+            </span>
+          ) : null}
         </span>
-        {startParts.meridiem ? (
-          <span className="font-fw-sans text-caption tabular-nums leading-tight text-text-tertiary">
-            {startParts.meridiem}
-          </span>
-        ) : null}
         {end ? (
-          <span className="hidden font-fw-sans text-caption tabular-nums leading-tight text-text-tertiary md:block">
-            – {end}
+          <span className="mt-0.5 font-fw-sans text-caption tabular-nums leading-tight text-text-tertiary">
+            {end}
           </span>
         ) : null}
       </span>

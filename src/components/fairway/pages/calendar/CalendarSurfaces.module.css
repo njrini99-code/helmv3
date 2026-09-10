@@ -230,10 +230,21 @@
     0 10px 26px -8px var(--cal-lens-glow);
 }
 
+/* The masthead's fetch-in-flight line: one third of the edge sweeping across. */
+.indeterminate {
+  animation: calendar-indeterminate 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes calendar-indeterminate {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .enter { animation: none; }
   .inspector { animation: none; }
   .settle { transition: none; }
+  /* A still line the full width of the edge: present, not sweeping. */
+  .indeterminate { animation: none; transform: none; width: 100%; opacity: 0.7; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .lensLabel { background: var(--fw-color-elevated); backdrop-filter: none; -webkit-backdrop-filter: none; }
