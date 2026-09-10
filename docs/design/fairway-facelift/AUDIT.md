@@ -51,6 +51,7 @@ knip + import-graph + per-file `rg` verification. Routes: no unreachable `page.t
 | `app/golf/actions/stats.ts` | zero references but large | 804 | human review before delete |
 | `components/golf/calendar/**` | dead for golf, live for baseball via PremiumCalendarClient | — | keep until baseball moves |
 | legacy `StandingBar` (golf/coachhelm/v3), `StandingStrip`, `StandingTrack` | replaced by `charts/StandingBars` | — | delete once no consumer remains |
+| `fairway/pages/dashboard/DaySchedule.tsx` component | coach home folds the schedule into Today; only the exported `dayKeyInTz`/`dayLabel` helpers are still imported | — | move the helpers, delete the component |
 
 Legacy stragglers being migrated: 12 `ui/button` + 6 `ui/input` imports inside Fairway pages, 3 `ui/confirm-dialog` → ModalShell, 6 `ui/skeleton` loading screens → Fairway Skeleton, `command/glass-surface.tsx` → GlassSurface, ChartTooltip hardcoded blur/rgb → tokens.
 
@@ -61,8 +62,22 @@ User-reported: a data-heavy coach account is slow and laggy, the message and cal
 | # | Symptom | Cause | Fix |
 | --- | --- | --- | --- |
 | 1 | Every bottom-nav / sidebar tab switch refetches the page and repaints the loading skeleton, even bouncing between two tabs | `next.config.mjs` set no `experimental.staleTimes`; Next 16 defaults `dynamic` to 0, and the dashboard layout is fully dynamic (cookies), so the client router cache never kept a visited tab. Dev mode also disables `<Link prefetch>`, so the dev server shows the worst case. | `staleTimes: { dynamic: 60, static: 300 }` — a visited tab is served from the router cache for the hop back; server actions that `revalidatePath` and `router.refresh()` still purge it. Shell links keep `prefetch`. |
-| 2 | Sheets and drawers (messages, calendar event sheet) stutter while opening | ranked list from the perf audit report (pending) | see report |
-| 3 | Round review shows a skeleton for 45s+ on a scorecard-only round | pending | pending |
+| 2 | Every sheet stutters on open, close and drag | `overlays/Sheet.tsx` puts the frost material (38px blur) on the very node vaul transforms, so the GPU resamples the blur every frame | split: transformed wrapper without blur, static inner child carries the material (perf-shared) |
+| 3 | Every blocking modal stutters the same way | `overlays/ModalShell.tsx` animates the `motion.div` that carries `fw-glass-strong` | same split (perf-shared) |
+| 4 | Sticky in-drawer headers re-blur on every scroll frame on phones | `.fw-glass-chrome` on sticky headers inside scrolling sheet bodies (event drawer, message thread, calendar hero, 7+ more) has no mobile downshift | mobile downshift + a no-blur `.fw-frost-static` for scrolling sticky headers; drawer/hero headers switch to it (perf-shared + helmv3-20) |
+| 5 | A data-heavy coach's calendar rebuilds on any team event write | `use-calendar-range-events.ts` realtime handler ignores the payload and does `router.refresh()` + a full range refetch, and every refetched row gets a new identity | patch the single changed id from the payload; full refetch only on reconnect-after-gap (perf-shared) |
+| 6 | Each incoming message tears down the reactions channel and refetches every reaction | `FairwayMessages.tsx` rebuilds the message-id array each render → `use-message-reactions.ts` re-keys, re-subscribes and refetches in 100-id chunks | stable id key; separate subscribe (conversation id) from refetch (messages-perf) |
+| 7 | Event drawer content pops in three times | `getEventRSVP` is called twice per open (calendar + EventPeopleSection) plus the itinerary fetch, each resolving on its own schedule | thread `summary.attendees` down; mount people/files after the open animation (helmv3-20) |
+| 8 | Thread pane does 2×N×R work per render | `summarizeReactions` runs twice per message per render, each a full scan of every reaction | one `useMemo` Map by message id (messages-perf) |
+| 9 | Eight shell consumers re-render every 45s forever | `notification-badge-context.tsx` sets a fresh `[]` for unseen announcements each poll; the 2-3 poll actions are awaited sequentially | module-level empty constant + bail-out updater; `Promise.allSettled` (perf-shared) |
+| 10 | Agenda re-renders every card every minute | `FairwayAgendaView.tsx` owns the minute clock and an unmemoized bucket filter; nothing under pages/calendar is memoized | isolate the tick in a NowLineHost child; memoize buckets; memo the row (helmv3-20) |
+| 11 | Permanent compositor layers, blur surfaces without hints | `will-change: transform` unscoped on `.surface-tile-hover`; `.animate-*` never clear it | scope to hover/focus; clear on animation end (perf-shared) |
+| 12 | 200 message rows re-render on any pane state change | `MessageThreadPane.tsx` renders every message inline with no memo boundary | extract a memoized MessageRow; consider windowing (messages-perf) |
+| 13 | Group participants refetch on any inbox change | `FairwayMessages.tsx` effect depends on the whole `conversations` array | depend on the selected conversation id (messages-perf) |
+| 14 | Conversation rail re-splits on every keystroke | `MessageConversationRail.tsx` triage split is plain consts | `useMemo` (messages-perf) |
+| 15 | Round review skeleton for 45s+ on a scorecard-only round | pending (round-detail worker to report the cause) | pending |
+
+Ruled out: framer `layout`/`layoutId` in calendar and messages (none), images (avatars only), calendar range refetch on pan (correctly gated). Runtime measurement (Playwright + CDP harness at `scripts/ui-intelligence/.perf-measure.tmp.mjs`) is deferred until the machine is quiet; the ranking above is by mechanism and blast radius.
 
 ## Mobile
 
