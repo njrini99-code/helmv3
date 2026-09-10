@@ -36,6 +36,7 @@ import { IconSparkles, IconRefresh } from '@/components/icons';
 import {
   ViewHeader as FwViewHeader,
   Button as FwButton,
+  IconButton as FwIconButton,
   StatusPill as FwStatusPill,
   InlineNotice as FwInlineNotice,
   EmptyState as FwEmptyState,
@@ -568,15 +569,14 @@ export default function RoundReviewPage() {
             title={displayCourseName(round?.course_name) || 'Round Review'}
             description="Your CoachHelm analysis for this round."
             primaryAction={
-              <FwButton
+              <FwIconButton
+                aria-label="Refresh review"
                 variant="secondary"
-                size="sm"
                 onClick={() => generateReview()}
                 disabled={isGenerating}
               >
                 <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
-                <span>Refresh</span>
-              </FwButton>
+              </FwIconButton>
             }
           />
 
@@ -802,25 +802,26 @@ export default function RoundReviewPage() {
               ) : undefined
             }
             primaryAction={
-              <FwButton
+              <FwIconButton
+                aria-label="Refresh review"
                 variant="secondary"
-                size="sm"
                 onClick={() => generateReview()}
                 disabled={isGenerating}
               >
                 <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
-                <span>Refresh</span>
-              </FwButton>
+              </FwIconButton>
             }
           />
 
           <div className="mt-8">{reviewBody}</div>
 
-          {/* The review is the detail surface; one clear exit avoids a third
-              nested review level competing with the content above. */}
+          {/* The review is the detail surface; a quiet text link avoids a
+              second full-width CTA competing with the header/body above
+              (spec: "All stats" demotes to an overflow item or a text
+              link). */}
           <m.div variants={itemVariants} className="mt-8 flex justify-end">
-            <FwButton variant="primary" className="w-full sm:w-auto sm:min-w-[220px]" asChild>
-              <Link href={`/golf/dashboard/stats?player=${round.player_id}`}>All Stats</Link>
+            <FwButton variant="ghost" size="sm" asChild>
+              <Link href={`/golf/dashboard/stats?player=${round.player_id}`}>All stats</Link>
             </FwButton>
           </m.div>
         </m.div>

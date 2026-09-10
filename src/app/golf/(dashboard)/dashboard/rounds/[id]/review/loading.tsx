@@ -8,15 +8,15 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * suspend on), and it mounts with `loadingRound`/`loadingStoredReview` both
  * starting `true`. So the instant this route boundary resolves and the page
  * mounts, what actually paints is the page's OWN "Fairway loading surface"
- * (P203/P216 — see page.tsx's `if (isLoading)` return, page.tsx:545-606),
- * not the eventual FilmstripReview/ReviewHero content. This fallback
- * reproduces THAT branch exactly: the same `max-w-6xl` container, the same
- * ViewHeader silhouette (eyebrow + title + description + one Refresh
- * action), then the same `mt-8 flex flex-col gap-6` status region with its
- * TWO children — the centered card (icon/title/value stack, a 3-up
- * mini-stat row, two stacked h-16 rows; page.tsx:573-595) and, immediately
- * after it, the always-present status line (page.tsx:596-605's `<p>` —
- * only its inner content branches on `isGenerating`, the element itself is
+ * (P203/P216 — see page.tsx's `if (isLoading)` return), not the eventual
+ * FilmstripReview/ReviewHero content. This fallback reproduces THAT branch
+ * exactly: the same `max-w-6xl` container, the same ViewHeader silhouette
+ * (eyebrow + title + description + one Refresh `IconButton` — a facelift
+ * icon-only action, not a labeled pill), then the same
+ * `mt-8 flex flex-col gap-6` status region with its TWO children — the
+ * centered card (icon/title/value stack, a 3-up mini-stat row, two stacked
+ * h-16 rows) and, immediately after it, the always-present status line
+ * (only its inner content branches on `isGenerating`, the element itself is
  * unconditional while `isLoading`) — so the route fallback hands off to
  * the page's own loading state with no shape change and no added/removed row.
  *
@@ -38,7 +38,7 @@ export default function Loading() {
             <Skeleton className="h-8 w-56 max-w-full" />
             <Skeleton className="h-4 w-72 max-w-full" />
           </div>
-          <Skeleton className="h-9 w-24 rounded-full" />
+          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
         </div>
 
         <div
