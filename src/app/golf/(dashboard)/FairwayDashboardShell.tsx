@@ -641,12 +641,12 @@ function FairwayDashboardContent({
         user={shellUser}
         brand={brand}
         sidebarFooter={sidebarFooter}
-        // Cream tone: the golf desktop rail sits beside the same cream canvas
-        // and structural green as the rest of the shell instead of reading as
-        // a bolted-on dark SaaS sidebar (fairway-facelift BRIEF.md §2). Never
-        // set by baseball or admin, which keep FairwaySidebar's default dark
-        // `nav-*` rail untouched.
-        sidebarTone="cream"
+        // Green tone: the golf rail is structural Fairway green beside the
+        // cream canvas (fairway-facelift BRIEF.md §2). The cream rail read as
+        // one flat tone with the page and the cards; the green rail gives the
+        // shell its contrast and carries the brand. Never set by baseball or
+        // admin, which keep FairwaySidebar's default dark `nav-*` rail.
+        sidebarTone="green"
         topBarActions={topBarActions}
         accentColor={accentColor}
         pathname={pathname}

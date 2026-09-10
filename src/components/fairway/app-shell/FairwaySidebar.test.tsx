@@ -182,3 +182,14 @@ describe('FairwaySidebar — tone', () => {
     expect(labelWrap?.className).toContain('z-10');
   });
 });
+
+describe('FairwaySidebar tone="green"', () => {
+  it('keeps the dark recipe and adds the fw-rail-green token scope', () => {
+    const { container } = render(<FairwaySidebar sections={SECTIONS} tone="green" />);
+    const aside = container.querySelector('aside, nav, div[class*="bg-nav-bg"]') as HTMLElement;
+    expect(aside.className).toContain('bg-nav-bg');
+    expect(aside.className).toContain('on-dark');
+    expect(aside.className).toContain('fw-rail-green');
+    expect(aside.className).not.toContain('bg-surface-sunken');
+  });
+});

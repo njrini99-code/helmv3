@@ -63,7 +63,7 @@ export function useSidebarCollapsed(): boolean {
 }
 
 /** The rail's material — see `FairwaySidebarProps['tone']` below. */
-export type SidebarTone = 'dark' | 'cream';
+export type SidebarTone = 'dark' | 'cream' | 'green';
 
 /**
  * Lets footer/brand slot children (rendered as `brand`/`footer` props from the
@@ -408,6 +408,9 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
       className={cn(
         'flex flex-col',
         cream ? 'bg-surface-sunken text-text-primary border-r border-border-subtle' : 'on-dark bg-nav-bg text-nav-text',
+        // Green: the dark recipe with the nav tokens re-pointed at the
+        // Fairway green ramp (design-tokens.css `.fw-rail-green`).
+        tone === 'green' && 'fw-rail-green',
         'transition-[width] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
         isMobile
           ? 'h-full w-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'

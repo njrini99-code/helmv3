@@ -114,18 +114,18 @@
   --fw-color-warm-950: oklch(0.147 0.005 49);   /* sidebar warm-black #0c0a09 (NOT #000) */
 
   /* ---- Semantic surfaces (warm, matte, OPAQUE at rest — not translucent) ---- */
-  --fw-color-canvas:         oklch(0.953 0.022 83);  /* deeper warm champagne page base — cards now clearly LIFT off it (was 0.978, near-identical to the 0.984 card; the ~0.03 gap is the premium card/page separation the flat-cream look lacked) */
-  --fw-color-surface:        oklch(0.984 0.016 86);  /* THE card: warm CREAM, not white. It lifts off the deeper champagne page via its hairline + soft shadow — never by being a cold white sheet (we keep coming back to this: no white cards). */
+  --fw-color-canvas:         oklch(0.938 0.024 83);  /* champagne page base. Cards LIFT off it by ~0.055 L (was 0.953 against a 0.984 card: 0.03 apart, which read as one flat cream on a phone). */
+  --fw-color-surface:        oklch(0.992 0.011 88);  /* THE card: the brightest warm cream, still not a cold white sheet (hue 88, chroma 0.011). Lifts off the canvas by lightness first, hairline second. */
   --fw-color-surface-tint:   oklch(0.968 0.026 84);  /* a TOASTED warm band — hero plinths (warmer + a touch deeper than the card so the tier reads, not vanishes) */
-  --fw-color-surface-sunken: oklch(0.963 0.021 84);  /* wells, insets, input tracks */
-  --fw-color-elevated:       oklch(0.993 0.016 88);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
+  --fw-color-surface-sunken: oklch(0.958 0.021 84);  /* wells, insets, input tracks: a visible step below the card */
+  --fw-color-elevated:       oklch(0.997 0.008 90);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
 
   /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
      it sits on — present in the DOM, absent to the eye, so a loading screen
      read as a blank one and the specular sweep had nothing to sweep across.
      1.23:1 on the card is the band the dark UIs people rate as premium use:
      unmistakably a placeholder, still quiet enough not to look like content. */
-  --fw-color-skeleton:       oklch(0.915 0.014 84);
+  --fw-color-skeleton:       oklch(0.905 0.014 84);
 
   /* ---- The sunlit page wash: a WARM CREAM gradient for the canvas, not a flat
           fill. A faint near-white highlight at the top reads as afternoon light;
@@ -135,24 +135,24 @@
           (layer it over the `bg-canvas` color so any overscroll stays warm). ---- */
   --fw-gradient-canvas:
     radial-gradient(132% 92% at 50% -15%,
-      oklch(0.982 0.014 86) 0%,
-      oklch(0.970 0.020 84) 44%,
+      oklch(0.970 0.016 86) 0%,
+      oklch(0.956 0.022 84) 44%,
       transparent 78%),
     linear-gradient(180deg,
-      oklch(0.973 0.018 85) 0%,   /* ≈ #F6EEDF — warm cream even at the top (no white) */
-      oklch(0.955 0.026 83) 52%,  /* ≈ #F1E7D6 — champagne linen, the body of the page */
-      oklch(0.934 0.034 81) 100%); /* ≈ #EBDFCD — soft champagne/sand at the foot (golden-undertone cream) */
+      oklch(0.958 0.020 85) 0%,   /* warm cream at the top, already a clear step below the 0.992 card */
+      oklch(0.938 0.028 83) 52%,  /* champagne linen, the body of the page */
+      oklch(0.916 0.036 81) 100%); /* soft sand at the foot */
 
   /* ---- Semantic text ---- */
   --fw-color-text-primary:   var(--fw-color-warm-900);
   --fw-color-text-secondary: var(--fw-color-warm-600);
-  --fw-color-text-tertiary:  oklch(0.535 0.015 70);  /* P422: darkened from 0.585 (≈3.7-4.0:1, FAILED 4.5:1) so small descriptive/value text using this token clears WCAG 2.2 AA normal-text 4.5:1 on EVERY warm surface — measured ≥4.51:1 on canvas, ≥4.65:1 on sunken, ≥4.95:1 on the card. Still well-separated from text-secondary (~6.7:1). */
+  --fw-color-text-tertiary:  oklch(0.515 0.015 70);  /* P422: darkened from 0.585 (≈3.7-4.0:1, FAILED 4.5:1) so small descriptive/value text using this token clears WCAG 2.2 AA normal-text 4.5:1 on EVERY warm surface — measured ≥4.51:1 on canvas, ≥4.65:1 on sunken, ≥4.95:1 on the card. Still well-separated from text-secondary (~6.7:1). */
   --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
   /* ---- Borders / warm hairlines (NOT cool gray) ---- */
-  --fw-color-border-subtle: oklch(0.862 0.013 82 / 0.95); /* a VISIBLE warm hairline — card edges read against the deeper canvas (was 0.90/0.8, invisible) */
-  --fw-color-border-strong: oklch(0.872 0.009 80);      /* emphasis / table head */
+  --fw-color-border-subtle: oklch(0.845 0.016 82 / 0.95); /* a VISIBLE warm hairline against both the card and the deeper canvas */
+  --fw-color-border-strong: oklch(0.790 0.014 80);      /* emphasis / table head: darker than subtle (it used to be lighter) */
   /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
      indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
      warm canvas measures ~2.67:1 on the OKLCH render path — it fails. That was
@@ -201,6 +201,17 @@
   --fw-color-nav-text:     var(--fw-color-text-on-dark);
   --fw-color-nav-text-dim: oklch(0.62 0.007 60);   /* recessive warm nav labels */
   --fw-color-nav-accent:   var(--fw-color-accent-400); /* active marker on black */
+
+  /* ---- Golf rail: structural Fairway green (BRIEF §2 "cream canvas with
+          structural green"). A scoped override of the nav-* tokens so the
+          rail carries the brand while every other dark-rail consumer
+          (admin, baseball) keeps the warm-black recipe. Applied by
+          FairwaySidebar for tone="green". ---- */
+  --fw-color-rail-green-bg:       oklch(0.345 0.078 152);
+  --fw-color-rail-green-surface:  oklch(0.415 0.086 152);
+  --fw-color-rail-green-text:     oklch(0.975 0.012 92);
+  --fw-color-rail-green-text-dim: oklch(0.815 0.040 130);
+  --fw-color-rail-green-accent:   oklch(0.870 0.130 138);
 
   /* ── Helm Bridge sport inks ──────────────────────────────────────────
      Baseball wayfinding accent (infield clay). NOTE: the "Living Annual"
@@ -477,6 +488,16 @@
  * AA (4.5:1 normal) on canvas / surface / sunken. color-scheme:dark makes
  * native controls, scrollbars and form widgets adopt the dark convention.
  * ========================================================================== */
+/* The green golf rail: FairwaySidebar tone="green" re-points the nav tokens
+   for everything inside the rail (rows, popouts, collapse pill). */
+.fw-rail-green {
+  --fw-color-nav-bg:       var(--fw-color-rail-green-bg);
+  --fw-color-nav-surface:  var(--fw-color-rail-green-surface);
+  --fw-color-nav-text:     var(--fw-color-rail-green-text);
+  --fw-color-nav-text-dim: var(--fw-color-rail-green-text-dim);
+  --fw-color-nav-accent:   var(--fw-color-rail-green-accent);
+}
+
 .dark,
 [data-theme='dark'] {
   color-scheme: dark;

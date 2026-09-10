@@ -91,7 +91,7 @@ export interface FairwayShellSkeletonProps {
    * (`src/app/golf/loading.tsx`) — so it defaults to `'cream'` directly
    * instead of requiring every caller to pass the prop.
    */
-  tone?: 'dark' | 'cream';
+  tone?: 'dark' | 'cream' | 'green';
   className?: string;
 }
 
@@ -117,6 +117,7 @@ export function FairwayShellSkeleton({ children, tone = 'cream', className }: Fa
           'fixed left-0 top-0 z-[var(--fw-z-nav)] hidden h-dvh w-[260px] flex-col',
           'pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] md:flex',
           cream ? 'bg-surface-sunken border-r border-border-subtle' : 'on-dark bg-nav-bg',
+          tone === 'green' && 'fw-rail-green',
         )}
       >
         {/* Brand — the real lockup (static, session-independent). */}
