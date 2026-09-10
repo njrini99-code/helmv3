@@ -19,8 +19,8 @@
  *     (team panels bind to useGolfUser().teamId — the cookie-aware ACTIVE team)
  *   • BENCHMARK_* (sg benchmark)          — '@/lib/golf/sg-benchmarks'
  *   • AvatarUpload                        — '@/components/ui/*'
- *     (destructive/warning confirms use the local ConfirmActionModal, a
- *     ModalShell recipe — not the legacy ui/confirm-dialog)
+ *     (destructive/warning confirms use the shared `overlays/ConfirmModal`,
+ *     not the legacy ui/confirm-dialog)
  *   • JoinTeamSection / CoachHelmToggle   — '@/components/golf/*'
  *   • account delete  → DELETE /api/account/delete   (identical to legacy)
  *
@@ -83,7 +83,6 @@ import {
   IconMoon,
   IconMonitor,
   IconSparkles,
-  IconWarning,
 } from '@/components/icons';
 import { useGolfTheme, type GolfTheme } from '@/lib/golf/theme';
 
@@ -107,9 +106,9 @@ import {
   resolveEventReminderSettings,
   formatLead,
 } from '@/lib/golf/event-reminder-settings';
-// Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
+// Specific paths (not the barrel) so barrel-mocking tests don't need to stub them.
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { ConfirmModal } from '@/components/fairway/overlays/ConfirmModal';
 
 const EM_DASH = '—';
 
@@ -160,81 +159,13 @@ function useReportDirty(id: string, dirty: boolean) {
 }
 
 /**
- * A file-local ModalShell recipe replacing the legacy `ui/confirm-dialog`
- * `ConfirmDialog` (same prop shape, so call sites only needed a tag rename).
- * Mirrors `fairway/overlays/DiscardChangesModal`'s structure (small ModalShell,
- * hideTitle + hideClose, tinted icon tile + two-button footer) since this file
- * isn't allowed to add a new shared component under overlays/ itself. Danger
- * and warning both render with the `danger` Button (Fairway has no dedicated
- * amber CTA variant); the icon tile still tints amber for `warning` so the two
- * severities stay visually distinct.
- */
-function ConfirmActionModal({
-  open,
-  title,
-  message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  variant = 'danger',
-  isLoading = false,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  variant?: 'danger' | 'warning';
-  isLoading?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const tone =
-    variant === 'danger'
-      ? { bg: 'bg-fw-danger-bg', ink: 'text-fw-danger-ink' }
-      : { bg: 'bg-fw-warning-bg', ink: 'text-fw-warning-ink' };
-  return (
-    <ModalShell
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onCancel();
-      }}
-      size="sm"
-      title={title}
-      hideTitle
-      hideClose
-    >
-      <div className="px-6 pb-6 pt-6">
-        <div className="mb-4 flex items-center gap-3">
-          <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md', tone.bg)}>
-            <IconWarning size={20} className={tone.ink} aria-hidden />
-          </div>
-          <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">
-            {title}
-          </h2>
-        </div>
-        <p className="mb-5 font-fw-sans text-body-sm leading-relaxed text-text-secondary">{message}</p>
-        <div className="flex gap-3">
-          <Button variant="secondary" className="flex-1" onClick={onCancel} disabled={isLoading}>
-            {cancelLabel}
-          </Button>
-          <Button variant="danger" className="flex-1" onClick={onConfirm} busy={isLoading}>
-            {confirmLabel}
-          </Button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-/**
  * Screen-level guard. Tracks the set of dirty panel ids; while any panel is dirty
  * it (1) arms the native `beforeunload` prompt (covers refresh / tab close /
  * external nav) and (2) intercepts same-origin in-app link clicks + the back
  * gesture, showing a "Discard unsaved changes?" confirm before allowing the
- * navigation to proceed. Reduced-motion / token-safe (confirm is the local
- * ConfirmActionModal, a ModalShell recipe).
+ * navigation to proceed. Reduced-motion / token-safe (confirm is the shared
+ * `overlays/ConfirmModal`, `tone="warning"` — a passive nav-intercept, not an
+ * explicit destructive click, so it gets the lighter open tap).
  */
 function UnsavedChangesGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -338,13 +269,13 @@ function UnsavedChangesGuard({ children }: { children: React.ReactNode }) {
   return (
     <DirtyRegistryContext.Provider value={registry}>
       {children}
-      <ConfirmActionModal
+      <ConfirmModal
         open={pendingHref !== null}
         title="Discard unsaved changes?"
         message="You have unsaved edits on this screen. If you leave now, those changes will be lost."
         confirmLabel="Discard & leave"
         cancelLabel="Keep editing"
-        variant="danger"
+        tone="warning"
         onConfirm={confirmLeave}
         onCancel={() => setPendingHref(null)}
       />
@@ -909,10 +840,11 @@ export function FairwaySettingsGeneral() {
             <Button
               variant="danger"
               busy={deletingAccount}
-              onClick={() => {
-                void triggerHaptic('warning');
-                setDeleteConfirmOpen(true);
-              }}
+              // No haptic here — opening ConfirmModal (tone="danger") below
+              // already fires the 'warning' tap on open; firing it here too
+              // double-buzzed (this call used the raw, throttle-bypassing
+              // triggerHaptic, so nothing swallowed the second one).
+              onClick={() => setDeleteConfirmOpen(true)}
             >
               Delete account
             </Button>
@@ -934,13 +866,13 @@ export function FairwaySettingsGeneral() {
         </p>
       </div>
 
-      <ConfirmActionModal
+      <ConfirmModal
         open={deleteConfirmOpen}
         title="Delete account?"
         message="This will permanently delete your account and all associated data. This action cannot be undone."
         confirmLabel="Delete Account"
         cancelLabel="Cancel"
-        variant="danger"
+        tone="danger"
         isLoading={deletingAccount}
         onConfirm={confirmDeleteAccount}
         onCancel={() => setDeleteConfirmOpen(false)}

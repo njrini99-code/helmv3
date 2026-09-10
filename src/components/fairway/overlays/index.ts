@@ -26,6 +26,9 @@ export type { ModalShellProps, ModalShellSize } from './ModalShell';
 export { DiscardChangesModal } from './DiscardChangesModal';
 export type { DiscardChangesModalProps } from './DiscardChangesModal';
 
+export { ConfirmModal } from './ConfirmModal';
+export type { ConfirmModalProps, ConfirmModalTone } from './ConfirmModal';
+
 export { Sheet } from './Sheet';
 export type { SheetProps, SheetSide } from './Sheet';
 

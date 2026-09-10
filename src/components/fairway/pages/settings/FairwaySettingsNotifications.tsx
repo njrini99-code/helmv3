@@ -26,11 +26,10 @@
 import { useState } from 'react';
 
 import { Button, Surface, Switch, ViewHeader } from '@/components/fairway';
-import { IconWarning } from '@/components/icons';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 // Specific path (not the barrel) so barrel-mocking tests don't need to stub it
 // — mirrors the same rationale as the Skeleton import in FairwaySettingsGeneral.
-import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { ConfirmModal } from '@/components/fairway/overlays/ConfirmModal';
 import {
   setAllChannels,
   setCategoryChannel,
@@ -92,68 +91,6 @@ const ALL_CATEGORIES: NotificationCategory[] = CATEGORY_GROUPS.flatMap(
 
 /** Pending key shared by the bulk actions (reset / mute push / mute email). */
 const BULK_KEY = 'bulk';
-
-/**
- * A file-local ModalShell recipe replacing the legacy `ui/confirm-dialog`
- * `ConfirmDialog` for the single "Reset to defaults?" confirm below (same
- * prop shape as ConfirmDialog, minus the unused `variant` — this screen only
- * ever shows the warning tone). Mirrors `fairway/overlays/DiscardChangesModal`'s
- * structure (small ModalShell, hideTitle + hideClose, tinted icon tile +
- * two-button footer) since this file can't add a new shared component under
- * overlays/ itself.
- */
-function ConfirmResetModal({
-  open,
-  title,
-  message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  isLoading = false,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  isLoading?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <ModalShell
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onCancel();
-      }}
-      size="sm"
-      title={title}
-      hideTitle
-      hideClose
-    >
-      <div className="px-6 pb-6 pt-6">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md bg-fw-warning-bg">
-            <IconWarning size={20} className="text-fw-warning-ink" aria-hidden />
-          </div>
-          <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">
-            {title}
-          </h2>
-        </div>
-        <p className="mb-5 font-fw-sans text-body-sm leading-relaxed text-text-secondary">{message}</p>
-        <div className="flex gap-3">
-          <Button variant="secondary" className="flex-1" onClick={onCancel} disabled={isLoading}>
-            {cancelLabel}
-          </Button>
-          <Button variant="danger" className="flex-1" onClick={onConfirm} busy={isLoading}>
-            {confirmLabel}
-          </Button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
 
 export interface FairwaySettingsNotificationsProps {
   prefs: PrefsByCategory;
@@ -418,12 +355,13 @@ export function FairwaySettingsNotifications({
 
       {/* Error prevention: Reset defaults discards every per-update channel
           choice, so gate it behind an explicit confirm. */}
-      <ConfirmResetModal
+      <ConfirmModal
         open={resetConfirmOpen}
         title="Reset notification preferences?"
         message="This replaces every per-update channel choice with the defaults (in-app on, push and email off). This can't be undone."
         confirmLabel="Reset to defaults"
         cancelLabel="Cancel"
+        tone="warning"
         isLoading={pendingKeys.has(BULK_KEY)}
         onConfirm={() => {
           setResetConfirmOpen(false);
