@@ -23,6 +23,15 @@
  *     keep the transform distances small)
  *
  * Escalation: PopoverPanel < Sheet < ModalShell.
+ *
+ * Perf split (2026-09-10): the material (bg + backdrop-filter + border)
+ * lives on a STATIC inner child, never on Drawer.Content itself. vaul
+ * applies an inline transform to Drawer.Content on every open/close/drag
+ * frame, and a transform forces the browser to resample backdrop-filter
+ * each frame it's on the same element — a 38px blur resampled at 60fps.
+ * Drawer.Content keeps only layout, the radius clip (overflow-hidden +
+ * rounding) and the outward shadow; the inner child carries data-material
+ * and the frost/matte classes.
  * ============================================================================
  */
 
@@ -215,58 +224,75 @@ function SheetRoot({
           // keyboardWillShow scroll-into-view must not also scroll the page
           // behind the scrim.
           data-fw-keyboard-aware
-          // fairway-ds scope = warm tokens/fonts for everything inside.
-          data-material={frosted ? 'frost' : 'matte'}
           className={cn(
-            'fairway-ds fixed flex flex-col outline-none text-text-primary',
-            frosted ? 'fw-frost fw-frost-modal' : 'bg-elevated shadow-fw-modal',
+            // Layout + radius clip + shadow ONLY — vaul's inline transform
+            // lives on THIS node, so its own paint stays cheap. `overflow-
+            // hidden` is the radius clip: it crops the inner material child
+            // (below) to this node's rounded corners. The frost material's
+            // shadow token has a non-inset component that would otherwise be
+            // clipped away by that same overflow-hidden if left on the inner
+            // child, so it's restated here explicitly.
+            'fixed flex flex-col outline-none overflow-hidden',
+            frosted ? 'shadow-[var(--fw-frost-shadow-modal)]' : 'shadow-fw-modal',
             SIDE_CLASS[resolvedSide],
             className,
           )}
           style={{ zIndex: FW_Z.modal }}
         >
-          {handleVisible && resolvedSide === 'bottom' ? (
-            <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-border-strong" />
-          ) : null}
+          {/* Static material child — never transformed, so its backdrop-
+              filter is painted once and left alone through open/close/drag. */}
+          <div
+            data-slot={`${dataSlot}-material`}
+            // fairway-ds scope = warm tokens/fonts for everything inside.
+            data-material={frosted ? 'frost' : 'matte'}
+            className={cn(
+              'fairway-ds flex min-h-0 flex-1 flex-col rounded-[inherit] text-text-primary',
+              frosted ? 'fw-frost fw-frost-modal' : 'bg-elevated',
+            )}
+          >
+            {handleVisible && resolvedSide === 'bottom' ? (
+              <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-border-strong" />
+            ) : null}
 
-          {/* a11y title always present; visually-hidden when asked / non-string. */}
-          {hideTitle || !titleIsString ? (
-            <Drawer.Title className="sr-only">
-              {titleIsString ? title : 'Sheet'}
-            </Drawer.Title>
-          ) : null}
+            {/* a11y title always present; visually-hidden when asked / non-string. */}
+            {hideTitle || !titleIsString ? (
+              <Drawer.Title className="sr-only">
+                {titleIsString ? title : 'Sheet'}
+              </Drawer.Title>
+            ) : null}
 
-          {!hideTitle && (titleIsString || description) ? (
-            <SheetHeader>
-              {titleIsString ? <SheetTitle>{title}</SheetTitle> : null}
-              {description ? (
-                <SheetDescription>{description}</SheetDescription>
-              ) : null}
-            </SheetHeader>
-          ) : description ? (
-            <Drawer.Description className="sr-only">
-              {description}
-            </Drawer.Description>
-          ) : null}
+            {!hideTitle && (titleIsString || description) ? (
+              <SheetHeader>
+                {titleIsString ? <SheetTitle>{title}</SheetTitle> : null}
+                {description ? (
+                  <SheetDescription>{description}</SheetDescription>
+                ) : null}
+              </SheetHeader>
+            ) : description ? (
+              <Drawer.Description className="sr-only">
+                {description}
+              </Drawer.Description>
+            ) : null}
 
-          {children}
+            {children}
 
-          {!hideClose ? (
-            <Drawer.Close
-              aria-label="Close"
-              className={cn(
-                CLOSE_BUTTON_CLASS,
-                // Invisible hit-slop expands the tap target to 44px without
-                // changing the 36px visual (iOS touch floor, §7.4). The button
-                // is already `absolute`, so it establishes the positioning
-                // context for `::before` — no extra `relative` needed.
-                "before:absolute before:-inset-1.5 before:content-['']",
-                'absolute right-4 top-4',
-              )}
-            >
-              <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-            </Drawer.Close>
-          ) : null}
+            {!hideClose ? (
+              <Drawer.Close
+                aria-label="Close"
+                className={cn(
+                  CLOSE_BUTTON_CLASS,
+                  // Invisible hit-slop expands the tap target to 44px without
+                  // changing the 36px visual (iOS touch floor, §7.4). The button
+                  // is already `absolute`, so it establishes the positioning
+                  // context for `::before` — no extra `relative` needed.
+                  "before:absolute before:-inset-1.5 before:content-['']",
+                  'absolute right-4 top-4',
+                )}
+              >
+                <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              </Drawer.Close>
+            ) : null}
+          </div>
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
