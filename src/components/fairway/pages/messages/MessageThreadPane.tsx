@@ -3,7 +3,7 @@
 /** Conversation canvas: grouped messages, delivery state, scrolling and actions.
  * The panel fills the workspace; bubble widths remain independently bounded. */
 
-import { MESSAGE_REACTIONS, summarizeReactions, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
+import { MESSAGE_REACTIONS, summarizeReactions, type MessageReaction, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
 import * as React from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info, SmilePlus } from 'lucide-react';
@@ -261,6 +261,10 @@ const EMPTY_REACTIONS: MessageReactionsState = {
   rows: [], error: null, pending: null,
   refresh: async () => {}, setReaction: async () => false,
 };
+
+/** Stable "no reactions" result, shared by every message that has none — see
+ *  the `reactionsByMessageId` memo below for why identity matters here. */
+const NO_REACTIONS: ReturnType<typeof summarizeReactions> = [];
 
 export interface MessageThreadPaneProps {
   reactions?: MessageReactionsState;
@@ -589,6 +593,34 @@ export function MessageThreadPane({
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
   const reduceMotion = useReducedMotion() ?? false;
   const reactions = reactionProps ?? EMPTY_REACTIONS;
+  /**
+   * Row 8 (perf audit) — `summarizeReactions` used to run TWICE per message
+   * per render (once to decide whether to render the reaction row, once to
+   * render it), each a full scan of every reaction row in the thread: 2×N×R
+   * work per render. One pass here groups `reactions.rows` by message id and
+   * summarizes each group once; the map is read by both call sites below.
+   *
+   * Deliberately keyed on `[reactions.rows, currentUserId, userId]` — NOT on
+   * `messages` — so a new incoming message (which doesn't touch
+   * `reactions.rows`) leaves this map's reference, and every existing
+   * message's summarized entry, untouched. That matters once MessageRow is
+   * memoized (Row 12): recomputing this on every new message would hand
+   * every row a "new" reactions prop and defeat the memo for all of them.
+   */
+  const reactionsByMessageId = React.useMemo(() => {
+    const byMessage = new Map<string, MessageReaction[]>();
+    for (const row of reactions.rows) {
+      const existing = byMessage.get(row.message_id);
+      if (existing) existing.push(row);
+      else byMessage.set(row.message_id, [row]);
+    }
+    const uid = currentUserId ?? userId;
+    const summarized = new Map<string, ReturnType<typeof summarizeReactions>>();
+    for (const [messageId, rows] of byMessage) {
+      summarized.set(messageId, summarizeReactions(rows, messageId, uid));
+    }
+    return summarized;
+  }, [reactions.rows, currentUserId, userId]);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   /** The message list itself — observed for late growth (images, fonts). */
@@ -1412,6 +1444,10 @@ export function MessageThreadPane({
               const senderName = senderInfo?.name ?? 'Former member';
               const senderAvatar = senderInfo?.avatar ?? null;
 
+              // Row 8 — one lookup into the pre-summarized map instead of two
+              // full scans of `reactions.rows`.
+              const messageReactions = reactionsByMessageId.get(msg.id) ?? NO_REACTIONS;
+
               return (
                 <React.Fragment key={msg.id}>
                 {/* Day separator. A thread had no temporal landmarks at all —
@@ -1807,9 +1843,9 @@ export function MessageThreadPane({
                         ) : null}
                       </div>
                     )}
-                    {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).length > 0 && (
+                    {messageReactions.length > 0 && (
                       <div className="relative z-10 -mt-3 flex flex-wrap gap-1 px-1" aria-label="Message reactions">
-                        {summarizeReactions(reactions.rows, msg.id, currentUserId ?? userId).map((reaction) => (
+                        {messageReactions.map((reaction) => (
                           <Button
                             key={reaction.emoji}
                             type="button"
