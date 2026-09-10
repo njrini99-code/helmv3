@@ -444,8 +444,13 @@ export function FairwayCoachDashboard({
       </Surface>
 
       {/* ── 3 · The ledger row ────────────────────────────────────────────── */}
+      {/* Ledger spans: even thirds at xl, unequal 5/3/4 from 2xl. At 1280 the
+          3-span Attention column clipped every player name to "Jackson ..." and
+          the Latest titles to "Message from Cole Be...". The unequal split is
+          the intended reading rhythm, but it only has the room for it once the
+          row is wide enough; below that, equal columns beat clipped names. */}
       <div className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
-        <div className="xl:col-span-5 xl:pr-8">
+        <div className="xl:col-span-4 xl:pr-8 2xl:col-span-5">
           <TodayPanel
             todayEvents={enhancedData?.todayEvents ?? []}
             scheduleEvents={scheduleEvents}
@@ -453,7 +458,7 @@ export function FairwayCoachDashboard({
             timezone={enhancedData?.timezone}
           />
         </div>
-        <div className="xl:col-span-3 xl:px-8">
+        <div className="xl:col-span-4 xl:px-8 2xl:col-span-3">
           <AttentionLedger pulse={enhancedData?.teamPulse} rows={attentionRows} unavailable={teamStatsUnavailable} />
         </div>
         <div className="md:col-span-2 xl:col-span-4 xl:pl-8">

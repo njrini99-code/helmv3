@@ -92,7 +92,10 @@ function FeaturedEventRow({ event, tz }: { event: ScheduleRowData; tz: string | 
   return (
     <Inset padding="md" className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-3">
-        <span className="min-w-0 truncate font-fw-sans text-h3 font-semibold text-text-primary">
+        {/* Wrap, do not truncate. An event's title is the only thing that
+            identifies it, and this column has vertical room to spare — an
+            "End-of-Season Team ..." tells the coach less than nothing. */}
+        <span className="min-w-0 font-fw-sans text-h3 font-semibold text-balance text-text-primary">
           {event.title}
         </span>
         <StatusPill tone={tone} dot={false}>
@@ -112,7 +115,7 @@ function FeaturedEventRow({ event, tz }: { event: ScheduleRowData; tz: string | 
         {event.location ? (
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <IconMapPin size={14} />
-            <span className="truncate">{event.location}</span>
+            <span className="line-clamp-1">{event.location}</span>
           </span>
         ) : null}
         {event.rsvp_total !== undefined ? (
@@ -139,7 +142,7 @@ function QuietEventRow({ event, tz }: { event: ScheduleRowData; tz: string | nul
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-start justify-between gap-2">
-          <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+          <span className="min-w-0 font-fw-sans text-body-sm font-medium text-text-primary">
             {event.title}
           </span>
           <StatusPill tone={tone} dot={false} size="sm" className="shrink-0">
@@ -149,7 +152,7 @@ function QuietEventRow({ event, tz }: { event: ScheduleRowData; tz: string | nul
         {event.location ? (
           <span className="mt-0.5 flex min-w-0 items-center gap-1 font-fw-sans text-caption text-text-tertiary">
             <IconMapPin size={12} />
-            <span className="truncate">{event.location}</span>
+            <span className="line-clamp-1">{event.location}</span>
           </span>
         ) : null}
       </div>

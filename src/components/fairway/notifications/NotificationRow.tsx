@@ -20,7 +20,7 @@ import { isUnread } from '@/app/golf/actions/unified-notifications-model';
 export interface NotificationRowProps {
   item: UnifiedNotificationItem;
   onClick: (item: UnifiedNotificationItem) => void;
-  /** Compact rows for the home "Latest" module (tighter padding, no body line). */
+  /** Compact rows for the home "Latest" module: tighter padding, body clamped to one line. */
   density?: 'comfortable' | 'compact';
   /**
    * The caller's seeded wall-clock reference — REQUIRED, and nullable by
@@ -61,8 +61,12 @@ export function NotificationRow({ item, onClick, density = 'comfortable', now }:
         <div className="flex items-start justify-between gap-2">
           <p
             className={cn(
-              'min-w-0 flex-1 truncate font-fw-sans font-medium text-text-primary',
-              compact ? 'text-body-sm' : 'text-body-sm',
+              'min-w-0 flex-1 font-fw-sans text-body-sm font-medium text-text-primary',
+              // The home digest is the narrow column, so it is the one place a
+              // title actually needs the second line. "Message from Cole Be..."
+              // hides the sender, which is the only part of that title worth
+              // reading.
+              compact ? 'line-clamp-2' : 'truncate',
             )}
           >
             <span className="sr-only">{unread ? 'Unread: ' : ''}</span>
@@ -76,8 +80,15 @@ export function NotificationRow({ item, onClick, density = 'comfortable', now }:
             {now ? relativeTimeFrom(item.created_at, now.getTime()) : fullDateTime(item.created_at)}
           </time>
         </div>
-        {!compact && item.body ? (
-          <p className="mt-0.5 line-clamp-2 font-fw-sans text-body-sm text-text-tertiary">{item.body}</p>
+        {/* The body line is NOT optional in compact density. Titles repeat —
+            a coach's home showed four consecutive rows reading "Message from
+            Cole Bennett" with nothing to tell them apart, which is a list of
+            five items carrying two items' worth of information. One clamped
+            line of the actual message is what makes the row worth a glance. */}
+        {item.body ? (
+          <p className={cn('mt-0.5 font-fw-sans text-text-tertiary', compact ? 'line-clamp-1 text-caption' : 'line-clamp-2 text-body-sm')}>
+            {item.body}
+          </p>
         ) : null}
       </div>
 

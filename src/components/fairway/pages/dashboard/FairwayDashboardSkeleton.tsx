@@ -92,8 +92,8 @@ export function FairwayDashboardSkeleton() {
       <div aria-hidden="true" className="mt-12 grid grid-cols-1 gap-y-10 md:grid-cols-2 md:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
         {/* Static class strings: Tailwind cannot extract an interpolated `xl:col-span-${n}`. */}
         {[
-          'xl:col-span-5 xl:pr-8',
-          'xl:col-span-3 xl:px-8',
+          'xl:col-span-4 xl:pr-8 2xl:col-span-5',
+          'xl:col-span-4 xl:px-8 2xl:col-span-3',
           'md:col-span-2 xl:col-span-4 xl:pl-8',
         ].map((span, col) => (
           <div key={col} className={`flex flex-col gap-3 ${span}`}>
