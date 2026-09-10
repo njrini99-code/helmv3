@@ -45,6 +45,8 @@ import {
   IconMessage,
   IconUsers,
   IconChevronRight,
+  IconMail,
+  IconPhone,
 } from '@/components/icons';
 
 /* ---------------------------------------------------------------------------
@@ -117,6 +119,14 @@ export interface FairwayPlayerActionsMenuProps {
   playerName: string;
   /** Current roster status (pre-selects the Change Status modal). */
   currentStatus?: string | null;
+  /**
+   * Contact info, when the caller has it on hand (the player dossier
+   * masthead does; the roster board rows don't fetch it). Adds an
+   * Email / Call `mailto:`/`tel:` item — omitted entirely when absent, so
+   * existing callers are unaffected.
+   */
+  email?: string | null;
+  phone?: string | null;
   /** Side the popover opens on (default `bottom`). */
   side?: 'top' | 'right' | 'bottom' | 'left';
   /** Alignment along the side (default `end`, matching the legacy kebab). */
@@ -129,6 +139,8 @@ export function FairwayPlayerActionsMenu({
   playerId,
   playerName,
   currentStatus,
+  email,
+  phone,
   side = 'bottom',
   align = 'end',
   className,
@@ -266,6 +278,20 @@ export function FairwayPlayerActionsMenu({
           <IconMessage size={18} className="text-text-tertiary" />
           Message
         </PopoverPanel.Item>
+
+        {email ? (
+          <a href={`mailto:${email}`} className={MENU_ITEM_CLASS} onClick={() => setMenuOpen(false)}>
+            <IconMail size={18} className="text-text-tertiary" />
+            Email
+          </a>
+        ) : null}
+
+        {phone ? (
+          <a href={`tel:${phone}`} className={MENU_ITEM_CLASS} onClick={() => setMenuOpen(false)}>
+            <IconPhone size={18} className="text-text-tertiary" />
+            Call
+          </a>
+        ) : null}
 
         <PopoverPanel.Separator />
 
