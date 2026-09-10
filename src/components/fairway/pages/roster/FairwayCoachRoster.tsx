@@ -12,11 +12,11 @@
  * message via the actions menu, "Open profile") in place — no navigation for
  * a coach's daily scan, no per-card "View player" button.
  *
- * `computeRosterHealth`/`computeNeedsAttention` (RosterHealthHeader.tsx) are
- * reused VERBATIM — this file composes NEW header JSX from their data, but
- * never re-derives the coverage/priority math itself, and never edits or
- * re-renders `RosterHealthHeader`'s own JSX (still used unmodified by
- * CoachHelm elsewhere).
+ * `computeRosterHealth`/`computeNeedsAttention` (`roster-health.ts`, a sibling
+ * of the now-deleted `RosterHealthHeader.tsx` JSX component — it had no
+ * render call sites left anywhere, only these two functions did) are reused
+ * VERBATIM — this file composes NEW header JSX from their data and never
+ * re-derives the coverage/priority math itself.
  *
  * Deviations from the literal screen spec (reported to team-lead, see PR/task
  * notes): the MatrixBoard column-key reuse in COLUMNS below (a pure wiring
@@ -57,7 +57,7 @@ import type { TrendVerdict } from '@/lib/coachhelm/trend';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import { exportRosterCSV } from '@/components/golf/roster/RosterToolbar';
 import type { PlayersGridFocusArea, PlayersGridStats, RosterRow } from '@/components/fairway/pages/coachhelm/PlayersGridView';
-import { computeRosterHealth, computeNeedsAttention } from '@/components/fairway/pages/coachhelm/RosterHealthHeader';
+import { computeRosterHealth, computeNeedsAttention } from '@/components/fairway/pages/coachhelm/roster-health';
 // FairwayPlayerCard.tsx is no longer RENDERED on this page (roster.md: "stop
 // using it here") — the component itself still ships (other importers keep
 // working; see FairwayPlayerCard.test.tsx / sentry-replay-privacy.test.ts).
@@ -227,9 +227,9 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
   const empty = players.length === 0;
 
   // ── "Who needs your attention" header data — SAME pure computations
-  // RosterHealthHeader.tsx exports (do not fork this math). RosterPlayer
-  // already carries every field PlayersGridPlayer requires, so no remapping
-  // is needed. ────────────────────────────────────────────────────────────
+  // roster-health.ts exports (do not fork this math). RosterPlayer already
+  // carries every field PlayersGridPlayer requires, so no remapping is
+  // needed. ──────────────────────────────────────────────────────────────
   const playerStatsForHealth = React.useMemo(() => {
     const rec: Record<string, PlayersGridStats> = {};
     for (const p of players) {
@@ -388,7 +388,18 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
+    // Right clearance for the "Ask CoachHelm" pill (review roster/38, desktop):
+    // it's `fixed bottom-6 right-6` with `h-14` (see
+    // src/test/golf/coachhelm-fab-clearance.test.ts), a 56px circle whose LEFT
+    // edge sits 80px from the viewport's right edge. FairwayDashboardShell's
+    // sidebar eats the page's left margin, so at md+ this container's own
+    // `md:px-6` was the ONLY inset from the true viewport edge — the board's
+    // last column (the per-row overflow menu, `pr-5` inside MatrixBoard) sat
+    // well inside that 80px band. `md:pr-24` (96px, mirroring the dashboard
+    // layout's own `md:pb-24` reservation for the same pill) clears it with
+    // margin to spare; the board and the header Surface stay the same width
+    // as each other because both are children of this one container.
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:pl-6 md:pr-24 md:py-8">
       {/* Masthead — the one canonical ViewHeader primitive. Invite stays the
           ONE primary action on this screen (brief §12). */}
       <ViewHeader
@@ -428,8 +439,11 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               right. Replaces the old two health cards + 4-number block
               (roster.md CONTAINERS TO REMOVE #2). The "Did the coaching
               land?" outcome-mix band is intentionally NOT ported here — it's
-              dropped from this page per that same spec item; it still lives
-              on CoachHelm via RosterHealthHeader, unmodified. */}
+              dropped from this page per that same spec item, and (as of the
+              `RosterHealthHeader.tsx` JSX component's deletion — it had no
+              render call sites left anywhere) that band doesn't render on
+              any page anymore; only its pure math survives, in
+              `roster-health.ts`. */}
           <Surface elevation="border" padding="none" className="mb-6 overflow-hidden">
             {/* `minmax(0,1fr)` at EVERY width: a plain auto track sizes to
                 its content's min-content, and the attention rows' nowrap
@@ -651,11 +665,12 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
 
 /* ---------------------------------------------------------------------------
  * AttentionPanel — the header Surface's right half. Honest copy branches
- * (no roster / no rounds / genuinely covered) are ported VERBATIM from
- * RosterHealthHeader.tsx so this page can't reintroduce the two production
- * incidents that copy's comments document (a vacuously-true all-clear on a
- * zero-round roster; every real player flagged on a program with no focus
- * areas yet). Only the presentation differs (seam rows in a Surface half
+ * (no roster / no rounds / genuinely covered) are ported VERBATIM from the
+ * old RosterHealthHeader.tsx JSX component (deleted; see roster-health.ts)
+ * so this page can't reintroduce the two production incidents that copy's
+ * comments documented (a vacuously-true all-clear on a zero-round roster;
+ * every real player flagged on a program with no focus areas yet). Only the
+ * presentation differs (seam rows in a Surface half
  * instead of an InstrumentCluster panel).
  * ------------------------------------------------------------------------- */
 function AttentionPanel({
@@ -693,8 +708,8 @@ function AttentionPanel({
             </span>
             <span className="mb-1 font-fw-sans text-body-sm text-text-secondary">
               {noAreasYet
-                ? `ready for a focus area — none set on this roster yet.`
-                : `to look at — trending down or without a focus area.`}
+                ? `ready for a focus area. None set on this roster yet.`
+                : `to look at. Trending down or without a focus area.`}
             </span>
           </div>
           <ul className="flex flex-col">
@@ -723,7 +738,7 @@ function AttentionPanel({
               onClick={onShowMore}
               className="mt-1 h-auto justify-start px-0 py-0 font-fw-sans text-caption font-medium text-accent-700 hover:underline"
             >
-              +{remaining} more player{remaining === 1 ? '' : 's'} — filter the board
+              +{remaining} more player{remaining === 1 ? '' : 's'}. Filter the board.
             </Button>
           ) : null}
           <p className="mt-3 font-fw-sans text-caption text-text-tertiary">{coveredText}.</p>
