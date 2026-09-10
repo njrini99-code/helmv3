@@ -165,7 +165,7 @@ async function settle(page, ms = 900) {
   await sleep(ms);
 }
 async function freeze(page) {
-  await page.addStyleTag({ content: '*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;animation-delay:0s!important;caret-color:transparent!important}' }).catch(() => {});
+  await page.addStyleTag({ content: '*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;animation-delay:0s!important;caret-color:transparent!important} nextjs-portal,[data-nextjs-toast],[data-next-badge-root]{display:none!important}' }).catch(() => {});
 }
 async function login(context, persona) {
   const email = process.env[`GOLFHELM_${persona.toUpperCase()}_EMAIL`];
