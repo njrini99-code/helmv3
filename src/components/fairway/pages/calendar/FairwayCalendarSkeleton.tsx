@@ -4,8 +4,7 @@
  * ----------------------------------------------------------------------------
  * The loading placeholder for the FAIRWAY calendar route. It mirrors the real
  * first paint of {@link FairwayCalendar} in its default AGENDA view — the
- * masthead (period title + primary action, then the full-width view
- * switcher), the coach's hairline people row, and ONE matte stage holding a
+ * masthead, the coach's hairline people row, and ONE matte stage holding a
  * short stack of day sections (a heading seam, then time-column rows) — all
  * in Fairway design tokens.
  *
@@ -13,9 +12,16 @@
  * legacy cream/warm palette. The live Fairway page never renders a week
  * time-grid on first paint (it defaults to Agenda), so that skeleton caused a
  * palette flip + layout shift when the real surface mounted. This token-true
- * skeleton matches the agenda first paint — one matte bar, one hairline
- * people row, one matte stage of three hairline-divided day sections — so
- * there's no CLS or palette flip.
+ * skeleton matches the agenda first paint — one hairline people row, one
+ * matte stage of three hairline-divided day sections — so there's no CLS or
+ * palette flip.
+ *
+ * MASTHEAD: two shapes, matching FairwayCalendarHero (phone, `md:hidden`,
+ * matte two-line bar) and FairwayCalendarToolbar (desktop, `md:flex`, one
+ * sticky-frost row: leading title cluster, view switcher, primary action) —
+ * the same breakpoint split as the real masthead pair in FairwayCalendar.tsx,
+ * so the skeleton never shows the wrong shape at either width and there's no
+ * reflow when the real masthead mounts in its place.
  *
  * Pure presentation — no data, no interactivity. Marked `aria-busy` via the
  * group wrapper so assistive tech announces the loading state once.
@@ -33,21 +39,33 @@ export function FairwayCalendarSkeleton() {
     >
       <span className="sr-only">Loading calendar…</span>
 
-      {/* ── Masthead — mirrors FairwayCalendarHero: title row, then the switcher ── */}
-      <div className="-mx-4 border-b border-border-subtle px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3">
+      {/* ── Phone masthead — mirrors FairwayCalendarHero: title row, then the
+          full-width switcher (`md:hidden`, matte). ──────────────────────── */}
+      <div className="-mx-4 border-b border-border-subtle px-4 pb-2.5 pt-2 md:hidden">
         <div className="flex min-h-11 items-center gap-2">
-          <Skeleton className="h-7 w-44 rounded-fw-sm md:h-8 md:w-52" />
+          <Skeleton className="h-7 w-44 rounded-fw-sm" />
           <span className="flex-1" />
-          <Skeleton className="h-11 w-11 rounded-full md:hidden" />
-          <Skeleton className="hidden h-11 w-32 rounded-full md:block" />
+          <Skeleton className="h-11 w-11 rounded-full" />
         </div>
         <div className="mt-2 flex items-center gap-2">
-          <Skeleton className="h-11 w-full rounded-fw-sm md:h-9 md:w-72" />
-          <div className="hidden items-center gap-0.5 md:flex">
-            <Skeleton className="h-9 w-9 rounded-full" />
-            <Skeleton className="h-9 w-9 rounded-full" />
-          </div>
+          <Skeleton className="h-11 w-full rounded-fw-sm" />
         </div>
+      </div>
+
+      {/* ── Desktop masthead — mirrors FairwayCalendarToolbar: ONE sticky-
+          frost Toolbar row (leading title cluster · view switcher · primary
+          action), `hidden` below md, `md:flex` from md up. ────────────────── */}
+      <div className="hidden min-h-[60px] items-center gap-3 rounded-card border border-border-subtle bg-surface px-3 py-2 md:flex">
+        <div className="flex shrink-0 items-center gap-1">
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <Skeleton className="h-6 w-32 rounded-fw-sm" />
+        </div>
+        <Skeleton className="h-8 w-56 rounded-full" />
+        <span className="flex-1" />
+        <Skeleton className="h-8 w-24 rounded-fw-sm" />
+        <Skeleton className="h-8 w-28 rounded-fw-sm" />
+        <Skeleton className="h-9 w-32 rounded-full" />
       </div>
 
       {/* ── People row — mirrors FairwayCalendarMemberRail's hairline row ── */}
