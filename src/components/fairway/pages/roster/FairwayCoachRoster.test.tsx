@@ -2,10 +2,12 @@
  * ============================================================================
  * FairwayCoachRoster — Wave 2 "Who needs your attention" header band
  * ----------------------------------------------------------------------------
- * The roster-health instrument (PlayersGridView.tsx's RosterHealthHeader,
- * extracted to RosterHealthHeader.tsx) is now ported into the canonical
- * Roster page as its header band, instead of sitting orphaned behind the
- * hidden `?view=players` route. This pins that the band renders above the
+ * The roster-health instrument (originally PlayersGridView.tsx's
+ * RosterHealthHeader, extracted to a `RosterHealthHeader.tsx` JSX component
+ * that ended up with no render call sites and was deleted — see
+ * roster-health.ts) is ported into the canonical Roster page as its own
+ * header band, instead of sitting orphaned behind the hidden `?view=players`
+ * route. This pins that the band renders above the
  * player grid and that its "Add focus area" affordance (no in-page modal on
  * this page) navigates to the canonical prescribe flow scoped to the player.
  * ========================================================================== */
