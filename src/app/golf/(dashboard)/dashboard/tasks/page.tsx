@@ -6,6 +6,7 @@ import { useGolfUser } from '@/contexts/golf-user-context';
 import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
 import { completeTask } from '@/app/golf/actions/tasks';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { cn } from '@/lib/utils';
 import { FairwayTasks } from '@/components/fairway/pages/tasks';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
@@ -162,13 +163,11 @@ export default function GolfTasksPage() {
   // to Suspense) has returned real tasks/stats. Without this branch there'd
   // be a beat of an empty/undefined board between mount and first data.
   //
-  // What WAS wrong: this fallback used its own bespoke shape (max-w-[720px],
-  // bg-transparent, single column, no Templates rail) instead of matching the
-  // page it precedes — so a single load painted THREE different layouts:
-  // loading.tsx (1280px/3-col) → this branch (720px/1-col) → FairwayTasks
-  // (1280px/3-col), the middle one 560px narrower than both neighbours. This
-  // now mirrors loading.tsx's shape exactly (same masthead/pills/search/list+
-  // rail skeleton) so the swap between the two loading states is invisible.
+  // Facelift (docs/design/fairway-facelift/screens/tasks.md): this mirrors
+  // loading.tsx's shape exactly (same masthead → StatMatrix → toolbar → one
+  // matte Surface of seam rows) so the swap between the two loading states is
+  // invisible — see loading.tsx's docblock for why the two files duplicate
+  // this markup instead of sharing a component.
   if (loading) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -180,61 +179,65 @@ export default function GolfTasksPage() {
         >
           <span className="sr-only">Loading tasks…</span>
 
-          {/* Masthead — ViewHeader (eyebrow · title · description · meta) + CTA */}
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
+          {/* Masthead — ViewHeader (eyebrow · title · description · meta) +
+              primary CTA + the header overflow (From template). */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Skeleton className="h-3 w-16" />
-              <Skeleton className="mt-2 h-9 w-52 max-w-full" />
-              <Skeleton className="mt-2 h-3.5 w-72 max-w-full" />
+              <Skeleton className="h-9 w-52 max-w-full" />
+              <Skeleton className="h-3.5 w-72 max-w-full" />
+              <Skeleton className="h-3 w-20" />
             </div>
-            <Skeleton className="h-10 w-32 rounded-fw-md" />
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <Skeleton className="h-10 w-32 rounded-fw-md" />
+              <Skeleton circle className="h-9 w-9" />
+            </div>
           </div>
 
           <div className="mt-8 flex flex-col gap-6">
-            {/* Status filter pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              {[64, 72, 96].map((w) => (
-                <Skeleton key={w} className="h-9 rounded-full" style={{ width: w }} />
+            {/* StatMatrix — Open · Active · Completed · Overdue (2×2 on
+                phone, one row of 4 from `sm`), the same inset-well seams the
+                real component draws. */}
+            <div className="grid grid-cols-2 overflow-hidden rounded-fw-md bg-surface-sunken sm:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 border-border-subtle px-3 py-3',
+                    i % 2 === 1 && 'border-l',
+                    i >= 2 && 'border-t sm:border-t-0',
+                    i !== 0 && 'sm:border-l',
+                  )}
+                >
+                  <Skeleton className="h-7 w-10" />
+                  <Skeleton className="h-3 w-14" />
+                </div>
               ))}
             </div>
 
-            {/* Search */}
-            <Skeleton className="h-11 w-full max-w-md rounded-fw-md" />
-
-            {/* List (col-span-2) + Templates rail */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="flex flex-col gap-3 lg:col-span-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Surface key={i} elevation="border" padding="none" className="overflow-hidden">
-                    <div className="flex items-start gap-4 p-4 md:p-5">
-                      <Skeleton className="mt-0.5 h-5 w-5 flex-shrink-0 rounded-fw-sm" />
-                      <div className="min-w-0 flex-1">
-                        <Skeleton className="h-4 w-2/5" />
-                        <Skeleton className="mt-2 h-3.5 w-3/4" />
-                        <div className="mt-3 flex items-center gap-2">
-                          <Skeleton className="h-6 w-20 rounded-full" />
-                          <Skeleton className="h-6 w-24 rounded-full" />
-                        </div>
-                      </div>
-                    </div>
-                  </Surface>
-                ))}
-              </div>
-
-              <div className="lg:col-span-1">
-                <Surface elevation="border" padding="none" className="overflow-hidden">
-                  <div className="flex items-center gap-2 border-b border-border-subtle px-4 py-3">
-                    <Skeleton className="h-[18px] w-[18px] rounded-fw-sm" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                  <div className="flex flex-col gap-2 p-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 w-full rounded-fw-md" />
-                    ))}
-                  </div>
-                </Surface>
-              </div>
+            {/* Toolbar — search · status Segmented · category filter, one row. */}
+            <div className="flex min-h-11 flex-wrap items-center gap-3 rounded-card border border-border-subtle bg-surface px-3 py-2">
+              <Skeleton className="h-10 w-full rounded-fw-md sm:min-w-[180px] sm:max-w-sm sm:flex-1 lg:w-72 lg:flex-none" />
+              <Skeleton className="h-9 w-48 rounded-fw-sm" />
+              <Skeleton className="ml-auto h-8 w-28 rounded-full" />
             </div>
+
+            {/* The task list — ONE matte Surface of seam rows. */}
+            <Surface
+              elevation="border"
+              padding="none"
+              className="divide-y divide-border-subtle overflow-hidden"
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+                  <Skeleton className="h-4 flex-1" style={{ maxWidth: `${60 - (i % 3) * 8}%` }} />
+                  <Skeleton className="hidden h-8 w-28 flex-shrink-0 sm:block" />
+                  <Skeleton className="h-4 w-12 flex-shrink-0 sm:w-16" />
+                  <Skeleton className="hidden h-6 w-20 flex-shrink-0 rounded-full sm:block" />
+                  <Skeleton className="hidden h-4 w-4 flex-shrink-0 sm:block" />
+                </div>
+              ))}
+            </Surface>
           </div>
         </div>
       </div>
