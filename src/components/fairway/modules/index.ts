@@ -23,5 +23,3 @@ export * from './RxCard';
 export * from './StatMatrix';
 export * from './ResizableWorkspace';
 export * from './MicroBar';
-export * from './ScoringHistogram';
-export * from './DrivingDotStrip';
