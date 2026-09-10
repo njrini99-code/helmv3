@@ -20,3 +20,4 @@ export * from './SignalChip';
 export * from './RankCell';
 export * from './GradeDots';
 export * from './RxCard';
+export * from './StatMatrix';

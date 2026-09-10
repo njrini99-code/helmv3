@@ -47,12 +47,19 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: ReactNode;
   /** Render styling onto the child element (e.g. a Link) instead of a <button>. */
   asChild?: boolean;
+  /**
+   * `pill` (default): the Fairway pill axis — compact actions, CTAs in a row.
+   * `block`: a large rectangular CTA (a sheet's sticky action, a full-width
+   * form submit) on the step-2 radius (14px), where a full pill reads
+   * cartoonish. Design-system exception recorded 2026-09-10.
+   */
+  shape?: 'pill' | 'block';
   children: ReactNode;
 }
 
 const base = cn(
   'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap',
-  'rounded-full font-fw-sans font-medium text-text-primary',
+  'font-fw-sans font-medium text-text-primary',
   'border', // border slot — variants set its color (or make it transparent)
   fwTransition,
   fwFocusRing,
@@ -160,6 +167,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     leftIcon,
     rightIcon,
     asChild = false,
+    shape = 'pill',
     disabled,
     children,
     onClick,
@@ -206,6 +214,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       ref={ref}
       className={cn(
         base,
+        shape === 'block' ? 'rounded-fw-md' : 'rounded-full',
         variantStyles[variant],
         sizeStyles[size],
         fullWidth && 'w-full',
@@ -220,6 +229,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       aria-busy={busy || undefined}
       data-slot="fw-button"
       data-variant={variant}
+      data-shape={shape}
       onClick={handleClick}
       onClickCapture={handleClickCapture}
       {...props}

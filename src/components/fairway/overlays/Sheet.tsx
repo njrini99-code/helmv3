@@ -11,8 +11,11 @@
  *
  *   • direction: bottom (default) | right | left | top
  *   • drag handle on the bottom variant; rounded leading edge
- *   • matte `Elevated` body (sheets carry primary content → matte, §4.3),
- *     warm border, shadow-modal; cheap dim warm scrim (not blurred)
+ *   • matte `Elevated` body by default (sheets carry primary content → matte,
+ *     §4.3), warm border, shadow-modal; cheap dim warm scrim (not blurred)
+ *   • `material="frost"` (2026-09-10): the Fairway Frost modal tier for a
+ *     bottom sheet that should read as a physical layer above the page (the
+ *     event sheet). Docked sides stay matte — frost is for what floats.
  *   • Header / Body / Footer / Title / Description compound parts
  *   • Escape + scrim click close; green focus-visible ring (§7.2)
  *   • prefers-reduced-motion respected (vaul falls back to opacity-only via
@@ -98,6 +101,9 @@ export interface SheetProps {
   hideClose?: boolean;
   /** Show the drag handle (default: only on bottom/top). */
   showHandle?: boolean;
+  /** Panel material. `matte` (default) or `frost` (bottom/top only; docked
+   *  sides always render matte). */
+  material?: 'matte' | 'frost';
   /** Optional snap points for a partial-height bottom sheet, e.g. [0.4, 1]. */
   snapPoints?: (number | string)[];
   /**
@@ -148,6 +154,7 @@ function SheetRoot({
   description,
   hideClose = false,
   showHandle,
+  material = 'matte',
   snapPoints,
   peek,
   dismissible = true,
@@ -167,6 +174,8 @@ function SheetRoot({
 
   const handleVisible =
     showHandle ?? (resolvedSide === 'bottom' || resolvedSide === 'top');
+  const frosted =
+    material === 'frost' && (resolvedSide === 'bottom' || resolvedSide === 'top');
 
   // iOS-native detents: OPT-IN. `peek={true}` on a bottom sheet asks for the
   // vaul half-height-drag-to-full behavior via numeric snapPoints; explicit
@@ -207,9 +216,10 @@ function SheetRoot({
           // behind the scrim.
           data-fw-keyboard-aware
           // fairway-ds scope = warm tokens/fonts for everything inside.
+          data-material={frosted ? 'frost' : 'matte'}
           className={cn(
-            'fairway-ds fixed flex flex-col outline-none',
-            'bg-elevated text-text-primary shadow-fw-modal',
+            'fairway-ds fixed flex flex-col outline-none text-text-primary',
+            frosted ? 'fw-frost fw-frost-modal' : 'bg-elevated shadow-fw-modal',
             SIDE_CLASS[resolvedSide],
             className,
           )}

@@ -9,6 +9,7 @@
  *   Inset         — sunken nested well (rows / evidence inside a card)
  *   Elevated      — opaque floating panel (menus / popovers, no glass)
  *   GlassSurface  — the RESTRAINED cream-tinted Liquid Glass, allow-list only
+ *   InsetGroup    — ONE recessed group with hairline seams (never stacked cards)
  *
  * ADDITIVE ONLY — import from '@/components/fairway/surfaces'.
  * ========================================================================== */
@@ -31,4 +32,7 @@ export type {
 } from './surface';
 
 export { GlassSurface } from './glass-surface';
-export type { GlassSurfaceProps, GlassSurfaceKind } from './glass-surface';
+export type { GlassSurfaceProps, GlassSurfaceKind, GlassSurfaceTier } from './glass-surface';
+
+export { InsetGroup, InsetGroupRow } from './inset-group';
+export type { InsetGroupProps, InsetGroupRowProps, InsetGroupVariant } from './inset-group';

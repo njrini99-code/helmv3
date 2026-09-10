@@ -78,6 +78,12 @@ export {
   GlassSurface,
   type GlassSurfaceProps,
   type GlassSurfaceKind,
+  type GlassSurfaceTier,
+  InsetGroup,
+  InsetGroupRow,
+  type InsetGroupProps,
+  type InsetGroupRowProps,
+  type InsetGroupVariant,
 } from './surfaces';
 
 // ── cards-insight ─────────────────────────────────────────────────────────--
