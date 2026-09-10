@@ -37,7 +37,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, Button, StatusPill, InsetGroup } from '@/components/fairway';
+import { Sheet, Button, StatusPill, InsetGroup, Skeleton, Eyebrow } from '@/components/fairway';
 import type { SheetSide } from '@/components/fairway';
 import { StatMatrix } from '@/components/fairway/modules';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -241,7 +241,8 @@ export function FairwayEventDetailDrawer({
     void (async () => {
       try {
         const res = await getItineraryForEvent(eventId);
-        if (!cancelled) setLinkedTrip(res.success ? res.data ?? null : null);
+        // Non-urgent: lands mid-open, so render it as a transition.
+        if (!cancelled) React.startTransition(() => setLinkedTrip(res.success ? res.data ?? null : null));
       } catch {
         if (!cancelled) setLinkedTrip(null);
       }
@@ -530,7 +531,24 @@ export function FairwayEventDetailDrawer({
               {/* Coach responses — one information object, not four cards.
                   Sits directly above the per-person People list below: one
                   summary, one roster, not two disconnected counts. */}
-              {isCoach && rsvpSummary ? (
+              {isCoach && !rsvpSummary ? (
+                // PERF: the summary lands ~200 ms after the tap, mid-open. A
+                // placeholder with the matrix's own geometry (eyebrow + 2×2
+                // cells) keeps the panel's height stable while it translates,
+                // so the data arriving does not relayout and re-blur a
+                // growing sheet in the middle of the animation.
+                <div aria-hidden className="flex flex-col">
+                  <Eyebrow as="p" className="mb-2">Responses</Eyebrow>
+                  <div className="grid grid-cols-2 gap-px overflow-hidden rounded-fw-md border border-border-subtle bg-border-subtle">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="flex h-20 flex-col items-center justify-center gap-2 bg-surface-sunken">
+                        <Skeleton className="h-6 w-8 rounded-fw-sm" />
+                        <Skeleton className="h-3 w-14 rounded-fw-sm" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : isCoach && rsvpSummary ? (
                 <StatMatrix
                   label="Responses"
                   detail={`${rsvpSummary.total} invited`}

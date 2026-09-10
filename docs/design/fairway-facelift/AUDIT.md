@@ -127,4 +127,15 @@ How the calendar/dock pass meets it:
 - `will-change` is not set by hand anywhere in the pass; vaul sets `transform` on the panel only.
 - Reduced motion: the dock pill and sheets read `useReducedMotion`; the date rail scrolls without smooth-scroll under `prefers-reduced-motion: reduce`.
 
-Measurements: NOT YET TAKEN. The probe exists (a Playwright page at 393×852, 4× CPU throttle, an in-page `requestAnimationFrame` recorder counting frames > 16.7 / 33 / 50 ms in the 600 ms after the tap, three runs, for (a) the More sheet from the dock and (b) the calendar event sheet, signing in the same way `scripts/ui-intelligence/capture-golf-facelift.mjs` does). This session's permission classifier refused to run it, and the machine was swapping (11 of 12 GB) under two worktrees' type-checks, which would have made the numbers meaningless anyway. Owner action: run it once on a quiet machine against a dev server serving this branch and paste the two lines here; the expected signal is zero frames > 50 ms during the open translate now that no blur applies mid-animation and People/Files mount after the sheet settles.
+Measurements (2026-09-10, this branch at 0a31c5350 + the drawer perf commit; a Playwright page at 393×852 @2×, iPhone UA, coach account, dev server; in-page `requestAnimationFrame` recorder over the 600 ms after the tap; four runs, medians):
+
+| Sheet | CPU | Open: frames / >33 ms / >50 ms / longest (at) | Close: frames / >33 ms / >50 ms / longest |
+|---|---|---|---|
+| More sheet (dock) | 1× | 49 / 1 / 0 / 38 ms (first frame) | 45 / 1 / 0 / 39 ms |
+| Event sheet (calendar) | 1× | 46 / 1 / 0 / 38 ms (first frame) | 51 / 0 / 0 / 27 ms |
+| More sheet (dock) | 4× throttle | 37 / 2 / 1 / 87 ms | 43 / 0 / 0 / 27 ms |
+| Event sheet (calendar) | 4× throttle | 36 / 2 / 1 / 125 ms (~200 ms after tap) | 47 / 2 / 1 / 74 ms |
+
+Reading: at native speed neither sheet drops a frame past 50 ms; the one 38 ms frame is the mount itself. Under a 4× throttle the event sheet still has one long frame about 200 ms after the tap — the moment the orchestrator's `getEventRSVP`/`getItineraryForEvent` results land mid-translate and FairwayCalendar re-renders. Two mitigations are in: the results are applied inside `React.startTransition`, and a placeholder with the StatMatrix's geometry holds the panel height so the arriving summary does not relayout and re-blur a growing sheet (that took the throttled longest frame from 183 ms to 125 ms). The remaining follow-up is to hold the fetched result until the sheet reports settled (~320 ms) before applying it.
+
+Found on the way (fixed by the peer in 35ddebc17): `.fw-frost { position: relative }` lives outside Tailwind's layers, so it overrode the utility `fixed` on any element that carried the class directly — every `Sheet material="frost"` (More sheet, event sheet) computed `position: relative` and rendered at the bottom of the DOCUMENT, off-screen. The Sheet now carries its material on a static inner child. The rule still applies to anything else given `.fw-frost` directly (a `sticky` toolbar, an `absolute` badge), see the note sent to the desktop lane.

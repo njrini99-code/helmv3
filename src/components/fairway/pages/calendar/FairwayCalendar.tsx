@@ -939,19 +939,24 @@ export function FairwayCalendar({
           const { getEventRSVP } = await import('@/app/golf/actions/golf');
           const result = await getEventRSVP(event.id);
           if (requestId !== drawerRequestRef.current) return;
-          if (result.success && result.data?.summary) {
-            const s = result.data.summary;
-            setDrawerRsvpSummary({
-              accepted: s.accepted ?? 0,
-              declined: s.declined ?? 0,
-              tentative: s.tentative ?? 0,
-              pending: s.pending ?? 0,
-              total: s.total ?? 0,
-            });
-            setDrawerAttendees(s.attendees ?? []);
-          } else {
-            setDrawerAttendees(undefined);
-          }
+          // PERF: this lands ~200 ms after the tap, while the sheet is still
+          // translating. A transition lets React render the summary in
+          // interruptible slices instead of one long frame mid-animation.
+          React.startTransition(() => {
+            if (result.success && result.data?.summary) {
+              const s = result.data.summary;
+              setDrawerRsvpSummary({
+                accepted: s.accepted ?? 0,
+                declined: s.declined ?? 0,
+                tentative: s.tentative ?? 0,
+                pending: s.pending ?? 0,
+                total: s.total ?? 0,
+              });
+              setDrawerAttendees(s.attendees ?? []);
+            } else {
+              setDrawerAttendees(undefined);
+            }
+          });
         } catch {
           // Drawer still works without the summary; People fetches for itself.
           if (requestId === drawerRequestRef.current) setDrawerAttendees(undefined);
@@ -961,10 +966,12 @@ export function FairwayCalendar({
           const { getPlayerEventRSVP } = await import('@/app/golf/actions/golf');
           const result = await getPlayerEventRSVP(event.id);
           if (result.success && result.data?.status) {
-            setUserRsvpStatuses((prev) => {
-              const next = new Map(prev);
-              next.set(event.id, result.data!.status as RSVPStatus);
-              return next;
+            React.startTransition(() => {
+              setUserRsvpStatuses((prev) => {
+                const next = new Map(prev);
+                next.set(event.id, result.data!.status as RSVPStatus);
+                return next;
+              });
             });
           }
         } catch {
