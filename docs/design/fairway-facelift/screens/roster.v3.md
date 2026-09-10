@@ -548,14 +548,44 @@ Built against this spec. Deviations, in the order a reviewer would hit them:
   regions of the same page in visible contradiction. Forwarding the one
   server-computed number instead makes that impossible by construction.
 - **Ledger split moved from `lg` to `xl`.** This spec's "The ledger row" section
-  says `divide-x` on `lg` / `lg:grid-cols-12`; LANGUAGE.md (lines 47-52) and
-  IMPLEMENTING.md's own load-bearing rule are explicit that every side-by-side
-  split belongs at `xl`, and LANGUAGE.md states it is the document that decides
-  composition when the two disagree. Built as `xl:grid-cols-12 xl:divide-x`,
-  `md:grid-cols-2` as the intermediate two-up state, single column with a
-  horizontal hairline (`border-t`) below `md`. Table column hiding
-  (`hidden md:table-cell` / `hidden lg:table-cell`) is unaffected — untouched
-  from the spec.
+  says `divide-x` on `lg` / `lg:grid-cols-12`; LANGUAGE.md states it is the
+  document that decides composition when the two disagree. (LANGUAGE.md's own
+  rule text changed mid-build, commit `00a73b901`: it's no longer the flat
+  "splits go at `xl`" this bullet originally cited — it's now a floor, "a split
+  is legal only at the width where every column still holds its content
+  whole," with a fixed rail beside a flexible instrument still bound to `xl`
+  and a fractional split allowed lower if measured there.) Built as
+  `xl:grid-cols-12 xl:divide-x` for the asymmetric 7/5 (Attention/Focus
+  outcomes) split, `md:grid-cols-2` even halves as the intermediate two-up
+  state, single column with a horizontal hairline (`border-t`) below `md`. Re-
+  verified against the floor rule at 768/1024/1280/1440 (the widened
+  verification set LANGUAGE.md now names) with the seeded roster's real names,
+  including the longest ("Audit Testplayer") — no clipping at any width in
+  either ledger column or the table. The stage's own readouts rail
+  (`xl:grid-cols-[minmax(0,1fr)_15rem]`) is the fixed-rail case and correctly
+  stays locked to `xl`. Table column hiding (`hidden md:table-cell` /
+  `hidden lg:table-cell`) is unaffected — untouched from the spec.
+- **Stage caption clarifies Avg is windowed, Trend is not.** Flagged by the
+  facelift lead after their own Home-page fix (`f6e242c45`) for a headline-
+  aggregate-vs-series aggregation mismatch: this stage's row pairs a
+  window-filtered `avg`/bars with a `trend` delta that (per the bullet above)
+  is deliberately the player's all-time `recent_trend`, never re-derived per
+  window — so a narrowed window (`30D`) can show bars/avg for one or two
+  rounds beside a trend delta describing a much longer history. Considered
+  re-deriving `trend` from the exact windowed rounds instead (matching Home's
+  pattern, where its window control is a server round-trip so bars and trend
+  are always the same slice) — rejected: the canonical five-vs-five classifier
+  needs ~8 in-window rounds for a signal, so at this screen's `90D` default
+  most players would flip to "no read," degrading the stage's own "sorted by
+  trend, decliners first" promise, AND it would let the stage's per-row trend
+  disagree with the Attention ledger/table/masthead (all still all-time) for
+  the same player in the same viewport — reintroducing the exact same-page
+  contradiction the bullet above was written to prevent. Fixed instead by
+  stating the split plainly in the stage's caption (`FairwayCoachRoster.tsx`):
+  "Avg is the window's average; trend is each player's overall read, the same
+  one behind Attention and the table below." No data changed, no new
+  classification — the existing number is now honestly labeled rather than
+  implicitly claimed to describe the bars beside it.
 - **Window control defaults to `90D`, not `All`.** The stage section says
   default `All`; the Risks section's own "All-window density" item flags this as
   unresolved and offers "default 90D, keep All as an explicit opt-in" as the
@@ -624,3 +654,19 @@ scroll on phone that hid the Avg/Trend columns entirely behind the fold, despite
 `overflow-x-auto`, not the page) — fixed to `md:min-w-[720px]` so it only
 engages once the `md:table-cell` columns exist to need the width, re-captured
 and re-probed clean.
+
+A second pass, after LANGUAGE.md's breakpoint rule was rewritten as a floor
+(`00a73b901`) and the verification width set widened to 768/1024/1280/1440:
+re-ran `.route-probe.tmp.mjs` at all four widths (0px horizontal overflow at
+every one) and read all four screenshots directly for the specific failure the
+new rule calls out — a column that clips a player's name. None did, in either
+ledger column or the table, at any of the four widths, including at 1280 where
+the facelift lead's own ledger had failed this exact check. Also caught, from
+the lead's second-pass note on headline/series aggregation consistency: the
+stage's per-row Avg (windowed) and Trend (deliberately all-time, see above)
+are two different slices sitting in adjacent cells with no label saying so —
+fixed via the caption wording change described above, not a data or
+classification change. Re-ran guarded `tsc --noEmit` (still clean for every
+roster file) and the same three-file vitest suite (still 44/44) after both the
+caption edit and this section's rewrite; re-captured desktop + phone via
+`capture-golf-facelift.mjs` to pick up the caption change.

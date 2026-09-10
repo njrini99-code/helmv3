@@ -257,8 +257,8 @@ export function FairwayCoachRoster({
           <div className="flex min-w-0 flex-col gap-1">
             <p className={OVERLINE}>Roster <span aria-hidden="true">·</span> {WINDOW_SENTENCE[scoreWindow]}</p>
             <h2 className="font-fw-display text-h2 text-text-primary">Score field</h2>
-            <p className="max-w-[60ch] font-fw-sans text-caption text-text-tertiary">
-              Every round in the window, sorted by trend — decliners first. Bars rise over par in amber and drop under par in green; par is the line, scale ±{cap}.
+            <p className="max-w-[68ch] font-fw-sans text-caption text-text-tertiary">
+              Every round in the window, sorted by trend — decliners first. Bars rise over par in amber and drop under par in green; par is the line, scale ±{cap}. Avg is the window’s average; trend is each player’s overall read, the same one behind Attention and the table below.
             </p>
           </div>
           <div className="hidden md:flex">
