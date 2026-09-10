@@ -156,15 +156,15 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
     mobile: 'blur downshifts', desktop: '', examples: ['Command menu', 'Calendar masthead'],
   },
   {
-    name: 'InstrumentPanel', category: 'surface', status: 'canonical', archetypes: ['C'], material: 'green',
+    name: 'InstrumentPanel', category: 'surface', status: 'canonical', archetypes: ['C', 'E'], material: 'green',
     bestFor: ['a rich instrument moment: effectiveness, strokes gained'], avoidFor: ['more than one per screen', 'text'],
     replaces: ['metric card + chart card'],
-    mobile: '', desktop: '', examples: ['Player dossier SG instrument', 'Effectiveness'],
+    mobile: '', desktop: '', examples: ['Player dossier SG instrument', 'Effectiveness', 'Rounds library'],
   },
   {
-    name: 'InstrumentCluster', category: 'surface', status: 'canonical', archetypes: ['C'], material: 'green',
+    name: 'InstrumentCluster', category: 'surface', status: 'canonical', archetypes: ['C', 'E'], material: 'green',
     bestFor: ['one primary readout + gauge + supporting readouts'], avoidFor: ['4 metric cards + chart'], replaces: ['KPI grid'],
-    mobile: '', desktop: '', examples: ['Effectiveness'],
+    mobile: '', desktop: '', examples: ['Effectiveness', 'Rounds library'],
   },
   // ── Intelligence ────────────────────────────────────────────────────────
   {
@@ -193,9 +193,9 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
     replaces: [], mobile: '', desktop: '', examples: [],
   },
   {
-    name: 'Readout', category: 'intelligence', status: 'canonical', archetypes: ['C'], material: 'green',
+    name: 'Readout', category: 'intelligence', status: 'canonical', archetypes: ['C', 'E'], material: 'green',
     bestFor: ['a calibrated number in an instrument'], avoidFor: ['outside an instrument'], replaces: ['big number in a card'],
-    mobile: '', desktop: '', examples: [],
+    mobile: '', desktop: '', examples: ['Rounds library'],
   },
   // ── Data viz ────────────────────────────────────────────────────────────
   { name: 'Sparkline', category: 'data-viz', status: 'canonical', archetypes: ['A', 'B'], material: 'matte', bestFor: ['am I improving, inline'], avoidFor: ['noisy 90-point series in a 60px box'], replaces: ['trend text'], mobile: '', desktop: '', examples: [] },
@@ -211,7 +211,8 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
   { name: 'RankCell', category: 'data-viz', status: 'canonical', archetypes: ['B'], material: 'matte', bestFor: ['rank in a board'], avoidFor: ['outside a board'], replaces: ['#3 text'], mobile: '', desktop: '', examples: ['Team stats'] },
   { name: 'SignalChip', category: 'data-viz', status: 'canonical', archetypes: ['B', 'D'], material: 'matte', bestFor: ['severity / state at a glance'], avoidFor: ['decorative color'], replaces: ['3 competing badge colors'], mobile: '', desktop: '', examples: ['Signals'] },
   { name: 'TickerStrip', category: 'data-viz', status: 'canonical', archetypes: ['E'], material: 'matte', bestFor: ['a compact chronology of values'], avoidFor: ['unordered values'], replaces: ['last-10 bar card'], mobile: '', desktop: '', examples: ['Rounds'] },
-  { name: 'RadialGauge', category: 'data-viz', status: 'canonical', archetypes: ['C'], material: 'green', bestFor: ['confidence, effectiveness'], avoidFor: ['every percentage'], replaces: ['percent in a card'], mobile: '', desktop: '', examples: ['Effectiveness'] },
+  { name: 'RadialGauge', category: 'data-viz', status: 'canonical', archetypes: ['C', 'E'], material: 'green', bestFor: ['confidence, effectiveness'], avoidFor: ['every percentage'], replaces: ['percent in a card'], mobile: '', desktop: '', examples: ['Effectiveness', 'Rounds library'] },
+  { name: 'MicroBar', category: 'data-viz', status: 'new', archetypes: ['B', 'E'], material: 'matte', bestFor: ['a signed per-row stat inside a dense ledger/table row'], avoidFor: ['a standalone chart (use DivergingBars)'], replaces: ['a bare number with no visual scale'], mobile: '', desktop: '', examples: ['Rounds library'] },
   { name: 'GradeDots', category: 'data-viz', status: 'canonical', archetypes: ['E'], material: 'matte', bestFor: ['hole grades along a strip'], avoidFor: ['a single grade'], replaces: ['letter-grade badge as hero'], mobile: '', desktop: '', examples: ['Round review'] },
   { name: 'DataTable', category: 'data-viz', status: 'canonical', archetypes: ['B', 'D'], material: 'matte', bestFor: ['real tables: sort, filter, density'], avoidFor: ['3 rows'], replaces: ['row cards', 'repeated Surfaces pretending to be a table'], mobile: 'compressed rows', desktop: 'sticky columns, row menus', examples: ['Recruiting'] },
   // ── Controls ────────────────────────────────────────────────────────────
