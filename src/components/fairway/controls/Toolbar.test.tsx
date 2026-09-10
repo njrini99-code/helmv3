@@ -214,4 +214,24 @@ describe('Toolbar `material` prop', () => {
     expect(row.className).toContain('fw-frost-subtle');
     expect(row.className).not.toContain('backdrop-blur-glass');
   });
+
+  it('stickyTop accepts a CSS calc() string and uses it verbatim as the `top` value', () => {
+    render(
+      <Toolbar
+        sticky
+        stickyTop="calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))"
+        aria-label="Filters and actions"
+      />,
+    );
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row.style.top).toBe(
+      'calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))',
+    );
+  });
+
+  it('stickyTop still defaults to a plain 0px offset when omitted', () => {
+    render(<Toolbar sticky aria-label="Filters and actions" />);
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row.style.top).toBe('0px');
+  });
 });

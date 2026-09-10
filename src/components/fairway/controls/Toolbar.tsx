@@ -150,8 +150,15 @@ export interface ToolbarProps {
    * glass once content scrolls under it. Default `false` (static matte row).
    */
   sticky?: boolean;
-  /** Top offset (px) when `sticky` — clears a fixed app/header above. Default 0. */
-  stickyTop?: number;
+  /**
+   * Top offset when `sticky` — clears a fixed app/header above. Default 0.
+   * A `number` is a plain px offset (unchanged behavior). A `string` is
+   * used verbatim as the CSS `top` value — e.g.
+   * `"calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))"`
+   * to clear the app top bar's own safe-area-aware offset instead of a
+   * fixed number.
+   */
+  stickyTop?: number | string;
   /** Accessible label for the toolbar landmark. Default "Filters and actions". */
   'aria-label'?: string;
   /** Extra classes merged (last-wins) onto the row. */
@@ -201,11 +208,19 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
     }
     const node = sentinelRef.current;
     if (!node || typeof IntersectionObserver === 'undefined') return;
+    // Shrink the intersection root by the sticky offset (+1px tolerance) so
+    // the sentinel reads "out of view" exactly when it passes beneath the
+    // pinned row, not the raw viewport edge. A numeric `stickyTop` keeps the
+    // original plain-px arithmetic; a string offset (e.g. a `calc()` var
+    // expression) is negated via a wrapping `calc()` — a valid CSS
+    // <length-percentage>, which is all rootMargin requires.
+    const rootMarginTop =
+      typeof stickyTop === 'number' ? `${-(stickyTop + 1)}px` : `calc(-1px - (${stickyTop}))`;
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry) setStuck(!entry.isIntersecting);
       },
-      { threshold: 0, rootMargin: `-${stickyTop + 1}px 0px 0px 0px` },
+      { threshold: 0, rootMargin: `${rootMarginTop} 0px 0px 0px` },
     );
     io.observe(node);
     return () => io.disconnect();
