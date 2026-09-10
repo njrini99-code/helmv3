@@ -138,6 +138,19 @@ Player Team Hub
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+Fairway Premium Facelift (2026-09, golf only): the coach `/golf/dashboard`
+home page (`FairwayCoachDashboard.tsx`, consumes `CoachDashboardPayload` from
+`dashboard-data.ts` above) is a cockpit composition, not a card grid — a
+one-sentence verdict line, a sticky bare `Toolbar` (signals `StatusPill` +
+performance-window `Segmented`/`Menu`), an operations row (Today with a new
+`AgendaStrip` hour rail beside a "Who needs attention" `MatrixBoard`), a
+full-width `InstrumentCluster` (Team scoring accent bezel + benchmarked
+`TrendChart`, GIR/Putts flanking panels, a Rounds logged/Signals/Rounds-this-
+week foot row), and a ledger row (Recent rounds, sign-colored `TickerStrip`,
+beside `NotificationsLatestModule frame="bare"`). Detail, deviations, and
+capture paths: `docs/design/fairway-facelift/screens/home.v2.md`'s "Result"
+section.
+
 ## Known Risk Areas
 
 - Task reminder auto-send is missing; setting `reminder_at` does not imply notifications will fire.

@@ -11,40 +11,67 @@
  * every value unchanged. No data fetching, no server actions, no mutations are
  * defined or altered here.
  *
- * FACELIFT PASS (docs/design/fairway-facelift/screens/coach-home.md): the
- * twelve-container "card soup" (hero + Window segmented + Latest + Today +
- * eight MetricCards + invite code + Recent rounds + Schedule + Performance
- * trend + Team pulse (3 insets) + Top performers = twelve containers, one
- * grammar) is recomposed into a 7/5 asymmetric grid with ONE dominant object
- * (Today) and everything else merged or compressed:
+ * FACELIFT PASS v2 (docs/design/fairway-facelift/screens/home.v2.md,
+ * synthesized 2026-09-10 from the facelift design panel — supersedes the v1
+ * coach-home.md 7/5-grid pass this file previously implemented). The v1 pass
+ * fixed the twelve-card soup into a 7/5 grid, but the owner's complaint was
+ * specific and still open: "so basic, just cards down, where is the
+ * architecture." v2's fix is not more cards, it is a designed cockpit — a
+ * stage that answers "what's on today, and does the team need me right now",
+ * four distinct visual instruments carrying the page (never two identical
+ * card shapes side by side), and a sticky toolbar giving the page structure
+ * across a scroll instead of every fact living inside whichever card happens
+ * to hold it:
  *
- *   • ViewHeader — ONE <h1>, eyebrow (date), the promoted primary action
- *     ("New event" → the calendar), and an overflow Menu (Add player /
- *     Qualifiers / Invite) for what used to be three loose buttons + a
- *     separate invite-code card.
- *   • Today (row 1, 7/12) — the old "Today" card + the standalone "Schedule"
- *     card merged: the current/next event large, remaining today events and
- *     the next 3 days as quiet seam rows under a hairline. A genuinely clear
- *     near-term schedule is one quiet text line, never a notice card.
- *   • Team performance (row 1, 5/12) — the window Segmented (previously a
- *     page-level control) now lives in this panel's own header; the eight
- *     MetricCards compress into one StatMatrix (Scoring avg / GIR / Putts per
- *     round / Rounds); the separate "Performance Trend" card's chart moves in
- *     underneath a hairline.
- *   • Team pulse (row 2, 7/12) — the old three-inset Team Pulse card's
- *     improving/stable/declining counts become the KPI band of a MatrixBoard
- *     whose ranked rows are the former "Top Performers" list. (DEVIATION —
- *     see the RISKS comment below the component: the screen spec calls this
- *     board "Who needs attention" with a trend glyph + strokes-gained column;
- *     the payload has no per-player decline list or SG figure, only the
- *     best-5-by-average `topPlayers` array, so fabricating those columns
- *     would mean inventing data. This keeps the honest ranking semantics and
- *     folds the real aggregate pulse counts into the board's KPI band.)
- *   • Latest (row 2, 5/12) — unchanged `NotificationsLatestModule`, just
- *     relocated beside Team pulse instead of floating above Today.
- *   • Recent rounds (row 3, full width) — the DataTable becomes a TickerStrip
- *     of the last 10 scores (md+) over quiet seam rows (all breakpoints),
- *     replacing the table's own mobile card fork.
+ *   • Stage — ViewHeader (unchanged) + a one-sentence verdict line built once
+ *     in the parent from data already in `enhancedData` (no client-only
+ *     timezone logic, so no hydration risk): events on today's schedule,
+ *     the improving/declining pulse split, open CoachHelm signals.
+ *   • Toolbar — sticky, bare frame: a signals `StatusPill` (the ONE fact
+ *     promoted here) plus the performance-window control, demoted from the
+ *     old "Team performance" card header into a page-level control that
+ *     survives the scroll (Segmented on desktop, a Menu on phone, both in
+ *     the DOM, CSS-gated).
+ *   • Operations row (7/5) — Today (bare seam rows, an `AgendaStrip` hour
+ *     rail on top — Today's own dominant-object status finally gets a real
+ *     instrument instead of a plain list) beside "Who needs attention" (a
+ *     MatrixBoard, which already paints its own ruled-grid card — the old
+ *     outer Surface around it was a genuine nested-card violation, now
+ *     removed). A rounded-list shape beside a bare ruled-grid shape — never
+ *     two identical cards.
+ *   • Instrument band — Team performance, promoted to its OWN full-width row
+ *     below the operations row (this is the direct structural fix for two
+ *     open REVIEW.md defects on this exact screen: the half-width Team
+ *     performance card ran a StatMatrix box AND a chart box nested inside
+ *     one outer card, and the shared grid row stretched short Today to match
+ *     its height, leaving a ~340px hole). It is now one `InstrumentCluster`
+ *     cockpit: a focal `InstrumentPanel tone="accent"` bezel (the page's ONE
+ *     green panel) holding a `Readout` + a benchmarked `TrendChart`, a
+ *     flanking rail of two neutral GIR/Putts panels, and a tertiary foot row
+ *     of micro-readouts.
+ *   • Ledger row (8/4) — Recent rounds (still the row's one boxed Surface,
+ *     `TickerStrip` now colored by sign rather than one bar highlighted
+ *     among nine identical dim ones) beside Activity (`NotificationsLatestModule`
+ *     `frame="bare"`, matching Today's and Who-needs-attention's bare
+ *     treatment — a rounded card beside a bare list, the ledger row's own
+ *     shape contrast).
+ *
+ * DEVIATION from `docs/design/fairway-facelift/screens/coach-home.md`'s
+ * original composition diagram (Today | Team pulse in row 1, Who-needs-
+ * attention in row 2): home.v2.md deliberately re-pairs Today with Who-needs-
+ * attention in row 1 and promotes Team performance to its own full-width
+ * band. That IS the fix for the two REVIEW.md defects above — a half-width
+ * chart card cannot be both compact and legible, a full-width band can be
+ * both — and it is home.v2.md's explicit, documented decision, not a v1
+ * carryover.
+ *
+ * DEVIATION (unchanged from v1, still applies): the screen spec's "Who needs
+ * attention" board calls for a trend glyph + strokes-gained column per
+ * player; the payload has no per-player decline list or SG figure, only the
+ * best-5-by-average `topPlayers` array, so fabricating those columns would
+ * mean inventing data. This keeps the honest ranking semantics and folds the
+ * real aggregate pulse counts (improving/stable/declining) into the board's
+ * KPI band instead.
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -67,21 +94,27 @@ import {
   OnboardingStep,
   OnboardingSteps,
   Skeleton,
+  Toolbar,
+  InstrumentCluster,
+  InstrumentPanel,
+  Readout,
   type TrendPoint,
 } from '@/components/fairway';
 import {
-  StatMatrix,
   MatrixBoard,
   TickerStrip,
+  AgendaStrip,
   type MatrixColumn,
   type MatrixBoardRow,
   type TickerItem,
+  type AgendaStripEvent,
 } from '@/components/fairway/modules';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
-// the StatMatrix delta hints from a single call, so a hint can never disagree
-// with the qualitative direction the server-side payload already computed.
-// Direct-file import (not the barrel) mirrors how MetricCard itself imports
-// its trend classifier.
+// the cockpit's Readout deltas from a single call, so a delta can never
+// disagree with the qualitative direction the server-side payload already
+// computed. Direct-file import (not the barrel) mirrors how MetricCard
+// itself imports its trend classifier.
 import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import {
   IconUsers,
@@ -233,11 +266,26 @@ function seriesDeltaLabel(points: number): string {
   return `last ${points} round${points === 1 ? '' : 's'}`;
 }
 
-/** Signed "+0.7" / "−1.2" formatting for a `computeSeriesTrend().value`. */
-function signedDelta(value: number, digits: number): string {
-  const rounded = Number(value.toFixed(digits));
-  const sign = rounded > 0 ? '+' : rounded < 0 ? '−' : '';
-  return `${sign}${Math.abs(rounded).toFixed(digits)}`;
+/**
+ * Minutes-from-midnight for an ISO instant, resolved in `tz` — the AgendaStrip
+ * hour rail's own coordinate space. `hourCycle: 'h23'` (not `hour12: false`)
+ * deliberately avoids the Intl "hour 24 at midnight" quirk some locales emit;
+ * the `% 1440` below is a second, cheap guard against that same edge case.
+ */
+function minutesOfDayInTz(iso: string, tz: string): number {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric',
+      minute: 'numeric',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(iso));
+    const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+    const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+    return (hour * 60 + minute) % 1440;
+  } catch {
+    return 0;
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -278,6 +326,12 @@ export function FairwayCoachDashboard({
    */
   const teamStatsUnavailable = enhancedData?.teamStatsUnavailable ?? false;
   const router = useRouter();
+  // The one new wire this pass adds (home.v2.md §2/§3) — reachable with no
+  // new provider, since `NotificationBadgeProvider` already wraps this route
+  // tree (`FairwayDashboardShell.tsx`); this file simply hadn't imported the
+  // hook yet. Feeds the verdict line's signals clause and the toolbar's
+  // signals chip from the SAME value, so the two can never disagree.
+  const badges = useNotificationBadges();
 
   const [range, setRange] = useState<DashboardDateRange>(initialRange);
   const [copied, setCopied] = useState(false);
@@ -339,6 +393,39 @@ export function FairwayCoachDashboard({
     [router],
   );
 
+  // Verdict line (home.v2.md §2) — one sentence answering "what's on today,
+  // and does the team need me right now", built once here from data already
+  // in `enhancedData`/`badges`. Count only, no per-event time formatting, so
+  // this needs no client-resolved timezone (unlike `TodayPanel`'s own `tz`
+  // state) and carries no hydration risk. Honest: the pulse clause is
+  // omitted (not rendered as "0 improving, 0 sliding") when nothing has been
+  // classified yet, and the signals clause is omitted at zero — never a
+  // claim the data can't support.
+  const verdictLine = useMemo(() => {
+    const eventCount = enhancedData?.todayEvents.length ?? 0;
+    const sentences: string[] = [
+      eventCount > 0
+        ? `${eventCount} ${eventCount === 1 ? 'event' : 'events'} on today's schedule.`
+        : "Nothing on today's schedule.",
+    ];
+
+    const pulse = enhancedData?.teamPulse;
+    const tracked = pulse ? pulse.improving + pulse.stable + pulse.declining : 0;
+    if (pulse && tracked > 0) {
+      sentences.push(
+        `${pulse.improving} ${pulse.improving === 1 ? 'player' : 'players'} improving, ${pulse.declining} sliding.`,
+      );
+    }
+
+    if (badges.coachhelm > 0) {
+      sentences.push(`${badges.coachhelm} ${badges.coachhelm === 1 ? 'signal' : 'signals'} waiting on you.`);
+    }
+
+    return sentences.join(' ');
+  }, [enhancedData?.todayEvents.length, enhancedData?.teamPulse, badges.coachhelm]);
+
+  const rangeLabel = RANGE_OPTIONS.find((o) => o.value === range)?.label ?? '';
+
   // PRESERVED LOGIC: invite-code copy-to-clipboard handler (same behavior as
   // the legacy InviteCodeCard).
   const handleCopy = useCallback(async () => {
@@ -397,13 +484,18 @@ export function FairwayCoachDashboard({
     return Array.from(merged.values());
   }, [enhancedData?.todayEvents, enhancedData?.calendarEvents]);
 
-  // Recent-rounds TickerStrip (row 3): the last 10 scored rounds, oldest →
-  // newest, min–max normalized on `total_to_par` WITHIN this window — same
-  // convention as FairwayRoundsLibrary's desktop chronology strip, so a
-  // coach who has seen one strip reads the other identically. `recentRounds`
-  // arrives newest-first (dashboard-data.ts orders `round_date desc`); this
-  // reverses the latest-10 slice into chronological order for the strip.
-  // (Hook lives above the coach-without-team early return below.)
+  // Recent-rounds TickerStrip (home.v2.md §6): the last 10 scored rounds,
+  // oldest → newest, min–max normalized on `total_to_par` WITHIN this
+  // window — same convention as FairwayRoundsLibrary's desktop chronology
+  // strip, so a coach who has seen one strip reads the other identically.
+  // `recentRounds` arrives newest-first (dashboard-data.ts orders
+  // `round_date desc`); this reverses the latest-10 slice into chronological
+  // order for the strip. Each bar's `tone` is the SAME to-par sign
+  // `formatToPar`/the row list's own `StatusPill` below already color by
+  // (under par → good/green, over → warning, even → neutral) — the strip
+  // reads as a form line by sign, replacing the old "one bar highlighted,
+  // nine identical dim ones" wash (REVIEW.md coach-home/desktop). (Hook
+  // lives above the coach-without-team early return below.)
   const tickerItems: TickerItem[] = useMemo(() => {
     const windowRounds = recentRounds.slice(0, 10).slice().reverse();
     if (windowRounds.length < 2) return [];
@@ -417,7 +509,7 @@ export function FairwayCoachDashboard({
         label: String(r.total_score ?? '—'),
         // best (lowest to-par) → 100%, worst (highest to-par) → 40%.
         heightPct: 100 - ((tp - min) / spread) * 60,
-        emphasis: tp === min,
+        tone: tp < 0 ? 'good' : tp > 0 ? 'over' : 'even',
       };
     });
   }, [recentRounds]);
@@ -483,6 +575,15 @@ export function FairwayCoachDashboard({
   const scoringDelta = computeSeriesTrend(scoringSeries, { goodDirection: 'down' });
   const girDelta = computeSeriesTrend(girSeries, { goodDirection: 'up' });
   const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
+
+  // Cockpit benchmark line (home.v2.md §5) — `TrendChart` already supports a
+  // dashed `benchmark` reference line; `stats.previousAverage` is already
+  // fetched by dashboard-data.ts and, before this pass, unused anywhere in
+  // this file. Falling back to the current average when there's no prior
+  // period avoids a benchmark line drawn exactly on top of the series (which
+  // reads as a bug, not a baseline). Only passed to TrendChart when finite —
+  // never a fabricated reference.
+  const benchmarkValue = enhancedData?.stats.previousAverage ?? enhancedData?.stats.teamScoringAverage ?? null;
 
   const trendFirst = trendPoints[0];
   const trendLast = trendPoints[trendPoints.length - 1];
@@ -626,8 +727,87 @@ export function FairwayCoachDashboard({
           omitted (e.g. any other caller that hasn't wired it). */}
       <FairwayJoinRequestAlert requests={joinRequests} />
 
-      {/* ── 2 · ROW 1 (7/5) — Today | Team performance ─────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      {/* ── 2 · STAGE — the verdict line (home.v2.md §2), plain text, never a
+          numeral standing alone (that would read as the banned hero-metric
+          template). Built once above from data already in `enhancedData` /
+          `badges` — no client-only timezone logic here, so no hydration
+          risk. */}
+      <p className="line-clamp-2 font-fw-display text-h3 text-text-primary md:text-h2">
+        {verdictLine}
+      </p>
+
+      {/* ── 3 · TOOLBAR (sticky, bare) — home.v2.md §3. The signals chip is
+          deliberately the ONLY fact promoted here; players/events/qualifiers
+          stay in the masthead above, not duplicated. `stickyTop` uses the
+          SAME top-bar-clearing calc `FairwayCoachRoster.tsx` already relies
+          on, so this pins at a proven-safe offset rather than a new one. The
+          Segmented (desktop) and the Menu (phone) both stay in the DOM —
+          CSS decides which paints, so there is no client-only breakpoint
+          branch and nothing here can disagree between server and client.
+
+          Wrapped in its own `<div>` (no gap/margin of its own): `Toolbar`
+          renders a two-element Fragment when `sticky` (a zero-height
+          intersection sentinel ahead of the row itself) — as a DIRECT child
+          of this page's `gap-8`/`gap-10` flex column, the sentinel and the
+          row would each land as their OWN flex item and each earn a full
+          flex gap, opening a ~80px blank band between the verdict line and
+          the toolbar's controls that has nothing in it. One wrapper div
+          absorbs the Fragment so the flex column only ever sees a single
+          item here — the same wrapping `FairwayCalendarHero.tsx` already
+          uses around its own sticky `Toolbar`. */}
+      <div>
+        <Toolbar
+          sticky
+          stickyTop="calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))"
+          aria-label="Dashboard toolbar"
+          leading={
+            badges.coachhelm > 0 ? (
+              <Link href="/golf/dashboard/intelligence">
+                <StatusPill tone="warning" dot>
+                  {badges.coachhelm} {badges.coachhelm === 1 ? 'signal' : 'signals'}
+                </StatusPill>
+              </Link>
+            ) : undefined
+          }
+          viewToggle={
+            <>
+              <div className="hidden md:flex">
+                <Segmented
+                  value={range}
+                  onValueChange={handleRangeChange}
+                  options={RANGE_OPTIONS}
+                  aria-label="Performance window"
+                  size="sm"
+                />
+              </div>
+              <div className="flex md:hidden">
+                <Menu
+                  ariaLabel="Performance window"
+                  align="end"
+                  trigger={
+                    <Button variant="secondary" size="sm">
+                      <span>Window · {rangeLabel}</span>
+                    </Button>
+                  }
+                >
+                  {RANGE_OPTIONS.map((option) => (
+                    <Menu.Item key={option.value} onSelect={() => handleRangeChange(option.value)}>
+                      {option.label}
+                    </Menu.Item>
+                  ))}
+                </Menu>
+              </div>
+            </>
+          }
+        />
+      </div>
+
+      {/* ── 4 · OPERATIONS ROW (7/5) — Today | Who needs attention. A rounded
+          seam-row shape beside a bare ruled-grid shape — never two identical
+          cards. `lg:items-start` (no row-stretch): with Team performance now
+          living in its own full-width band below, neither column is forced
+          tall by a chart anymore. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
         <div className="lg:col-span-7">
           <TodayPanel
             todayEvents={enhancedData?.todayEvents ?? []}
@@ -637,131 +817,14 @@ export function FairwayCoachDashboard({
           />
         </div>
 
-        <section aria-label="Team performance" className="lg:col-span-5">
-          <Surface elevation="border" padding="md" className="flex h-full flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team performance</h2>
-              <Segmented
-                value={range}
-                onValueChange={handleRangeChange}
-                options={RANGE_OPTIONS}
-                aria-label="Performance window"
-                size="sm"
-              />
-            </div>
-
-            <StatMatrix
-              items={[
-                {
-                  label: 'Scoring avg',
-                  value: scoringAvg != null ? Number(scoringAvg.toFixed(1)) : '—',
-                  tone: scoringAvg == null ? 'muted' : undefined,
-                  hint:
-                    scoringAvg == null
-                      ? 'Need 3+ rounds'
-                      : scoringDelta != null
-                        ? `${signedDelta(scoringDelta.value, 1)} ${seriesDeltaLabel(scoringDelta.points)}`
-                        : `${roundsLogged} ${roundsLogged === 1 ? 'round' : 'rounds'}`,
-                },
-                {
-                  label: 'GIR',
-                  value: girValue != null ? `${Number(girValue.toFixed(0))}%` : '—',
-                  tone: girValue == null ? 'muted' : undefined,
-                  hint:
-                    girValue == null
-                      ? 'Need 3+ rounds'
-                      : girDelta != null
-                        ? `${signedDelta(girDelta.value, 0)}% ${seriesDeltaLabel(girDelta.points)}`
-                        : undefined,
-                },
-                {
-                  label: 'Putts/rd',
-                  value: puttsValue != null ? Number(puttsValue.toFixed(1)) : '—',
-                  tone: puttsValue == null ? 'muted' : undefined,
-                  hint:
-                    puttsValue == null
-                      ? 'Need 3+ rounds'
-                      : puttsDelta != null
-                        ? `${signedDelta(puttsDelta.value, 1)} ${seriesDeltaLabel(puttsDelta.points)}`
-                        : undefined,
-                },
-                {
-                  label: 'Rounds',
-                  value: roundsLogged,
-                  hint: teamStatsUnavailable ? 'Couldn’t load' : undefined,
-                },
-              ]}
-            />
-
-            <div aria-hidden="true" className="h-px w-full bg-border-subtle" />
-
-            {hasTrend ? (
-              <div className="flex-1">
-                <TrendChart
-                  title="Performance Trend"
-                  overline="Team scoring average"
-                  data={trendPoints}
-                  valueFormatter={(v) => v.toFixed(1)}
-                  takeaway={trendTakeaway}
-                />
-              </div>
-            ) : (
-              // Bare fallback (no nested Surface — this panel already IS one):
-              // a narrow window is not an empty roster. Telling a coach with 7
-              // players and 90 rounds to "invite players" because they
-              // filtered to 7 days reads as the product not knowing its own
-              // state (audit 2026-07-24, H5).
-              <div className="flex flex-1 flex-col gap-3">
-                <InsufficientData
-                  title={
-                    teamStatsUnavailable
-                      ? 'Couldn’t load the trend'
-                      : range !== 'all'
-                        ? 'Not enough rounds in this window'
-                        : 'Trend appears as rounds build'
-                  }
-                  description={
-                    teamStatsUnavailable
-                      ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
-                      : range !== 'all'
-                        ? 'A trend needs rounds spread across a longer period. Try a wider window.'
-                        : 'Trends need rounds across multiple months. Invite players and keep logging.'
-                  }
-                />
-                {/* handleRangeChange, not setRange — the range is also a URL
-                    contract (force-dynamic ?range re-fetch); setting state
-                    alone would leave the page showing stale data. */}
-                <div>
-                  {range !== 'all' ? (
-                    <Button variant="secondary" size="sm" onClick={() => handleRangeChange('all')}>
-                      <span>Widen the window</span>
-                    </Button>
-                  ) : (
-                    <Button variant="secondary" size="sm" asChild>
-                      <Link href="/golf/dashboard/roster">
-                        <IconPlus size={16} />
-                        <span>Invite Players</span>
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-          </Surface>
-        </section>
-      </div>
-
-      {/* ── 3 · ROW 2 (7/5) — Team pulse (board) | Latest ───────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="flex flex-col gap-4 lg:col-span-7">
-          <TeamPulseBoard
+        <div className="flex flex-col gap-4 lg:col-span-5">
+          <WhoNeedsAttentionBoard
             pulse={enhancedData?.teamPulse}
             topPlayers={topPlayers}
             teamStatsUnavailable={teamStatsUnavailable}
           />
           {/* Invite + roster-cap notices — quiet matte status rows directly
-              under the board (coach-home.md Tertiary), not a standing card
-              in the KPI row the legacy layout used. */}
+              under the board (unchanged position/content, home.v2.md §4). */}
           {showInviteNotice ? (
             <InlineNotice
               tone="info"
@@ -785,136 +848,167 @@ export function FairwayCoachDashboard({
             </InlineNotice>
           ) : null}
         </div>
-
-        {/* Latest notifications — compact digest of the unified feed
-            (CoachHelm signals, event/RSVP lifecycle, task reminders…).
-            Self-fetching client module; renders nothing when there's
-            genuinely nothing new (the bell in the top bar stays the source
-            of truth either way). "View all" opens that same bell panel via
-            NotificationPanelContext. */}
-        <div className="lg:col-span-5">
-          <NotificationsLatestModule />
-        </div>
       </div>
 
-      {/* ── 4 · ROW 3 — Recent rounds (TickerStrip + seam rows) ─────────────── */}
-      <section aria-label="Recent rounds" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
-          <Link
-            href="/golf/dashboard/rounds"
-            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
-          >
-            View all
-            <IconArrowRight size={14} />
-          </Link>
-        </div>
-        {/* Section hairline — more-green ruling. */}
-        <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-        {recentRounds.length === 0 ? (
-          <Surface elevation="border" padding="sm">
-            {/* `teamStatsUnavailable` says a read behind the round data FAILED.
-                Without it, a lock wait or timeout rendered "No rounds logged
-                yet" to a team with a full season on file — the empty state and
-                the failure state were the same screen. */}
-            {teamStatsUnavailable ? (
-              <EmptyState
-                variant="subtle"
-                icon={LucideFlag}
-                title="Couldn’t load rounds"
-                description="Something went wrong reading this team’s rounds. Refresh to try again — nothing has been lost."
-              />
-            ) : (
-              <EmptyState
-                variant="subtle"
-                icon={LucideFlag}
-                title={range !== 'all' ? 'No rounds in this window' : 'No rounds logged yet'}
-                description={
-                  range !== 'all'
-                    ? 'Try a wider window, or have players log rounds from their dashboard.'
-                    : 'Players can submit rounds from their dashboard — they’ll appear here.'
-                }
-              />
-            )}
-          </Surface>
-        ) : (
-          <Surface elevation="border" padding="sm" className="flex flex-col gap-4">
-            {tickerItems.length >= 2 ? (
-              <div className="hidden md:block">
-                <TickerStrip items={tickerItems} />
-              </div>
-            ) : null}
-            <ul className="flex flex-col">
-              {recentRounds.slice(0, 10).map((r) => (
-                <li key={r.id}>
-                  {/* Every row is the obvious next action: open that round's
-                      detail (the route authorizes a coach for any team
-                      player's round) (P005). */}
-                  <Link
-                    href={`/golf/dashboard/rounds/${r.id}`}
-                    className="flex items-center gap-3 rounded-fw-sm border-t border-border-subtle px-1 py-2.5 transition-colors duration-150 first:border-t-0 hover:bg-surface-hover"
-                  >
-                    <Avatar decorative
-                      name={r.player_name}
-                      src={r.player_avatar_url}
-                      size="sm"
-                      className="shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                        {r.player_name}
-                      </p>
-                      <p className="truncate font-fw-sans text-caption text-text-tertiary">
-                        {toTitleCase(r.course_name)} · {shortDate(r.round_date)}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-baseline gap-2">
-                      <span className="font-fw-mono text-body font-medium tabular-nums text-text-primary">
-                        {r.total_score}
-                      </span>
-                      <StatusPill
-                        tone={r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral'}
+      {/* ── 5 · INSTRUMENT BAND — Team performance, full width (home.v2.md
+          §5). The one genuinely new visual moment: a real cockpit
+          (InstrumentCluster) replaces the old half-width StatMatrix-plus-
+          chart-in-one-card, which is the direct structural fix for the
+          nested-card and "340px hole" defects REVIEW.md flagged on this
+          exact screen. */}
+      <TeamPerformanceCluster
+        rangeLabel={rangeLabel}
+        scoringAvg={scoringAvg}
+        scoringDelta={scoringDelta}
+        roundsLogged={roundsLogged}
+        girValue={girValue}
+        girDelta={girDelta}
+        puttsValue={puttsValue}
+        puttsDelta={puttsDelta}
+        hasTrend={hasTrend}
+        trendPoints={trendPoints}
+        trendTakeaway={trendTakeaway}
+        teamStatsUnavailable={teamStatsUnavailable}
+        range={range}
+        onWidenWindow={() => handleRangeChange('all')}
+        benchmarkValue={benchmarkValue}
+        signalsCount={badges.coachhelm}
+        roundsThisWeek={enhancedData?.teamPulse.roundsThisWeek ?? null}
+      />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
+        <section aria-label="Recent rounds" className="flex flex-col gap-3 lg:col-span-8">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
+            <Link
+              href="/golf/dashboard/rounds"
+              className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+            >
+              View all
+              <IconArrowRight size={14} />
+            </Link>
+          </div>
+          {/* Section hairline — more-green ruling. */}
+          <div aria-hidden="true" className="h-px w-full bg-accent-300" />
+          {recentRounds.length === 0 ? (
+            <Surface elevation="border" padding="sm">
+              {/* `teamStatsUnavailable` says a read behind the round data FAILED.
+                  Without it, a lock wait or timeout rendered "No rounds logged
+                  yet" to a team with a full season on file — the empty state and
+                  the failure state were the same screen. */}
+              {teamStatsUnavailable ? (
+                <EmptyState
+                  variant="subtle"
+                  icon={LucideFlag}
+                  title="Couldn’t load rounds"
+                  description="Something went wrong reading this team’s rounds. Refresh to try again — nothing has been lost."
+                />
+              ) : (
+                <EmptyState
+                  variant="subtle"
+                  icon={LucideFlag}
+                  title={range !== 'all' ? 'No rounds in this window' : 'No rounds logged yet'}
+                  description={
+                    range !== 'all'
+                      ? 'Try a wider window, or have players log rounds from their dashboard.'
+                      : 'Players can submit rounds from their dashboard — they’ll appear here.'
+                  }
+                />
+              )}
+            </Surface>
+          ) : (
+            <Surface elevation="border" padding="sm" className="flex flex-col gap-4">
+              {tickerItems.length >= 2 ? (
+                <div className="hidden md:block">
+                  <TickerStrip items={tickerItems} />
+                </div>
+              ) : null}
+              <ul className="flex flex-col">
+                {recentRounds.slice(0, 10).map((r) => (
+                  <li key={r.id}>
+                    {/* Every row is the obvious next action: open that round's
+                        detail (the route authorizes a coach for any team
+                        player's round) (P005). */}
+                    <Link
+                      href={`/golf/dashboard/rounds/${r.id}`}
+                      className="flex items-center gap-3 rounded-fw-sm border-t border-border-subtle px-1 py-2.5 transition-colors duration-150 first:border-t-0 hover:bg-surface-hover"
+                    >
+                      <Avatar decorative
+                        name={r.player_name}
+                        src={r.player_avatar_url}
                         size="sm"
-                        dot={false}
-                        className="font-fw-mono tabular-nums"
-                      >
-                        {formatToPar(r.total_to_par)}
-                      </StatusPill>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Surface>
-        )}
-      </section>
+                        className="shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                          {r.player_name}
+                        </p>
+                        <p className="truncate font-fw-sans text-caption text-text-tertiary">
+                          {toTitleCase(r.course_name)} · {shortDate(r.round_date)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-baseline gap-2">
+                        <span className="font-fw-mono text-body font-medium tabular-nums text-text-primary">
+                          {r.total_score}
+                        </span>
+                        <StatusPill
+                          tone={r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral'}
+                          size="sm"
+                          dot={false}
+                          className="font-fw-mono tabular-nums"
+                        >
+                          {formatToPar(r.total_to_par)}
+                        </StatusPill>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Surface>
+          )}
+        </section>
+
+        {/* Activity — `frame="bare"` (home.v2.md §6): the module's own
+            bordered Surface is skipped so this reads as a bare seam-row
+            list, the same treatment Today and Who-needs-attention already
+            use. This is what makes the ledger row read as two different
+            objects (a rounded card, a bare list), not two identical cards.
+            Self-fetching, honest-empty (renders nothing while loading or
+            when genuinely empty), unchanged. */}
+        <div className="lg:col-span-4">
+          <NotificationsLatestModule frame="bare" />
+        </div>
+      </div>
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Team pulse — a MatrixBoard whose KPI band is the aggregate pulse counts
- * (improving/stable/declining, honest even at zero) and whose ranked rows
- * are the top-5 scoring average leaderboard.
+ * Who needs attention — a MatrixBoard whose KPI band is the aggregate pulse
+ * counts (improving/stable/declining, honest even at zero) and whose ranked
+ * rows are the top-5 scoring average leaderboard. Renamed from "Team pulse"
+ * (home.v2.md §4): `docs/design/fairway-facelift/screens/coach-home.md`'s
+ * own composition diagram already named this section "Who needs attention";
+ * the shipped code had drifted to "Team pulse". This is a correction, not a
+ * new invention.
  *
- * DEVIATION from docs/design/fairway-facelift/screens/coach-home.md: the
- * spec calls for a "Who needs attention" board (trend glyph, strokes-gained
- * column, the 5 players most in need of a look). `dashboard-data.ts` computes
- * that judgment per player (`computeScoringTrendFromRounds`) but only ever
- * folds it into the three aggregate counters below — there is no per-player
- * decline list, and no strokes-gained figure anywhere in this payload. Coding
- * that column would mean inventing data client-side (or duplicating a
- * different classifier over `recentRounds`, a cross-player latest-N slice
- * with no real per-player baseline window, which would silently disagree with
- * the canonical trend classifier every other surface uses). This dashboard is
- * a composition-only pass — "keep every data hook and server-action call" —
- * so the board renders the one honestly-rankable list the payload provides
- * (`topPlayers`, best-5 by scoring average) and gives the real pulse counts a
- * home in the KPI band MatrixBoard is already built for, instead of
- * fabricating a fourth/fifth column.
+ * DEVIATION (unchanged from the original pass): the screen spec calls for a
+ * board with a trend glyph + strokes-gained column, the 5 players most in
+ * need of a look. `dashboard-data.ts` computes that judgment per player
+ * (`computeScoringTrendFromRounds`) but only ever folds it into the three
+ * aggregate counters below — there is no per-player decline list, and no
+ * strokes-gained figure anywhere in this payload. Coding that column would
+ * mean inventing data client-side (or duplicating a different classifier
+ * over `recentRounds`, a cross-player latest-N slice with no real per-player
+ * baseline window, which would silently disagree with the canonical trend
+ * classifier every other surface uses). So the board renders the one
+ * honestly-rankable list the payload provides (`topPlayers`, best-5 by
+ * scoring average) and gives the real pulse counts a home in the KPI band
+ * MatrixBoard is already built for, instead of fabricating a fourth/fifth
+ * column.
  * ────────────────────────────────────────────────────────────────────────── */
 
-function TeamPulseBoard({
+function WhoNeedsAttentionBoard({
   pulse,
   topPlayers,
   teamStatsUnavailable,
@@ -971,84 +1065,248 @@ function TeamPulseBoard({
   }));
 
   return (
-    <section aria-label="Team pulse">
-      <Surface elevation="border" padding="md" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team pulse</h2>
-          {/* Suppressed when there is nothing to classify: the pill sat directly
-              above "No movement to read yet" and the card contradicted itself
-              (audit 2026-07-24, H6). The count still shows in the empty-state
-              copy below, where it reads as context rather than a claim. */}
-          {roundsThisWeek > 0 && tracked > 0 ? (
-            <StatusPill tone="accent" dot>
-              {roundsThisWeek} this week
-            </StatusPill>
-          ) : null}
-        </div>
-
-        {tracked === 0 ? (
-          <InsufficientData
-            compact
-            title="No movement to read yet"
-            description={
-              roundsThisWeek > 0
-                ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
-                : 'Pulse compares recent rounds. It fills in as players log activity.'
-            }
-          />
+    <section aria-label="Who needs attention" className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Who needs attention</h2>
+        {/* Suppressed when there is nothing to classify: the pill sat directly
+            above "No movement to read yet" and the card contradicted itself
+            (audit 2026-07-24, H6). The count still shows in the empty-state
+            copy below, where it reads as context rather than a claim. */}
+        {roundsThisWeek > 0 && tracked > 0 ? (
+          <StatusPill tone="accent" dot>
+            {roundsThisWeek} this week
+          </StatusPill>
         ) : null}
+      </div>
+      {/* Section hairline — same bare-seam-section grammar Today and Recent
+          rounds use (home.v2.md §4: "heading + hairline + the board's own
+          ruled-grid card"). `MatrixBoard` paints its own full card chrome
+          below, so this section carries NO outer Surface — the old wrapper
+          was a genuine nested-card violation. */}
+      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
 
-        {ranked.length > 0 ? (
-          <MatrixBoard
-            kpis={tracked > 0 ? [
-              { label: 'Improving', value: improving },
-              { label: 'Stable', value: stable },
-              { label: 'Declining', value: declining },
-            ] : []}
-            columns={columns}
-            rows={rows}
-          />
-        ) : (
-          <InsufficientData
-            compact
-            title={teamStatsUnavailable ? 'Couldn’t load performers' : 'No leaderboard yet'}
-            description={
-              teamStatsUnavailable
-                ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
-                : 'Player averages appear once rounds are logged.'
-            }
-          />
-        )}
+      {tracked === 0 ? (
+        <InsufficientData
+          compact
+          title="No movement to read yet"
+          description={
+            roundsThisWeek > 0
+              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
+              : 'Pulse compares recent rounds. It fills in as players log activity.'
+          }
+        />
+      ) : null}
 
-        {pulse?.topMover && pulse.topMover.delta !== 0 ? (
-          <Inset padding="sm" className="flex items-center justify-between gap-3">
-            <span className="font-fw-sans text-body-sm text-text-secondary">
-              Top mover · <span className="font-medium text-text-primary">{pulse.topMover.name}</span>
-            </span>
-            <span
-              className={cn(
-                'font-fw-mono text-body-sm font-medium tabular-nums',
-                // delta is a POSITIVE improvement magnitude (olderAvg - recentAvg),
-                // so a positive delta means the player improved → success green.
-                pulse.topMover.delta > 0 ? 'text-fw-success-ink' : 'text-fw-warning-ink',
-              )}
-            >
-              {pulse.topMover.delta > 0 ? '−' : '+'}
-              {Math.abs(pulse.topMover.delta).toFixed(1)}
-            </span>
-          </Inset>
-        ) : null}
+      {ranked.length > 0 ? (
+        <MatrixBoard
+          kpis={tracked > 0 ? [
+            { label: 'Improving', value: improving },
+            { label: 'Stable', value: stable },
+            { label: 'Declining', value: declining },
+          ] : []}
+          columns={columns}
+          rows={rows}
+        />
+      ) : (
+        <InsufficientData
+          compact
+          title={teamStatsUnavailable ? 'Couldn’t load performers' : 'No leaderboard yet'}
+          description={
+            teamStatsUnavailable
+              ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
+              : 'Player averages appear once rounds are logged.'
+          }
+        />
+      )}
 
-        <div className="flex justify-end">
-          <Link
-            href="/golf/dashboard/stats/team"
-            className="inline-flex items-center gap-1 py-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      {pulse?.topMover && pulse.topMover.delta !== 0 ? (
+        <Inset padding="sm" className="flex items-center justify-between gap-3">
+          <span className="font-fw-sans text-body-sm text-text-secondary">
+            Top mover · <span className="font-medium text-text-primary">{pulse.topMover.name}</span>
+          </span>
+          <span
+            className={cn(
+              'font-fw-mono text-body-sm font-medium tabular-nums',
+              // delta is a POSITIVE improvement magnitude (olderAvg - recentAvg),
+              // so a positive delta means the player improved → success green.
+              pulse.topMover.delta > 0 ? 'text-fw-success-ink' : 'text-fw-warning-ink',
+            )}
           >
-            Rankings
-            <IconArrowRight size={14} />
-          </Link>
-        </div>
-      </Surface>
+            {pulse.topMover.delta > 0 ? '−' : '+'}
+            {Math.abs(pulse.topMover.delta).toFixed(1)}
+          </span>
+        </Inset>
+      ) : null}
+
+      <div className="flex justify-end">
+        <Link
+          href="/golf/dashboard/stats/team"
+          className="inline-flex items-center gap-1 py-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+        >
+          Rankings
+          <IconArrowRight size={14} />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Team performance — the cockpit (home.v2.md §5). Extracted into its own
+ * function, same convention `WhoNeedsAttentionBoard` already uses, since it
+ * is now a full-width row of its own rather than inline half-width markup.
+ * `InstrumentCluster`/`InstrumentPanel`/`Readout` are registry archetype C
+ * (analytical instrument); this page is archetype A (intelligence overview).
+ * Deliberate cross-archetype use — the same kind of documented deviation
+ * `WhoNeedsAttentionBoard` above already carries for its own MatrixBoard
+ * reading.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function TeamPerformanceCluster({
+  rangeLabel,
+  scoringAvg,
+  scoringDelta,
+  roundsLogged,
+  girValue,
+  girDelta,
+  puttsValue,
+  puttsDelta,
+  hasTrend,
+  trendPoints,
+  trendTakeaway,
+  teamStatsUnavailable,
+  range,
+  onWidenWindow,
+  benchmarkValue,
+  signalsCount,
+  roundsThisWeek,
+}: {
+  rangeLabel: string;
+  scoringAvg: number | null;
+  scoringDelta: ReturnType<typeof computeSeriesTrend>;
+  roundsLogged: number;
+  girValue: number | null;
+  girDelta: ReturnType<typeof computeSeriesTrend>;
+  puttsValue: number | null;
+  puttsDelta: ReturnType<typeof computeSeriesTrend>;
+  hasTrend: boolean;
+  trendPoints: TrendPoint[];
+  trendTakeaway?: string;
+  teamStatsUnavailable: boolean;
+  range: DashboardDateRange;
+  onWidenWindow: () => void;
+  benchmarkValue: number | null;
+  signalsCount: number;
+  /** Nullable — null means the count query failed. Omit the tertiary
+   *  readout entirely rather than render a fabricated 0. */
+  roundsThisWeek: number | null;
+}) {
+  const tertiary: React.ReactNode[] = [
+    <Readout key="rounds" size="sm" label="Rounds logged" value={roundsLogged} />,
+    <Link key="signals" href="/golf/dashboard/intelligence" className="block">
+      <Readout size="sm" label="Signals" value={signalsCount} />
+    </Link>,
+  ];
+  if (roundsThisWeek != null) {
+    tertiary.push(<Readout key="week" size="sm" label="Rounds this week" value={roundsThisWeek} />);
+  }
+
+  return (
+    <section aria-label="Team performance">
+      <InstrumentCluster
+        balance="focal"
+        primary={
+          <InstrumentPanel tone="accent" depth="raised" eyebrow={`TEAM SCORING · ${rangeLabel}`}>
+            <Readout
+              size="lg"
+              value={scoringAvg ?? undefined}
+              format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }}
+              state={scoringAvg == null ? 'awaiting' : 'live'}
+              delta={
+                scoringDelta
+                  ? { value: scoringDelta.value, caption: seriesDeltaLabel(scoringDelta.points) }
+                  : undefined
+              }
+            />
+            {hasTrend ? (
+              <div className="mt-5">
+                <TrendChart
+                  title="Performance Trend"
+                  overline="Team scoring average"
+                  data={trendPoints}
+                  valueFormatter={(v) => v.toFixed(1)}
+                  takeaway={trendTakeaway}
+                  benchmark={
+                    benchmarkValue != null && Number.isFinite(benchmarkValue)
+                      ? { value: benchmarkValue, label: 'Prior period' }
+                      : undefined
+                  }
+                />
+              </div>
+            ) : (
+              // a narrow window is not an empty roster — telling a coach with
+              // 7 players and 90 rounds to "invite players" because they
+              // filtered to 7 days reads as the product not knowing its own
+              // state (audit 2026-07-24, H5).
+              <div className="mt-5 flex flex-col gap-3">
+                <InsufficientData
+                  title={
+                    teamStatsUnavailable
+                      ? 'Couldn’t load the trend'
+                      : range !== 'all'
+                        ? 'Not enough rounds in this window'
+                        : 'Trend appears as rounds build'
+                  }
+                  description={
+                    teamStatsUnavailable
+                      ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
+                      : range !== 'all'
+                        ? 'A trend needs rounds spread across a longer period. Try a wider window.'
+                        : 'Trends need rounds across multiple months. Invite players and keep logging.'
+                  }
+                />
+                <div>
+                  {range !== 'all' ? (
+                    <Button variant="secondary" size="sm" onClick={onWidenWindow}>
+                      <span>Widen the window</span>
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" size="sm" asChild>
+                      <Link href="/golf/dashboard/roster">
+                        <IconPlus size={16} />
+                        <span>Invite Players</span>
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </InstrumentPanel>
+        }
+        secondary={[
+          <InstrumentPanel key="gir" depth="base" eyebrow={`GIR · ${rangeLabel}`}>
+            <Readout
+              size="md"
+              value={girValue ?? undefined}
+              unit="%"
+              state={girValue == null ? 'awaiting' : 'live'}
+              delta={girDelta ? { value: girDelta.value, caption: seriesDeltaLabel(girDelta.points) } : undefined}
+            />
+          </InstrumentPanel>,
+          <InstrumentPanel key="putts" depth="base" eyebrow={`Putts/rd · ${rangeLabel}`}>
+            <Readout
+              size="md"
+              value={puttsValue ?? undefined}
+              state={puttsValue == null ? 'awaiting' : 'live'}
+              delta={
+                puttsDelta ? { value: puttsDelta.value, caption: seriesDeltaLabel(puttsDelta.points) } : undefined
+              }
+            />
+          </InstrumentPanel>,
+        ]}
+        tertiary={tertiary}
+        tertiaryColumns={3}
+      />
     </section>
   );
 }
@@ -1239,6 +1497,26 @@ function TodayPanel({
   const todayIsClear = sortedToday.length === 0;
   const nothingAtAll = todayIsClear && nextDayGroups.length === 0;
 
+  // AgendaStrip feed (home.v2.md §4) — mount-gated on `tz` exactly like the
+  // row labels below (`formatTimeInTz`/`getCurrentDecimalHourInTz`), so
+  // server and client never disagree. Same `EVENT_TONE` map every row below
+  // already uses — no new tone vocabulary.
+  const agendaEvents: AgendaStripEvent[] = useMemo(() => {
+    if (!tz) return [];
+    return sortedToday.map((event) => {
+      const startMinutes = minutesOfDayInTz(event.start_time, tz);
+      const endMinutes = event.end_time ? minutesOfDayInTz(event.end_time, tz) : startMinutes;
+      return {
+        id: event.id,
+        label: event.title,
+        startMinutes,
+        endMinutes: endMinutes >= startMinutes ? endMinutes : startMinutes,
+        tone: EVENT_TONE[event.event_type] ?? 'neutral',
+      };
+    });
+  }, [sortedToday, tz]);
+  const nowMinutes = tz ? Math.round(getCurrentDecimalHourInTz(tz) * 60) : null;
+
   return (
     <section aria-label="Today's schedule" className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
@@ -1278,40 +1556,46 @@ function TodayPanel({
           Clear schedule today — a good window for practice or recovery.
         </p>
       ) : (
+        // BARE seam section end to end (home.v2.md §4 — the Surface wrapper
+        // is removed): a genuinely clear day above renders as one quiet
+        // line at this same `px-0.5` inset, so "Clear schedule today." below
+        // shares that inset too rather than sitting at a boxed card's own
+        // indent (REVIEW.md phone row 1 — two left edges in one card).
         <div className="flex flex-1 flex-col gap-3">
-          <Surface elevation="border" padding="sm" className="flex flex-col">
-            {todayIsClear ? (
-              <p className="px-2 py-2 font-fw-sans text-body-sm text-text-tertiary">
-                Clear schedule today.
-              </p>
-            ) : (
-              <>
-                {/* Provably defined here: this branch only renders when
-                    `!todayIsClear`, i.e. `sortedToday.length > 0`. */}
-                <FeaturedEventRow event={featured!} tz={tz} />
-                {restToday.map((event) => (
-                  <QuietEventRow key={event.id} event={event} tz={tz} />
-                ))}
-              </>
-            )}
-            {nextDayGroups.length > 0 ? (
-              <div className={cn('flex flex-col gap-2', !todayIsClear && 'mt-2 border-t border-border-subtle pt-2')}>
-                <span className="px-0.5 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
-                  Next 3 days
-                </span>
-                {nextDayGroups.map((group) => (
-                  <div key={group.key} className="flex flex-col">
-                    <span className="px-0.5 py-1 font-fw-sans text-caption font-medium text-text-secondary">
-                      {group.label}
-                    </span>
-                    {group.events.map((event) => (
-                      <QuietEventRow key={event.id} event={event} tz={tz} />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </Surface>
+          {sortedToday.length > 0 ? (
+            <AgendaStrip events={agendaEvents} nowMinutes={nowMinutes} hourLabels={6} />
+          ) : null}
+          {todayIsClear ? (
+            <p className="px-0.5 py-1 font-fw-sans text-body-sm text-text-tertiary">
+              Clear schedule today.
+            </p>
+          ) : (
+            <>
+              {/* Provably defined here: this branch only renders when
+                  `!todayIsClear`, i.e. `sortedToday.length > 0`. */}
+              <FeaturedEventRow event={featured!} tz={tz} />
+              {restToday.map((event) => (
+                <QuietEventRow key={event.id} event={event} tz={tz} />
+              ))}
+            </>
+          )}
+          {nextDayGroups.length > 0 ? (
+            <div className={cn('flex flex-col gap-2', !todayIsClear && 'mt-2 border-t border-border-subtle pt-2')}>
+              <span className="px-0.5 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                Next 3 days
+              </span>
+              {nextDayGroups.map((group) => (
+                <div key={group.key} className="flex flex-col">
+                  <span className="px-0.5 py-1 font-fw-sans text-caption font-medium text-text-secondary">
+                    {group.label}
+                  </span>
+                  {group.events.map((event) => (
+                    <QuietEventRow key={event.id} event={event} tz={tz} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </section>

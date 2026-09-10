@@ -16,35 +16,39 @@
  *      so this part IS a safe shape-match for either role.
  *   2. Row 1 (7/5 asymmetric grid) — a schedule band on the left standing in
  *      for the schedule block BOTH roles render first (player:
- *      DayScheduleSwipe; coach: the merged Today panel — coach-home.md); a
- *      KPI-shaped 2×2 tile grid + chart-shaped block on the right, standing
- *      in for coach's "Team performance" panel (window Segmented + StatMatrix
- *      + Performance Trend, now ONE panel per the facelift) and for player's
- *      KPI row + trend chart. The 132px schedule body height is
+ *      DayScheduleSwipe; coach: the Today panel — home.v2.md §4); a
+ *      ranked-list shape (KPI band + rows) on the right, standing in for
+ *      coach's "Who needs attention" board (a MatrixBoard) and, as an
+ *      accepted mismatch, for player's own KPI row + trend chart (see the
+ *      DEVIATION note below). The 132px schedule body height is
  *      DayScheduleSwipe's own reserved min-height, so the real card lands on
  *      these pixels rather than near them.
- *
- *      DEVIATION (facelift pass, coach-home.md): this row used to be TWO
- *      full-width, stacked regions — a schedule band, then a separate
- *      full-width 4-up KPI grid. The facelift recomposed the coach dashboard's
- *      top-of-page into a 7/5 grid (Today | Team performance), so a
- *      full-width KPI row is now a real coach-first-paint mismatch. Player's
- *      dashboard is untouched by this pass and still renders its KPI row
- *      full-width above its own chart — moving the KPI shell into a 5-col
- *      right rail is a deliberate, bounded mismatch for THAT role's loading
- *      state (same tile count, narrower band) in exchange for matching the
- *      role this pass actually changed. Neither role's swap fully
- *      disappears; this shifts which one is left.
- *   3. Two balanced content columns — a generic pair of matte Panel groups
+ *   3. A full-width cockpit-shaped band (2026-09-10, home.v2.md §5) — a
+ *      focal block + a two-panel flanking rail, standing in for the
+ *      InstrumentCluster "Team performance" cockpit this pass promotes to
+ *      its own full-width row below the operations row. Coach-only content;
+ *      inserted here (rather than folded into row 1) precisely because it no
+ *      longer lives in a half-width column.
+ *   4. Two balanced content columns — a generic pair of matte Panel groups
  *      (one "chart/list" block + one row-list block per column) standing in
- *      for whatever the resolved role actually renders below row 1 (coach:
- *      Team pulse board / Latest, then Recent Rounds — coach-home.md; player:
- *      genome / standing / recent rounds / focus areas). Neither role's real
- *      layout is reproduced exactly — that would require knowing the role
- *      before the page has resolved it — but the two-column, evenly-weighted
- *      shape reads as a calm placeholder for either outcome instead of
- *      visibly "coach-shaped" chrome flashing on a player's first load (or
- *      vice versa).
+ *      for whatever the resolved role actually renders below (coach: Recent
+ *      rounds / Activity — home.v2.md §6; player: genome / standing / recent
+ *      rounds / focus areas). Neither role's real layout is reproduced
+ *      exactly — that would require knowing the role before the page has
+ *      resolved it — but the two-column, evenly-weighted shape reads as a
+ *      calm placeholder for either outcome instead of visibly "coach-shaped"
+ *      chrome flashing on a player's first load (or vice versa).
+ *
+ * DEVIATION (2026-09-10, home.v2.md §7 "Implementation plan"): row 1's right
+ * column used to hold a 2×2 MetricCard tile grid + a chart-shaped block,
+ * shape-matching BOTH coach's old "Team performance" panel AND player's KPI
+ * row + trend chart at once (they happened to share a shape). Coach's panel
+ * in that position is now a ranked-list shape (Who-needs-attention), so this
+ * skeleton follows it — the player dashboard is untouched by this pass and
+ * still renders a KPI-tile-grid + trend pairing in that exact spot, so this
+ * change trades WHICH role's loading state mismatches, the same bounded
+ * trade-off this file's design already accepts elsewhere (item 2 above).
+ * Neither role's swap fully disappears; this shifts which one is left.
  *
  * Previously (pre-2026-07-22) this skeleton mirrored FairwayCoachDashboard's
  * exact 7-region layout 1:1, including a `<InsightCard variant="hero" loading>`
@@ -59,7 +63,7 @@
  * whole group carries the loading a11y contract via the Skeleton groups.
  * ========================================================================== */
 
-import { Skeleton, MetricCard } from '@/components/fairway';
+import { Skeleton } from '@/components/fairway';
 
 /** A matte Fairway Surface-shaped block (border elevation, rounded-card). */
 function Panel({
@@ -120,12 +124,13 @@ export function FairwayDashboardSkeleton() {
         </div>
       </div>
 
-      {/* ── 2 · Row 1 (7/5) — schedule band | KPI + chart. Player mounts
-          DayScheduleSwipe beside its KPI row + trend; coach mounts the merged
-          Today panel beside the Team performance panel (window Segmented +
-          StatMatrix + Performance Trend, coach-home.md). Both sit at the top
-          of the page, so the placeholder has to match the asymmetric grid or
-          first paint reshuffles on handoff. ─────────────────────────────── */}
+      {/* ── 2 · Row 1 (7/5) — schedule band | ranked-list shape. Player
+          mounts DayScheduleSwipe beside its KPI row + trend; coach mounts
+          the Today panel beside the Who-needs-attention board (home.v2.md
+          §4 — renamed/reshaped from "Team pulse", which itself replaced the
+          coach-home.md "Team performance" panel that used to sit here).
+          Both sit at the top of the page, so the placeholder has to match
+          the asymmetric grid or first paint reshuffles on handoff. ────── */}
       <div aria-hidden="true" className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Schedule band — day-chip strip + a body reserved at
             DayScheduleSwipe's own min-h-[132px] (~2 event rows), so the real
@@ -153,29 +158,63 @@ export function FairwayDashboardSkeleton() {
           </div>
         </Panel>
 
-        {/* KPI + chart — a neutral 2×2 MetricCard `loading` grid (both roles
-            render four tiles here — coach: Scoring Avg / GIR / Putts /
-            Rounds; player: Scoring avg / GIR / Putts / Handicap — same tile
-            COUNT either way, see file doc) plus a chart-shaped block beneath,
-            matching coach's Team performance panel and player's KPI+trend
-            pairing.
+        {/* Ranked-list shape (2026-09-10, home.v2.md §4/§7) — a KPI band
+            + several ranked rows, matching `MatrixBoard`'s own silhouette
+            (Who-needs-attention) now that this position no longer holds a
+            2×2 tile grid + chart on the coach side.
 
-            KNOWN, ACCEPTED SWAP: a player with zero rounds played renders no
-            KPI grid at all (FairwayPlayerDashboard's cold-start branch), so
-            for that one account state these four shells are never fulfilled.
-            The skeleton cannot tell — role AND round count are both
-            server-resolved after this renders — and dropping the grid would
-            trade one account state's swap for every other account's. Keeping
-            it is the deliberate choice. */}
-        <Panel className="flex flex-col gap-4 p-4 md:p-5 lg:col-span-5">
-          <div className="grid grid-cols-2 gap-3">
-            <MetricCard label="" value={0} loading />
-            <MetricCard label="" value={0} loading />
-            <MetricCard label="" value={0} loading />
-            <MetricCard label="" value={0} loading />
+            KNOWN, ACCEPTED SWAP (same trade-off this file's doc already
+            makes elsewhere — see the schedule-band note above): the
+            player dashboard is untouched by this pass and still renders a
+            KPI-tile-grid + trend pairing in this exact position, so this
+            shape is now a deliberate mismatch for THAT role's loading
+            state in exchange for matching the role this pass actually
+            changed. This trades which role's swap happens; it does not
+            remove one. */}
+        <Panel className="flex flex-col overflow-hidden lg:col-span-5">
+          <div className="grid grid-cols-3 gap-3 border-b border-border-subtle p-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
           </div>
+          <div className="flex flex-col">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 border-b border-border-subtle px-4 py-3 last:border-b-0"
+              >
+                <Skeleton circle className="h-6 w-6 shrink-0" />
+                <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${58 - i * 8}%` }} />
+                <Skeleton className="h-3.5 w-9" />
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      {/* ── NEW · Team performance cockpit band, full width (2026-09-10,
+          home.v2.md §5) — stands in for the InstrumentCluster this pass
+          promotes to its own full-width row: a focal block + a flanking
+          rail of two, so the real cockpit lands close to these pixels
+          instead of the KPI-tile-grid this position used to hold. Coach-
+          only content; the player dashboard's own layout below this row is
+          untouched, same generic "two balanced columns" shape as before. */}
+      <div aria-hidden="true" className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_minmax(15rem,1fr)] lg:gap-6">
+        <Panel className="flex flex-col gap-4 p-6">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-12 w-40" />
           <Skeleton className="h-40 w-full rounded-fw-md" />
         </Panel>
+        <div className="flex flex-col gap-5 lg:gap-6">
+          <Panel className="flex flex-col gap-3 p-5">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-8 w-24" />
+          </Panel>
+          <Panel className="flex flex-col gap-3 p-5">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-8 w-24" />
+          </Panel>
+        </div>
       </div>
 
       {/* ── 3 · Two balanced content columns — generic, role-agnostic panel
