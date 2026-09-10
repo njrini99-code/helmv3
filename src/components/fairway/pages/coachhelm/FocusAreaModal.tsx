@@ -18,7 +18,7 @@
  * to improve to (direction-aware, clamped). A "Custom" option still allows a
  * free-text metric (which simply won't auto-track). The chosen metric is stored
  * by its stable catalog key so the windowed auto-tracker
- * (src/app/golf/actions/v3/focus-area-progress.ts) can move the bar over time.
+ * (src/lib/golf/progress-drivers.ts) can move the bar over time.
  *
  * The modal owns its own form lifecycle (state, autofill handlers, unsaved-
  * changes guard, save/saving) and persists through the caller-supplied
@@ -454,7 +454,7 @@ export function FocusAreaModal({
         editing
           ? 'Update the target and details for this development focus area.'
           : mode === 'coach'
-            ? 'Set a measurable development focus — the player accepts to start tracking.'
+            ? 'Set a measurable development focus. The player accepts to start tracking.'
             : 'Set a measurable focus area to track over your next rounds.'
       }
     >
@@ -567,7 +567,7 @@ export function FocusAreaModal({
           {/* Measurable target — catalog-driven picker with real player values */}
           <FormSection
             title="Measurable target"
-            description="Pick the stat to improve — the player's current value is shown, and a target is suggested (golf metrics like putts/score are lower-is-better)."
+            description="Pick the stat to improve. The player's current value is shown, and a target is suggested (golf metrics like putts/score are lower-is-better)."
           >
             {areaMetrics.length > 0 ? (
               <FormField label="Stat to improve" showOptional>
@@ -733,7 +733,7 @@ export function FocusAreaModal({
 
             {previewDelta ? (
               <p className="font-fw-sans text-eyebrow text-text-tertiary">
-                {previewDelta.improving ? 'Asking for a' : 'Heads up — this target moves the wrong way by'}{' '}
+                {previewDelta.improving ? 'Asking for a' : 'Heads up. This target moves the wrong way by'}{' '}
                 <Badge tone={previewDelta.improving ? 'neutral' : 'warning'} size="sm" numeric>
                   {previewDelta.magnitude}
                 </Badge>{' '}
