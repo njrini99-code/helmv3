@@ -2,15 +2,16 @@
 
 /**
  * ============================================================================
- * TriageDesk — the CoachHelm command desk (Triage Desk spec, full rebuild)
+ * TriageDesk — the CoachHelm cockpit + Signals workspace (Fairway Premium
+ * Facelift, `/golf/dashboard/intelligence`)
  * ----------------------------------------------------------------------------
- * Replaces the Spine + Bento home entirely. This is the ONE composition root
- * for the coach `/dashboard/intelligence` page: a horizontal `BriefBand`,
- * a `ViewSwitch` (Signals/Players/Effectiveness, `?view=`-driven), and below
- * it either the Signals master-detail (`SignalQueue` + `SignalDossier`, built
- * on the frozen `getSignalGroups`/`reviewSignal`/`dismissSignal` contract), the
- * unchanged `PlayersGridView` embed, or the compact `EffectivenessScoreboard`
- * (spec §4 — NOT the retired 1,800-line `FairwayEffectiveness` cockpit).
+ * The ONE composition root for the coach `/dashboard/intelligence` page: a
+ * `ViewHeader`, a deep-green `Spine` (identity, pulse, the one urgent signal,
+ * top priorities, a ledger, "Ask CoachHelm"), and — on the right — the
+ * workspace: a frost `Toolbar` (Signals/Players/Effectiveness view switch +
+ * Severity/Category filters), the team leak band as ONE row, and either the
+ * Signals `ResizableWorkspace` (queue | dossier | CoachHelm), the unchanged
+ * `PlayersGridView` embed, or the `EffectivenessScoreboard`.
  *
  * Reads `view`/`filter`/`signal` from `useSearchParams()` directly (same
  * self-contained pattern `StageRouter` used) rather than threading them down
@@ -20,134 +21,52 @@
  * `groups` is seeded from the server fetch and re-synced whenever it changes
  * (a `router.refresh()` after Scan team / a mutation re-runs
  * `getSignalGroups` server-side and flows a fresh array back down) — every
- * mutation below is optimistic-with-rollback on top of that local copy,
- * matching the pattern the diagnosis flagged as MISSING on the legacy
- * Signals surface (no `router.refresh()` after mutations there).
+ * mutation below is optimistic-with-rollback on top of that local copy. The
+ * Spine reads from this SAME local `groups` state (not a separate copy), so
+ * dismissing/reviewing the one urgent signal updates the Spine in the same
+ * render frame.
  * ========================================================================== */
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ChevronDown, MessageCircle } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, RotateCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { Button, fairwayToast, InlineNotice, PlayersGridView } from '@/components/fairway';
 import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 import type { PlayersGridViewProps, FairwayEffectivenessProps, PlayersGridStats } from '@/components/fairway';
-import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
-import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { ViewHeader } from '@/components/fairway/view-header/view-header';
+import { IconButton } from '@/components/fairway/controls/button';
+import { Menu } from '@/components/fairway/overlays/Menu';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { Toolbar } from '@/components/fairway/controls/Toolbar';
+import { Spine } from '@/components/fairway/modules/Spine';
+import type { PriorityItem } from '@/components/fairway/modules/types';
+import { ResizableWorkspace } from '@/components/fairway/modules/ResizableWorkspace';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
 import { reviewSignal, dismissSignal } from '@/app/golf/actions/signal-groups';
-import type { TeamCategoryInsightsResult, TeamShotAnalysis } from '@/app/golf/actions/team-category-insights';
+import type { TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { TeamCategoryLeakBand } from '@/components/fairway/pages/coachhelm/TeamCategoryLeakBand';
-import {
-  formatShotContext,
-  formatLie,
-  formatDistanceRange,
-} from '@/lib/coachhelm/v2/shot-analysis/format';
-import { BriefBand } from './BriefBand';
 import { ViewSwitch } from './ViewSwitch';
 import { SignalQueue } from './SignalQueue';
-import { TeamSignalSummary } from './TeamSignalSummary';
 import { SignalDossier } from './SignalDossier';
+import { SignalInsightPanel } from './SignalInsightPanel';
 import { EffectivenessScoreboard } from './EffectivenessScoreboard';
+import { summarizeAdoption } from './buildEffectivenessScoreboard';
 import {
+  buildSpineVerdict,
   computeBriefCounts,
-  buildBriefVerdict,
   distinctCategories,
   filterGroupSignals,
   findSignalInGroups,
+  formatCategoryLabel,
   formatRelativeScanTime,
   removeSignalFromGroups,
   resolveQueueFilter,
   resolveTriageView,
+  severityLabel,
 } from './buildTriageViewModel';
-
-/**
- * The team-level equivalent of `ShotAnalysisCard`'s "Key Weaknesses" —
- * `getTeamOverview`'s `teamShotAnalysis` (topWeaknesses + deadZones) was
- * computed on every `/intelligence` load and discarded down to
- * `playerCount` (data-completeness audit 2026-07-23). Same row treatment and
- * format helpers as the per-player card; honest-empty when the payload is
- * thin (overview failed, or the team simply has no shot data yet).
- */
-function TeamShotWeaknessesPanel({ data }: { data: TeamShotAnalysis | undefined }) {
-  const topWeaknesses = data?.topWeaknesses ?? [];
-  const deadZones = data?.deadZones ?? [];
-
-  if (topWeaknesses.length === 0 && deadZones.length === 0) {
-    return (
-      <InstrumentPanel depth="base" eyebrow="CoachHelm · team" header="Team shot weaknesses">
-        <InsufficientData
-          title="No team shot analysis yet"
-          description="Log more team rounds and the toughest yardage bands will surface here."
-          unit="rounds"
-          compact
-        />
-      </InstrumentPanel>
-    );
-  }
-
-  return (
-    <InstrumentPanel depth="base" eyebrow="CoachHelm · team" header="Team shot weaknesses">
-      <div className="space-y-4">
-        {topWeaknesses.length > 0 ? (
-          <div className="space-y-2">
-            <p className="text-body-sm font-medium text-text-secondary">
-              Where the team loses the most strokes
-            </p>
-            <div className="grid gap-2">
-              {topWeaknesses.map((weakness, i) => (
-                <div
-                  key={`${weakness.context}-${weakness.lie}-${weakness.distanceRange}-${i}`}
-                  className="flex items-center justify-between rounded-fw-md border border-border-subtle bg-surface-sunken p-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-body-sm font-medium text-text-primary">
-                      {formatShotContext({
-                        lie: weakness.lie,
-                        distanceRange: weakness.distanceRange,
-                        context: weakness.context,
-                      })}
-                    </p>
-                    <p className="text-caption text-text-tertiary">
-                      {formatLie(weakness.lie)} · {formatDistanceRange(weakness.distanceRange, weakness.lie)}
-                    </p>
-                  </div>
-                  <div className="ml-3 shrink-0 text-right">
-                    <p className="font-fw-mono text-body-sm font-medium tabular-nums text-fw-danger-ink">
-                      {weakness.avgSG.toFixed(2)}
-                    </p>
-                    <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                      {weakness.shotCount} shots
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {deadZones.length > 0 ? (
-          <div className="rounded-fw-md border border-border-subtle bg-fw-danger-bg px-3 py-2.5">
-            <p className="mb-1 text-caption font-medium text-fw-danger-ink">Dead zones</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {deadZones.map((dz, i) => (
-                <span
-                  key={`${dz.rangeStart}-${dz.rangeEnd}-${i}`}
-                  className="inline-flex items-center gap-1 font-fw-mono text-caption tabular-nums text-fw-danger-ink"
-                >
-                  {dz.rangeStart}-{dz.rangeEnd}y
-                  <span className="opacity-80">({dz.deficit.toFixed(2)} deficit)</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </InstrumentPanel>
-  );
-}
 
 type TriageNavigationUpdates = Partial<{
   view: string;
@@ -165,21 +84,39 @@ export interface TriageDeskProps {
    *  genuinely empty (all-clear) queue, rendered as an honest retry notice. */
   groupsError: string | null;
   /** "Where the team is bleeding strokes" band data — categories[] +
-   *  teamHealth from `getTeamCategoryInsights`. Rendered above `BriefBand` so
-   *  it's visible regardless of which sub-view the coach is on; silently
+   *  teamHealth from `getTeamCategoryInsights`. Rendered above the workspace
+   *  so it's visible regardless of which sub-view the coach is on; silently
    *  omitted (not an error banner) when the fetch failed, mirroring how the
    *  other best-effort extras on this page degrade. */
   categoryInsights: TeamCategoryInsightsResult;
-  /** `getTeamOverview`'s discarded shot-analysis payload (topWeaknesses +
-   *  deadZones) — `undefined` when the overview fetch failed or hasn't
-   *  resolved yet. Rendered by `TeamShotWeaknessesPanel` as an honest-empty
-   *  instrument, never a blocking error (mirrors how `categoryInsights`
-   *  degrades above). */
-  teamShotAnalysis?: TeamShotAnalysis;
+  /** The Spine's identity-line team name. Falls back to a neutral label when
+   *  the CoachHelm chat context (`command`) couldn't be resolved. */
+  teamName: string;
+  /**
+   * A server-seeded ISO timestamp (`page.tsx`'s one-time
+   * `new Date().toISOString()`, computed during the server render) — used
+   * ONLY to FORMAT the Spine's identity-line date and `SignalDossier`'s
+   * relative-scan caption. Parsing a fixed value handed down as a prop is
+   * not the same thing as reading the ambient clock during a client
+   * re-render — no `new Date()`/`Date.now()` call happens here.
+   */
+  now: string;
   playersDrillProps: PlayersGridViewProps;
   /** Same SSR-fetched shape the retired cockpit consumed — `EffectivenessScoreboard`
    *  only reads its `initialOverview`/`initialEffectiveness`/`initialPerformance` fields. */
   effectivenessDrillProps: FairwayEffectivenessProps;
+}
+
+/** Fixed month+day format for the Spine's identity line — a plain
+ *  presentation formatter over an already-known timestamp, not a clock read. */
+function formatSpineDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  try {
+    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
+  } catch {
+    return '';
+  }
 }
 
 export function TriageDesk({
@@ -188,7 +125,8 @@ export function TriageDesk({
   scannedAt,
   groupsError,
   categoryInsights,
-  teamShotAnalysis,
+  teamName,
+  now,
   playersDrillProps,
   effectivenessDrillProps,
 }: TriageDeskProps) {
@@ -196,6 +134,10 @@ export function TriageDesk({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const rosterPlayers = playersDrillProps.players ?? [];
+  // 940px matches the app-wide spine/stage stacking threshold (MatrixBoard,
+  // StatsSpineStage) — the Spine stacks above the workspace below it, and
+  // collapses its priorities/ledger rows per the phone composition.
+  const isDesktopSpine = useMediaQuery('(min-width: 940px)');
 
   const requestedView = resolveTriageView(searchParams.get('view'));
   const requestedQueueFilter = resolveQueueFilter(searchParams.get('filter'));
@@ -223,6 +165,9 @@ export function TriageDesk({
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(requestedSignalId);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(validRequestedPlayerId);
   const [playersTab, setPlayersTab] = useState<'roster' | 'areas'>(requestedPlayersTab);
+  // "Ask CoachHelm" — opens the right (CoachHelm) pane's own sheet on phone;
+  // a no-op on desktop, where that pane is already docked and visible.
+  const [askOpen, setAskOpen] = useState(false);
 
   useEffect(() => setView(requestedView), [requestedView]);
   useEffect(() => setQueueFilter(requestedQueueFilter), [requestedQueueFilter]);
@@ -234,12 +179,6 @@ export function TriageDesk({
   useEffect(() => {
     setGroups(initialGroups);
   }, [initialGroups]);
-
-  // Team diagnostics — the team shot weaknesses instrument, supplementary to
-  // the primary Signal Queue below. Expanded by default: a coach shouldn't
-  // need an extra click to see data that was already being fetched and
-  // simply discarded before this.
-  const [showDiagnostics, setShowDiagnostics] = useState(true);
 
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [isScanning, startScanTransition] = useTransition();
@@ -327,8 +266,6 @@ export function TriageDesk({
   }
 
   const counts = useMemo(() => computeBriefCounts(groups), [groups]);
-  const verdict = useMemo(() => buildBriefVerdict(groups, counts), [groups, counts]);
-  const lastScanLabel = useMemo(() => formatRelativeScanTime(scannedAt), [scannedAt]);
   const categories = useMemo(() => distinctCategories(groups), [groups]);
   const filteredGroups = useMemo(() => filterGroupSignals(groups, queueFilter), [groups, queueFilter]);
   const selectedEntry = useMemo(() => findSignalInGroups(groups, selectedSignalId), [groups, selectedSignalId]);
@@ -341,6 +278,7 @@ export function TriageDesk({
     return signal && group ? { group, signal } : null;
   }, [groups]);
   const dossierEntry = selectedEntry ?? defaultEntry;
+  const isAllClear = !groupsError && groups.length === 0;
 
   // Related-context slices for the dossier's right-pane fill (live-QA
   // "~700-800px dead space" fix) — derived straight from data this desk
@@ -361,6 +299,51 @@ export function TriageDesk({
     : null;
 
   const categoryBandData = categoryInsights.success ? categoryInsights.data : undefined;
+
+  // ── Spine content ─────────────────────────────────────────────────────
+  const adoption = useMemo(
+    () => summarizeAdoption(effectivenessDrillProps.initialEffectiveness),
+    [effectivenessDrillProps.initialEffectiveness],
+  );
+  const outcomesAwaiting = Math.max(0, adoption.generated - adoption.actedUpon);
+  const activeFocusAreaCount = playersDrillProps.focusAreas.filter(
+    (fa) => fa.status === 'active' || fa.status === 'in_progress',
+  ).length;
+  const roundsLogged = Object.values(playersDrillProps.playerStats ?? {}).reduce(
+    (sum, stats) => sum + (stats?.rounds_played ?? 0),
+    0,
+  );
+  const spineVerdict = useMemo(
+    () => buildSpineVerdict(groups, counts, outcomesAwaiting),
+    [groups, counts, outcomesAwaiting],
+  );
+  // `now` is a server-seeded ISO string, not a live clock read — see the
+  // `now` prop doc above. Passing it explicitly (rather than relying on
+  // `formatRelativeScanTime`'s `now = new Date()` default) is the fix for
+  // the render-time `Date()` call this function used to make on every
+  // client re-render.
+  const lastScanLabel = useMemo(() => formatRelativeScanTime(scannedAt, new Date(now)), [scannedAt, now]);
+  const priorityItems: PriorityItem[] = useMemo(() => {
+    const flat = groups.flatMap((group) => group.signals);
+    return flat.slice(0, 3).map((s, i) => ({
+      rank: i + 1,
+      title: s.title,
+      value:
+        s.strokeImpact != null
+          ? `${s.strokeImpact > 0 ? '+' : ''}${s.strokeImpact.toFixed(1)} str`
+          : severityLabel(s.severity),
+    }));
+  }, [groups]);
+  const urgentSignal = useMemo(() => {
+    for (const group of groups) {
+      const signal = group.signals.find((s) => s.severity === 'urgent');
+      if (signal) return { signal, group };
+    }
+    return null;
+  }, [groups]);
+  const leakBandExplanation = categoryBandData
+    ? `Team health is ${categoryBandData.teamHealth} of 100 — see the category band above for where to look next.`
+    : undefined;
 
   function handleScan() {
     startScanTransition(async () => {
@@ -440,172 +423,263 @@ export function TriageDesk({
 
   // A stale bookmark (or a signal reviewed in another tab) can leave a
   // `?signal=` that no longer resolves. On narrow screens the queue is hidden
-  // whenever a detail is open, so key this off the resolved entry—not merely
-  // the raw URL param—or an invalid deep link strands the coach on an empty
-  // dossier with no Back control.
+  // (and the dossier sheet closed) whenever a detail is open, so key this off
+  // the resolved entry — not merely the raw URL param — or an invalid deep
+  // link strands the coach on an empty dossier with no Back control.
   const isSignalSelected = Boolean(selectedEntry);
+
+  function toggleQueueFilter(next: string) {
+    navigate({ filter: queueFilter === next ? null : next });
+  }
+
+  const severityFilterSelected = queueFilter === 'urgent' ? ['urgent'] : [];
+  const categoryFilterSelected =
+    queueFilter === 'patterns' || queueFilter.startsWith('category:') ? [queueFilter] : [];
+
+  const insightPanel = (
+    <SignalInsightPanel
+      entry={dossierEntry}
+      coachId={coachId}
+      onPromoted={handlePromoted}
+      playerStats={dossierPlayerStats}
+      open={askOpen}
+      onOpenChange={setAskOpen}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-6">
-      {categoryBandData ? (
-        <TeamCategoryLeakBand
-          categories={categoryBandData.categories}
-          teamHealth={categoryBandData.teamHealth}
-        />
-      ) : null}
-
-      <BriefBand
-        verdict={verdict}
-        counts={counts}
-        lastScanLabel={lastScanLabel}
-        scanning={isScanning}
-        onScan={handleScan}
+      <ViewHeader
+        eyebrow={`CoachHelm · ${teamName}`}
+        title="CoachHelm"
+        secondaryActions={
+          <>
+            <IconButton aria-label="Refresh" onClick={() => router.refresh()}>
+              <RotateCw className="h-4 w-4" strokeWidth={2} aria-hidden />
+            </IconButton>
+            <Menu
+              trigger={
+                <IconButton aria-label="More options">
+                  <MoreHorizontal className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </IconButton>
+              }
+              align="end"
+            >
+              <Menu.Item icon={<Sparkles className="h-4 w-4" aria-hidden />} onSelect={() => handleScan()}>
+                Scan team
+              </Menu.Item>
+              <Menu.Item
+                icon={<MessageCircle className="h-4 w-4" aria-hidden />}
+                onSelect={() => router.push(surfaceHref('ask'))}
+              >
+                {surfaceName('ask')}
+              </Menu.Item>
+            </Menu>
+          </>
+        }
       />
 
-      {/*
-        Ask sits BESIDE the view switcher, not inside it.
-
-        `surface-registry.ts` has always declared Ask as a live
-        `group: 'coachhelm-tab'` surface — it carries neither `legacy` nor
-        `hidden`, unlike the three tabs Spine & Stage genuinely retired. But
-        the strip that was supposed to render it, `CoachHelmSubNav`, is not
-        mounted by any live page: every non-test reference to it is a comment
-        or a `loading.tsx` skeleton drawing a tab strip the real page never
-        shows. So the only route into the chat was the floating FAB, while the
-        breadcrumb kept printing `CoachHelm AI / Ask`.
-
-        It does NOT belong in `ViewSwitch`: that control is typed to the
-        `?view=` drills of this same page (`signals | players | effectiveness`)
-        and Ask is a separate route. Putting a route inside a view-switcher
-        would break the one thing that control means.
-
-        Name and href come from the registry rather than being written here,
-        so this cannot drift from the breadcrumb and page title that already
-        read from it.
-      */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ViewSwitch
-          view={view}
-          hrefFor={(next) => hrefFor({ view: next, signal: null })}
-          onSelect={(next) => navigate({ view: next, signal: null })}
-        />
-        <Button asChild variant="secondary" size="sm">
-          <Link href={surfaceHref('ask')}>
-            <MessageCircle aria-hidden className="h-3.5 w-3.5" />
-            {surfaceName('ask')}
-          </Link>
-        </Button>
-      </div>
-
-      {view === 'signals' ? (
-        groupsError ? (
-          <InlineNotice
-            tone="danger"
-            title="Couldn't load signals — retry"
-            action={
-              <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
-                Try again
-              </Button>
-            }
-          >
-            {groupsError}
-          </InlineNotice>
-        ) : (
-          <>
-            <div className="space-y-3">
-              {/* eslint-disable-next-line helm/no-raw-button -- borderless full-bleed disclosure toggle; the Fairway Button's pill surface can't host this justify-between row + chevron layout (matches FairwayCoachAnnouncementCard's identical disclosure toggle) */}
-              <button
-                type="button"
-                onClick={() => setShowDiagnostics((prev) => !prev)}
-                aria-expanded={showDiagnostics}
-                aria-controls="triage-team-diagnostics"
-                className={cn(
-                  'flex w-full items-center justify-between gap-2 rounded-fw-sm border border-border-subtle bg-surface-sunken px-4 py-2.5 text-left',
-                  'font-fw-sans text-body-sm font-medium text-text-secondary transition-colors hover:bg-surface-tint hover:text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
-                )}
-              >
-                <span>Team diagnostics</span>
-                <ChevronDown
-                  className={cn('h-4 w-4 shrink-0 transition-transform duration-medium', showDiagnostics && 'rotate-180')}
-                  aria-hidden
-                />
-              </button>
-              {showDiagnostics ? (
-                <div id="triage-team-diagnostics">
-                  <TeamShotWeaknessesPanel data={teamShotAnalysis} />
-                </div>
-              ) : null}
-            </div>
-
-            {/* Per-category signal pressure, above the queue it summarises.
-                Distinct from Team diagnostics above it: that panel reads shot
-                analysis, this one aggregates the SIGNAL GROUPS themselves —
-                count, high-priority share, freshness and impact per category —
-                which nothing else on this surface does. `SignalQueue` shows a
-                severity chip per group and trailing filter counts, but never
-                the shape of the whole queue at a glance. */}
-            <TeamSignalSummary
-              groups={groups}
-              playerHref={(playerId) => hrefFor({ view: 'players', player: playerId, playersTab: 'areas' })}
-              onOpenPlayer={(playerId) => navigate({ view: 'players', player: playerId, playersTab: 'areas' })}
-            />
-
-            <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
-              <div className={cn(isSignalSelected && 'hidden min-[940px]:block')}>
-                <SignalQueue
-                  groups={filteredGroups}
-                  allGroups={groups}
-                  categories={categories}
-                  filter={queueFilter}
-                  filterHref={(next) => hrefFor({ filter: next === 'all' ? null : next })}
-                  onSelectFilter={(next) => navigate({ filter: next === 'all' ? null : next })}
-                  selectedSignalId={selectedSignalId}
-                  onSelectSignal={(id) => navigate({ signal: id })}
-                  signalHref={(id) => hrefFor({ signal: id })}
-                />
-              </div>
-              <div className={cn(!isSignalSelected && 'hidden min-[940px]:block')}>
-                <SignalDossier
-                  entry={dossierEntry}
-                  coachId={coachId}
-                  pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
-                  onReview={handleReview}
-                  onDismiss={handleDismiss}
-                  onPromoted={handlePromoted}
-                  onBack={() => navigate({ signal: null })}
-                  onSelectSignal={(id) => navigate({ signal: id })}
-                  playerFocusAreas={dossierPlayerFocusAreas}
-                  playerGoals={dossierPlayerGoals}
-                  playerStats={dossierPlayerStats}
-                />
-              </div>
-            </div>
-          </>
-        )
-      ) : null}
-
-      {view === 'players' ? (
-        <PlayersGridView
-          {...playersDrillProps}
-          embedded
-          initialSelectedPlayerId={selectedPlayerId}
-          initialPlayersView={playersTab === 'areas' ? 'areas' : 'grid'}
-          onNavigationChange={({ view: nextView, playerId }) =>
-            navigate({
-              player: nextView === 'areas' ? playerId : null,
-              playersTab: nextView === 'areas' ? 'areas' : null,
-            })
+      <div className="grid grid-cols-1 gap-6 min-[940px]:grid-cols-[320px_1fr] min-[940px]:items-start">
+        <Spine
+          className="min-[940px]:sticky min-[940px]:top-6"
+          eyebrow={`${teamName} · ${formatSpineDate(now)}`}
+          hero={{ value: String(groups.reduce((n, g) => n + g.signals.length, 0)), unit: 'open signals' }}
+          verdict={spineVerdict}
+          priorities={isDesktopSpine ? priorityItems : undefined}
+          ledger={
+            isDesktopSpine
+              ? [
+                  { label: 'Players needing attention', value: String(counts.playersFlagged) },
+                  { label: 'Outcomes awaiting', value: String(outcomesAwaiting) },
+                  { label: 'Rounds logged', value: String(roundsLogged) },
+                  { label: 'Focus areas active', value: String(activeFocusAreaCount) },
+                  { label: 'Last scan', value: lastScanLabel },
+                ]
+              : undefined
           }
-        />
-      ) : null}
-      {view === 'effectiveness' ? (
-        <EffectivenessScoreboard
-          initialOverview={effectivenessDrillProps.initialOverview}
-          initialEffectiveness={effectivenessDrillProps.initialEffectiveness}
-          initialPerformance={effectivenessDrillProps.initialPerformance}
-        />
-      ) : null}
+          cta={{ label: 'Ask CoachHelm', onClick: () => setAskOpen(true) }}
+        >
+          {urgentSignal ? (
+            <div
+              className="mt-5 border-t pt-4"
+              style={{ borderTopColor: 'oklch(1 0 0 / 0.14)' }}
+            >
+              <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-300">
+                Urgent
+              </p>
+              <p className="mt-1.5 font-fw-sans text-body-sm font-medium text-text-on-accent">
+                {urgentSignal.group.playerId ? `${urgentSignal.group.playerName} — ` : ''}
+                {urgentSignal.signal.title}
+              </p>
+            </div>
+          ) : null}
+        </Spine>
+
+        <div className="flex min-w-0 flex-col gap-4">
+          {isScanning ? (
+            <InlineNotice tone="info" title="Scanning the team">
+              Refreshing signals — panes stay put while this finishes.
+            </InlineNotice>
+          ) : null}
+
+          <Toolbar
+            material="frost"
+            viewToggle={
+              <ViewSwitch
+                view={view}
+                hrefFor={(next) => hrefFor({ view: next, signal: null })}
+                onSelect={(next) => navigate({ view: next, signal: null })}
+              />
+            }
+            filters={
+              view === 'signals' ? (
+                <>
+                  <Toolbar.FilterMenu
+                    label="Severity"
+                    options={[{ value: 'urgent', label: 'Urgent' }]}
+                    selected={severityFilterSelected}
+                    onToggle={toggleQueueFilter}
+                    onClear={() => navigate({ filter: null })}
+                  />
+                  <Toolbar.FilterMenu
+                    label="Category"
+                    options={[
+                      { value: 'patterns', label: 'Patterns' },
+                      ...categories.map((category) => ({
+                        value: `category:${category}`,
+                        label: formatCategoryLabel(category),
+                      })),
+                    ]}
+                    selected={categoryFilterSelected}
+                    onToggle={toggleQueueFilter}
+                    onClear={() => navigate({ filter: null })}
+                  />
+                </>
+              ) : null
+            }
+          />
+
+          {categoryBandData ? (
+            <TeamCategoryLeakBand categories={categoryBandData.categories} teamHealth={categoryBandData.teamHealth} />
+          ) : null}
+
+          {view === 'signals' ? (
+            groupsError ? (
+              <InlineNotice
+                tone="danger"
+                title="Couldn't load signals — retry"
+                action={
+                  <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
+                    Try again
+                  </Button>
+                }
+              >
+                {groupsError}
+              </InlineNotice>
+            ) : (
+              <ResizableWorkspace
+                left={
+                  <SignalQueue
+                    groups={filteredGroups}
+                    selectedSignalId={selectedSignalId}
+                    onSelectSignal={(id) => navigate({ signal: id })}
+                    signalHref={(id) => hrefFor({ signal: id })}
+                    isAllClear={isAllClear}
+                    onScan={handleScan}
+                    scanning={isScanning}
+                  />
+                }
+                center={
+                  <SignalDossier
+                    entry={dossierEntry}
+                    coachId={coachId}
+                    pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
+                    onReview={handleReview}
+                    onDismiss={handleDismiss}
+                    onPromoted={handlePromoted}
+                    onBack={() => navigate({ signal: null })}
+                    onSelectSignal={(id) => navigate({ signal: id })}
+                    playerFocusAreas={dossierPlayerFocusAreas}
+                    playerGoals={dossierPlayerGoals}
+                    playerStats={dossierPlayerStats}
+                    emptyLeakBandExplanation={isAllClear ? leakBandExplanation : undefined}
+                  />
+                }
+                right={insightPanel}
+                defaultLayout={[28, 44, 28]}
+                minSizes={{ left: 20, center: 32, right: 20 }}
+                storageKey="coachhelm-signals-workspace-v1"
+                renderMobile={
+                  <div className="flex flex-col gap-3">
+                    <div className={cn(isSignalSelected && 'hidden')}>
+                      <SignalQueue
+                        groups={filteredGroups}
+                        selectedSignalId={selectedSignalId}
+                        onSelectSignal={(id) => navigate({ signal: id })}
+                        signalHref={(id) => hrefFor({ signal: id })}
+                        isAllClear={isAllClear}
+                        onScan={handleScan}
+                        scanning={isScanning}
+                      />
+                    </div>
+                    <Sheet
+                      open={isSignalSelected}
+                      onOpenChange={(next) => {
+                        if (!next) navigate({ signal: null });
+                      }}
+                      material="frost"
+                      side="bottom"
+                      hideTitle
+                      hideClose
+                      title={dossierEntry?.signal.title ?? 'Signal'}
+                    >
+                      <Sheet.Body>
+                        <SignalDossier
+                          entry={dossierEntry}
+                          coachId={coachId}
+                          pending={dossierEntry ? pendingIds.has(dossierEntry.signal.id) : false}
+                          onReview={handleReview}
+                          onDismiss={handleDismiss}
+                          onPromoted={handlePromoted}
+                          onBack={() => navigate({ signal: null })}
+                          onSelectSignal={(id) => navigate({ signal: id })}
+                          playerFocusAreas={dossierPlayerFocusAreas}
+                          playerGoals={dossierPlayerGoals}
+                          playerStats={dossierPlayerStats}
+                          emptyLeakBandExplanation={isAllClear ? leakBandExplanation : undefined}
+                        />
+                      </Sheet.Body>
+                    </Sheet>
+                    {insightPanel}
+                  </div>
+                }
+              />
+            )
+          ) : null}
+
+          {view === 'players' ? (
+            <PlayersGridView
+              {...playersDrillProps}
+              embedded
+              initialSelectedPlayerId={selectedPlayerId}
+              initialPlayersView={playersTab === 'areas' ? 'areas' : 'grid'}
+              onNavigationChange={({ view: nextView, playerId }) =>
+                navigate({
+                  player: nextView === 'areas' ? playerId : null,
+                  playersTab: nextView === 'areas' ? 'areas' : null,
+                })
+              }
+            />
+          ) : null}
+          {view === 'effectiveness' ? (
+            <EffectivenessScoreboard
+              initialOverview={effectivenessDrillProps.initialOverview}
+              initialEffectiveness={effectivenessDrillProps.initialEffectiveness}
+              initialPerformance={effectivenessDrillProps.initialPerformance}
+            />
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

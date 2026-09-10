@@ -21,7 +21,9 @@
 
 ## Current State
 
-Coach Intelligence Triage is the coach-facing operational layer on top of CoachHelm AI. Its canonical `/golf/dashboard/intelligence` surface is a Triage Desk: a horizontal daily brief, a player-grouped open-signal queue, an evidence/action dossier, a roster-development view, and a compact effectiveness scoreboard.
+Coach Intelligence Triage is the coach-facing operational layer on top of CoachHelm AI. Its canonical `/golf/dashboard/intelligence` surface is a Triage Desk.
+
+Fairway Premium Facelift (2026-09, golf only): the Triage Desk's `BriefBand`/`TeamSignalSummary` horizontal daily-brief band and the standalone `CommandOpening` "welcome" opening were replaced by ONE deep-green `Spine` (identity line, an open-signals hero numeral, a prose verdict that folds in players-needing-attention and outcomes-awaiting, the one urgent signal, top-3 priorities, a ledger, and the "Ask CoachHelm" CTA). The workspace below it is a frost `Toolbar` (Signals/Players/Effectiveness `ViewSwitch` + Severity/Category `Toolbar.FilterMenu`s), the `TeamCategoryLeakBand` as one horizontal band, then a `ResizableWorkspace` for the Signals view (`SignalQueue` | `SignalDossier` | a new `SignalInsightPanel` built on the `InsightPanel` primitive). `EffectivenessScoreboard` was rebuilt onto one `InstrumentCluster`. On phone the Spine collapses to its hero/verdict/urgent/CTA (priorities and ledger are desktop-only, `min-width: 940px`), and `ResizableWorkspace`'s `renderMobile` opens the dossier as a `Sheet`. `TriageDesk` remains the sole owner of the optimistic signal-action state (`groups`/`pendingIds`) the rest of this doc describes below. The Players view's `RosterHealthHeader` roster-health instrument was removed as a duplicate of the Spine's own ledger numbers (`RosterHealthHeader.tsx` itself is untouched — `FairwayCoachRoster.tsx`, the canonical Roster page, still imports it).
 
 This feature is distinct from the engine itself: `memory/features/coachhelm-ai.md` describes generation/trust behavior, while this document describes coach workflows after intelligence exists.
 
@@ -103,6 +105,7 @@ CoachHelm generates insight/pattern/prediction
 
 ## Known Risk Areas
 
+- `Spine` (`@/components/fairway/modules/Spine.tsx`) has one fixed `verdict` string and no native multi-readout slot — the Triage Desk's "players needing attention" / "outcomes awaiting" readouts are folded into that one sentence (`buildSpineVerdict`) rather than rendered as separate tiles, and the one urgent signal renders in `Spine`'s `children` slot, which places it after the ledger rather than above the priorities list the original ASCII composition sketch showed. Both are primitive-shape constraints, not oversights — do not "fix" by editing `Spine.tsx` without checking who else consumes it first.
 - Effectiveness analytics can look complete while `golf_insight_effectiveness` is sparse.
 - Bulk lifecycle operations can accidentally over-update if team/player scope is wrong.
 - Pattern and insight lifecycle labels can drift from DB constraints and UI copy.

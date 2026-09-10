@@ -11,6 +11,7 @@ import {
   findSignalInGroups,
   computeBriefCounts,
   buildBriefVerdict,
+  buildSpineVerdict,
   formatRelativeScanTime,
   formatCategoryLabel,
   severityLabel,
@@ -262,6 +263,33 @@ describe('buildBriefVerdict', () => {
     const groups = [group({ playerId: 'p1', playerName: 'Alex Rivera', signals: [signal({ severity: 'low' })] })];
     const verdict = buildBriefVerdict(groups, { urgent: 0, playersFlagged: 1 });
     expect(verdict).toBe('Nothing urgent — Alex Rivera has the highest-priority open signal.');
+  });
+});
+
+describe('buildSpineVerdict', () => {
+  it('folds in no "outcomes awaiting" clause when there are none', () => {
+    expect(buildSpineVerdict([], { urgent: 0, playersFlagged: 0 }, 0)).toBe(
+      'All clear — no open signals right now.',
+    );
+  });
+
+  it('appends a pluralized "outcomes awaiting" clause onto the brief verdict', () => {
+    const groups = [group({ playerId: 'p1', playerName: 'Alex Rivera', signals: [signal({ severity: 'urgent' })] })];
+    const verdict = buildSpineVerdict(groups, { urgent: 1, playersFlagged: 1 }, 3);
+    expect(verdict).toBe(
+      '1 urgent signal needs review across 1 player. Alex Rivera needs the most attention right now. 3 outcomes awaiting a resolved result.',
+    );
+  });
+
+  it('singularizes "outcome" when exactly one is awaiting', () => {
+    const verdict = buildSpineVerdict([], { urgent: 0, playersFlagged: 0 }, 1);
+    expect(verdict).toBe('All clear — no open signals right now. 1 outcome awaiting a resolved result.');
+  });
+
+  it('never fabricates a negative count into the sentence', () => {
+    expect(buildSpineVerdict([], { urgent: 0, playersFlagged: 0 }, -5)).toBe(
+      'All clear — no open signals right now.',
+    );
   });
 });
 

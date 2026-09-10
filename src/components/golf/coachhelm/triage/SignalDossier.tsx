@@ -65,6 +65,16 @@ export interface SignalDossierProps {
   /** This player's roster-row stats (recent_trend, avg_score) for the
    *  "recent trend" chip. `null`/omitted when there's no player scope. */
   playerStats?: PlayersGridStats | null;
+  /**
+   * Facelift addition (Triage Desk spec — "no signals" state): when the
+   * queue is genuinely empty (`entry` is `null` because there is nothing to
+   * select, not merely because nothing is selected yet), this pane fills
+   * with the team leak-band's own explanation instead of the bare "pick a
+   * row" prompt — the coach still gets a real answer to "so what's the
+   * state of the team" even with zero open signals. Omit to keep the
+   * original generic empty copy (e.g. for a caller with no leak-band data).
+   */
+  emptyLeakBandExplanation?: ReactNode;
 }
 
 function DossierSection({ title, children }: { title: string; children: ReactNode }) {
@@ -96,15 +106,21 @@ export function SignalDossier({
   playerFocusAreas = [],
   playerGoals = [],
   playerStats = null,
+  emptyLeakBandExplanation,
 }: SignalDossierProps) {
   if (!entry) {
     return (
-      <div className="flex items-center justify-center rounded-fw-lg border border-border-subtle bg-surface p-6 min-[940px]:h-full">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-fw-lg border border-border-subtle bg-surface p-6 min-[940px]:h-full">
         <EmptyState
           variant="subtle"
           title="Select a signal"
           description="Pick a row from the queue to see the full evidence and act on it."
         />
+        {emptyLeakBandExplanation ? (
+          <div className="w-full max-w-md font-fw-sans text-body-sm text-text-secondary">
+            {emptyLeakBandExplanation}
+          </div>
+        ) : null}
       </div>
     );
   }

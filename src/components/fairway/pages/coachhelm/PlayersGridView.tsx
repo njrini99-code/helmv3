@@ -74,11 +74,6 @@ import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
 import { TrendGlyph } from '@/components/fairway/charts';
 import {
-  RosterHealthHeader,
-  computeRosterHealth,
-  computeNeedsAttention,
-} from './RosterHealthHeader';
-import {
   DataTable,
   type ColumnDef,
 } from '@/components/fairway/data-table';
@@ -339,18 +334,6 @@ export function PlayersGridView({
         ? focusAreas.filter((fa) => fa.player_id === selectedPlayerId)
         : focusAreas,
     [focusAreas, selectedPlayerId],
-  );
-
-  /* ---- roster-health header metrics + coach triage (RosterHealthHeader.tsx,
-         Wave 2 extraction — SAME computation, now shared with the Roster
-         page). Derived from the SAME props; no new fetch, no fake. -- */
-  const rosterHealth = React.useMemo(
-    () => computeRosterHealth(players, focusAreas, playerStats),
-    [players, focusAreas, playerStats],
-  );
-  const needsAttention = React.useMemo(
-    () => computeNeedsAttention(rosterRows),
-    [rosterRows],
   );
 
   const selectedPlayer = selectedPlayerId
@@ -808,10 +791,15 @@ export function PlayersGridView({
           </InlineNotice>
         ) : null}
 
-        {/* ── ROSTER-HEALTH HEADER INSTRUMENT — the hero. A ranked cluster on
-              warm glass: coverage gauge focal, outcome-mix rail, micro-readout
-              foot row. Reads from the same props (no new fetch). ── */}
-        <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
+        {/* The roster-health header instrument (coverage/outcome-mix/micro-
+              readouts) was removed here (Fairway Premium Facelift — Triage
+              Desk spec's "roster health header duplicate" removal item):
+              the same numbers (players needing attention, focus areas
+              active) now live in the Triage Desk's Spine ledger one level
+              up, and this view can be mounted standalone (via the
+              `/development` redirect shim) where that duplication no
+              longer applied either. `RosterHealthHeader.tsx` itself is left
+              in place — `FairwayCoachRoster.tsx` still imports it. ── */}
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (

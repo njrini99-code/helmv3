@@ -86,6 +86,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,
@@ -105,6 +106,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,
@@ -124,6 +126,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,
@@ -145,6 +148,7 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         groups={[]}
         scannedAt={null}
         groupsError={null}
+        now="2026-01-01T00:00:00.000Z"
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never, { id: 'p-2' } as never])}
         effectivenessDrillProps={effectivenessDrillProps}
       />,

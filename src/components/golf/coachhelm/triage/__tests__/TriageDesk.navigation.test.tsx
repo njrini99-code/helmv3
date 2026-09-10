@@ -37,8 +37,6 @@ vi.mock('@/app/golf/actions/signal-groups', () => ({
   dismissSignal: vi.fn(),
 }));
 
-vi.mock('../BriefBand', () => ({ BriefBand: () => <div data-testid="brief-band" /> }));
-vi.mock('../TeamSignalSummary', () => ({ TeamSignalSummary: () => <div data-testid="team-signal-summary" /> }));
 vi.mock('../SignalQueue', () => ({ SignalQueue: () => <div data-testid="signal-queue" /> }));
 vi.mock('../EffectivenessScoreboard', () => ({
   EffectivenessScoreboard: () => <div data-testid="effectiveness-view" />,
@@ -88,6 +86,8 @@ function renderDesk() {
       scannedAt={null}
       groupsError={null}
       categoryInsights={{ success: false, error: 'not fetched in this test' }}
+      teamName="Test Team"
+      now="2026-01-01T00:00:00.000Z"
       playersDrillProps={{
         players: [
           {
@@ -124,14 +124,21 @@ describe('TriageDesk URL-driven drill-ins', () => {
 
     const queueShell = screen.getByTestId('signal-queue').parentElement;
     expect(queueShell).not.toHaveClass('hidden');
+    // A stale id resolves to no entry — the (real, unmocked) mobile dossier
+    // Sheet stays closed, so vaul portals nothing into the document at all.
+    expect(screen.queryByTestId('signal-dossier')).not.toBeInTheDocument();
   });
 
   it('opens a valid signal in the narrow-screen dossier state', () => {
     navigation.params = new URLSearchParams('signal=signal-1');
     renderDesk();
 
+    // Under jsdom `useMediaQuery` reports desktop=false, so `ResizableWorkspace`
+    // renders TriageDesk's `renderMobile` branch: the queue hides and the
+    // (real, unmocked) Sheet opens, portaling the mocked dossier into the
+    // document body rather than under the queue's own container.
     expect(screen.getByTestId('signal-queue').parentElement).toHaveClass('hidden');
-    expect(screen.getByTestId('signal-dossier').parentElement).not.toHaveClass('hidden');
+    expect(screen.getByTestId('signal-dossier')).toBeInTheDocument();
   });
 
   it('opens the view named in the URL on FIRST RENDER, not just on click', () => {

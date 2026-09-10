@@ -220,6 +220,24 @@ export function buildBriefVerdict(groups: readonly SignalGroup[], counts: BriefC
   return `${totalSignals} open ${signalWord} to review — nothing urgent right now.`;
 }
 
+/**
+ * The Spine's plain-language verdict (facelift) — folds "players needing
+ * attention" (already inside `buildBriefVerdict`) and "outcomes awaiting" (a
+ * number the Spine has no separate slot for — `Spine`'s fixed shape is one
+ * `verdict` string, a `hero` number, and a `ledger`, not a multi-readout
+ * row) into ONE sentence rather than fabricating a fourth Spine slot.
+ */
+export function buildSpineVerdict(
+  groups: readonly SignalGroup[],
+  counts: BriefCounts,
+  outcomesAwaiting: number,
+): string {
+  const base = buildBriefVerdict(groups, counts);
+  if (outcomesAwaiting <= 0) return base;
+  const outcomeWord = outcomesAwaiting === 1 ? 'outcome' : 'outcomes';
+  return `${base} ${outcomesAwaiting} ${outcomeWord} awaiting a resolved result.`;
+}
+
 /** Relative "last scan" caption. `null` (no scan on record) reads as an
  *  honest "No scans yet" rather than a fabricated duration. */
 export function formatRelativeScanTime(scannedAt: string | null, now: Date = new Date()): string {

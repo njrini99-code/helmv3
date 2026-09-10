@@ -6,19 +6,29 @@
  * (Triage Desk spec §4)
  * ----------------------------------------------------------------------------
  * Replaces the 1,800-line `FairwayEffectiveness` instrument cockpit on the
- * Triage Desk's `?view=effectiveness` tab: ONE screen, no tabs inside —
- * adoption `RingGauge`, effectiveness-trend `Ribbon`, "working / not working"
- * top-3 lists, and a calibration line. Reads the SAME SSR-fetched
- * `CoachHelmOverviewData` / `InsightEffectivenessData` /
- * `PredictionPerformanceData` shapes the retired cockpit consumed — no new
- * server action, no re-derived scoring (`buildEffectivenessScoreboard.ts`
- * only filters/ranks/formats what `coachhelm-analytics.ts` already produced).
+ * Triage Desk's `?view=effectiveness` tab: ONE `InstrumentCluster` — adoption
+ * `RingGauge` as the focal primary (the always-populated answer to "did the
+ * coaching land"), the accuracy `Ribbon` + a Working/Not-working comparison
+ * panel flanking it in the secondary rail, and the calibration line as the
+ * tertiary foot readout. Reads the SAME SSR-fetched `CoachHelmOverviewData` /
+ * `InsightEffectivenessData` / `PredictionPerformanceData` shapes the retired
+ * cockpit consumed — no new server action, no re-derived scoring
+ * (`buildEffectivenessScoreboard.ts` only filters/ranks/formats what
+ * `coachhelm-analytics.ts` already produced).
+ *
+ * Primary is Adoption, NOT the accuracy Ribbon: `accuracyOverTime` is empty
+ * on both a fresh team and most real ones (a longitudinal series needs a run
+ * of resolved predictions), so a focal Ribbon would render blank far more
+ * often than not. Adoption always has a number (even "0 of 0" reads as an
+ * honest awaiting-state, never blank).
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
 import { Badge, EmptyState, Ribbon, Surface, formatPercent } from '@/components/fairway';
 import type { FairwayEffectivenessProps } from '@/components/fairway';
 import { RingGauge } from '@/components/fairway/modules';
+import { InstrumentCluster } from '@/components/fairway/instrument/InstrumentCluster';
+import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { formatCategoryLabel } from './buildTriageViewModel';
 import {
   summarizeAdoption,
@@ -99,66 +109,87 @@ export function EffectivenessScoreboard({
   const showConsolidatedEmptyState = rankingsEmpty && !calibration.live;
 
   return (
-    // `items-start` — each card sizes to its OWN content (intrinsic height)
-    // instead of CSS Grid's default row-stretch, which was forcing the
-    // compact Adoption ring+caption to stretch to match its taller Ribbon
-    // row-mate and center-float in the resulting empty middle.
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-      <Surface padding="md" className="flex flex-col gap-3">
-        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">Adoption</p>
-        <div className="flex items-center gap-3">
-          <RingGauge value={adoption.pct} size={48} />
-          <p className="font-fw-sans text-body-sm text-text-secondary">
-            {adoption.live
-              ? `${adoption.actedUpon} of ${adoption.generated} insights acted on`
-              : 'No insights generated in this window yet.'}
-          </p>
-        </div>
-      </Surface>
-
-      <Surface padding="md">
-        <Ribbon
-          title="Prediction accuracy"
-          overline="Trend"
-          data={trendPoints}
-          valueFormatter={(v) => formatPercent(v)}
-          seriesName="Accuracy"
-          goodDirection="up"
-          height={140}
-        />
-      </Surface>
-
-      {showConsolidatedEmptyState ? (
-        <Surface padding="md" className="lg:col-span-2">
-          <EmptyState
-            variant="subtle"
-            title="Not enough resolved outcomes yet"
-            description="Working / not-working rankings and prediction calibration fill in together once insights get acted on and predictions resolve."
-          />
-        </Surface>
-      ) : (
-        <>
-          <Surface padding="md">
-            <RankedList title="Working" tone="success" items={working} />
-          </Surface>
-          <Surface padding="md">
-            <RankedList title="Not working" tone="danger" items={notWorking} />
-          </Surface>
-
-          <Surface padding="md" className="lg:col-span-2">
-            <p
-              className={cn(
-                'font-fw-sans text-body-sm',
-                calibration.tone === 'positive' && 'text-fw-success-ink',
-                calibration.tone === 'warning' && 'text-fw-warning-ink',
-                calibration.tone === 'neutral' && 'text-text-tertiary',
-              )}
-            >
-              {calibration.label}
+    <InstrumentCluster
+      ariaLabel="Effectiveness scoreboard"
+      // Primitive API gap: `cluster-deck` (the primary+secondary CSS grid)
+      // has no row-stretch override and no prop threads a className onto it
+      // — only the outer `flex-col` wrapper takes `className`. Reaching the
+      // grid needs the same descendant-selector escape hatch the primitive
+      // already uses on itself for the tertiary phone group (see
+      // `TERTIARY_PHONE_GROUP` in InstrumentCluster.tsx), rather than a
+      // primitive edit: without it the short Adoption panel stretches to
+      // match its taller secondary-rail neighbor and centers inside the
+      // extra height (the exact dead-space bug this file was already fixed
+      // for once, under the old grid).
+      className="[&_[data-slot=cluster-deck]]:items-start"
+      primary={
+        <InstrumentPanel depth="raised" eyebrow="Effectiveness" header="Adoption">
+          <div className="flex items-center gap-3">
+            <RingGauge value={adoption.pct} size={48} />
+            <p className="font-fw-sans text-body-sm text-text-secondary">
+              {adoption.live
+                ? `${adoption.actedUpon} of ${adoption.generated} insights acted on`
+                : 'No insights generated in this window yet.'}
             </p>
-          </Surface>
-        </>
-      )}
-    </div>
+          </div>
+        </InstrumentPanel>
+      }
+      secondary={[
+        <InstrumentPanel key="trend" depth="base" eyebrow="Trend" header="Prediction accuracy">
+          <Ribbon
+            title="Prediction accuracy"
+            overline="Trend"
+            data={trendPoints}
+            valueFormatter={(v) => formatPercent(v)}
+            seriesName="Accuracy"
+            goodDirection="up"
+            height={140}
+          />
+        </InstrumentPanel>,
+        showConsolidatedEmptyState ? (
+          <InstrumentPanel key="comparison" depth="base">
+            <EmptyState
+              variant="subtle"
+              title="Not enough resolved outcomes yet"
+              description="Working / not-working rankings and prediction calibration fill in together once insights get acted on and predictions resolve."
+            />
+          </InstrumentPanel>
+        ) : (
+          <InstrumentPanel key="comparison" depth="base" eyebrow="Comparison" header="Working vs. not working">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:divide-x sm:divide-border-subtle">
+              <div className="min-w-0">
+                <RankedList title="Working" tone="success" items={working} />
+              </div>
+              <div className="min-w-0 sm:pl-4">
+                <RankedList title="Not working" tone="danger" items={notWorking} />
+              </div>
+            </div>
+          </InstrumentPanel>
+        ),
+      ]}
+      tertiary={
+        showConsolidatedEmptyState
+          ? undefined
+          : [
+              // `depth="inset"` — a recessed sub-readout, not a floating card;
+              // its chrome is deliberately what `InstrumentCluster`'s
+              // `TERTIARY_PHONE_GROUP` strips below `sm` (see the primitive's
+              // `[&_[data-slot=instrument-panel]]` overrides), collapsing
+              // this single foot-row cell into the shared grouped ledger.
+              <InstrumentPanel key="calibration" depth="inset" eyebrow="Calibration">
+                <p
+                  className={cn(
+                    'font-fw-sans text-body-sm',
+                    calibration.tone === 'positive' && 'text-fw-success-ink',
+                    calibration.tone === 'warning' && 'text-fw-warning-ink',
+                    calibration.tone === 'neutral' && 'text-text-tertiary',
+                  )}
+                >
+                  {calibration.label}
+                </p>
+              </InstrumentPanel>,
+            ]
+      }
+    />
   );
 }
