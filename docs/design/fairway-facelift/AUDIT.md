@@ -75,9 +75,11 @@ User-reported: a data-heavy coach account is slow and laggy, the message and cal
 | 12 | 200 message rows re-render on any pane state change | `MessageThreadPane.tsx` renders every message inline with no memo boundary | extract a memoized MessageRow; consider windowing (messages-perf) |
 | 13 | Group participants refetch on any inbox change | `FairwayMessages.tsx` effect depends on the whole `conversations` array | depend on the selected conversation id (messages-perf) |
 | 14 | Conversation rail re-splits on every keystroke | `MessageConversationRail.tsx` triage split is plain consts | `useMemo` (messages-perf) |
-| 15 | Round review skeleton for 45s+ on a scorecard-only round | pending (round-detail worker to report the cause) | pending |
+| 15 | Round review skeleton for 45s+ on a scorecard-only round | `rounds/[id]/review/page.tsx` awaits `getRoundReview` then `getPlayerStandingForReview` sequentially in one try block and clears `loadingStoredReview` only in `finally`, so the review sits behind the season-standing read; a round with no stored review also pays a full LLM round-trip from the auto-generate effect under the same skeleton | clear the loading flag when the review resolves and apply standing separately; show auto-generation as its own state (review-page) |
 
 Ruled out: framer `layout`/`layoutId` in calendar and messages (none), images (avatars only), calendar range refetch on pan (correctly gated). Runtime measurement (Playwright + CDP harness at `scripts/ui-intelligence/.perf-measure.tmp.mjs`) is deferred until the machine is quiet; the ranking above is by mechanism and blast radius.
+
+Tooling note: `cn()` (tailwind-merge) does not treat the custom `rounded-card` / `rounded-fw-*` radius tokens as one mergeable group, so a caller cannot strip a radius by passing another radius class; border, background and padding do merge.
 
 ## Mobile
 
