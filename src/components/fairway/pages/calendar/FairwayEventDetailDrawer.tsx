@@ -5,14 +5,16 @@ import surfaces from './CalendarSurfaces.module.css';
 /**
  * Event details with role-specific actions and persistent RSVP confirmation.
  *
- * §18 section order (SCREEN-BUILD-PLAN §2.10): header -> response/Edit ->
- * location -> Description -> People -> Files -> Attendance (prominent for
- * coaches from one hour before start). History is omitted entirely — it is
- * gated on G2 (SCREEN-BUILD-PLAN §5) and has no honest content to show yet.
- * Destructive actions live in the anchored `EventActionsMenu` "More" menu,
- * not inline. Desktop (>=1024px) renders as a right-side inspector; mobile
- * keeps the bottom sheet — both are the SAME `Sheet`, just a different
- * `side`, so every section below is identical on both.
+ * Rebuilt per docs/design/fairway-facelift/screens/calendar.mobile.md
+ * ("CONTAINERS TO REMOVE / MERGE" item 5) as the frost bottom sheet: header
+ * (type pill + overflow, title, time) -> Your response (one InsetGroup,
+ * player only) -> metadata InsetGroup (owner / location / notes / linked
+ * trip) -> response StatMatrix (coach) -> People InsetGroup -> Files
+ * InsetGroup -> Attendance row -> sticky Sheet.Footer CTA. Destructive
+ * actions live in the anchored `EventActionsMenu` "More" menu, not inline.
+ * Desktop (>=1024px) renders as a right-side inspector; mobile renders the
+ * frost bottom sheet — both are the SAME `Sheet`, just a different `side`
+ * (+ `material`), so every section below is identical on both.
  */
 
 import * as React from 'react';
@@ -35,16 +37,19 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, Button, PressTarget, StatusPill } from '@/components/fairway';
-import type { FwStatusTone, SheetSide } from '@/components/fairway';
+import { Sheet, Button, StatusPill, InsetGroup } from '@/components/fairway';
+import type { SheetSide } from '@/components/fairway';
+import { StatMatrix } from '@/components/fairway/modules';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { rsvpLockMessage } from '@/hooks/useRSVP';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { formatEventTime, formatEventDateLabel } from '@/lib/calendar/timezone';
 import { stripClassTag } from '@/lib/calendar/class-events';
-import { EventPeopleSection } from './detail/EventPeopleSection';
+import { typeMeta } from './eventPresentation';
+import { EventPeopleSection, type EventAttendee } from './detail/EventPeopleSection';
 import { EventActionsMenu } from './detail/EventActionsMenu';
 import { EventFilesSection } from './files/EventFilesSection';
 import { CalendarAttendanceScreen } from './attendance/CalendarAttendanceScreen';
@@ -54,30 +59,30 @@ import { CalendarAttendanceScreen } from './attendance/CalendarAttendanceScreen'
  * coach, per SCREEN-BUILD-PLAN §2.10. Never affects server permissions. */
 const ATTENDANCE_PROMINENT_WINDOW_MS = 60 * 60 * 1000;
 
-const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
-  practice: { label: 'Practice', tone: 'accent' },
-  tournament: { label: 'Tournament', tone: 'warning' },
-  qualifier: { label: 'Qualifier', tone: 'success' },
-  qualifying: { label: 'Qualifier', tone: 'success' },
-  travel: { label: 'Travel', tone: 'neutral' },
-  workout: { label: 'Workout', tone: 'accent' },
-  team_meeting: { label: 'Meeting', tone: 'neutral' },
-  meeting: { label: 'Meeting', tone: 'neutral' },
-  // Kept in step with FairwayEventCard's TYPE_META — this is a second copy of
-  // that map, so a type added there and not here reads "Class" on the card and
-  // "Event" in the drawer for the same event.
-  class: { label: 'Class', tone: 'neutral' },
-  other: { label: 'Event', tone: 'neutral' },
+/** Upper bound of the sheet's open transition (brief §motion: 240–320 ms for
+ *  sheets) — after this the heavy sections mount even if no animationend
+ *  event ever arrived. */
+const SETTLE_FALLBACK_MS = 360;
+
+/** Anchor-only attributes threaded onto an `InsetGroup.Row` when it renders
+ *  as `as="a"`. `InsetGroupRowProps` doesn't declare `target`/`rel` (it only
+ *  types the generic `HTMLAttributes<HTMLElement>` + its own `href`) — kept
+ *  as a typed, spread-in object rather than inline JSX attributes so the
+ *  extra anchor props reach the rendered `<a>` without an excess-property
+ *  error against that narrower prop type. */
+const EXTERNAL_LINK_PROPS: React.AnchorHTMLAttributes<HTMLAnchorElement> = {
+  target: '_blank',
+  rel: 'noopener noreferrer',
 };
 
 const RSVP_OPTIONS: Array<{
   value: RSVPStatus;
   label: string;
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
 }> = [
-  { value: 'accepted', label: 'Going', icon: <Check className="h-4 w-4" /> },
-  { value: 'tentative', label: 'Maybe' },
-  { value: 'declined', label: 'Decline', icon: <X className="h-4 w-4" /> },
+  { value: 'accepted', label: 'Going', icon: <Check className="h-4 w-4" aria-hidden /> },
+  { value: 'tentative', label: 'Maybe', icon: <CalendarClock className="h-4 w-4" aria-hidden /> },
+  { value: 'declined', label: 'Decline', icon: <X className="h-4 w-4" aria-hidden /> },
 ];
 
 export interface FairwayEventDetailDrawerProps {
@@ -96,6 +101,13 @@ export interface FairwayEventDetailDrawerProps {
     pending: number;
     total: number;
   } | null;
+  /**
+   * Coach view: the attendee list from the SAME `getEventRSVP` call that
+   * produced `rsvpSummary`, so the People section never fetches it a second
+   * time. `null` while that call is in flight; omit it (player view, or the
+   * orchestrator's fetch failed) and the People section fetches for itself.
+   */
+  attendees?: EventAttendee[] | null;
   /** Player RSVP submit (the EXISTING respondToEvent action, via the parent). */
   onRespond?: (eventId: string, status: RSVPStatus) => Promise<RsvpRespondResult>;
   /** Coach view: opens the Fairway create/edit editor for this event. */
@@ -155,6 +167,7 @@ export function FairwayEventDetailDrawer({
   isCoach,
   rsvpStatus,
   rsvpSummary,
+  attendees,
   onRespond,
   onEdit,
   timezone,
@@ -182,6 +195,26 @@ export function FairwayEventDetailDrawer({
   // rendering on a phone anyway.
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const side: SheetSide = isDesktop ? 'right' : 'bottom';
+
+  // PERF: the People and Files lists (each a fetch + a list of rows) mount
+  // only once the sheet has SETTLED, so the open translate animates a light
+  // tree — header, response group, metadata. The Sheet reports the panel's
+  // own animation end; the timer is the fallback for environments where no
+  // animation runs (reduced motion, a non-animating test double) so the
+  // sections never stay unmounted. Reset on every close.
+  const [settled, setSettled] = React.useState(false);
+  React.useEffect(() => {
+    if (!open) {
+      setSettled(false);
+      return;
+    }
+    const id = window.setTimeout(() => setSettled(true), SETTLE_FALLBACK_MS);
+    return () => window.clearTimeout(id);
+  }, [open]);
+  const onSheetAnimationEnd = React.useCallback((e: React.AnimationEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) setSettled(true);
+  }, []);
+  const sectionsActive = open && settled;
 
   React.useEffect(() => {
     responseRequest.current += 1;
@@ -218,12 +251,10 @@ export function FairwayEventDetailDrawer({
     };
   }, [open, eventId]);
 
-  // Standalone non-optional fallback — TYPE_META.other is `| undefined` under
-  // noUncheckedIndexedAccess, so it can't guarantee a non-undefined `meta`.
-  const META_FALLBACK: { label: string; tone: FwStatusTone } = { label: 'Event', tone: 'neutral' };
-  const meta = event
-    ? TYPE_META[(event.event_type || 'other').toLowerCase()] ?? META_FALLBACK
-    : META_FALLBACK;
+  // The ONE event-type presentation table (eventPresentation.ts) — shared
+  // with the agenda row and the month grid so a "qualifier" never disagrees
+  // between screens (audit finding #5).
+  const meta = typeMeta(event?.event_type);
 
   // ── RSVP gating (audit finding #16) ────────────────────────────────────────
   // The drawer previously rendered live RSVP buttons on past events, non-RSVP
@@ -255,6 +286,9 @@ export function FairwayEventDetailDrawer({
   // only, never a server-permission change.
   const attendanceProminent =
     isCoach && Number.isFinite(startMs) && startMs - nowMs <= ATTENDANCE_PROMINENT_WINDOW_MS;
+  // Whether the prominent case actually gets its own footer CTA — also
+  // requires a team event (the Attendance screen needs `event.team_id`).
+  const attendanceCta = attendanceProminent && Boolean(event?.team_id);
 
   const displayedResponse = savedResponse ?? rsvpStatus;
   const handleRespond = async (status: RSVPStatus) => {
@@ -278,363 +312,307 @@ export function FairwayEventDetailDrawer({
     }
   };
 
-  /** Icon at the head of a detail row: a bare emerald glyph in a 32px
-   *  alignment box (a cream disc on a cream card washes out; the accent is
-   *  the drawer's one colour — owner, 2026-09-09), or a semantic-tone disc
-   *  when the tone carries meaning. */
-  const rowIcon = (Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>, tint?: 'warning' | 'success') => (
-    <span
-      aria-hidden
-      className={cn(
-        'grid h-8 w-8 shrink-0 place-items-center rounded-full',
-        tint === 'warning'
-          ? 'bg-fw-warning-bg text-fw-warning-ink'
-          : tint === 'success'
-            ? 'bg-fw-success-bg text-fw-success-ink'
-            : 'text-accent-700',
-      )}
-    >
-      <Icon className="h-[18px] w-[18px]" aria-hidden />
-    </span>
-  );
+  // Plain `InsetGroup.Row as="button"` carries none of `Button`'s own
+  // haptic — fire the selection tick by hand to keep parity with the
+  // `PressTarget` row this replaced. NOT used for the footer CTA below,
+  // which is a real `Button` and already fires its own (impact) haptic.
+  const openAttendanceRow = () => {
+    fwHaptic('selection');
+    setAttendanceOpen(true);
+  };
+  const openAttendance = () => setAttendanceOpen(true);
 
   const showDock = isCoach && Boolean(onEdit);
+  const showFooter = showDock || attendanceCta;
 
   return (
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
       side={side}
+      // Frost is a bottom-sheet-only material (Sheet keeps docked sides
+      // matte automatically) — the desktop right inspector is unaffected.
+      material="frost"
       title={event?.title ?? 'Event'}
       hideTitle
+      onAnimationEnd={onSheetAnimationEnd}
       className={cn(
         surfaces.scope,
         // The shell's own X is an absolute sibling after the body; lift it
-        // over the sticky glass header so it stays tappable while scrolled.
+        // over the sticky matte header so it stays tappable while scrolled.
         '[&>button[aria-label=Close]]:z-30',
         side === 'bottom'
-          ? cn('sm:mx-auto sm:max-w-xl', surfaces.panel)
+          ? // NOT `surfaces.panel` here: that class paints a fully opaque
+            // canvas background, which would completely hide the frost
+            // blur underneath it. The frost tier's own background carries
+            // the sheet's material on this side.
+            'sm:mx-auto sm:max-w-xl'
           : cn('w-[400px] max-w-full', surfaces.inspector),
       )}
     >
       {event ? (
-        <Sheet.Body className="flex flex-col px-0 py-0 first:pt-0 last:pb-0">
-          {/* Sticky glass header — type pill (+ cancelled badge), title,
-              date/time line, plus the anchored "More" menu for destructive
-              actions (§2.10). Cancelled events render DISTINCTLY (badge +
-              strike) instead of disappearing — soft-cancel lifecycle. The
-              header stays pinned while the sections below scroll under it. */}
-          <header
-            className={cn(
-              'sticky top-0 z-20 flex flex-col gap-2.5 border-b px-5 pb-4 pr-14 pt-5',
-              'fw-glass-chrome',
-            )}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <StatusPill tone={meta.tone} size="sm" dot={false}>
-                  {meta.label}
-                </StatusPill>
-                {isCancelled ? (
-                  <StatusPill tone="danger" size="sm" dot={false}>
-                    Cancelled
+        <>
+          <Sheet.Body className="flex flex-col px-0 py-0 first:pt-0 last:pb-0">
+            {/* Sticky header — type pill (+ cancelled badge), title, date/time
+                line, plus the anchored "More" menu for destructive actions
+                (§2.10). Cancelled events render DISTINCTLY (badge + strike)
+                instead of disappearing — soft-cancel lifecycle. Plain matte
+                (bg-surface + hairline), never blurred: the header is not a
+                floating element, and the sheet around it already is. */}
+            <header
+              className={cn(
+                'sticky top-0 z-20 flex flex-col gap-2.5 border-b border-border-subtle bg-surface px-5 pb-4 pr-14 pt-5',
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <StatusPill tone={meta.tone} size="sm" dot={false}>
+                    {meta.label}
                   </StatusPill>
+                  {isCancelled ? (
+                    <StatusPill tone="danger" size="sm" dot={false}>
+                      Cancelled
+                    </StatusPill>
+                  ) : null}
+                </div>
+                {isCoach ? (
+                  <EventActionsMenu
+                    event={event}
+                    onCancelEvent={onCancelEvent}
+                    onRestoreEvent={onRestoreEvent}
+                    onDeletePermanently={onDeletePermanently}
+                  />
                 ) : null}
               </div>
-              {isCoach ? (
-                <EventActionsMenu
-                  event={event}
-                  onCancelEvent={onCancelEvent}
-                  onRestoreEvent={onRestoreEvent}
-                  onDeletePermanently={onDeletePermanently}
+              <h2
+                className={cn(
+                  'font-fw-display text-h2 font-medium tracking-[-0.005em] text-text-primary',
+                  isCancelled && 'text-text-tertiary line-through decoration-2',
+                )}
+              >
+                {event.title}
+              </h2>
+              <p className="flex items-center gap-1.5 font-fw-sans text-body-sm tabular-nums text-text-secondary">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0 text-accent-700" aria-hidden />
+                <span>{formatDateLine(event, timezone)}</span>
+              </p>
+            </header>
+
+            <div className={cn('flex flex-col gap-5 px-5 pt-4', showFooter ? 'pb-5' : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]')}>
+              {/* Player "Your response" — one InsetGroup, not a bordered card.
+                  GATED: hidden for non-RSVP events; LOCKED (read-only) for
+                  past / post-deadline / cancelled events (audit finding #16). */}
+              {!isCoach && onRespond && requiresRsvp ? (
+                <InsetGroup variant="inset" aria-label="Your response">
+                  {rsvpLocked ? (
+                    <InsetGroup.Row icon={<Lock aria-hidden />} align="start">
+                      <p className="font-fw-sans text-body-sm font-medium text-text-primary">{lockReason}</p>
+                      <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
+                        Your response: {displayedResponse ? RSVP_STATUS_LABEL[displayedResponse] : '—'}
+                      </p>
+                    </InsetGroup.Row>
+                  ) : (
+                    <InsetGroup.Row align="start" className="flex-col items-stretch gap-3 py-3">
+                      <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
+                        Your response
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {RSVP_OPTIONS.map((opt) => {
+                          const isSelected = displayedResponse === opt.value;
+                          return (
+                            <Button
+                              key={opt.value}
+                              type="button"
+                              variant={isSelected ? 'primary' : 'secondary'}
+                              size="md"
+                              fullWidth
+                              busy={pendingStatus === opt.value}
+                              disabled={pendingStatus !== null}
+                              aria-pressed={isSelected}
+                              leftIcon={opt.icon}
+                              onClick={() => handleRespond(opt.value)}
+                            >
+                              {opt.label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      {savedResponse ? (
+                        <p role="status" className="flex items-center gap-1.5 font-fw-sans text-body-sm text-accent-700">
+                          <Check className="h-4 w-4" aria-hidden />
+                          Response saved · {RSVP_STATUS_LABEL[savedResponse]}
+                        </p>
+                      ) : null}
+                      {deadlineLabel ? (
+                        <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+                          <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                          <span suppressHydrationWarning>Respond by {deadlineLabel}</span>
+                        </p>
+                      ) : null}
+                      {error ? (
+                        <p className="font-fw-sans text-caption text-fw-danger-ink" role="alert">
+                          {error}
+                        </p>
+                      ) : null}
+                    </InsetGroup.Row>
+                  )}
+                </InsetGroup>
+              ) : !isCoach && !requiresRsvp ? (
+                // No response required — say so explicitly rather than leaving a
+                // silent gap where the RSVP section would otherwise sit.
+                <p className="font-fw-sans text-caption text-text-tertiary">
+                  No response needed for this event.
+                </p>
+              ) : null}
+
+              {/* Metadata — owner, location, notes, linked trip. Only rendered
+                  when at least one applies (honest: no empty group). */}
+              {(event.owner_label && event.owner_player_id) || event.location || stripClassTag(event.description) || linkedTrip ? (
+                <InsetGroup variant="inset">
+                  {/* Whose class this is. Only ever set on synced class meetings,
+                      and the one place the FULL name is shown — the chips
+                      elsewhere are abbreviated to fit. */}
+                  {event.owner_label && event.owner_player_id ? (
+                    <InsetGroup.Row icon={<UserRound aria-hidden />}>
+                      <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                        {event.owner_label}
+                      </span>
+                    </InsetGroup.Row>
+                  ) : null}
+
+                  {/* Location — taps through to Maps. */}
+                  {event.location ? (
+                    <InsetGroup.Row
+                      as="a"
+                      href={mapsHref(event.location)}
+                      {...EXTERNAL_LINK_PROPS}
+                      aria-label={`Open ${event.location} in Google Maps (opens in a new tab)`}
+                      icon={<MapPin aria-hidden />}
+                      trailing={<ExternalLink aria-hidden />}
+                    >
+                      <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                        {event.location}
+                      </span>
+                    </InsetGroup.Row>
+                  ) : null}
+
+                  {/* Description. The `[class:<id>]` ownership marker is internal
+                      plumbing, not prose — it was rendering verbatim to coaches
+                      under a class's instructor and credits. */}
+                  {stripClassTag(event.description) ? (
+                    <InsetGroup.Row icon={<AlignLeft aria-hidden />} align="start">
+                      <p className="whitespace-pre-wrap font-fw-sans text-body-sm leading-[1.5] text-text-secondary">
+                        {stripClassTag(event.description)}
+                      </p>
+                    </InsetGroup.Row>
+                  ) : null}
+
+                  {/* Linked travel itinerary (P440) — only when this event has a
+                      trip in golf_travel_itineraries pointing back at it. Deep-
+                      links to the SPECIFIC trip (?trip=<id>) so Travel HQ auto-
+                      selects it. Honest: hidden when the event has no linked trip. */}
+                  {linkedTrip ? (
+                    <InsetGroup.Row
+                      as={Link}
+                      href={`/golf/dashboard/travel?trip=${linkedTrip.id}`}
+                      icon={<Plane aria-hidden />}
+                      trailing={<ArrowRight aria-hidden />}
+                    >
+                      View itinerary:{' '}
+                      <span className="font-medium text-text-primary">
+                        {linkedTrip.destination || linkedTrip.event_name || 'travel itinerary'}
+                      </span>
+                    </InsetGroup.Row>
+                  ) : null}
+                </InsetGroup>
+              ) : null}
+
+              {/* Coach responses — one information object, not four cards.
+                  Sits directly above the per-person People list below: one
+                  summary, one roster, not two disconnected counts. */}
+              {isCoach && rsvpSummary ? (
+                <StatMatrix
+                  label="Responses"
+                  detail={`${rsvpSummary.total} invited`}
+                  variant="inset"
+                  items={[
+                    { label: 'Accepted', value: rsvpSummary.accepted, tone: rsvpSummary.accepted > 0 ? 'accent' : 'neutral' },
+                    { label: 'Maybe', value: rsvpSummary.tentative },
+                    { label: 'No', value: rsvpSummary.declined },
+                    { label: 'Pending', value: rsvpSummary.pending },
+                  ]}
                 />
               ) : null}
-            </div>
-            <h2
-              className={cn(
-                'font-fw-display text-h2 font-medium tracking-[-0.005em] text-text-primary',
-                isCancelled && 'text-text-tertiary line-through decoration-2',
-              )}
-            >
-              {event.title}
-            </h2>
-            <p className="flex items-center gap-1.5 font-fw-sans text-body-sm tabular-nums text-text-secondary">
-              <Clock className="h-3.5 w-3.5 flex-shrink-0 text-accent-700" aria-hidden />
-              <span>{formatDateLine(event, timezone)}</span>
-            </p>
-          </header>
 
-          <div className={cn('flex flex-col gap-4 px-5 pt-4', showDock ? 'pb-4' : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]')}>
-          {/* Player RSVP — 3 large selectable cards wired to the existing
-              respondToEvent. GATED: hidden for non-RSVP events; LOCKED
-              (read-only) for past / post-deadline / cancelled events (audit
-              finding #16). Sits directly under the header (§2.10/§18 order:
-              header, response-or-edit, location). */}
-          {!isCoach && onRespond && requiresRsvp ? (
-            rsvpLocked ? (
-              <div className={cn('flex items-center gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-                {rowIcon(Lock)}
-                <div className="min-w-0">
-                  <p className="font-fw-sans text-body-sm font-medium text-text-primary">{lockReason}</p>
-                  <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
-                    Your response: {displayedResponse ? RSVP_STATUS_LABEL[displayedResponse] : '—'}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className={cn('flex flex-col gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-                <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-                  Your response
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {RSVP_OPTIONS.map((opt) => {
-                    const isSelected = displayedResponse === opt.value;
-                    const Icon = opt.value === 'accepted' ? Check : opt.value === 'declined' ? X : CalendarClock;
-                    return (
-                      <Button
-                        key={opt.value}
-                        variant="ghost"
-                        size="md"
-                        fullWidth
-                        busy={pendingStatus === opt.value}
-                        disabled={pendingStatus !== null}
-                        aria-pressed={isSelected}
-                        onClick={() => handleRespond(opt.value)}
-                        className={cn(
-                          'h-auto min-h-[84px] flex-col gap-2 rounded-fw-md px-2 py-3 font-fw-sans text-body-sm font-semibold',
-                          'text-text-primary hover:bg-transparent hover:text-text-primary',
-                          'border border-border-subtle bg-surface',
-                          isSelected && 'ring-2 ring-accent-600 ring-offset-2 ring-offset-surface',
-                        )}
-                      >
-                        <span
-                          aria-hidden
-                          className={cn(
-                            'grid h-8 w-8 place-items-center rounded-full',
-                            isSelected ? 'bg-accent-650 text-text-on-accent' : 'text-text-secondary',
-                          )}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        {opt.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-                {savedResponse ? (
-                  <p role="status" className="flex items-center gap-1.5 font-fw-sans text-body-sm text-accent-700">
-                    <Check className="h-4 w-4" aria-hidden />
-                    Response saved · {RSVP_STATUS_LABEL[savedResponse]}
-                  </p>
-                ) : null}
-                {deadlineLabel ? (
-                  <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
-                    <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
-                    <span suppressHydrationWarning>Respond by {deadlineLabel}</span>
-                  </p>
-                ) : null}
-                {error ? (
-                  <p className="font-fw-sans text-caption text-fw-danger-ink" role="alert">
-                    {error}
-                  </p>
-                ) : null}
-              </div>
-            )
-          ) : !isCoach && !requiresRsvp ? (
-            // No response required — say so explicitly rather than leaving a
-            // silent gap where the RSVP section would otherwise sit.
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              No response needed for this event.
-            </p>
-          ) : null}
+              {/* People — who is involved and their status (its own eyebrow +
+                  InsetGroup, no wrapper card here). Mounts once the sheet has
+                  settled; a coach's list arrives via `attendees`. */}
+              <EventPeopleSection eventId={event.id} active={sectionsActive} attendees={attendees} />
 
-          {/* Details card — owner, location, description, linked trip. Each
-              is a 44px row with a tinted icon disc; rows that navigate carry
-              a chevron / external-link glyph. */}
-          {(event.owner_label && event.owner_player_id) || event.location || stripClassTag(event.description) || linkedTrip ? (
-            <div className={cn('flex flex-col rounded-card px-4 py-1', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-              {/* Whose class this is. Only ever set on synced class meetings,
-                  and the one place the FULL name is shown — the chips
-                  elsewhere are abbreviated to fit. */}
-              {event.owner_label && event.owner_player_id ? (
-                <div className="flex min-h-11 items-center gap-3 py-2">
-                  {rowIcon(UserRound)}
-                  <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                    {event.owner_label}
-                  </span>
-                </div>
+              {/* Files (§2.6) — attach-from-library, count in the eyebrow.
+                  Mounts once the sheet has settled. */}
+              {event.team_id ? (
+                <EventFilesSection
+                  eventId={event.id}
+                  teamId={event.team_id}
+                  isCoach={isCoach}
+                  active={sectionsActive}
+                />
               ) : null}
 
-              {/* Location — taps through to Maps. */}
-              {event.location ? (
-                <a
-                  href={mapsHref(event.location)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Open ${event.location} in Google Maps (opens in a new tab)`}
-                  className={cn(
-                    'flex min-h-11 items-center justify-between gap-3 rounded-fw-md py-2',
-                    'outline-none transition-colors [transition-duration:180ms] hover:text-accent-700',
-                    'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
-                  )}
+              {/* Attendance (§2.5) — opens the dedicated screen. Prominent
+                  (primary-styled) for a coach starting one hour before the
+                  event's start becomes the Sheet.Footer CTA instead (below);
+                  otherwise it is a quiet disclosure row here. Players see
+                  their own recorded status only (S5 branches on the server's
+                  `viewerIsCoach`/`viewerPlayerId`, never on this button). */}
+              {event.team_id && !attendanceCta ? (
+                <InsetGroup variant="inset">
+                  <InsetGroup.Row
+                    as="button"
+                    icon={<ClipboardCheck aria-hidden />}
+                    trailing={<ChevronRight aria-hidden />}
+                    onClick={openAttendanceRow}
+                  >
+                    {isCoach ? 'Record attendance' : 'View my attendance'}
+                  </InsetGroup.Row>
+                </InsetGroup>
+              ) : null}
+            </div>
+          </Sheet.Body>
+
+          {/* Sticky CTA — the ONE primary action for a coach preparing the
+              event. When Attendance is prominent (within the hour), it takes
+              the primary slot and "Edit event" drops to secondary. */}
+          {showFooter ? (
+            <Sheet.Footer className="flex-col sm:flex-col">
+              {attendanceCta ? (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  shape="block"
+                  fullWidth
+                  leftIcon={<ClipboardCheck className="h-4 w-4" aria-hidden />}
+                  onClick={openAttendance}
                 >
-                  <span className="flex min-w-0 items-center gap-3">
-                    {rowIcon(MapPin)}
-                    <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                      {event.location}
-                    </span>
-                  </span>
-                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
-                </a>
+                  {isCoach ? 'Record attendance' : 'View my attendance'}
+                </Button>
               ) : null}
-
-              {/* Description. The `[class:<id>]` ownership marker is internal
-                  plumbing, not prose — it was rendering verbatim to coaches
-                  under a class's instructor and credits. */}
-              {stripClassTag(event.description) ? (
-                <div className="flex items-start gap-3 py-2.5">
-                  {rowIcon(AlignLeft)}
-                  <p className="min-w-0 whitespace-pre-wrap pt-1.5 font-fw-sans text-body-sm leading-[1.5] text-text-secondary">
-                    {stripClassTag(event.description)}
-                  </p>
-                </div>
-              ) : null}
-
-              {/* Linked travel itinerary (P440) — only when this event has a
-                  trip in golf_travel_itineraries pointing back at it. Deep-
-                  links to the SPECIFIC trip (?trip=<id>) so Travel HQ auto-
-                  selects it. Honest: hidden when the event has no linked trip. */}
-              {linkedTrip ? (
-                <Link
-                  href={`/golf/dashboard/travel?trip=${linkedTrip.id}`}
-                  className={cn(
-                    'group flex min-h-11 items-center gap-3 rounded-fw-md py-2',
-                    'font-fw-sans text-body-sm text-text-secondary transition-colors hover:text-accent-700',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40',
-                  )}
+              {showDock && onEdit ? (
+                <Button
+                  variant={attendanceCta ? 'secondary' : 'primary'}
+                  size="lg"
+                  shape="block"
+                  fullWidth
+                  leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
+                  onClick={() => onEdit(event)}
                 >
-                  {rowIcon(Plane)}
-                  <span className="min-w-0 flex-1 truncate">
-                    View itinerary:{' '}
-                    <span className="font-medium text-text-primary">
-                      {linkedTrip.destination || linkedTrip.event_name || 'travel itinerary'}
-                    </span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-accent-700" aria-hidden />
-                </Link>
+                  Edit event
+                </Button>
               ) : null}
-            </div>
+            </Sheet.Footer>
           ) : null}
-
-          {/* Coach aggregate — 4 Readouts, tabular-nums, 0 rendered as 0.
-              Sits directly above the per-person People list below: one
-              summary, one roster, not two disconnected counts. */}
-          {isCoach && rsvpSummary ? (
-            <div className={cn('flex flex-col gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-              <div className="flex items-center gap-3">
-                {rowIcon(ClipboardCheck)}
-                <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-                  Responses · {rsvpSummary.total} invited
-                </p>
-              </div>
-              {/* One centred stat strip: figure over label, hairline dividers.
-                  Not four sunken tiles — cream on cream washed out and the
-                  left-aligned figures read off-centre (owner, 2026-09-09). */}
-              <dl className="grid grid-cols-4 divide-x divide-border-subtle">
-                {[
-                  { label: 'Accepted', value: rsvpSummary.accepted, accent: true },
-                  { label: 'Maybe', value: rsvpSummary.tentative, accent: false },
-                  { label: 'No', value: rsvpSummary.declined, accent: false },
-                  { label: 'Pending', value: rsvpSummary.pending, accent: false },
-                ].map((stat) => (
-                  <div key={stat.label} className="flex min-w-0 flex-col items-center gap-0.5 px-1 py-1 text-center">
-                    <dd
-                      className={cn(
-                        'font-fw-sans text-h3 font-semibold tabular-nums leading-none',
-                        // The accepted count is the figure that matters; it carries the accent.
-                        stat.accent && stat.value > 0 ? 'text-accent-700' : 'text-text-primary',
-                      )}
-                    >
-                      {stat.value}
-                    </dd>
-                    <dt className="truncate font-fw-sans text-caption font-medium text-text-secondary">{stat.label}</dt>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          ) : null}
-
-          {/* People — who is involved and their status (§2.10, §18). */}
-          <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-            <EventPeopleSection eventId={event.id} active={open} />
-          </div>
-
-          {/* Files (§2.6) — attach-from-library, count in the heading. */}
-          {event.team_id ? (
-            <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-              <EventFilesSection
-                eventId={event.id}
-                teamId={event.team_id}
-                isCoach={isCoach}
-                active={open}
-              />
-            </div>
-          ) : null}
-
-          {/* Attendance (§2.5) — opens the dedicated screen. Prominent
-              (primary-styled) for a coach starting one hour before the
-              event's start; a quiet row otherwise. Players see their own
-              recorded status only (S5 branches on the server's
-              `viewerIsCoach`/`viewerPlayerId`, never on this button). */}
-          {event.team_id ? (
-            attendanceProminent ? (
-              // A labeled action: the shared Button, nothing reaching into it.
-              <Button
-                variant="primary"
-                size="lg"
-                fullWidth
-                leftIcon={<ClipboardCheck className="h-4 w-4" aria-hidden />}
-                onClick={() => setAttendanceOpen(true)}
-              >
-                {isCoach ? 'Record attendance' : 'View my attendance'}
-              </Button>
-            ) : (
-              // A quiet disclosure row: the unstyled pressable with its own layout.
-              <PressTarget
-                onClick={() => setAttendanceOpen(true)}
-                className="flex min-h-[60px] w-full items-center gap-3 rounded-card border border-border-subtle bg-surface px-4 py-3 text-left font-fw-sans text-body-sm font-semibold text-text-primary [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken"
-              >
-                {rowIcon(ClipboardCheck)}
-                <span className="min-w-0 flex-1">{isCoach ? 'Record attendance' : 'View my attendance'}</span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
-              </PressTarget>
-            )
-          ) : null}
-          </div>
-
-          {/* Coach dock — the ONE primary action for a coach preparing the
-              event (§18 "Event detail: progressive depth"). Pinned to the
-              bottom of the sheet so it never scrolls away. */}
-          {showDock && onEdit ? (
-            <div
-              className={cn(
-                'sticky bottom-0 z-20 mt-auto flex border-t px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-end',
-                'fw-glass-chrome',
-              )}
-            >
-              <Button
-                variant="primary"
-                size="lg"
-                fullWidth
-                leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
-                onClick={() => onEdit(event)}
-                className={'sm:w-auto'}
-              >
-                Edit event
-              </Button>
-            </div>
-          ) : null}
-        </Sheet.Body>
+        </>
       ) : null}
 
       {event?.team_id ? (

@@ -15,15 +15,18 @@
  * already names the month and steps it. Selecting a day only changes the
  * selected date; it never switches the display mode.
  *
- * One lifted card (the same raised material as the agenda's day groups) with
- * the day numbers in the same sans face (tabular figures) as the day strip
- * and the agenda rows — never the mono face the desktop grid uses for dense
- * cells.
+ * One matte stage (the same hairline-bordered `Surface` recipe as the
+ * agenda's stage — border, no shadow) with the day numbers in the same sans
+ * face (tabular figures) as the day strip and the agenda rows — never the
+ * mono face the desktop grid uses for dense cells. `CalendarSurface` owns its
+ * own card look by default, so its border/fill are neutralized here to avoid
+ * a card nested inside a card — the outer `Surface` is the only edge.
  * ========================================================================== */
 
 import * as React from 'react';
 import { startOfMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Surface } from '@/components/fairway';
 import { CalendarSurface } from '@/components/fairway/calendar';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { eventDaySpan } from '@/lib/calendar/timezone';
@@ -68,36 +71,41 @@ export function FairwayMonthOverview({
   }, [events, timezone]);
 
   return (
-    <CalendarSurface
-      mode="single"
-      required
-      selected={selectedDate}
-      onSelect={(date) => { if (date) onSelectDate(date); }}
-      month={startOfMonth(selectedDate)}
-      onMonthChange={onMonthChange}
-      today={nowRef}
-      eventDays={eventDays}
-      size="comfortable"
-      glass={false}
-      hideNavigation
-      showOutsideDays
-      className={cn(
-        // THE card, lifted: hairline plus the lit top edge and the raised whisper.
-        'rounded-card border-border-subtle bg-surface [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]',
-        // The same sans, tabular figures as every other date in the calendar.
-        '[&_.rdp-day_button]:font-fw-sans [&_.rdp-day_button]:font-medium [&_.rdp-day_button]:text-body-lg',
-        className,
-      )}
-      classNames={{
-        // The toolbar above already names and steps the month.
-        month_caption: 'sr-only',
-        // Fill the phone width: DayPicker's table stretches, day buttons stay
-        // their 44px targets centered in each cell.
-        root: 'w-full',
-        months: 'w-full',
-        month: 'w-full',
-        month_grid: 'w-full',
-      }}
-    />
+    // The matte stage: ONE hairline border, no shadow. `className` (the
+    // parent's own spacing hook) lands here so the surrounding `gap-4` still
+    // applies to this as a single flex child.
+    <Surface elevation="border" padding="none" className={cn('overflow-hidden rounded-card', className)}>
+      <CalendarSurface
+        mode="single"
+        required
+        selected={selectedDate}
+        onSelect={(date) => { if (date) onSelectDate(date); }}
+        month={startOfMonth(selectedDate)}
+        onMonthChange={onMonthChange}
+        today={nowRef}
+        eventDays={eventDays}
+        size="comfortable"
+        glass={false}
+        hideNavigation
+        showOutsideDays
+        className={cn(
+          // No card of its own — the outer Surface is the only edge, so this
+          // is transparent and edge-to-edge inside it (card-in-card is banned).
+          'w-full border-0 bg-transparent',
+          // The same sans, tabular figures as every other date in the calendar.
+          '[&_.rdp-day_button]:font-fw-sans [&_.rdp-day_button]:font-medium [&_.rdp-day_button]:text-body-lg',
+        )}
+        classNames={{
+          // The toolbar above already names and steps the month.
+          month_caption: 'sr-only',
+          // Fill the phone width: DayPicker's table stretches, day buttons stay
+          // their 44px targets centered in each cell.
+          root: 'w-full',
+          months: 'w-full',
+          month: 'w-full',
+          month_grid: 'w-full',
+        }}
+      />
+    </Surface>
   );
 }
