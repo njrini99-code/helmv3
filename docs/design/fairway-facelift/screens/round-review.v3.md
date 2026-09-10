@@ -146,7 +146,10 @@ Files added under `src/components/golf/coachhelm/round-review/`:
 `round-review-parts.tsx` (verdict, readouts, ledger columns, table),
 `RoundReviewFieldSheet.tsx` (the composition root), `HoleDetail.tsx` (the hole
 panel lifted out of `ReviewHero`), `FullBreakdownPanel.tsx`. `ReviewHero.tsx`
-and `FilmstripReview.tsx` are deleted. `RoundShape` is page-local: it is not
+and `FilmstripReview.tsx` are deleted. The route's `loading.tsx` was
+rebuilt with them: it had been drawing the retired centred card with its
+3-up mini-stat row, which is the first thing a navigation paints, so it now
+mirrors the page's own masthead-and-stage loading surface. `RoundShape` is page-local: it is not
 in the shared fairway barrel or registry.
 
 ### Deviations, and why
@@ -231,6 +234,15 @@ in the shared fairway barrel or registry.
     a pressable row in the table. Coverage is repointed, not deleted.
 
 ### Known limitations
+
+- `src/components/golf/dashboard/premium-components.tsx` is now reachable from
+  no route. Its only importer in the repo was this page's
+  `containerVariants`/`itemVariants`, and the v3 masthead uses the `m` +
+  `EASE_CINEMATIC` vocabulary directly instead. `src/test/route-reachability.test.ts`
+  lists it, alongside four components orphaned by other sessions' facelift
+  passes (`StandingTrack`, `CommandOpening`, `BriefBand`, `TeamSignalSummary`).
+  Deleting a file in the shared golf dashboard tree is outside this pass's
+  ownership, so it is reported rather than removed.
 
 - At the specced 3/12 width, `StandingBars` truncates its reference row label
   to "Fiel…" in the third ledger column. That truncation is inside
