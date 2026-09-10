@@ -183,9 +183,9 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
     mobile: '', desktop: '', examples: ['Spine'],
   },
   {
-    name: 'StandingTrack', category: 'intelligence', status: 'canonical', archetypes: ['A', 'B'], material: 'matte',
-    bestFor: ['where do I rank vs team / tour'], avoidFor: [], replaces: ['"you are top quartile" text'],
-    mobile: '', desktop: '', examples: ['Spine', 'Player stats'],
+    name: 'StandingBars', category: 'intelligence', status: 'canonical', archetypes: ['A', 'B'], material: 'matte',
+    bestFor: ['where do I rank vs team / tour: labeled You / Team / Reference bars, diverging for strokes gained'], avoidFor: ['a lone dot on a rail'], replaces: ['StandingTrack', 'StandingStrip', 'legacy StandingBar', '"you are top quartile" text'],
+    mobile: 'frame="bare" inside a host card', desktop: 'className="text-text-on-accent" on the Spine gradient', examples: ['Spine', 'Player stats', 'Round review'],
   },
   {
     name: 'MetricCard', category: 'intelligence', status: 'legacy', archetypes: ['A'], material: 'matte',
@@ -257,7 +257,7 @@ export const QUESTION_TO_VISUAL: ReadonlyArray<readonly [question: string, compo
   ['Am I improving?', 'TrendChart'],
   ['What changed?', 'Sparkline'],
   ['What hurts me most?', 'StrokesGainedTornado'],
-  ['Where do I rank?', 'StandingTrack'],
+  ['Where do I rank?', 'StandingBars'],
   ['Who needs attention?', 'MatrixBoard'],
   ['Where are misses?', 'ShotDispersion'],
   ['Where is putting weakness?', 'PuttingHeatmap'],

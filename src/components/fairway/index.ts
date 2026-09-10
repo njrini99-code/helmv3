@@ -367,6 +367,8 @@ export {
   resolveCssColor,
   type UseCanvasLayer,
   type CanvasSize,
+  StandingBars,
+  type StandingBarsProps,
 } from './charts';
 
 // ── ChartCard alias (cohesion: ChartFrame self-describes as the §6 ChartCard) ─
@@ -438,6 +440,9 @@ export {
   TooltipProvider,
   type TooltipProps,
   type TooltipProviderProps,
+  ConfirmModal,
+  type ConfirmModalProps,
+  type ConfirmModalTone,
 } from './overlays';
 
 // ── command ─────────────────────────────────────────────────────────────────
