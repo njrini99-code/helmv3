@@ -53,7 +53,7 @@ knip + import-graph + per-file `rg` verification. Routes: no unreachable `page.t
 | legacy `StandingBar` (golf/coachhelm/v3), `StandingStrip`, `StandingTrack` | replaced by `charts/StandingBars` | — | delete once no consumer remains |
 | `fairway/pages/dashboard/DaySchedule.tsx` component | coach home folds the schedule into Today; only the exported `dayKeyInTz`/`dayLabel` helpers are still imported | — | move the helpers, delete the component |
 
-Legacy stragglers being migrated: 12 `ui/button` + 6 `ui/input` imports inside Fairway pages, 3 `ui/confirm-dialog` → ModalShell, 6 `ui/skeleton` loading screens → Fairway Skeleton, `command/glass-surface.tsx` → GlassSurface, ChartTooltip hardcoded blur/rgb → tokens.
+Legacy stragglers: ui/input and the three ui/confirm-dialog consumers inside Fairway pages are migrated (file-local ModalShell confirms; a shared overlays confirm is the follow-up), ChartTooltip and the command glass surface use tokens and the canonical GlassSurface. Still legacy: four ui/button uses in new round entry that need `haptic="none"` (Fairway Button gap), PlayersGridView, FairwayGolfClasses and FairwayExpenseList on ui/confirm-dialog, and the join/admin/onboarding loading screens, which `.claude/rules/design-system.md` keeps on the legacy skeleton on purpose.
 
 ## Performance
 
