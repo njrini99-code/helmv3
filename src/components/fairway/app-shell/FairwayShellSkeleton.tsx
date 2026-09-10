@@ -82,10 +82,21 @@ export interface FairwayShellSkeletonProps {
    * this boundary to that one changes nothing but the chrome filling in.
    */
   children?: React.ReactNode;
+  /**
+   * The rail's material — mirrors `FairwaySidebarProps['tone']` so this
+   * silhouette matches whichever rail the real `AppShell` is about to paint
+   * (fairway-facelift BRIEF.md §2). Unlike `FairwaySidebar` (shared by
+   * baseball/admin, so it must default to the existing `'dark'` recipe),
+   * this skeleton has exactly one caller — the golf loading boundary
+   * (`src/app/golf/loading.tsx`) — so it defaults to `'cream'` directly
+   * instead of requiring every caller to pass the prop.
+   */
+  tone?: 'dark' | 'cream';
   className?: string;
 }
 
-export function FairwayShellSkeleton({ children, className }: FairwayShellSkeletonProps) {
+export function FairwayShellSkeleton({ children, tone = 'cream', className }: FairwayShellSkeletonProps) {
+  const cream = tone === 'cream';
   return (
     <div
       role="status"
@@ -103,12 +114,13 @@ export function FairwayShellSkeleton({ children, className }: FairwayShellSkelet
       <div
         aria-hidden
         className={cn(
-          'on-dark fixed left-0 top-0 z-[var(--fw-z-nav)] hidden h-dvh w-[260px] flex-col',
-          'bg-nav-bg pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] md:flex',
+          'fixed left-0 top-0 z-[var(--fw-z-nav)] hidden h-dvh w-[260px] flex-col',
+          'pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] md:flex',
+          cream ? 'bg-surface-sunken border-r border-border-subtle' : 'on-dark bg-nav-bg',
         )}
       >
         {/* Brand — the real lockup (static, session-independent). */}
-        <div className="flex h-16 items-center border-b border-white/[0.06] px-5">
+        <div className={cn('flex h-16 items-center border-b px-5', cream ? 'border-border-subtle' : 'border-white/[0.06]')}>
           <span className="flex items-center gap-2.5">
             <Image
               src="/helm-golf-logo-transparent.png"
@@ -119,8 +131,13 @@ export function FairwayShellSkeleton({ children, className }: FairwayShellSkelet
               priority
               unoptimized
             />
-            <span className="font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em] text-nav-text">
-              Golf<span className="text-nav-accent">Helm</span>
+            <span
+              className={cn(
+                'font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em]',
+                cream ? 'text-text-primary' : 'text-nav-text',
+              )}
+            >
+              Golf<span className={cream ? 'text-accent-700' : 'text-nav-accent'}>Helm</span>
             </span>
           </span>
         </div>
@@ -131,12 +148,15 @@ export function FairwayShellSkeleton({ children, className }: FairwayShellSkelet
           <div className="flex flex-col gap-0.5">
             {NAV_ROWS.map((width, i) => (
               <div key={i} className="flex items-center gap-3 rounded-fw-md px-3.5 py-2.5">
-                {/* `bg-nav-surface` is the rail's OWN elevated tone (it is what
-                    an active nav row sits on), so these placeholders recede into
-                    the rail instead of reading as grey blocks on black. */}
-                <span className="h-[18px] w-[18px] flex-shrink-0 rounded-sm bg-nav-surface" />
+                {/* Dark: `bg-nav-surface` is the rail's OWN elevated tone (it is
+                    what an active nav row sits on), so these placeholders recede
+                    into the rail instead of reading as grey blocks on black.
+                    Cream: the same ink-on-surface wash the top bar's own
+                    placeholders below use, since `nav-surface` is a warm-black
+                    alias that would paint a dark blot on the cream rail. */}
+                <span className={cn('h-[18px] w-[18px] flex-shrink-0 rounded-sm', cream ? 'bg-text-primary/[0.07]' : 'bg-nav-surface')} />
                 <span
-                  className="h-2.5 rounded-full bg-nav-surface/70"
+                  className={cn('h-2.5 rounded-full', cream ? 'bg-text-primary/[0.05]' : 'bg-nav-surface/70')}
                   style={{ width: `${width}%` }}
                 />
               </div>

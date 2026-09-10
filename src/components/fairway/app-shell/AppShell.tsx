@@ -73,6 +73,14 @@ export interface AppShellProps {
    * Hidden when the rail is collapsed.
    */
   sidebarIdentityExtra?: React.ReactNode;
+  /**
+   * The rail's material — forwarded verbatim to `FairwaySidebar`'s `tone`
+   * prop (fairway-facelift BRIEF.md §2). Default `'dark'` (omitted) renders
+   * the existing warm-black rail unchanged; baseball and admin never pass
+   * this. Golf's desktop shell passes `'cream'` so the rail sits beside the
+   * cream canvas as one instrument.
+   */
+  sidebarTone?: FairwaySidebarProps['tone'];
 
   /** Breadcrumb trail for the top bar. */
   breadcrumbs?: readonly Breadcrumb[];
@@ -195,6 +203,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     brand,
     sidebarFooter,
     sidebarIdentityExtra,
+    sidebarTone,
     breadcrumbs,
     onSearchOpen,
     searchPlaceholder = DEFAULT_PLACEHOLDER,
@@ -284,8 +293,9 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         identityExtra: sidebarIdentityExtra,
         pathname,
         linkComponent,
+        tone: sidebarTone,
       }),
-      [sections, user, brand, sidebarFooter, sidebarIdentityExtra, pathname, linkComponent],
+      [sections, user, brand, sidebarFooter, sidebarIdentityExtra, pathname, linkComponent, sidebarTone],
     );
 
   // Gate the desktop rail's MOUNT (not just its CSS visibility) behind an

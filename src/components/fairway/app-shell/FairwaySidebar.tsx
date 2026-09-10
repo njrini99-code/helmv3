@@ -62,6 +62,23 @@ export function useSidebarCollapsed(): boolean {
   return useContext(SidebarCollapseContext);
 }
 
+/** The rail's material — see `FairwaySidebarProps['tone']` below. */
+export type SidebarTone = 'dark' | 'cream';
+
+/**
+ * Lets footer/brand slot children (rendered as `brand`/`footer` props from the
+ * PRODUCT shell, not this file) read the rail's tone without prop-drilling —
+ * mirrors `SidebarCollapseContext` above. Defaults to `'dark'`, matching
+ * `FairwaySidebarProps['tone']`'s own default, so a slot rendered outside this
+ * provider (tests, Storybook) still gets the long-standing warm-black recipe.
+ */
+export const SidebarToneContext = createContext<SidebarTone>('dark');
+
+/** Hook for sidebar brand/footer slots. Returns the rail's current tone. */
+export function useSidebarTone(): SidebarTone {
+  return useContext(SidebarToneContext);
+}
+
 /** Default link element — a plain anchor (works in isolation + tests). */
 const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
   <a href={href} {...rest}>
@@ -105,6 +122,16 @@ export interface FairwaySidebarProps {
    * the items below the fold existed.
    */
   hideScrollbar?: boolean;
+  /**
+   * The rail's material (fairway-facelift BRIEF.md §2/§3 — "premium warm
+   * cream canvas with structural Fairway green"). Default `'dark'` renders
+   * the EXACT existing warm-black recipe byte-for-byte — the baseball and
+   * admin shells share the `nav-*` aliases this reads and must never change.
+   * `'cream'` (golf desktop only) swaps the rail onto the same `--fw-color-*`
+   * surface/text tokens the canvas and cards already use, so it sits beside
+   * a cream canvas as one instrument instead of a bolted-on dark SaaS rail.
+   */
+  tone?: SidebarTone;
   className?: string;
 }
 
@@ -130,11 +157,13 @@ interface SidebarRowProps {
   item: NavItem;
   active: boolean;
   collapsed: boolean;
+  tone: SidebarTone;
   Link: ShellLinkComponent;
   onNavigate?: () => void;
 }
 
-function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowProps) {
+function SidebarRow({ item, active, collapsed, tone, Link, onNavigate }: SidebarRowProps) {
+  const cream = tone === 'cream';
   const Icon = item.icon;
   const rowRef = useRef<HTMLDivElement>(null);
   const [popoutTop, setPopoutTop] = useState<number | null>(null);
@@ -167,33 +196,67 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
         className={cn(
           navRowBase,
           collapsed ? 'justify-center px-2 py-2.5' : 'px-3.5 py-2.5',
-          // Active row carries the BRAND, not just a lighter grey. On the black
+          // Active row carries the BRAND, not just a lighter grey. On the dark
           // rail a neutral pill reads as "slightly less off" rather than as
           // "you are here"; a green-tinted well plus a green ring makes the
           // single most-looked-at piece of chrome in the app the place the
-          // black-and-green identity actually shows up.
+          // black-and-green identity actually shows up. On the cream rail
+          // the row sits on `bg-surface-sunken` already, so the active state
+          // is a tinted-glass capsule (`fw-frost-selection`, BRIEF.md §2)
+          // instead of a same-toned pill that would vanish into the rail.
+          // The capsule itself lives on the inset overlay span below, NOT on
+          // this element — `.fw-frost-selection`'s `prefers-reduced-
+          // transparency` fallback sets its OWN `color` to the on-accent ink
+          // (globals.css), and that rule and this `text-accent-700` utility
+          // sit in the same cascade layer, so which one would win on a
+          // shared element is a coin flip. Keeping the class off the text-
+          // bearing element sidesteps that entirely — see FairwayBottomNav's
+          // identical split (frost on an absolute sibling, ink on the row).
           active
-            ? 'bg-nav-surface text-nav-text ring-1 ring-nav-accent/25 [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.06)]'
-            : 'text-nav-text-dim hover:bg-nav-surface/50 hover:text-nav-text',
+            ? cream
+              ? 'text-accent-700'
+              : 'bg-nav-surface text-nav-text ring-1 ring-nav-accent/25 [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.06)]'
+            : cream
+              ? 'text-text-secondary hover:bg-surface-tint hover:text-text-primary'
+              : 'text-nav-text-dim hover:bg-nav-surface/50 hover:text-nav-text',
         )}
       >
+        {active && cream && (
+          // Decorative background layer only — no text lives here (see the
+          // comment above). `relative z-10` on every visible child below
+          // lifts it above this absolutely-positioned overlay so the label,
+          // icon and badges are never painted over, in either transparency
+          // mode.
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-fw-md border fw-frost-selection"
+          />
+        )}
         <Icon
           size={18}
           aria-hidden
-          className={cn('flex-shrink-0 transition-colors', active ? 'text-nav-accent' : 'text-nav-text-dim')}
+          className={cn(
+            'relative z-10 flex-shrink-0 transition-colors',
+            active ? (cream ? 'text-accent-700' : 'text-nav-accent') : cream ? 'text-text-secondary' : 'text-nav-text-dim',
+          )}
         />
         {!collapsed && (
-          <span className="min-w-0 flex-1">
+          <span className="relative z-10 min-w-0 flex-1">
             <span className="block truncate whitespace-nowrap">{item.label}</span>
             {item.description ? (
-              <span className="mt-0.5 block truncate text-caption font-normal leading-4 text-nav-text-dim">
+              <span className={cn('mt-0.5 block truncate text-caption font-normal leading-4', cream ? 'text-text-tertiary' : 'text-nav-text-dim')}>
                 {item.description}
               </span>
             ) : null}
           </span>
         )}
         {!collapsed && item.meta ? (
-          <span className="rounded-full border border-white/[0.08] px-1.5 py-0.5 font-fw-mono text-micro uppercase leading-none text-nav-text-dim">
+          <span
+            className={cn(
+              'relative z-10 rounded-full border px-1.5 py-0.5 font-fw-mono text-micro uppercase leading-none',
+              cream ? 'border-border-subtle text-text-tertiary' : 'border-white/[0.08] text-nav-text-dim',
+            )}
+          >
             {item.meta}
           </span>
         ) : null}
@@ -205,13 +268,16 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
           // reads as noise, not a shortcut announcement.
           <span
             aria-hidden="true"
-            className="rounded border border-white/[0.08] px-1.5 py-0.5 font-fw-mono text-micro leading-none text-nav-text-dim"
+            className={cn(
+              'relative z-10 rounded border px-1.5 py-0.5 font-fw-mono text-micro leading-none',
+              cream ? 'border-border-subtle text-text-tertiary' : 'border-white/[0.08] text-nav-text-dim',
+            )}
           >
             {item.shortcut}
           </span>
         ) : null}
         {typeof item.badge === 'number' && item.badge > 0 && !collapsed && (
-          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-650 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
+          <span className="relative z-10 ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-650 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
             {item.badge > 99 ? '99+' : item.badge}
           </span>
         )}
@@ -220,12 +286,19 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
             Collapsed rows are icon-only and centered, so an inline dot would
             shove the icon off-centre — pin it to the corner there instead. */}
         <NavPendingDot
-          className={collapsed ? 'absolute right-1.5 top-1.5 ml-0' : undefined}
+          className={collapsed ? 'z-10 absolute right-1.5 top-1.5 ml-0' : 'relative z-10'}
         />
         {typeof item.badge === 'number' && item.badge > 0 && collapsed && (
+          // The ring is a cutout matching whichever surface the dot sits on
+          // (not a "badge token" — see `bg-accent-500` above, unchanged in
+          // both tones), so it still reads as inset rather than a mismatched
+          // dark halo dropped onto the cream rail.
           <span
             aria-hidden
-            className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent-500 ring-2 ring-nav-bg"
+            className={cn(
+              'z-10 absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent-500 ring-2',
+              cream ? 'ring-surface-sunken' : 'ring-nav-bg',
+            )}
           />
         )}
       </Link>
@@ -233,24 +306,39 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
         <span
           aria-hidden="true"
           className={cn(
-            'pointer-events-none fixed left-[88px] z-[calc(var(--fw-z-nav)+1)] w-[268px] -translate-y-1/2 rounded-xl border border-white/[0.09] bg-nav-surface px-3.5 py-3 text-left shadow-fw-modal',
+            'pointer-events-none fixed left-[88px] z-[calc(var(--fw-z-nav)+1)] w-[268px] -translate-y-1/2 rounded-xl border px-3.5 py-3 text-left shadow-fw-modal',
+            cream ? 'border-border-subtle bg-surface' : 'border-white/[0.09] bg-nav-surface',
             'animate-in fade-in-0 zoom-in-95 duration-150',
           )}
           style={{ top: popoutTop }}
         >
           <span className="flex items-center justify-between gap-3">
-            <span className="truncate text-sm font-semibold text-nav-text">{item.label}</span>
+            <span className={cn('truncate text-sm font-semibold', cream ? 'text-text-primary' : 'text-nav-text')}>
+              {item.label}
+            </span>
             {item.shortcut ? (
-              <span className="rounded border border-white/[0.1] px-1.5 py-0.5 font-fw-mono text-micro leading-none text-nav-text-dim">
+              <span
+                className={cn(
+                  'rounded border px-1.5 py-0.5 font-fw-mono text-micro leading-none',
+                  cream ? 'border-border-subtle text-text-tertiary' : 'border-white/[0.1] text-nav-text-dim',
+                )}
+              >
                 {item.shortcut}
               </span>
             ) : null}
           </span>
           {item.description ? (
-            <span className="mt-1 block text-xs leading-4 text-nav-text-dim">{item.description}</span>
+            <span className={cn('mt-1 block text-xs leading-4', cream ? 'text-text-tertiary' : 'text-nav-text-dim')}>
+              {item.description}
+            </span>
           ) : null}
           {item.meta ? (
-            <span className="mt-2 inline-flex rounded-full border border-white/[0.08] px-2 py-0.5 font-fw-mono text-micro uppercase leading-none text-nav-text-dim">
+            <span
+              className={cn(
+                'mt-2 inline-flex rounded-full border px-2 py-0.5 font-fw-mono text-micro uppercase leading-none',
+                cream ? 'border-border-subtle text-text-tertiary' : 'border-white/[0.08] text-nav-text-dim',
+              )}
+            >
               {item.meta}
             </span>
           ) : null}
@@ -279,6 +367,7 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
     onNavigate,
     linkComponent,
     hideScrollbar = true,
+    tone = 'dark',
     className,
   },
   ref,
@@ -286,6 +375,7 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
   const reduceMotion = useReducedMotion();
   const Link = linkComponent ?? DefaultLink;
   const isCollapsed = isMobile ? false : collapsed;
+  const cream = tone === 'cream';
 
   // Take the first LETTER of each word, ignoring punctuation-only tokens.
   //
@@ -307,13 +397,17 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
 
   return (
     <SidebarCollapseContext.Provider value={isCollapsed}>
+    <SidebarToneContext.Provider value={tone}>
     <aside
       ref={ref}
       aria-label="Main navigation"
       // `.on-dark` activates the cream focus-halo from the design-system base
       // layer so the green focus ring survives the black background (§7.2).
+      // The cream tone sits on the app's own light surface, where the default
+      // focus ring already reads fine, so it skips this scope entirely.
       className={cn(
-        'on-dark flex flex-col bg-nav-bg text-nav-text',
+        'flex flex-col',
+        cream ? 'bg-surface-sunken text-text-primary border-r border-border-subtle' : 'on-dark bg-nav-bg text-nav-text',
         'transition-[width] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
         isMobile
           ? 'h-full w-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
@@ -330,10 +424,10 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
           aria-label={isCollapsed ? 'Expand navigation' : 'Collapse navigation'}
           className={cn(
             'absolute -right-3 top-7 z-10 flex h-6 w-6 min-h-0 items-center justify-center p-0',
-            'rounded-full bg-nav-surface text-nav-text-dim ring-1 ring-white/10',
-            'shadow-soft transition-colors [transition-duration:var(--fw-dur-fast)]',
-            'hover:bg-nav-surface hover:text-nav-text',
-            'active:translate-y-[0.5px]',
+            'rounded-full shadow-soft transition-colors [transition-duration:var(--fw-dur-fast)] active:translate-y-[0.5px]',
+            cream
+              ? 'bg-surface text-text-tertiary ring-1 ring-border-subtle hover:bg-surface-tint hover:text-text-primary'
+              : 'bg-nav-surface text-nav-text-dim ring-1 ring-white/10 hover:bg-nav-surface hover:text-nav-text',
           )}
         >
           {isCollapsed ? <IconChevronRight size={14} aria-hidden /> : <IconChevronLeft size={14} aria-hidden />}
@@ -343,15 +437,21 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
       {/* Brand */}
       <div
         className={cn(
-          'flex h-16 items-center border-b border-white/[0.06]',
+          'flex h-16 items-center border-b',
+          cream ? 'border-border-subtle' : 'border-white/[0.06]',
           isCollapsed ? 'justify-center px-3' : 'px-5',
         )}
       >
         {brand ?? (
-          <span className="font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em] text-nav-text">
+          <span
+            className={cn(
+              'font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em]',
+              cream ? 'text-text-primary' : 'text-nav-text',
+            )}
+          >
             {isCollapsed ? 'G' : (
               <>
-                Golf<span className="text-nav-accent">Helm</span>
+                Golf<span className={cream ? 'text-accent-700' : 'text-nav-accent'}>Helm</span>
               </>
             )}
           </span>
@@ -360,7 +460,7 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
 
       {/* Identity */}
       {user && !isCollapsed && (
-        <div className="border-b border-white/[0.06] px-5 pb-3 pt-5">
+        <div className={cn('border-b px-5 pb-3 pt-5', cream ? 'border-border-subtle' : 'border-white/[0.06]')}>
           <div className="flex items-center gap-3">
             <div
               className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-fw-md bg-gradient-to-br from-accent-400 to-accent-700 bg-cover bg-center"
@@ -381,12 +481,28 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans text-body-sm font-medium tracking-[-0.005em] text-nav-text">
+              <p
+                className={cn(
+                  'truncate font-fw-sans text-body-sm font-medium tracking-[-0.005em]',
+                  cream ? 'text-text-primary' : 'text-nav-text',
+                )}
+              >
                 {user.name}
               </p>
               {user.teamName && !identityExtra && (
-                <p className="flex items-center gap-1.5 truncate font-fw-sans text-caption font-normal text-nav-text-dim">
-                  <span className="h-1 w-1 flex-shrink-0 rounded-full bg-nav-accent" aria-hidden />
+                <p
+                  className={cn(
+                    'flex items-center gap-1.5 truncate font-fw-sans text-caption font-normal',
+                    cream ? 'text-text-secondary' : 'text-nav-text-dim',
+                  )}
+                >
+                  {/* A fill dot — never `text-accent-700` (theme-flipped INK,
+                      not a fill; see tailwind.config.ts). `accent-500` is the
+                      same solid green the collapsed badge dot below uses. */}
+                  <span
+                    className={cn('h-1 w-1 flex-shrink-0 rounded-full', cream ? 'bg-accent-500' : 'bg-nav-accent')}
+                    aria-hidden
+                  />
                   {user.teamName}
                 </p>
               )}
@@ -408,9 +524,16 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
       >
         {sections.map((section, sIdx) => (
           <div key={section.heading ?? `section-${sIdx}`} className={cn(sIdx > 0 && 'mt-5')}>
-            {sIdx > 0 && <div className="mx-3 mb-5 border-t border-white/[0.05]" aria-hidden />}
+            {sIdx > 0 && (
+              <div className={cn('mx-3 mb-5 border-t', cream ? 'border-border-subtle' : 'border-white/[0.05]')} aria-hidden />
+            )}
             {section.heading && !isCollapsed && (
-              <p className="px-4 pb-3 pt-1 font-fw-sans text-eyebrow uppercase text-nav-text-dim">
+              <p
+                className={cn(
+                  'px-4 pb-3 pt-1 font-fw-sans text-eyebrow uppercase',
+                  cream ? 'text-text-tertiary' : 'text-nav-text-dim',
+                )}
+              >
                 {section.heading}
               </p>
             )}
@@ -426,6 +549,7 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
                       : matchActive(item.href, pathname))
                   }
                   collapsed={isCollapsed}
+                  tone={tone}
                   Link={Link}
                   onNavigate={onNavigate}
                 />
@@ -440,12 +564,13 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
         <motion.div
           initial={false}
           animate={reduceMotion ? undefined : { opacity: 1 }}
-          className={cn('border-t border-white/[0.06]', isCollapsed ? 'p-2' : 'p-3')}
+          className={cn('border-t', cream ? 'border-border-subtle' : 'border-white/[0.06]', isCollapsed ? 'p-2' : 'p-3')}
         >
           {footer}
         </motion.div>
       )}
     </aside>
+    </SidebarToneContext.Provider>
     </SidebarCollapseContext.Provider>
   );
 }));
