@@ -15,7 +15,7 @@
  * a fixed width from `lg` up (rather than letting it keep growing) hands all
  * the desktop-tier leftover space to `filters` instead.
  * ========================================================================== */
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Toolbar } from './Toolbar';
 
@@ -158,18 +158,36 @@ describe('Toolbar bulk-action bar — bottom-docked, not swapped in place', () =
  * slot or behavior.
  * ========================================================================== */
 describe('Toolbar `material` prop', () => {
-  it('defaults to matte: no frost classes, at-rest bg-surface hairline', () => {
+  it('defaults to the bare frame: no box, one hairline, no frost or matte card paint at rest', () => {
     render(<Toolbar search={<input aria-label="search" />} aria-label="Filters and actions" />);
     const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row).toHaveAttribute('data-frame', 'bare');
+    expect(row.className).toContain('border-b');
+    expect(row.className).toContain('border-border-subtle');
+    expect(row.className).not.toContain('rounded-card');
+    expect(row.className).not.toMatch(/(?:^|\s)bg-surface(?:\s|$)/);
+    expect(row.className).not.toMatch(/(?:^|\s)fw-frost/);
+    // Bleed hooks: margin and padding cancel through --fw-toolbar-bleed.
+    expect(row.style.marginInline).toBe('calc(var(--fw-toolbar-bleed, 0px) * -1)');
+    expect(row.style.paddingInline).toBe('var(--fw-toolbar-bleed, 0px)');
+  });
+
+  it('frame="card" + matte: no frost classes, at-rest bg-surface hairline (pre-facelift box)', () => {
+    render(
+      <Toolbar frame="card" search={<input aria-label="search" />} aria-label="Filters and actions" />,
+    );
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
     expect(row).toHaveAttribute('data-material', 'matte');
+    expect(row.className).toContain('rounded-card');
     expect(row.className).not.toMatch(/(?:^|\s)fw-frost/);
     expect(row.className).toContain('bg-surface');
     expect(row.className).toContain('border-border-subtle');
   });
 
-  it('material="frost" always renders the shared floating frost material, not stuck-only glass', () => {
+  it('frame="card" material="frost" always renders the shared floating frost material, not stuck-only glass', () => {
     render(
       <Toolbar
+        frame="card"
         search={<input aria-label="search" />}
         material="frost"
         aria-label="Filters and actions"
@@ -199,9 +217,24 @@ describe('Toolbar `material` prop', () => {
     expect(screen.getByText('New')).toBeInTheDocument();
   });
 
-  it('material="frost" + sticky still applies the sticky offset/z-index style, unlike matte it never swaps to the stuck-glass classes', () => {
+  it('bare frame ignores material at rest: material="frost" renders no frost classes until stuck', () => {
     render(
       <Toolbar
+        search={<input aria-label="search" />}
+        material="frost"
+        aria-label="Filters and actions"
+      />,
+    );
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row).toHaveAttribute('data-material', 'frost');
+    expect(row.className).not.toMatch(/(?:^|\s)fw-frost/);
+    expect(row.className).toContain('border-border-subtle');
+  });
+
+  it('frame="card" material="frost" + sticky still applies the sticky offset/z-index style, unlike matte it never swaps to the stuck-glass classes', () => {
+    render(
+      <Toolbar
+        frame="card"
         search={<input aria-label="search" />}
         material="frost"
         sticky
@@ -329,5 +362,45 @@ describe('Toolbar `leading` slot', () => {
 
     rerender(<Toolbar search={<input aria-label="search" />} />);
     expect(screen.queryByRole('button', { name: '‹ September 2026 ›' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Toolbar bare frame while stuck', () => {
+  const originalIO = globalThis.IntersectionObserver;
+  afterEach(() => {
+    globalThis.IntersectionObserver = originalIO;
+  });
+
+  it('earns the shared frost bar (fw-frost fw-frost-bar) only once the sentinel scrolls out', () => {
+    let fire: ((stuck: boolean) => void) | null = null;
+    class FakeIO {
+      constructor(cb: IntersectionObserverCallback) {
+        fire = (stuck) =>
+          cb([{ isIntersecting: !stuck } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    globalThis.IntersectionObserver = FakeIO as unknown as typeof IntersectionObserver;
+
+    render(<Toolbar sticky stickyTop={8} search={<input aria-label="search" />} aria-label="Filters and actions" />);
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row.className).not.toMatch(/(?:^|\s)fw-frost/);
+    expect(row).not.toHaveAttribute('data-stuck');
+
+    act(() => fire?.(true));
+    expect(row).toHaveAttribute('data-stuck');
+    expect(row.className).toContain('fw-frost');
+    expect(row.className).toContain('fw-frost-bar');
+    expect(row.className).not.toContain('rounded-card');
+    expect(row.className).not.toContain('fw-frost-subtle');
+
+    act(() => fire?.(false));
+    expect(row.className).not.toMatch(/(?:^|\s)fw-frost/);
+    expect(row.className).toContain('border-border-subtle');
   });
 });

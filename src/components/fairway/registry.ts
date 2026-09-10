@@ -99,9 +99,9 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
   },
   {
     name: 'Toolbar', category: 'architecture', status: 'canonical', archetypes: ['B', 'D', 'E'], material: 'float',
-    bestFor: ['filters, view switching, date navigation as ONE composed bar'], avoidFor: ['a single button'],
-    replaces: ['4+ loose pills above a grid', 'full-width select + full-width search stacked'],
-    mobile: 'one row, overflow into a sheet', desktop: 'one row, right-aligned actions', examples: ['Calendar', 'Rounds library'],
+    bestFor: ['filters, view switching, date navigation as ONE composed bar', 'frame="bare" (default): no box, a hairline at rest, the frost bar only while stuck'], avoidFor: ['a single button', 'wrapping it in a Surface or placing it above a list as a card (frame="card" is for a bar floating over a canvas)'],
+    replaces: ['4+ loose pills above a grid', 'full-width select + full-width search stacked', 'a pill-shaped toolbar card above a list card'],
+    mobile: 'one bare row, overflow into a sheet', desktop: 'one bare sticky row, right-aligned actions; set --fw-toolbar-bleed to the page padding so the stuck bar runs edge to edge', examples: ['Calendar', 'Rounds library'],
   },
   {
     name: 'ResizableWorkspace', category: 'architecture', status: 'new', archetypes: ['D'], material: 'canvas',
