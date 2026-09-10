@@ -446,19 +446,17 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
           </Surface>
 
           {/* Toolbar — search · sort · "Needs attention" filter · export.
-              NOT `sticky`: Toolbar's `stickyTop` is a plain number, so it
-              can't carry the shared `--golf-mobile-header-offset` calc()
-              (which bakes in `env(safe-area-inset-top)`) that every other
-              sticky-under-the-top-bar strip in this app pins to — see
-              FairwayRoundsLibrary.tsx's seam headers, which thread that var
-              by hand for the same reason instead of using this prop. A bare
-              `sticky` here would pin at viewport top:0, directly underneath
-              FairwayTopBar's own `sticky top-0` 4rem-tall bar, and disappear
-              behind it on scroll. roster.md's sticky note is a parenthetical,
-              not one of the numbered build steps, so matte-always is the
-              correct, safe reading here. */}
+              `sticky`: matte at rest, earns the shared cream glass once
+              stuck (roster.md's parenthetical). `stickyTop` now accepts a
+              CSS string (primitives, 2026-09-10) so this pins below
+              FairwayTopBar's `sticky top-0` bar using the SAME calc every
+              other sticky-under-the-top-bar strip in this app uses — see
+              FairwayHubSubNav / FairwayCalendarHero / FairwayRoundsLibrary's
+              seam headers. */}
           <Toolbar
             className="mb-4"
+            sticky
+            stickyTop="calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))"
             aria-label="Roster filters and actions"
             search={
               <SearchField
