@@ -39,6 +39,7 @@ import { Badge } from '@/components/fairway/controls/badge';
 import { TrendGlyph } from '@/components/fairway/charts/TrendChip';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { RingGauge } from '@/components/fairway/modules/RingGauge';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import type { TeamCategory } from '@/app/golf/actions/team-category-insights';
 
 export interface TeamCategoryLeakBandProps {
@@ -64,7 +65,16 @@ function CategorySegment({ category }: { category: TeamCategory }) {
     .slice(0, 2);
 
   return (
-    <div className="flex h-full min-w-[164px] shrink-0 flex-col gap-3 px-4 py-3.5 first:pl-0 last:pr-0">
+    // `max-w-[220px]` alongside the existing `min-w-[164px]`: without a
+    // ceiling, a column whose strokes badge ("+0.7 str/rd available") or
+    // player-row content wants more room than 164px could grow wider than
+    // its siblings — nothing here caps it, so at 1440px the row's total
+    // content width crept past the panel's available width and the last
+    // column landed partly outside the (unfaded) scroll viewport, reading
+    // as text cut mid-word rather than a column that fit. Capping the width
+    // forces the same wrap-not-grow behavior every column already uses for
+    // its own badges (facelift REVIEW.md item 6).
+    <div className="flex h-full min-w-[164px] max-w-[220px] shrink-0 flex-col gap-3 px-4 py-3.5 first:pl-0 last:pr-0">
       {/* flex-wrap: on tight phone widths (long label + long trend word,
           e.g. APPROACH + Declining) the glyph must wrap under the label —
           with shrink-0 alone it escapes past the card edge (iOS 2026-07-24). */}
@@ -169,6 +179,21 @@ function CategorySegment({ category }: { category: TeamCategory }) {
 }
 
 export function TeamCategoryLeakBand({ categories, teamHealth, className }: TeamCategoryLeakBandProps) {
+  // Premium scroll-edge fade (the same primitive `ViewHeaderSegments` uses
+  // for its own horizontally-scrollable row) — at 1440px five categories can
+  // still exceed the panel's available width, and this strip is DESIGNED to
+  // scroll rather than wrap into a second row (see the file docblock). A
+  // hard-clipped hidden edge with no visual cue reads as a broken layout
+  // (facelift REVIEW.md item 6, "columns clip at 1440"); the fade signals
+  // "more this way" instead.
+  //
+  // Called BEFORE the `categories.length === 0` guard below — Rules of Hooks
+  // forbids a conditional/early-return call (caught by
+  // react-hooks/rules-of-hooks), and there is nothing unsafe about running
+  // this on the empty-categories render anyway (the ref just never attaches
+  // to a DOM node in that case).
+  const { ref: scrollFadeRef, fadeStyle } = useScrollFade<HTMLDivElement>('x');
+
   if (categories.length === 0) return null;
 
   return (
@@ -187,7 +212,7 @@ export function TeamCategoryLeakBand({ categories, teamHealth, className }: Team
       {/* ONE seamed row (hairline `divide-x`), not a wrapped grid of cards —
           overflows into its own horizontal scroller on narrow viewports
           rather than wrapping into a second seamed row. */}
-      <div className="overflow-x-auto">
+      <div ref={scrollFadeRef} style={fadeStyle} className="overflow-x-auto">
         <div className="flex divide-x divide-border-subtle">
           {categories.map((category) => (
             <CategorySegment key={category.id} category={category} />
