@@ -71,7 +71,7 @@ import { readRsvpLockCode } from '@/hooks/useRSVP';
 import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { wallClockInZone } from '@/lib/golf/timezone';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
@@ -140,6 +140,16 @@ export interface FairwayCalendarProps {
    */
   initialEventId?: string;
   /**
+   * `?new=1` from the route's searchParams — the coach-home "New event" link's
+   * entry point. Opens the create editor once on mount (coach only; a no-op
+   * for a player, but the param is still stripped either way) via the SAME
+   * `openCreate` the masthead's own primary action calls — no separate create
+   * surface. `FairwayCalendar` strips the param with `router.replace` right
+   * after, preserving any other query params (e.g. a co-existing `?event=`),
+   * so refreshing the page never reopens the editor.
+   */
+  initialComposeNew?: boolean;
+  /**
    * Class id → owning player, for every class on this team the VIEWER may read
    * (RLS already scopes it). Class meetings live on the team calendar with no
    * owner column, so this is what lets the "All" lens say whose class a block
@@ -200,11 +210,13 @@ export function FairwayCalendar({
   loadedRangeStart,
   loadedRangeEnd,
   initialEventId,
+  initialComposeNew = false,
   classOwners,
   classOwnersResolved = false,
   viewerPlayerId = null,
 }: FairwayCalendarProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const badges = useNotificationBadges();
   // ── serverNow → nowRef deferred hydration (mirrors the legacy surface) ──────
   // MUST use `zonedMidnight` (explicit `teamTimezone`), NOT `toLocalMidnight`
@@ -979,6 +991,31 @@ export function FairwayCalendar({
     autoOpenedRef.current = true;
     void openDrawerForEvent(match);
   }, [initialEventId, events, openDrawerForEvent]);
+
+  // ── Deep-link auto-compose (coach-home "New event" link, `?new=1`) ────────
+  // Opens the SAME create editor the masthead's primary action opens
+  // (openCreate — no separate create surface, per audit P240). Coach only —
+  // a player following this link has nothing to create, so it's a silent
+  // no-op for them, but the param is still stripped (below) either way so it
+  // never lingers in the URL. Guarded by its own ref (never re-fires once
+  // the coach closes the editor — events reloading via realtime/
+  // router.refresh() must not reopen it, same reasoning as the `?event=`
+  // auto-open above). Strips `new` via router.replace with `scroll: false`,
+  // rebuilding the query from the CURRENT URLSearchParams rather than a bare
+  // path — a coexisting `?event=` (or anything else) survives the replace.
+  const autoComposedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!initialComposeNew || autoComposedRef.current) return;
+    autoComposedRef.current = true;
+    if (isCoach) openCreate();
+    const params = new URLSearchParams(searchParams?.toString());
+    params.delete('new');
+    const query = params.toString();
+    router.replace(
+      query ? `/golf/dashboard/calendar?${query}` : '/golf/dashboard/calendar',
+      { scroll: false },
+    );
+  }, [initialComposeNew, isCoach, openCreate, router, searchParams]);
 
   // Player RSVP submit — REUSES the existing respondToEvent action UNCHANGED.
   // Typed lock codes (deadline passed / event started / cancelled) are passed
