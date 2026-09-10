@@ -280,6 +280,19 @@ export function FairwayMessages() {
     setGroupMemberIds(memberIds);
   }, []);
 
+  // Row 13 (perf audit) — the SCALAR this effect actually reads off
+  // `conversations`, not the array itself. `conversations` gets a new
+  // reference on any inbox change (an unrelated conversation's unread count,
+  // a new message anywhere), and the effect below used to depend on the
+  // whole array, so it refetched every group's participant list on every
+  // such change. `isGroupConversation` only reads participant_count /
+  // participant_ids / is_group, so a primitive boolean is the true
+  // dependency: it only flips when the SELECTED conversation's own kind
+  // actually changes (e.g. a member is added past the 2-person DM boundary).
+  const selectedConversationIsGroup = isGroupConversation(
+    conversations.find((c) => c.id === selectedConversationId),
+  );
+
   // Invalidate in-flight results when the selected conversation changes.
   React.useEffect(() => {
     if (groupSelection.current !== selectedConversationId) {
@@ -292,15 +305,14 @@ export function FairwayMessages() {
       setGroupMemberIds(new Set());
       return;
     }
-    const conv = conversations.find(c => c.id === selectedConversationId);
-    if (isGroupConversation(conv)) {
+    if (selectedConversationIsGroup) {
       fetchGroupParticipants(selectedConversationId);
     } else {
       setGroupParticipants(new Map());
       setGroupMemberIds(new Set());
     }
     return () => { groupFetchVersion.current += 1; };
-  }, [selectedConversationId, conversations, fetchGroupParticipants]);
+  }, [selectedConversationId, selectedConversationIsGroup, fetchGroupParticipants]);
 
   // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
 
