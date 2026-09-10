@@ -83,4 +83,52 @@ Tooling note: `cn()` (tailwind-merge) does not treat the custom `rounded-card` /
 
 ## Mobile
 
-(helmv3-20)
+Owner: helmv3-20 (mobile lane). Evidence: the read-only understand pass over `src/components/fairway/app-shell/**`, `src/components/fairway/pages/calendar/**`, `src/components/fairway/overlays/**` and the golf mobile surfaces (2026-09-10), plus the measurements in §Performance below. Golf only.
+
+### Competing implementations (mobile)
+
+| # | Surfaces | What overlaps | Decision |
+|---|---|---|---|
+| M1 | `src/components/fairway/pages/calendar/FairwayEventDetailDrawer.tsx` vs `src/components/golf/calendar/MobileEventSheet.tsx` (915 LOC, hand-rolled bottom sheet) | Two event-detail sheets for one event. The golf one is dead for golf but is still reached by baseball through `src/components/shared/calendar/PremiumCalendarClient.ts` (re-exports `@/components/golf/calendar/PremiumCalendarClient`). | Golf uses only the Fairway drawer (now a `Sheet material="frost"`). Leave `golf/calendar/**` alone in this lane: it is the baseball calendar. Moving it is a baseball task. |
+| M2 | Event type presentation: `eventPresentation.ts` (TYPE_META), the drawer's own type map, `FairwayDayStrip.tsx` `TYPE_DOT_CLASS` | Three copies of the same colour/label/icon table drifted independently. | One table in `eventPresentation.ts`; the drawer and the strip import it (done in the calendar mobile pass). |
+| M3 | Legacy `@/components/ui/drawer` (vaul, its own frost) inside Fairway: `pages/coachhelm/FairwayMyDevelopment.tsx`, `pages/rounds-new/FairwayCoursePicker.tsx`, and `app/golf/(dashboard)/dashboard/my-development/LogProgressButton.tsx` | A second bottom-sheet stack next to `fairway/overlays/Sheet`, with its own overlay z-index, blur and safe-area maths. | Migrate each to `Sheet` when its screen gets its mobile pass (rounds → CoursePicker; CoachHelm → MyDevelopment). Not touched by the calendar/dock PR. |
+| M4 | Active-route matching: `FairwayBottomNav.tsx` had its own `matchActive` next to `app-shell/more-nav.ts` `matchActive` | Two segment-boundary matchers that could disagree on which tab lights up vs which row the More sheet marks current. | One matcher (`more-nav.ts`); the dock imports it (done). |
+| M5 | Buttons in the shell: legacy `@/components/ui/button` in `FairwayBottomNav.tsx` (More) and `MoreSheetFooter.tsx` (Sign out) | The dock had four native controls and one legacy Button with a different haptic, focus ring and radius; Sign out rendered as a tinted pill. | Native `<button>` sharing the dock `control` class (More) and a quiet danger text row (Sign out). 21 legacy `@/components/ui/*` imports remain inside `src/components/fairway/**` outside `__tests__`; they move screen by screen. |
+| M6 | Glass recipes on phone: `CalendarSurfaces.module.css:131` (`--cal-blur` 22px + saturate), `.lensLabel` (`:250`), `FairwayTopBar.tsx:79` (md-only), `FairwayShellSkeleton.tsx:156`, `.fw-glass-chrome` on the More sheet, `overlays/fairway-overlays.css:19` | Each sheet/bar blurred on its own terms, some while translating. | Only `.fw-frost` tiers, applied by the primitive (`Sheet material="frost"`, `GlassSurface`), and only on a settled panel. On the calendar phone screen the masthead and the sheet's in-body header are MATTE (bg-surface + hairline) — nothing that sits over a scrolling stage blurs; the More sheet drops `fw-glass-chrome` for `material="frost"`. |
+
+### Hydration hazards (mobile surfaces)
+
+Each renders server-side from `Date.now()` / `new Date()` / an undefined-locale `toLocale*`, so the server HTML and the first client render can disagree (a hydration warning at best, a text flash at worst).
+
+| File:line | Pattern | Fix |
+|---|---|---|
+| `src/components/fairway/notifications/time-format.ts:7` (`relativeTimeFrom(iso, nowMs = Date.now())`), `:18`, `:24` (`toLocaleDateString(undefined, …)`) and its consumer `pages/notifications/NotificationRow.tsx` | Relative time and locale formatting computed during render. | Pass `now` from a `useEffect`-set state or `useSyncExternalStore` snapshot (the pattern `FairwayWhatsNew.tsx` already uses), and pin the locale. |
+| `src/components/fairway/pages/rounds/FairwayUnfinishedBanner.tsx:47` | `Date.now() - new Date(ts)` in render. | Same: compute after mount. Rounds mobile pass. |
+| `src/components/fairway/pages/roster/roster-helpers.ts:35` (`isUserOnline`) | `Date.now()` in a helper called from render. | Take `nowMs` as an argument supplied by the client. Roster mobile pass. |
+| `src/components/fairway/pages/coachhelm/FairwayEffectiveness.tsx:340` (and `:420/:463` `new Date()` inside effects, which are fine) | Relative "refreshed N s ago" computed in render. | Derive from `lastRefreshedAt` state in an interval effect. CoachHelm pass. |
+| `pages/development/FairwayGoalCard.tsx:137`, `pages/development/GoalsSection.tsx:231` | Date arithmetic in render. | Same. Development is the peer's screen; listed here because the cards render inside sheets on phone. |
+
+### Dead code and drift (mobile)
+
+| Item | Evidence | Decision |
+|---|---|---|
+| `Sheet` keyboard lift | `overlays/ModalShell.tsx:51` and the drawer use `--keyboard-height`; only `CapacitorProvider` publishes it. In a mobile browser the value is always 0px and the sheet footer sits under the software keyboard. | Keep (it is correct in the Capacitor build). For PWA/browser, the block CTA relies on `interactive-widget=resizes-content`; noted, not changed. |
+| `--fw-mobile-nav-height` vs the real dock | Token said 70px + max(); the dock is 60px capsule + 10px padding + `pb-[calc(10px+safe-area)]` = 80px + safe area. Content under the dock lost 10px. | Fixed by the peer in 0d241b70b (`calc(80px + env(safe-area-inset-bottom, 0px))`, AppShell offset 80px). The calendar FAB uses the token, so it moved with it. |
+| Calendar FAB `z-[19]` | `FairwayCalendar.tsx:1140`: an arbitrary z one below the dock. | `z-[var(--fw-z-sticky)]` (10): above the stage, below the dock (`--fw-z-nav` 20). |
+| Availability overlay, Month on phone | `FairwayCalendar.tsx:1296` renders the compact month on phone, but the availability lens still lays out the desktop month grid inside it. | Behaviour gap, unchanged in this pass; a follow-up for the availability lens. |
+| `motion.ts enterStyle` | No consumer found in `fairway/**`. | Peer's dead-code table decides; flagged. |
+| Framer `layout` in the dock | `FairwayBottomNav.tsx:140–165`: `layout="position"` on five `li`/`span` pairs plus one `layoutId` pill. Five items, not a list — cheap, kept. The rule "no framer `layout` on long lists" is honoured: no `layout` prop remains anywhere in `pages/calendar/**`. | Keep. |
+
+### Performance
+
+Constraint (owner, relayed 2026-09-10): no `backdrop-filter` on a panel while it translates, frost only in the settled open state; no framer `layout` on long lists; no heavy trees mounted inside a sheet before it settles; `will-change` only on the moving panel; reduced motion respected.
+
+How the calendar/dock pass meets it:
+
+- `Sheet material="frost"` is the only blur on the More sheet and the event sheet. The `Sheet` primitive applies the frost class on the settled panel; during the vaul translate the panel is opaque matte.
+- The event sheet mounts its header, response group and metadata immediately; people, files and attendance rows mount after the sheet's `onAnimationEnd` (the same gate `MoreNavSheet` uses for link prefetch).
+- The More sheet's rows are `InsetGroup` seam rows (borders + background only); no per-row `transform` transition, no `layout`.
+- `will-change` is not set by hand anywhere in the pass; vaul sets `transform` on the panel only.
+- Reduced motion: the dock pill and sheets read `useReducedMotion`; the date rail scrolls without smooth-scroll under `prefers-reduced-motion: reduce`.
+
+Measurements: NOT YET TAKEN. The probe exists (a Playwright page at 393×852, 4× CPU throttle, an in-page `requestAnimationFrame` recorder counting frames > 16.7 / 33 / 50 ms in the 600 ms after the tap, three runs, for (a) the More sheet from the dock and (b) the calendar event sheet, signing in the same way `scripts/ui-intelligence/capture-golf-facelift.mjs` does). This session's permission classifier refused to run it, and the machine was swapping (11 of 12 GB) under two worktrees' type-checks, which would have made the numbers meaningless anyway. Owner action: run it once on a quiet machine against a dev server serving this branch and paste the two lines here; the expected signal is zero frames > 50 ms during the open translate now that no blur applies mid-animation and People/Files mount after the sheet settles.
