@@ -83,6 +83,7 @@ import { FairwayMonthOverview } from './FairwayMonthOverview';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
+import type { EventAttendee } from './detail/EventPeopleSection';
 import { FairwayEventEditor } from './FairwayEventEditor';
 import type { FairwayEventTimeRequest, FairwayEventSuggestedTime } from './FairwayEventEditor';
 import { CalendarSchedulingDialog } from './CalendarSchedulingDialog';
@@ -840,6 +841,12 @@ export function FairwayCalendar({
   const [userRsvpStatuses, setUserRsvpStatuses] = React.useState<Map<string, RSVPStatus>>(
     new Map(),
   );
+  // The coach's People list rides on the SAME getEventRSVP call as the
+  // summary below (one fetch per open, not two): null while in flight, the
+  // list once loaded, undefined when that fetch failed (the People section
+  // then fetches for itself as its Retry path) or for a player, whose
+  // orchestrator only fetches their own status.
+  const [drawerAttendees, setDrawerAttendees] = React.useState<EventAttendee[] | null | undefined>(undefined);
   const [drawerRsvpSummary, setDrawerRsvpSummary] = React.useState<{
     accepted: number;
     declined: number;
@@ -913,12 +920,14 @@ export function FairwayCalendar({
       setDrawerEvent(event);
       setDrawerOpen(true);
       setDrawerRsvpSummary(null);
+      setDrawerAttendees(isCoach ? null : undefined);
 
       if (isCoach) {
         try {
           const { getEventRSVP } = await import('@/app/golf/actions/golf');
           const result = await getEventRSVP(event.id);
-          if (requestId === drawerRequestRef.current && result.success && result.data?.summary) {
+          if (requestId !== drawerRequestRef.current) return;
+          if (result.success && result.data?.summary) {
             const s = result.data.summary;
             setDrawerRsvpSummary({
               accepted: s.accepted ?? 0,
@@ -927,9 +936,13 @@ export function FairwayCalendar({
               pending: s.pending ?? 0,
               total: s.total ?? 0,
             });
+            setDrawerAttendees(s.attendees ?? []);
+          } else {
+            setDrawerAttendees(undefined);
           }
         } catch {
-          // Drawer still works without the summary.
+          // Drawer still works without the summary; People fetches for itself.
+          if (requestId === drawerRequestRef.current) setDrawerAttendees(undefined);
         }
       } else if (!userRsvpStatuses.has(event.id)) {
         try {
@@ -1137,10 +1150,13 @@ export function FairwayCalendar({
           data-testid="calendar-fab"
           onClick={primaryAction}
           className={cn(
-            'fixed right-4 z-[19] h-14 w-14 md:hidden [&_svg]:h-6 [&_svg]:w-6',
-            // Lit from above and lifted well off the page: this is the one
-            // element on the screen that genuinely floats.
-            '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.28),var(--fw-shadow-raise)]',
+            // Sticky tier: above the stage's pinned day headings, below the
+            // dock (--fw-z-nav) and every overlay. Never an arbitrary z.
+            'fixed right-4 z-[var(--fw-z-sticky)] h-14 w-14 md:hidden [&_svg]:h-6 [&_svg]:w-6',
+            // Lifted well off the page: this is the one element on the
+            // screen that genuinely floats (the token lift, not a bespoke
+            // shadow).
+            'shadow-raise',
             'active:scale-[0.96] active:[transition-duration:110ms] motion-reduce:active:scale-100',
           )}
           style={{ bottom: 'calc(var(--fw-mobile-nav-height, 64px) + 1rem)' }}
@@ -1370,6 +1386,7 @@ export function FairwayCalendar({
         isCoach={isCoach}
         rsvpStatus={drawerEvent ? userRsvpStatuses.get(drawerEvent.id) ?? null : null}
         rsvpSummary={drawerRsvpSummary}
+        attendees={drawerAttendees}
         onRespond={!isCoach ? handleRespond : undefined}
         onEdit={
           isCoach

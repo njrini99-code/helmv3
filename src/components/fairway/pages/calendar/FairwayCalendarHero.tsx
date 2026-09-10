@@ -29,9 +29,12 @@
  * A range fetch in flight is a 2px line along the masthead's bottom edge
  * (`busy`), not a banner between the header and the list.
  *
- * Material comes from the shell (`fw-glass-chrome`, with its own opaque
- * reduced-transparency fallback). Nothing here glows, washes or floats on
- * its own; every control is the shared Fairway primitive in its shared state.
+ * Material is the frost bar recipe — `fw-frost fw-frost-bar` (globals.css,
+ * "FAIRWAY FROST": `.fw-frost-bar` is the edge-to-edge floating-toolbar tier,
+ * a rim on its foot only, no top/side border). `.fw-frost` carries the
+ * reduced-transparency, no-backdrop-filter and forced-colors fallbacks, so
+ * nothing extra is needed here. Nothing here glows, washes or floats on its
+ * own; every control is the shared Fairway primitive in its shared state.
  *
  * The player's "Respond" action is NOT a header CTA — it is rendered by the
  * parent as a contextual row beside the schedule, when there is something to
@@ -223,14 +226,19 @@ export function FairwayCalendarHero({
       ref={sectionRef}
       aria-label="Calendar controls"
       className={cn(
-        // Sticky under the app header + hub sub-nav (AppShell publishes both
-        // offsets). The shell's chrome material keeps scrolled rows from
-        // reading as ghost text behind the controls.
-        'fw-glass-chrome sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9]',
-        // A warm rim along the bottom edge plus the resting whisper: the
-        // masthead sits ON the list, the way a native bar floats over content.
+        // One composed bar — sticky under the app header + hub sub-nav
+        // (AppShell publishes both offsets), on the shared sticky tier so it
+        // stacks correctly against the rest of the chrome ladder. MATTE, not
+        // frost: a backdrop-filter that sits over the scrolling stage is
+        // re-blurred on every scroll frame on a phone (owner perf
+        // requirement, 2026-09-10), so the bar is opaque with a foot hairline.
+        // (`.fw-frost-static`, the blur-free frost look, replaces this once
+        // it lands in globals.css.)
+        'sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[var(--fw-z-sticky)]',
+        'border-b border-border-subtle bg-surface',
+        // Edge-to-edge geometry: the masthead sits ON the list, the way a
+        // native bar floats over content.
         '-mx-4 px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3',
-        '[box-shadow:0_1px_0_var(--fw-glass-border-bot),var(--fw-shadow-flat)]',
       )}
     >
       {/* Row 1 — the period, and the primary action. */}
@@ -246,7 +254,7 @@ export function FairwayCalendarHero({
             width="auto"
             ariaLabel="Jump to a date"
             trigger={
-              <PressTarget className="-mx-2 inline-flex max-w-full items-center gap-1 rounded-fw-sm px-2 py-1 text-left [@media(hover:hover)]:hover:bg-surface-sunken">
+              <PressTarget className="-mx-2 inline-flex min-h-11 max-w-full items-center gap-1 rounded-fw-sm px-2 py-1 text-left [@media(hover:hover)]:hover:bg-surface-sunken">
                 {/* Re-keyed on change so a new period settles in rather than
                     snapping — one quiet rise, no exit choreography. */}
                 <motion.span
@@ -292,6 +300,10 @@ export function FairwayCalendarHero({
           </PopoverPanel>
         </h1>
         {!focusIsToday ? (
+          // size="sm" already clears 44px here: Button's `sm` sizing sets
+          // `[@media(pointer:coarse)]:min-h-[44px]` (controls/button.tsx —
+          // sizeStyles.sm), so a touch pointer gets the full target without
+          // the desktop-dense sizing changing.
           <Button
             variant="secondary"
             size="sm"
@@ -311,6 +323,9 @@ export function FairwayCalendarHero({
             width="sm"
             ariaLabel="More calendar actions"
             trigger={
+              // size="sm" already clears 44px on touch: IconButton's `sm`
+              // sizing sets `[@media(pointer:coarse)]:h-11 w-11` (controls/
+              // button.tsx — iconSizeStyles.sm).
               <IconButton
                 variant="secondary"
                 size="sm"
@@ -358,6 +373,11 @@ export function FairwayCalendarHero({
       <div className="mt-2 flex items-center gap-2">
         {hasViews ? (
           <div className="min-w-0 flex-1 md:flex-none">
+            {/* Segmented already fires fwHaptic('selection') on every commit
+                (controls/segmented.tsx, its ToggleGroup.Root onValueChange) —
+                wrapping onViewChange here to add a second tick would
+                double-fire the haptic on every view change, so onViewChange
+                is passed straight through. */}
             <Segmented<FairwayCalendarViewId>
               options={viewOptions!}
               value={view!}

@@ -9,12 +9,14 @@
  * bottom bar's 5th "More" column (`FairwayBottomNav`'s `onMoreOpen`), this
  * re-materializes the SAME rail `sections` a page already builds — minus the
  * 4 hrefs already on the bottom bar (`more-nav.ts`'s `selectOverflow`) — as a
- * composed vaul bottom `Sheet`: identity row → grouped overflow rows (icon
- * tile + label + description + badge + chevron, never a flat list) → a
- * product-owned footer slot (Settings + Sign out).
+ * composed vaul bottom `Sheet`: identity row → one InsetGroup per rail
+ * section (seam rows: bare glyph + label + description + badge + chevron —
+ * never a stack of tiles, never a flat list) → a product-owned footer slot
+ * (Settings + Sign out).
  *
  * `peek={false}` — opens straight to content height (no half-detent drag);
- * Tinted glass chrome with a fixed blur; vaul owns focus-trap,
+ * `material="frost"` — the Fairway Frost modal tier (the Sheet primitive
+ * owns WHEN the blur applies, so the panel never blurs mid-translate); vaul owns focus-trap,
  * Esc-to-close, scrim-click-to-close, and focus-restore-to-trigger natively —
  * none of that is hand-rolled here (the retired AppShell drawer used to).
  *
@@ -28,6 +30,7 @@ import { memo, useEffect, useState, type MouseEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { IconChevronRight } from '@/components/icons';
 import { Sheet } from '@/components/fairway/overlays';
+import { InsetGroup } from '@/components/fairway/surfaces';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { selectOverflow, matchActive } from './more-nav';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
@@ -92,25 +95,22 @@ function OverflowRow({ item, active, Link, prefetch }: OverflowRowProps) {
       prefetch={prefetch}
       aria-current={active ? 'page' : undefined}
       className={cn(
+        // One seam row of the section's InsetGroup (the group draws the
+        // hairlines and the radius; the row draws nothing of its own).
         // #177: `w-full overflow-hidden` — the row must never measure wider
         // than its sheet, even transiently (e.g. a badge/description longer
         // than expected before `truncate` can clip it). `min-w-0` lets the
         // flex child below actually shrink instead of pushing the row wide.
-        'flex w-full min-h-[56px] min-w-0 items-center gap-3 overflow-hidden rounded-fw-md px-4 py-2',
-        'transition-[background-color,transform] [transition-duration:var(--fw-dur-fast)] motion-safe:active:scale-[0.98] motion-reduce:transition-none',
-        active ? 'bg-accent-100 text-accent-700' : 'text-text-secondary hover:bg-surface-sunken/60',
+        'flex w-full min-h-[56px] min-w-0 items-center gap-3 overflow-hidden px-4 py-2.5 outline-none',
+        'transition-colors [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
+        'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+        active ? 'bg-accent-100/60 text-accent-700' : 'text-text-secondary [@media(hover:hover)]:hover:bg-surface-tint active:bg-surface-tint',
       )}
     >
-      <span
-        className={cn(
-          'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-fw-md border border-border-subtle bg-surface-sunken',
-        )}
-      >
-        <Icon
-          size={18}
-          aria-hidden
-          className={cn('flex-shrink-0', active ? 'text-accent-700' : 'text-text-secondary')}
-        />
+      {/* A bare glyph in the accent ink — the InsetGroup row convention —
+          not a tile in a rounded square. */}
+      <span aria-hidden className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center text-accent-700">
+        <Icon size={18} aria-hidden className="flex-shrink-0" />
       </span>
       <span className="min-w-0 flex-1 overflow-hidden">
         <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
@@ -178,7 +178,8 @@ export const MoreNavSheet = memo(function MoreNavSheet({
       peek={false}
       title={title}
       hideTitle
-      className={cn('fw-glass-chrome', sheetClassName)}
+      material="frost"
+      className={sheetClassName}
     >
       <Sheet.Body onClick={closeForNavigation}>
         {header}
@@ -218,19 +219,14 @@ export const MoreNavSheet = memo(function MoreNavSheet({
         ) : null}
 
         {overflow.map((section, sIdx) => (
-          <div key={section.heading ?? `section-${sIdx}`}>
-            {sIdx > 0 && <div className="mx-4 my-1 border-t border-border-subtle" aria-hidden />}
+          <div key={section.heading ?? `section-${sIdx}`} className={sIdx === 0 ? 'pt-1' : 'pt-5'}>
             {section.heading && (
-              <p
-                className={cn(
-                  'px-4 pb-2 font-fw-sans text-eyebrow uppercase text-text-tertiary',
-                  sIdx === 0 ? 'pt-1' : 'pt-4',
-                )}
-              >
+              <p className="px-1 pb-2 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
                 {section.heading}
               </p>
             )}
-            <div className="space-y-1">
+            {/* One recessed group per section: the rows are seams inside it. */}
+            <InsetGroup variant="matte" aria-label={section.heading}>
               {section.items.map((item) => (
                 <OverflowRow
                   key={item.href}
@@ -243,7 +239,7 @@ export const MoreNavSheet = memo(function MoreNavSheet({
                   prefetch={open && prefetchReady}
                 />
               ))}
-            </div>
+            </InsetGroup>
           </div>
         ))}
       </Sheet.Body>

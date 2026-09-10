@@ -63,6 +63,37 @@ export function typeIcon(eventType: string | null | undefined): React.ComponentT
   return TYPE_ICON[(eventType || 'other').toLowerCase()] ?? CalendarDays;
 }
 
+/**
+ * Tone → dot color class. Mirrors the one exhaustive-over-`FwStatusTone`
+ * table FairwayDayStrip keeps today (its own comment explains why it is
+ * keyed by tone rather than by type: a type-keyed dot map would be a FOURTH
+ * copy of this presentation table that a new event_type could miss). Kept
+ * here, private, so `dotClassFor`/`TYPE_DOT_CLASS` below can derive a
+ * per-TYPE class through `typeMeta` without any caller re-deriving
+ * tone → color for itself.
+ */
+const TONE_DOT_CLASS: Record<FwStatusTone, string> = {
+  neutral: 'bg-text-tertiary',
+  accent: 'bg-accent-500',
+  success: 'bg-fw-success',
+  warning: 'bg-fw-warning',
+  danger: 'bg-fw-danger',
+  info: 'bg-text-primary',
+};
+
+/** One dot color for an event type, derived from `typeMeta` (and so from
+ *  TYPE_META) — a new event_type gets a correct dot the moment it is added
+ *  to TYPE_META, with nothing else to keep in sync. */
+export function dotClassFor(eventType: string | null | undefined): string {
+  return TONE_DOT_CLASS[typeMeta(eventType).tone];
+}
+
+/** Every known event type's dot class, precomputed from TYPE_META's own
+ *  keys — for callers that want a lookup table rather than a function call. */
+export const TYPE_DOT_CLASS: Record<string, string> = Object.fromEntries(
+  Object.keys(TYPE_META).map((type) => [type, dotClassFor(type)]),
+);
+
 /** RSVP status → pill copy + tone (a player's own response). */
 export const RSVP_PILL: Record<RSVPStatus, EventTypeMeta> = {
   accepted: { label: 'Going', tone: 'accent' },
