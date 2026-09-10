@@ -59,7 +59,7 @@ import {
   Plus,
   ScanLine,
 } from 'lucide-react';
-import { Button, IconButton, PopoverPanel, PressTarget, Segmented } from '@/components/fairway';
+import { Button, IconButton, PopoverPanel, PressTarget, Segmented, Toolbar } from '@/components/fairway';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -239,6 +239,12 @@ export function FairwayCalendarHero({
         // Edge-to-edge geometry: the masthead sits ON the list, the way a
         // native bar floats over content.
         '-mx-4 px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3',
+        // From `md` up, `FairwayCalendarToolbar` (below) is the masthead —
+        // ONE composed, frost `Toolbar` row rather than this matte bar's two
+        // stacked lines. This phone bar stays mounted (not conditionally
+        // rendered) so its own height-publishing effect and every pinned
+        // test targeting it directly are unaffected; only visibility changes.
+        'md:hidden',
       )}
     >
       {/* Row 1 — the period, and the primary action. */}
@@ -432,5 +438,232 @@ export function FairwayCalendarHero({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/* ============================================================================
+ * FairwayCalendarToolbar — the desktop (>=768px) masthead
+ * ----------------------------------------------------------------------------
+ * `FairwayCalendarHero` above stays the phone masthead only (`md:hidden`,
+ * matte on purpose — a backdrop-filter over the scrolling stage re-blurs on
+ * every scroll frame on a phone). From `md` up the SAME period/view/action
+ * controls this docs/design/fairway-facelift/screens/calendar.desktop.md
+ * composition asks for live in ONE row built on the shared `Toolbar`
+ * primitive instead: `material="frost"` + `sticky` is a primitive-level
+ * combo the facelift's own enforcement ratchet (fairway-facelift-ratchets.
+ * test.ts, guard 4) already allow-lists as supported and perf-tested, so
+ * this masthead never hand-rolls sticky+blur itself.
+ *
+ * A GENUINELY SEPARATE component (not a second branch inside
+ * `FairwayCalendarHero`): both mount unconditionally side by side (parent:
+ * `FairwayCalendar`) and only their `className` (`md:hidden` / `hidden
+ * md:flex`) picks which one paints. jsdom applies no breakpoints, so if this
+ * were a second branch INSIDE `FairwayCalendarHero` its own pinned tests
+ * (FairwayCalendarHero.test.tsx / .masthead.test.tsx, which render
+ * `<FairwayCalendarHero>` directly) would see two <h1>s, two "Today"s, two
+ * Segmenteds. As a separate export those tests never see this component at
+ * all, so they're untouched. `FairwayCalendar.swipe.test.tsx` — which DOES
+ * render the whole shell — reads the title via `getAllByRole('heading',
+ * {level:1})[0]`, since both mastheads track the same `focusDate`/`view`
+ * and always agree.
+ *
+ * The spec's desktop ascii also keeps a "ViewHeader" row above this Toolbar
+ * carrying the h1. There is no ViewHeader on this route (grepped — none
+ * exists), and adding one would also give the coach a second "New event"
+ * button, contradicting the spec's own "ONE primary action." The h1 and the
+ * primary action live in THIS row instead — a documented deviation, not an
+ * omission (see this pass's report).
+ *
+ * The height-publishing that lets the stage's sticky day headings pin
+ * exactly under the masthead is NOT done here (or duplicated in
+ * `FairwayCalendarHero`): `FairwayCalendarHero`'s own effect measures ONLY
+ * its own `<section>`, which is 0-height once `md:hidden` takes over, and
+ * an independent effect here would race it on the same host column. Instead
+ * `FairwayCalendar` wraps both mastheads in one ref'd column and publishes
+ * ONE measurement of whichever is actually laid out — see the wrapper
+ * comment at its call site.
+ * ========================================================================== */
+
+export interface FairwayCalendarToolbarProps {
+  focusDate: Date;
+  selectedDate: Date;
+  nowRef: Date;
+  isDayView?: boolean;
+  isCoach: boolean;
+  onNavigate: (direction: 'prev' | 'next' | 'today') => void;
+  onSelectDate: (date: Date) => void;
+  onPrimaryAction?: () => void;
+  primaryActionLabel?: string;
+  view?: FairwayCalendarViewId;
+  viewOptions?: ReadonlyArray<{ value: FairwayCalendarViewId; label: string }>;
+  onViewChange?: (view: FairwayCalendarViewId) => void;
+  onFindTime?: () => void;
+  onConflicts?: () => void;
+  onSubscribe?: () => void;
+  onAvailability?: () => void;
+  conflictCount?: number | null;
+  busy?: boolean;
+  className?: string;
+}
+
+/** The desktop `--golf-mobile-header-offset` + hub-sub-nav calc, shared
+ *  verbatim with the phone bar's own `top-[calc(...)]` above so both clear
+ *  the SAME fixed chrome, whichever is on screen. */
+const DESKTOP_STICKY_TOP =
+  'calc(var(--golf-mobile-header-offset) + var(--fw-hub-subnav-offset, 0px))';
+
+export function FairwayCalendarToolbar({
+  focusDate,
+  selectedDate,
+  nowRef,
+  isDayView = false,
+  isCoach,
+  onNavigate,
+  onSelectDate,
+  onPrimaryAction,
+  primaryActionLabel,
+  view,
+  viewOptions,
+  onViewChange,
+  onFindTime,
+  onConflicts,
+  onSubscribe,
+  onAvailability,
+  conflictCount = null,
+  busy = false,
+  className,
+}: FairwayCalendarToolbarProps) {
+  const [jumpOpen, setJumpOpen] = React.useState(false);
+  const title = isDayView
+    ? { main: format(focusDate, 'EEEE, MMMM d'), quiet: '' }
+    : view === 'week'
+      ? weekRangeTitleParts(focusDate)
+      : { main: `${format(focusDate, 'MMMM')} `, quiet: format(focusDate, 'yyyy') };
+  const focusIsToday = isSameDay(focusDate, nowRef);
+  const ctaLabel = primaryActionLabel ?? 'New event';
+  const hasViews = Boolean(view && viewOptions && onViewChange);
+  const conflictsLabel =
+    conflictCount && conflictCount > 0 ? `Conflicts (${conflictCount})` : 'Conflicts';
+  // Same step semantics as the phone bar's prev/next (FairwayCalendar's own
+  // navigate() routes Day through addDays(d, dir * 7) too).
+  const stepLabel = view === 'month' || view === 'agenda' ? 'month' : 'week';
+
+  const secondaryActions = [
+    onFindTime && isCoach
+      ? { key: 'find', label: 'Find a time', icon: <ScanLine className="h-4 w-4" aria-hidden />, run: onFindTime }
+      : null,
+    onConflicts
+      ? { key: 'conflicts', label: conflictsLabel, icon: <AlertTriangle className="h-4 w-4" aria-hidden />, run: onConflicts }
+      : null,
+    onAvailability
+      ? { key: 'availability', label: 'My availability', icon: <CalendarClock className="h-4 w-4" aria-hidden />, run: onAvailability }
+      : null,
+    onSubscribe
+      ? { key: 'subscribe', label: 'Subscribe', icon: <CalendarPlus className="h-4 w-4" aria-hidden />, run: onSubscribe }
+      : null,
+  ].filter((action): action is NonNullable<typeof action> => action !== null);
+
+  return (
+    <div className={cn('relative', className)}>
+      <Toolbar
+        material="frost"
+        sticky
+        stickyTop={DESKTOP_STICKY_TOP}
+        aria-label="Calendar controls"
+        leading={
+          <>
+            <IconButton variant="ghost" size="sm" aria-label={`Previous ${stepLabel}`} onClick={() => onNavigate('prev')}>
+              <ChevronLeft />
+            </IconButton>
+            <IconButton variant="ghost" size="sm" aria-label={`Next ${stepLabel}`} onClick={() => onNavigate('next')}>
+              <ChevronRight />
+            </IconButton>
+            <h1 className="min-w-0 font-fw-sans text-h3 text-text-primary">
+              <PopoverPanel
+                open={jumpOpen}
+                onOpenChange={setJumpOpen}
+                side="bottom"
+                align="start"
+                width="auto"
+                ariaLabel="Jump to a date"
+                trigger={
+                  <PressTarget className="-mx-2 inline-flex min-h-9 max-w-full items-center gap-1 whitespace-nowrap rounded-fw-sm px-2 py-1 text-left [@media(hover:hover)]:hover:bg-surface-sunken">
+                    <span className="truncate">
+                      {title.main}
+                      {title.quiet ? <span className="font-medium text-text-tertiary">{title.quiet}</span> : null}
+                    </span>
+                    <span className="sr-only">, jump to a date</span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+                  </PressTarget>
+                }
+              >
+                <CalendarSurface
+                  mode="single"
+                  selected={selectedDate}
+                  defaultMonth={focusDate}
+                  today={nowRef}
+                  size="cozy"
+                  glass={false}
+                  className="border-0 shadow-none"
+                  onSelect={(date) => {
+                    if (!date) return;
+                    onSelectDate(date);
+                    setJumpOpen(false);
+                  }}
+                />
+              </PopoverPanel>
+            </h1>
+            {!focusIsToday ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onNavigate('today')}
+                leftIcon={<TodayGlyph day={nowRef.getDate()} />}
+                className="px-2.5"
+              >
+                Today
+              </Button>
+            ) : null}
+          </>
+        }
+        viewToggle={
+          hasViews ? (
+            <Segmented<FairwayCalendarViewId>
+              options={viewOptions!}
+              value={view!}
+              onValueChange={onViewChange!}
+              size="sm"
+              aria-label="Calendar view"
+            />
+          ) : undefined
+        }
+        filters={
+          secondaryActions.length > 0 ? (
+            <>
+              {secondaryActions.map((action) => (
+                <Button key={action.key} variant="ghost" size="sm" leftIcon={action.icon} onClick={action.run}>
+                  {action.label}
+                </Button>
+              ))}
+            </>
+          ) : undefined
+        }
+        primaryAction={
+          onPrimaryAction && isCoach ? (
+            <Button variant="primary" size="md" onClick={onPrimaryAction} leftIcon={<Plus />}>
+              {ctaLabel}
+            </Button>
+          ) : undefined
+        }
+      />
+
+      {/* Same progress-line convention as the phone bar. */}
+      {busy ? (
+        <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[2px] overflow-hidden rounded-b-card">
+          <span className="sr-only">Loading events for this date range…</span>
+          <span aria-hidden className={cn('block h-full w-1/3 rounded-full bg-accent-500', surfaces.indeterminate)} />
+        </div>
+      ) : null}
+    </div>
   );
 }

@@ -75,7 +75,7 @@ import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
-import { FairwayCalendarHero } from './FairwayCalendarHero';
+import { FairwayCalendarHero, FairwayCalendarToolbar, CALENDAR_HERO_HEIGHT_VAR } from './FairwayCalendarHero';
 import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
@@ -1114,31 +1114,85 @@ export function FairwayCalendar({
     prevPeriodRef.current = { view, key: periodKey };
   });
 
+  // The masthead wrapper below hosts BOTH the phone bar (FairwayCalendarHero,
+  // `md:hidden`) and the desktop Toolbar (FairwayCalendarToolbar, `hidden
+  // md:flex`) unconditionally, so CSS alone decides which paints. Each
+  // publishes NOTHING itself here (FairwayCalendarHero's own height-publish
+  // effect still runs, but now targets THIS wrapper as its parentElement,
+  // not the page column — an inert write, since nothing reads the var off
+  // the wrapper). ONE observer on the wrapper measures whichever child is
+  // actually laid out (the `display:none` one contributes 0) and publishes
+  // THAT onto the wrapper's own parent, the real page column the stage reads
+  // it from. Two independent per-masthead observers would race: whichever
+  // one last measured its own (possibly 0-height, CSS-hidden) branch would
+  // win, occasionally pinning the stage's sticky day headings under a
+  // phantom height.
+  const mastheadWrapperRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const wrapper = mastheadWrapperRef.current;
+    const host = wrapper?.parentElement;
+    if (!wrapper || !host) return;
+    const publish = () => host.style.setProperty(CALENDAR_HERO_HEIGHT_VAR, `${wrapper.offsetHeight}px`);
+    publish();
+    if (typeof ResizeObserver === 'undefined') return () => host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    const observer = new ResizeObserver(publish);
+    observer.observe(wrapper);
+    return () => {
+      observer.disconnect();
+      host.style.removeProperty(CALENDAR_HERO_HEIGHT_VAR);
+    };
+  }, []);
+
   return (
     <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-6 md:gap-5 md:px-6", surfaces.scope)}>
-      {/* ── The toolbar: title, view selector, stepping, primary action ─────── */}
-      <FairwayCalendarHero
-        focusDate={focusDate}
-        selectedDate={focusDate}
-        events={events}
-        nowRef={nowRef}
-        isDayView={isDay}
-        isCoach={isCoach}
-        onNavigate={navigate}
-        onSelectDate={(d) => setFocusDate(d)}
-        onPrimaryAction={isCoach ? primaryAction : undefined}
-        primaryActionLabel={primaryActionLabel}
-        teamTimezone={teamTimezone}
-        view={view}
-        viewOptions={VIEW_OPTIONS}
-        onViewChange={setView}
-        onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
-        onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
-        onSubscribe={() => setSubscribeOpen(true)}
-        onAvailability={() => setAvailabilityOpen(true)}
-        conflictCount={homeConflictCount}
-        busy={isLoadingRange}
-      />
+      {/* ── The masthead: title, view selector, stepping, primary action.
+          Two mastheads, one wrapper (see the ResizeObserver effect above) —
+          the phone bar below md, the frost Toolbar masthead from md up. ──── */}
+      <div ref={mastheadWrapperRef}>
+        <FairwayCalendarHero
+          focusDate={focusDate}
+          selectedDate={focusDate}
+          events={events}
+          nowRef={nowRef}
+          isDayView={isDay}
+          isCoach={isCoach}
+          onNavigate={navigate}
+          onSelectDate={(d) => setFocusDate(d)}
+          onPrimaryAction={isCoach ? primaryAction : undefined}
+          primaryActionLabel={primaryActionLabel}
+          teamTimezone={teamTimezone}
+          view={view}
+          viewOptions={VIEW_OPTIONS}
+          onViewChange={setView}
+          onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
+          onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
+          onSubscribe={() => setSubscribeOpen(true)}
+          onAvailability={() => setAvailabilityOpen(true)}
+          conflictCount={homeConflictCount}
+          busy={isLoadingRange}
+        />
+        <FairwayCalendarToolbar
+          className="hidden md:block"
+          focusDate={focusDate}
+          selectedDate={focusDate}
+          nowRef={nowRef}
+          isDayView={isDay}
+          isCoach={isCoach}
+          onNavigate={navigate}
+          onSelectDate={(d) => setFocusDate(d)}
+          onPrimaryAction={isCoach ? primaryAction : undefined}
+          primaryActionLabel={primaryActionLabel}
+          view={view}
+          viewOptions={VIEW_OPTIONS}
+          onViewChange={setView}
+          onFindTime={teamId && isCoach ? () => openScheduling() : undefined}
+          onConflicts={teamId ? () => setConflictsOpen(true) : undefined}
+          onSubscribe={() => setSubscribeOpen(true)}
+          onAvailability={() => setAvailabilityOpen(true)}
+          conflictCount={homeConflictCount}
+          busy={isLoadingRange}
+        />
+      </div>
 
       {/* ── Phone: the coach's ONE primary action floats above the tab bar,
           where a thumb already is; the masthead carries it from md up. ──── */}
