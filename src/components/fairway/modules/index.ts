@@ -21,3 +21,4 @@ export * from './RankCell';
 export * from './GradeDots';
 export * from './RxCard';
 export * from './StatMatrix';
+export * from './ResizableWorkspace';

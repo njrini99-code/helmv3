@@ -84,6 +84,9 @@ export {
   type InsetGroupProps,
   type InsetGroupRowProps,
   type InsetGroupVariant,
+  ScrollArea,
+  type ScrollAreaProps,
+  type ScrollAreaOrientation,
 } from './surfaces';
 
 // ── cards-insight ─────────────────────────────────────────────────────────--
@@ -155,6 +158,7 @@ export {
   Toolbar,
   ToolbarIconButton,
   type ToolbarProps,
+  type ToolbarMaterial,
   type ToolbarViewToggleProps,
   type ToolbarFilterMenuProps,
   type ToolbarFilterOption,
@@ -405,6 +409,13 @@ export {
   type ToneStyle,
   ReportProblemButton,
   type ReportProblemButtonProps,
+  Progress,
+  type ProgressProps,
+  type ProgressSize,
+  type ProgressTone,
+  Meter,
+  type MeterProps,
+  type MeterSize,
 } from './feedback';
 
 // ── overlays ────────────────────────────────────────────────────────────────
@@ -420,6 +431,13 @@ export {
   PopoverPanel,
   type PopoverPanelProps,
   type PopoverPanelSurface,
+  Menu,
+  type MenuProps,
+  type FwMenuItemProps,
+  Tooltip,
+  TooltipProvider,
+  type TooltipProps,
+  type TooltipProviderProps,
 } from './overlays';
 
 // ── command ─────────────────────────────────────────────────────────────────
@@ -539,3 +557,6 @@ export {
   FairwayMyDevelopment,
   type FairwayMyDevelopmentProps,
 } from './pages/coachhelm';
+
+// ── modules (architecture: Spine, Bento, MatrixBoard, Filmstrip, StatMatrix …) ──
+export * from './modules';

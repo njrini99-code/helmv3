@@ -34,3 +34,9 @@ export type {
   PopoverPanelProps,
   PopoverPanelSurface,
 } from './PopoverPanel';
+
+export { Menu } from './Menu';
+export type { MenuProps, FwMenuItemProps } from './Menu';
+
+export { Tooltip, TooltipProvider } from './Tooltip';
+export type { TooltipProps, TooltipProviderProps } from './Tooltip';

@@ -68,6 +68,7 @@ export type { PlayerIdentityProps, PlayerIdentitySize } from './PlayerIdentity';
 export { Toolbar, ToolbarIconButton } from './Toolbar';
 export type {
   ToolbarProps,
+  ToolbarMaterial,
   ToolbarViewToggleProps,
   ToolbarFilterMenuProps,
   ToolbarFilterOption,

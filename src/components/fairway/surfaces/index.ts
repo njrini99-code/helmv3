@@ -36,3 +36,6 @@ export type { GlassSurfaceProps, GlassSurfaceKind, GlassSurfaceTier } from './gl
 
 export { InsetGroup, InsetGroupRow } from './inset-group';
 export type { InsetGroupProps, InsetGroupRowProps, InsetGroupVariant } from './inset-group';
+
+export { ScrollArea } from './scroll-area';
+export type { ScrollAreaProps, ScrollAreaOrientation } from './scroll-area';

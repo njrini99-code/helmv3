@@ -103,6 +103,12 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
     replaces: ['4+ loose pills above a grid', 'full-width select + full-width search stacked'],
     mobile: 'one row, overflow into a sheet', desktop: 'one row, right-aligned actions', examples: ['Calendar', 'Rounds library'],
   },
+  {
+    name: 'ResizableWorkspace', category: 'architecture', status: 'new', archetypes: ['D'], material: 'canvas',
+    bestFor: ['desktop queue | evidence | assistant', 'schedule lane + inspector'], avoidFor: ['mobile (renders center-only by default)', 'a single-pane view'],
+    replaces: ['fixed-width flex columns with no resize', 'bespoke pointer-drag splitter code'],
+    mobile: 'center pane only by default, or a consumer-owned renderMobile layout', desktop: 'pointer + keyboard resizable panes, persisted layout, collapsible sides', examples: ['Signals workspace', 'Practice planner'],
+  },
   // ── Surfaces ────────────────────────────────────────────────────────────
   {
     name: 'Surface', category: 'surface', status: 'canonical', archetypes: ['A', 'B', 'C', 'D', 'E', 'F'], material: 'matte',
@@ -126,6 +132,12 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
     bestFor: ['2–6 related numbers as ONE object'], avoidFor: ['one number', 'unrelated numbers'],
     replaces: ['four response cards', 'a row of MetricCards'],
     mobile: '2×2', desktop: '4 columns', examples: ['Event responses', 'Team stats header'],
+  },
+  {
+    name: 'ScrollArea', category: 'surface', status: 'new', archetypes: ['A', 'B', 'D'], material: 'canvas',
+    bestFor: ['a queue/rail/panel that scrolls independently of the page', 'a ResizableWorkspace pane'], avoidFor: ['the page body itself', 'content that already fits without scrolling'],
+    replaces: ['bespoke overflow-y-auto + manual scrollbar CSS', 'nested scroll divs with no edge fade'],
+    mobile: 'native momentum scroll, overscroll-behavior: contain', desktop: 'compact 8px scrollbar, edge fade', examples: ['ResizableWorkspace panes'],
   },
   {
     name: 'StatStrip', category: 'surface', status: 'canonical', archetypes: ['A', 'B', 'E'], material: 'matte',
@@ -218,6 +230,8 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
   { name: 'ModalShell', category: 'overlay', status: 'canonical', archetypes: ['F'], material: 'modal', bestFor: ['focused tasks and confirmations'], avoidFor: ['every detail'], replaces: ['legacy ui/dialog'], mobile: 'full-height', desktop: 'centered', examples: ['Event editor'] },
   { name: 'PopoverPanel', category: 'overlay', status: 'canonical', archetypes: ['B', 'D'], material: 'float', bestFor: ['menus, notification panel'], avoidFor: ['long content'], replaces: ['custom absolute dropdowns'], mobile: 'sheet fallback', desktop: 'anchored', examples: ['Notifications'] },
   { name: 'CommandMenu', category: 'overlay', status: 'canonical', archetypes: ['D'], material: 'float', bestFor: ['fast global search and actions'], avoidFor: ['a hero search page'], replaces: ['a search page'], mobile: 'full sheet', desktop: '⌘K', examples: [] },
+  { name: 'Menu', category: 'overlay', status: 'new', archetypes: ['B', 'D'], material: 'float', bestFor: ['row/overflow action menus', 'context menus with icons, shortcuts, destructive items'], avoidFor: ['long scrolling content (use Sheet)', 'a single action (use a Button)'], replaces: ['src/components/ui/dropdown-menu.tsx', 'src/components/ui/row-actions-menu.tsx', 'hand-rolled absolute dropdowns'], mobile: 'same floating panel, collision-aware', desktop: 'anchored, roving-tabindex keyboard nav', examples: [] },
+  { name: 'Tooltip', category: 'overlay', status: 'new', archetypes: ['A', 'B', 'C', 'D', 'E', 'F'], material: 'float', bestFor: ['icon-only control labels', 'truncated text or shortcuts on desktop hover'], avoidFor: ['mobile-only flows (no hover surface)', 'content the user must interact with (use Menu/PopoverPanel)'], replaces: ['title attribute tooltips', 'ad-hoc absolute-positioned label spans'], mobile: 'renders the trigger only — no hover surface', desktop: 'hover/focus reveal, 120ms fade, no arrow', examples: [] },
   // ── Forms ───────────────────────────────────────────────────────────────
   { name: 'FormSection', category: 'form', status: 'canonical', archetypes: ['F'], material: 'matte', bestFor: ['grouped fields sharing spacing'], avoidFor: ['a card per field'], replaces: ['field cards'], mobile: '', desktop: '', examples: ['Qualifier editor'] },
   { name: 'FormField', category: 'form', status: 'canonical', archetypes: ['F'], material: 'matte', bestFor: ['label above, helper/error below'], avoidFor: ['placeholder as the only label'], replaces: ['bespoke label + input stacks'], mobile: '', desktop: '', examples: [] },
@@ -226,6 +240,8 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
   { name: 'EmptyState', category: 'feedback', status: 'canonical', archetypes: ['A', 'B', 'C', 'D', 'E', 'F'], material: 'matte', bestFor: ['no data with context and one action'], avoidFor: ['dashes in a grid', 'a lock icon in a card'], replaces: ['— placeholders'], mobile: '', desktop: '', examples: [] },
   { name: 'InlineNotice', category: 'feedback', status: 'canonical', archetypes: ['A', 'B', 'C', 'D', 'E', 'F'], material: 'inset', bestFor: ['a local, quiet notice'], avoidFor: ['stacking two notices'], replaces: ['toast for persistent state'], mobile: '', desktop: '', examples: [] },
   { name: 'Skeleton', category: 'feedback', status: 'canonical', archetypes: ['A', 'B', 'C', 'D', 'E', 'F'], material: 'matte', bestFor: ['loading that preserves layout'], avoidFor: ['full-page spinner'], replaces: ['Loading… text'], mobile: '', desktop: '', examples: [] },
+  { name: 'Progress', category: 'feedback', status: 'new', archetypes: ['A', 'B', 'C', 'D', 'E', 'F'], material: 'matte', bestFor: ['completion of a running process: upload, import, sync'], avoidFor: ['a static measure against a benchmark (use Meter)', 'a single percentage KPI (use a RadialGauge/StatTile)'], replaces: ['ad-hoc h-2 bg-gray-200 bars', 'one-off page-local progress bars'], mobile: '', desktop: '', examples: [] },
+  { name: 'Meter', category: 'feedback', status: 'new', archetypes: ['A', 'C'], material: 'matte', bestFor: ['a value measured against a known good range or band'], avoidFor: ['a running process (use Progress)', 'no band or target to measure against'], replaces: ['percent text with no visual band context'], mobile: '', desktop: '', examples: [] },
   // ── Navigation ──────────────────────────────────────────────────────────
   { name: 'FairwayBottomNav', category: 'navigation', status: 'canonical', archetypes: ['A', 'B', 'C', 'D', 'E', 'F'], material: 'float', bestFor: ['the floating dock: 4–5 destinations + More'], avoidFor: ['a second floating bar near the bottom'], replaces: ['solid tab bar'], mobile: '60px frost capsule', desktop: 'hidden', examples: [] },
   { name: 'FairwayHubSubNav', category: 'navigation', status: 'canonical', archetypes: ['A', 'B'], material: 'float', bestFor: ['sibling views under one hub'], avoidFor: ['tabs as page architecture elsewhere'], replaces: ['per-page tab bars'], mobile: 'sticky under top bar', desktop: '', examples: ['Rounds & Stats'] },

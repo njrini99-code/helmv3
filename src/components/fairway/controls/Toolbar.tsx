@@ -2,7 +2,7 @@
 
 /**
  * ============================================================================
- * Fairway · Toolbar — the one quiet triage row (search + filters + actions)
+ * Fairway · Toolbar (a.k.a. the brief's "FrostToolbar" — one component, not two)
  * ----------------------------------------------------------------------------
  * ONE composed control row that replaces the 3 competing filter mechanisms on
  * the Insights page (DESIGN-SYSTEM.md §6 "Toolbar": "sticky glass top bar …
@@ -16,7 +16,21 @@
  *   • Button / IconButton (controls/)  — primary action + bulk actions
  *   • StatusPill / Chip / Badge        — selection count + applied-filter chips
  *
- * ── Material (§4.3 glass allow-list) ─────────────────────────────────────────
+ * ── Material (§4.3 glass allow-list + brief §2/§9 float material) ───────────
+ * Two independent knobs decide the row's material:
+ *
+ *   `material` (default `'matte'`) — the row's material AT REST:
+ *     • `'matte'`  (default, unchanged behavior) — `bg-surface` + a single
+ *       hairline at rest; only earns glass while STUCK (below).
+ *     • `'frost'`  — ALWAYS renders on the shared `fw-frost fw-frost-subtle`
+ *       floating material (brief §2 material 4 / §9 "one composed toolbar"),
+ *       whether stuck or not. Every slot and behavior is identical to matte —
+ *       this only swaps the row's own paint.
+ *
+ *   `sticky` — independent of `material`: a sticky matte row still earns the
+ *   STUCK glass upgrade below once it pins (unchanged); a sticky FROST row is
+ *   already on glass, so sticking changes nothing more.
+ *
  * Matte AT REST: a warm `bg-surface` row with a single hairline (border OR
  * shadow, never both). Restrained warm-CREAM glass ONLY while STUCK — when the
  * row is `sticky` and an IntersectionObserver sentinel scrolls out of view, the
@@ -89,6 +103,9 @@ const STUCK_GLASS_STYLE: CSSProperties = {
  * Public types
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/** `'matte'` (default): unchanged at-rest row, glass only while stuck. `'frost'`: always on the shared floating frost material. */
+export type ToolbarMaterial = 'matte' | 'frost';
+
 export interface ToolbarProps {
   /** The inline search slot (typically a <SearchField />). */
   search?: ReactNode;
@@ -122,6 +139,13 @@ export interface ToolbarProps {
   /** Called when the bulk bar's "Clear" affordance is pressed. */
   onClearSelection?: () => void;
   /**
+   * The row's at-rest material. `'matte'` (default) keeps today's behavior
+   * exactly — a warm matte row that only earns glass while `sticky` + stuck.
+   * `'frost'` always renders on the shared floating frost material, stuck or
+   * not; every slot and behavior is unchanged either way.
+   */
+  material?: ToolbarMaterial;
+  /**
    * Make the row stick to the top of its scroll container and earn the cream
    * glass once content scrolls under it. Default `false` (static matte row).
    */
@@ -150,6 +174,7 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
     selectedCount = 0,
     selectionNoun = 'selected',
     onClearSelection,
+    material = 'matte',
     sticky = false,
     stickyTop = 0,
     'aria-label': ariaLabel = 'Filters and actions',
@@ -186,12 +211,16 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
     return () => io.disconnect();
   }, [sticky, stickyTop]);
 
-  // The row carries the warm glass only when STUCK (sticky slot). The bulk
-  // bar is no longer rendered inside this row (it docks to the bottom edge
+  const isFrost = material === 'frost';
+
+  // The row carries the warm glass only when STUCK (sticky slot) — and only
+  // for the `matte` material; `frost` is already on the floating material at
+  // rest, so the stuck-glass upgrade has nothing to add for it. The bulk bar
+  // is no longer rendered inside this row (it docks to the bottom edge
   // below), so a live selection no longer has anything to do with THIS row's
   // material — the filter controls stay matte-at-rest exactly as when nothing
   // is selected.
-  const onGlass = sticky && stuck;
+  const onGlass = !isFrost && sticky && stuck;
 
   // One merged style: sticky offset/z-index (always when sticky) + the warm
   // glass tint/edge tokens (only when on-glass). Matte at rest carries no inline
@@ -213,6 +242,7 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
         role="toolbar"
         aria-label={ariaLabel}
         data-slot={dataSlot}
+        data-material={material}
         data-stuck={sticky && stuck ? '' : undefined}
         data-selecting={hasSelection ? '' : undefined}
         style={rowStyle}
@@ -220,13 +250,18 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
           'rounded-card border',
           'transition-[background-color,border-color,box-shadow] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none',
           sticky && 'sticky',
-          onGlass
-            ? // Restrained warm cream glass (sticky-stuck or hosting the bulk bar).
-              // Tint/edge come from STUCK_GLASS_STYLE tokens; only the blur + soft
-              // lift are class-driven here.
-              'backdrop-blur-glass shadow-soft'
-            : // Matte at rest — single hairline, no shadow (border OR shadow, never both)
-              'bg-surface border-border-subtle shadow-flat',
+          isFrost
+            ? // Always on the shared floating frost material (brief §2/§9) —
+              // stuck or not; the CSS-only recipe already includes its own
+              // border/edge-light/shadow, so no extra border/shadow classes.
+              'fw-frost fw-frost-subtle'
+            : onGlass
+              ? // Restrained warm cream glass (sticky-stuck or hosting the bulk bar).
+                // Tint/edge come from STUCK_GLASS_STYLE tokens; only the blur + soft
+                // lift are class-driven here.
+                'backdrop-blur-glass shadow-soft'
+              : // Matte at rest — single hairline, no shadow (border OR shadow, never both)
+                'bg-surface border-border-subtle shadow-flat',
           className,
         )}
       >

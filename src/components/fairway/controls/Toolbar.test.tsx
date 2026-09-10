@@ -146,3 +146,72 @@ describe('Toolbar bulk-action bar — bottom-docked, not swapped in place', () =
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 });
+
+/**
+ * ============================================================================
+ * Toolbar `material` prop — the brief's "FrostToolbar" is this component
+ * ----------------------------------------------------------------------------
+ * `material` defaults to `'matte'`, which must be byte-identical to every
+ * pre-existing Toolbar (no `fw-frost*` class, no `data-material` regression
+ * for callers that never pass the prop). `material="frost"` always renders
+ * the shared floating frost material — stuck or not — without touching any
+ * slot or behavior.
+ * ========================================================================== */
+describe('Toolbar `material` prop', () => {
+  it('defaults to matte: no frost classes, at-rest bg-surface hairline', () => {
+    render(<Toolbar search={<input aria-label="search" />} aria-label="Filters and actions" />);
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row).toHaveAttribute('data-material', 'matte');
+    expect(row.className).not.toMatch(/(?:^|\s)fw-frost/);
+    expect(row.className).toContain('bg-surface');
+    expect(row.className).toContain('border-border-subtle');
+  });
+
+  it('material="frost" always renders the shared floating frost material, not stuck-only glass', () => {
+    render(
+      <Toolbar
+        search={<input aria-label="search" />}
+        material="frost"
+        aria-label="Filters and actions"
+      />,
+    );
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row).toHaveAttribute('data-material', 'frost');
+    expect(row.className).toContain('fw-frost');
+    expect(row.className).toContain('fw-frost-subtle');
+    // No matte-at-rest classes leak through when frosted.
+    expect(row.className).not.toMatch(/(?:^|\s)bg-surface(?:\s|$)/);
+  });
+
+  it('material="frost" keeps every slot rendering (search + filters + viewToggle + primaryAction)', () => {
+    render(
+      <Toolbar
+        material="frost"
+        search={<input aria-label="search" />}
+        filters={<button>Severity</button>}
+        viewToggle={<button data-testid="toggle">Feed</button>}
+        primaryAction={<button>New</button>}
+      />,
+    );
+    expect(screen.getByLabelText('search')).toBeInTheDocument();
+    expect(screen.getByText('Severity')).toBeInTheDocument();
+    expect(screen.getByTestId('toggle')).toBeInTheDocument();
+    expect(screen.getByText('New')).toBeInTheDocument();
+  });
+
+  it('material="frost" + sticky still applies the sticky offset/z-index style, unlike matte it never swaps to the stuck-glass classes', () => {
+    render(
+      <Toolbar
+        search={<input aria-label="search" />}
+        material="frost"
+        sticky
+        stickyTop={12}
+        aria-label="Filters and actions"
+      />,
+    );
+    const row = screen.getByRole('toolbar', { name: 'Filters and actions' });
+    expect(row.style.top).toBe('12px');
+    expect(row.className).toContain('fw-frost-subtle');
+    expect(row.className).not.toContain('backdrop-blur-glass');
+  });
+});
