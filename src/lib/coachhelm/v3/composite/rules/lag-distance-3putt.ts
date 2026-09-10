@@ -61,7 +61,7 @@ function isWeakShortPutt(i: EvidenceInsight): boolean {
 
 const rule: CompositeRule = {
   id: 'lag_distance_3putt',
-  name: 'Lag-distance → 3-putt cascade',
+  name: 'Lag distance to 3-putt cascade',
   priority: 'urgent',
   category: 'putting',
 
