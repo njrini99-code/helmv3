@@ -352,6 +352,33 @@ function isActionableStatus(status: string | null | undefined): boolean {
 }
 
 /* ---------------------------------------------------------------------------
+ * Trend series — the per-area Sparkline's input, oldest → newest
+ * ----------------------------------------------------------------------------
+ * Manual "Log progress" notes (`progressHistory`) merged with the driver's own
+ * `snapshots` (#1241), deduped per day; a measured snapshot wins over a
+ * same-day manual note because it is the value the card is actually showing.
+ * Exported so the player's phone focus-area rows (FairwayMyDevelopment) draw
+ * the SAME series the card does, and never a second, drifting derivation.
+ * ------------------------------------------------------------------------- */
+
+export function focusAreaTrendSeries(
+  focusArea: Pick<FocusAreaCardData, 'progressHistory' | 'snapshots'>,
+): number[] {
+  const byDay = new Map<string, number>();
+  const add = (at: string | null | undefined, value: unknown) => {
+    if (!at || typeof value !== 'number' || !Number.isFinite(value)) return;
+    byDay.set(at.slice(0, 10), value);
+  };
+  for (const e of focusArea.progressHistory ?? []) add(e.at, e.value);
+  // `snapshots` arrives as raw jsonb — never trust its shape.
+  const snaps = Array.isArray(focusArea.snapshots) ? focusArea.snapshots : [];
+  for (const s of snaps) add(s?.date, s?.value);
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, v]) => v);
+}
+
+/* ---------------------------------------------------------------------------
  * Source chip — a REAL <Link> to the origin (review or insight)
  * ------------------------------------------------------------------------- */
 
@@ -708,20 +735,14 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     // demonstrably moved. Merge the driver's own `snapshots` in, deduped per
     // day (the measured snapshot wins over a same-day manual note, since it is
     // the value the card is actually showing).
-    const series = useMemo(() => {
-      const byDay = new Map<string, number>();
-      const add = (at: string | null | undefined, value: unknown) => {
-        if (!at || typeof value !== 'number' || !Number.isFinite(value)) return;
-        byDay.set(at.slice(0, 10), value);
-      };
-      for (const e of focusArea.progressHistory ?? []) add(e.at, e.value);
-      // `snapshots` arrives as raw jsonb — never trust its shape.
-      const snaps = Array.isArray(focusArea.snapshots) ? focusArea.snapshots : [];
-      for (const s of snaps) add(s?.date, s?.value);
-      return [...byDay.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([, v]) => v);
-    }, [focusArea.progressHistory, focusArea.snapshots]);
+    const series = useMemo(
+      () =>
+        focusAreaTrendSeries({
+          progressHistory: focusArea.progressHistory,
+          snapshots: focusArea.snapshots,
+        }),
+      [focusArea.progressHistory, focusArea.snapshots],
+    );
     const hasTrend = series.length >= 2;
 
     // Trend classification is goodDirection-aware: for lower-is-better metrics,
@@ -757,7 +778,12 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             padding="sm"
             className={cn('flex flex-col gap-3', className)}
           >
-            <div className="flex items-center gap-4">
+            {/* Below `sm` the status cluster (pills · date · Reopen) takes its
+                own line under the title: on one line the three of them left
+                the title a few pixels wide, so a phone showed the icon, two
+                pills and Reopen and no name (player-development.mobile.md).
+                From `sm` the row is unchanged. */}
+            <div className="flex flex-wrap items-center gap-4">
               <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-tertiary">
                 <AreaIcon size={18} />
               </span>
@@ -769,6 +795,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   <p className="font-fw-sans text-eyebrow text-text-tertiary">{areaLabel}</p>
                 ) : null}
               </div>
+              <div className="flex shrink-0 items-center gap-4 max-sm:w-full max-sm:justify-end">
               {recordedOutcome ? (
                 <StatusPill tone={recordedOutcome.tone} size="sm">
                   Outcome: {recordedOutcome.label}
@@ -802,6 +829,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   Reopen
                 </Button>
               ) : null}
+              </div>
             </div>
             {showOutcomeCapture ? (
               <div className="border-t border-border-subtle pt-3">

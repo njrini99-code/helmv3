@@ -38,14 +38,15 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Target, Trophy } from 'lucide-react';
+import { Sparkles, Target, Trophy, X } from 'lucide-react';
 
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
 // that barrel, so importing the barrel back here created an import cycle,
 // flagged by npm run check:cycles.
-import { Surface, Inset } from '@/components/fairway/surfaces';
-import { Button } from '@/components/fairway/controls';
+import { Surface } from '@/components/fairway/surfaces';
+import { InsetGroup } from '@/components/fairway/surfaces/inset-group';
+import { Button, IconButton } from '@/components/fairway/controls';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
 import { Sparkline } from '@/components/fairway/charts';
@@ -117,7 +118,10 @@ export interface GoalsSectionProps {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * Suggestion row — compact Inset with Accept / Dismiss
+ * Suggestion row — one seam row of the "CoachHelm suggests" InsetGroup:
+ * label · target line, then ONE primary Accept and a quiet Dismiss glyph
+ * (player-development.mobile.md #4). Two text buttons used to crush the
+ * label to three characters at 393 px.
  * ────────────────────────────────────────────────────────────────────────── */
 
 function SuggestionRow({ view }: { view: GoalSuggestionView }) {
@@ -150,45 +154,43 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
       : '—';
 
   return (
-    <Inset
-      padding="sm"
-      className="flex items-center justify-between gap-3"
+    <InsetGroup.Row
       data-slot="goal-suggestion-row"
       data-suggestion-id={suggestion.id}
+      trailing={
+        /* Touch target: md (44px) unconditionally — not sm, which is only
+           44px behind a `(pointer: coarse)` media query (mustFix #194). */
+        <span className="inline-flex items-center gap-1">
+          <Button
+            variant="secondary"
+            busy={isPending}
+            disabled={isPending}
+            onClick={() =>
+              runTransition(() => acceptGoalSuggestion(suggestion.id), 'Goal started')
+            }
+          >
+            Accept
+          </Button>
+          <IconButton
+            variant="ghost"
+            aria-label="Dismiss"
+            disabled={isPending}
+            onClick={() =>
+              runTransition(() => dismissGoalSuggestion(suggestion.id), 'Suggestion dismissed')
+            }
+          >
+            <X aria-hidden />
+          </IconButton>
+        </span>
+      }
     >
-      <div className="min-w-0">
-        <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-          {display_label}
-        </p>
-        <p className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-          Target {targetText} · {suggestion.suggested_window_days}-day window
-        </p>
-      </div>
-      {/* Touch target: md (44px min-height) unconditionally — not sm, which is
-          only 44px behind a `(pointer: coarse)` media query (mustFix #194). */}
-      <div className="flex shrink-0 items-center gap-1">
-        <Button
-          variant="secondary"
-          busy={isPending}
-          disabled={isPending}
-          onClick={() =>
-            runTransition(() => acceptGoalSuggestion(suggestion.id), 'Goal started')
-          }
-        >
-          Accept
-        </Button>
-        <Button
-          variant="ghost"
-          busy={isPending}
-          disabled={isPending}
-          onClick={() =>
-            runTransition(() => dismissGoalSuggestion(suggestion.id), 'Suggestion dismissed')
-          }
-        >
-          Dismiss
-        </Button>
-      </div>
-    </Inset>
+      <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
+        {display_label}
+      </span>
+      <span className="block truncate font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+        Target {targetText} · {suggestion.suggested_window_days}-day window
+      </span>
+    </InsetGroup.Row>
   );
 }
 
@@ -392,8 +394,8 @@ export function GoalsSection({
                 : focusAreaCount > 0
                   ? `A goal tracks one stat you want to move. You have ${focusAreaCount} focus ${
                       focusAreaCount === 1 ? 'area' : 'areas'
-                    } below — set a goal to put a number on one of them.`
-                  : 'Set a goal to track a stat you want to improve — or accept one CoachHelm suggests below.'
+                    } below. Set a goal to put a number on one of them.`
+                  : 'Set a goal to track a stat you want to improve, or accept one CoachHelm suggests below.'
             }
             action={canCreate ? setGoalButton : undefined}
           />
@@ -426,10 +428,11 @@ export function GoalsSection({
         </Surface>
       ) : null}
 
-      {/* Suggestions rail — player-facing; omitted entirely when none exist */}
+      {/* Suggestions rail — player-facing; omitted entirely when none exist.
+          A heading line over ONE matte InsetGroup (no card around rows). */}
       {role === 'player' && hasSuggestions ? (
-        <Surface padding="md">
-          <div className="mb-3 flex items-center gap-2">
+        <section className="flex flex-col gap-3" aria-label="CoachHelm suggests">
+          <div className="flex items-center gap-2 px-1">
             <Sparkles className="h-4 w-4 text-accent-600" aria-hidden />
             <h3 className="font-fw-display text-body-lg font-medium text-text-primary">
               CoachHelm suggests
@@ -438,12 +441,12 @@ export function GoalsSection({
               {suggestions.length} {suggestions.length === 1 ? 'suggestion' : 'suggestions'}
             </span>
           </div>
-          <div className="flex flex-col gap-2">
+          <InsetGroup variant="matte">
             {suggestions.map((view) => (
               <SuggestionRow key={view.suggestion.id} view={view} />
             ))}
-          </div>
-        </Surface>
+          </InsetGroup>
+        </section>
       ) : null}
 
       {/* Player creation overlay — the shipped flow, reused as an overlay. */}

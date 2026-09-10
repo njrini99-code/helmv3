@@ -189,6 +189,8 @@ describe('GoalsSection — 44px touch targets', () => {
     const accept = screen.getByRole('button', { name: /^accept$/i });
     const dismiss = screen.getByRole('button', { name: /^dismiss$/i });
     expect(accept.className).toMatch(/min-h-\[44px\]/);
-    expect(dismiss.className).toMatch(/min-h-\[44px\]/);
+    // Dismiss is the row's quiet IconButton glyph: its md recipe is a fixed
+    // 44px square (`h-11 w-11`), the same unconditional floor.
+    expect(dismiss.className).toMatch(/min-h-\[44px\]|\bh-11\b/);
   });
 });

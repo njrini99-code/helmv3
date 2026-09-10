@@ -4,33 +4,29 @@
  * ============================================================================
  * DevelopmentDrill — `?view=development` (spec §5.3, absorbs `/my-development`)
  * ----------------------------------------------------------------------------
- * Goals + causal "why your scores move" + focus areas — ported from
- * `FairwayMyDevelopment`'s body (minus its own `CoachHelmShell`; the stage IS
- * the chrome now). Every write action (`updateFocusAreaProgress`,
- * `completeFocusArea`, `reactivateFocusArea`, `createPlayerFocusArea`,
- * `acceptFocusArea`, `declineFocusArea`) and every reused sub-component
- * (`GoalsSection`, `CausalWhyPanel`, `FocusAreaCard`, `FocusAreaModal`) are
- * imported UNCHANGED — only the page-chrome wrapper is retired.
+ * Goals + causal "why your scores move" + focus areas — the SAME body as
+ * `FairwayMyDevelopment` (minus its own `CoachHelmShell`; the stage IS the
+ * chrome now). The pieces both hosts share (log progress sheet, prescribed
+ * card, overview instrument, the phone focus-area rows and sheet) live in
+ * `fairway/pages/coachhelm/development-parts.tsx`; this file used to carry
+ * verbatim copies of three of them. Every write action (`completeFocusArea`,
+ * `reactivateFocusArea`, `createPlayerFocusArea`, `acceptFocusArea`,
+ * `declineFocusArea`) and every reused sub-component (`GoalsSection`,
+ * `CausalWhyPanel`, `FocusAreaCard`, `FocusAreaModal`) are imported
+ * UNCHANGED.
  * ========================================================================== */
 
 import { useCallback, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle2, Target } from 'lucide-react';
+import { Clock, CheckCircle2, MessageSquare, Target } from 'lucide-react';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   Button,
   Surface,
   EmptyState,
   InlineNotice,
-  InstrumentPanel,
-  Readout,
-  formatPercent,
-  FormField,
-  Input,
-  TextArea,
   Eyebrow,
   FocusAreaCard,
   type FocusAreaCardData,
@@ -38,20 +34,22 @@ import {
 import { GoalsSection, type GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
 import { CausalWhyPanel } from '@/components/fairway/pages/coachhelm/CausalWhyPanel';
 import { FocusAreaModal, type FocusAreaModalSubmit } from '@/components/fairway/pages/coachhelm/FocusAreaModal';
-// SourceChip — the same REAL "From a round review / From a CoachHelm insight"
-// link FocusAreaCard renders for active areas. A prescribed-but-not-yet-
-// accepted area is exactly where a player most needs that context: it's the
-// one moment they're deciding whether to accept, and until now the card gave
-// them zero evidence of WHY the coach flagged this (#1290 UX audit).
-import { SourceChip } from '@/components/fairway/pages/coachhelm/FocusAreaCard';
-import { getAreaType, formatTargetMetricLabel, type AreaAutoFillStats } from '@/components/fairway/pages/coachhelm/areaTypes';
+import {
+  ActiveFocusAreaList,
+  DevelopmentOverviewInstrument,
+  FocusAreaSheet,
+  LogProgressSheet,
+  ProposedAreaCard,
+  useFocusAreaSheet,
+  standingForArea,
+  type LogProgressState,
+} from '@/components/fairway/pages/coachhelm/development-parts';
+import type { AreaAutoFillStats } from '@/components/fairway/pages/coachhelm/areaTypes';
 import { IconPlus } from '@/components/icons';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
-import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import {
-  updateFocusAreaProgress,
   completeFocusArea,
   reactivateFocusArea,
   createPlayerFocusArea,
@@ -59,7 +57,6 @@ import {
   declineFocusArea,
 } from '@/app/golf/actions/development';
 import { useToast } from '@/components/ui/sonner';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 export interface DevelopmentDrillProps {
   activeAreas: FocusAreaCardData[];
@@ -73,263 +70,6 @@ export interface DevelopmentDrillProps {
   standingByMetric?: Record<string, PlayerStanding>;
   causalRelationships?: CausalRelationshipRow[];
   achievedGoals?: FairwayGoalCardData[];
-}
-
-/* ── Log-progress drawer — ported verbatim from FairwayMyDevelopment. ────── */
-interface LogProgressState {
-  focusArea: FocusAreaCardData;
-}
-
-function LogProgressDrawer({ state, onClose }: { state: LogProgressState | null; onClose: () => void }) {
-  const router = useRouter();
-  const { addToast } = useToast();
-  // Desktop-only autofocus for the measurement field: on touch, focusing it
-  // as the drawer opens summons the iOS keyboard over the form (owner
-  // TestFlight report, 2026-08-26). The keyboard waits for a tap.
-  const finePointer = useMediaQuery('(pointer: fine)');
-  const fa = state?.focusArea;
-  const [newValue, setNewValue] = useState('');
-  const [note, setNote] = useState('');
-  const [valueError, setValueError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  const open = state != null;
-  const currentValue = fa?.current_value ?? null;
-  const targetValue = fa?.target_value ?? null;
-  const targetMetric = fa?.target_metric ?? null;
-  const metricLabel = formatTargetMetricLabel(targetMetric) || 'Progress';
-
-  const MAX_REASONABLE = 100_000;
-
-  const valueHint = (() => {
-    const parts: string[] = ['0 or higher'];
-    if (currentValue != null) parts.push(`current ${currentValue}`);
-    if (targetValue != null) parts.push(`target ${targetValue}`);
-    return parts.join(' · ');
-  })();
-
-  function reset() {
-    setNewValue('');
-    setNote('');
-    setValueError(null);
-    setSubmitting(false);
-  }
-
-  function handleClose() {
-    if (submitting) return;
-    onClose();
-    setTimeout(reset, 200);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (submitting || !fa) return;
-
-    const trimmed = newValue.trim();
-    if (trimmed === '') {
-      setValueError('Enter a new value to log.');
-      return;
-    }
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed)) {
-      setValueError('Enter a number (e.g. 31.5).');
-      return;
-    }
-    if (parsed < 0) {
-      setValueError('Value can’t be negative — enter 0 or higher.');
-      return;
-    }
-    if (parsed > MAX_REASONABLE) {
-      setValueError(`That looks too large — enter a value up to ${MAX_REASONABLE.toLocaleString('en-US')}.`);
-      return;
-    }
-    setValueError(null);
-
-    setSubmitting(true);
-    try {
-      const trimmedNote = note.trim();
-      const result = await updateFocusAreaProgress(fa.id, parsed, { note: trimmedNote || undefined });
-      if (!result.success) {
-        addToast({ type: 'error', title: result.error || 'Failed to log progress' });
-        setSubmitting(false);
-        return;
-      }
-      addToast({ type: 'success', title: 'Progress updated' });
-      onClose();
-      router.refresh();
-      setTimeout(reset, 200);
-    } catch {
-      addToast({ type: 'error', title: 'Failed to log progress' });
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <Drawer open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
-      <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl sm:bottom-1/2 sm:translate-y-1/2">
-        <DrawerHeader>
-          <DrawerTitle>Log progress</DrawerTitle>
-          <DrawerDescription>{fa?.title || 'Focus area'}</DrawerDescription>
-        </DrawerHeader>
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
-          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-        >
-          <div>
-            <p className="mb-1.5 block font-fw-sans text-body-sm font-medium text-text-secondary">Current value</p>
-            <div className="rounded-fw-sm border border-border-subtle bg-surface-sunken px-3 py-2.5 font-fw-sans text-text-primary">
-              {currentValue ?? '—'}
-              {targetValue != null && <span className="font-normal text-text-tertiary"> / {targetValue}</span>}
-              {metricLabel && metricLabel !== 'Progress' && (
-                <span className="ml-2 font-fw-sans text-eyebrow text-text-tertiary">{metricLabel}</span>
-              )}
-            </div>
-          </div>
-
-          <FormField label={`New value (${metricLabel})`} required error={valueError ?? undefined} help={valueHint}>
-            <Input
-              type="number"
-              inputMode="decimal"
-              step="any"
-              min={0}
-              value={newValue}
-              onChange={(e) => {
-                setNewValue(e.target.value);
-                if (valueError) setValueError(null);
-              }}
-              placeholder="Enter your latest measurement"
-              required
-              aria-invalid={valueError ? true : undefined}
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus={finePointer}
-            />
-          </FormField>
-
-          <FormField label="Note" showOptional>
-            <TextArea value={note} onChange={(e) => setNote(e.target.value)} placeholder="How did it go? Any context for your coach…" rows={3} />
-          </FormField>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={handleClose} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button type="submit" busy={submitting} disabled={submitting}>
-              Save progress
-            </Button>
-          </div>
-        </form>
-      </DrawerContent>
-    </Drawer>
-  );
-}
-
-/* ── ProposedAreaCard — ported verbatim from FairwayMyDevelopment. ───────── */
-function ProposedAreaCard({
-  focusArea,
-  deciding,
-  onAccept,
-  onDecline,
-}: {
-  focusArea: FocusAreaCardData;
-  deciding: boolean;
-  onAccept: () => void;
-  onDecline: () => void;
-}) {
-  const area = getAreaType(focusArea.area_type);
-  const hasTarget = focusArea.target_metric != null && focusArea.target_value != null;
-  const targetMetricLabel = formatTargetMetricLabel(focusArea.target_metric);
-  return (
-    <Surface padding="md" className="flex flex-col gap-3">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-fw-sm bg-accent-50 text-accent-700">
-          <area.icon size={18} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-fw-sans text-body font-semibold text-text-primary">{focusArea.title || area.label}</p>
-          {focusArea.description ? (
-            <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">{focusArea.description}</p>
-          ) : null}
-          {focusArea.from_review_id || focusArea.from_insight_id ? (
-            <div className="mt-1.5">
-              <SourceChip
-                reviewId={focusArea.from_review_id}
-                reviewRoundId={focusArea.from_review_round_id}
-                insightId={focusArea.from_insight_id}
-                context={focusArea.review_context}
-                // eslint-disable-next-line jsx-a11y/aria-role -- SourceChip's own viewer-role prop, not an ARIA role
-                role="player"
-              />
-            </div>
-          ) : null}
-          {hasTarget ? (
-            <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
-              Target: <span className="font-fw-mono tabular-nums text-text-secondary">{targetMetricLabel}</span> →{' '}
-              <span className="font-fw-mono tabular-nums text-text-primary">{focusArea.target_value}</span>
-            </p>
-          ) : null}
-        </div>
-      </div>
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={onDecline} disabled={deciding}>
-          Decline
-        </Button>
-        <Button variant="primary" busy={deciding} onClick={onAccept}>
-          Accept
-        </Button>
-      </div>
-    </Surface>
-  );
-}
-
-/* ── DevelopmentOverviewInstrument — ported verbatim. ─────────────────────── */
-function DevelopmentOverviewInstrument({ activeCount, completedCount }: { activeCount: number; completedCount: number }) {
-  const total = activeCount + completedCount;
-  const completionRate = total > 0 ? completedCount / total : 0;
-  const anyCompleted = completedCount > 0;
-
-  return (
-    <InstrumentPanel padding="lg" header="Development progress" as="section">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-        <div className="flex flex-col gap-4">
-          <Readout
-            value={activeCount}
-            format={{ maximumFractionDigits: 0 }}
-            label="Active focus areas"
-            unit={activeCount === 1 ? 'area' : 'areas'}
-            size="hero"
-            state={activeCount > 0 ? 'live' : 'awaiting'}
-            samples={activeCount === 0 ? { have: 0, need: 1 } : undefined}
-            awaitingLabel="None active"
-          />
-          <InstrumentPanel depth="inset" padding="sm" className="w-full max-w-[18rem]">
-            <Readout
-              value={completedCount}
-              format={{ maximumFractionDigits: 0 }}
-              label="Completed"
-              unit={completedCount === 1 ? 'area' : 'areas'}
-              size="md"
-              state={anyCompleted ? 'live' : 'awaiting'}
-              samples={anyCompleted ? undefined : { have: 0, need: 1 }}
-              awaitingLabel="None yet"
-            />
-          </InstrumentPanel>
-        </div>
-        <div className="flex justify-center sm:justify-end">
-          <Readout
-            value={anyCompleted ? completionRate : undefined}
-            display={anyCompleted ? formatPercent(completionRate, 0) : undefined}
-            label="Plan complete"
-            size="lg"
-            align="end"
-            state={anyCompleted ? 'live' : 'awaiting'}
-            samples={anyCompleted ? undefined : { have: 0, need: 1 }}
-            awaitingLabel="None yet"
-          />
-        </div>
-      </div>
-    </InstrumentPanel>
-  );
 }
 
 /* ── Component ─────────────────────────────────────────────────────────── */
@@ -357,6 +97,8 @@ export function DevelopmentDrill({
   const [reopeningId, setReopeningId] = useState<string | null>(null);
   const [decidingId, setDecidingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  // Phone focus-area Sheet (player-development.mobile.md #3).
+  const areaSheet = useFocusAreaSheet(activeAreas);
 
   const total = activeAreas.length + completedAreas.length;
   const hasAnyArea = total + proposedAreas.length > 0;
@@ -480,8 +222,14 @@ export function DevelopmentDrill({
   const headerActions = (
     <div className="flex flex-wrap items-center gap-2">
       {total > 0 ? (
-        <Button asChild variant="secondary">
-          <Link href="/golf/dashboard/messages">Message coach</Link>
+        // Below `md` this collapses to a 44px icon-only link so the header
+        // keeps ONE primary (player-development.mobile.md #6); the label
+        // stays for screen readers.
+        <Button asChild variant="secondary" className="max-md:w-11 max-md:px-0">
+          <Link href="/golf/dashboard/messages">
+            <MessageSquare className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="max-md:sr-only">Message coach</span>
+          </Link>
         </Button>
       ) : null}
       {canCreateOwn ? (
@@ -527,6 +275,9 @@ export function DevelopmentDrill({
             activeGoals={goals ?? []}
             suggestions={suggestions ?? []}
             achievedGoals={achievedGoals ?? []}
+            // ACTIVE areas only, so the goals empty state never contradicts the
+            // list right below it (parity with FairwayMyDevelopment).
+            focusAreaCount={activeAreas.length}
           />
 
           <CausalWhyPanel relationships={causalRelationships} />
@@ -590,25 +341,17 @@ export function DevelopmentDrill({
                       {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
                     </span>
                   </h2>
-                  <div className="flex flex-col gap-4">
-                    {activeAreas.map((fa, i) => {
-                      const m = fa.target_metric;
-                      const st = m && isMetricId(m) ? standingByMetric?.[m] : undefined;
-                      return (
-                        <FocusAreaCard
-                          key={fa.id}
-                          focusArea={fa}
-                          // eslint-disable-next-line jsx-a11y/aria-role
-                          role="player"
-                          index={i}
-                          onLogProgress={handleLogProgress}
-                          onComplete={handleComplete}
-                          completing={completingId === fa.id}
-                          standing={st}
-                        />
-                      );
-                    })}
-                  </div>
+                  {/* Phone: ONE matte group of seam rows, a tap opens the full
+                      card in a Sheet (player-development.mobile.md #3); md and
+                      up: the full cards, unchanged. */}
+                  <ActiveFocusAreaList
+                    areas={activeAreas}
+                    standingByMetric={standingByMetric}
+                    onOpen={areaSheet.openArea}
+                    onLogProgress={handleLogProgress}
+                    onComplete={handleComplete}
+                    completingId={completingId}
+                  />
                 </section>
               ) : null}
 
@@ -641,7 +384,18 @@ export function DevelopmentDrill({
         </div>
       )}
 
-      <LogProgressDrawer state={logState} onClose={() => setLogState(null)} />
+      {/* Phone: the tapped focus area's full card in a matte Sheet. */}
+      <FocusAreaSheet
+        area={areaSheet.area}
+        open={areaSheet.open}
+        onClose={areaSheet.close}
+        onLogProgress={handleLogProgress}
+        onComplete={handleComplete}
+        completing={areaSheet.area != null && completingId === areaSheet.area.id}
+        standing={areaSheet.area ? standingForArea(areaSheet.area, standingByMetric) : undefined}
+      />
+
+      <LogProgressSheet state={logState} onClose={() => setLogState(null)} />
 
       {canCreateOwn ? (
         <FocusAreaModal
