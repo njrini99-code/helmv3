@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Eyebrow, Surface, Button } from '@/components/fairway';
+import { Eyebrow, Surface, Button, InlineNotice, Skeleton } from '@/components/fairway';
 import {
   buildReviewShotsByHole,
   type RawGolfShotRow,
@@ -40,7 +40,7 @@ import { createFocusAreaFromReview } from '@/app/golf/actions/development';
 import { CoachNotesSection } from '@/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection';
 import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
 import { ReviewHero, type ReviewHoleMeta } from './ReviewHero';
-import { ReviewBreakdown } from './ReviewBreakdown';
+import { ReviewBreakdown, hasFrontBackData, hasPuttingRampData } from './ReviewBreakdown';
 import { RoundSGSummary } from './RoundSGSummary';
 import {
   buildCourseDateLine,
@@ -79,6 +79,12 @@ export interface FilmstripReviewProps {
   coachNotes: string | null;
   promoteSuggestion: PromoteSuggestion | null;
   standing: Record<string, PlayerStanding>;
+  /** True while the season-standing fetch (`getPlayerStandingForReview`) is
+   *  still in flight. Decoupled from the review's own loading state (the
+   *  perf fix, AUDIT row 15) — the page clears its umbrella loading flag as
+   *  soon as the review resolves, so "Where this sits" carries its own
+   *  pending state here rather than the review waiting on it. */
+  standingLoading: boolean;
   holes: Array<{ hole_number: number; par: number | null; yardage: number | null; score: number | null }>;
   /** The reviewed player's display name — used ONLY for the coach-facing
    *  "Where this sits" StandingBars band (`viewer_context: 'coach'` reads the
@@ -115,6 +121,7 @@ export function FilmstripReview({
   coachNotes,
   promoteSuggestion,
   standing,
+  standingLoading,
   holes,
   playerName,
   strokesGainedTotal,
@@ -263,6 +270,21 @@ export function FilmstripReview({
     standing.sg_ott?.is_womens ?? standing.sg_approach?.is_womens ?? standing.sg_putting?.is_womens,
   );
 
+  // Whole-round Strokes Gained truly not computed — every one of the five
+  // cached columns is null/absent, not just some. Gates whether the
+  // `RoundSGSummary` instrument renders at all (round-detail.md CONTAINERS TO
+  // REMOVE #2: the empty "Strokes gained: This round" + "By category" cards
+  // collapse to nothing, replaced by one line in the standing surface below).
+  // A round with EVEN ONE category computed still gets the full instrument —
+  // this only catches the truly-uncomputed case.
+  const hasAnySG = useMemo(
+    () =>
+      [strokesGainedTotal, strokesGainedTee, strokesGainedApproach, strokesGainedAroundGreen, strokesGainedPutting].some(
+        (v) => typeof v === 'number' && Number.isFinite(v),
+      ),
+    [strokesGainedTotal, strokesGainedTee, strokesGainedApproach, strokesGainedAroundGreen, strokesGainedPutting],
+  );
+
   const standingBars = useMemo(() => {
     // A coach viewing a PLAYER's review must read the player's standing as
     // the player's, not their own — pass viewer context + the player's name
@@ -270,47 +292,109 @@ export function FilmstripReview({
     // player's own view (StandingBars' aria label already handled this; the
     // visible label previously hardcoded "You" for every viewer).
     const viewerContext: 'self' | 'coach' = isCoachViewer ? 'coach' : 'self';
-    return STANDING_BAND_METRICS.map((mid) => {
+    return STANDING_BAND_METRICS.map((mid): { id: string; node: ReactElement } | null => {
       const st = standing[mid];
       const cfg = getMetricRenderConfig(mid);
       if (!st || !cfg) return null;
-      return (
-        <StandingBars
-          key={mid}
-          frame="bare"
-          metric_id={mid}
-          metric_label={cfg.display_label}
-          player_value={st.player_value}
-          team_avg={st.team_avg}
-          team_n={st.team_n}
-          team_pct={st.team_pct}
-          pga_value={st.pga_value}
-          pga_omitted={st.pga_omitted}
-          is_womens={st.is_womens}
-          direction={cfg.direction}
-          unit={cfg.unit}
-          scale={cfg.default_scale}
-          viewer_context={viewerContext}
-          player_name={playerName ?? undefined}
-        />
-      );
-    }).filter((b): b is ReactElement => b !== null);
+      return {
+        id: mid,
+        node: (
+          <StandingBars
+            frame="bare"
+            metric_id={mid}
+            metric_label={cfg.display_label}
+            player_value={st.player_value}
+            team_avg={st.team_avg}
+            team_n={st.team_n}
+            team_pct={st.team_pct}
+            pga_value={st.pga_value}
+            pga_omitted={st.pga_omitted}
+            is_womens={st.is_womens}
+            direction={cfg.direction}
+            unit={cfg.unit}
+            scale={cfg.default_scale}
+            viewer_context={viewerContext}
+            player_name={playerName ?? undefined}
+          />
+        ),
+      };
+    }).filter((b): b is { id: string; node: ReactElement } => b !== null);
   }, [standing, isCoachViewer, playerName]);
+
+  // The "Where this sits" seamed Surface's rows, in order: the SG-not-computed
+  // notice (when applicable) first, then either the standing-loading pending
+  // state, the standing rows, or the standing-absent notice — never more than
+  // one of those three, since they're mutually exclusive standing states.
+  // Empty overall (`sgNotComputedRow` absent AND nothing standing-related)
+  // means there is truly nothing to say, so the whole section is omitted
+  // below — never a floating heading over an empty Surface.
+  const standingSectionRows = useMemo(() => {
+    const rows: Array<{ id: string; node: ReactElement }> = [];
+    if (!hasAnySG) {
+      rows.push({
+        id: 'sg-not-computed',
+        node: <InlineNotice tone="info">SG not computed for this round.</InlineNotice>,
+      });
+    }
+    if (standingLoading) {
+      rows.push({
+        id: 'standing-loading',
+        node: (
+          <div role="status" aria-busy="true" aria-live="polite" className="space-y-2">
+            <span className="sr-only">Loading season standing…</span>
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-2 w-full" />
+          </div>
+        ),
+      });
+    } else if (standingBars.length > 0) {
+      rows.push(...standingBars);
+    } else {
+      rows.push({
+        id: 'standing-absent',
+        node: (
+          <InlineNotice tone="info">
+            Season standing isn&rsquo;t available yet — it fills in once enough rounds are logged.
+          </InlineNotice>
+        ),
+      });
+    }
+    return rows;
+  }, [hasAnySG, standingLoading, standingBars]);
+
+  // Whole-section gate for "Round breakdown" — `hasFrontBackData`/
+  // `hasPuttingRampData` mirror `momentum`/`drivingPenaltyLines`/
+  // `shortGameRows`'s own honest-empty-array convention, so a scorecard-only
+  // round with nothing anywhere hides the section entirely rather than
+  // leaving an "Round breakdown" heading over an empty grid.
+  const showBreakdown = useMemo(
+    () =>
+      hasFrontBackData(frontBack) ||
+      hasPuttingRampData(puttingRamp) ||
+      momentum.length > 0 ||
+      drivingPenaltyLines.length > 0 ||
+      shortGameRows.length > 0,
+    [frontBack, puttingRamp, momentum, drivingPenaltyLines, shortGameRows],
+  );
 
   return (
     <div className="space-y-6">
       {/* The "cooler metric" headline — Strokes Gained total + by-category
           breakdown, ahead of the score/filmstrip hero so the accuracy-forward
           number is the first thing a reader sees, not buried below 18 holes
-          of filmstrip. */}
-      <RoundSGSummary
-        strokesGainedTotal={strokesGainedTotal}
-        strokesGainedTee={strokesGainedTee}
-        strokesGainedApproach={strokesGainedApproach}
-        strokesGainedAroundGreen={strokesGainedAroundGreen}
-        strokesGainedPutting={strokesGainedPutting}
-        isWomens={isWomens}
-      />
+          of filmstrip. Omitted entirely when NOTHING is computed yet — see
+          `hasAnySG` — collapsing to the one-line notice in "Where this sits"
+          below instead of an empty-shell instrument. */}
+      {hasAnySG ? (
+        <RoundSGSummary
+          strokesGainedTotal={strokesGainedTotal}
+          strokesGainedTee={strokesGainedTee}
+          strokesGainedApproach={strokesGainedApproach}
+          strokesGainedAroundGreen={strokesGainedAroundGreen}
+          strokesGainedPutting={strokesGainedPutting}
+          isWomens={isWomens}
+        />
+      ) : null}
 
       <ReviewHero
         totalScore={totalScore}
@@ -386,32 +470,44 @@ export function FilmstripReview({
         </div>
       </div>
 
-      {standingBars.length > 0 ? (
+      {standingSectionRows.length > 0 ? (
         <section className="space-y-3">
           <div>
             <Eyebrow as="h2">Where this sits</Eyebrow>
             <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">Season standing vs PGA Tour and the team.</p>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{standingBars}</div>
+          {/* ONE seamed Surface — a hairline between each row rather than a
+              card per standing (round-detail.md: "'Where this sits' four
+              cards → one Surface, four seam rows"). Each `StandingBars` row
+              already carries its own "↑ vs team" delta chip in its header. */}
+          <Surface elevation="border" padding="none" className="divide-y divide-border-subtle overflow-hidden">
+            {standingSectionRows.map((row) => (
+              <div key={row.id} className="p-4 sm:p-5">
+                {row.node}
+              </div>
+            ))}
+          </Surface>
         </section>
       ) : null}
 
-      <section className="space-y-3">
-        <div>
-          <Eyebrow as="h2">Round breakdown</Eyebrow>
-          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-            The key scoring, putting, driving, and short-game details from this round.
-          </p>
-        </div>
-        <ReviewBreakdown
-          roundId={roundId}
-          frontBack={frontBack}
-          puttingRamp={puttingRamp}
-          momentum={momentum}
-          drivingPenaltyLines={drivingPenaltyLines}
-          shortGameRows={shortGameRows}
-        />
-      </section>
+      {showBreakdown ? (
+        <section className="space-y-3">
+          <div>
+            <Eyebrow as="h2">Round breakdown</Eyebrow>
+            <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
+              The key scoring, putting, driving, and short-game details from this round.
+            </p>
+          </div>
+          <ReviewBreakdown
+            roundId={roundId}
+            frontBack={frontBack}
+            puttingRamp={puttingRamp}
+            momentum={momentum}
+            drivingPenaltyLines={drivingPenaltyLines}
+            shortGameRows={shortGameRows}
+          />
+        </section>
+      ) : null}
     </div>
   );
 }

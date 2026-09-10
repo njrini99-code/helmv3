@@ -44,6 +44,29 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/** True when at least one Front/Back row carries a real figure. Unlike
+ *  `momentum`/`drivingPenaltyLines`/`shortGameRows` (honest-empty arrays
+ *  that are `[]` when there's nothing to show), `buildFrontBackRows` always
+ *  returns exactly two rows — a scorecard-only round with no hole data still
+ *  gets a "Front 9" / "Back 9" row, just one whose every field is the
+ *  zero/dash a `HalfStats` with no holes computes to. `frontBack.length > 0`
+ *  was therefore never a real gate; this checks the VALUES instead, so that
+ *  round-detail.md's "Round breakdown ... hidden when no hole data" applies
+ *  to the Front/Back card the same as every other section here. */
+export function hasFrontBackData(rows: FrontBackRow[]): boolean {
+  return rows.some((row) => row.score !== 0 || row.putts !== 0 || row.gir !== '0/0' || row.fairways !== '—');
+}
+
+/** Same reasoning as `hasFrontBackData`: `buildPuttingRamp`'s `cols` come
+ *  from the fixed distance-bucket config, not from the round's own putts —
+ *  `puttingRamp.cols.length > 0` is always true. A cell is real data only
+ *  when its bucket had at least one attempt (`buildPuttingRamp` renders "—"
+ *  for a zero-attempt bucket); if every cell is a dash, there is nothing to
+ *  show. */
+export function hasPuttingRampData(ramp: PuttingRamp): boolean {
+  return ramp.cells.some((cell) => cell.value !== '—');
+}
+
 export function ReviewBreakdown({
   roundId,
   frontBack,
@@ -56,7 +79,7 @@ export function ReviewBreakdown({
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      {frontBack.length > 0 ? (
+      {hasFrontBackData(frontBack) ? (
         <Section title="Front / back">
           <div className="grid grid-cols-1 gap-2">
             {frontBack.map((row) => (
@@ -77,7 +100,7 @@ export function ReviewBreakdown({
         </Section>
       ) : null}
 
-      {puttingRamp.cols.length > 0 ? (
+      {hasPuttingRampData(puttingRamp) ? (
         <div className="min-w-0 space-y-3 overflow-clip rounded-fw-md border border-border-subtle bg-surface p-4 shadow-soft md:col-span-2">
           <Eyebrow as="h3">Putting</Eyebrow>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
