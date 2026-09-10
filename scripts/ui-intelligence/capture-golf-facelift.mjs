@@ -172,11 +172,20 @@ async function login(context, persona) {
   const password = process.env[`GOLFHELM_${persona.toUpperCase()}_PASSWORD`];
   if (!email || !password) throw new Error(`${persona} credentials missing from .env.local`);
   const page = await context.newPage();
-  await page.goto(`${BASE}/golf/login`, { timeout: GOTO_TIMEOUT, waitUntil: 'domcontentloaded' });
-  await page.fill('#golf-signin-email', email);
-  await page.fill('#golf-signin-password', password);
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL((u) => !u.toString().includes('/golf/login'), { timeout: 60_000 });
+  // A busy dev server can hand us the form before React has hydrated it; a
+  // click then submits nothing. Wait for idle, submit, and retry a few times.
+  let ok = false;
+  for (let attempt = 1; attempt <= 4 && !ok; attempt++) {
+    await page.goto(`${BASE}/golf/login`, { timeout: GOTO_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+    await sleep(600);
+    await page.fill('#golf-signin-email', email);
+    await page.fill('#golf-signin-password', password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    ok = await page.waitForURL((u) => !u.toString().includes('/golf/login'), { timeout: 30_000 }).then(() => true).catch(() => false);
+    if (!ok) console.log(`[${persona}] login attempt ${attempt} did not leave /golf/login; retrying`);
+  }
+  if (!ok) throw new Error('login did not complete after 4 attempts');
   await settle(page, 1500);
   await page.close();
 }
@@ -218,7 +227,13 @@ async function resolveDynamic(page, spec) {
 // Main
 // ---------------------------------------------------------------------------
 fs.mkdirSync(OUT, { recursive: true });
-const manifest = { base: BASE, capturedAt: new Date().toISOString(), surfaces: [] };
+const MANIFEST = path.join(OUT, 'manifest.json');
+// Resumable: an earlier run's good captures are kept unless --force.
+const prior = !args.force && fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : null;
+const manifest = { base: BASE, capturedAt: new Date().toISOString(), surfaces: prior?.surfaces || [] };
+const isGood = (e) => e && e.status === 'ok' && e.shots?.length && !(e.finalUrl || '').startsWith('/golf/login');
+const findPrior = (persona, vp, slug) => manifest.surfaces.find((e) => e.persona === persona && e.viewport === vp && e.slug === slug);
+const upsert = (entry) => { const i = manifest.surfaces.findIndex((e) => e.persona === entry.persona && e.viewport === entry.viewport && e.slug === entry.slug); if (i >= 0) manifest.surfaces[i] = entry; else manifest.surfaces.push(entry); fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2)); };
 const browser = await chromium.launch();
 for (const persona of PERSONAS) {
   const list = (persona === 'coach' ? COACH : PLAYER).filter((s) => !ONLY || ONLY.includes(s.slug));
@@ -234,17 +249,24 @@ for (const persona of PERSONAS) {
     const dir = path.join(OUT, 'captures', persona);
     fs.mkdirSync(dir, { recursive: true });
     for (const s of list) {
+      if (isGood(findPrior(persona, vp.name, s.slug))) { console.log(`[${persona}/${vp.name}] ${s.slug} kept from prior run`); continue; }
       let route = s.route;
       if (s.dynamic) {
         if (!dynCache.has(s.slug)) dynCache.set(s.slug, await resolveDynamic(page, s.dynamic));
         route = dynCache.get(s.slug);
-        if (!route) { console.log(`[${persona}/${vp.name}] ${s.slug}: no instance found, skipped`); manifest.surfaces.push({ persona, viewport: vp.name, slug: s.slug, route: s.route, status: 'no-instance' }); continue; }
+        if (!route) { console.log(`[${persona}/${vp.name}] ${s.slug}: no instance found, skipped`); upsert({ persona, viewport: vp.name, slug: s.slug, route: s.route, status: 'no-instance' }); continue; }
       }
       const entry = { persona, viewport: vp.name, slug: s.slug, route: s.route, url: route, shots: [], status: 'ok' };
       const t0 = Date.now();
       try {
         await page.goto(`${BASE}${route}`, { timeout: GOTO_TIMEOUT, waitUntil: 'domcontentloaded' });
         await settle(page, 1200);
+        if (new URL(page.url()).pathname.startsWith('/golf/login')) {
+          // Session lapsed mid-run: sign in again on this context and retry once.
+          await login(context, persona);
+          await page.goto(`${BASE}${route}`, { timeout: GOTO_TIMEOUT, waitUntil: 'domcontentloaded' });
+          await settle(page, 1200);
+        }
         entry.finalUrl = new URL(page.url()).pathname;
         entry.title = await page.title();
         const base = `${s.slug}__${vp.name}`;
@@ -289,8 +311,9 @@ for (const persona of PERSONAS) {
         entry.status = 'failed'; entry.error = String(e.message || e).slice(0, 300);
       }
       entry.ms = Date.now() - t0;
+      if ((entry.finalUrl || '').startsWith('/golf/login')) entry.status = 'redirected-login';
       console.log(`[${persona}/${vp.name}] ${s.slug} ${entry.status} ${entry.shots.length} shots ${entry.ms}ms${entry.finalUrl && entry.finalUrl !== route ? ` → ${entry.finalUrl}` : ''}`);
-      manifest.surfaces.push(entry);
+      upsert(entry);
     }
     await context.close();
   }
@@ -305,7 +328,7 @@ for (const s of [...COACH, ...PLAYER]) {
   codeByRoute[s.route] = pf ? codeGraph(pf) : [];
 }
 manifest.code = codeByRoute;
-fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
+fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2));
 
 // INDEX.md — one section per surface, coach then player.
 const lines = [`# Golf facelift capture — ${manifest.capturedAt}`, '', `Base: ${BASE}`, ''];

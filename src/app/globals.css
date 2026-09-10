@@ -99,7 +99,7 @@
   /* Floating dock: a 60px frost capsule, a 10px float gap above the safe area,
      and the home-indicator clearance. Share this measurement with content
      padding and fixed action offsets (FairwayBottomNav owns the geometry). */
-  --fw-mobile-nav-height: calc(70px + max(10px, env(safe-area-inset-bottom, 0px)));
+  --fw-mobile-nav-height: calc(80px + env(safe-area-inset-bottom, 0px));
   --golf-mobile-bottom-nav-offset: var(--fw-mobile-nav-height);
 
   /* ── IMMERSIVE SURFACES ────────────────────────────────────────────────

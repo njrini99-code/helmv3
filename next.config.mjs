@@ -50,6 +50,13 @@ const nextConfig = {
   agentRules: false,
   allowedDevOrigins: ['127.0.0.1'],
   reactStrictMode: true, // Enable to catch potential issues
+  logging: {
+    // The dev server's Server Function log line prints every action's
+    // arguments verbatim — including the password passed to loginAction. That
+    // is a credential in a log file (2026-09-10, found while capturing UI).
+    // Keep the request log; drop the argument echo.
+    serverFunctions: false,
+  },
 
   // Type errors block the build. Keep this honest.
   typescript: {

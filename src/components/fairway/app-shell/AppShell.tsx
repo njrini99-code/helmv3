@@ -452,7 +452,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
           // under the bottom tab bar) and by 97px at 1440x900.
           '[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px))]',
           bottomNav &&
-            'max-md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+70px+env(safe-area-inset-bottom,0px))]',
+            'max-md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+80px+env(safe-area-inset-bottom,0px))]',
         )}
         // In-page sticky sub-headers offset below the glass top bar (4rem tall
         // + the notch inset). The immersive branch sets this var elsewhere.
@@ -504,7 +504,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
                 // modes so home-indicator clearance never regresses.
                 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
                 // P413: when the floating dock is mounted, add its reserved height
-                // (--fw-mobile-nav-height: 60px capsule + 10px float gap + safe
+                // (--fw-mobile-nav-height: 10px top pad + 60px capsule + 10px float gap + safe
                 // area) to the mobile bottom pad so it never overlaps content.
                 // Desktop (md+) is unaffected — the bar is md:hidden.
                 bottomNav && 'pb-[calc(2rem+var(--fw-mobile-nav-height))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
