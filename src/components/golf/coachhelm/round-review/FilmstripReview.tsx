@@ -30,8 +30,10 @@ import {
   type ReviewShotInput,
 } from './round-review-shots';
 import { StandingBars } from '@/components/fairway/charts/StandingBars';
+import { TrendChart } from '@/components/fairway/charts/TrendChart';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import {
   FocusAreaModal,
   type FocusAreaModalSubmit,
@@ -41,21 +43,31 @@ import {
   CoachNotesSection,
   hasCoachNotesContent,
 } from '@/app/golf/(dashboard)/dashboard/rounds/[id]/review/CoachNotesSection';
-import type { RoundReviewContent } from '@/app/golf/actions/round-review-system';
+import type { RoundReviewContent, RoundReviewTrendRow } from '@/app/golf/actions/round-review-system';
 import { ReviewHero, type ReviewHoleMeta } from './ReviewHero';
-import { ReviewBreakdown, hasFrontBackData, hasPuttingRampData } from './ReviewBreakdown';
+import {
+  ReviewBreakdown,
+  hasFrontBackData,
+  hasPuttingRampData,
+  hasDrivingDotData,
+  hasApproachHeatData,
+} from './ReviewBreakdown';
 import { RoundSGSummary } from './RoundSGSummary';
 import {
   buildCourseDateLine,
   buildDrivingPenaltyLines,
+  buildDrivingDotStripData,
   buildFilmstripHoles,
+  buildFrontBackDiverging,
   buildFrontBackRows,
   buildGrade,
-  buildMixLine,
+  buildRoundTrendSeries,
+  buildScoringHistogram,
   buildMomentumTicker,
   buildNarrative,
   buildPuttingRamp,
   buildShortGameRows,
+  formatToPar,
   pickPracticePriority,
 } from './buildReviewViewModel';
 
@@ -103,6 +115,20 @@ export interface FilmstripReviewProps {
   strokesGainedApproach: number | null;
   strokesGainedAroundGreen: number | null;
   strokesGainedPutting: number | null;
+  /** Already-fetched per-round detailed stats (`getDetailedStats`, same
+   *  object `page.tsx` passes to `RoundStatsPanel`) — a second, round-
+   *  review-local consumer for R6's Approach heat rows, no new fetch. `null`
+   *  while `page.tsx`'s own fetch is still in flight or found nothing. */
+  roundStats: GolfStats | null;
+  /** The player's last ~12 completed rounds' score-to-par (`getRoundReviewTrend`,
+   *  own effect/loading flag in `page.tsx`, R3) — reads OTHER rounds, never
+   *  this one's holes/SG, so it is the one new instrument that survives a
+   *  scorecard-only round. `[]` while loading or below the 4-round floor. */
+  trendRounds: RoundReviewTrendRow[];
+  /** True while the R3 trend fetch is in flight — its OWN flag, never folded
+   *  into the page's umbrella loading state (the exact AUDIT perf row 15
+   *  mistake this page already paid down once). */
+  trendLoading: boolean;
 }
 
 const STANDING_BAND_METRICS = ['gir_pct', 'sg_ott', 'sg_approach', 'sg_putting'] as const;
@@ -132,6 +158,9 @@ export function FilmstripReview({
   strokesGainedApproach,
   strokesGainedAroundGreen,
   strokesGainedPutting,
+  roundStats,
+  trendRounds,
+  trendLoading,
 }: FilmstripReviewProps) {
   const [shotsByHole, setShotsByHole] = useState<Map<number, ReviewShotInput[]> | null>(null);
   const [shotsError, setShotsError] = useState<string | null>(null);
@@ -235,7 +264,10 @@ export function FilmstripReview({
   }, [holes]);
 
   const grade = useMemo(() => buildGrade(scoreToPar), [scoreToPar]);
-  const mixLine = useMemo(() => buildMixLine(review.scoringDistribution), [review.scoringDistribution]);
+  const scoringBuckets = useMemo(
+    () => buildScoringHistogram(review.scoringDistribution),
+    [review.scoringDistribution],
+  );
   const courseDateLine = useMemo(() => buildCourseDateLine(courseName, roundDate), [courseName, roundDate]);
   const filmstripHoles = useMemo(() => buildFilmstripHoles(review.holeByHole), [review.holeByHole]);
   // Third tier — the persisted CoachHelm composed body, mirroring
@@ -253,6 +285,10 @@ export function FilmstripReview({
   );
 
   const frontBack = useMemo(() => buildFrontBackRows(review.frontBackSplit), [review.frontBackSplit]);
+  const frontBackDiverging = useMemo(
+    () => buildFrontBackDiverging(review.frontBackSplit, holes),
+    [review.frontBackSplit, holes],
+  );
   const puttingRamp = useMemo(() => buildPuttingRamp(review.puttingBreakdown), [review.puttingBreakdown]);
   const momentum = useMemo(() => buildMomentumTicker(review.momentumData), [review.momentumData]);
   const drivingPenaltyLines = useMemo(
@@ -260,6 +296,11 @@ export function FilmstripReview({
     [review.drivingAnalysis, review.penaltyAnalysis],
   );
   const shortGameRows = useMemo(() => buildShortGameRows(review.shortGameAnalysis), [review.shortGameAnalysis]);
+  const drivingDots = useMemo(() => buildDrivingDotStripData(review.holeByHole), [review.holeByHole]);
+  const trendSeries = useMemo(
+    () => buildRoundTrendSeries(trendRounds, roundId),
+    [trendRounds, roundId],
+  );
 
   // Women's-team flag for `RoundSGSummary`'s baseline caption — reads
   // `is_womens` off whichever season-standing SG metric happens to be
@@ -357,7 +398,7 @@ export function FilmstripReview({
         id: 'standing-absent',
         node: (
           <InlineNotice tone="info">
-            Season standing isn&rsquo;t available yet — it fills in once enough rounds are logged.
+            Season standing isn&rsquo;t available yet. It fills in once enough rounds are logged.
           </InlineNotice>
         ),
       });
@@ -424,18 +465,21 @@ export function FilmstripReview({
   }, [narrative, practicePriority, promoteSuggestion, isCoachViewer, onShare, sharedWithCoach, coachNotes, reviewId]);
 
   // Whole-section gate for "Round breakdown" — `hasFrontBackData`/
-  // `hasPuttingRampData` mirror `momentum`/`drivingPenaltyLines`/
-  // `shortGameRows`'s own honest-empty-array convention, so a scorecard-only
-  // round with nothing anywhere hides the section entirely rather than
-  // leaving an "Round breakdown" heading over an empty grid.
+  // `hasPuttingRampData`/`hasDrivingDotData`/`hasApproachHeatData` mirror
+  // `momentum`/`drivingPenaltyLines`/`shortGameRows`'s own honest-empty-array
+  // convention, so a scorecard-only round with nothing anywhere hides the
+  // section entirely rather than leaving a "Round breakdown" heading over
+  // six empty rows.
   const showBreakdown = useMemo(
     () =>
       hasFrontBackData(frontBack) ||
       hasPuttingRampData(puttingRamp) ||
+      hasDrivingDotData(drivingDots) ||
+      hasApproachHeatData(roundStats) ||
       momentum.length > 0 ||
       drivingPenaltyLines.length > 0 ||
       shortGameRows.length > 0,
-    [frontBack, puttingRamp, momentum, drivingPenaltyLines, shortGameRows],
+    [frontBack, puttingRamp, drivingDots, roundStats, momentum, drivingPenaltyLines, shortGameRows],
   );
 
   return (
@@ -462,7 +506,7 @@ export function FilmstripReview({
         scoreToPar={scoreToPar}
         courseDateLine={courseDateLine}
         grade={grade}
-        mixLine={mixLine}
+        scoringBuckets={scoringBuckets}
         filmstripHoles={filmstripHoles}
         holeMeta={holeMeta}
         shotsByHole={shotsByHole}
@@ -473,6 +517,33 @@ export function FilmstripReview({
         <p className="font-fw-sans text-caption italic text-text-tertiary">
           {`Couldn't load shots for this round (${shotsError}).`}
         </p>
+      ) : null}
+
+      {/* R3, Season trajectory — a NEW standalone bare band, no wrapping
+          Surface (matches "Where this sits"/"Round breakdown"'s own
+          bare-band convention). Reads OTHER rounds, never this one's holes
+          or SG, so it is the one new instrument that renders fully
+          regardless of whether THIS round has either — gated only on round
+          count (`buildRoundTrendSeries`'s own >=4 floor), never on this
+          round's own data. While the fetch is in flight, a loading skeleton
+          stands in (a real pending state, not a fabricated chart); once
+          resolved, a series below the floor omits the section entirely
+          rather than rendering an empty chart shell. */}
+      {trendLoading ? (
+        <div role="status" aria-busy="true" aria-live="polite" className="space-y-2">
+          <span className="sr-only">Loading season trajectory…</span>
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-[180px] w-full rounded-fw-lg" />
+        </div>
+      ) : trendSeries.points.length > 0 ? (
+        <TrendChart
+          title="Season trajectory"
+          subtitle="Score to par, most recent rounds"
+          data={trendSeries.points}
+          benchmark={trendSeries.benchmark ? { value: trendSeries.benchmark.value, label: trendSeries.benchmark.label } : undefined}
+          valueFormatter={(v) => formatToPar(Math.round(v))}
+          height={200}
+        />
       ) : null}
 
       {/* NOTE: the old V1 "Where strokes went" RailBars block was removed
@@ -541,6 +612,9 @@ export function FilmstripReview({
           <ReviewBreakdown
             roundId={roundId}
             frontBack={frontBack}
+            frontBackDiverging={frontBackDiverging}
+            drivingDots={drivingDots}
+            roundStats={roundStats}
             puttingRamp={puttingRamp}
             momentum={momentum}
             drivingPenaltyLines={drivingPenaltyLines}

@@ -24,8 +24,10 @@ import {
   getRoundReview,
   generateAndStoreRoundReview,
   getPlayerStandingForReview,
+  getRoundReviewTrend,
   shareRoundReviewWithCoach,
   type RoundReviewWithRound,
+  type RoundReviewTrendRow,
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
 import { getRoundTakeawayInsight, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -41,6 +43,7 @@ import {
   InlineNotice as FwInlineNotice,
   EmptyState as FwEmptyState,
   Skeleton as FwSkeleton,
+  Sheet as FwSheet,
 } from '@/components/fairway';
 import { Flag as LucideFlag } from 'lucide-react';
 import { regimeHeadline } from '@/lib/coachhelm/v3/insights/round-regime';
@@ -50,7 +53,11 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import { FilmstripReview, type PromoteSuggestion } from '@/components/golf/coachhelm/round-review/FilmstripReview';
-import { sanitizeNaN, buildReviewHeaderTitle } from '@/components/golf/coachhelm/round-review/buildReviewViewModel';
+import {
+  sanitizeNaN,
+  buildReviewHeaderTitle,
+  buildRoundTypeLabel,
+} from '@/components/golf/coachhelm/round-review/buildReviewViewModel';
 
 // ============================================================================
 // TYPES
@@ -78,6 +85,10 @@ interface RoundData {
   strokes_gained_approach: number | null;
   strokes_gained_around_green: number | null;
   strokes_gained_putting: number | null;
+  // R0 header's second `StatusPill` (round-review.v2.md). Already selected
+  // by the `select('*')` below (values `practice|tournament|qualifier`),
+  // just previously undeclared here.
+  round_type: string | null;
   holes?: Array<{
     hole_number: number;
     score: number | null;
@@ -209,6 +220,17 @@ export default function RoundReviewPage() {
   // this separate, independently-slow read. `FilmstripReview`'s "Where this
   // sits" band renders its own inline pending/absent state off this flag.
   const [loadingStanding, setLoadingStanding] = useState(true);
+  // R3, Season trajectory (round-review.v2.md) — the player's last ~12
+  // completed rounds' score-to-par, for the ONE new instrument that survives
+  // a scorecard-only round (it reads OTHER rounds, never this one's holes or
+  // SG). Own effect, own loading flag, deliberately decoupled from every
+  // other fetch on this page (the exact AUDIT perf row 15 mistake this page
+  // already paid down once for the standing fetch).
+  const [trendRounds, setTrendRounds] = useState<RoundReviewTrendRow[]>([]);
+  const [loadingTrend, setLoadingTrend] = useState(true);
+  // R7, Full breakdown — opens `RoundStatsPanel`/`RoundStatReport` in a
+  // Sheet instead of always resting inline at the page's end.
+  const [fullBreakdownOpen, setFullBreakdownOpen] = useState(false);
   const [loadingRound, setLoadingRound] = useState(true);
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
@@ -478,6 +500,39 @@ export default function RoundReviewPage() {
       cancelled = true;
     };
   }, [round?.player_id]);
+
+  // Fetch the season-trajectory rows (R3) — its own effect and its own
+  // `loadingTrend` flag, deliberately decoupled from every other fetch on
+  // this page (AUDIT perf row 15, same reasoning as the standing fetch just
+  // above). This is the one new instrument that renders fully regardless of
+  // whether THIS round has holes or computed Strokes Gained, because it
+  // reads the player's OTHER rounds — it must never end up gated behind a
+  // slower, unrelated read.
+  useEffect(() => {
+    if (!round?.player_id) {
+      setLoadingTrend(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingTrend(true);
+
+    getRoundReviewTrend(round.player_id, roundId)
+      .then((rows) => {
+        if (!cancelled) setTrendRounds(rows);
+      })
+      .catch(() => {
+        // getRoundReviewTrend already resolves `[]` on a handled failure/
+        // denial; an unexpected throw just leaves `trendRounds` at its prior
+        // value — `buildRoundTrendSeries`'s own round-count floor covers it.
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTrend(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [round?.player_id, roundId]);
 
   // Fetch the evidence-backed takeaway once we know which player the round
   // belongs to — used only to pre-fill the Promote-to-Focus-Area CTA (see
@@ -761,6 +816,26 @@ export default function RoundReviewPage() {
   // it vanished on every revisit even though the composed narrative (now)
   // still renders from the stored review.
   const hasComposedNarrative = Boolean(v2Body) || Boolean(storedReview?.review_content?.deepInsights?.[0]?.body?.trim());
+  // R0 header's second `StatusPill` (round-review.v2.md) — "Qualifier" /
+  // "Tournament" / "Practice", already selected by `select('*')`, just
+  // previously undeclared on `RoundData`.
+  const roundTypeLabel = buildRoundTypeLabel(round.round_type);
+  const hasHeaderMeta = hasComposedNarrative || Boolean(roundTypeLabel);
+  const headerMeta = (
+    <>
+      {hasComposedNarrative ? (
+        <FwStatusPill tone="accent" dot={false} size="sm">
+          <IconSparkles size={14} />
+          CoachHelm AI
+        </FwStatusPill>
+      ) : null}
+      {roundTypeLabel ? (
+        <FwStatusPill tone="neutral" dot={false} size="sm">
+          {roundTypeLabel}
+        </FwStatusPill>
+      ) : null}
+    </>
+  );
 
   // Whether there's a complete, renderable stored review — the guard
   // `FilmstripReview` needs beyond just "a review row exists" (it also needs
@@ -811,6 +886,9 @@ export default function RoundReviewPage() {
           strokesGainedApproach={round.strokes_gained_approach}
           strokesGainedAroundGreen={round.strokes_gained_around_green}
           strokesGainedPutting={round.strokes_gained_putting}
+          roundStats={roundStats}
+          trendRounds={trendRounds}
+          trendLoading={loadingTrend}
         />
       ) : isGenerating ? (
         <div
@@ -878,17 +956,6 @@ export default function RoundReviewPage() {
         ) : null;
       })()}
 
-      {/* The full stat breakdown renders regardless of whether a NARRATIVE
-          exists — the numbers come straight from the round's shots, so a round
-          with no generated review still has stats worth showing. */}
-      <RoundStatsPanel
-        stats={roundStats}
-        loading={loadingRoundStats}
-        error={roundStatsError}
-        onRetry={() => {
-          if (round?.player_id) void loadRoundStats(round.player_id, roundId);
-        }}
-      />
     </m.div>
   );
 
@@ -908,13 +975,11 @@ export default function RoundReviewPage() {
           <FwViewHeader
             eyebrow="Round review"
             title={headerTitle || 'Round review'}
-            meta={
-              hasComposedNarrative ? (
-                <FwStatusPill tone="accent" dot={false} size="sm">
-                  <IconSparkles size={14} />
-                  CoachHelm AI
-                </FwStatusPill>
-              ) : undefined
+            meta={hasHeaderMeta ? headerMeta : undefined}
+            secondaryActions={
+              <FwButton variant="ghost" size="sm" onClick={() => setFullBreakdownOpen(true)}>
+                Full breakdown
+              </FwButton>
             }
             primaryAction={
               <FwIconButton
@@ -940,6 +1005,31 @@ export default function RoundReviewPage() {
             </FwButton>
           </m.div>
         </m.div>
+
+        {/* R7, Full breakdown (round-review.v2.md) — `RoundStatsPanel` /
+            `RoundStatReport` moved off the page and behind this Sheet,
+            opened by the header button above, instead of always resting
+            inline at the page's end. `RoundStatReport.tsx` itself is
+            untouched; only its mount point moved. */}
+        <FwSheet
+          open={fullBreakdownOpen}
+          onOpenChange={setFullBreakdownOpen}
+          side="right"
+          mobileSide="bottom"
+          material="matte"
+          title="Full breakdown"
+        >
+          <FwSheet.Body>
+            <RoundStatsPanel
+              stats={roundStats}
+              loading={loadingRoundStats}
+              error={roundStatsError}
+              onRetry={() => {
+                if (round?.player_id) void loadRoundStats(round.player_id, roundId);
+              }}
+            />
+          </FwSheet.Body>
+        </FwSheet>
       </div>
     );
 }
