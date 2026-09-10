@@ -61,7 +61,7 @@ describe('EvidencePanel', () => {
 
   // W15: when v2 generators inject `evidence.standing` (W14) and the
   // metric_id resolves to a canonical v3 metric, EvidencePanel renders
-  // the v3 StandingBars (bar rows) instead of the legacy BenchmarkScale.
+  // the v3 StandingBars (bar rows) instead of the plain value-pair text.
   it('renders v3 StandingBars when evidence.standing is present (W15)', () => {
     const evidence = makeEvidence();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,9 +89,9 @@ describe('EvidencePanel', () => {
   });
 
   // Defense: an unknown / non-canonical metric_id in evidence.standing
-  // falls through to the legacy BenchmarkScale rather than rendering
+  // falls through to the plain value-pair text rather than rendering
   // a broken v3 bar with missing direction/unit.
-  it('falls through to BenchmarkScale when standing.metric_id is unknown', () => {
+  it('falls through to the plain value pair when standing.metric_id is unknown', () => {
     const evidence = makeEvidence();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (evidence as any).standing = {
@@ -107,8 +107,8 @@ describe('EvidencePanel', () => {
     render(<EvidencePanel evidence={evidence} compact />);
     // Canonical v3 metric display labels aren't present
     expect(screen.queryByText('Putts Made 10-15 ft')).toBeNull();
-    // BenchmarkScale renders the legacy axis testid
-    expect(screen.getByTestId('evidence-benchmark-scale')).toBeTruthy();
+    // The plain value-pair renders in its place
+    expect(screen.getByTestId('evidence-value-pair')).toBeTruthy();
   });
 
   // TODO(plan-03 + user-wip): see src/test/SKIPPED.md.
@@ -236,17 +236,13 @@ describe('EvidencePanel', () => {
     });
   });
 
-  // ui-tone-4: percent-axis must be domain-aware (whole-number vs fraction).
-  describe('BenchmarkScale percent axis (ui-tone-4)', () => {
-    function tickLeft(role: string): number {
-      const scale = screen.getByTestId('evidence-benchmark-scale');
-      const tick = scale.querySelector<HTMLElement>(`[aria-label^="${role}"]`);
-      return Number.parseFloat(tick?.style.left ?? 'NaN');
-    }
-
-    it('does not collapse whole-number-percent ticks to the edge', () => {
-      // Whole-number percents (38 vs 52) — the old [0,1] clamp pinned both to
-      // 100%. With the domain-aware fix they sit at distinct interior spots.
+  // ui-tone-4: percent display must stay domain-aware (whole-number vs
+  // fraction) now that the value pair is plain text rather than a positioned
+  // axis — there's no "collapse to the edge" failure mode left to guard, but
+  // the underlying formatting bug (double-scaling / mismatched reads) is
+  // still worth pinning.
+  describe('EvidenceValuePair percent formatting (ui-tone-4)', () => {
+    it('formats whole-number percents without double-scaling', () => {
       render(
         <EvidencePanel
           evidence={makeEvidence({
@@ -258,20 +254,15 @@ describe('EvidencePanel', () => {
           compact
         />,
       );
-      const you = tickLeft('You');
-      const comp = tickLeft('D2 average');
-      // You (38) is the smaller value → left of the comparison (52).
-      expect(you).toBeLessThan(comp);
-      // Neither tick is pinned to an edge.
-      expect(you).toBeGreaterThan(0);
-      expect(comp).toBeLessThan(100);
+      const pair = screen.getByTestId('evidence-value-pair');
+      expect(pair.textContent).toContain('38%');
+      expect(pair.textContent).toContain('52%');
     });
 
-    it('orders mixed-representation ticks by magnitude without a fabricated clamp', () => {
+    it('formats a mixed fraction/whole-number pair independently, without a fabricated shared scale', () => {
       // FID-5: your_value as whole-percent (65) vs comparison as fraction
-      // (0.62) is a representation mismatch — the percent clamp is skipped and
-      // the natural padded extents order the ticks by raw magnitude (65 > 0.62)
-      // rather than collapsing both onto an edge.
+      // (0.62) is a representation mismatch. Each value is formatted on its
+      // own terms (no shared axis to mislead), so both read correctly.
       render(
         <EvidencePanel
           evidence={makeEvidence({
@@ -283,11 +274,54 @@ describe('EvidencePanel', () => {
           compact
         />,
       );
-      const you = tickLeft('You');
-      const comp = tickLeft('D2 average');
-      expect(you).toBeGreaterThan(comp);
-      expect(you).toBeLessThanOrEqual(100);
-      expect(comp).toBeGreaterThanOrEqual(0);
+      const pair = screen.getByTestId('evidence-value-pair');
+      expect(pair.textContent).toContain('65%');
+      expect(pair.textContent).toContain('62%');
+    });
+  });
+
+  // Regression: `synthesizeTeamSignals` (team-synthesis.ts) mints an
+  // evidence blob with only `{ metric, metric_label, strokes_impact,
+  // players_affected }` — none of the fields below. The Triage Desk's
+  // SignalInsightPanel/SignalDossier used to cast this straight to
+  // `InsightEvidence`, and this component printed "undefined You ·
+  // undefined", "undefined putts · undefined days" and "NaN% confidence"
+  // (2026-09 facelift capture). This shape should never reach EvidencePanel
+  // once `resolveSignalEvidence` (buildTriageViewModel.ts) is used at the
+  // call site, but the component guards it independently too, since it has
+  // callers this file doesn't own.
+  describe('malformed / team-synthesis-shaped evidence (regression)', () => {
+    it('never renders the literal string "undefined" or "NaN"', () => {
+      const teamSynthesisEvidence = {
+        metric: 'putts_made_3_5ft_pct',
+        metric_label: 'Putts Made 3-5 ft',
+        strokes_impact: 12.17,
+        players_affected: 6,
+      } as unknown as InsightEvidence;
+
+      const { container } = render(<EvidencePanel evidence={teamSynthesisEvidence} compact />);
+      expect(container.textContent).not.toMatch(/undefined/i);
+      expect(container.textContent).not.toMatch(/NaN/);
+      // No value pair, no sample/window text, no confidence pill — every
+      // guarded field is genuinely absent, so this renders nothing rather
+      // than a half-populated row.
+      expect(screen.queryByTestId('evidence-value-pair')).toBeNull();
+      expect(screen.queryByTestId('evidence-sample')).toBeNull();
+      expect(screen.queryByTestId('evidence-confidence')).toBeNull();
+    });
+
+    it('expanded mode shows "Not available" instead of "undefined" for missing fields', () => {
+      const teamSynthesisEvidence = {
+        metric: 'putts_made_3_5ft_pct',
+        metric_label: 'Putts Made 3-5 ft',
+        strokes_impact: 12.17,
+        players_affected: 6,
+      } as unknown as InsightEvidence;
+
+      render(<EvidencePanel evidence={teamSynthesisEvidence} compact={false} />);
+      expect(screen.getByTestId('evidence-row-your')).toHaveTextContent('Not available');
+      expect(screen.getByTestId('evidence-row-comparison')).toHaveTextContent('Not available');
+      expect(screen.getByTestId('evidence-row-confidence')).toHaveTextContent('Not available');
     });
   });
 

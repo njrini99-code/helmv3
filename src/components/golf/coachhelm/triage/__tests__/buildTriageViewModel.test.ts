@@ -248,7 +248,7 @@ describe('computeBriefCounts', () => {
 describe('buildBriefVerdict', () => {
   it('reports an honest all-clear when there are no groups', () => {
     expect(buildBriefVerdict([], { urgent: 0, playersFlagged: 0 })).toBe(
-      'All clear — no open signals right now.',
+      'All clear. No open signals right now.',
     );
   });
 
@@ -262,14 +262,14 @@ describe('buildBriefVerdict', () => {
   it('reports a calm sentence when nothing is urgent but signals exist', () => {
     const groups = [group({ playerId: 'p1', playerName: 'Alex Rivera', signals: [signal({ severity: 'low' })] })];
     const verdict = buildBriefVerdict(groups, { urgent: 0, playersFlagged: 1 });
-    expect(verdict).toBe('Nothing urgent — Alex Rivera has the highest-priority open signal.');
+    expect(verdict).toBe('Nothing urgent. Alex Rivera has the highest-priority open signal.');
   });
 });
 
 describe('buildSpineVerdict', () => {
   it('folds in no "outcomes awaiting" clause when there are none', () => {
     expect(buildSpineVerdict([], { urgent: 0, playersFlagged: 0 }, 0)).toBe(
-      'All clear — no open signals right now.',
+      'All clear. No open signals right now.',
     );
   });
 
@@ -283,12 +283,12 @@ describe('buildSpineVerdict', () => {
 
   it('singularizes "outcome" when exactly one is awaiting', () => {
     const verdict = buildSpineVerdict([], { urgent: 0, playersFlagged: 0 }, 1);
-    expect(verdict).toBe('All clear — no open signals right now. 1 outcome awaiting a resolved result.');
+    expect(verdict).toBe('All clear. No open signals right now. 1 outcome awaiting a resolved result.');
   });
 
   it('never fabricates a negative count into the sentence', () => {
     expect(buildSpineVerdict([], { urgent: 0, playersFlagged: 0 }, -5)).toBe(
-      'All clear — no open signals right now.',
+      'All clear. No open signals right now.',
     );
   });
 });

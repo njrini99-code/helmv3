@@ -31,8 +31,7 @@ import type { PlayersGridFocusArea, PlayersGridStats } from '@/components/fairwa
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
-import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
-import { formatCategoryLabel } from './buildTriageViewModel';
+import { formatCategoryLabel, resolveSignalEvidence } from './buildTriageViewModel';
 import { SeverityChip } from './SignalRow';
 import { PromoteToFocusAreaButton } from './PromoteToFocusAreaButton';
 import { toCoachVoice } from '@/lib/golf/claim-voice';
@@ -194,7 +193,7 @@ export function SignalDossier({
           "too few to read reliably" handling. Renders nothing for patterns and
           for pre-evidence v2 rows, which is why it needs no guard here.
         */}
-        <EvidencePanel evidence={signal.evidence as InsightEvidence | null} compact />
+        <EvidencePanel evidence={resolveSignalEvidence(signal.evidence)} compact />
         <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 font-fw-mono text-caption tabular-nums text-text-tertiary">
           <span>
             Status <span className="text-text-secondary">{signal.status}</span>
@@ -218,8 +217,8 @@ export function SignalDossier({
         {/* A roster roll-up has no row to acknowledge. Its id is a synthetic
             `team:<metric>`, so the server actions cannot act on it — and there
             is nothing coherent for them to mean, since dismissing the summary
-            would not touch any of the leaks it summarizes (each of which has
-            its own card below). Rendering disabled-looking buttons that
+            would not touch any of the per-player leaks it summarizes (each is
+            its own row in the queue). Rendering disabled-looking buttons that
             silently no-op is worse than not rendering them. */}
         {signal.kind !== 'team_synthesis' ? (
           <>

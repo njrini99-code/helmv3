@@ -27,15 +27,19 @@ import { formatValue } from './format-value';
 
 /**
  * W15: When v2 generators have injected `evidence.standing` (W14), render
- * StandingBars instead of the legacy BenchmarkScale. It carries cohort
- * percentile + team_n cold-start gating + auto a11y label.
+ * StandingBars — the only path with a real `team_n` to gate a "Team" row
+ * honestly (see `EvidenceValuePair`'s docstring for why nothing else may
+ * reach for `StandingBars`). It carries cohort percentile + team_n
+ * cold-start gating + auto a11y label.
  *
  * Returns the v3 component when:
  *   - `evidence.standing` is present and well-formed
  *   - The standing's metric_id maps to a canonical v3 metric (via
  *     metric-config), so direction + unit + scale are known
  *
- * Otherwise returns null — caller falls through to BenchmarkScale.
+ * Otherwise returns null — caller falls through to the plain
+ * `EvidenceValuePair` text (facelift; replaced the old hand-rolled
+ * "BenchmarkScale" dot-on-a-rail).
  */
 function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | null {
   const standing = (evidence as InsightEvidence & { standing?: EvidenceStanding }).standing;
@@ -125,34 +129,6 @@ export function sanitizeStrokesImpact(raw: number | null | undefined): number {
   return sign * Math.min(Math.abs(n), STROKES_IMPACT_CEILING);
 }
 
-/**
- * ui-tone-4: percent evidence arrives in two representations — a 0..1 fraction
- * (0.65) OR a whole-number percent (65). The original axis hard-clamped the
- * percent domain to [0, 1], which collapsed every whole-number-percent row's
- * ticks onto the right edge (38 and 52 both → 100%). This returns the correct
- * clamp BOUNDS for the percent domain the row actually uses: [0, 1] when all
- * values look like fractions, else [0, 100]. Non-percent units don't clamp.
- *
- * FID-5: it also surfaces whether the supplied values share a representation.
- * A mixed pair (one fraction-looking ≤1, one whole-looking >1) can't be drawn
- * on one honest axis — the caller skips the percent clamp and lets the natural
- * padded extents drive positioning rather than fabricating a shared scale.
- */
-function percentAxisBounds(
-  values: number[],
-  unit: InsightUnit,
-): { min: number; max: number } | null {
-  if (unit !== 'percent') return null;
-  const finite = values.filter((v) => Number.isFinite(v));
-  if (finite.length === 0) return null;
-  const anyWhole = finite.some((v) => Math.abs(v) > 1);
-  const anyFractionOnly = finite.some((v) => Math.abs(v) > 0 && Math.abs(v) < 1);
-  // FID-5: mixed representation (e.g. 65 vs 0.62) — refuse to clamp; a shared
-  // percent axis would mislead. Natural extents stay in charge.
-  if (anyWhole && anyFractionOnly) return null;
-  return anyWhole ? { min: 0, max: 100 } : { min: 0, max: 1 };
-}
-
 const METHOD_LABELS: Record<InsightEvidence['strokes_impact_method'], string> = {
   sg_baseline: 'Strokes-gained baseline',
   historical_correlation: 'Historical correlation',
@@ -190,112 +166,100 @@ function formatSample(sample: number, metric: string): string {
 }
 
 /**
- * Horizontal scale that places the player's value, the primary baseline
- * (team avg), and the optional secondary baseline (PGA) as ticks on the
- * same axis. Lets the coach see at a glance both "where am I" and "where
- * is the team" relative to "tour-grade." Falls back to the legacy "X vs Y"
- * pill when the metric only carries a single anchor.
+ * `formatValue` assumes a real number. Two evidence shapes travel through
+ * this component's `evidence` prop: a real `golf_coach_insights.evidence`
+ * row (every field below present) and `synthesizeTeamSignals`'s roster
+ * roll-up (`{ metric, metric_label, strokes_impact, players_affected }`
+ * only — no `your_value`/`comparison_value` at all, see
+ * `src/lib/coachhelm/v3/insights/team-synthesis.ts`). An unguarded
+ * `formatValue(undefined, ...)` either prints the literal string
+ * "undefined" (percent/count/yards/feet) or throws (`strokes`, which calls
+ * `.toFixed` on it). This is the single guard every read site below goes
+ * through: a non-finite number renders as `null` so the caller can decide
+ * between a fallback and rendering nothing, never the raw value.
  */
-function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
-  const ticks: Array<{
-    value: number;
-    label: string;
-    role: 'you' | 'primary' | 'secondary';
-  }> = [
-    {
-      value: evidence.your_value,
-      label: 'You',
-      role: 'you',
-    },
-    {
-      value: evidence.comparison_value,
-      label: SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label,
-      role: 'primary',
-    },
-  ];
-  if (
-    typeof evidence.secondary_value === 'number' &&
-    evidence.secondary_value !== evidence.comparison_value
-  ) {
-    ticks.push({
-      value: evidence.secondary_value,
-      label: evidence.secondary_label
-        ?? (evidence.secondary_source ? SOURCE_LABELS[evidence.secondary_source] : 'Benchmark'),
-      role: 'secondary',
+function safeFormatValue(
+  value: number,
+  unit: InsightUnit,
+  display?: string,
+): string | null {
+  if (!Number.isFinite(value)) return null;
+  return formatValue(value, unit, display);
+}
+
+/**
+ * Plain labeled value pair — replaces the removed hand-rolled "dot on a
+ * rail" axis (side-stripe/slider family the design system bans; see
+ * `docs/design/fairway-facelift/REVIEW.md`). `tryRenderV3Standing` above
+ * already renders the real `StandingBars` component for any row carrying
+ * `evidence.standing`, and that IS the only path with a `team_n` to gate a
+ * "Team" marker honestly — `StandingBar`'s `shouldShowTeamMarker` treats an
+ * absent `team_n` as cold-start (< 5) and hides the row, and `team_n` is
+ * ONLY ever written as part of `.standing` (`standing-injection.ts`), never
+ * alongside the legacy top-level `your_value`/`comparison_value` fields.
+ * Reaching for `StandingBars` here for a `.standing`-less row would force a
+ * choice between fabricating a `team_n` (never — synthesizes false
+ * confidence) or silently dropping the comparison behind a "Team marker
+ * appears once 5+ teammates…" caption that doesn't apply to this data at
+ * all — both worse than the rail it would replace. So a `.standing`-less
+ * row (every `comparison_source`, including `team_avg`) gets its own value
+ * and its benchmark's value as two labeled tabular numbers; no axis, no
+ * position math, no fabricated scale.
+ */
+function EvidenceValuePair({ evidence }: { evidence: InsightEvidence }) {
+  const pairs: Array<{ key: string; value: string; label: string; emphasis: boolean }> = [];
+
+  const yourDisplay = safeFormatValue(evidence.your_value, evidence.unit, evidence.your_value_display);
+  if (yourDisplay !== null) {
+    pairs.push({ key: 'you', value: yourDisplay, label: 'You', emphasis: true });
+  }
+
+  const comparisonDisplay = safeFormatValue(evidence.comparison_value, evidence.unit);
+  if (comparisonDisplay !== null) {
+    pairs.push({
+      key: 'comparison',
+      value: comparisonDisplay,
+      label: SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label ?? 'Comparison',
+      emphasis: false,
     });
   }
 
-  // Pad the axis 25% beyond the extremes so the ticks aren't pinned to
-  // the edges. ui-tone-4: for percent metrics clamp to a DOMAIN-AWARE range
-  // ([0,1] for fractions, [0,100] for whole-number percents) so a row of
-  // 38%/52% no longer collapses both ticks onto the right edge.
-  const tickValues = ticks.map((t) => t.value);
-  const rawMin = Math.min(...tickValues);
-  const rawMax = Math.max(...tickValues);
-  const span = Math.max(rawMax - rawMin, 0.0001);
-  const pad = span * 0.25;
-  let axisMin = rawMin - pad;
-  let axisMax = rawMax + pad;
-  const pctBounds = percentAxisBounds(tickValues, evidence.unit);
-  if (pctBounds) {
-    axisMin = Math.max(pctBounds.min, axisMin);
-    axisMax = Math.min(pctBounds.max, axisMax);
+  const secondaryDisplay =
+    typeof evidence.secondary_value === 'number' && evidence.secondary_value !== evidence.comparison_value
+      ? safeFormatValue(evidence.secondary_value, evidence.unit)
+      : null;
+  if (secondaryDisplay !== null) {
+    pairs.push({
+      key: 'secondary',
+      value: secondaryDisplay,
+      label: evidence.secondary_label
+        ?? (evidence.secondary_source ? SOURCE_LABELS[evidence.secondary_source] : 'Benchmark'),
+      emphasis: false,
+    });
   }
-  const axisSpan = Math.max(axisMax - axisMin, 0.0001);
 
-  const positions = ticks.map((t) => ({
-    ...t,
-    pct: ((t.value - axisMin) / axisSpan) * 100,
-  }));
-
-  const youColor = 'bg-primary-600 text-white ring-2 ring-primary-200';
-  const primaryColor = 'bg-warm-700 text-white ring-1 ring-warm-200/45';
-  const secondaryColor = 'bg-violet-600 text-white ring-2 ring-violet-200';
+  // Nothing finite to show (the team-synthesis roll-up shape) — honest
+  // emptiness, never a row of "undefined".
+  if (pairs.length === 0) return null;
 
   return (
-    <div className="space-y-2" data-testid="evidence-benchmark-scale">
-      <div className="relative h-7">
-        {/* Axis */}
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-gradient-to-r from-warm-200/80 via-warm-200 to-warm-200/80" />
-        {positions.map((p, i) => (
+    <div
+      className="flex flex-wrap items-baseline gap-x-4 gap-y-1"
+      data-testid="evidence-value-pair"
+    >
+      {pairs.map((p) => (
+        <span key={p.key} className="inline-flex items-baseline gap-1.5">
           <span
-            key={`${p.role}-${i}`}
             className={cn(
-              'absolute top-1/2 -translate-y-1/2 -translate-x-1/2',
-              'w-3 h-3 rounded-full',
-              'shadow-[0_1px_3px_rgba(16,24,40,0.18)]',
-              p.role === 'you' && youColor,
-              p.role === 'primary' && primaryColor,
-              p.role === 'secondary' && secondaryColor,
+              'font-fw-mono text-body font-semibold tabular-nums',
+              p.emphasis ? 'text-warm-900' : 'text-warm-700',
             )}
-            style={{ left: `${Math.max(0, Math.min(100, p.pct))}%` }}
-            aria-label={`${p.label}: ${formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}`}
-            title={`${p.label}: ${formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}`}
-          />
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow tabular-nums">
-        {positions.map((p, i) => (
-          <span
-            key={`legend-${p.role}-${i}`}
-            className="inline-flex items-center gap-1.5"
           >
-            <span
-              aria-hidden="true"
-              className={cn(
-                'w-2 h-2 rounded-full',
-                p.role === 'you' && 'bg-primary-600',
-                p.role === 'primary' && 'bg-warm-700',
-                p.role === 'secondary' && 'bg-violet-600',
-              )}
-            />
-            <span className="text-warm-700 font-medium">
-              {formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}
-            </span>
-            <span className="text-warm-500">{p.label}</span>
+            {p.value}
           </span>
-        ))}
-      </div>
+          <span className="text-eyebrow uppercase text-warm-500">{p.label}</span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -309,8 +273,14 @@ export function EvidencePanel({
   // JSON. Render nothing rather than a half-populated panel.
   if (!evidence) return null;
 
-  const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
-  const colors = confidenceColor(evidence.confidence);
+  // Guarded: `confidence` is absent on the team-synthesis roll-up shape (see
+  // `EvidenceValuePair`'s docstring) — an unguarded `Math.round(NaN * 100)`
+  // rendered the literal "NaN% confidence". `null` here means "don't render
+  // the pill" rather than a fabricated percentage.
+  const confPct = Number.isFinite(evidence.confidence)
+    ? Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100)
+    : null;
+  const colors = confidenceColor(Number.isFinite(evidence.confidence) ? evidence.confidence : 0);
 
   // FID-5: clamp the stroke magnitude at render so an impossible upstream
   // value (stale rows have carried 40+ strokes/round) never reaches the eye.
@@ -318,47 +288,65 @@ export function EvidencePanel({
 
   // W15: prefer StandingBars when v14 generators have populated
   // evidence.standing AND the metric_id resolves to a canonical v3 metric.
-  // Falls through to the legacy BenchmarkScale for v2-only insights.
+  // Falls through to the plain EvidenceValuePair for v2-only insights and
+  // any row a `.standing` metric_id doesn't resolve for.
   const v3Standing = tryRenderV3Standing(evidence);
 
   if (compact) {
+    // Guarded the same way as the value pair above: `sample_n`/`window_days`
+    // are absent on the team-synthesis shape, and an unguarded template
+    // literal printed "undefined putts · undefined days".
+    const samplePart = Number.isFinite(evidence.sample_n) && typeof evidence.metric === 'string'
+      ? formatSample(evidence.sample_n, evidence.metric)
+      : null;
+    const windowPart = Number.isFinite(evidence.window_days) ? `${evidence.window_days} days` : null;
+    const sampleText = [samplePart, windowPart].filter((p): p is string => p !== null).join(' · ');
+
     return (
       <div
         data-testid={testId ?? 'evidence-panel-compact'}
         className={cn('mt-3 space-y-2.5')}
       >
-        {v3Standing ?? <BenchmarkScale evidence={evidence} />}
+        {v3Standing ?? <EvidenceValuePair evidence={evidence} />}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow text-warm-500 tabular-nums">
-          <span data-testid="evidence-sample">
-            {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_days} days
-          </span>
+          {sampleText ? <span data-testid="evidence-sample">{sampleText}</span> : null}
           {Math.round(Math.abs(safeImpact) * 10) > 0 && (
             <>
-              <span aria-hidden="true">·</span>
+              {sampleText ? <span aria-hidden="true">·</span> : null}
               <span className="text-warm-700 font-medium" data-testid="evidence-impact">
                 ~{Math.abs(safeImpact).toFixed(1)} strokes/round
               </span>
             </>
           )}
-          <span aria-hidden="true">·</span>
-          <span
-            className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
-            data-testid="evidence-confidence"
-          >
-            {confPct}% confidence
-          </span>
+          {confPct !== null ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span
+                className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
+                data-testid="evidence-confidence"
+              >
+                {confPct}% confidence
+              </span>
+            </>
+          ) : null}
         </div>
       </div>
     );
   }
 
-  // Expanded mode — 2-column key/value grid.
+  // Expanded mode — 2-column key/value grid. Every value read is guarded the
+  // same way as the compact branch above — the team-synthesis roll-up shape
+  // has none of these fields, and this expanded grid is a shared primitive
+  // with callers this component doesn't own (`insight-card/InsightCard.tsx`,
+  // `player-hub/HubInsightSignalCard.tsx`), so a bad shape reaching here from
+  // elsewhere must still degrade honestly rather than print "undefined" or
+  // throw ('strokes' unit's unguarded `.toFixed`).
   const rows: Array<{ label: string; value: React.ReactNode; testId: string }> = [
     {
       label: 'Your number',
       value: (
         <span className="font-medium text-warm-900">
-          {formatValue(evidence.your_value, evidence.unit, evidence.your_value_display)}
+          {safeFormatValue(evidence.your_value, evidence.unit, evidence.your_value_display) ?? 'Not available'}
         </span>
       ),
       testId: 'evidence-row-your',
@@ -368,10 +356,10 @@ export function EvidencePanel({
       value: (
         <span>
           <span className="font-medium text-warm-900">
-            {formatValue(evidence.comparison_value, evidence.unit)}
+            {safeFormatValue(evidence.comparison_value, evidence.unit) ?? 'Not available'}
           </span>{' '}
           <span className="text-warm-500">
-            ({SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label})
+            ({SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label ?? 'Comparison'})
           </span>
         </span>
       ),
@@ -379,13 +367,23 @@ export function EvidencePanel({
     },
     {
       label: 'Sample',
-      value: <span>{formatSample(evidence.sample_n, evidence.metric)}</span>,
+      value: (
+        <span>
+          {Number.isFinite(evidence.sample_n) && typeof evidence.metric === 'string'
+            ? formatSample(evidence.sample_n, evidence.metric)
+            : 'Not available'}
+        </span>
+      ),
       testId: 'evidence-row-sample',
     },
     {
       label: 'Window',
       value: (
-        <span>{formatWindow(evidence.window_start, evidence.window_end, evidence.window_days)}</span>
+        <span>
+          {Number.isFinite(evidence.window_days)
+            ? formatWindow(evidence.window_start, evidence.window_end, evidence.window_days)
+            : 'Not available'}
+        </span>
       ),
       testId: 'evidence-row-window',
     },
@@ -403,7 +401,7 @@ export function EvidencePanel({
       label: 'Method',
       value: (
         <span className="text-warm-700">
-          {METHOD_LABELS[evidence.strokes_impact_method] ?? evidence.strokes_impact_method}
+          {METHOD_LABELS[evidence.strokes_impact_method] ?? evidence.strokes_impact_method ?? 'Not specified'}
         </span>
       ),
       testId: 'evidence-row-method',
@@ -445,19 +443,25 @@ export function EvidencePanel({
         <div className="contents" data-testid="evidence-row-confidence">
           <dt className="text-warm-500">Confidence</dt>
           <dd className="flex items-center gap-2 tabular-nums">
-            <span className={cn('font-medium', colors.text)}>{confPct}%</span>
-            <div
-              role="progressbar"
-              aria-valuenow={confPct}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              className="relative flex-1 h-1.5 rounded-full bg-warm-100 overflow-hidden max-w-[160px]"
-            >
-              <div
-                className={cn('absolute inset-y-0 left-0', colors.bar)}
-                style={{ width: `${confPct}%` }}
-              />
-            </div>
+            {confPct !== null ? (
+              <>
+                <span className={cn('font-medium', colors.text)}>{confPct}%</span>
+                <div
+                  role="progressbar"
+                  aria-valuenow={confPct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  className="relative flex-1 h-1.5 rounded-full bg-warm-100 overflow-hidden max-w-[160px]"
+                >
+                  <div
+                    className={cn('absolute inset-y-0 left-0', colors.bar)}
+                    style={{ width: `${confPct}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <span className="text-warm-500">Not available</span>
+            )}
           </dd>
         </div>
       </dl>

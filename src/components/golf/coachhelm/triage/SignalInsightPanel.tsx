@@ -26,9 +26,8 @@ import type { InsightPriority } from '@/components/fairway/cards-insight/Insight
 import type { PlayersGridStats } from '@/components/fairway';
 import type { GroupedSignal, SignalGroup, SignalSeverity } from '@/lib/coachhelm/signal-grouping';
 import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
-import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
-import { formatCategoryLabel } from './buildTriageViewModel';
+import { formatCategoryLabel, resolveSignalEvidence } from './buildTriageViewModel';
 import { PromoteToFocusAreaButton } from './PromoteToFocusAreaButton';
 
 export interface SignalInsightPanelEntry {
@@ -55,10 +54,10 @@ const SEVERITY_TO_PRIORITY: Record<SignalSeverity, InsightPriority> = {
 
 function recommendationFor(signal: GroupedSignal, playerName: string): string {
   if (signal.kind === 'team_synthesis') {
-    return 'A team-wide roll-up of the leaks below it — review or dismiss the individual signals it summarizes rather than this row.';
+    return 'A team-wide roll-up of the leaks it summarizes. Review or dismiss the individual player signals in the queue rather than this row.';
   }
   if (signal.kind === 'pattern') {
-    return 'A cross-player pattern — worth a look across the roster before acting on any one player.';
+    return 'A cross-player pattern. Worth a look across the roster before acting on any one player.';
   }
   if (signal.playerId) {
     return `Prescribe a focus area to turn this into a plan ${playerName} can work on.`;
@@ -105,7 +104,7 @@ export function SignalInsightPanel({
       title="Why this matters"
       meta={group.playerId ? group.playerName : 'Team'}
       evidenceLabel="Evidence"
-      evidence={<EvidencePanel evidence={signal.evidence as InsightEvidence | null} compact />}
+      evidence={<EvidencePanel evidence={resolveSignalEvidence(signal.evidence)} compact />}
       detail={
         <p className="font-fw-sans text-body-sm leading-relaxed text-text-secondary">
           {recommendationFor(signal, group.playerName)}
