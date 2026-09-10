@@ -689,6 +689,14 @@ function FairwayDashboardContent({
           tabIndex={-1}
           className={cn(
             'outline-none',
+            // Bare Toolbars (`frame="bare"`, the facelift default) bleed by
+            // `--fw-toolbar-bleed` so a stuck frost bar runs edge to edge while
+            // its controls stay on the content column. Declared ONCE here at
+            // the page roots' actual gutter — `px-4 md:px-6` on 70+ dashboard
+            // roots (roster, rounds, qualifiers, tasks…). A page with a
+            // different gutter (round review's `px-5 md:px-8`, PageContainer's
+            // `px-4 sm:px-6 lg:px-8` once adopted) re-declares it on its root.
+            '[--fw-toolbar-bleed:1rem] md:[--fw-toolbar-bleed:1.5rem]',
             // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
             // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
             // only), mounted once for every coach dashboard route. Nothing in

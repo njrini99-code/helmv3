@@ -30,7 +30,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Download } from 'lucide-react';
+import { ArrowUpDown, Check, Download } from 'lucide-react';
 
 import { cn, pluralize } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -42,6 +42,8 @@ import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { InsetGroup } from '@/components/fairway/surfaces';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { Toolbar } from '@/components/fairway/controls/Toolbar';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { StatMatrix } from '@/components/fairway/modules/StatMatrix';
@@ -115,6 +117,9 @@ const ATTENTION_ROWS_CAP = 3;
  *  em-dash for a 2- or 3-round sample is still misleadingly confident here). */
 const TREND_MIN_POINTS = 4;
 
+/** Verdict word read to screen readers behind the phone row's arrow-only trend. */
+const VERDICT_WORD: Record<string, string> = { improving: 'Improving', stable: 'Steady', declining: 'Declining' };
+
 function playerName(p: Pick<RosterPlayer, 'first_name' | 'last_name'>): string {
   return `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
 }
@@ -135,22 +140,23 @@ function deriveSignal(
 }
 
 /*
- * ── MatrixBoard column keys — a deliberate deviation, reported to team-lead ──
+ * ── MatrixBoard column keys ──────────────────────────────────────────────────
  * MatrixBoard.tsx (not editable here) hides columns keyed literally 'scor' /
  * 'composite' / 'trend' / 'signal' below its 940px breakpoint (HIDE_ON_MOBILE)
  * and gives ONLY the literal 'trend' / 'signal' keys a wider custom track.
- * The spec wants SG:Total + Focus HIDDEN on phone (so 'scor'/'composite' are
- * reused verbatim for those two columns to get that behavior) but Trend +
- * Signal VISIBLE on phone (the opposite of what the literal 'trend'/'signal'
- * keys would do) — so those two columns use non-matching keys ('trendline',
- * 'sig') and fall back to the default track width instead of the wider
- * custom one. No visible column key ever renders as text, so this is a pure
- * wiring detail, not a user-facing change.
+ * SG:Total and Focus reuse 'scor' / 'composite' to be hidden on phone. Trend
+ * uses the literal 'trend' key on purpose (roster.mobile.md): desktop gets
+ * the 96px sparkline track (the width this file already drew the sparkline
+ * at), and below 940px the column is hidden while the trend ARROW rides
+ * inside the Avg cell instead — a phone row is identity · avg+arrow · signal
+ * plus the overflow menu, which is what fits in 289px without truncating a
+ * name to nine characters. Signal keeps a non-matching key ('sig') so it
+ * stays visible on phone. No column key ever renders as text.
  */
 const COLUMNS: MatrixColumn[] = [
   { key: 'player', label: 'Player' },
   { key: 'avg', label: 'Avg', align: 'center' },
-  { key: 'trendline', label: 'Trend', align: 'center' },
+  { key: 'trend', label: 'Trend', align: 'center' },
   { key: 'scor', label: 'SG:Total', align: 'center' },
   { key: 'composite', label: 'Focus' },
   { key: 'sig', label: 'Signal' },
@@ -178,6 +184,8 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
   const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
   const [sheetPlayerId, setSheetPlayerId] = React.useState<string | null>(null);
+  // Phone: the sort Segmented + Export live in a Sheet behind one "Sort" control.
+  const [sortSheetOpen, setSortSheetOpen] = React.useState(false);
   const handleExpandedRowChange = React.useCallback(
     (candidate: string | null) => {
       if (isDesktop) {
@@ -314,32 +322,33 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
             <span
               key="avg"
               className={cn(
-                'font-fw-mono text-body-sm tabular-nums',
+                'inline-flex items-center gap-1 font-fw-mono text-body-sm tabular-nums',
                 hasScore ? 'text-text-primary' : 'text-text-tertiary',
               )}
             >
               {hasScore ? (p.avg_score ?? 0).toFixed(1) : '—'}
+              {/* Phone: the trend arrow rides beside the average (the Trend
+                  column is hidden below 940px); the verdict word is read,
+                  not shown. */}
+              {hasTrendSignal && p.recent_trend ? (
+                <TrendGlyph
+                  direction={p.recent_trend}
+                  label={<span className="sr-only">{VERDICT_WORD[p.recent_trend] ?? p.recent_trend}</span>}
+                  className="text-caption min-[940px]:hidden"
+                />
+              ) : null}
             </span>,
-            <div key="trendline">
-              <span className="hidden min-[940px]:inline-flex">
-                {hasTrendSignal ? (
-                  <Sparkline
-                    data={scores}
-                    goodDirection="down"
-                    label={`${name} scoring trend`}
-                    width={TREND_SPARKLINE_WIDTH}
-                  />
-                ) : (
-                  <span className="font-fw-mono text-body-sm text-text-tertiary">—</span>
-                )}
-              </span>
-              <span className="min-[940px]:hidden">
-                {hasTrendSignal && p.recent_trend ? (
-                  <TrendGlyph direction={p.recent_trend} className="text-caption" />
-                ) : (
-                  <span className="font-fw-mono text-body-sm text-text-tertiary">—</span>
-                )}
-              </span>
+            <div key="trend">
+              {hasTrendSignal ? (
+                <Sparkline
+                  data={scores}
+                  goodDirection="down"
+                  label={`${name} scoring trend`}
+                  width={TREND_SPARKLINE_WIDTH}
+                />
+              ) : (
+                <span className="font-fw-mono text-body-sm text-text-tertiary">—</span>
+              )}
             </div>,
             <span
               key="scor"
@@ -354,8 +363,8 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               {p.active_focus_areas ? p.active_focus_areas : '—'}
             </span>,
             <SignalChip key="sig" tone={signal.tone}>
-              <span className="hidden min-[940px]:inline">{signal.full}</span>
-              <span className="min-[940px]:hidden">{signal.compact}</span>
+              <span className="hidden whitespace-nowrap min-[940px]:inline">{signal.full}</span>
+              <span className="whitespace-nowrap min-[940px]:hidden">{signal.compact}</span>
             </SignalChip>,
           ],
           expand: (
@@ -422,10 +431,15 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               dropped from this page per that same spec item; it still lives
               on CoachHelm via RosterHealthHeader, unmodified. */}
           <Surface elevation="border" padding="none" className="mb-6 overflow-hidden">
-            <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            {/* `minmax(0,1fr)` at EVERY width: a plain auto track sizes to
+                its content's min-content, and the attention rows' nowrap
+                meta lines made it wider than a phone — the whole panel
+                clipped at the right edge (roster.mobile.md #1). */}
+            <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
               <div className="p-5 md:p-6">
+                {/* No `label`: the ViewHeader eyebrow above already says
+                    Roster (REVIEW.md: one eyebrow per screen). */}
                 <StatMatrix
-                  label="Roster"
                   variant="plain"
                   columns={4}
                   items={[
@@ -469,32 +483,51 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               />
             }
             viewToggle={
-              <Toolbar.ViewToggle<SortField>
-                aria-label="Sort players"
-                value={sort}
-                onValueChange={setSort}
-                options={SORT_OPTIONS as unknown as { value: SortField; label: string }[]}
-              />
+              <div className="hidden sm:contents">
+                <Toolbar.ViewToggle<SortField>
+                  aria-label="Sort players"
+                  value={sort}
+                  onValueChange={setSort}
+                  options={SORT_OPTIONS as unknown as { value: SortField; label: string }[]}
+                />
+              </div>
             }
             filters={
-              <FilterPill
-                selected={attentionFilter}
-                count={needsAttention.length > 0 ? needsAttention.length : undefined}
-                onClick={() => setAttentionFilter((v) => !v)}
-              >
-                Needs attention
-              </FilterPill>
+              <>
+                <FilterPill
+                  selected={attentionFilter}
+                  count={needsAttention.length > 0 ? needsAttention.length : undefined}
+                  onClick={() => setAttentionFilter((v) => !v)}
+                >
+                  Needs attention
+                </FilterPill>
+                {/* Phone: one control opens the sort Sheet (the Segmented
+                    and Export below are desktop-only). */}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="sm:hidden"
+                  leftIcon={<ArrowUpDown className="h-4 w-4" aria-hidden />}
+                  aria-haspopup="dialog"
+                  aria-expanded={sortSheetOpen}
+                  onClick={() => setSortSheetOpen(true)}
+                >
+                  Sort · {SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Name'}
+                </Button>
+              </>
             }
             primaryAction={
-              <IconButton
-                variant="secondary"
-                size="md"
-                aria-label="Export roster as CSV"
-                onClick={handleExport}
-                disabled={sorted.length === 0}
-              >
-                <Download className="h-4 w-4" aria-hidden />
-              </IconButton>
+              <div className="hidden sm:contents">
+                <IconButton
+                  variant="secondary"
+                  size="md"
+                  aria-label="Export roster as CSV"
+                  onClick={handleExport}
+                  disabled={sorted.length === 0}
+                >
+                  <Download className="h-4 w-4" aria-hidden />
+                </IconButton>
+              </div>
             }
           />
 
@@ -555,8 +588,61 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               name={playerName(sheetPlayer)}
               intent={intents[sheetPlayer.id] ?? null}
               onIntentSaved={() => router.refresh()}
+              host="sheet"
             />
           ) : null}
+        </Sheet.Body>
+        {/* The ONE primary action of the phone sheet, pinned above the safe
+            area (the inline desktop band keeps it in its own row). */}
+        {sheetPlayer ? (
+          <Sheet.Footer>
+            <Button asChild variant="primary" size="lg" shape="block" fullWidth>
+              <Link href={`/golf/dashboard/roster/${sheetPlayer.id}`}>Open profile</Link>
+            </Button>
+          </Sheet.Footer>
+        ) : null}
+      </Sheet>
+
+      {/* Phone sort Sheet — the Segmented's four options as seam rows, then
+          Export. Matte (a docked utility sheet, not a floating one). */}
+      <Sheet open={sortSheetOpen} onOpenChange={setSortSheetOpen} title="Sort players">
+        <Sheet.Body className="px-4 pb-4">
+          <InsetGroup variant="matte" aria-label="Sort players by">
+            {SORT_OPTIONS.map((opt) => {
+              const selected = sort === opt.value;
+              return (
+                <InsetGroup.Row
+                  key={opt.value}
+                  as="button"
+                  aria-pressed={selected}
+                  trailing={selected ? <Check className="text-accent-700" aria-hidden /> : undefined}
+                  onClick={() => {
+                    if (!selected) fwHaptic('selection');
+                    setSort(opt.value);
+                    setSortSheetOpen(false);
+                  }}
+                >
+                  <span className={cn('font-fw-sans text-body-sm', selected ? 'font-semibold text-text-primary' : 'text-text-secondary')}>
+                    {opt.label}
+                  </span>
+                </InsetGroup.Row>
+              );
+            })}
+          </InsetGroup>
+          <InsetGroup variant="matte" className="mt-4">
+            <InsetGroup.Row
+              as="button"
+              icon={<Download aria-hidden />}
+              onClick={() => {
+                handleExport();
+                setSortSheetOpen(false);
+              }}
+              aria-disabled={sorted.length === 0 || undefined}
+              className={cn(sorted.length === 0 && 'pointer-events-none opacity-50')}
+            >
+              <span className="font-fw-sans text-body-sm text-text-primary">Export roster as CSV</span>
+            </InsetGroup.Row>
+          </InsetGroup>
         </Sheet.Body>
       </Sheet>
     </div>
@@ -685,11 +771,15 @@ function RowDetail({
   name,
   intent,
   onIntentSaved,
+  host = 'band',
 }: {
   player: RosterPlayer;
   name: string;
   intent: CoachPlayerIntent | null;
   onIntentSaved: () => void;
+  /** 'band' = MatrixBoard's inline expand (CTA inline, right); 'sheet' =
+   *  the phone Sheet, whose Footer owns the CTA (none rendered here). */
+  host?: 'band' | 'sheet';
 }) {
   return (
     <div data-sentry-mask="" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -708,9 +798,11 @@ function RowDetail({
           onSaved={onIntentSaved}
         />
       </div>
-      <Button asChild variant="secondary" size="sm" shape="block" fullWidth className="sm:w-auto">
-        <Link href={`/golf/dashboard/roster/${player.id}`}>Open profile</Link>
-      </Button>
+      {host === 'band' ? (
+        <Button asChild variant="secondary" size="sm" shape="block" fullWidth className="sm:w-auto">
+          <Link href={`/golf/dashboard/roster/${player.id}`}>Open profile</Link>
+        </Button>
+      ) : null}
     </div>
   );
 }
