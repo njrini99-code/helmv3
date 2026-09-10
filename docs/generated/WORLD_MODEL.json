@@ -3259,7 +3259,7 @@
       },
       {
         "id": "helm_debug_db_analysis_snapshot",
-        "definedIn": "supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql"
+        "definedIn": "supabase/migrations/20260909230000_helm_debug_analysis_drop_index_advisor.sql"
       },
       {
         "id": "helm_debug_db_health_snapshot",
@@ -5396,7 +5396,12 @@
         {
           "kind": "import_graph",
           "path": "src/lib/admin/__tests__/rca.test.ts",
-          "line": 22
+          "line": 23
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/__tests__/rca.test.ts",
+          "line": 24
         },
         {
           "kind": "import_graph",
@@ -7393,7 +7398,7 @@
         {
           "kind": "rpc_call",
           "path": "src/lib/admin/triage-apply.ts",
-          "line": 57
+          "line": 69
         }
       ]
     },
@@ -7587,7 +7592,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/admin/selfheal-registry.ts",
-          "line": 39
+          "line": 40
         }
       ]
     },
@@ -16502,12 +16507,12 @@
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 268
+          "line": 281
         },
         {
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-supabase.md",
-          "line": 271
+          "line": 284
         },
         {
           "kind": "import_graph",

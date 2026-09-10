@@ -155,6 +155,14 @@ them:
 - `NOT A DEFECT` — expected control flow, third-party noise, or a bot.
 - `NEEDS MORE EVIDENCE` — name exactly what is missing and what would produce it.
 
+The Vercel cron cannot get this wrong any more: `runRcaAnalysis` asks the
+model for an explicit `category` enum alongside `suggestedFix` and stamps the
+matching prefix on before persisting (`withCanonicalPrefix` in `rca.ts`). It
+had to — every one of the 184 analyses the cron wrote 2026-09-03 → 09-09
+opened with free prose, derived to `uncategorized`, and so Close resolved
+nothing and Repair ranked nothing for a week. An operator writing analyses
+by hand (`npm run triage:write`) is still validated by `deriveRcaCategory`.
+
 Anything else derives to `uncategorized`. That is not fatal — it renders as
 uncategorized in the Bridge and still reaches the repair stage for a human read
 — but it is off contract, no automatic path can close it, and it wastes the

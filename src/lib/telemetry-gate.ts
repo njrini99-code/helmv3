@@ -44,6 +44,34 @@ export function shouldPersistAdminTables(): boolean {
   // on that staying true). This check, and NEXT_PHASE above, must run
   // before the preview opt-in below so neither guard can be bypassed by it.
   if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') return false;
+  // NODE_ENV is the one signal a local env file cannot forge. Next's CLI sets
+  // it ('development' for `next dev`, 'production' for `next build`/`next
+  // start`) BEFORE any .env* file is loaded, and dotenv-style loaders never
+  // overwrite an already-set process.env key — whereas VERCEL_ENV is just
+  // another line in .env.local, which `vercel env pull` writes verbatim from
+  // the Production environment.
+  //
+  // Measured 2026-09-09: both .env.local and .env.production.local on the
+  // owner's machine carried a hardcoded VERCEL_ENV="production", so plain
+  // `npm run dev` satisfied the VERCEL_ENV check at the bottom of this
+  // function and wrote 287 of 1626 rows in a 72h window straight into the
+  // PRODUCTION admin_events table — tagged `runtimeEnv: 'production'` — with
+  // local `/Users/.../node_modules/next/.../app-page.runtime.dev.js` and
+  // `webpack-internal:///(rsc)/` frames still in their stack traces. That
+  // made incident event-counts in the Bridge unrankable: the single largest
+  // "actionable production incident" in the 2026-09-09 export (163 events)
+  // was the developer's own dev server. The doc comment above predicted this
+  // exact scenario in 2026-07 but only the CI/GITHUB_ACTIONS branch was
+  // hardened.
+  //
+  // What NODE_ENV does NOT catch: a local `next build && next start` runs
+  // under NODE_ENV=production too. Measured 2026-09-09: 96 of the 268
+  // "destination stream closed early" rows carried app-page.runtime.PROD.js
+  // at a /Users/... path — that variant. The only defence there is the env
+  // file itself: VERCEL and VERCEL_ENV must not be present in any .env*.local
+  // (`vercel env pull --environment=production` writes both; delete them —
+  // worktrees symlink the canonical copies, so one edit covers every checkout).
+  if (process.env.NODE_ENV !== 'production') return false;
   // Deliberate opt-in to rehearse the pipeline against a real preview
   // deployment. Requires both the flag and an actual Vercel preview env —
   // a local machine can't set VERCEL_ENV=preview without deliberately
@@ -73,6 +101,11 @@ export type RuntimeEnv = 'production' | 'preview' | 'ci' | 'dev';
  */
 export function getRuntimeEnv(): RuntimeEnv {
   if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') return 'ci';
+  // Same NODE_ENV reasoning as shouldPersistAdminTables(): a local env file
+  // can hardcode VERCEL_ENV=production, so without this a row forced through
+  // by ADMIN_EVENTS_FORCE_CAPTURE from a dev machine would still be *tagged*
+  // 'production' and be indistinguishable from a real prod incident.
+  if (process.env.NODE_ENV !== 'production') return 'dev';
   if (process.env.VERCEL_ENV === 'production') return 'production';
   if (process.env.VERCEL_ENV) return 'preview';
   return 'dev';

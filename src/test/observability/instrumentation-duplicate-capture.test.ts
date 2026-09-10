@@ -160,6 +160,50 @@ describe('onRequestError — captureRequestError respects __helmBridgeLogged', (
  * built un-wired; this pins that it is actually reachable from Sentry.init,
  * not just exported.
  */
+describe('onRequestError — a client-aborted RSC stream is not an incident', () => {
+  beforeEach(() => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs');
+    mocks.init.mockClear();
+    mocks.logServerException.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  // 260 admin_events rows across nine /golf/dashboard/* fingerprints in the
+  // 72h to 2026-09-09, every one "The destination stream closed early." with
+  // zero affected users: the browser navigated away while the RSC payload
+  // was still streaming. Next reports that through onRequestError as an
+  // unhandled render error; it is the request being abandoned, not a page
+  // failing.
+  it('skips the Bridge write for "The destination stream closed early."', async () => {
+    for (const message of ['The destination stream closed early.', 'The destination stream closed early']) {
+      await onRequestError(new Error(message), baseRequest, baseErrorContext);
+    }
+    expect(mocks.logServerException).not.toHaveBeenCalled();
+  });
+
+  it('still writes a stream error that merely mentions closing', async () => {
+    await onRequestError(
+      new Error('The destination stream closed early. Underlying cause: ECONNRESET on the database socket'),
+      baseRequest,
+      baseErrorContext,
+    );
+    expect(mocks.logServerException).toHaveBeenCalledTimes(1);
+  });
+
+  it('Sentry ignores it too, on both runtimes', async () => {
+    await register();
+    for (const call of mocks.init.mock.calls) {
+      const ignoreErrors = call[0].ignoreErrors as unknown[];
+      const matches = ignoreErrors.some(
+        (entry) => entry instanceof RegExp && entry.test('The destination stream closed early.'),
+      );
+      expect(matches).toBe(true);
+    }
+  });
+});
+
 describe('Sentry.init — metrics enabled, second-line PII defence wired', () => {
   beforeEach(() => {
     mocks.init.mockClear();

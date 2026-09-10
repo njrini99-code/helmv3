@@ -68,3 +68,50 @@ describe('classifyIncident — a client fetch that never reached the server', ()
     expect(c.actionable).toBe(true);
   });
 });
+
+/**
+ * The 2026-09-09 72h export ranked "The destination stream closed early."
+ * (163 events) and bare "aborted" (67 events) as its two largest actionable
+ * production incidents. Both are the peer hanging up mid-response. They arrive
+ * with a SERVER source — Next's onRequestError hook names the RSC render or
+ * route handler that was streaming — so rule 3c's `source === 'client'` guard
+ * never saw them.
+ */
+describe('classifyIncident — the client disconnected mid-response', () => {
+  it.each(['server_component', 'route_handler', 'server_action', 'request_hook'] as const)(
+    'files "destination stream closed early" from source=%s as non-actionable',
+    (source) => {
+      const c = classifyIncident({
+        title: 'The destination stream closed early.',
+        message: 'The destination stream closed early.',
+        severity: 'error',
+        source,
+      });
+      expect(c.klass).toBe('integration');
+      expect(c.actionable).toBe(false);
+      expect(c.reason).toMatch(/disconnected mid-render/);
+    },
+  );
+
+  it('files a bare "aborted" as a client disconnect', () => {
+    const c = classifyIncident({
+      title: 'aborted',
+      message: 'aborted',
+      severity: 'error',
+      source: 'server_component',
+    });
+    expect(c.klass).toBe('integration');
+    expect(c.actionable).toBe(false);
+    expect(c.reason).toMatch(/client went away/);
+  });
+
+  it('keeps OUR abort budget expiring actionable — exact equality, not substring', () => {
+    const c = classifyIncident({
+      title: 'Round submit failed',
+      message: 'The operation was aborted due to timeout',
+      severity: 'error',
+      source: 'server_action',
+    });
+    expect(c.reason).not.toMatch(/client went away/);
+  });
+});

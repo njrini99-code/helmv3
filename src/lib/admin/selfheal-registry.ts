@@ -6,8 +6,9 @@
  * routine, REPAIRED into pull requests by a local routine running against the
  * real checkout, and CLOSED — with evidence — into `admin_error_resolutions`
  * by the nightly cron. Each stage is a different runner in a different place:
- * a Vercel cron, an Anthropic-hosted routine, and a launchd agent on the
- * owner's laptop.
+ * two Vercel crons and a GitHub Actions workflow (Repair — a launchd agent
+ * on the owner's laptop until 2026-09-05, and an Anthropic-hosted routine
+ * for Diagnose until 2026-09-02).
  *
  * WHICH IS EXACTLY WHY THIS FILE EXISTS. Two of those three runners are
  * outside this deployment entirely — nothing in the app invokes them, nothing
@@ -41,11 +42,12 @@ import { classifyCronStatus, type CronBoardStatus } from '@/lib/admin/cron-regis
 /** Where a stage actually executes. The Bridge shows this, because "it is not
  *  running" has a completely different fix in each case: redeploy, re-enable
  *  the routine, or wake the laptop. */
-export type SelfHealRunner = 'vercel-cron' | 'cloud-routine' | 'local-agent';
+export type SelfHealRunner = 'vercel-cron' | 'cloud-routine' | 'github-actions' | 'local-agent';
 
 export const SELFHEAL_RUNNER_LABEL: Readonly<Record<SelfHealRunner, string>> = {
   'vercel-cron': 'Vercel cron',
   'cloud-routine': 'Cloud routine',
+  'github-actions': 'GitHub Actions',
   'local-agent': 'Local agent',
 };
 
@@ -103,7 +105,11 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     jobType: 'selfheal-repair',
     step: 2,
     title: 'Repair',
-    runner: 'local-agent',
+    // .github/workflows/selfheal-repair.yml since 2026-09-05; the launchd
+    // agent on the owner's laptop is retired (README.md). The Bridge kept
+    // saying "Local agent — on the owner's laptop" for four more days, which
+    // sent an operator to wake a machine that was not the runner.
+    runner: 'github-actions',
     cadenceMinutes: DAILY,
     what: 'Takes the repairable analyses, reproduces each with a failing test, and opens a verified PR. Never merges, never deploys.',
     contract: 'docs/ai-system/selfheal/repair-contract.md',

@@ -1,8 +1,8 @@
 /**
  * Joining a repair pull request back to the incident it repairs.
  *
- * WHY THIS IS NOT OBVIOUS. The repair half of the self-healing loop runs on
- * the owner's laptop and its only durable output is a pull request on GitHub.
+ * WHY THIS IS NOT OBVIOUS. The repair half of the self-healing loop runs in
+ * GitHub Actions and its only durable output is a pull request on GitHub.
  * Nothing writes a row anywhere linking that PR to the fingerprint it fixes —
  * so from the Bridge's side, "is anyone working on this incident?" has no
  * answer at all, and an operator re-triages work that is already sitting in a

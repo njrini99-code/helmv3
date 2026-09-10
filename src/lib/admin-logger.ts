@@ -343,9 +343,19 @@ export async function logEmailSuppressed(params: {
     eventType: 'email.suppressed',
     title: `Customer email suppressed (${params.kind})`,
     severity: 'info',
-    source: params.source,
+    // `source` is CHECK-constrained to 11 values (admin_events_source_check,
+    // supabase/migrations/20260701120000_admin_events_bridge_columns.sql).
+    // params.source is a free-text call-site path
+    // ('notifications/email.sendEmailNotification', ...), so forwarding it
+    // here raised SQLSTATE 23514 on EVERY suppressed-email event and the row
+    // was silently dropped — reportBridgeWriteFailure() only console.warns and
+    // fires a rate-limited `bridge_write_failed` Sentry message, deliberately
+    // never logServerError (recursion), so nothing landed in admin_events at
+    // all. The call-site path belongs in unconstrained jsonb metadata.
+    source: 'system',
     metadata: {
       kind: params.kind,
+      callSite: params.source,
       recipientCount: params.recipientCount,
       ...(params.collapsedCount ? { collapsedCount: params.collapsedCount } : {}),
     },
