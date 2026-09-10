@@ -133,4 +133,105 @@ describe('MatrixBoard', () => {
     const row = screen.getByRole('button', { name: 'Jackson Hale row' });
     expect(row).not.toHaveAttribute('aria-expanded');
   });
+
+  it('renders row.actions as a sibling of the press-target, never nested inside it', () => {
+    const rowWithActions: MatrixBoardRow = {
+      id: 'avery',
+      cells: ['Avery Cole', '3', '1'],
+      ariaLabel: 'Avery Cole row',
+      actions: <button type="button">Overflow</button>,
+    };
+    const { container } = render(
+      <MatrixBoard kpis={[]} columns={columns} rows={[rowWithActions]} />,
+    );
+
+    const rowButton = screen.getByRole('button', { name: 'Avery Cole row' });
+    const overflowButton = screen.getByRole('button', { name: 'Overflow' });
+
+    // Never a button nested inside a button.
+    expect(rowButton.contains(overflowButton)).toBe(false);
+    expect(overflowButton.contains(rowButton)).toBe(false);
+
+    // Rendered as a dedicated actions slot, a sibling of the row button
+    // under the shared row wrapper.
+    const actionsSlot = container.querySelector('[data-slot="matrix-row-actions"]');
+    expect(actionsSlot).not.toBeNull();
+    expect(actionsSlot!.contains(overflowButton)).toBe(true);
+    expect(actionsSlot!.parentElement).toBe(rowButton.parentElement);
+  });
+
+  it('omits the actions slot entirely when a row has no actions', () => {
+    const { container } = render(
+      <MatrixBoard kpis={[]} columns={columns} rows={[rowWithoutExpand]} />,
+    );
+    expect(container.querySelector('[data-slot="matrix-row-actions"]')).toBeNull();
+  });
+
+  it('defers to an externally controlled expandedRowId instead of internal state', () => {
+    const onExpandedRowChange = vi.fn();
+    const { rerender } = render(
+      <MatrixBoard
+        kpis={[]}
+        columns={columns}
+        rows={[rowWithExpand]}
+        expandedRowId={null}
+        onExpandedRowChange={onExpandedRowChange}
+      />,
+    );
+    const row = screen.getByRole('button', { name: 'Mason Rivers, expandable row' });
+    expect(row).toHaveAttribute('aria-expanded', 'false');
+
+    // Clicking a controlled row never flips its own state — it only reports
+    // the candidate id upward.
+    fireEvent.click(row);
+    expect(onExpandedRowChange).toHaveBeenCalledTimes(1);
+    expect(onExpandedRowChange).toHaveBeenCalledWith('mason');
+    expect(row).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Slump length 6 rds')).not.toBeInTheDocument();
+
+    // The parent "accepts" the change by feeding the id back in.
+    rerender(
+      <MatrixBoard
+        kpis={[]}
+        columns={columns}
+        rows={[rowWithExpand]}
+        expandedRowId="mason"
+        onExpandedRowChange={onExpandedRowChange}
+      />,
+    );
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Slump length 6 rds')).toBeInTheDocument();
+
+    // Clicking again while expanded reports null (collapse), not toggled
+    // internal state.
+    fireEvent.click(row);
+    expect(onExpandedRowChange).toHaveBeenCalledTimes(2);
+    expect(onExpandedRowChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it('leaves independent per-row uncontrolled state intact when expandedRowId is omitted', () => {
+    const secondRowWithExpand: MatrixBoardRow = {
+      id: 'harlow',
+      cells: ['Harlow Reyes', '4', '2'],
+      expand: <div>Second expandable row</div>,
+      ariaLabel: 'Harlow Reyes, expandable row',
+    };
+    render(
+      <MatrixBoard
+        kpis={[]}
+        columns={columns}
+        rows={[rowWithExpand, secondRowWithExpand]}
+      />,
+    );
+    const first = screen.getByRole('button', { name: 'Mason Rivers, expandable row' });
+    const second = screen.getByRole('button', { name: 'Harlow Reyes, expandable row' });
+
+    fireEvent.click(first);
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    expect(second).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(second);
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    expect(second).toHaveAttribute('aria-expanded', 'true');
+  });
 });

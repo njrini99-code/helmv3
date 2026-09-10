@@ -32,9 +32,15 @@ export interface FilterPillProps
   children: ReactNode;
 }
 
+// WCAG 2.2 AA (2.5.8) / DoD-required >=44px touch target on coarse pointers
+// (touch) — both sizes sat under 44px (30px / 36px) for the desktop-tuned
+// visual height, so the min-height only expands under `(pointer: coarse)`.
+// Mirrors the identical fix already applied to Button `sm` and Segmented
+// `sm`/`md` (see `button.tsx`, `segmented.tsx`) — the pill's visual height
+// on a mouse-driven desktop is unchanged.
 const sizeStyles: Record<'sm' | 'md', string> = {
-  sm: 'min-h-[30px] px-3 text-[12px] gap-1.5',
-  md: 'min-h-[36px] px-3.5 text-[13px] gap-1.5',
+  sm: 'min-h-[30px] [@media(pointer:coarse)]:min-h-[44px] px-3 text-[12px] gap-1.5',
+  md: 'min-h-[36px] [@media(pointer:coarse)]:min-h-[44px] px-3.5 text-[13px] gap-1.5',
 };
 
 /** The pill's visuals, shared by the <button> and <a> forms below. */

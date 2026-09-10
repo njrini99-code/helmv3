@@ -71,7 +71,7 @@ function kpiBandCellClass(i: number): string {
  * of which can expand an inline detail band. See `types.ts` for the prop
  * contract (`MatrixBoardProps`).
  */
-export function MatrixBoard({ kpis, columns, rows }: MatrixBoardProps) {
+export function MatrixBoard({ kpis, columns, rows, expandedRowId, onExpandedRowChange }: MatrixBoardProps) {
   const gridVars = {
     '--mtx-mobile': gridTemplate(columns, true),
     '--mtx-desktop': gridTemplate(columns, false),
@@ -108,7 +108,14 @@ export function MatrixBoard({ kpis, columns, rows }: MatrixBoardProps) {
         <MatrixHeader columns={columns} />
 
         {rows.map((row, i) => (
-          <MatrixRow key={row.id} row={row} columns={columns} isLast={i === rows.length - 1} />
+          <MatrixRow
+            key={row.id}
+            row={row}
+            columns={columns}
+            isLast={i === rows.length - 1}
+            expandedRowId={expandedRowId}
+            onExpandedRowChange={onExpandedRowChange}
+          />
         ))}
       </div>
     </div>
@@ -145,45 +152,70 @@ function MatrixRow({
   row,
   columns,
   isLast,
+  expandedRowId,
+  onExpandedRowChange,
 }: {
   row: MatrixBoardRowData;
   columns: MatrixColumn[];
   isLast: boolean;
+  /** Undefined = uncontrolled (this row owns its own open state, as before).
+   *  Defined (including `null`) = controlled by the parent board. */
+  expandedRowId?: string | null;
+  onExpandedRowChange?: (rowId: string | null) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const hasExpand = row.expand != null;
   const expandId = useId();
+  const isControlled = expandedRowId !== undefined;
+  const open = isControlled ? expandedRowId === row.id : internalOpen;
+
+  function toggleOpen() {
+    if (isControlled) {
+      onExpandedRowChange?.(open ? null : row.id);
+    } else {
+      setInternalOpen((v) => !v);
+    }
+  }
 
   return (
     <div data-slot="matrix-row-group">
-      <PressTarget
-        aria-label={row.ariaLabel}
-        aria-expanded={hasExpand ? open : undefined}
-        aria-controls={hasExpand && open ? expandId : undefined}
-        onClick={hasExpand ? () => setOpen((v) => !v) : undefined}
+      <div
+        data-slot="matrix-row"
         className={cn(
-          'grid w-full items-center gap-x-1 px-5 py-2.5 text-left transition-colors duration-150',
+          'flex items-stretch transition-colors duration-150',
           'hover:bg-surface-tint',
           open && 'bg-accent-50 shadow-[inset_3px_0_0_var(--fw-color-accent-500)]',
           !(isLast && !hasExpand) && 'border-b border-border-subtle',
-          GRID_COLS_CLASS,
         )}
       >
-        {row.cells.map((cell, i) => {
-          const col = columns[i];
-          return (
-            <div
-              key={col?.key ?? i}
-              className={cn(
-                col?.align === 'center' && 'flex justify-center',
-                col && HIDE_ON_MOBILE.has(col.key) && 'hidden min-[940px]:flex min-[940px]:items-center',
-              )}
-            >
-              {cell}
-            </div>
-          );
-        })}
-      </PressTarget>
+        <PressTarget
+          aria-label={row.ariaLabel}
+          aria-expanded={hasExpand ? open : undefined}
+          aria-controls={hasExpand && open ? expandId : undefined}
+          onClick={hasExpand ? toggleOpen : undefined}
+          className={cn('grid flex-1 items-center gap-x-1 px-5 py-2.5 text-left', GRID_COLS_CLASS)}
+        >
+          {row.cells.map((cell, i) => {
+            const col = columns[i];
+            return (
+              <div
+                key={col?.key ?? i}
+                className={cn(
+                  col?.align === 'center' && 'flex justify-center',
+                  col && HIDE_ON_MOBILE.has(col.key) && 'hidden min-[940px]:flex min-[940px]:items-center',
+                )}
+              >
+                {cell}
+              </div>
+            );
+          })}
+        </PressTarget>
+        {row.actions != null ? (
+          <div data-slot="matrix-row-actions" className="flex shrink-0 items-center pr-5 pl-2">
+            {row.actions}
+          </div>
+        ) : null}
+      </div>
       {hasExpand && open ? <MatrixExpand id={expandId}>{row.expand}</MatrixExpand> : null}
     </div>
   );

@@ -130,12 +130,29 @@ export interface MatrixBoardProps {
   kpis: { label: string; value: ReactNode }[];
   columns: MatrixColumn[];
   rows: MatrixBoardRow[];
+  /**
+   * Externally controlled expand state: the `id` of the one row that should
+   * read as expanded (`null` = none). Omit (leave `undefined`) to let each
+   * row manage its own local open state exactly as before — a board with no
+   * `expandedRowId` is byte-identical to the pre-existing uncontrolled
+   * behavior, including independently-expandable rows.
+   */
+  expandedRowId?: string | null;
+  /** Fires when a row's expand toggle is pressed WHILE `expandedRowId` is controlled — the new candidate id (or `null` when collapsing). Ignored (never called) in uncontrolled mode. */
+  onExpandedRowChange?: (rowId: string | null) => void;
 }
 export interface MatrixBoardRow {
   id: string;
   cells: ReactNode[];            // rendered per column, same order as columns
   expand?: ReactNode;            // inline detail band content
   ariaLabel: string;
+  /**
+   * A trailing per-row action slot (e.g. an overflow `Menu`/`IconButton`),
+   * rendered as a SIBLING of the row's press-target button — never nested
+   * inside it, so a real interactive control here never produces a
+   * button-inside-a-button. Omit for rows with no row-level actions.
+   */
+  actions?: ReactNode;
 }
 
 export interface FilmstripHole { n: number; par: number; score: number; note?: string }
