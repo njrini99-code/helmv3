@@ -31,7 +31,6 @@ import { cn } from '@/lib/utils';
 import { CourseImage, formatCourseName } from '@/components/golf/courses/CourseImage';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
-import { Button as UIButton } from '@/components/ui/button';
 import { Input } from '@/components/fairway/forms/Input';
 import { Select } from '@/components/ui/select';
 import { Segmented } from '@/components/fairway/controls/segmented';
@@ -282,16 +281,16 @@ function CockpitBand({
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-warm-50/[0.06]" />
       {onBack && (
-        <UIButton
+        <Button
           type="button"
           variant="ghost"
           onClick={onBack}
           haptic="none"
+          leftIcon={<ChevronLeft className="h-4 w-4" aria-hidden />}
           className="relative -ml-1 mb-3 min-h-[44px] gap-1 rounded-[var(--fw-radius-sm)] px-1 py-0 font-fw-sans text-body-sm font-medium text-nav-text-dim hover:bg-transparent hover:text-nav-text focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
         >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
           {backLabel ?? 'Back'}
-        </UIButton>
+        </Button>
       )}
       <p className="relative font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
         {eyebrow}
@@ -523,7 +522,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         const par = course.holeConfigs.length > 0 ? totalPar(course.holeConfigs) : null;
                         const loc = [course.courseCity, course.courseState].filter(Boolean).join(', ');
                         return (
-                          <UIButton
+                          <Button
                             key={course.id}
                             type="button"
                             variant="ghost"
@@ -576,7 +575,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                                 {relTime(course.lastUsedAt)}
                               </span>
                             </div>
-                          </UIButton>
+                          </Button>
                         );
                       })
                     )}
@@ -746,35 +745,43 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   </div>
 
                   {courseMode === 'new' && (
-                    <UIButton
+                    <Button
                       type="button"
                       variant="ghost"
                       haptic="none"
                       onClick={props.onToggleSaveCourse}
                       className={cn(
-                        'h-auto w-full min-h-0 flex items-center justify-start gap-3 rounded-[var(--fw-radius-md)] border p-3.5 text-left transition-colors',
+                        'h-auto w-full min-h-0 rounded-[var(--fw-radius-md)] border p-3.5 text-left transition-colors',
                         props.saveCourseChecked
                           ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
                           : 'border-border-subtle bg-surface-sunken hover:bg-surface-tint',
                       )}
                     >
-                      <span
-                        className={cn(
-                          'grid h-5 w-5 flex-shrink-0 place-items-center rounded-md border-2 transition-colors',
-                          props.saveCourseChecked ? 'border-accent-500 bg-accent-500' : 'border-border-strong',
-                        )}
-                      >
-                        {props.saveCourseChecked && <Check className="h-3 w-3 text-text-on-accent" />}
-                      </span>
-                      <span>
-                        <span className="block font-fw-sans text-body-sm font-medium text-text-primary">
-                          Save for quick access next round
+                      {/* Button always wraps `children` in a single inner <span>
+                          (controls/button.tsx's CHILDREN CONTRACT) — passing the
+                          checkbox tile and the label as two siblings there would
+                          get silently split onto separate lines the moment CSS
+                          treats one as its own box. One flex row here, passed as
+                          Button's ONE child, owns the layout instead. */}
+                      <span className="flex w-full items-center gap-3">
+                        <span
+                          className={cn(
+                            'grid h-5 w-5 flex-shrink-0 place-items-center rounded-md border-2 transition-colors',
+                            props.saveCourseChecked ? 'border-accent-500 bg-accent-500' : 'border-border-strong',
+                          )}
+                        >
+                          {props.saveCourseChecked && <Check className="h-3 w-3 text-text-on-accent" />}
                         </span>
-                        <span className="block font-fw-sans text-caption text-text-tertiary">
-                          Remembers hole pars, yardages &amp; course details
+                        <span>
+                          <span className="block font-fw-sans text-body-sm font-medium text-text-primary">
+                            Save for quick access next round
+                          </span>
+                          <span className="block font-fw-sans text-caption text-text-tertiary">
+                            Remembers hole pars, yardages &amp; course details
+                          </span>
                         </span>
                       </span>
-                    </UIButton>
+                    </Button>
                   )}
                 </div>
               )}
@@ -793,30 +800,36 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 <p className="font-fw-sans text-caption text-text-tertiary">Tap to start a qualifier round</p>
                 <Inset padding="sm" className="flex max-h-[240px] flex-col gap-2 overflow-y-auto">
                   {allActiveQualifiers.map((q) => (
-                    <UIButton
+                    <Button
                       key={q.id}
                       type="button"
                       variant="ghost"
                       haptic="none"
                       onClick={() => props.onPickActiveQualifier(q)}
-                      className="h-auto min-h-0 w-full flex items-center justify-between gap-3 rounded-[var(--fw-radius-md)] border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-border-strong hover:bg-surface-tint"
+                      className="h-auto min-h-0 w-full rounded-[var(--fw-radius-md)] border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-border-strong hover:bg-surface-tint"
                     >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">{q.name}</p>
-                        <div className="mt-1 flex items-center gap-3 font-fw-sans text-caption text-text-tertiary">
-                          {q.courseName && (
-                            <span className="flex items-center gap-1 truncate">
-                              <MapPin className="h-3 w-3" />
-                              {formatCourseName(q.courseName)}
+                      {/* One flex row as Button's ONE child — see the save-course
+                          toggle above for why (controls/button.tsx CHILDREN
+                          CONTRACT: two siblings here would drop `justify-between`
+                          and strand the StatusPill instead of pushing it right). */}
+                      <span className="flex w-full items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">{q.name}</p>
+                          <div className="mt-1 flex items-center gap-3 font-fw-sans text-caption text-text-tertiary">
+                            {q.courseName && (
+                              <span className="flex items-center gap-1 truncate">
+                                <MapPin className="h-3 w-3" />
+                                {formatCourseName(q.courseName)}
+                              </span>
+                            )}
+                            <span className="tabular-nums">
+                              {q.roundsCompleted}/{q.numRounds} rounds
                             </span>
-                          )}
-                          <span className="tabular-nums">
-                            {q.roundsCompleted}/{q.numRounds} rounds
-                          </span>
+                          </div>
                         </div>
-                      </div>
-                      <StatusPill tone="accent" size="sm">Play</StatusPill>
-                    </UIButton>
+                        <StatusPill tone="accent" size="sm">Play</StatusPill>
+                      </span>
+                    </Button>
                   ))}
                 </Inset>
               </Surface>
