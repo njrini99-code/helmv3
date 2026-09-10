@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD013 -->
-# My rounds — `/golf/dashboard/rounds` (player) · PHONE · SPEC ONLY
+# My rounds — `/golf/dashboard/rounds` (player) · PHONE
 
-Files: `src/components/fairway/pages/rounds/FairwayRoundsLibrary.tsx` (player branch). NOT edited in the mobile lane: `rounds/**` is held by rounds-polish (peer message 2026-09-10); this preflight is for whoever lands there next.
+Files: `src/components/fairway/pages/rounds/FairwayRoundsLibrary.tsx` (player branch, read only here), `src/components/fairway/pages/rounds/FairwayUnfinishedBanner.tsx` (rewritten). Written while `rounds/**` was held by rounds-polish; the lane was released after 50f4e2321 and 22ceb697a landed #2 and #3.
 
 ## What the phone capture shows (this branch, player, 393×852)
 
@@ -24,3 +24,7 @@ Files: `src/components/fairway/pages/rounds/FairwayRoundsLibrary.tsx` (player br
 
 - Rounds tests pin the unfinished-round Continue/Discard names (`FairwayUnfinishedBanner`, library tests) — keep the accessible names.
 - `FairwayUnfinishedBanner.tsx:47` computes `Date.now()` in render (AUDIT hydration row) — the "9 d ago" copy must come from a mounted clock.
+
+## RESULT (capture, this branch, player, 393×852)
+
+Item 1 landed: "In progress · 5" is one matte InsetGroup; each row is a 40 px hole tile ("1 / 18", or "Setup" before the first hole, with the hole count sr-only after the course name), the course name, "city · 9d ago" from a mounted clock (blank on the server and first paint, so no hydration mismatch), one primary Continue and an overflow Menu holding the destructive "Discard round". Choosing it swaps the trailing block for Cancel · Confirm discard in the same row (probe: five Continue buttons, zero visible Discard buttons at rest; menu and confirm states captured). The existing `deleteInProgressRound` action is reused unchanged. Items 2 and 3 arrived via rounds-polish (StatMatrix rounds · avg · best · to par · trend; a Month/Week Menu below `md`); the Menu still sits alone right-pinned on the toolbar's last line, which is the accepted Toolbar-level phone fallback. Tests pin the "In progress" heading, the count and the hole tiles, all kept.

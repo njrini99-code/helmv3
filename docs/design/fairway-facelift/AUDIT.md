@@ -15,6 +15,7 @@ Evidence: `ui-intelligence/facelift/` captures (2026-09-10) and the read-only au
 | 6 | Glass recipes | Six bespoke backdrop-filter recipes (see competing.md from the audit) plus `.fw-glass-chrome`. | One recipe: `.fw-frost` tiers. `.fw-glass-chrome` becomes an alias of `fw-frost fw-frost-subtle` and is migrated by consumers over time. |
 | 7 | Buttons | `src/components/ui/button` (legacy) still used inside Fairway pages (FairwayBottomNav More column, others per audit). | Fairway `Button`/`IconButton` only in Fairway pages; the legacy import list is in competing.md. |
 | 8 | Card units | `FairwayPlayerCard` (roster), qualifier cards, task cards, focus-area cards, "NEEDS MORE ROUNDS" cards | Boards and seam rows per the screen specs; the card files stay until their last consumer moves. |
+| 9 | Player standing (`/my-standing`, redirects to `/coachhelm?view=standing`) | Legacy StageRouter standing view in `src/components/golf/coachhelm/home/PlayerCoachHelmHome.tsx`, outside `fairway/**`. Reads fine on phone as one column of seam blocks (player-standing.mobile.md). | Leave it. Migrate to StandingBars rows later, per player-standing.mobile.md; not part of the mobile pass. |
 
 ## Hydration
 
