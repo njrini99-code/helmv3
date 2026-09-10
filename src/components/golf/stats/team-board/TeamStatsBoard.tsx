@@ -3,23 +3,32 @@
 /**
  * ============================================================================
  * TeamStatsBoard — the roster-as-one-instrument Team Stats surface
- * (spec §5.2 / §3.3 Matrix Board; mockup `.board`)
+ * (fairway-facelift screens/team-stats.md — Archetype B board + C analysis)
  * ----------------------------------------------------------------------------
- * Replaces the per-player InstrumentPanel tile grid with ONE `MatrixBoard`:
- * a sticky KPI band, then a ranked row per player — five `RankCell`s
- * (green-ramp, darker = stronger), a composite `RingGauge`, a scoring-trend
- * `Sparkline`, and a `SignalChip`. A row click expands an inline detail band
- * in place (worst metric / SG putt / last round + triage links) — no
- * navigation for a coach's daily scan.
+ * ONE primary action ("Open team intelligence"); Export + "Ask CoachHelm"
+ * live in the header overflow `Menu` (Export also gets its own IconButton
+ * from `sm:` up). A standalone header `StatMatrix` (Scoring · SG/rd ·
+ * Trajectory · Rounds 30d) replaces the old 2×2 KPI band that used to live
+ * inside `MatrixBoard` itself (`kpis={[]}` below disables that band) — it's
+ * sticky on desktop so the coach keeps the team read while scrolling a long
+ * roster. Below it, the player `MatrixBoard` is the dominant object: five
+ * `RankCell`s (green-ramp, darker = stronger), a composite `RingGauge`, a
+ * scoring-trend `Sparkline`, and a `SignalChip` per row; a row click expands
+ * an inline detail band in place (worst metric / SG putt / last round +
+ * triage links) — no navigation for a coach's daily scan.
  *
- * Order (spec §5.2): masthead → roster board FIRST → team Strokes Gained +
- * leak maps BELOW (still real, still reused chart components, just demoted
- * from the page's opening hero). CSV export drops to an icon button in the
- * masthead. Cold-start renders the board with `quiet` chips immediately —
- * the tornado/leak-map charts never block it.
+ * Below the board, ONE analysis `Bento` (tornado hero 2×2, fundamentals
+ * rails 2×1, putts-by-distance 1×1, approach proximity 1×1) replaces the old
+ * fundamentals/tornado/leak-map card stack — and the old "SG: Total" hero is
+ * gone outright (it duplicated the header StatMatrix's SG cell). Every chart
+ * keeps its own Recharts/visx body, title, and "View as table" toggle;
+ * `BentoCell`'s own required `label` carries the short context tag
+ * (`overline` used to) so a cell shows one heading, not two. Cold-start
+ * renders the board immediately — the tornado/leak-map charts never block it.
  *
  * Reuse: `MatrixBoard`/`RankCell`/`RingGauge`/`SignalChip` (module kit),
- * `Sparkline`/`StrokesGainedTornado`/`LeakMap`/`Readout`/`InstrumentPanel`/
+ * `StatMatrix`/`Bento`/`BentoCell` (module kit), `Menu`/`InsufficientData`,
+ * `Sparkline`/`StrokesGainedTornado`/`LeakMap`/`InstrumentPanel`/
  * `ViewHeader`/`InlineNotice`/`Button`/`IconButton` (Fairway primitives +
  * charts). All ranking/tone/formatting logic lives in
  * `buildTeamBoardViewModel` — this file only composes JSX.
@@ -27,11 +36,12 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Download, MoreVertical } from 'lucide-react';
 
-import { ViewHeader, StrokesGainedTornado, type SGCategory, LeakMap, type LeakMapBucket, InstrumentPanel, Readout, Button, IconButton, InlineNotice, Sparkline, fairwayToast } from '@/components/fairway';
-import { MatrixBoard, RankCell, RailBars, RingGauge, SignalChip } from '@/components/fairway/modules';
-import type { MatrixColumn, MatrixBoardRow as MatrixBoardRowData, RailBarRow } from '@/components/fairway/modules';
+import { ViewHeader, StrokesGainedTornado, type SGCategory, LeakMap, type LeakMapBucket, InstrumentPanel, InsufficientData, Menu, Button, IconButton, InlineNotice, Sparkline, fairwayToast } from '@/components/fairway';
+import { MatrixBoard, RankCell, RailBars, RingGauge, SignalChip, Bento, BentoCell, StatMatrix } from '@/components/fairway/modules';
+import type { MatrixColumn, MatrixBoardRow as MatrixBoardRowData, RailBarRow, StatMatrixItem } from '@/components/fairway/modules';
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -160,6 +170,8 @@ const COLUMNS: MatrixColumn[] = [
 ];
 
 export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d, freshness }: TeamStatsBoardProps) {
+  const router = useRouter();
+
   const boardInput = React.useMemo(() => {
     const boardPlayers: TeamBoardPlayerInput[] = players.map((p) => ({
       id: p.id,
@@ -326,12 +338,32 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
     expand: <ExpandBand row={row} />,
   }));
 
-  const kpis = [
+  // Team-wide trend signal is the same per-player gate as the roster board's
+  // own trajectory verdicts (`scoringTrendVerdict` only counts a player once
+  // their `scoringTrend` delta is non-null, i.e. TREND_SIGNAL_MIN_ROUNDS+
+  // rounds with 5 recent vs 3+ prior). Zero players clearing that gate would
+  // otherwise render as an authoritative-looking "0▲ 0→ 0▼" — a fabricated
+  // zero, not a real reading (DESIGN-SYSTEM §0 #8) — so the cell honestly
+  // says "not yet" instead (spec STATES: <8 rounds → InsufficientData inline,
+  // board still renders).
+  const hasTrajectorySignal = vm.kpis.trajectory.improving + vm.kpis.trajectory.steady + vm.kpis.trajectory.declining > 0;
+
+  const statItems: StatMatrixItem[] = [
     { label: 'Team scoring', value: vm.kpis.teamScoring },
     { label: 'Team SG', value: <TeamSgKpi display={vm.kpis.teamSg} /> },
     {
       label: 'Trajectory',
-      value: <TrajectoryKpi trajectory={vm.kpis.trajectory} />,
+      value: hasTrajectorySignal ? (
+        <TrajectoryKpi trajectory={vm.kpis.trajectory} />
+      ) : (
+        <InsufficientData
+          compact
+          icon={null}
+          title="Trend pending"
+          description={`Signals begin after ${TREND_SIGNAL_MIN_ROUNDS} rounds.`}
+          className="flex-1 justify-center gap-1 border-0 bg-transparent p-0 text-center"
+        />
+      ),
     },
     { label: 'Rounds · 30d', value: vm.kpis.rounds30d },
   ];
@@ -344,17 +376,44 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
         title="Team Stats"
         description={`Every player on ${teamName}'s roster: ranked, tracked, and measured against Tour.`}
         meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshness(freshness)}</p>}
+        primaryAction={
+          <Button asChild variant="primary" size="md">
+            <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
+          </Button>
+        }
         secondaryActions={
-          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
-            <Button asChild variant="secondary" size="md" className="min-w-0 flex-1 sm:flex-none">
-              <Link href="/golf/dashboard/coachhelm/chat">Ask CoachHelm</Link>
-            </Button>
-            <Button asChild variant="ghost" size="md" className="min-w-0 flex-1 sm:flex-none">
-              <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
-            </Button>
-            <IconButton className="shrink-0" variant="secondary" size="md" aria-label="Export team stats as CSV" onClick={handleExport} disabled={vm.rows.length === 0}>
+          <div className="flex items-center gap-2">
+            <IconButton
+              className="hidden sm:inline-flex"
+              variant="secondary"
+              size="md"
+              aria-label="Export team stats as CSV"
+              onClick={handleExport}
+              disabled={vm.rows.length === 0}
+            >
               <Download className="h-4 w-4" aria-hidden />
             </IconButton>
+            <Menu
+              trigger={
+                <IconButton variant="secondary" size="md" aria-label="More actions">
+                  <MoreVertical className="h-4 w-4" aria-hidden />
+                </IconButton>
+              }
+            >
+              {/* `Menu.Item asChild` can't wrap a bare `<Link>` here — MenuItem
+                  always wraps its own `children` in a fixed icon/content/
+                  shortcut span structure before handing off to Radix's
+                  `DropdownMenu.Item`, so an `asChild` Slot sees multiple
+                  sibling children instead of the single element it requires
+                  ("Primitive.div failed to slot onto its children", caught by
+                  TeamStatsBoard.freshness.test.tsx). `onSelect` + `router.push`
+                  is the same navigate-from-a-menu idiom FairwayPlayerActionsMenu
+                  already uses. */}
+              <Menu.Item onSelect={() => router.push('/golf/dashboard/coachhelm/chat')}>Ask CoachHelm</Menu.Item>
+              <Menu.Item onSelect={handleExport} disabled={vm.rows.length === 0}>
+                Export as CSV
+              </Menu.Item>
+            </Menu>
           </div>
         }
       />
@@ -365,8 +424,20 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
         </InlineNotice>
       ) : null}
 
-      {/* ── ROSTER BOARD — first, per spec §5.2 (roster before tornado/leak-map) ── */}
-      <section className="mt-8">
+      {/* ── HEADER STAT MATRIX — the KPI band, now its own object above the
+            board (spec CONTAINERS TO REMOVE #2) instead of living inside
+            MatrixBoard's own kpi band (`kpis={[]}` below disables that). Sticky
+            on desktop only (spec COMPOSITION "Floating: sticky board header on
+            desktop") using the shell's own sticky-sub-header offset vars — the
+            same idiom FairwayRoundsLibrary/FairwayCalendarHero use — so it never
+            collides with the app-shell's own sticky glass top bar. ── */}
+      <div className="mt-8 min-[940px]:sticky min-[940px]:top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] min-[940px]:z-10 min-[940px]:border-b min-[940px]:border-border-subtle min-[940px]:bg-canvas min-[940px]:pb-4">
+        <StatMatrix items={statItems} columns={4} />
+      </div>
+
+      {/* ── ROSTER BOARD (dominant object) — first, per spec §5.2 (roster before
+            tornado/leak-map) ── */}
+      <section className="mt-6">
         <p className="mb-3 font-fw-sans text-caption text-text-secondary">
           Trend signals begin after {TREND_SIGNAL_MIN_ROUNDS} completed rounds: five recent rounds compared with at least three prior rounds.
         </p>
@@ -375,54 +446,87 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
             <p className="font-fw-sans text-body-sm text-text-secondary">No players on your roster yet.</p>
           </InstrumentPanel>
         ) : (
-          <MatrixBoard kpis={kpis} columns={COLUMNS} rows={rows} />
+          <MatrixBoard kpis={[]} columns={COLUMNS} rows={rows} />
         )}
       </section>
 
-      {/* ── TEAM FUNDAMENTALS — pooled raw outcomes, visible without opening a player ── */}
+      {/* ── ANALYSIS BENTO — ONE object replacing the fundamentals/tornado/
+            SG-total/leak-map card stack (spec CONTAINERS TO REMOVE #3, #4):
+            tornado hero (2×2) → fundamentals rails (2×1) → putts-by-distance
+            (1×1) → approach proximity (1×1). DOM order matches visual
+            priority (the 2×2 goes first) per Bento's own grid-flow-dense
+            contract. Every cell keeps its chart's own title (Section-title
+            role) + "View as table" toggle — `BentoCell`'s own required
+            `label` carries the short context tag that `overline` used to
+            (moved here, not duplicated) so each cell shows ONE heading
+            stack, not two. The "SG: Total" hero from the old capture is
+            gone outright — it repeated the header StatMatrix's SG cell. ── */}
       <section className="mt-10">
-        <InstrumentPanel depth="raised" eyebrow="Core scoring profile" header="Team fundamentals">
-          <div className="grid gap-8 xl:grid-cols-[minmax(0,1.65fr)_minmax(21rem,0.85fr)] xl:items-center">
-            <div>
-              <p className="mb-5 max-w-[62ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">The team’s repeatable outcomes, pooled from every recorded opportunity—not averaged player percentages.</p>
-              {hasFundamentals ? <RailBars rows={fundamentalsRows} labelWidth={84} /> : <p className="font-fw-sans text-body-sm text-text-secondary">Fairways, GIR, and scrambling appear once hole outcomes are recorded.</p>}
+        <Bento>
+          <BentoCell label="Strokes Gained" span={2} rows={2}>
+            <StrokesGainedTornado
+              title="Team Strokes Gained"
+              subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`}
+              takeaway={sgTakeaway}
+              data={sgData}
+              state={hasSg ? undefined : 'insufficient-data'}
+              stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'}
+              className="border-0 bg-transparent p-0"
+            />
+          </BentoCell>
+
+          <BentoCell
+            label="Fundamentals"
+            span={2}
+            sentence="Pooled from every recorded opportunity — not averaged player percentages."
+          >
+            <div className="grid gap-6 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] sm:items-center">
+              {hasFundamentals ? (
+                <RailBars rows={fundamentalsRows} labelWidth={72} />
+              ) : (
+                <p className="font-fw-sans text-caption text-text-tertiary">Fairways, GIR, and scrambling appear once hole outcomes are recorded.</p>
+              )}
+              <StatMatrix
+                variant="plain"
+                size="sm"
+                columns={3}
+                items={[
+                  { label: 'Score avg', value: vm.kpis.teamScoring },
+                  { label: 'Putts / 18', value: fmtOneDecimal(vm.fundamentals.puttsPerRound) },
+                  { label: 'Birdies / 18', value: fmtOneDecimal(vm.fundamentals.birdiesPerRound) },
+                ]}
+              />
             </div>
+          </BentoCell>
 
-            <div className="border-t border-border-subtle pt-6 xl:border-l xl:border-t-0 xl:pl-8 xl:pt-0">
-              <div className="grid grid-cols-3 divide-x divide-border-subtle">
-                <FundamentalReadout label="Score avg" value={vm.kpis.teamScoring} />
-                <FundamentalReadout label="Putts / 18" value={fmtOneDecimal(vm.fundamentals.puttsPerRound)} />
-                <FundamentalReadout label="Birdies / 18" value={fmtOneDecimal(vm.fundamentals.birdiesPerRound)} />
-              </div>
-              <p className="mt-5 font-fw-sans text-caption leading-relaxed text-text-tertiary xl:text-right">Per-18 figures normalize every valid recorded hole.</p>
-            </div>
-          </div>
-        </InstrumentPanel>
-      </section>
+          <BentoCell label="Putting" rows={1}>
+            <LeakMap
+              title="Putts Made by Distance"
+              subtitle={`Team make% vs ${tourLabel(isWomens)}${leakMaps && leakRoundsIncluded > 0 ? ` · ${leakRoundsIncluded} round${leakRoundsIncluded !== 1 ? 's' : ''} tracked` : ''}`}
+              takeaway={puttTakeaway}
+              data={puttBuckets}
+              direction="higher_better"
+              unit="percent"
+              state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'}
+              stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage}
+              className="border-0 bg-transparent p-0"
+            />
+          </BentoCell>
 
-      {/* ── TEAM STROKES GAINED — demoted below the board ──────────────────────── */}
-      <section className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
-        <InstrumentPanel depth="raised" tone="accent" eyebrow="Season to date" header="SG: Total" className="flex flex-col justify-center">
-          {vm.kpis.teamSgRaw !== null ? <Readout size="hero" label="Team SG · per round" display={fmtSg(vm.kpis.teamSgRaw)} unit="sg" /> : <Readout size="hero" label="Team SG · per round" state="awaiting" awaitingLabel="Awaiting standing" />}
-          <p className="mt-4 font-fw-sans text-caption text-text-tertiary">The sum of every category vs the {tourLabel(isWomens)} baseline. Negative means the team is losing strokes to Tour over a round.</p>
-        </InstrumentPanel>
-      </section>
-
-      {/* ── LEAK MAPS — demoted below the board ─────────────────────────────────── */}
-      <section className="mt-10">
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">Where the strokes leak</h2>
-          {leakMaps && leakRoundsIncluded > 0 ? (
-            <span className="font-fw-sans text-caption text-text-secondary">
-              {leakRoundsIncluded} round{leakRoundsIncluded !== 1 ? 's' : ''} with shot tracking
-            </span>
-          ) : null}
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <LeakMap overline="Putting" title="Putts Made by Distance" subtitle={`Team make% vs ${tourLabel(isWomens)}`} takeaway={puttTakeaway} data={puttBuckets} direction="higher_better" unit="percent" state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage} />
-          <LeakMap overline="Approach" title="Approach Proximity by Distance" subtitle={`Avg proximity to hole vs ${tourLabel(isWomens)}`} takeaway={approachTakeaway} data={approachBuckets} direction="lower_better" unit="feet" state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage} />
-        </div>
+          <BentoCell label="Approach" rows={1}>
+            <LeakMap
+              title="Approach Proximity by Distance"
+              subtitle={`Avg proximity to hole vs ${tourLabel(isWomens)}${leakMaps && leakRoundsIncluded > 0 ? ` · ${leakRoundsIncluded} round${leakRoundsIncluded !== 1 ? 's' : ''} tracked` : ''}`}
+              takeaway={approachTakeaway}
+              data={approachBuckets}
+              direction="lower_better"
+              unit="feet"
+              state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'}
+              stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage}
+              className="border-0 bg-transparent p-0"
+            />
+          </BentoCell>
+        </Bento>
       </section>
     </div>
   );
@@ -481,15 +585,6 @@ function fmtPct(value: number | null): string {
 
 function fmtOneDecimal(value: number | null): string {
   return value === null || !Number.isFinite(value) ? '—' : value.toFixed(1);
-}
-
-function FundamentalReadout({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 px-3 first:pl-0 last:pr-0 sm:px-5 xl:text-right">
-      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">{label}</p>
-      <strong className="mt-1 block truncate font-fw-mono text-h2 font-normal tracking-[-0.03em] tabular-nums text-text-primary">{value}</strong>
-    </div>
-  );
 }
 
 function ExpandStat({ label, value }: { label: string; value: string }) {
