@@ -142,8 +142,8 @@ don't hardcode a count here). Selected categories:
 | Analytics | stats.ts, stats-data.ts, stats-intelligence.ts, stats-leak-maps.ts, player-profile-stats.ts, dashboard-data.ts |
 | CoachHelm | coachhelm-analytics.ts, coachhelm-data.ts, intelligence-dashboard.ts, pattern-management.ts, insight-management.ts, insight-evidence.ts |
 | CRM (outreach) | crm-sequences.ts, crm-templates.ts, crm-automations.ts, crm-engagement.ts, crm-gmail-send.ts, crm-replies.ts, crm-timeline.ts + more (`crm-*.ts`) |
-| Recruiting | recruiting.ts, player-fingerprint.ts, player-effectiveness.ts |
-| Admin | admin-data.ts, admin-bi-data.ts, admin-people-data.ts, admin-system-data.ts, admin-tracer-data.ts |
+| Recruiting | recruiting.ts, player-fingerprint.ts |
+| Admin | admin-data.ts, admin-system-data.ts, admin-tracer-data.ts |
 | Other | courses.ts, travel.ts, development.ts, alerts.ts, drills.ts |
 
 ---
