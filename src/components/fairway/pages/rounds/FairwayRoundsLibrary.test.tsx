@@ -268,3 +268,47 @@ describe('FairwayRoundsLibrary — pagination for long ledgers', () => {
     expect(screen.queryByRole('button', { name: 'Show 30 more' })).not.toBeInTheDocument();
   });
 });
+
+/**
+ * ============================================================================
+ * player-rounds.v2.md — the player branch opens with the scoring stage; the
+ * coach branch keeps its Cockpit cluster. Both roles still render the one
+ * ledger Surface.
+ * ========================================================================== */
+describe('FairwayRoundsLibrary — player v2 stage (role fork)', () => {
+  const stats = {
+    totalRounds: 3,
+    avg: 74.3,
+    best: 72,
+    avgToPar: 2.3,
+    underParPct: 0,
+    trend: null,
+  } as const;
+  const rounds = [
+    makeRound({ id: 'r1', round_date: '2026-06-15', total_score: 76, score_to_par: 4 }),
+    makeRound({ id: 'r2', round_date: '2026-07-02', total_score: 75, score_to_par: 3 }),
+    makeRound({ id: 'r3', round_date: '2026-08-31', total_score: 72, score_to_par: 0 }),
+  ];
+
+  it('player: the stage names the newest round, the masthead keeps its static title, no cockpit', () => {
+    render(
+      <FairwayRoundsLibrary rounds={rounds} inProgressRounds={[]} userRole="player" stats={stats} />,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Your rounds.' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Scoring' })).toBeInTheDocument();
+    expect(screen.getByText('Six scored rounds unlock the trend.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Last \(E\) · Pebble Beach Golf Links · Aug 31/ }),
+    ).toHaveAttribute('href', '/golf/dashboard/rounds/r3');
+    expect(screen.getByRole('region', { name: 'Where your scores land' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Round summary instrument cluster')).not.toBeInTheDocument();
+  });
+
+  it('coach: the cockpit cluster renders and the stage does not', () => {
+    render(
+      <FairwayRoundsLibrary rounds={rounds} inProgressRounds={[]} userRole="coach" stats={stats} />,
+    );
+    expect(screen.getByLabelText('Round summary instrument cluster')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Scoring' })).not.toBeInTheDocument();
+  });
+});
