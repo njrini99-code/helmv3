@@ -92,6 +92,12 @@ function basePayload(overrides: Partial<CoachDashboardPayload> = {}): CoachDashb
       puttsPerRound: { label: 'Team Putts/Rd', value: 31.4, sparkline: [] },
       rosterSize: { label: 'Roster Size', value: 3, sparkline: [] },
     },
+    teamSeries: {
+      scoringAvg: [76.2, 75.1, 74.6],
+      girPct: [55.4, 60.2, 61.1],
+      puttsPerRound: [],
+      roundsInWindow: 12,
+    },
     teamPulse: { improving: 1, stable: 1, declining: 1, roundsThisWeek: 2 },
     actionItems: [],
     recentRounds: [],
@@ -173,5 +179,16 @@ describe('FairwayCoachDashboard, the field sheet composition', () => {
     expect(within(stage).getByText('No rounds in this window')).toBeInTheDocument();
     expect(within(stage).getByRole('button', { name: 'Show all time' })).toBeInTheDocument();
     expect(document.querySelector('[data-slot="verdict"]')).toHaveTextContent('No rounds in this window.');
+  });
+
+  it('captions a readout delta with the span it was actually measured across', () => {
+    render(<FairwayCoachDashboard data={baseData()} enhancedData={basePayload()} joinRequests={[]} />);
+    // The series under the readouts is teamSeries (window buckets), not the
+    // five-individual-round sparkline. The caption must name the real span so
+    // the arrow cannot be read as "the team moved this much in five rounds".
+    // Scoring and GIR both have a bucketed series, so both caption the span;
+    // putts has none and prints nothing rather than a bare arrow.
+    expect(screen.getAllByText(/across 12 rounds/i).length).toBe(2);
+    expect(screen.queryByText(/last 5 rounds/i)).not.toBeInTheDocument();
   });
 });

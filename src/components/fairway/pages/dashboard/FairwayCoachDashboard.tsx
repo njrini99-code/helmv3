@@ -176,9 +176,19 @@ export function FairwayCoachDashboard({
 
   const readouts: ReadoutItem[] = useMemo(() => {
     const sp = enhancedData?.sparklines;
-    const scoringSeries = sp?.scoringAvg.sparkline ?? [];
-    const girSeries = sp?.girPct.sparkline ?? [];
-    const puttsSeries = sp?.puttsPerRound.sparkline ?? [];
+    // The series under each readout is `teamSeries`, NOT `sparklines[].sparkline`.
+    // The sparkline is the last five individual rounds by whoever logged them,
+    // so a first-to-last delta across it is the gap between two unrelated rounds
+    // by two different players — that is how this readout once claimed the team
+    // gained 44.5 points of GIR. `teamSeries` cuts the window into consecutive
+    // buckets and aggregates each the way the headline above it is aggregated,
+    // so the arrow means what a coach reads it to mean.
+    const ts = enhancedData?.teamSeries;
+    const scoringSeries = ts?.scoringAvg ?? [];
+    const girSeries = ts?.girPct ?? [];
+    const puttsSeries = ts?.puttsPerRound ?? [];
+    const roundsInWindow = ts?.roundsInWindow ?? 0;
+    const spanLabel = roundsInWindow > 0 ? `${roundsInWindow} round${roundsInWindow === 1 ? '' : 's'}` : undefined;
     const scoringAvg = sp?.scoringAvg.value ?? stats.teamScoringAverage;
     const thisWeek = enhancedData?.teamPulse.roundsThisWeek;
     return [
@@ -188,6 +198,7 @@ export function FairwayCoachDashboard({
         value: scoringAvg != null ? scoringAvg.toFixed(1) : null,
         series: scoringSeries,
         goodDirection: 'down',
+        spanLabel,
         delta: computeSeriesTrend(scoringSeries, { goodDirection: 'down' }),
       },
       {
@@ -197,6 +208,7 @@ export function FairwayCoachDashboard({
         unit: '%',
         series: girSeries,
         goodDirection: 'up',
+        spanLabel,
         delta: computeSeriesTrend(girSeries, { goodDirection: 'up' }),
       },
       {
@@ -205,6 +217,7 @@ export function FairwayCoachDashboard({
         value: sp?.puttsPerRound.value != null ? sp.puttsPerRound.value.toFixed(1) : null,
         series: puttsSeries,
         goodDirection: 'down',
+        spanLabel,
         delta: computeSeriesTrend(puttsSeries, { goodDirection: 'down' }),
       },
       {
@@ -214,7 +227,7 @@ export function FairwayCoachDashboard({
         note: thisWeek == null ? RANGE_SENTENCE[range] : `${thisWeek} this week`,
       },
     ];
-  }, [enhancedData?.sparklines, enhancedData?.teamPulse.roundsThisWeek, stats.teamScoringAverage, roundsLogged, range]);
+  }, [enhancedData?.sparklines, enhancedData?.teamSeries, enhancedData?.teamPulse.roundsThisWeek, stats.teamScoringAverage, roundsLogged, range]);
 
   const verdictParts = useMemo(() => {
     const leader = fieldRows.find((r) => r.avg != null);

@@ -85,6 +85,15 @@ export interface ReadoutItem {
   series?: ReadonlyArray<number>;
   goodDirection?: GoodDirection;
   delta?: SeriesTrend | null;
+  /**
+   * What the series and its delta are measured across, e.g. "97 rounds".
+   * REQUIRED whenever `delta` is set: the caption is a claim about a span, and
+   * an unlabelled span defaults to the reader's assumption rather than the
+   * truth. This readout used to hard-code "last 5 rounds" while the series was
+   * five unrelated single rounds by five different players, which let it print
+   * "▲ 44.5 pts last 5 rounds" for a team that had not moved.
+   */
+  spanLabel?: string;
   /** Free caption when there is no series delta, e.g. "0 this week". */
   note?: string;
 }
@@ -92,11 +101,11 @@ export interface ReadoutItem {
 function deltaText(item: ReadoutItem): { text: string; tone: 'good' | 'bad' | 'flat' } | null {
   if (!item.delta) return null;
   const magnitude = Math.abs(item.delta.value).toFixed(1);
-  const span = `last ${item.delta.points} rounds`;
+  const span = item.spanLabel ? `across ${item.spanLabel}` : `across ${item.delta.points} periods`;
   const unit = item.unit === '%' ? ' pts' : item.unit ?? '';
   if (item.delta.direction === 'improving') return { text: `▲ ${magnitude}${unit} ${span}`, tone: 'good' };
   if (item.delta.direction === 'declining') return { text: `▼ ${magnitude}${unit} ${span}`, tone: 'bad' };
-  return { text: `flat over the ${span}`, tone: 'flat' };
+  return { text: `flat ${span}`, tone: 'flat' };
 }
 
 export function FieldReadouts({ items }: { items: ReadoutItem[] }) {
@@ -113,7 +122,20 @@ export function FieldReadouts({ items }: { items: ReadoutItem[] }) {
                 {item.value != null && item.unit ? <span className="ml-0.5 text-caption font-medium text-text-tertiary">{item.unit}</span> : null}
               </span>
               {item.series && item.series.length >= 2 ? (
-                <Sparkline data={item.series} goodDirection={item.goodDirection} width={64} height={20} label={`${item.label} recent rounds`} />
+                // `direction` is NOT optional here. Without it Sparkline falls back
+                // to its own endpoint diff while the caption below is classified by
+                // computeSeriesTrend's split-half average — the two disagree, and
+                // on a noisy series they flip sign, so the line reads green while
+                // the caption reads amber on the same readout. seriesTrend.ts was
+                // written to close exactly that gap; hand it the one verdict.
+                <Sparkline
+                  data={item.series}
+                  direction={item.delta?.direction}
+                  goodDirection={item.goodDirection}
+                  width={64}
+                  height={20}
+                  label={`${item.label} ${item.spanLabel ? `across ${item.spanLabel}` : 'recent trend'}`}
+                />
               ) : null}
             </dd>
             <dd
