@@ -63,6 +63,14 @@ export function shouldPersistAdminTables(): boolean {
   // was the developer's own dev server. The doc comment above predicted this
   // exact scenario in 2026-07 but only the CI/GITHUB_ACTIONS branch was
   // hardened.
+  //
+  // What NODE_ENV does NOT catch: a local `next build && next start` runs
+  // under NODE_ENV=production too. Measured 2026-09-09: 96 of the 268
+  // "destination stream closed early" rows carried app-page.runtime.PROD.js
+  // at a /Users/... path — that variant. The only defence there is the env
+  // file itself: VERCEL and VERCEL_ENV must not be present in any .env*.local
+  // (`vercel env pull --environment=production` writes both; delete them —
+  // worktrees symlink the canonical copies, so one edit covers every checkout).
   if (process.env.NODE_ENV !== 'production') return false;
   // Deliberate opt-in to rehearse the pipeline against a real preview
   // deployment. Requires both the flag and an actual Vercel preview env —

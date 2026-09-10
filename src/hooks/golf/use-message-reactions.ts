@@ -51,9 +51,33 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
   const locked = useRef(false);
   const request = useRef(0);
 
+  /**
+   * Never query without a live session. The browser client is a singleton
+   * (`@supabase/ssr` caches it), but the session it carries can be absent or
+   * expired at the moment a call fires — reliably so on iOS WKWebView, where
+   * a backgrounded tab misses the auto-refresh window. PostgREST then runs
+   * the request as `anon`, and `golf_message_reactions` deliberately grants
+   * `anon` nothing (migration 20260908160000), so it fails with `42501
+   * permission denied` instead of RLS's silent empty set. That is not a grant
+   * to widen — the table is doing its job. The call simply must not be made
+   * without a token; `getSession()` reads local state and refreshes an
+   * expired token, so it repairs the common case rather than only detecting
+   * it. Measured 2026-09-09T18:31:49Z: this hook's GET went out with no JWT
+   * in the same millisecond that use-presence.ts's heartbeat — which already
+   * gates on getSession() — went out authenticated from the same device.
+   */
+  const hasLiveSession = useCallback(async () => {
+    const { data: { session }, error } = await client.auth.getSession();
+    return !error && !!session?.access_token && (!userId || session.user?.id === userId);
+  }, [client, userId]);
+
   const refresh = useCallback(async () => {
     const version = ++request.current;
     if (!conversationId || !ids.length) { setRows([]); setError(null); return; }
+    // Keep whatever is on screen: onAuthStateChange below re-runs this once a
+    // session appears, so a request that arrived a beat early self-heals.
+    if (!(await hasLiveSession())) return;
+    if (version !== request.current || scope.current !== conversationId) return;
     try {
       // Bound the URL size as older messages accumulate in an open thread.
       const loaded: MessageReaction[] = [];
@@ -74,7 +98,7 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       setError('Reactions could not be loaded. Tap to retry.');
       logError(cause instanceof Error ? cause : new Error(describeError(cause)), { component: 'MessageReactions', action: 'load', sport: 'golf', conversationId });
     }
-  }, [client, conversationId, ids]);
+  }, [client, conversationId, hasLiveSession, ids]);
 
   useEffect(() => { setRows([]); setError(null); }, [conversationId]);
 
@@ -88,9 +112,13 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       .subscribe();
     const onFocus = () => { void refresh(); };
     window.addEventListener('focus', onFocus);
+    const { data: { subscription } } = client.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') void refresh();
+    });
     return () => {
       request.current += 1;
       window.removeEventListener('focus', onFocus);
+      subscription.unsubscribe();
       void client.removeChannel(channel);
     };
   }, [client, conversationId, refresh]);
@@ -100,6 +128,10 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
     locked.current = true;
     setPending(`${messageId}:${emoji}`);
     try {
+      if (!(await hasLiveSession())) {
+        if (scope.current === conversationId) setError('Sign in again to react.');
+        return false;
+      }
       const result = active
         ? await client.from('golf_message_reactions').insert({ message_id: messageId, user_id: userId, emoji })
         : await client.from('golf_message_reactions').delete().eq('message_id', messageId).eq('user_id', userId).eq('emoji', emoji);
@@ -114,7 +146,7 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       locked.current = false;
       setPending(null);
     }
-  }, [client, conversationId, ids, refresh, userId]);
+  }, [client, conversationId, hasLiveSession, ids, refresh, userId]);
 
   return { rows, error, pending, refresh, setReaction };
 }

@@ -55,6 +55,18 @@ feedback and composer send transitions respect reduced motion. Tap a reaction co
 distinct members, refresh through realtime, and reload on window focus. Errors
 remain visible; switching threads discards stale fetch results. Removing a
 reaction targets the current user's row only and never edits group membership.
+Every reactions read and write is gated on `client.auth.getSession()` first
+and the hook re-loads on `SIGNED_IN`/`TOKEN_REFRESHED`: the browser client is a
+singleton, but the session it carries can be absent at the moment a call fires
+(reliably so on iOS WKWebView after backgrounding), and `golf_message_reactions`
+deliberately grants `anon` nothing, so an ungated call fails with `42501`
+rather than RLS's silent empty set. That is the table doing its job — never
+widen the grant; gate the call (measured 2026-09-09T18:31:49Z, one ungated GET
+went out with no JWT in the same millisecond an authenticated heartbeat left
+the same device). Likewise `getPlayerNotificationCounts` returns
+`{ success: true, authExpired: true }` for a dead session, mirroring the coach
+action, so the 45s badge poll stops instead of persisting "Not authenticated"
+to the Bridge every tick.
 `20260908160000_golf_message_reactions_access.sql` reconciles the already-live
 membership helper, reaction policies, indexes and publication into migration
 replay. The declarative schema already carried those objects; the earlier
