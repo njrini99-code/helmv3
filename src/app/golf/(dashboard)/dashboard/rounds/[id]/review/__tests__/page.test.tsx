@@ -3,7 +3,7 @@
  *
  * Covers: auth-gated round fetch + course-name casing (#109, carried over
  * from the pre-filmstrip page), and that `FilmstripReview` actually mounts
- * with the hero (score/to-par/mix line), the strokes-lost section, the
+ * with the hero (score/to-par/scoring histogram), the strokes-lost section, the
  * Share-with-Coach CTA, and the always-visible round breakdown wired to a
  * complete `RoundReviewContent` fixture without a redundant nested view.
  */
@@ -239,6 +239,10 @@ vi.mock('@/app/golf/actions/round-review-system', () => ({
   })),
   generateAndStoreRoundReview: vi.fn(async () => ({ success: false })),
   getPlayerStandingForReview: vi.fn(async () => ({})),
+  // R3, Season trajectory (round-review.v2.md) — below the 4-round floor by
+  // default, so existing tests that don't care about the trend chart see it
+  // stay omitted rather than needing to know about this fetch at all.
+  getRoundReviewTrend: vi.fn(async () => []),
   shareRoundReviewWithCoach: vi.fn(async () => ({ success: true })),
 }));
 
@@ -306,8 +310,8 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     roundRow = { ...DEFAULT_ROUND_ROW };
   });
 
-  it('renders the hero score/to-par and the scoring-mix line', async () => {
-    const { findAllByText, getByText } = renderAsPlayer();
+  it('renders the hero score/to-par and the scoring histogram', async () => {
+    const { findAllByText, getByText, container } = renderAsPlayer();
 
     // Scoped to the hero on purpose. The front/back breakdown legitimately
     // shows the same figure — the front nine is also 38 in this fixture — and
@@ -318,7 +322,24 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     const hero = (await findAllByText('38')).find((el) => el.className.includes('text-stat-lg'));
     expect(hero, 'the hero should render the score at stat-lg').toBeDefined();
     expect(getByText('+2')).toBeInTheDocument();
-    expect(getByText(/3 pars · 6 bogeys/)).toBeInTheDocument();
+
+    // The old plain-text "3 pars · 6 bogeys" mix line was replaced by the
+    // ScoringHistogram module (round-review.v2.md R2) — five labelled bars,
+    // one per bucket, each with its own count cell. The fixture's
+    // `scoringDistribution` carries 3 pars and 6 bogeys.
+    const histogram = await waitFor(() => {
+      const el = container.querySelector('[data-slot="scoring-histogram"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    expect(within(histogram).getByText('Par')).toBeInTheDocument();
+    expect(within(histogram).getByText('Bogey')).toBeInTheDocument();
+    const parRow = within(histogram).getByText('Par').closest('div');
+    expect(parRow, 'the Par row should contain its own count').not.toBeNull();
+    expect(within(parRow as HTMLElement).getByText('3')).toBeInTheDocument();
+    const bogeyRow = within(histogram).getByText('Bogey').closest('div');
+    expect(bogeyRow, 'the Bogey row should contain its own count').not.toBeNull();
+    expect(within(bogeyRow as HTMLElement).getByText('6')).toBeInTheDocument();
   });
 
   it('collapses to one notice, not the RoundSGSummary instrument, when SG is not computed', async () => {
@@ -366,6 +387,24 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     await findByText('Round breakdown');
     expect(queryByRole('button', { name: 'Full breakdown →' })).not.toBeInTheDocument();
     expect(queryByRole('button', { name: 'Back to summary' })).not.toBeInTheDocument();
+  });
+
+  it('opens RoundStatsPanel/RoundStatReport in a Sheet from the header "Full breakdown" button (R7)', async () => {
+    // `RoundStatReport` used to always rest inline at the page's end; R7
+    // moves it behind this Sheet instead. Asserted structurally via vaul's
+    // own portal marker (mirrors Sheet.test.tsx) rather than the report's
+    // content, since that content depends on an unmocked stats fetch this
+    // suite doesn't stub.
+    const { findByRole } = renderAsPlayer();
+
+    const trigger = await findByRole('button', { name: 'Full breakdown' });
+    expect(document.body.querySelector('[data-vaul-drawer]')).not.toBeInTheDocument();
+
+    trigger.click();
+
+    await waitFor(() => {
+      expect(document.body.querySelector('[data-vaul-drawer]')).toBeInTheDocument();
+    });
   });
 });
 

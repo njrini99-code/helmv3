@@ -3,8 +3,11 @@ import {
   formatToPar,
   buildGrade,
   buildMixLine,
+  buildScoringHistogram,
   synthesizeHoleNote,
   buildFilmstripHoles,
+  buildDrivingDotStripData,
+  buildFrontBackDiverging,
   buildNarrative,
   buildStrokesLostRows,
   buildFrontBackRows,
@@ -13,12 +16,19 @@ import {
   buildDrivingPenaltyLines,
   buildShortGameRows,
   pickPracticePriority,
+  buildRoundTrendSeries,
+  buildRoundTypeLabel,
   formatReviewDate,
   buildCourseDateLine,
   formatHoleDetail,
   sanitizeNaN,
 } from '../buildReviewViewModel';
-import type { HoleBreakdown, HalfStats, StrokesToGainItem } from '@/app/golf/actions/round-review-system';
+import type {
+  HoleBreakdown,
+  HalfStats,
+  StrokesToGainItem,
+  RoundReviewTrendRow,
+} from '@/app/golf/actions/round-review-system';
 
 function hole(overrides: Partial<HoleBreakdown> = {}): HoleBreakdown {
   return {
@@ -127,6 +137,32 @@ describe('buildMixLine', () => {
   });
 });
 
+describe('buildScoringHistogram', () => {
+  it('returns all five buckets, including a real zero-count bar, once there is at least one scored hole', () => {
+    const buckets = buildScoringHistogram({
+      eagles: [],
+      birdies: [3],
+      pars: Array.from({ length: 9 }, (_, i) => i + 1),
+      bogeys: [2, 5, 6, 7, 8],
+      doublePlus: [],
+      holesPlayed: 15,
+    });
+    expect(buckets).toEqual([
+      { label: 'Eagle', count: 0, tone: 'good' },
+      { label: 'Birdie', count: 1, tone: 'good' },
+      { label: 'Par', count: 9, tone: 'even' },
+      { label: 'Bogey', count: 5, tone: 'over' },
+      { label: 'Dbl+', count: 0, tone: 'over' },
+    ]);
+  });
+
+  it('returns an empty array (no chart at all) when every bucket is empty, same gate as buildMixLine', () => {
+    expect(
+      buildScoringHistogram({ eagles: [], birdies: [], pars: [], bogeys: [], doublePlus: [], holesPlayed: 0 }),
+    ).toEqual([]);
+  });
+});
+
 describe('synthesizeHoleNote', () => {
   it('prioritizes penalties over everything else', () => {
     const h = hole({ penalties: 1, threePutt: true, fairwayHit: false, driveMiss: 'left' });
@@ -177,6 +213,67 @@ describe('buildFilmstripHoles', () => {
       { n: 1, par: 4, score: 4, note: undefined },
       { n: 2, par: 4, score: 4, note: '1 penalty stroke.' },
     ]);
+  });
+});
+
+describe('buildDrivingDotStripData', () => {
+  it('maps a hit, a left miss, and a right miss', () => {
+    const holes = [
+      hole({ hole: 1, fairwayHit: true }),
+      hole({ hole: 2, fairwayHit: false, driveMiss: 'left_rough' }),
+      hole({ hole: 3, fairwayHit: false, driveMiss: 'right' }),
+    ];
+    expect(buildDrivingDotStripData(holes)).toEqual([
+      { n: 1, fairwayHit: true, missSide: null },
+      { n: 2, fairwayHit: false, missSide: 'left' },
+      { n: 3, fairwayHit: false, missSide: 'right' },
+    ]);
+  });
+
+  it('carries a par-3 (no fairway target) hole through as null, never coerced to false', () => {
+    const holes = [hole({ hole: 4, par: 3, fairwayHit: null })];
+    expect(buildDrivingDotStripData(holes)).toEqual([{ n: 4, fairwayHit: null, missSide: null }]);
+  });
+
+  it('renders a short/long/unparsed miss centered rather than guessing a side', () => {
+    const holes = [hole({ hole: 5, fairwayHit: false, driveMiss: 'short' })];
+    expect(buildDrivingDotStripData(holes)).toEqual([{ n: 5, fairwayHit: false, missSide: null }]);
+  });
+});
+
+describe('buildFrontBackDiverging', () => {
+  const holes = [
+    { hole_number: 1, par: 4 }, { hole_number: 2, par: 4 }, { hole_number: 3, par: 3 },
+    { hole_number: 4, par: 5 }, { hole_number: 5, par: 4 }, { hole_number: 6, par: 4 },
+    { hole_number: 7, par: 3 }, { hole_number: 8, par: 5 }, { hole_number: 9, par: 4 },
+    { hole_number: 10, par: 4 }, { hole_number: 11, par: 4 }, { hole_number: 12, par: 3 },
+    { hole_number: 13, par: 5 }, { hole_number: 14, par: 4 }, { hole_number: 15, par: 4 },
+    { hole_number: 16, par: 3 }, { hole_number: 17, par: 5 }, { hole_number: 18, par: 4 },
+  ];
+  // Front/back par sums to 36 each from the mixed 3/4/5 layout above.
+
+  it('computes front/back score-to-par delta rows from mixed par-3/4/5 holes', () => {
+    const front: HalfStats = { score: 39, putts: 15, gir: 2, girTotal: 4, fairways: 1, fairwayTotal: 4 };
+    const back: HalfStats = { score: 40, putts: 16, gir: 3, girTotal: 4, fairways: 2, fairwayTotal: 4 };
+    const rows = buildFrontBackDiverging({ front, back }, holes);
+    expect(rows).toEqual([
+      { label: 'Front 9', delta: 3, display: '+3' },
+      { label: 'Back 9', delta: 4, display: '+4' },
+    ]);
+  });
+
+  it('omits a half with no hole data (scorecard-only round) rather than plotting a fabricated 0 (E) bar', () => {
+    const front: HalfStats = { score: 0, putts: 0, gir: 0, girTotal: 0, fairways: 0, fairwayTotal: 0 };
+    const back: HalfStats = { score: 0, putts: 0, gir: 0, girTotal: 0, fairways: 0, fairwayTotal: 0 };
+    expect(buildFrontBackDiverging({ front, back }, [])).toEqual([]);
+  });
+
+  it('omits only the half missing hole data when the other half has real holes', () => {
+    const front: HalfStats = { score: 39, putts: 15, gir: 2, girTotal: 4, fairways: 1, fairwayTotal: 4 };
+    const back: HalfStats = { score: 0, putts: 0, gir: 0, girTotal: 0, fairways: 0, fairwayTotal: 0 };
+    const frontOnlyHoles = holes.filter((h) => h.hole_number <= 9);
+    const rows = buildFrontBackDiverging({ front, back }, frontOnlyHoles);
+    expect(rows).toEqual([{ label: 'Front 9', delta: 3, display: '+3' }]);
   });
 });
 
@@ -404,6 +501,64 @@ describe('pickPracticePriority', () => {
   });
   it('returns null when neither source has content', () => {
     expect(pickPracticePriority(undefined, undefined)).toBeNull();
+  });
+});
+
+describe('buildRoundTrendSeries', () => {
+  function row(id: string, date: string, scoreToPar: number): RoundReviewTrendRow {
+    return { id, round_date: date, score_to_par: scoreToPar };
+  }
+
+  it('returns an empty series below the 4-round floor, never a plotted single point', () => {
+    const rows = [row('a', '2026-08-01', 3), row('b', '2026-08-08', 1), row('c', '2026-08-15', 5)];
+    expect(buildRoundTrendSeries(rows, 'c')).toEqual({ points: [], benchmark: null });
+  });
+
+  it('flips newest-first rows to chronological order and marks the current round success when better than the trailing average', () => {
+    // Rows arrive newest-first (the server query's own order): d, c, b, a.
+    const rows = [
+      row('d', '2026-08-22', 1),
+      row('c', '2026-08-15', 5),
+      row('b', '2026-08-08', 3),
+      row('a', '2026-08-01', 7),
+    ];
+    const series = buildRoundTrendSeries(rows, 'd');
+    expect(series.points.map((p) => p.x)).toEqual(['Sat, Aug 1', 'Sat, Aug 8', 'Sat, Aug 15', 'Sat, Aug 22']);
+    // Benchmark excludes the current round 'd' — average of a/b/c: (7+3+5)/3 = 5.
+    expect(series.benchmark).toEqual({ value: 5, label: 'Your avg' });
+    const current = series.points.find((p) => p.x === 'Sat, Aug 22');
+    expect(current?.marker).toEqual({ tone: 'success' }); // 1 < 5 (fewer strokes over par is better)
+  });
+
+  it('marks the current round danger when worse than the trailing average', () => {
+    const rows = [row('d', '2026-08-22', 9), row('c', '2026-08-15', 1), row('b', '2026-08-08', 1), row('a', '2026-08-01', 1)];
+    const series = buildRoundTrendSeries(rows, 'd');
+    const current = series.points.find((p) => p.x === 'Sat, Aug 22');
+    expect(current?.marker).toEqual({ tone: 'danger' });
+  });
+
+  it('still renders the series (informationally) with no marker when the reviewed round is not among the fetched rows', () => {
+    const rows = [row('d', '2026-08-22', 1), row('c', '2026-08-15', 5), row('b', '2026-08-08', 3), row('a', '2026-08-01', 7)];
+    const series = buildRoundTrendSeries(rows, 'not-in-the-fetched-window');
+    expect(series.points).toHaveLength(4);
+    expect(series.points.every((p) => p.marker === undefined)).toBe(true);
+    // No round excluded from the average since the current round isn't among these rows.
+    expect(series.benchmark?.value).toBe(4); // (1+5+3+7)/4 = 4
+  });
+});
+
+describe('buildRoundTypeLabel', () => {
+  it('labels the three known round types', () => {
+    expect(buildRoundTypeLabel('practice')).toBe('Practice');
+    expect(buildRoundTypeLabel('tournament')).toBe('Tournament');
+    expect(buildRoundTypeLabel('qualifier')).toBe('Qualifier');
+  });
+  it('normalizes the legacy "qualifying" value to "Qualifier"', () => {
+    expect(buildRoundTypeLabel('qualifying')).toBe('Qualifier');
+  });
+  it('returns null (omit the pill) for a missing round type, never a fabricated label', () => {
+    expect(buildRoundTypeLabel(null)).toBeNull();
+    expect(buildRoundTypeLabel(undefined)).toBeNull();
   });
 });
 

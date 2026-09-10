@@ -107,6 +107,24 @@ Player opens round review
   hydration. Spec and captures: `docs/design/fairway-facelift/screens/
   player-development.mobile.md`.
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.
+- Round review (coach/player, `FilmstripReview.tsx`) v2 (2026-09-10,
+  `docs/design/fairway-facelift/screens/round-review.v2.md`): `ReviewHero`'s
+  green panel renders the scoring mix as `ScoringHistogram` (new Fairway
+  module primitive, five bars, replaces plain "Mix: …" text). A NEW
+  standalone "Season trajectory" `TrendChart` section reads the player's
+  OTHER completed rounds via `getRoundReviewTrend` (`round-review-system.ts`,
+  own effect/loading flag in `page.tsx`, gated on `rounds.length >= 4`) — it
+  is the one instrument that renders fully on a scorecard-only round (no
+  `golf_holes`/`golf_shots`, ~46% of live rounds), since it never reads this
+  round's own holes or Strokes Gained. "Round breakdown" (`ReviewBreakdown.tsx`)
+  is a flat numbered 01–06 bare band, not a card grid: off-the-tee accuracy
+  via the new `DrivingDotStrip` module primitive, two approach `RampMatrix`
+  heat rows from the already-fetched `roundStats`, front/back via
+  `DivergingBars`, short game/putting/momentum unchanged internally, just
+  re-homed out of per-row cards. `RoundStatReport` (shared with
+  `/golf/dashboard/stats`, owned by the stats-polish lane, untouched
+  internally) now renders inside a `Sheet` opened from the header's "Full
+  breakdown" button (R0/R7), not always resting inline at the page's end.
 - Standing/goal/intent/hero narrative UI should be polished but not obscure source data or actionability.
 - Mobile views must follow the shared app shell and avoid oversized top-of-screen chrome.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a

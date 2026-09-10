@@ -1351,3 +1351,77 @@ const observedGetPlayerStandingForReview = withAdminObserved(
 export async function getPlayerStandingForReview(playerId: string): Promise<Record<string, PlayerStanding>> {
   return observedGetPlayerStandingForReview(playerId);
 }
+
+/** One completed round's date + to-par, for the round-review "Season
+ *  trajectory" trend chart (round-review.v2.md R3). */
+export interface RoundReviewTrendRow {
+  id: string;
+  round_date: string;
+  score_to_par: number;
+}
+
+/**
+ * The player's last 12 completed rounds' score-to-par, for the NEW season-
+ * trajectory `TrendChart` (R3) — the only instrument on this page that
+ * renders fully regardless of whether THIS round has holes or computed
+ * Strokes Gained, because it reads OTHER rounds, not this one.
+ *
+ * Co-located here (not `stats-data.ts`'s `getPlayerRoundOptions`, which is
+ * shared elsewhere and returns a wider row shape) with its own auth, mirroring
+ * this file's existing access-verified actions. Binds `roundId` to `playerId`
+ * the same way `generateAndStoreRoundReview` does (`verifyReviewAccess` +
+ * `verifyRoundBelongsToPlayer`), since a coach can be authorized for the
+ * player without this specific round necessarily belonging to them.
+ *
+ * Returns `[]` on any failure/denial/cold-start — never throws — so a
+ * flaky trend fetch can't take the rest of the review down with it.
+ */
+async function getRoundReviewTrendImpl(
+  playerId: string,
+  roundId: string,
+): Promise<RoundReviewTrendRow[]> {
+  if (!isValidUuid(playerId) || !isValidUuid(roundId)) return [];
+  const supabase = await createClient();
+  try {
+    const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
+    if (!access.authorized) return [];
+    if (!(await verifyRoundBelongsToPlayer(roundId, playerId, supabase))) return [];
+
+    const { data, error } = await supabase
+      .from('golf_rounds')
+      .select('id, round_date, score_to_par')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .not('score_to_par', 'is', null)
+      .order('round_date', { ascending: false })
+      .limit(12);
+
+    if (error) {
+      await logServerError(
+        `[RoundReview] getRoundReviewTrend read failed: ${describeError(error)}`,
+        { action: 'round_review_system.getRoundReviewTrend', featureArea: 'round_reviews', playerId, roundId },
+      );
+      return [];
+    }
+
+    return (data ?? [])
+      .filter((r): r is { id: string; round_date: string; score_to_par: number } => typeof r.score_to_par === 'number')
+      .map((r) => ({ id: r.id, round_date: r.round_date, score_to_par: r.score_to_par }));
+  } catch (error) {
+    await logServerError(
+      `[RoundReview] getRoundReviewTrend failed: ${describeError(error)}`,
+      { action: 'round_review_system.getRoundReviewTrend', featureArea: 'round_reviews', playerId, roundId },
+    );
+    return [];
+  }
+}
+
+const observedGetRoundReviewTrend = withAdminObserved(
+  'getRoundReviewTrend',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getRoundReviewTrendImpl,
+);
+
+export async function getRoundReviewTrend(playerId: string, roundId: string): Promise<RoundReviewTrendRow[]> {
+  return observedGetRoundReviewTrend(playerId, roundId);
+}

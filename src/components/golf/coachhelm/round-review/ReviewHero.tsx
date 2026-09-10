@@ -39,9 +39,9 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
-import { Filmstrip, GradeDots } from '@/components/fairway/modules';
+import { Filmstrip, GradeDots, ScoringHistogram } from '@/components/fairway/modules';
 import { PressTarget, Skeleton } from '@/components/fairway';
-import type { FilmstripHole } from '@/components/fairway/modules';
+import type { FilmstripHole, ScoringBucket } from '@/components/fairway/modules';
 import type { Lie } from '@/components/golf/coachhelm/v3/HoleShotPath/types';
 // `plotHole` is pure math (no framer-motion, no client-only APIs, SSR-safe —
 // see geometry.ts's own doc comment) so it's safe to import statically here,
@@ -132,7 +132,7 @@ function describeShotRow(
   const lieBefore = normalizeLieLoose(lieBeforeRaw ?? (index === 0 ? 'tee' : null));
   const lieAfter = normalizeLieLoose(shot.lie_after);
   const isPutt = lieBefore === 'green' && lieAfter === 'green';
-  const transition = isPutt ? 'putt' : `${LIE_LABEL[lieBefore]} → ${LIE_LABEL[lieAfter]}`;
+  const transition = isPutt ? 'putt' : `${LIE_LABEL[lieBefore]} to ${LIE_LABEL[lieAfter]}`;
 
   let distance: string;
   if (typeof shot.distance_to_hole_after !== 'number') {
@@ -209,7 +209,7 @@ export function formatHoleSgNarrative(sg: HoleStrokesGainedByCategory | null): H
     .slice(0, 2)
     .map((c) => `${Math.abs(c.value).toFixed(1)} ${SG_CATEGORY_LABEL[c.category]}`)
     .join(', ');
-  return { text: `${headline} — ${breakdown}.`, tone };
+  return { text: `${headline}: ${breakdown}.`, tone };
 }
 
 export interface ReviewHoleMeta {
@@ -223,7 +223,11 @@ export interface ReviewHeroProps {
   scoreToPar: number;
   courseDateLine: string;
   grade: ReviewGrade;
-  mixLine: string;
+  /** Five-bucket scoring histogram (eagle→double+, R2) — `[]` when the round
+   *  has no scored holes at all, which the green panel simply omits (no
+   *  empty chart shell), matching the retired `mixLine` text line's own
+   *  `totalScored === 0` gate. */
+  scoringBuckets: ScoringBucket[];
   filmstripHoles: FilmstripHole[];
   holeMeta: Map<number, ReviewHoleMeta>;
   /** `null` while the shot ledger is still loading. */
@@ -252,7 +256,7 @@ export function ReviewHero({
   scoreToPar,
   courseDateLine,
   grade,
-  mixLine,
+  scoringBuckets,
   filmstripHoles,
   holeMeta,
   shotsByHole,
@@ -394,11 +398,7 @@ export function ReviewHero({
           <p className="mt-1.5 font-fw-sans text-body-sm text-ink-on-deep">{courseDateLine}</p>
         ) : null}
         <GradeDots score={grade.score} label={grade.label} onGreen />
-        {mixLine ? (
-          <p className="mt-4 font-fw-sans text-caption text-ink-on-deep">
-            Mix: <span className="font-fw-mono font-normal text-text-on-accent">{mixLine}</span>
-          </p>
-        ) : null}
+        {scoringBuckets.length > 0 ? <ScoringHistogram buckets={scoringBuckets} /> : null}
         {!hasHoleData ? (
           <p className="mt-4 font-fw-sans text-caption text-ink-on-deep">
             Scorecard only. Enter holes to unlock the hole-by-hole view.
