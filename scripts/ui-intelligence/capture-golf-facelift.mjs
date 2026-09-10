@@ -269,6 +269,9 @@ for (const persona of PERSONAS) {
         }
         entry.finalUrl = new URL(page.url()).pathname;
         entry.title = await page.title();
+        // A blank or unstyled page (crash, mid-compile, empty body) is not a capture; mark it so the resume re-shoots it.
+        const textLen = await page.evaluate(() => (document.body?.innerText || "").trim().length).catch(() => 0);
+        if (textLen < 40) entry.status = "blank";
         const base = `${s.slug}__${vp.name}`;
         await shoot(page, vp, path.join(dir, `${base}__fold.png`)); entry.shots.push(`${base}__fold.png`);
         const { h } = await shoot(page, vp, path.join(dir, `${base}__full.png`), { full: true }); entry.shots.push(`${base}__full.png`); entry.height = h;
