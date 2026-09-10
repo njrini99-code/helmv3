@@ -42,6 +42,17 @@ before this component renders a single node. Two consequences, both binding:
 This is the one place this screen deviates from `LANGUAGE.md`'s literal
 anatomy, and it deviates in order to obey the ban it would otherwise break.
 
+**Re-scoping DrillPanel to wrap only the instrument was considered and
+rejected on evidence.** The question was whether DrillPanel is mis-scoped
+here or is shared chrome. It is shared chrome: all four sibling drills wrap
+their entire view in it with the same shape (`ProfileDrill.tsx:251`
+`title="Game profile"`, `StandingDrill.tsx:70` `title="Standing"`,
+`InsightsDrill.tsx:121` `title="Insights"`, `DeepDiveDrill.tsx:30`
+`title="Deep dive"`), and `StageRouter.tsx:92` names the DrillPanel back chip
+as a `useStage()` consumer by design. Narrowing it for development alone would
+put the back affordance in a different place on one of five sibling views.
+The bare-stage solution above stands.
+
 ## Data (every field verified in the tree, nothing new fetched)
 
 Props are `FairwayMyDevelopmentProps` (`FairwayMyDevelopment.tsx:113-160`),
@@ -141,9 +152,15 @@ a one-day floor on the domain, a link per mark to that area's Sheet, an axis
 that thins its own labels and yields the right edge to a "Today" marker, a
 stagger capped at 16 marks, and `useReducedMotionGuard`.
 
-**Ink.** A mark is green when it sits above the previous reading in the
-direction of the target, amber when it sits below it. The target rule is a
-green hairline at 100, the baseline a neutral rule at 0. No third hue.
+**Ink.** A mark is coloured against the **baseline rule**, a fixed reference,
+never against its predecessor: green above the rule, amber below it, neutral
+on it (`markTone` in `development-logic.ts`). The target rule is a green
+hairline at 100, the baseline a neutral rule at 0. No third hue.
+
+Colouring each mark against the reading before it would turn any noisy series
+into alternating confetti and would make the hue mean "the last step" rather
+than "where you are". The step-to-step story is already carried by slope,
+which is what slope is for.
 
 **The un-floored mark.** `getProgressPercent` ends in `Math.max(0, ...)`
 (`areaTypes.ts:386`), so a player who has slipped past their own starting
@@ -153,9 +170,21 @@ the *printed number* stays the unmodified `getProgressPercent` return, so this
 page can never disagree with any other screen that prints the same figure.
 Only the geometry is refined, never the number.
 
+**But the two are never printed side by side.** A row whose latest reading is
+below its starting value prints no percent at all: a point sitting visibly
+under the baseline rule, labelled `0%`, forces the reader to decide which of
+the two is lying. Neither is, and they cannot know that. Such a row prints its
+current value in its own unit followed by the phrase `Below where you
+started.` (`BELOW_START_PHRASE`). `rowReadout` in `development-logic.ts` makes
+that choice once, so no component re-derives it. The clamped figure still
+exists for any consumer that needs the shared number; it just never shares an
+eyeline with the mark that contradicts it.
+
 **Row end**: the current value in its own unit via
 `formatValue(value, getMetricRenderConfig(target_metric).unit)`, mono; then
-the percent or its honest substitute; then a trend triangle **only** when the
+the percent, or `Below where you started.` when the latest reading is under
+the baseline, or the row's honest caption when there is nothing to plot (the
+three arms of `rowReadout`); then a trend triangle **only** when the
 row has two or more readings and a resolved direction. The triangle is data
 ink beside a number, which the ban list allows; it never appears inside a
 sentence.
@@ -171,7 +200,12 @@ actually missing rather than defaulting to a baseline-shaped excuse):
 | direction unknown | `areaTypes.ts:370` | `No direction known for this metric.` |
 | no target | `:367` (`target == null`) | `No target set.` |
 | no starting value | `:367` (`baseline == null`) | `No starting value on record.` |
-| target equals start, or points the wrong way | `:381-383` | `Target is where you started.` |
+| target equals start | `:381` (`span === 0`) | `Target is where you started.` |
+| target points away from start | `:382-383` | `Target points away from the starting value.` |
+
+Both malformed-target branches sit **after** the met check, so they are
+unreachable for a reader who has already passed their target: that reader
+reads 100, which is the honest answer. Pinned in `development-logic.test.ts`.
 
 A row in any of those states still renders its identity, its current value and
 its caption. It never renders a track at a guessed position, and it never
