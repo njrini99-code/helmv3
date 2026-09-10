@@ -21,13 +21,17 @@ const fixture: SpineProps = {
   eyebrow: 'Your game · last 15 rounds',
   hero: { value: '−2.1', unit: 'SG / round' },
   verdict: "Putting costs you the most. Fix 3–5 ft and you're a 73-shooter.",
-  track: {
-    pct: 38,
-    subjectLabel: 'You',
-    benchmarks: [
-      { label: 'Team', pct: 62, emphasis: true },
-      { label: 'Tour', pct: 91 },
-    ],
+  standing: {
+    metric_id: 'sg_total',
+    metric_label: 'SG: Total',
+    player_value: -0.76,
+    team_avg: -0.31,
+    team_n: 8,
+    team_pct: 22,
+    pga_value: 0,
+    direction: 'higher_better',
+    unit: 'strokes',
+    scale: { min: -2, max: 2 },
   },
   priorities,
   ledger: [

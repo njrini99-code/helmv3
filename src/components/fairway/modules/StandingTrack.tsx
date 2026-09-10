@@ -1,6 +1,17 @@
 'use client';
 
 /**
+ * DEPRECATED 2026-09-10 — replaced by charts/StandingBars; delete when the
+ * dead-code pass confirms no consumers. (Owner: "I've asked repeatedly to
+ * get rid of these slider things. Everywhere... Replace it with an actual
+ * component." Both real mounts — `Spine.tsx` and the SG instrument in
+ * `spine-stage/StandingDrill.tsx` — now render `StandingBars` in
+ * `frame="bare"` mode instead. This file's own dot/pin marker was already
+ * removed; the rail idiom itself is what's being retired, not just that one
+ * marker. Do not add new consumers.)
+ */
+
+/**
  * ============================================================================
  * StandingTrack — the spine's "you vs. benchmarks" progress rail (mockup §01 .track)
  * ----------------------------------------------------------------------------

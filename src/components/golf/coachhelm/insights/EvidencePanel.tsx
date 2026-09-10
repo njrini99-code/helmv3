@@ -44,6 +44,7 @@ function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | nu
   if (!cfg) return null;
   return (
     <StandingBars
+      frame="bare"
       metric_id={standing.metric_id}
       metric_label={cfg.display_label}
       player_value={standing.player_value}

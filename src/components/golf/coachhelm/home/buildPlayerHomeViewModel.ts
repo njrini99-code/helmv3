@@ -11,8 +11,11 @@
  * `src/components/golf/stats/spine-stage/buildStatsViewModel.ts`).
  * ========================================================================== */
 
-import type { PriorityItem, SignalTone, StandingTrackProps, TickerItem } from '@/components/fairway/modules';
+import type { PriorityItem, SignalTone, TickerItem } from '@/components/fairway/modules';
 import { clampPct } from '@/components/fairway/modules';
+import type { StandingBarsProps } from '@/components/fairway/charts/StandingBars';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -106,20 +109,24 @@ export function sgToTrackPct(value: number | null | undefined, halfRange = 2): n
   return clampPct(50 + (n / halfRange) * 50);
 }
 
-export function buildPlayerStandingTrack(
-  sgTotal: number | null | undefined,
-  teamAvg: number | null | undefined,
-): StandingTrackProps | undefined {
-  const you = finite(sgTotal);
+export function buildPlayerStandingBars(sgTotalRow: PlayerStanding | null | undefined): StandingBarsProps | undefined {
+  const you = finite(sgTotalRow?.player_value ?? null);
   if (you === null) return undefined;
-  const team = finite(teamAvg);
+  const cfg = getMetricRenderConfig('sg_total');
+  if (!cfg) return undefined;
   return {
-    pct: sgToTrackPct(you),
-    subjectLabel: 'You',
-    benchmarks: [
-      ...(team !== null ? [{ label: 'Team', pct: sgToTrackPct(team) }] : []),
-      { label: 'Tour', pct: sgToTrackPct(0), emphasis: true },
-    ],
+    metric_id: 'sg_total',
+    metric_label: cfg.display_label,
+    player_value: you,
+    team_avg: sgTotalRow?.team_avg ?? null,
+    team_n: sgTotalRow?.team_n ?? 0,
+    team_pct: sgTotalRow?.team_pct ?? null,
+    pga_value: sgTotalRow?.pga_value ?? 0,
+    pga_omitted: sgTotalRow?.pga_omitted,
+    is_womens: sgTotalRow?.is_womens,
+    direction: cfg.direction,
+    unit: cfg.unit,
+    scale: cfg.default_scale,
   };
 }
 

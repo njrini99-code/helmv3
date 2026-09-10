@@ -53,7 +53,7 @@ import { useToast } from '@/components/ui/sonner';
 import {
   buildFocusAreaPriorities,
   buildPlayerLedger,
-  buildPlayerStandingTrack,
+  buildPlayerStandingBars,
   buildPredictionVerdict,
   formatPredictionHero,
 } from './buildPlayerHomeViewModel';
@@ -263,9 +263,10 @@ export function PlayerCoachHelmHome({
     [addToast, router],
   );
 
-  const sgTotal = finite(standingByMetric['sg_total']?.player_value ?? null);
-  const sgTeamAvg = finite(standingByMetric['sg_total']?.team_avg ?? null);
-  const track = useMemo(() => buildPlayerStandingTrack(sgTotal, sgTeamAvg), [sgTotal, sgTeamAvg]);
+  const standing = useMemo(
+    () => buildPlayerStandingBars(standingByMetric['sg_total']),
+    [standingByMetric],
+  );
 
   const priorities = useMemo(
     () => buildFocusAreaPriorities(data.focusAreas.map((a) => ({ area: a.area, strokesGained: a.strokesGained, value: a.value, unit: a.unit }))),
@@ -422,7 +423,7 @@ export function PlayerCoachHelmHome({
           mobileClassName={showMobileSpine ? undefined : 'hidden'}
           hero={hero}
           verdict={verdict}
-          track={track}
+          standing={standing}
           priorities={priorities}
           ledger={ledger}
         />

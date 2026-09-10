@@ -335,6 +335,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
       {showStanding ? (
         <div className="mt-4">
           <StandingBars
+            frame="bare"
             metric_id={standing.metric_id}
             metric_label={cfg.display_label}
             player_value={standing.player_value}

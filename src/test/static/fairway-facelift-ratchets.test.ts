@@ -95,7 +95,6 @@ describe('ratchet 1 — no legacy ui/* import under fairway or the golf dashboar
    */
   const ALLOWLIST: Record<string, string[]> = {
     'src/app/golf/(dashboard)/FairwayDashboardShell.tsx': ['button'],
-    'src/app/golf/(dashboard)/dashboard/dev/haptics/page.tsx': ['button'],
     'src/app/golf/(dashboard)/dashboard/players/[playerId]/game/sections/FingerprintHero.tsx': ['button'],
     'src/components/fairway/data-table/data-table.tsx': ['button'],
     'src/components/fairway/app-shell/FairwaySidebar.tsx': ['button'],
@@ -106,7 +105,6 @@ describe('ratchet 1 — no legacy ui/* import under fairway or the golf dashboar
     'src/components/fairway/app-shell/FairwayTopBar.test.tsx': ['button'],
     'src/components/fairway/app-shell/LargeTitleContext.test.tsx': ['button'],
     'src/components/fairway/overlays/ModalShell.focus-restore.test.tsx': ['button'],
-    'src/components/fairway/pages/rounds-new/FairwayNewRoundEntry.tsx': ['button'],
     'src/components/fairway/pages/messages/MessageComposer.tsx': ['button', 'input'],
     'src/components/fairway/pages/calendar/EventWhenFields.tsx': ['button'],
     'src/components/fairway/pages/calendar/editor/EventEssentialsFields.tsx': ['button', 'input'],
@@ -143,8 +141,8 @@ describe('ratchet 1 — no legacy ui/* import under fairway or the golf dashboar
   }
 
   it(`pins today's debt at ${ALLOWLIST_TOTAL} legacy ui/* imports across ${Object.keys(ALLOWLIST).length} files`, () => {
-    expect(Object.keys(ALLOWLIST).length).toBe(21);
-    expect(ALLOWLIST_TOTAL).toBe(25);
+    expect(Object.keys(ALLOWLIST).length).toBe(19);
+    expect(ALLOWLIST_TOTAL).toBe(23);
   });
 
   it('no NEW file imports a banned @/components/ui/* package', () => {
@@ -181,18 +179,18 @@ describe('ratchet 2 — no new consumer of the legacy dot-on-a-rail standing fam
   const STANDING_BAR_DEDICATED_TEST = 'src/test/golf/components/StandingBar.test.tsx';
 
   /**
-   * file -> which of the three the file still renders. Every entry is a real
-   * consumer as of 2026-09-10. `fairway/modules/Spine.tsx` and
-   * `golf/coachhelm/home/StandingDrill.tsx` already migrated to `StandingBars`
-   * (verified: no `<StandingTrack`/`<StandingStrip` JSX in either) — do not
-   * re-add them here on a future revert without also reverting the migration.
+   * file -> which of the three the file still renders. Empty as of
+   * 2026-09-10: every real consumer has migrated to `StandingBars`
+   * (`fairway/modules/Spine.tsx`, `golf/coachhelm/home/StandingDrill.tsx`,
+   * and `golf/stats/spine-stage/StandingDrill.tsx`'s `StrokesGainedInstrument`
+   * — verified: no `<StandingTrack`/`<StandingStrip` JSX remains in any of
+   * them) — do not re-add an entry here on a future revert without also
+   * reverting the migration.
    */
-  const ALLOWLIST: Record<string, 'StandingStrip' | 'StandingTrack'> = {
-    'src/components/golf/stats/spine-stage/StandingDrill.tsx': 'StandingTrack',
-  };
+  const ALLOWLIST: Record<string, 'StandingStrip' | 'StandingTrack'> = {};
 
   it(`pins today's debt at ${Object.keys(ALLOWLIST).length} remaining consumer(s)`, () => {
-    expect(Object.keys(ALLOWLIST).length).toBe(1);
+    expect(Object.keys(ALLOWLIST).length).toBe(0);
   });
 
   it('no NEW JSX use of <StandingStrip> outside its own file/test', () => {
@@ -340,9 +338,13 @@ describe('ratchet 3 — backdrop-filter stays owned by the frost tiers', () => {
  * ═══════════════════════════════════════════════════════════════════════ */
 
 describe('ratchet 4 — sticky elements do not also carry a blur class', () => {
-  // `fw-frost-static` does not exist yet as an escape-hatch modifier class —
-  // when it is added, extend this list check to skip a `fw-frost` match that
-  // is immediately followed by `-static`.
+  // `.fw-frost-static` (globals.css, 2026-09-10) is the escape hatch for
+  // exactly this guard: the subtle frost tier's bg/border/edge-light recipe
+  // with NO `backdrop-filter` at all — safe on a sticky element because
+  // there's no blur to repaint on scroll. The `(?!-)` below already excludes
+  // it (and every other suffixed tier — `-modal`, `-floating`, `-bar`,
+  // `-selection`) from this match: bare `fw-frost` is what's flagged, never
+  // a `fw-frost-` prefix.
   const BLUR_CLASS_RE = /\bfw-glass-chrome\b|\bfw-glass-strong\b|\bfw-glass-regular\b|\bfw-frost\b(?!-)/;
   const STICKY_CLASS_RE = /(?:^|[\s'"`])sticky(?:[\s'"`]|$)/;
 
@@ -368,22 +370,26 @@ describe('ratchet 4 — sticky elements do not also carry a blur class', () => {
    * as of 2026-09-10 (grepped for every non-CSS use of `fw-glass-chrome`,
    * bare `fw-frost`, `fw-glass-strong`, `fw-glass-regular`, then checked each
    * call site's own className expression for `sticky`).
+   *
+   * `FairwayCalendarHero.tsx` and `FairwayEventDetailDrawer.tsx` paid this
+   * debt off (2026-09-10, the mobile pass): both sticky headers switched to
+   * a plain matte `bg-surface` — no blur-tier class left in either
+   * className — so they dropped off this list rather than move to
+   * `.fw-frost-static` (that class didn't exist yet when they landed).
    */
   const ALLOWLIST: Record<string, string> = {
     'src/components/fairway/app-shell/FairwayHubSubNav.tsx': 'sticky sub-nav strip, fw-glass-chrome',
-    'src/components/fairway/pages/calendar/FairwayCalendarHero.tsx': 'sticky hero, fw-glass-chrome',
     'src/components/fairway/pages/calendar/FairwayEventEditor.tsx': 'sticky header/footer, fw-glass-chrome',
     'src/components/fairway/pages/calendar/CalendarPersonDialog.tsx': 'sticky mobile footer, fw-glass-chrome',
     'src/components/fairway/pages/calendar/scheduling/SchedulingWorkspace.tsx': 'sticky header, fw-glass-chrome',
     'src/components/fairway/pages/calendar/people/CalendarPeoplePicker.tsx': 'sticky header, fw-glass-chrome',
     'src/components/fairway/pages/calendar/conflicts/ConflictDetail.tsx': 'sticky header, fw-glass-chrome',
     'src/components/fairway/pages/calendar/conflicts/ConflictCenter.tsx': 'sticky header, fw-glass-chrome',
-    'src/components/fairway/pages/calendar/FairwayEventDetailDrawer.tsx': 'sticky header + dock, fw-glass-chrome',
     'src/components/fairway/controls/Toolbar.tsx': 'sticky + material="frost" is a supported, tested combo (bare fw-frost)',
   };
 
   it(`pins today's debt at ${Object.keys(ALLOWLIST).length} files`, () => {
-    expect(Object.keys(ALLOWLIST).length).toBe(10);
+    expect(Object.keys(ALLOWLIST).length).toBe(8);
   });
 
   it('no NEW sticky element also carries a blur-tier class in the same className', () => {

@@ -6,10 +6,16 @@
  * ----------------------------------------------------------------------------
  * The "always visible, never scrolls away" half of the Spine & Stage
  * pattern: an eyebrow, a huge mono hero figure + verdict sentence, an
- * optional `StandingTrack`, an optional `PriorityList`, an optional
- * `SpineLedger`, a free-form `children` escape hatch for surface-specific
- * rows, and a pill CTA that renders as a real `<a>` when `cta.href` is
- * given, else a real `<button>`.
+ * optional bare `StandingBars` readout, an optional `PriorityList`, an
+ * optional `SpineLedger`, a free-form `children` escape hatch for
+ * surface-specific rows, and a pill CTA that renders as a real `<a>` when
+ * `cta.href` is given, else a real `<button>`.
+ *
+ * The standing readout used to be `StandingTrack` (a dot-on-a-rail pin) —
+ * replaced 2026-09-10 (owner: "get rid of these slider things... replace it
+ * with an actual component") with `StandingBars` in `frame="bare"` mode, so
+ * it reads as labeled rows on the spine's own dark surface instead of a
+ * second nested card.
  *
  * Sticky positioning is the CONSUMER's job (per plan: "sticky top-20 handled
  * by the CONSUMER via className prop passthrough") — this component only
@@ -19,15 +25,14 @@
  *
  * The dark accent-900→accent-800 gradient surface has no `bg-surface-*`
  * equivalent for its translucent white hairlines/border — those are inline
- * `oklch(1 0 0 / N)` values, matching the approved mockup and mirroring how
- * `StandingTrack` handles the same on-dark overlay problem.
+ * `oklch(1 0 0 / N)` values, matching the approved mockup.
  * ========================================================================== */
 
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { PressTarget } from '../controls';
 import { TABULAR_NUMS } from '../charts/theme';
-import { StandingTrack } from './StandingTrack';
+import { StandingBars } from '../charts/StandingBars';
 import { PriorityList } from './PriorityList';
 import { SpineLedger } from './SpineLedger';
 import type { SpineProps } from './types';
@@ -51,7 +56,7 @@ export function Spine({
   eyebrow,
   hero,
   verdict,
-  track,
+  standing,
   priorities,
   ledger,
   cta,
@@ -84,10 +89,10 @@ export function Spine({
 
       <p className="mt-2.5 font-fw-sans text-body-sm text-ink-on-deep">{verdict}</p>
 
-      {track ? (
+      {standing ? (
         <>
           <SpineHairline />
-          <StandingTrack {...track} />
+          <StandingBars {...standing} size="sm" layout="compact" frame="bare" className="text-text-on-accent" />
         </>
       ) : null}
 

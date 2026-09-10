@@ -277,6 +277,7 @@ export function FilmstripReview({
       return (
         <StandingBars
           key={mid}
+          frame="bare"
           metric_id={mid}
           metric_label={cfg.display_label}
           player_value={st.player_value}

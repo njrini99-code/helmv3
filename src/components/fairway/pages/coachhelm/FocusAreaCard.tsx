@@ -907,6 +907,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                     const cfg = getMetricRenderConfig(standing.metric_id);
                     return cfg ? (
                       <StandingBars
+                        frame="bare"
                         size="sm"
                         layout="compact"
                         metric_id={standing.metric_id}

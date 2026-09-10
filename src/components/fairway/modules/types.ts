@@ -1,5 +1,6 @@
 // types.ts — public contracts for the Spine & Stage module kit
 import type { ReactNode } from 'react';
+import type { StandingBarsProps } from '../charts/StandingBars';
 
 export interface StandingTrackProps {
   /** 0–100 position of the subject pin */
@@ -47,7 +48,15 @@ export interface SpineProps {
   eyebrow: string;
   hero: { value: string; unit?: string };
   verdict: string;
-  track?: StandingTrackProps;
+  /**
+   * The you/team/Tour standing readout, rendered as a bare (chrome-free)
+   * `StandingBars` row group between two hairlines — same call site the
+   * old `StandingTrack` pin/rail occupied. Full metric data, not a reduced
+   * `{pct, benchmarks}` shape, so `StandingBars` can derive its own
+   * cold-start gating (`team_n`), diverging-vs-rail geometry, and aria
+   * label instead of trusting a caller-computed percentage.
+   */
+  standing?: StandingBarsProps;
   priorities?: PriorityItem[];
   ledger?: { label: string; value: string }[];
   cta?: { label: string; onClick?: () => void; href?: string };

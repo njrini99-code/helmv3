@@ -99,9 +99,39 @@ export interface StandingBarsProps extends Omit<StandingBarProps, 'size'> {
    * figure's aria-label), for a narrow rail/sidebar placement.
    */
   layout?: 'rows' | 'compact';
+  /**
+   * 'card' (default) — full standalone chrome: border, cream `bg-surface`,
+   * padding, soft shadow. 'bare' — the identical header/rows/summary
+   * content with NONE of that chrome, for a consumer that already sits
+   * inside its own card, `InsetGroup`, `DrillPanel`, or `InsightPanel` (a
+   * bare StandingBars never nests a card inside a card). Applies to every
+   * render state — loading/error/empty stay bare too, so a bare instrument
+   * never sprouts a card mid-load.
+   */
+  frame?: 'card' | 'bare';
+  /**
+   * Merged onto the outer wrapper last, so it wins any Tailwind class
+   * conflict (via `cn`'s `twMerge`) with this component's own defaults —
+   * including the base `text-text-primary` ink color every row/label/value
+   * below inherits through `text-current` rather than hardcoding its own
+   * color. This is how a caller mounts `StandingBars` on a non-cream
+   * surface (Spine's dark accent gradient, the SG instrument's matching
+   * gradient): pass `className="text-text-on-accent"` and every descendant
+   * follows, exactly the way `Spine.tsx` already does for its own hero/
+   * verdict text. The rail TRACK background (`bg-surface-sunken`) cannot
+   * inherit color this way — see `onDark` below, which keys off this same
+   * prop so no second prop is needed for it.
+   */
+  className?: string;
 }
 
 const clampPct = (n: number): number => Math.max(0, Math.min(100, n));
+
+// Same rail, same dark accent-900/800 gradient `StandingTrack.tsx` drew on —
+// matching its `RAIL_BG` exactly keeps the visual identical across the
+// dot-rail -> bar-row swap instead of introducing a second on-dark rail
+// treatment nobody asked for.
+const RAIL_TRACK_ON_DARK = 'oklch(1 0 0 / 0.14)';
 
 interface Row {
   key: 'you' | 'team' | 'ref';
@@ -111,7 +141,7 @@ interface Row {
 }
 
 export function StandingBars(props: StandingBarsProps) {
-  const { size = 'md', layout = 'rows' } = props;
+  const { size = 'md', layout = 'rows', frame = 'card', className } = props;
   const state: RenderState = deriveState(props);
   // `deriveAriaLabel` types its param as the legacy `StandingBarProps`
   // (whose `size: SizeVariant` this component intentionally shadows with a
@@ -120,9 +150,9 @@ export function StandingBars(props: StandingBarsProps) {
   // without affecting the derived label.
   const ariaLabel = deriveAriaLabel({ ...props, size: 'card' });
 
-  if (state === 'loading') return <BarsSkeleton />;
-  if (state === 'error') return <BarsError message={props.errorMessage} />;
-  if (state === 'empty') return <BarsEmpty label={props.metric_label} />;
+  if (state === 'loading') return <BarsSkeleton frame={frame} className={className} />;
+  if (state === 'error') return <BarsError message={props.errorMessage} frame={frame} className={className} />;
+  if (state === 'empty') return <BarsEmpty label={props.metric_label} frame={frame} className={className} />;
 
   const showTeam = shouldShowTeamMarker(props);
   const isSgMetric = /^sg_/.test(props.metric_id);
@@ -141,10 +171,21 @@ export function StandingBars(props: StandingBarsProps) {
   const deltaToneClass =
     delta.tone === 'good' ? 'text-accent-600' :
     delta.tone === 'bad'  ? 'text-fw-warning-ink' :
-                            'text-text-tertiary';
+                            'text-current opacity-70';
 
   const subjectLabel = standingSubjectLabel(props.viewer_context, props.player_name);
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
+
+  // The rail TRACK background can't follow `text-current` the way the
+  // labels/values below do — a background-color has no ambient color to
+  // inherit. Rather than a second prop, key off the SAME `className` the
+  // caller already passes to flip every text color for an on-dark mount:
+  // both real on-dark call sites (Spine.tsx, the SG instrument) pass
+  // `className="text-text-on-accent"`, so checking for that one substring
+  // is the single check that picks the dark-surface rail token instead of
+  // the light one — same idea as `StandingTrack.tsx`'s own inline
+  // `oklch(1 0 0 / 0.14)` rail on that identical dark gradient.
+  const onDark = className?.includes('text-on-accent') ?? false;
 
   const rows: Row[] = [
     { key: 'you', label: subjectLabel, rawValue: props.player_value, emphasis: true },
@@ -188,7 +229,10 @@ export function StandingBars(props: StandingBarsProps) {
       row.key === 'team' ? 'bg-border-strong' :
                             'bg-text-tertiary';
     return (
-      <span className={cn('relative block w-full rounded-full bg-surface-sunken', barHeight)}>
+      <span
+        className={cn('relative block w-full rounded-full', !onDark && 'bg-surface-sunken', barHeight)}
+        style={onDark ? { background: RAIL_TRACK_ON_DARK } : undefined}
+      >
         <span
           aria-hidden="true"
           className={cn('absolute inset-y-0 left-0 rounded-full', fillClass)}
@@ -207,7 +251,10 @@ export function StandingBars(props: StandingBarsProps) {
     const better = props.direction === 'higher_better' ? row.rawValue > 0 : row.rawValue < 0;
     const worse = props.direction === 'higher_better' ? row.rawValue < 0 : row.rawValue > 0;
     return (
-      <span className={cn('relative block w-full rounded-full bg-surface-sunken', barHeight)}>
+      <span
+        className={cn('relative block w-full rounded-full', !onDark && 'bg-surface-sunken', barHeight)}
+        style={onDark ? { background: RAIL_TRACK_ON_DARK } : undefined}
+      >
         <span aria-hidden="true" className="absolute inset-y-0 left-1/2 w-px bg-warm-400" />
         {better || worse ? (
           <span
@@ -228,10 +275,15 @@ export function StandingBars(props: StandingBarsProps) {
       aria-label={ariaLabel}
       data-slot="standing-bars"
       data-state={state}
-      className="overflow-clip rounded-card border border-border-subtle bg-surface p-4 shadow-soft"
+      data-frame={frame}
+      className={cn(
+        'text-text-primary',
+        frame === 'bare' ? undefined : 'overflow-clip rounded-card border border-border-subtle bg-surface p-4 shadow-soft',
+        className,
+      )}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <figcaption className="min-w-0 flex-1 break-words font-fw-display text-body font-semibold tracking-[-0.01em] text-text-primary">
+        <figcaption className="min-w-0 flex-1 break-words font-fw-display text-body font-semibold tracking-[-0.01em] text-current">
           {props.metric_label}
         </figcaption>
         {showTeam ? (
@@ -258,7 +310,7 @@ export function StandingBars(props: StandingBarsProps) {
               className={cn(
                 'truncate font-fw-sans text-caption',
                 labelWidthClass,
-                row.emphasis ? 'font-semibold text-text-primary' : 'text-text-tertiary',
+                row.emphasis ? 'font-semibold text-current' : 'text-current opacity-70',
               )}
             >
               {row.label}
@@ -266,7 +318,7 @@ export function StandingBars(props: StandingBarsProps) {
             {isSgMetric ? divergingBar(row) : railBar(row)}
             <span
               style={TABULAR_NUMS}
-              className="whitespace-nowrap text-right font-fw-mono text-caption font-semibold tabular-nums text-text-primary"
+              className="whitespace-nowrap text-right font-fw-mono text-caption font-semibold tabular-nums text-current"
             >
               {formatValue(row.rawValue, props.unit)}
             </span>
@@ -284,7 +336,7 @@ export function StandingBars(props: StandingBarsProps) {
       ) : null}
 
       {layout !== 'compact' && state === 'cold-start' ? (
-        <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+        <p className="mt-2 font-fw-sans text-caption text-current opacity-70">
           Team marker appears once 5+ teammates have 5+ rounds each.
         </p>
       ) : null}
@@ -310,13 +362,18 @@ export function StandingBars(props: StandingBarsProps) {
 /* Honest matte states — identical copy/classes to StandingStrip's own        */
 /* -------------------------------------------------------------------------- */
 
-function BarsSkeleton() {
+function cardClass(frame: 'card' | 'bare'): string | undefined {
+  return frame === 'bare' ? undefined : 'rounded-card border border-border-subtle bg-surface p-4';
+}
+
+function BarsSkeleton({ frame, className }: { frame: 'card' | 'bare'; className?: string }) {
   return (
     <div
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="rounded-card border border-border-subtle bg-surface p-4"
+      data-frame={frame}
+      className={cn('text-text-primary', cardClass(frame), className)}
     >
       <Skeleton className="mb-3 h-3 w-28 rounded" />
       <Skeleton className="mb-2 h-2 w-full rounded" />
@@ -325,16 +382,25 @@ function BarsSkeleton() {
   );
 }
 
-function BarsError({ message }: { message?: string }) {
+function BarsError({
+  message,
+  frame,
+  className,
+}: {
+  message?: string;
+  frame: 'card' | 'bare';
+  className?: string;
+}) {
   return (
     <div
       role="alert"
       data-state="error"
-      className="rounded-card border border-border-subtle bg-surface p-4"
+      data-frame={frame}
+      className={cn('text-text-primary', cardClass(frame), className)}
     >
       <p className="font-fw-sans text-body-sm text-danger">Couldn&rsquo;t load standing.</p>
       {message ? (
-        <p className="mt-1 truncate font-fw-sans text-caption text-text-tertiary" title={message}>
+        <p className="mt-1 truncate font-fw-sans text-caption text-current opacity-70" title={message}>
           {message}
         </p>
       ) : null}
@@ -342,14 +408,19 @@ function BarsError({ message }: { message?: string }) {
   );
 }
 
-function BarsEmpty({ label }: { label: string }) {
+function BarsEmpty({
+  label,
+  frame,
+  className,
+}: {
+  label: string;
+  frame: 'card' | 'bare';
+  className?: string;
+}) {
   return (
-    <div
-      data-state="empty"
-      className="rounded-card border border-border-subtle bg-surface p-4"
-    >
-      <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">{label}</h4>
-      <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+    <div data-state="empty" data-frame={frame} className={cn('text-text-primary', cardClass(frame), className)}>
+      <h4 className="font-fw-sans text-body-sm font-medium text-current">{label}</h4>
+      <p className="mt-2 font-fw-sans text-caption text-current opacity-70">
         Log 5 rounds to see how you stack up.
       </p>
     </div>

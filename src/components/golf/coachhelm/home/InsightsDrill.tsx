@@ -168,6 +168,7 @@ export function InsightsDrill({
                       {st && cfg ? (
                         <div className="mt-3">
                           <StandingBars
+                            frame="bare"
                             size="sm"
                             layout="compact"
                             metric_id={m}

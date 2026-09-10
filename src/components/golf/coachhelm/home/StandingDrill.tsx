@@ -103,6 +103,7 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
                     return (
                       <div key={id} className="flex flex-col">
                         <StandingBars
+                          frame="bare"
                           metric_id={id}
                           metric_label={cfg.display_label}
                           player_value={standing.player_value}

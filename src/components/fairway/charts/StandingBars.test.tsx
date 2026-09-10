@@ -185,3 +185,95 @@ describe('StandingBars — accessibility', () => {
     expect(within(table).queryByText('Team')).toBeNull();
   });
 });
+
+describe('StandingBars — frame ("card" vs "bare")', () => {
+  it('defaults to "card": border + background + padding + shadow classes present', () => {
+    const { container } = render(<StandingBars {...UNSIGNED_BASE} />);
+    const figure = container.querySelector('[data-slot="standing-bars"]') as HTMLElement;
+    expect(figure.getAttribute('data-frame')).toBe('card');
+    expect(figure.className).toMatch(/border-border-subtle/);
+    expect(figure.className).toMatch(/bg-surface/);
+    expect(figure.className).toMatch(/shadow-soft/);
+  });
+
+  it('"bare" renders the same rows with no border/background/padding/shadow classes', () => {
+    const { container } = render(<StandingBars {...UNSIGNED_BASE} frame="bare" />);
+    const figure = container.querySelector('[data-slot="standing-bars"]') as HTMLElement;
+    expect(figure.getAttribute('data-frame')).toBe('bare');
+    // No chrome — but the base ink color survives, since that's content
+    // (every row/label/value inherits it via `text-current`), not chrome.
+    expect(figure.className).toBe('text-text-primary');
+    expect(figure.className).not.toMatch(/border-border-subtle|bg-surface\b|shadow-soft|rounded-card/);
+    // Content is untouched — same rows, same header pill, same hidden table.
+    expect(visibleRows(container).querySelectorAll('[class*="grid-cols"]').length).toBe(3);
+    expect(screen.getByText('GIR %')).toBeTruthy();
+  });
+
+  it('"bare" stays chrome-free in the loading/error/empty states too', () => {
+    const { container: loading } = render(<StandingBars {...UNSIGNED_BASE} state="loading" frame="bare" />);
+    const loadingEl = loading.querySelector('[role="status"]') as HTMLElement;
+    expect(loadingEl.className).toBe('text-text-primary');
+
+    const { container: error } = render(
+      <StandingBars {...UNSIGNED_BASE} state="error" frame="bare" errorMessage="oops" />,
+    );
+    const errorEl = error.querySelector('[role="alert"]') as HTMLElement;
+    expect(errorEl.className).toBe('text-text-primary');
+
+    const { container: empty } = render(<StandingBars {...UNSIGNED_BASE} state="empty" frame="bare" />);
+    const emptyEl = empty.querySelector('[data-state="empty"]') as HTMLElement;
+    expect(emptyEl.className).toBe('text-text-primary');
+  });
+});
+
+describe('StandingBars — className (on-dark cascade)', () => {
+  it('a caller className overrides the default ink color on the figure (twMerge, not append)', () => {
+    const { container } = render(
+      <StandingBars {...UNSIGNED_BASE} frame="bare" className="text-text-on-accent" />,
+    );
+    const figure = container.querySelector('[data-slot="standing-bars"]') as HTMLElement;
+    expect(figure.className).toContain('text-text-on-accent');
+    expect(figure.className).not.toContain('text-text-primary');
+  });
+
+  it('row labels/values use text-current (not a hardcoded ink class) so the override cascades', () => {
+    const { container } = render(<StandingBars {...UNSIGNED_BASE} className="text-text-on-accent" />);
+    const rowSpans = Array.from(visibleRows(container).querySelectorAll('span')) as HTMLElement[];
+    const currentColorSpans = rowSpans.filter((el) => /text-current/.test(el.className));
+    expect(currentColorSpans.length).toBeGreaterThan(0);
+    for (const el of rowSpans) {
+      expect(el.className).not.toMatch(/\btext-text-primary\b|\btext-text-tertiary\b/);
+    }
+  });
+
+  it('propagates to the loading/error/empty states too, so a bare on-dark instrument never flashes dark-on-dark text', () => {
+    const { container: loading } = render(
+      <StandingBars {...UNSIGNED_BASE} state="loading" frame="bare" className="text-text-on-accent" />,
+    );
+    expect((loading.querySelector('[role="status"]') as HTMLElement).className).toContain('text-text-on-accent');
+
+    const { container: empty } = render(
+      <StandingBars {...UNSIGNED_BASE} state="empty" frame="bare" className="text-text-on-accent" />,
+    );
+    expect((empty.querySelector('[data-state="empty"]') as HTMLElement).className).toContain('text-text-on-accent');
+  });
+
+  it('an on-dark className swaps the rail TRACK background from the light token to the dark inline oklch value (unsigned/rail geometry)', () => {
+    const light = render(<StandingBars {...UNSIGNED_BASE} />).container;
+    const lightRail = visibleRows(light).querySelector('[class*="rounded-full"]') as HTMLElement;
+    expect(lightRail.className).toMatch(/bg-surface-sunken/);
+    expect(lightRail.style.background).toBe('');
+
+    const dark = render(<StandingBars {...UNSIGNED_BASE} className="text-text-on-accent" />).container;
+    const darkRail = visibleRows(dark).querySelector('[class*="rounded-full"]') as HTMLElement;
+    expect(darkRail.className).not.toMatch(/bg-surface-sunken/);
+    expect(darkRail.style.background).toMatch(/oklch\(1 0 0 \/ 0\.14\)/);
+  });
+
+  it('an on-dark className swaps the rail TRACK background for the diverging (sg_*) geometry too', () => {
+    const dark = render(<StandingBars {...SIGNED_BASE} className="text-text-on-accent" />).container;
+    const darkRail = visibleRows(dark).querySelector('[class*="rounded-full"]') as HTMLElement;
+    expect(darkRail.className).not.toMatch(/bg-surface-sunken/);
+    expect(darkRail.style.background).toMatch(/oklch\(1 0 0 \/ 0\.14\)/);
+  });
+});
