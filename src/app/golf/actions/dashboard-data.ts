@@ -143,6 +143,12 @@ export interface CoachDashboardPayload {
     teamName: string | null;
     joinCode: string | null;
     timezone: string;
+    /** Every active player on the roster, so the home stage can draw a row for a player with no rounds in the window. */
+    roster: Array<{ id: string; name: string; avatar_url: string | null }>;
+    /** First day of the selected window (`YYYY-MM-DD`), null for `all`. */
+    windowStart: string | null;
+    /** Today in the team timezone (`YYYY-MM-DD`): the right edge of the home stage axis. */
+    today: string;
 }
 
 export interface PlayerDashboardPayload {
@@ -853,6 +859,13 @@ async function getCoachDashboardDataImpl(
         teamName: team?.name || null,
         joinCode: team?.join_code || null,
         timezone: teamTimezone,
+        roster: players.map(p => ({
+            id: p.id,
+            name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
+            avatar_url: p.avatar_url || null,
+        })),
+        windowStart: dateCutoff,
+        today: todayStart.split('T')[0] ?? '',
     };
 }
 

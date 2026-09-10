@@ -25,3 +25,4 @@ export * from './ResizableWorkspace';
 export * from './MicroBar';
 export * from './ScoringHistogram';
 export * from './DrivingDotStrip';
+export * from './ScoreField';
