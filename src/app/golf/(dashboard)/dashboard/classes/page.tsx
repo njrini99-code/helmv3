@@ -8,12 +8,15 @@ import { AddClassModal, type ClassFormData } from '@/components/golf/classes/Add
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayGolfClasses } from '@/components/fairway/pages/player-game';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { Button } from '@/components/fairway';
+import { IconWarning } from '@/components/icons';
+// Specific path (not the barrel) so barrel-mocking tests don't need to stub it.
+import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 
 // PlayerClass interface matches the actual golf_player_classes table schema
 interface PlayerClass {
@@ -41,6 +44,68 @@ interface PlayerClass {
   team_id: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+/**
+ * A file-local ModalShell recipe replacing the legacy `ui/confirm-dialog`
+ * `ConfirmDialog` for the single "Delete all classes?" confirm below (same
+ * prop shape as ConfirmDialog, minus the unused `variant` — this screen only
+ * ever shows the danger tone). Mirrors `fairway/overlays/DiscardChangesModal`'s
+ * structure (small ModalShell, hideTitle + hideClose, tinted icon tile +
+ * two-button footer) since this file can't add a new shared component under
+ * overlays/ itself.
+ */
+function ConfirmDeleteAllModal({
+  open,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  isLoading = false,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  isLoading?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <ModalShell
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onCancel();
+      }}
+      size="sm"
+      title={title}
+      hideTitle
+      hideClose
+    >
+      <div className="px-6 pb-6 pt-6">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md bg-fw-danger-bg">
+            <IconWarning size={20} className="text-fw-danger-ink" aria-hidden />
+          </div>
+          <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">
+            {title}
+          </h2>
+        </div>
+        <p className="mb-5 font-fw-sans text-body-sm leading-relaxed text-text-secondary">{message}</p>
+        <div className="flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={onCancel} disabled={isLoading}>
+            {cancelLabel}
+          </Button>
+          <Button variant="danger" className="flex-1" onClick={onConfirm} busy={isLoading}>
+            {confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </ModalShell>
+  );
 }
 
 export default function GolfClassesPage() {
@@ -711,13 +776,12 @@ export default function GolfClassesPage() {
         parsedClasses={parsedClasses}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteAllModal
         open={showDeleteAllConfirm}
         title="Delete all classes?"
         message={`This will remove all ${classes.length} class${classes.length === 1 ? '' : 'es'} from your schedule and your calendar. This action cannot be undone.`}
         confirmLabel="Delete All"
         cancelLabel="Cancel"
-        variant="danger"
         isLoading={deletingAll}
         onConfirm={confirmDeleteAllClasses}
         onCancel={() => setShowDeleteAllConfirm(false)}

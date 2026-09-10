@@ -32,7 +32,7 @@ import { CourseImage, formatCourseName } from '@/components/golf/courses/CourseI
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Button as UIButton } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/fairway/forms/Input';
 import { Select } from '@/components/ui/select';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Chip } from '@/components/fairway/controls/badge';
@@ -143,13 +143,15 @@ export interface FairwayNewRoundEntryProps {
  * `focus:` ring fired on mouse-click and the old `/25` alpha ring composited to
  * ~1.3:1, far below the 3:1 floor). */
 
-/** Override className passed into the canonical <Input>/<Select> wrappers so
- * they render with the Fairway token recipe above instead of their own
- * cream/warm defaults. twMerge (via `cn`) resolves same-family conflicts
- * (rounded-*, border-*, bg-*, text-*, focus:*) in favor of these classes —
- * the `focus:` overrides explicitly cancel the wrapper's baked-in
- * mouse-click ring so only `focus-visible:` shows the accent ring, matching
- * the accessibility intent documented above. */
+/** Override className passed into the still-legacy <Select> wrapper so it
+ * renders with the Fairway token recipe above instead of its own cream/warm
+ * defaults. twMerge (via `cn`) resolves same-family conflicts (rounded-*,
+ * border-*, bg-*, text-*, focus:*) in favor of these classes — the `focus:`
+ * overrides explicitly cancel the wrapper's baked-in mouse-click ring so
+ * only `focus-visible:` shows the accent ring, matching the accessibility
+ * intent documented above. `<Input>` no longer needs this override — it now
+ * renders `fairway/forms/Input`, whose own `fieldControlBase` recipe already
+ * matches this token set natively. */
 const fwInputCls =
   'rounded-[var(--fw-radius-md)] border-border-subtle bg-surface-sunken px-3.5 py-2.5 min-h-0 font-fw-sans text-body text-text-primary placeholder:text-text-tertiary hover:border-border-subtle focus:border-border-subtle focus:ring-0 focus:bg-surface-sunken focus-visible:border-border-focus focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
@@ -497,18 +499,17 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       placeholder="Search saved courses…"
                       // Explicit name: this <Input> is NOT wrapped in a `Field`,
                       // and Input only borrows a label by attaching to a
-                      // surrounding one (see input.tsx header) — so the
-                      // placeholder was this control's only name. Placeholder-as-
-                      // name is fragile in two ways: it is last-resort in the
-                      // accname chain, and it stops being announced the moment
-                      // the field has content, so the name disappears exactly
-                      // when the user is mid-task. The decorative leftIcon
-                      // contributes nothing.
+                      // surrounding one (see fairway/forms/Input.tsx header) —
+                      // so the placeholder was this control's only name.
+                      // Placeholder-as-name is fragile in two ways: it is
+                      // last-resort in the accname chain, and it stops being
+                      // announced the moment the field has content, so the
+                      // name disappears exactly when the user is mid-task.
+                      // The decorative `leading` icon contributes nothing.
                       aria-label="Search saved courses"
                       enterKeyHint="search"
                       autoComplete="off"
-                      leftIcon={<Search className="h-4 w-4 text-text-tertiary" />}
-                      className={fwInputCls}
+                      leading={<Search className="h-4 w-4 text-text-tertiary" />}
                     />
                   )}
                   <Inset padding="sm" className="scrollbar-hide flex max-h-[300px] flex-col gap-2 overflow-y-auto">
@@ -673,7 +674,6 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
                       enterKeyHint="next"
                       autoComplete="off"
-                      className={fwInputCls}
                       placeholder="Pebble Beach Golf Links"
                       required
                     />
@@ -688,7 +688,6 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
                         enterKeyHint="next"
                         autoComplete="off"
-                        className={fwInputCls}
                         placeholder="Pebble Beach"
                       />
                     </div>
@@ -701,7 +700,6 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
                         enterKeyHint="next"
                         autoComplete="off"
-                        className={fwInputCls}
                         placeholder="CA"
                         maxLength={2}
                       />
@@ -719,7 +717,6 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         value={setupData.courseRating}
                         onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        className={fwInputCls}
                         placeholder="72.1"
                       />
                     </div>
@@ -733,7 +730,6 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         value={setupData.courseSlope}
                         onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        className={fwInputCls}
                         placeholder="133"
                         aria-label="Course slope rating"
                       />
@@ -855,7 +851,6 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       value={setupData.roundDate}
                       onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
                       max={maxRoundDate}
-                      className={fwInputCls}
                       required
                     />
                   </div>

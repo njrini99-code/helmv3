@@ -2,38 +2,51 @@
 
 /**
  * ============================================================================
- * Fairway · command · GlassSurface (SELF-CONTAINED, restrained Liquid Glass)
+ * Fairway · command · CommandGlassSurface (thin wrapper, delegates to the
+ * canonical `surfaces` GlassSurface)
  * ----------------------------------------------------------------------------
- * The ONE premium material, applied here to the command palette panel — an
- * allow-listed surface per DESIGN-SYSTEM.md §4.3 ("Command palette (⌘K) — the
- * summoned overlay panel, `--blur-strong`"). It is a floating chrome layer
- * ABOVE content, never a card texture.
+ * The ⌘K command palette's glass panel used to inline its own bespoke warm
+ * cream-tinted Liquid Glass recipe here (scoped CSS-in-JS keyed off
+ * `[data-fw-glass]`). That recipe has since been superseded by the shared
+ * `.fw-frost` material in `surfaces/glass-surface.tsx` (DESIGN-SYSTEM.md
+ * §4.3 allow-list, which already names `'command'` as one of the approved
+ * surfaces). This file is now a thin wrapper over that canonical primitive
+ * with `surface="command"`, so the palette gets the same material everything
+ * else on the allow-list gets, instead of a second, drifting implementation.
  *
- * Why local: the task scopes this group to `src/components/fairway/command/`
- * with NO top-level shared files other agents might collide on. So we inline
- * the warm cream-tinted glass recipe here (matching the locked recipe in the
- * design system) and use only the Fairway design tokens (--fw-*).
+ * Naming: both this module and `surfaces/glass-surface.tsx` used to declare
+ * a component literally named `GlassSurface` (a real symbol collision, not
+ * just a filename one — see the disambiguation note in the top-level
+ * `fairway/index.ts` barrel). The component itself is now named and exported
+ * as `CommandGlassSurface` to resolve that. `./index.ts` still re-exports it
+ * under the historical name `GlassSurface` (`export { CommandGlassSurface as
+ * GlassSurface } ...`), so no import path or call site — including the
+ * top-level barrel's `GlassSurface as CommandGlassSurface` re-export — needs
+ * to change.
  *
- * Recipe (warm cream tint over cream, never white-over-gray):
- *  - background: --fw-glass-bg-strong (~78% cream) for legibility,
- *  - backdrop-filter: blur(--fw-blur-strong) saturate(--fw-glass-saturate),
- *  - bright specular top rim + faint warm base edge (inset box-shadows),
- *  - shadow-raise so it floats off the page,
- *  - a ::before top sheen via an absolutely-positioned span (Safari/FF safe),
- *  - contain + isolation to scope repaint (perf),
- *  - mobile blur downshift (<=768px) via the `data-glass` hook + media query.
+ * Prop mapping onto the canonical primitive:
+ *  - `intensity="strong"` (default) → `tier="modal"`   (same weight the old
+ *    `[data-fw-glass="strong"]` variant used for the summoned panel).
+ *  - `intensity="regular"`          → `tier="floating"`.
+ *  - `sheen` (default `true`)       → `edgeHighlight` (the lit top rim).
+ *  - `animateIn={false}` always: `command-menu.tsx` already owns the
+ *    palette's own materialize animation on its outer `motion.div`s, so the
+ *    inner surface must not animate a second time.
+ *  - `padding={null}`: the palette lays out its own header/list/footer
+ *    padding; the old local component never added any.
  *
- * A11y fallbacks (Apple's own lesson): under prefers-reduced-transparency or
- * forced-colors the glass collapses to an opaque warm surface with a soft
- * shadow — handled here with inline <style> using ONLY this component's scoped
- * `data-fw-glass` attribute so it can't leak to the rest of the app.
+ * The prop type is deliberately narrow (not `HTMLAttributes<HTMLDivElement>`)
+ * — the sole caller (`./command-menu.tsx`) only ever passes `intensity`,
+ * `className`, and `children`, and the canonical primitive is a
+ * `motion.div`, whose event-handler prop types (e.g. `onDrag`) are not
+ * structurally compatible with plain DOM `HTMLAttributes`.
  * ============================================================================
  */
 
-import { forwardRef, type HTMLAttributes } from 'react';
-import { cn } from '@/lib/utils';
+import { forwardRef, type ReactNode } from 'react';
+import { GlassSurface as FairwayGlassSurface } from '@/components/fairway/surfaces/glass-surface';
 
-export interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
+export interface GlassSurfaceProps {
   /**
    * `strong` → command palette / modal (more opaque, heavier blur — legible).
    * `regular` → lighter chrome (top bars). Default `strong` for the palette.
@@ -41,91 +54,32 @@ export interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
   intensity?: 'regular' | 'strong';
   /** Render the inner top specular sheen overlay. Default `true`. */
   sheen?: boolean;
+  className?: string;
+  children?: ReactNode;
 }
 
 /**
- * The scoped CSS for the glass material. Keyed entirely off `[data-fw-glass]`
- * so it is inert everywhere except on this component's own root element.
+ * CommandGlassSurface — the cream-tinted Liquid Glass panel used to float the
+ * command palette above the page. Forwards its ref so overlay libraries /
+ * focus managers can anchor to it.
  */
-const GLASS_CSS = `
-[data-fw-glass]{
-  position:relative;
-  border-radius:var(--fw-radius-lg);
-  isolation:isolate;
-  contain:layout paint style;
-  border:1px solid var(--fw-glass-border);
-  -webkit-backdrop-filter:blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
-  backdrop-filter:blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
-  background:var(--fw-glass-bg);
-  box-shadow:
-    inset 0 1px 0 0 var(--fw-glass-highlight),
-    inset 0 -1px 0 0 var(--fw-glass-border-bot),
-    var(--fw-shadow-raise);
-}
-[data-fw-glass="strong"]{
-  -webkit-backdrop-filter:blur(var(--fw-blur-strong)) saturate(var(--fw-glass-saturate));
-  backdrop-filter:blur(var(--fw-blur-strong)) saturate(var(--fw-glass-saturate));
-  background:var(--fw-glass-bg-strong);
-  box-shadow:
-    inset 0 1px 0 0 var(--fw-glass-highlight),
-    inset 0 -1px 0 0 var(--fw-glass-border-bot),
-    var(--fw-shadow-modal);
-}
-[data-fw-glass-sheen]{
-  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
-  background:linear-gradient(180deg,
-    rgb(255 255 255 / 0.28) 0%,
-    rgb(255 255 255 / 0.04) 22%,
-    transparent 60%);
-}
-@media (max-width:768px){
-  [data-fw-glass]{
-    -webkit-backdrop-filter:blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
-    backdrop-filter:blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
-  }
-}
-@media (prefers-reduced-transparency:reduce){
-  [data-fw-glass]{
-    background:var(--fw-color-surface);
-    -webkit-backdrop-filter:none;backdrop-filter:none;
-    border-color:var(--fw-color-border-subtle);
-    box-shadow:var(--fw-shadow-soft);
-  }
-  [data-fw-glass-sheen]{display:none;}
-}
-@media (forced-colors:active){
-  [data-fw-glass]{
-    background:Canvas;-webkit-backdrop-filter:none;backdrop-filter:none;
-    border:1px solid CanvasText;box-shadow:none;
-  }
-  [data-fw-glass-sheen]{display:none;}
-}
-`;
-
-/**
- * GlassSurface — the cream-tinted Liquid Glass panel used to float the command
- * palette above the page. Forwards its ref so overlay libraries / focus
- * managers can anchor to it.
- */
-export const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
-  function GlassSurface(
-    { intensity = 'strong', sheen = true, className, children, ...rest },
+export const CommandGlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
+  function CommandGlassSurface(
+    { intensity = 'strong', sheen = true, className, children },
     ref,
   ) {
     return (
-      <div
+      <FairwayGlassSurface
         ref={ref}
-        data-fw-glass={intensity}
-        data-slot="glass-surface"
-        className={cn('text-text-primary', className)}
-        {...rest}
+        surface="command"
+        tier={intensity === 'strong' ? 'modal' : 'floating'}
+        edgeHighlight={sheen}
+        animateIn={false}
+        padding={null}
+        className={className}
       >
-        {/* Scoped material CSS — inert outside [data-fw-glass]. */}
-        <style>{GLASS_CSS}</style>
-        {sheen ? <span data-fw-glass-sheen aria-hidden="true" /> : null}
-        {/* Content sits above the sheen layer. */}
-        <div className="relative z-[1] flex min-h-0 flex-col">{children}</div>
-      </div>
+        {children}
+      </FairwayGlassSurface>
     );
   },
 );
