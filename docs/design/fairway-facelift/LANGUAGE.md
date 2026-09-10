@@ -37,13 +37,19 @@ and everything else is typeset around it.
    never a chart in a card; the axis labels and readouts are typeset as part
    of the page.
 3. **The ledger row**: two or three bare columns divided by vertical
-   hairlines (`divide-x divide-border-subtle` on `lg`), stacked with
-   horizontal hairlines on phone. Each column is a heading and a list of
-   hairline rows. Unequal widths (5/4/3, 7/5), never equal cards.
+   hairlines, stacked on phone. Each column is a heading and a list of
+   hairline rows. Unequal widths (5/3/4, 7/5), never equal cards.
 4. **The table**: a dense, full-width `<table>` with an uppercase caption
    header over a `border-strong` rule, hairline rows, mono numerals right
    aligned, signed values colored as ink (green under, amber over), one row
    is one link. Ten rows and a "View all N" link.
+
+Breakpoints. The side-by-side splits belong to `xl` (1280), not `lg` (1024):
+at 1024 a 15rem readouts column starves the instrument beside it and a
+three-column ledger squeezes names to a single character. Between `md` and
+`xl` the readouts sit as a four-across band above the instrument and the
+ledger runs two columns with the third spanning both. Verify every screen at
+1024, 1280 and 1440, not just 1440 and phone.
 
 Rhythm: masthead 40px above the stage, 48px between the stage and the
 ledger, 40px to the table. Inside regions use 12 to 16px. Vary it; a page
