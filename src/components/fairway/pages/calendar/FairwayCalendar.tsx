@@ -61,7 +61,7 @@ import {
 } from 'date-fns';
 import { AlertTriangle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Sheet, Button as FwButton, IconButton, PressTarget, fairwayToast } from '@/components/fairway';
+import { Sheet, Button as FwButton, IconButton, PressTarget, Surface, fairwayToast } from '@/components/fairway';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -1401,9 +1401,30 @@ export function FairwayCalendar({
         //    all wired to the SAME server actions the legacy grid called.
         <>
           {/* Phone: the shared compact month (CalendarSurface) with the
-              selected day's schedule directly beneath it. Tapping a day only
-              moves the selection — the month stays on screen. */}
-          <div className="flex flex-col gap-4 md:hidden">
+              selected day's schedule directly beneath it, as ONE matte stage
+              — not two stacked cards. Tapping a day only moves the
+              selection — the month stays on screen.
+
+              FairwayMonthOverview and FairwayAgendaView each carry their OWN
+              `Surface elevation="border"` (a hairline + the card-whisper
+              shadow) since they're also used standalone elsewhere. Neither
+              is edited here — this wrapper is itself a Surface, and the
+              `[data-slot=surface]` descendant override neutralizes BOTH
+              children's own border/radius/shadow (every Surface renders
+              `data-slot="surface"`, so this reaches the child's root
+              whichever of AgendaView's several return branches renders,
+              without needing to know which one), leaving the seam between
+              them as the SAME hairline-on-retina divider AgendaView's own
+              row dividers use. */}
+          <Surface
+            elevation="border"
+            padding="none"
+            className={cn(
+              'overflow-hidden md:hidden',
+              '[&>*+*]:border-t [&>*+*]:border-border-subtle [@media(min-resolution:2dppx)]:[&>*+*]:border-t-[0.5px]',
+              '[&_[data-slot=surface]]:!rounded-none [&_[data-slot=surface]]:!border-0 [&_[data-slot=surface]]:!shadow-none',
+            )}
+          >
             <FairwayMonthOverview
               events={events}
               selectedDate={focusDate}
@@ -1424,7 +1445,7 @@ export function FairwayCalendar({
               nowRef={nowRef}
               isLoadingRange={isLoadingRange}
             />
-          </div>
+          </Surface>
           <div className="hidden md:block">
             <FairwayMonthGrid
               events={events}

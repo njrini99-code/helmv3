@@ -449,10 +449,20 @@ export function FairwayCalendarHero({
  * every scroll frame on a phone). From `md` up the SAME period/view/action
  * controls this docs/design/fairway-facelift/screens/calendar.desktop.md
  * composition asks for live in ONE row built on the shared `Toolbar`
- * primitive instead: `material="frost"` + `sticky` is a primitive-level
- * combo the facelift's own enforcement ratchet (fairway-facelift-ratchets.
- * test.ts, guard 4) already allow-lists as supported and perf-tested, so
- * this masthead never hand-rolls sticky+blur itself.
+ * primitive instead. Toolbar's own `frame` default (`'bare'`, 2026-09-10)
+ * already gives this masthead the right look with no extra props: no box at
+ * rest (a transparent row, one bottom hairline — this masthead sits
+ * directly above the stage, exactly the "toolbar-card over a list-card"
+ * shape that default exists to avoid), earning the shared frost bar
+ * (`fw-frost fw-frost-bar`) only once `sticky` genuinely pins it under
+ * scroll. `frame="card"` (the always-boxed row, what the desktop ascii's
+ * literal "Toolbar(frost, sticky)" annotation would have meant before
+ * `frame` existed) is deliberately NOT set — Toolbar's own docs say to keep
+ * it only where a toolbar floats over a canvas, never above a list, which
+ * is exactly this masthead's position. Sticky+blur still never gets
+ * hand-rolled here: it's Toolbar's own primitive-level behavior, which the
+ * facelift's enforcement ratchet (fairway-facelift-ratchets.test.ts, guard
+ * 4) allow-lists as supported and perf-tested.
  *
  * A GENUINELY SEPARATE component (not a second branch inside
  * `FairwayCalendarHero`): both mount unconditionally side by side (parent:
@@ -564,9 +574,14 @@ export function FairwayCalendarToolbar({
   ].filter((action): action is NonNullable<typeof action> => action !== null);
 
   return (
-    <div className={cn('relative', className)}>
+    // `--fw-toolbar-bleed` matches the page column's own `md:px-6` (1.5rem)
+    // horizontal padding, so the bare row's stuck frost bar runs edge to
+    // edge with the viewport — the same "sits ON the list" edge-to-edge
+    // geometry the phone bar's own `-mx-6 px-6` already gives it — while its
+    // controls (leading/viewToggle/primaryAction) stay aligned with the
+    // content column, unmoved.
+    <div className={cn('relative', className)} style={{ '--fw-toolbar-bleed': '1.5rem' } as React.CSSProperties}>
       <Toolbar
-        material="frost"
         sticky
         stickyTop={DESKTOP_STICKY_TOP}
         aria-label="Calendar controls"

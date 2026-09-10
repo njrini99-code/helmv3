@@ -37,11 +37,27 @@ function renderToolbar(overrides: Partial<React.ComponentProps<typeof FairwayCal
 }
 
 describe('FairwayCalendarToolbar — desktop masthead contract', () => {
-  it('is ONE row built on the shared Toolbar: sticky, frost at rest', () => {
+  it('is ONE row built on the shared Toolbar: sticky, Toolbar\'s own bare-at-rest/frost-while-stuck default', () => {
     renderToolbar();
     const row = screen.getByRole('toolbar', { name: 'Calendar controls' });
-    expect(row.getAttribute('data-material')).toBe('frost');
+    // No `frame="card"` override — this masthead sits directly above the
+    // stage, exactly the position Toolbar's bare default (2026-09-10) is
+    // FOR: no box at rest, the shared frost bar only once genuinely stuck.
+    expect(row.getAttribute('data-frame')).toBe('bare');
     expect(row.className).toContain('sticky');
+  });
+
+  it('sets --fw-toolbar-bleed so the stuck frost bar can run edge to edge with the page column\'s own padding', () => {
+    renderToolbar();
+    const row = screen.getByRole('toolbar', { name: 'Calendar controls' });
+    // The row's own inline style references the var inside a `calc()` (which
+    // itself contains the substring "--fw-toolbar-bleed"), so a `closest()`
+    // attribute-substring match would resolve to the row itself rather than
+    // climbing to the wrapper that actually sets it. The wrapper is the
+    // row's direct DOM parent, so assert on it precisely instead.
+    const host = row.parentElement;
+    expect(host).not.toBeNull();
+    expect(host!.getAttribute('style')).toContain('--fw-toolbar-bleed: 1.5rem');
   });
 
   it('titles the month and offers an explicit view selector, same as the phone bar', () => {
