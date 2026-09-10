@@ -388,18 +388,12 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
   );
 
   return (
-    // Right clearance for the "Ask CoachHelm" pill (review roster/38, desktop):
-    // it's `fixed bottom-6 right-6` with `h-14` (see
-    // src/test/golf/coachhelm-fab-clearance.test.ts), a 56px circle whose LEFT
-    // edge sits 80px from the viewport's right edge. FairwayDashboardShell's
-    // sidebar eats the page's left margin, so at md+ this container's own
-    // `md:px-6` was the ONLY inset from the true viewport edge — the board's
-    // last column (the per-row overflow menu, `pr-5` inside MatrixBoard) sat
-    // well inside that 80px band. `md:pr-24` (96px, mirroring the dashboard
-    // layout's own `md:pb-24` reservation for the same pill) clears it with
-    // margin to spare; the board and the header Surface stay the same width
-    // as each other because both are children of this one container.
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:pl-6 md:pr-24 md:py-8">
+    // Symmetric gutter. The shell reserves `md:pb-28` under every coach route
+    // for the Ask CoachHelm launcher, so the board's last row scrolls clear
+    // of it; a right-hand gutter cannot (the pill is ~160px wide, wider than
+    // any gutter this page could carry) and it shifted the whole page off the
+    // axis every other dashboard route sits on.
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
       {/* Masthead — the one canonical ViewHeader primitive. Invite stays the
           ONE primary action on this screen (brief §12). */}
       <ViewHeader
@@ -445,12 +439,14 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               any page anymore; only its pure math survives, in
               `roster-health.ts`. */}
           <Surface elevation="border" padding="none" className="mb-6 overflow-hidden">
-            {/* `minmax(0,1fr)` at EVERY width: a plain auto track sizes to
-                its content's min-content, and the attention rows' nowrap
-                meta lines made it wider than a phone — the whole panel
-                clipped at the right edge (roster.mobile.md #1). */}
-            <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-              <div className="p-5 md:p-6">
+            {/* One column at every width: the four numbers run as a strip
+                across the top (the same instrument the rounds library opens
+                with), the attention rows sit under a hairline. The old
+                side-by-side split parked one row of numbers in a half-panel
+                that ran 250px of empty cream under them at 1440 while the
+                attention list filled the other half. */}
+            <div className="flex flex-col">
+              <div className="border-b border-border-subtle p-5 md:px-6 md:py-5">
                 {/* No `label`: the ViewHeader eyebrow above already says
                     Roster (REVIEW.md: one eyebrow per screen). */}
                 <StatMatrix
@@ -670,7 +666,7 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
  * so this page can't reintroduce the two production incidents that copy's
  * comments documented (a vacuously-true all-clear on a zero-round roster;
  * every real player flagged on a program with no focus areas yet). Only the
- * presentation differs (seam rows in a Surface half
+ * presentation differs (seam rows under the Surface's stat strip
  * instead of an InstrumentCluster panel).
  * ------------------------------------------------------------------------- */
 function AttentionPanel({
@@ -695,7 +691,7 @@ function AttentionPanel({
   const remaining = needs.length - shown.length;
 
   return (
-    <div className="border-t border-border-subtle p-5 lg:border-l lg:border-t-0 md:p-6">
+    <div className="p-5 md:p-6">
       <h3 className="mb-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
         Who needs your attention
       </h3>
