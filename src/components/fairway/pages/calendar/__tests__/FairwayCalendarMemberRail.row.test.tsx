@@ -2,9 +2,9 @@
  * FairwayCalendarMemberRail — one row, three ways in.
  *
  * The summary (avatars · "Team schedule" · "N people") IS the People menu
- * trigger; Compare is its own control (icon on a phone, so it is named by
- * aria-label), and the People menu ALSO offers "Compare schedules…" so the
- * icon is never the only way to the picker.
+ * trigger and, on a phone, the only control in the row; "Compare schedules…"
+ * lives in that menu. From `md` up a labelled Compare button stands beside
+ * the row, never nested inside it.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
@@ -30,9 +30,13 @@ describe('FairwayCalendarMemberRail — one row', () => {
     expect(await screen.findByText('Everyone')).toBeInTheDocument();
   });
 
-  it('names Compare by label so the phone\'s icon-only control is still "Compare"', () => {
+  it('keeps the labelled Compare beside the row (never nested) and off the phone', () => {
     render(<FairwayCalendarMemberRail teamMembers={ROSTER} selectedPlayerIds={[]} onSelect={vi.fn()} onOpenPerson={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Compare' })).toHaveAttribute('aria-label', 'Compare');
+    const compare = screen.getByRole('button', { name: 'Compare' });
+    expect(compare.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(compare.className).toContain('md:inline-flex');
+    const row = screen.getByRole('button', { name: 'People' }).parentElement!;
+    expect(row.contains(compare)).toBe(false);
   });
 
   it('offers the picker from the People menu too', async () => {

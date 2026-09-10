@@ -339,11 +339,12 @@ keeps its date separate from the return-to-today action.
   (`rounded-[16px]`, hairline, `--fw-shadow-card`): the summary
   (AvatarGroup max 2 · "Team schedule" / "Comparing N" · detail · chevron) is
   a `PressTarget` that IS the People menu trigger (`aria-label="People"`);
-  Clear while comparing; Compare as a secondary control (icon only on a
-  phone, labelled from md; always named "Compare") — the People menu also
-  offers "Compare schedules…" so the icon is never the only way in. Three
-  distinct actions — team schedule, open a person, include in a comparison —
-  never one avatar meaning all three.
+  Clear while comparing (ghost text, the only other thing inside the row).
+  Nothing else nests in the row: on a phone "Compare schedules…" lives in
+  the People menu; from md a labelled secondary Compare button stands BESIDE
+  the row (`hidden md:inline-flex`), never inside it. Three distinct actions
+  — team schedule, open a person, include in a comparison — never one avatar
+  meaning all three.
 - Agenda: month-scoped — its visible window is the title's calendar month
   and prev/next step by month (`Previous month` / `Next month`); the empty
   state names the period ("Nothing in September 2026") in a compact

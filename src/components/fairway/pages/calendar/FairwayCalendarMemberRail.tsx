@@ -106,10 +106,12 @@ export function FairwayCalendarMemberRail({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* One raised row on the canvas: the summary (which IS the People menu)
-          and the Compare control share a lifted card, so the entry reads as a
-          real control tile rather than a line of text with ghost buttons. */}
-      <div className="flex items-center gap-1 rounded-xl border border-border-subtle bg-surface py-1 pl-1 pr-1.5 [box-shadow:var(--fw-shadow-card)]">
+      <div className="flex items-center gap-2">
+        {/* One raised row on the canvas: the summary IS the People menu. On a
+            phone it is the only control here — "Compare schedules…" lives in
+            the menu — so nothing sits nested inside it. From `md` up the
+            labelled Compare button stands beside the row, never inside it. */}
+        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl border border-border-subtle bg-surface p-1 [box-shadow:var(--fw-shadow-card)]">
         {/* The summary is the menu: one press opens People. */}
         <PopoverPanel
           open={menuOpen}
@@ -196,10 +198,11 @@ export function FairwayCalendarMemberRail({
         </PopoverPanel>
 
         {comparing ? (
-          <Button variant="ghost" size="sm" onClick={() => onSelect([])}>
+          <Button variant="ghost" size="sm" className="shrink-0" onClick={() => onSelect([])}>
             Clear
           </Button>
         ) : null}
+        </div>
         {onOpenPerson ? (
           <CalendarPeoplePicker
             open={pickerOpen}
@@ -215,11 +218,10 @@ export function FairwayCalendarMemberRail({
               <Button
                 variant="secondary"
                 size="sm"
-                aria-label="Compare"
                 leftIcon={<UserSearch className="h-4 w-4" aria-hidden />}
-                className="shrink-0 px-2.5 md:px-3.5"
+                className="hidden shrink-0 md:inline-flex"
               >
-                <span className="hidden md:inline">Compare</span>
+                Compare
               </Button>
             }
           />
