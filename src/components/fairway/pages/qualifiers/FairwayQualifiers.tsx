@@ -303,13 +303,17 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onClear={() => setQuery('')}
-                placeholder="Search qualifiers by name, course, or detail"
+                placeholder="Search qualifiers"
                 aria-label="Search qualifiers"
               />
             }
-            viewToggle={
+            // FilterPills belong in the `filters` slot (left, under the search
+            // on phone; beside it on desktop). In `viewToggle` they sat in the
+            // trailing `ml-auto` cluster and read as orphaned on phone
+            // (qualifiers.mobile.md #1).
+            filters={
               <div
-                className="flex flex-wrap items-center gap-2"
+                className="flex flex-nowrap items-center gap-2"
                 role="group"
                 aria-label="Filter qualifiers by status"
               >

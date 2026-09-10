@@ -53,10 +53,12 @@
 
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Bell, ChevronDown } from 'lucide-react';
+import { ClipboardList, Bell, Check, ChevronDown, ListFilter } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { InsetGroup } from '@/components/fairway/surfaces';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import {
   ViewHeader,
   Surface,
@@ -142,6 +144,12 @@ export interface FairwayTaskPlayer {
 }
 
 type FilterType = 'all' | 'active' | 'completed';
+/** Status options — the desktop Segmented and the phone status Sheet share them. */
+const STATUS_OPTIONS: { value: FilterType; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'completed', label: 'Completed' },
+];
 
 export interface FairwayTasksProps {
   /** Resolved viewer role (gates the create CTA + Templates rail + complete action). */
@@ -246,6 +254,8 @@ export function FairwayTasks({
   };
 
   const [filter, setFilter] = useState<FilterType>('all');
+  // Phone: the status Segmented lives in a Sheet behind one "Status" control.
+  const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   // P287 — text search (title/description) + category narrowing for coaches at scale.
   const [query, setQuery] = useState('');
   // Multi-select category filter (screens/tasks.md CONTAINERS TO REMOVE #2): a
@@ -465,18 +475,33 @@ export function FairwayTasks({
               />
             }
             viewToggle={
-              <Toolbar.ViewToggle
-                options={[
-                  { value: 'all', label: 'All' },
-                  { value: 'active', label: 'Active' },
-                  { value: 'completed', label: 'Completed' },
-                ]}
-                value={filter}
-                onValueChange={setFilter}
-                aria-label="Filter tasks by status"
-              />
+              // Desktop only; on phone the same options open from the
+              // "Status" control in the filters line (tasks.mobile.md #1).
+              <div className="hidden sm:contents">
+                <Toolbar.ViewToggle
+                  options={STATUS_OPTIONS}
+                  value={filter}
+                  onValueChange={setFilter}
+                  aria-label="Filter tasks by status"
+                />
+              </div>
             }
-            filters={categoryFilterMenu}
+            filters={
+              <>
+                {categoryFilterMenu}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0 sm:hidden"
+                  leftIcon={<ListFilter className="h-4 w-4" aria-hidden />}
+                  aria-haspopup="dialog"
+                  aria-expanded={statusSheetOpen}
+                  onClick={() => setStatusSheetOpen(true)}
+                >
+                  Status · {STATUS_OPTIONS.find((o) => o.value === filter)?.label ?? 'All'}
+                </Button>
+              </>
+            }
           />
 
           {/* ── The task list: ONE matte Surface of seam rows. ────────────────── */}
@@ -547,6 +572,35 @@ export function FairwayTasks({
           categories={categories}
         />
       )}
+
+      {/* ── Phone status Sheet — the Segmented's three options as seam rows.
+          Matte (a docked utility sheet), closes on pick. ──────────────────── */}
+      <Sheet open={statusSheetOpen} onOpenChange={setStatusSheetOpen} title="Filter tasks by status">
+        <Sheet.Body className="px-4 pb-4">
+          <InsetGroup variant="matte" aria-label="Task status">
+            {STATUS_OPTIONS.map((opt) => {
+              const selected = filter === opt.value;
+              return (
+                <InsetGroup.Row
+                  key={opt.value}
+                  as="button"
+                  aria-pressed={selected}
+                  trailing={selected ? <Check className="text-accent-700" aria-hidden /> : undefined}
+                  onClick={() => {
+                    if (!selected) fwHaptic('selection');
+                    setFilter(opt.value);
+                    setStatusSheetOpen(false);
+                  }}
+                >
+                  <span className={cn('font-fw-sans text-body-sm', selected ? 'font-semibold text-text-primary' : 'text-text-secondary')}>
+                    {opt.label}
+                  </span>
+                </InsetGroup.Row>
+              );
+            })}
+          </InsetGroup>
+        </Sheet.Body>
+      </Sheet>
 
       {/* ── Templates Sheet (coach) — header overflow's "From template". ────── */}
       {isCoach && teamId && (
@@ -925,6 +979,24 @@ function FairwayTaskRow({
             <p className="truncate font-fw-sans text-body font-medium text-text-primary">
               {task.title}
             </p>
+            {/* Phone: progress rides under the title (the desktop cell below is
+                `hidden sm:block`) — title · progress · due (tasks.mobile.md #2).
+                Never a fake 0/0. */}
+            {hasAssignments && (
+              <div className="mt-1 flex items-center gap-2 sm:hidden">
+                <div className="w-16">
+                  <Progress
+                    value={completionRate}
+                    size="sm"
+                    tone={completionRate === 100 ? 'success' : 'accent'}
+                    label={`${task.title}: ${completedCount} of ${totalCount} assignees completed`}
+                  />
+                </div>
+                <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
+                  {completedCount}/{totalCount}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Assignee progress — n/total + a slim Progress bar. Never a fake
