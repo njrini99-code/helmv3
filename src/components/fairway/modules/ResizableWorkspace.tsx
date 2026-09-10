@@ -16,6 +16,7 @@
  *     minSizes={{ left: 18, center: 32, right: 20 }}
  *     storageKey="signals-workspace-v1"
  *     collapsible={{ left: true, right: true }}
+ *     defaultCollapsed={{ right: !isWideMonitor }}
  *   />
  *
  * ── Sizing ──────────────────────────────────────────────────────────────────
@@ -32,6 +33,19 @@
  * degrade to `defaultLayout` silently). A `hydrated` flag delays the
  * write-back effect one tick so a fresh mount can never stomp a previously
  * saved layout with the just-rendered default before the read finishes.
+ * Only a layout the user has TOUCHED (drag, arrow key, chevron) is written:
+ * the rendered default is not user data, so a laptop session never pins its
+ * narrow-screen defaults onto the same coach's wide monitor. A collapsed side
+ * persists as a 0 track and restores collapsed.
+ *
+ * ── Default collapse ────────────────────────────────────────────────────────
+ * `defaultCollapsed` starts a `collapsible` side at zero (its share handed to
+ * `center`). Initial-only, like `defaultLayout`: a persisted layout wins, and
+ * once the user touches a handle the prop is never re-applied. Until then it
+ * IS re-applied when its value changes, so a caller can feed it a media
+ * query — collapse the inspector below 2xl where three panes leave the stage
+ * ~500px wide, keep it open on a wide monitor — without the pane snapping
+ * shut again after the coach expanded it.
  *
  * ── Keyboard ────────────────────────────────────────────────────────────────
  * Each handle is `role="separator" aria-orientation="vertical" tabIndex={0}`
@@ -94,6 +108,13 @@ export interface ResizableWorkspaceProps {
   /** Which side(s) can collapse to zero via the handle's chevron / Home-End. Default `false`. */
   collapsible?: boolean | { left?: boolean; right?: boolean };
   /**
+   * Side(s) that start collapsed (must also be `collapsible`). Initial-only:
+   * a layout persisted under `storageKey` wins, and the prop stops applying
+   * the moment the user drags, keys, or clicks a handle. Re-applied on change
+   * until then, so a media query is a valid input.
+   */
+  defaultCollapsed?: { left?: boolean; right?: boolean };
+  /**
    * Owns the ENTIRE sub-`md` layout (e.g. a tab switcher exposing `left`/
    * `right` as sheets). Omit for the default: `center` alone, no chrome.
    */
@@ -116,7 +137,10 @@ function resolveCollapsible(
 
 /** Renormalize a raw size list to the given pane count, summing to exactly 100. */
 function normalizeSizes(raw: number[] | undefined, count: number, fallbackEach = 100 / count): number[] {
-  const src = Array.isArray(raw) && raw.length === count && raw.every((n) => Number.isFinite(n) && n > 0) ? raw : null;
+  // `>= 0`, not `> 0`: a collapsed pane is a legitimate 0 track (see the
+  // persistence note in the docblock) — rejecting it threw away every saved
+  // layout that had a side collapsed.
+  const src = Array.isArray(raw) && raw.length === count && raw.every((n) => Number.isFinite(n) && n >= 0) ? raw : null;
   const base = src ?? Array.from({ length: count }, () => fallbackEach);
   const sum = base.reduce((a, b) => a + b, 0);
   // Already sums to 100 (the common case: a caller-supplied layout that adds
@@ -141,6 +165,7 @@ export const ResizableWorkspace = forwardRef<HTMLDivElement, ResizableWorkspaceP
       minSizes,
       storageKey,
       collapsible = false,
+      defaultCollapsed,
       renderMobile,
       className,
       'data-slot': dataSlot = 'fw-resizable-workspace',
@@ -156,13 +181,26 @@ export const ResizableWorkspace = forwardRef<HTMLDivElement, ResizableWorkspaceP
       () => ({ ...DEFAULT_MIN, ...minSizes }),
       [minSizes],
     );
-    const canCollapse = resolveCollapsible(collapsible);
+    const resolvedCollapsible = resolveCollapsible(collapsible);
+    // Memoized on the two booleans, not the (usually inline) `collapsible`
+    // object, so the callbacks and the default-collapse effect below stay
+    // referentially stable across renders.
+    const canCollapse = useMemo(
+      () => ({ left: resolvedCollapsible.left, right: resolvedCollapsible.right }),
+      [resolvedCollapsible.left, resolvedCollapsible.right],
+    );
+    const wantCollapsedLeft = !!defaultCollapsed?.left;
+    const wantCollapsedRight = !!defaultCollapsed?.right;
 
     const [sizes, setSizes] = useState<number[]>(() => normalizeSizes(defaultLayout, paneKeys.length));
     const [hydrated, setHydrated] = useState(!storageKey);
     const [collapsed, setCollapsed] = useState<{ left: boolean; right: boolean }>({ left: false, right: false });
     const [isResizing, setIsResizing] = useState(false);
     const lastSizeRef = useRef<{ left: number; right: number }>({ left: min.left, right: min.right });
+    /** Set once a persisted layout was loaded — `defaultCollapsed` then never applies. */
+    const storedLayoutRef = useRef(false);
+    /** Set on the first drag/key/chevron — from then on the layout is user data: persisted, and no longer overridden by `defaultCollapsed`. */
+    const userTouchedRef = useRef(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const composedRef = useComposedRefs(ref, containerRef);
 
@@ -181,7 +219,20 @@ export const ResizableWorkspace = forwardRef<HTMLDivElement, ResizableWorkspaceP
         if (raw) {
           const parsed = JSON.parse(raw) as unknown;
           if (Array.isArray(parsed) && parsed.length === paneKeys.length && parsed.every((n) => typeof n === 'number')) {
-            setSizes(normalizeSizes(parsed, paneKeys.length));
+            const restored = normalizeSizes(parsed, paneKeys.length);
+            const defaults = normalizeSizes(defaultLayout, paneKeys.length);
+            const restoredCollapsed = { left: false, right: false };
+            (['left', 'right'] as const).forEach((side) => {
+              const idx = paneKeys.indexOf(side);
+              if (idx < 0 || (restored[idx] ?? 1) > 0.01) return;
+              restoredCollapsed[side] = true;
+              // Expanding a side that was saved collapsed brings back its
+              // default share, not the bare minimum.
+              lastSizeRef.current = { ...lastSizeRef.current, [side]: Math.max(defaults[idx] ?? 0, min[side]) };
+            });
+            setSizes(restored);
+            setCollapsed(restoredCollapsed);
+            storedLayoutRef.current = true;
           }
         }
       } catch {
@@ -192,9 +243,11 @@ export const ResizableWorkspace = forwardRef<HTMLDivElement, ResizableWorkspaceP
     }, [storageKey]);
 
     // Persist on change — gated on `hydrated` so the initial default render
-    // can never overwrite a previously saved layout before the read above runs.
+    // can never overwrite a previously saved layout before the read above
+    // runs, and on `userTouchedRef` so only a layout the user actually chose
+    // is written (a default-collapsed inspector is not a preference).
     useEffect(() => {
-      if (!storageKey || !hydrated) return;
+      if (!storageKey || !hydrated || !userTouchedRef.current) return;
       try {
         window.localStorage.setItem(storageKey, JSON.stringify(sizes));
       } catch {
@@ -281,11 +334,27 @@ export const ResizableWorkspace = forwardRef<HTMLDivElement, ResizableWorkspaceP
 
     const toggleSide = useCallback(
       (side: 'left' | 'right') => {
+        userTouchedRef.current = true;
         if (collapsed[side]) expandSide(side);
         else collapseSide(side);
       },
       [collapsed, collapseSide, expandSide],
     );
+
+    // Apply `defaultCollapsed`. Declared AFTER the storage read so, within
+    // the mount commit, a persisted layout has already flagged
+    // `storedLayoutRef` by the time this runs. Idempotent: it only acts when
+    // the wanted state differs from the current one, and never once the user
+    // has touched a handle.
+    useEffect(() => {
+      if (storedLayoutRef.current || userTouchedRef.current) return;
+      (['left', 'right'] as const).forEach((side) => {
+        if (!canCollapse[side] || paneIndex(side) < 0) return;
+        const want = side === 'left' ? wantCollapsedLeft : wantCollapsedRight;
+        if (want && !collapsed[side]) collapseSide(side);
+        else if (!want && collapsed[side]) expandSide(side);
+      });
+    }, [wantCollapsedLeft, wantCollapsedRight, canCollapse, collapsed, collapseSide, expandSide, paneIndex]);
 
     const handlePointerDown = useCallback(
       (handleIndex: number) => (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -295,6 +364,7 @@ export const ResizableWorkspace = forwardRef<HTMLDivElement, ResizableWorkspaceP
         const rect = container.getBoundingClientRect();
         const target = event.currentTarget;
         target.setPointerCapture(event.pointerId);
+        userTouchedRef.current = true;
         setIsResizing(true);
         const onMove = (moveEvent: PointerEvent) => {
           const deltaPx = moveEvent.movementX;
@@ -317,6 +387,7 @@ export const ResizableWorkspace = forwardRef<HTMLDivElement, ResizableWorkspaceP
       (handleIndex: number) => (event: ReactKeyboardEvent<HTMLDivElement>) => {
         const before = paneKeys[handleIndex];
         const after = paneKeys[handleIndex + 1];
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) userTouchedRef.current = true;
         switch (event.key) {
           case 'ArrowLeft':
             event.preventDefault();

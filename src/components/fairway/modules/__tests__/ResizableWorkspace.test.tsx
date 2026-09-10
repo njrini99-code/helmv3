@@ -281,3 +281,100 @@ describe('ResizableWorkspace — layout persistence', () => {
     expect(percents(root)).toEqual([50, 30, 20]);
   });
 });
+
+describe('ResizableWorkspace — defaultCollapsed', () => {
+  const three = (extra: Record<string, unknown>) => (
+    <ResizableWorkspace
+      left={<div>Queue</div>}
+      center={<div>Evidence</div>}
+      right={<div>Assistant</div>}
+      defaultLayout={[24, 48, 28]}
+      {...extra}
+    />
+  );
+
+  it('starts a collapsible side at 0 and hands its share to center', () => {
+    mockDesktop();
+    const { container } = render(three({ collapsible: { right: true }, defaultCollapsed: { right: true } }));
+    const root = container.querySelector('[data-slot="fw-resizable-workspace"]') as HTMLElement;
+    const [leftPct, centerPct, rightPct] = percents(root);
+    expect(leftPct).toBe(24);
+    expect(centerPct).toBeCloseTo(76, 5);
+    expect(rightPct).toBe(0);
+    expect(screen.getByRole('button', { name: 'Expand right panel' })).toBeInTheDocument();
+  });
+
+  it('is ignored for a side that is not collapsible', () => {
+    mockDesktop();
+    const { container } = render(three({ defaultCollapsed: { right: true } }));
+    const root = container.querySelector('[data-slot="fw-resizable-workspace"]') as HTMLElement;
+    expect(percents(root)).toEqual([24, 48, 28]);
+  });
+
+  it('loses to a persisted layout', () => {
+    window.localStorage.setItem('workspace-test-3', JSON.stringify([50, 30, 20]));
+    mockDesktop();
+    const { container } = render(
+      three({ collapsible: { right: true }, defaultCollapsed: { right: true }, storageKey: 'workspace-test-3' }),
+    );
+    const root = container.querySelector('[data-slot="fw-resizable-workspace"]') as HTMLElement;
+    expect(percents(root)).toEqual([50, 30, 20]);
+    expect(screen.getByRole('button', { name: 'Collapse right panel' })).toBeInTheDocument();
+  });
+
+  it('re-applies when its value changes until the user touches a handle', () => {
+    mockDesktop();
+    const { container, rerender } = render(three({ collapsible: { right: true }, defaultCollapsed: { right: true } }));
+    const root = container.querySelector('[data-slot="fw-resizable-workspace"]') as HTMLElement;
+    expect(percents(root)[2]).toBe(0);
+
+    rerender(three({ collapsible: { right: true }, defaultCollapsed: { right: false } }));
+    expect(percents(root)).toEqual([24, 48, 28]);
+
+    // The coach collapses it by hand — the prop flipping back must not reopen it.
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse right panel' }));
+    expect(percents(root)[2]).toBe(0);
+    rerender(three({ collapsible: { right: true }, defaultCollapsed: { right: false } }));
+    expect(percents(root)[2]).toBe(0);
+  });
+});
+
+describe('ResizableWorkspace — collapsed persistence', () => {
+  it('does not persist an untouched default layout (collapsed or not)', () => {
+    mockDesktop();
+    render(
+      <ResizableWorkspace
+        left={<div>A</div>}
+        center={<div>B</div>}
+        right={<div>C</div>}
+        defaultLayout={[24, 48, 28]}
+        collapsible={{ right: true }}
+        defaultCollapsed={{ right: true }}
+        storageKey="workspace-test-4"
+      />,
+    );
+    expect(window.localStorage.getItem('workspace-test-4')).toBeNull();
+  });
+
+  it('a layout saved with a 0 track restores collapsed and expands back to the default share', () => {
+    window.localStorage.setItem('workspace-test-5', JSON.stringify([24, 76, 0]));
+    mockDesktop();
+    const { container } = render(
+      <ResizableWorkspace
+        left={<div>A</div>}
+        center={<div>B</div>}
+        right={<div>C</div>}
+        defaultLayout={[24, 48, 28]}
+        collapsible={{ right: true }}
+        storageKey="workspace-test-5"
+      />,
+    );
+    const root = container.querySelector('[data-slot="fw-resizable-workspace"]') as HTMLElement;
+    expect(percents(root)).toEqual([24, 76, 0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Expand right panel' }));
+    const [, centerPct, rightPct] = percents(root);
+    expect(rightPct).toBeCloseTo(28, 5);
+    expect(centerPct).toBeCloseTo(48, 5);
+    expect(JSON.parse(window.localStorage.getItem('workspace-test-5')!)[2]).toBeCloseTo(28, 5);
+  });
+});

@@ -107,7 +107,7 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
     name: 'ResizableWorkspace', category: 'architecture', status: 'new', archetypes: ['D'], material: 'canvas',
     bestFor: ['desktop queue | evidence | assistant', 'schedule lane + inspector'], avoidFor: ['mobile (renders center-only by default)', 'a single-pane view'],
     replaces: ['fixed-width flex columns with no resize', 'bespoke pointer-drag splitter code'],
-    mobile: 'center pane only by default, or a consumer-owned renderMobile layout', desktop: 'pointer + keyboard resizable panes, persisted layout, collapsible sides', examples: ['Signals workspace', 'Practice planner'],
+    mobile: 'center pane only by default, or a consumer-owned renderMobile layout', desktop: 'pointer + keyboard resizable panes, user-touched layout persisted, collapsible sides, defaultCollapsed (media-query friendly) for the inspector below 2xl', examples: ['Signals workspace', 'Practice planner'],
   },
   // ── Surfaces ────────────────────────────────────────────────────────────
   {

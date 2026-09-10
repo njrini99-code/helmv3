@@ -138,6 +138,10 @@ export function TriageDesk({
   // StatsSpineStage) — the Spine stacks above the workspace below it, and
   // collapses its priorities/ledger rows per the phone composition.
   const isDesktopSpine = useMediaQuery('(min-width: 940px)');
+  // Below 2xl three panes leave the dossier ~500px wide at 1440 (the leak
+  // band's fourth column landed in the scroll fade). The inspector starts
+  // collapsed there — one chevron brings it back, and that choice persists.
+  const isWideWorkspace = useMediaQuery('(min-width: 1536px)');
 
   const requestedView = resolveTriageView(searchParams.get('view'));
   const requestedQueueFilter = resolveQueueFilter(searchParams.get('filter'));
@@ -616,9 +620,11 @@ export function TriageDesk({
                   />
                 }
                 right={insightPanel}
-                defaultLayout={[28, 44, 28]}
+                defaultLayout={[26, 48, 26]}
                 minSizes={{ left: 20, center: 32, right: 20 }}
-                storageKey="coachhelm-signals-workspace-v1"
+                collapsible={{ left: true, right: true }}
+                defaultCollapsed={{ right: !isWideWorkspace }}
+                storageKey="coachhelm-signals-workspace-v2"
                 renderMobile={
                   <div className="flex flex-col gap-3">
                     <div className={cn(isSignalSelected && 'hidden')}>

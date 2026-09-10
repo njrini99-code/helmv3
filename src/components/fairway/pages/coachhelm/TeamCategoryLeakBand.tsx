@@ -65,16 +65,15 @@ function CategorySegment({ category }: { category: TeamCategory }) {
     .slice(0, 2);
 
   return (
-    // `max-w-[220px]` alongside the existing `min-w-[164px]`: without a
-    // ceiling, a column whose strokes badge ("+0.7 str/rd available") or
-    // player-row content wants more room than 164px could grow wider than
-    // its siblings — nothing here caps it, so at 1440px the row's total
-    // content width crept past the panel's available width and the last
-    // column landed partly outside the (unfaded) scroll viewport, reading
-    // as text cut mid-word rather than a column that fit. Capping the width
-    // forces the same wrap-not-grow behavior every column already uses for
-    // its own badges (facelift REVIEW.md item 6).
-    <div className="flex h-full min-w-[164px] max-w-[220px] shrink-0 flex-col gap-3 px-4 py-3.5 first:pl-0 last:pr-0">
+    // Equal-share columns (`flex-1` from a 0 basis) with a 152px floor: when
+    // the band has room every category gets the same width and the row fills
+    // the panel edge to edge; when it doesn't (five categories in a ~500px
+    // stage) the floor pushes the row into the horizontal scroller above
+    // rather than squeezing the mono readouts. The old `min-w-[164px]
+    // max-w-[220px] shrink-0` pair could never fill the panel and, with the
+    // cockpit's three panes at 1440, left the fourth column half inside the
+    // scroll fade reading as text cut mid-word (facelift REVIEW.md item 6).
+    <div className="flex h-full min-w-[152px] flex-1 flex-col gap-3 px-4 py-3.5 first:pl-0 last:pr-0">
       {/* flex-wrap: on tight phone widths (long label + long trend word,
           e.g. APPROACH + Declining) the glyph must wrap under the label —
           with shrink-0 alone it escapes past the card edge (iOS 2026-07-24). */}
