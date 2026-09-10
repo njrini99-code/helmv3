@@ -2,19 +2,29 @@
  * FairwayTasks — render regression tests.
  *
  *  - P295: a task's due date must read IDENTICALLY across every render call
- *    site in this file (the list card's due label, the masthead's "due
- *    today" count, and the overdue tint) for the SAME stored `due_date`.
- *    `new Date('YYYY-MM-DD')` parses a date-only value as UTC midnight,
- *    which in any negative-UTC-offset zone (all of the US) rolls back to the
- *    PREVIOUS local calendar day — this used to make the card say "Tomorrow"
- *    while the masthead's due-today count silently excluded the same task.
+ *    site in this file (the row's due label and the overdue tint) for the
+ *    SAME stored `due_date`. `new Date('YYYY-MM-DD')` parses a date-only
+ *    value as UTC midnight, which in any negative-UTC-offset zone (all of the
+ *    US) rolls back to the PREVIOUS local calendar day — this used to make
+ *    the row say "Tomorrow" a day early.
  *  - #88: the per-task kebab (manage) menu must open on click and show a
  *    visible menu (re-verification — the prior audit capture didn't see it
  *    open).
+ *  - facelift (screens/tasks.md): the StatMatrix's Overdue cell is a real
+ *    button, tap → filters the list to Active (the previously-separate
+ *    overdue warning banner's "View active" action, now folded into the
+ *    stat itself).
  *
  * Actions are mocked (colocated pattern, same as
  * FairwayCreateTaskModal.layout.test.tsx) — only this file's own rendering
  * logic is under test.
+ *
+ * NOTE (removed composition): the old masthead carried a "N due today" meta
+ * chip alongside "N open" — dropped with the redesign (screens/tasks.md's
+ * masthead shows a single honest count, and the StatMatrix now owns the
+ * Open/Active/Completed/Overdue breakdown), so the assertions that used to
+ * check `screen.getByText('1 due today')` / `queryByText('1 due today')`
+ * were removed below rather than updated to a new string.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -93,14 +103,11 @@ describe('FairwayTasks — due date consistency (P295)', () => {
       />,
     );
 
-    // Card due label — waits for the `now` effect to flush.
+    // Row due label — waits for the `now` effect to flush.
     expect(await screen.findByText('Today')).toBeInTheDocument();
-    // Masthead "N due today" meta chip — the second, independent call site
-    // that used to disagree with the card under the UTC-midnight bug.
-    expect(screen.getByText('1 due today')).toBeInTheDocument();
   });
 
-  it('a task due "tomorrow" (date-only) never collides with Today across the card and masthead', async () => {
+  it('a task due "tomorrow" (date-only) never collides with Today', async () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tasks = [makeTask({ due_date: toDateOnly(tomorrow) })];
@@ -117,7 +124,6 @@ describe('FairwayTasks — due date consistency (P295)', () => {
     );
 
     expect(await screen.findByText('Tomorrow')).toBeInTheDocument();
-    expect(screen.queryByText('1 due today')).not.toBeInTheDocument();
   });
 });
 
@@ -152,5 +158,58 @@ describe('FairwayTasks — kebab (manage) menu (#88)', () => {
     // unreliable here — presence in the DOM is the meaningful assertion.)
     expect(await screen.findByText('Set reminder')).toBeInTheDocument();
     expect(screen.getByText('Delete task')).toBeInTheDocument();
+  });
+});
+
+describe('FairwayTasks — StatMatrix Overdue cell filters the list (facelift)', () => {
+  it('tapping the Overdue stat switches to the Active filter, dropping completed tasks from view', async () => {
+    const user = userEvent.setup();
+    const tasks = [
+      makeTask({ id: 'overdue-1', title: 'Overdue drill', status: 'active' }),
+      makeTask({ id: 'done-1', title: 'Finished chore', status: 'completed' }),
+    ];
+    const overdueStats: FairwayTaskStats = { ...baseStats, total_tasks: 2, overdue_tasks: 1 };
+
+    render(
+      <FairwayTasks
+        role={COACH_ROLE}
+        teamId="team-1"
+        tasks={tasks}
+        stats={overdueStats}
+        players={[]}
+        onRefetch={vi.fn()}
+      />,
+    );
+
+    // Both tasks visible on the default "All" filter.
+    expect(screen.getByText('Finished chore')).toBeInTheDocument();
+    expect(screen.getByText('Overdue drill')).toBeInTheDocument();
+
+    const overdueButton = screen.getByRole('button', { name: /view overdue tasks/i });
+    expect(overdueButton).toHaveTextContent('1');
+
+    await user.click(overdueButton);
+
+    // Now on the Active filter — the completed task drops out, the active
+    // (overdue) task stays.
+    expect(screen.queryByText('Finished chore')).not.toBeInTheDocument();
+    expect(screen.getByText('Overdue drill')).toBeInTheDocument();
+  });
+
+  it('renders the Overdue count as plain text (no button) when nothing is overdue', () => {
+    const tasks = [makeTask({ title: 'On track' })];
+
+    render(
+      <FairwayTasks
+        role={COACH_ROLE}
+        teamId="team-1"
+        tasks={tasks}
+        stats={baseStats}
+        players={[]}
+        onRefetch={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /view overdue tasks/i })).not.toBeInTheDocument();
   });
 });
