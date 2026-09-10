@@ -98,6 +98,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+- Assistant copy punctuation (2026-09-10): `src/lib/coachhelm/v3/chat/instructions.ts` tells the model to punctuate with commas, colons and periods, never em dashes, separator dashes or arrows, and to say direction in words. Composite rule display names follow the same rule (`Lag distance to 3-putt cascade`).
+
 ## Known Risk Areas
 
 - Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.
