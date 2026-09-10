@@ -42,7 +42,23 @@ export interface SpineLedgerRow {
    *  (PlayerSpine/CoachSpine) already renders. */
   delta?: SpineLedgerDelta;
 }
-export interface SpineLedgerProps { rows: SpineLedgerRow[]; className?: string }
+/**
+ * A `SpineLedgerRow` whose `value` isn't necessarily plain text — e.g. a
+ * count `Chip` (2026-09-10, primitives follow-up, for `Spine`'s `readouts`
+ * slot). `SpineLedgerProps.rows` accepts this WIDER shape rather than
+ * widening `SpineLedgerRow` itself, so every existing typed consumer of
+ * `SpineLedgerRow` (`buildStatsViewModel.ts#buildLedger` returns
+ * `SpineLedgerRow[]`, assigned into `StatsSpine`'s `ledger: Array<{label,
+ * value: string}>` prop) keeps its narrower `string` value unchanged. A
+ * `SpineLedgerRow[]` is still assignable wherever this wider type is
+ * expected — `string` is a valid `ReactNode`.
+ */
+export interface SpineReadoutRow {
+  label: string;
+  value: ReactNode;
+  delta?: SpineLedgerDelta;
+}
+export interface SpineLedgerProps { rows: SpineReadoutRow[]; className?: string }
 
 export interface SpineProps {
   eyebrow: string;
@@ -58,7 +74,27 @@ export interface SpineProps {
    */
   standing?: StandingBarsProps;
   priorities?: PriorityItem[];
+  /**
+   * A compact multi-row ledger rendered directly under the verdict sentence
+   * (2026-09-10, primitives follow-up) — for facts a single verdict string
+   * can't hold without folding distinct signals together (REVIEW.md: the
+   * cockpit folded "players needing attention" and "outcomes awaiting" into
+   * one sentence for lack of this slot). Same `SpineLedger` visual as
+   * `ledger` below (hairline row group, tabular numerals) but a SEPARATE
+   * slot rendered earlier (right after the verdict, before `standing`) —
+   * `ledger` keeps its existing position/callers untouched.
+   */
+  readouts?: SpineReadoutRow[];
   ledger?: { label: string; value: string }[];
+  /**
+   * An urgent signal rendered as a marked row BEFORE `ledger` and BEFORE
+   * `children` (2026-09-10, primitives follow-up). Existing callers render
+   * urgent content through `children`, which lands AFTER `ledger` — moving
+   * that content into this slot instead is how a consumer fixes the
+   * "urgent signal after the ledger" ordering flagged in REVIEW.md without
+   * restructuring its own JSX.
+   */
+  urgent?: ReactNode;
   cta?: { label: string; onClick?: () => void; href?: string };
   children?: ReactNode;          // escape hatch for surface-specific rows
 }
@@ -149,6 +185,40 @@ export interface MatrixBoardProps {
   expandedRowId?: string | null;
   /** Fires when a row's expand toggle is pressed WHILE `expandedRowId` is controlled — the new candidate id (or `null` when collapsing). Ignored (never called) in uncontrolled mode. */
   onExpandedRowChange?: (rowId: string | null) => void;
+  /**
+   * Column keys hidden below the 940px breakpoint, IN ADDITION to the
+   * board's own built-in set (`scor`/`composite`/`trend`/`signal` —
+   * `MatrixBoard.tsx`'s `HIDE_ON_MOBILE`). 2026-09-10, primitives follow-up:
+   * a per-board column that needs the same phone-hiding behavior without
+   * colliding with those literal keys (see `FairwayCoachRoster`'s
+   * "MatrixBoard column keys" deviation note, which worked around the
+   * absence of this prop by reusing the built-in keys for unrelated
+   * columns). Omit for the unchanged built-in-only set.
+   */
+  hideOnMobile?: string[];
+  /**
+   * Fires when a BARE row (one with no `expand` content) is activated by
+   * click, Enter, or Space. 2026-09-10, primitives follow-up (REVIEW.md
+   * decision: "MatrixBoard has no bare row-select callback"). Never fires
+   * for a row that HAS `expand` — those rows keep the existing toggle-only
+   * behavior unchanged, and selecting a row never expands it. Omit to keep
+   * bare rows non-interactive exactly as before.
+   */
+  onRowSelect?: (row: MatrixBoardRow) => void;
+  /**
+   * The id of the row that should read as selected (`aria-selected`) while
+   * `onRowSelect` is in use. Has no effect on a row that isn't selectable
+   * (i.e. one with `expand` content, or when `onRowSelect` is omitted).
+   */
+  selectedId?: string | null;
+  /**
+   * Override the identity (first) column's grid track. Default
+   * `minmax(0,2fr)` (2026-09-10, primitives follow-up — was
+   * `minmax(120px,1.6fr)`, which cut player names at ~10 characters on a
+   * 390px phone because the 120px floor competed with the metric columns'
+   * own floors for the remaining width instead of yielding to them first).
+   */
+  identityTrack?: string;
 }
 export interface MatrixBoardRow {
   id: string;

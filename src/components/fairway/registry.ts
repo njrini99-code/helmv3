@@ -58,7 +58,7 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
   },
   {
     name: 'Spine', category: 'architecture', status: 'canonical', archetypes: ['A'], material: 'green',
-    bestFor: ['the ONE structural green region: identity, standing, priorities, ledger, CTA'], avoidFor: ['a second green block on the same screen', 'body copy'],
+    bestFor: ['the ONE structural green region: identity, standing, priorities, ledger, CTA', '`readouts` for multi-fact rows under the verdict instead of folding them into the verdict sentence', '`urgent` for a marked row before the ledger (fixes urgent-after-ledger ordering vs. pushing it through `children`)'], avoidFor: ['a second green block on the same screen', 'body copy'],
     replaces: ['profile hero card + separate stats card + separate CTA card'],
     mobile: 'stacks above the stage', desktop: 'left column, sticky', examples: ['Player dossier', 'CoachHelm home'],
   },
@@ -81,9 +81,9 @@ export const FAIRWAY_REGISTRY: readonly FairwayRegistryEntry[] = [
   },
   {
     name: 'MatrixBoard', category: 'architecture', status: 'canonical', archetypes: ['B'], material: 'matte',
-    bestFor: ['who needs attention', 'team comparison', 'ranking', 'triage'], avoidFor: ['single KPI', 'free-form content', 'fewer than 3 rows'],
+    bestFor: ['who needs attention', 'team comparison', 'ranking', 'triage', '`onRowSelect` for a board whose bare (non-expanding) rows navigate/select instead of expanding', '`hideOnMobile` to hide a per-board column below 940px beyond the built-in set'], avoidFor: ['single KPI', 'free-form content', 'fewer than 3 rows'],
     replaces: ['player card gallery', 'one chart per player', '25 profile cards'],
-    mobile: 'compressed rows + sheet detail', desktop: 'board + inline expand or right inspector', examples: ['Roster', 'Team stats', 'CoachHelm players'],
+    mobile: 'compressed rows + sheet detail; identity column defaults to a wider `minmax(0,2fr)` track so names truncate only after metric columns shrink', desktop: 'board + inline expand or right inspector', examples: ['Roster', 'Team stats', 'CoachHelm players'],
   },
   {
     name: 'Filmstrip', category: 'architecture', status: 'canonical', archetypes: ['E'], material: 'matte',
