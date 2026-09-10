@@ -456,7 +456,13 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         )}
         // In-page sticky sub-headers offset below the glass top bar (4rem tall
         // + the notch inset). The immersive branch sets this var elsewhere.
-        style={{ '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))' } as React.CSSProperties}
+        // `--fw-hub-subnav-offset`: the hub sub-nav strip's height when one is
+        // part of the sticky unit, so a page's own sticky chrome can sit right
+        // under it (calendar hero) without guessing whether a strip exists.
+        style={{
+          '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))',
+          '--fw-hub-subnav-offset': subNav ? '2.5rem' : '0px',
+        } as React.CSSProperties}
       >
         {/* Faint accent wash: a low-alpha team tint bleeding down from the top,
             masked into transparency so it dissolves into the warm cream. Sits

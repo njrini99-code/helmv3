@@ -2,89 +2,47 @@
 
 /**
  * ============================================================================
- * Fairway · Calendar · FairwayEventCard
+ * Fairway · Calendar · FairwayEventCard — one agenda row
  * ----------------------------------------------------------------------------
- * The Fairway re-skin of the legacy `editorial/EventChip` — a single horizontal
- * event row used inside the Agenda body. Native <button> (GOTCHA a), warm matte
- * card (border OR shadow, never both), tabular-nums time block, a non-skeuomorphic
- * StatusPill for the event_type, and an optional RSVP StatusPill on the right
- * (player view only).
+ * A single full-width pressable row: time column · event content · one
+ * trailing affordance. The whole row is a Fairway `PressTarget` (native
+ * button semantics, shared press response, green focus ring). Rows sit
+ * together inside ONE day Surface owned by FairwayAgendaView, separated by
+ * hairlines — a grouped daily schedule, not a list of floating cards. No
+ * colored side strip, no icon pedestal: the event's identity comes from its
+ * title, its small type cue and its status.
  *
- * Token-only: bg-surface / border-border-subtle / text-text-* / font-fw-* /
- * rounded-card. NO bg-white, NO serif, NO glass.
- *
- * ADDITIVE + GATED — only mounted behind the isRedesignEnabled() fork.
+ * Time and date rendering stay anchored to the team's timezone so the row
+ * agrees with the detail drawer and across server/client renders.
  * ========================================================================== */
 
+import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StatusPill } from '@/components/fairway';
-import { Button } from '@/components/fairway/controls/button';
-import type { FwStatusTone } from '@/components/fairway';
+import { PressTarget, StatusPill } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { formatEventTime } from '@/lib/calendar/timezone';
 import { tintFor } from './FairwayCalendarMemberRail';
-import surfaces from './CalendarSurfaces.module.css';
-import { enterStyle } from './motion';
+import { RSVP_PILL, typeIcon, typeMeta } from './eventPresentation';
 
-/**
- * event_type → { label, tone } using ONLY the Fairway status tones
- * (accent/success/warning/neutral). NO skeuomorphic chips — StatusPill is a
- * flat tinted pill where the label always carries the meaning too.
- */
-const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
-  practice: { label: 'Practice', tone: 'accent' },
-  tournament: { label: 'Tournament', tone: 'warning' },
-  qualifier: { label: 'Qualifier', tone: 'success' },
-  qualifying: { label: 'Qualifier', tone: 'success' },
-  travel: { label: 'Travel', tone: 'neutral' },
-  workout: { label: 'Workout', tone: 'accent' },
-  team_meeting: { label: 'Meeting', tone: 'neutral' },
-  meeting: { label: 'Meeting', tone: 'neutral' },
-  // A synced class meeting. It shows on the team calendar's "All" lens by
-  // design, so it has to SAY it's a class — otherwise a roster's worth of
-  // classes reads as unexplained "Event" chips.
-  class: { label: 'Class', tone: 'neutral' },
-  other: { label: 'Event', tone: 'neutral' },
-};
-
-// Standalone non-optional fallback (TYPE_META.other is `| undefined` under
-// noUncheckedIndexedAccess, so it can't guarantee a non-undefined return).
-const TYPE_META_FALLBACK: { label: string; tone: FwStatusTone } = { label: 'Event', tone: 'neutral' };
-
-export function typeMeta(eventType: string | null | undefined): { label: string; tone: FwStatusTone } {
-  return TYPE_META[(eventType || 'other').toLowerCase()] ?? TYPE_META_FALLBACK;
-}
-
-/** RSVP status → pill copy + tone (player's own response). */
-const RSVP_PILL: Record<RSVPStatus, { label: string; tone: FwStatusTone }> = {
-  accepted: { label: 'Going', tone: 'accent' },
-  tentative: { label: 'Maybe', tone: 'warning' },
-  declined: { label: 'Declined', tone: 'danger' },
-  pending: { label: 'Reply', tone: 'neutral' },
-};
+export { typeMeta } from './eventPresentation';
 
 export interface FairwayEventCardProps {
   event: CalendarEvent;
   /** Player's own RSVP status — only rendered when `showRsvp` is true. */
   rsvpStatus?: RSVPStatus | null;
-  /** Show the RSVP pill on the right rail (player view only). */
+  /** Show the RSVP pill in the trailing slot (player view only). */
   showRsvp?: boolean;
-  /** Click handler — opens the detail drawer. */
+  /** Tap handler — opens the detail drawer. */
   onClick?: (event: CalendarEvent) => void;
-  /** True for events whose day has already passed — renders at reduced opacity. */
+  /** True for events whose day has already passed. Text quietens; it never fades below legibility. */
   isPast?: boolean;
-  /**
-   * Position in a freshly rendered list. Drives the staggered `.enter`
-   * reveal (30ms per card, capped at 8 so long agendas never wait on the
-   * animation). Omit for cards rendered alone.
-   */
+  /** Kept for callers that still pass a list index; the row no longer animates in. */
   enterIndex?: number;
   /**
-   * Team's canonical IANA timezone (golf_team_settings.timezone). Times
-   * render anchored to this zone — NOT the runtime's own local zone — so the
-   * SAME event agrees between server and client render, and between this
-   * card and FairwayEventDetailDrawer (audit W1: cal-tz).
+   * Team's canonical IANA timezone (golf_team_settings.timezone). Times render
+   * anchored to this zone so the SAME event agrees between server and client
+   * render, and between this row and FairwayEventDetailDrawer.
    */
   timezone?: string | null;
   className?: string;
@@ -112,6 +70,12 @@ function timeAria(event: CalendarEvent, timezone?: string | null): string {
   return end ? `${start} – ${end}` : start;
 }
 
+/** "9:00 AM" → { clock: "9:00", meridiem: "AM" }; "All day" stays whole. */
+function splitClock(label: string): { clock: string; meridiem: string } {
+  const match = /^(\d{1,2}:\d{2})\s*([AP]M)$/i.exec(label);
+  return match ? { clock: match[1]!, meridiem: match[2]!.toUpperCase() } : { clock: label, meridiem: '' };
+}
+
 export function FairwayEventCard({
   event,
   rsvpStatus,
@@ -120,107 +84,105 @@ export function FairwayEventCard({
   isPast = false,
   timezone,
   className,
-  enterIndex,
 }: FairwayEventCardProps) {
-  const { label: typeLabel, tone: typeTone } = typeMeta(event.event_type);
+  const { label: typeLabel } = typeMeta(event.event_type);
+  const Icon = typeIcon(event.event_type);
   const start = startTimeLabel(event, timezone);
   const end = endTimeLabel(event, timezone);
+  const startParts = splitClock(start);
   const rsvp = showRsvp && rsvpStatus ? RSVP_PILL[rsvpStatus] : null;
-  // Cancelled events render DISTINCTLY at the list level too — badge + strike,
-  // mirroring FairwayEventDetailDrawer's treatment (previously this only
-  // showed up once a player tapped into the event's detail drawer; 2026-07-10
-  // calendar-travel audit). Orthogonal to `isPast` — a cancelled event can be
-  // past or upcoming, both cues apply independently.
+  // Cancelled is orthogonal to past: both cues apply independently.
   const isCancelled = event.status === 'cancelled';
+  const ownerTint = event.owner_label && event.owner_player_id ? tintFor(event.owner_player_id) : null;
 
   return (
-    // GOTCHA (a): a real Fairway <Button variant="ghost">, NOT `Surface as="button"`.
-    <Button
-      type="button"
-      variant="ghost"
+    <PressTarget
       onClick={onClick ? () => onClick(event) : undefined}
-      aria-label={`${event.title} — ${timeAria(event, timezone)}${event.location ? `, ${event.location}` : ''}`}
+      aria-label={`${event.title} — ${timeAria(event, timezone)}${event.location ? `, ${event.location}` : ''}${isCancelled ? ', cancelled' : ''}`}
       className={cn(
-        'group relative block h-auto min-h-[64px] w-full border text-left font-normal',
-        'rounded-card bg-surface border-border-subtle shadow-flat',
-        'p-4',
-        'transition-[box-shadow,transform,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-        'hover:-translate-y-px hover:bg-surface hover:shadow-soft hover:border-border-strong',
-        'active:translate-y-[0.5px] active:shadow-flat',
-        'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
-        surfaces.press,
-        enterIndex !== undefined && surfaces.enter,
-        isPast && 'opacity-50',
+        // One row inside the day's Surface (FairwayAgendaView owns the frame
+        // and the dividers). Rounded only so the focus ring follows the row.
+        'group flex w-full items-stretch gap-3 rounded-none bg-surface px-3 py-2.5 text-left focus-visible:z-10 focus-visible:ring-inset focus-visible:ring-offset-0',
+        // Hover on a pointer; a real press tint on touch (the press response
+        // itself is PressTarget's), then back to rest.
+        '[@media(hover:hover)]:hover:bg-surface-sunken active:bg-surface-sunken',
+        'md:gap-4 md:px-4 md:py-3',
         className,
       )}
-      style={enterStyle(enterIndex)}
     >
-      <span className="flex w-full items-stretch gap-4">
-        {/* Time block — Fragment-Mono tabular-nums, fixed width for column alignment. */}
-        <span className="flex w-[68px] flex-shrink-0 flex-col items-start justify-center md:w-[84px]">
-          <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
-            {start}
-          </span>
-          {end ? (
-            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-              {end}
+      {/* Time column — a stable width so titles align down the list: the start
+          with its meridiem, and the end time beneath it on every width. */}
+      <span className="flex w-[60px] shrink-0 flex-col justify-center whitespace-nowrap md:w-[72px]">
+        <span
+          className={cn(
+            'font-fw-sans text-body font-semibold tabular-nums leading-tight',
+            isPast ? 'text-text-secondary' : 'text-text-primary',
+          )}
+        >
+          {startParts.clock}
+          {startParts.meridiem ? (
+            <span className="ml-0.5 font-fw-sans text-eyebrow font-medium tabular-nums text-text-tertiary">
+              {startParts.meridiem}
             </span>
           ) : null}
         </span>
-
-        {/* Title + location. */}
-        <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-          <p
-            className={cn(
-              'truncate font-fw-sans text-body-sm font-medium text-text-primary',
-              isCancelled && 'text-text-tertiary line-through decoration-2',
-            )}
-          >
-            {event.title}
-          </p>
-          <span className="flex min-w-0 items-center gap-2">
-            <StatusPill tone={typeTone} size="sm" dot={false}>
-              {typeLabel}
-            </StatusPill>
-            {/* Whose class this is. Carries the player's identity tint — the
-                same one their avatar wears in the member rail and on the
-                roster — so the name and the color reinforce each other. The
-                name is what makes it certain: the tint palette is 8 wide and
-                a roster can be larger. */}
-            {event.owner_label && event.owner_player_id ? (
-              <span
-                className="flex-shrink-0 rounded-full px-2 py-0.5 font-fw-sans text-caption font-semibold"
-                style={{
-                  backgroundColor: tintFor(event.owner_player_id).bg,
-                  color: tintFor(event.owner_player_id).text,
-                }}
-              >
-                {event.owner_label}
-              </span>
-            ) : null}
-            {isCancelled ? (
-              <StatusPill tone="danger" size="sm" dot={false}>
-                Cancelled
-              </StatusPill>
-            ) : null}
-            {event.location ? (
-              <span className="truncate font-fw-sans text-caption text-text-tertiary">
-                {event.location}
-              </span>
-            ) : null}
-          </span>
-        </span>
-
-        {/* RSVP pill — player view only. */}
-        {rsvp ? (
-          <span className="flex flex-shrink-0 items-center">
-            <StatusPill tone={rsvp.tone} size="sm">
-              {rsvp.label}
-            </StatusPill>
+        {end ? (
+          <span className="mt-0.5 font-fw-sans text-caption tabular-nums leading-tight text-text-tertiary">
+            {end}
           </span>
         ) : null}
       </span>
-    </Button>
+
+      <span aria-hidden className="w-px shrink-0 self-stretch bg-border-subtle" />
+
+      {/* Event content — title first, then one line of useful detail. */}
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 py-0.5">
+        <span
+          className={cn(
+            'line-clamp-2 font-fw-sans text-body font-semibold leading-snug',
+            isPast ? 'text-text-secondary' : 'text-text-primary',
+            isCancelled && 'text-text-tertiary line-through decoration-2',
+          )}
+        >
+          {event.title}
+        </span>
+        <span className="flex min-w-0 items-center gap-1.5 font-fw-sans text-body-sm text-text-secondary">
+          <Icon className="h-3.5 w-3.5 shrink-0 text-text-tertiary" aria-hidden />
+          {ownerTint ? (
+            <span
+              className="shrink-0 rounded-full px-1.5 py-px font-fw-sans text-caption font-semibold"
+              style={{ backgroundColor: ownerTint.bg, color: ownerTint.text }}
+            >
+              {event.owner_label}
+            </span>
+          ) : (
+            <span className="shrink-0">{typeLabel}</span>
+          )}
+          {event.location ? (
+            <>
+              <span aria-hidden className="shrink-0 text-text-tertiary">·</span>
+              <span className="min-w-0 truncate">{event.location}</span>
+            </>
+          ) : null}
+        </span>
+      </span>
+
+      {/* Trailing — one thing: a response status, a cancelled mark, or the disclosure. */}
+      <span className="flex shrink-0 items-center gap-2 self-center">
+        {isCancelled ? (
+          <StatusPill tone="danger" size="sm" dot={false}>
+            Cancelled
+          </StatusPill>
+        ) : rsvp ? (
+          <StatusPill tone={rsvp.tone} size="sm">
+            {rsvp.label}
+          </StatusPill>
+        ) : null}
+        <ChevronRight
+          aria-hidden
+          className="h-4 w-4 text-text-tertiary transition-transform [@media(hover:hover)]:group-hover:translate-x-0.5 motion-reduce:transition-none"
+        />
+      </span>
+    </PressTarget>
   );
 }

@@ -20,7 +20,6 @@
 import { CalendarCheck2, CalendarOff, CalendarClock, CircleHelp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InlineNotice } from '@/components/fairway';
-import surfaces from '../CalendarSurfaces.module.css';
 
 export interface ClassOccurrenceStatusProps {
   kind: 'scheduled' | 'excluded' | 'unknown' | 'unsynced';
@@ -38,8 +37,8 @@ function formatCalendarDate(date: string): string {
 export function ClassOccurrenceStatus({ kind, exclusion }: ClassOccurrenceStatusProps) {
   if (kind === 'scheduled') {
     return (
-      <div className={cn('flex items-center gap-2 rounded-fw-md px-3 py-2.5', surfaces.paper)}>
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fw-success-bg text-fw-success-ink">
+      <div className={cn('flex items-center gap-2 rounded-fw-md px-3 py-2.5', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
+        <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', 'bg-accent-650 text-text-on-accent')}>
           <CalendarCheck2 className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">

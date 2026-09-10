@@ -19,7 +19,10 @@
  * partial/failed verification to a clean bill in this copy either.
  */
 
+import { ClipboardList } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import surfaces from '../CalendarSurfaces.module.css';
 import { SpanSummary } from '@/components/fairway/pages/calendar/EventWhenFields';
 import type { GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { EVENT_TYPES } from './EventEssentialsFields';
@@ -87,14 +90,19 @@ export function EventReviewReceipt({
     : 'Not required';
 
   return (
-    <div role="group" aria-labelledby={headingId} className="flex flex-col gap-4 rounded-fw-md border border-border-subtle bg-surface-sunken p-4">
-      <h3 id={headingId} className="font-fw-display text-body-lg font-semibold text-text-primary">
-        Review
-      </h3>
+    <div role="group" aria-labelledby={headingId} className={cn('flex flex-col gap-4 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]', surfaces.enter)}>
+      <div className="flex items-center gap-3">
+        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'text-text-secondary')}>
+          <ClipboardList className="h-4 w-4" aria-hidden />
+        </span>
+        <h3 id={headingId} className="font-fw-display text-body-lg font-semibold text-text-primary">
+          Review
+        </h3>
+      </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 font-fw-sans text-body-sm">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 font-fw-sans text-body-sm">
         <dt className="text-text-tertiary">What</dt>
-        <dd className="text-text-primary">{formData.title.trim() || 'Untitled event'} · {typeLabel}</dd>
+        <dd className="font-medium text-text-primary">{formData.title.trim() || 'Untitled event'} · {typeLabel}</dd>
 
         <dt className="text-text-tertiary">When</dt>
         <dd className="text-text-primary">

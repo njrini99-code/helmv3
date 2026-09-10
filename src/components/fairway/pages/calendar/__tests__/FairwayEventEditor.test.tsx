@@ -124,7 +124,17 @@ function rsvpResult(playerIds: string[]) {
   };
 }
 
-function renderEditor(overrides: Partial<React.ComponentProps<typeof FairwayEventEditor>> = {}) {
+/**
+ * Renders the editor and, by default, jumps the phone-width stage dock to
+ * Review — the one stage whose bottom dock carries the publish action
+ * (Save changes / Create event). Every field stays mounted on every stage
+ * (see editor/EventEditorStages.tsx), so this only changes which dock
+ * buttons render. Pass `{ stage: 'essentials' }` to stay on the first stage.
+ */
+function renderEditor(
+  overrides: Partial<React.ComponentProps<typeof FairwayEventEditor>> = {},
+  { stage = 'review' }: { stage?: 'essentials' | 'review' } = {},
+) {
   const onSave = vi.fn<(data: GolfEventFormData) => Promise<void>>().mockResolvedValue(undefined);
   const props: React.ComponentProps<typeof FairwayEventEditor> = {
     open: true,
@@ -137,6 +147,10 @@ function renderEditor(overrides: Partial<React.ComponentProps<typeof FairwayEven
     ...overrides,
   };
   const utils = render(<FairwayEventEditor {...props} />);
+  if (stage === 'review') {
+    const reviewDot = screen.queryByRole('button', { name: 'Go to Review' });
+    if (reviewDot) fireEvent.click(reviewDot);
+  }
   return { ...utils, onSave, props };
 }
 
@@ -198,7 +212,9 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     // Hydration landed: the invitees really are selected.
     await waitFor(() => expect(screen.getByText(/2 of/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+    // A clean draft offers no Discard affordance at all — closing is the
+    // shell's own X, which never asks.
+    expect(screen.queryByRole('button', { name: /^Discard$/ })).not.toBeInTheDocument();
     expect(screen.queryAllByRole('heading', { name: /Discard this/i })).toHaveLength(0);
   });
 
@@ -208,7 +224,7 @@ describe('FairwayEventEditor — attendee hydration and deltas', () => {
     await waitFor(() => expect(screen.queryByText(/Loading current invitees/i)).not.toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Changed' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Discard$/ }));
     expect(screen.getAllByRole('heading', { name: /Discard this/i }).length).toBeGreaterThan(0);
   });
 
@@ -530,7 +546,7 @@ describe('FairwayEventEditor — scheduling verification and draft handoff', () 
 
 describe('FairwayEventEditor — mobile stage navigation and review', () => {
   it('Continue off Essentials is disabled until the title is filled', async () => {
-    renderEditor({ event: null });
+    renderEditor({ event: null }, { stage: 'essentials' });
     const continueButton = screen.getByRole('button', { name: 'Continue' });
     expect(continueButton).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
@@ -552,7 +568,7 @@ describe('FairwayEventEditor — mobile stage navigation and review', () => {
         suggestions: [],
       },
     });
-    renderEditor({ event: null });
+    renderEditor({ event: null }, { stage: 'essentials' });
     await waitFor(() => expect(checkScheduleConflicts).toHaveBeenCalled());
 
     fireEvent.change(screen.getByLabelText(/event title/i), { target: { value: 'Morning practice' } });
@@ -712,7 +728,9 @@ describe('FairwayEventEditor — desktop layout', () => {
 
 describe('FairwayEventEditor — empty roster', () => {
   it('shows a disabled invite affordance with "No players on this team yet." when the roster is empty', async () => {
-    renderEditor({ event: null, teamPlayers: [] });
+    // Stay on Essentials: the review receipt's own "No one invited yet"
+    // line is a different element from the invite trigger under test.
+    renderEditor({ event: null, teamPlayers: [] }, { stage: 'essentials' });
 
     expect(await screen.findByText(/No players on this team yet\./i)).toBeInTheDocument();
     const inviteButton = screen.getByText(/No players on this team yet\./i).closest('button');
@@ -725,7 +743,7 @@ describe('FairwayEventEditor — empty roster', () => {
 
   it('shows the same disabled empty-roster message when the people-picker seam is wired', async () => {
     const onOpenPeoplePicker = vi.fn();
-    renderEditor({ event: null, teamPlayers: [], onOpenPeoplePicker });
+    renderEditor({ event: null, teamPlayers: [], onOpenPeoplePicker }, { stage: 'essentials' });
 
     const inviteButton = (await screen.findByText(/No players on this team yet\./i)).closest('button');
     expect(inviteButton).toBeDisabled();

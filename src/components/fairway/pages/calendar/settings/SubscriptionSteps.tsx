@@ -14,7 +14,7 @@
 
 import * as React from 'react';
 import { Apple, CalendarDays, Globe, type LucideIcon } from 'lucide-react';
-import { Segmented, Inset } from '@/components/fairway';
+import { Segmented } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 
 type Platform = 'apple' | 'google' | 'outlook';
@@ -71,13 +71,13 @@ export function SubscriptionSteps({ className }: SubscriptionStepsProps) {
         value={platform}
         onValueChange={setPlatform}
       />
-      <Inset padding="sm">
+      <div className={cn('rounded-fw-md p-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
         <ol className="list-decimal space-y-1.5 pl-4 font-fw-sans text-caption text-text-secondary">
           {active.steps.map((step, index) => (
             <li key={index}>{step}</li>
           ))}
         </ol>
-      </Inset>
+      </div>
       <p className="font-fw-sans text-caption text-text-tertiary">
         One-way: changes made in {active.label} never sync back to Helm.
       </p>

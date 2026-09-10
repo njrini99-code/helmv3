@@ -40,21 +40,18 @@
 import * as React from 'react';
 import { startOfWeek, addDays, isSameDay, isBefore, format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import surfaces from './CalendarSurfaces.module.css';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Button } from '@/components/fairway/controls/button';
-import { getZonedDateParts } from '@/lib/calendar/timezone';
+import { fwHaptic } from '@/lib/fairway/haptics';
+import { eventDaySpan } from '@/lib/calendar/timezone';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 /** Same `yyyy-MM-dd` shape as `format(day, 'yyyy-MM-dd')` on the local pill
  *  Dates below, but derived from the event's ISO instant AS SEEN in
  *  `timezone` rather than the calling process's own ambient zone. */
-function zonedDayKey(iso: string, timezone: string | null | undefined): string {
-  const { year, month, day } = getZonedDateParts(iso, timezone);
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
 const WEEK_STARTS_ON = 0 as const;
+/** Longest multi-day span a single event may mark (guards a bad end date). */
+const MAX_SPAN_DAYS = 62;
 
 /** event_type → density-dot tint, same tone vocabulary as FairwayEventCard. */
 const TYPE_DOT_CLASS: Record<string, string> = {
@@ -90,8 +87,17 @@ export interface FairwayDayStripProps {
   teamTimezone: string | null;
   /** Called when the user taps a day pill. */
   onSelectDate: (date: Date) => void;
+  /**
+   * Phone gesture: a horizontal swipe across the strip moves one week.
+   * Swiping left (finger moves toward the left) asks for the NEXT week, the
+   * way a page turns. Vertical drags are left to the page scroll.
+   */
+  onSwipe?: (direction: 'prev' | 'next') => void;
   className?: string;
 }
+
+const SWIPE_MIN_PX = 48;
+const SWIPE_MAX_DRIFT_PX = 40;
 
 export function FairwayDayStrip({
   focusDate,
@@ -100,9 +106,28 @@ export function FairwayDayStrip({
   nowRef,
   teamTimezone,
   onSelectDate,
+  onSwipe,
   className,
 }: FairwayDayStripProps) {
   const { ref: railRef, fadeStyle } = useScrollFade<HTMLDivElement>('x');
+  const swipeRef = React.useRef<{ x: number; y: number; id: number } | null>(null);
+  const handleSwipeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!onSwipe || event.pointerType === 'mouse') return;
+    swipeRef.current = { x: event.clientX, y: event.clientY, id: event.pointerId };
+  };
+  const handleSwipeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start || !onSwipe || start.id !== event.pointerId) return;
+    const rail = selectedRef.current?.parentElement;
+    // A strip that scrolls (very narrow phones) pans instead of paging.
+    if (rail && rail.scrollWidth > rail.clientWidth + 1) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dy) > SWIPE_MAX_DRIFT_PX) return;
+    fwHaptic('light');
+    onSwipe(dx < 0 ? 'next' : 'prev');
+  };
   const selectedRef = React.useRef<HTMLButtonElement>(null);
   React.useEffect(() => {
     const selected = selectedRef.current;
@@ -129,15 +154,22 @@ export function FairwayDayStrip({
 
   // Bucket events by yyyy-MM-dd (team-timezone calendar day, not raw UTC) for
   // O(1) per-pill lookup — see the file-header DENSITY-DOT BUCKETING note.
+  // A commitment occupies EVERY day it runs (`eventDaySpan`, the same
+  // interpretation the agenda and month overview use), so a three-day
+  // tournament marks three pills, not just the day it starts.
   const eventsByDay = React.useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
     for (const ev of events) {
-      const iso = ev.start_date || ev.start_time;
-      if (!iso) continue;
-      const key = zonedDayKey(iso, teamTimezone);
-      const list = map.get(key);
-      if (list) list.push(ev);
-      else map.set(key, [ev]);
+      const span = eventDaySpan(ev, teamTimezone);
+      if (!span) continue;
+      let cursor = span.first;
+      for (let i = 0; i < MAX_SPAN_DAYS && cursor <= span.last; i++) {
+        const key = format(cursor, 'yyyy-MM-dd');
+        const list = map.get(key);
+        if (list) list.push(ev);
+        else map.set(key, [ev]);
+        cursor = addDays(cursor, 1);
+      }
     }
     return map;
   }, [events, teamTimezone]);
@@ -154,7 +186,10 @@ export function FairwayDayStrip({
       aria-label="Week navigator"
       ref={railRef}
       style={fadeStyle}
-      className={cn('grid grid-flow-col auto-cols-[minmax(44px,1fr)] gap-0.5 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:gap-2.5', className)}
+      onPointerDown={handleSwipeStart}
+      onPointerUp={handleSwipeEnd}
+      onPointerCancel={() => { swipeRef.current = null; }}
+      className={cn('grid grid-flow-col auto-cols-[minmax(44px,1fr)] gap-0.5 overflow-x-auto overscroll-x-contain touch-pan-y [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:gap-1', className)}
     >
       {days.map((day) => {
         const key = format(day, 'yyyy-MM-dd');
@@ -190,32 +225,24 @@ export function FairwayDayStrip({
                 : ' — no events'
             }`}
             className={cn(
-              'group relative block h-auto min-h-[68px] w-full border-0 font-normal md:min-h-[88px]',
-              'rounded-card px-1.5 py-2.5 md:px-2 md:py-3',
+              'group relative block h-auto min-h-[60px] w-full border-0 font-normal md:min-h-[68px]',
+              'rounded-fw-md px-0.5 py-1 md:px-2 md:py-2',
               'transition-[background-color,box-shadow,transform,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'motion-reduce:transition-none',
-              surfaces.press,
-              // Selected — the green CTA fill (overrides everything else).
-              dayIsSelected && 'bg-accent-650 text-text-on-accent shadow-soft hover:bg-accent-800',
-              // Today (not selected) — quiet accent ring on a toasted well.
-              !dayIsSelected && dayIsToday && 'bg-inset ring-2 ring-accent-300',
-              // Resting / past — toasted-cream well with a subtle hover.
-              !dayIsSelected && !dayIsToday && [
-                'bg-inset hover:bg-inset hover:shadow-soft hover:-translate-y-px active:translate-y-0',
-                'motion-reduce:hover:translate-y-0',
-              ],
+              'bg-transparent hover:bg-surface-sunken active:translate-y-0',
+              dayIsSelected && 'text-text-primary',
             )}
           >
-            <span className="flex h-full min-h-[48px] w-full flex-col items-center justify-between md:min-h-[88px]">
+            <span className="flex h-full min-h-[44px] w-full flex-col items-center justify-center gap-1">
               {/* Day-of-week eyebrow. */}
               <span
                 className={cn(
-                  'font-fw-display text-eyebrow uppercase leading-none tracking-[0.12em]',
+                  'font-fw-sans text-caption font-medium leading-none tracking-[0.01em]',
                   dayIsSelected
-                    ? 'text-text-on-accent/85'
+                    ? 'font-semibold text-accent-700'
                     : dayIsToday
-                      ? 'text-accent-700'
+                      ? 'font-semibold text-accent-700'
                       : // PAST: quieted by ROLE, not by alpha. `text-text-tertiary/60`
                         // resolved to #5b5854 on the sunken well — 2.72:1, well under
                         // AA. text-tertiary is already the dimmest AA-safe ink token
@@ -228,12 +255,19 @@ export function FairwayDayStrip({
                 {format(day, 'EEE')}
               </span>
 
-              {/* Day number — Fragment-Mono tabular-nums. */}
+              {/* Day number — Fragment-Mono tabular-nums, inside a 32px disc.
+                  Selected = the emerald fill; today = a quiet ring. */}
               <span
                 className={cn(
-                  'font-fw-mono text-h3 font-semibold leading-none tabular-nums',
+                  // One date-state vocabulary shared with the month grid:
+                  // selected = solid accent fill; today = a quiet accent ring.
+                  'grid h-9 w-9 place-items-center rounded-full font-fw-sans text-body font-semibold leading-none tabular-nums transition-[background-color,color] motion-reduce:transition-none',
+                  dayIsSelected && 'bg-accent-650 text-text-on-accent [box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
+                  !dayIsSelected && dayIsToday && 'ring-1 ring-inset ring-accent-650 text-accent-700',
                   dayIsSelected
                     ? 'text-text-on-accent'
+                    : dayIsToday
+                      ? 'text-accent-700'
                     : dayIsPast
                       ? // The DATE is the data in this cell, so it must outrank its
                         // own weekday label. At tertiary/70 (3.43:1) it was landing
@@ -258,7 +292,7 @@ export function FairwayDayStrip({
                       key={`${key}-${t}-${i}`}
                       className={cn(
                         'h-1 w-1 rounded-full',
-                        dayIsSelected ? 'bg-text-on-accent/80' : TYPE_DOT_CLASS[t] ?? DEFAULT_DOT_CLASS,
+                        TYPE_DOT_CLASS[t] ?? DEFAULT_DOT_CLASS,
                         dayIsPast && !dayIsSelected && 'opacity-50',
                       )}
                     />

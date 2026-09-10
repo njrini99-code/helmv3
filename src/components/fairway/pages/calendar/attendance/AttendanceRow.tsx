@@ -83,7 +83,8 @@ export function AttendanceRow({
       role="group"
       aria-label={name}
       className={cn(
-        'flex flex-col gap-2 rounded-fw-md border border-transparent bg-surface-sunken px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between',
+        'flex flex-col gap-2 rounded-fw-md py-3 pl-4 pr-3.5 sm:flex-row sm:items-center sm:justify-between',
+        'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]',
         isPending && surfaces.pending,
         enterIndex !== undefined && surfaces.enter,
       )}
@@ -158,7 +159,6 @@ export function AttendanceRow({
                 disabled={disabled}
                 className={cn(
                   'h-9 w-9 shrink-0 rounded-fw-sm p-0 text-text-tertiary',
-                  surfaces.press,
                   'hover:bg-surface hover:text-text-secondary',
                   record.notes && 'text-accent-700',
                 )}

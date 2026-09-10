@@ -3,24 +3,24 @@
 import * as React from 'react';
 import surfaces from '../CalendarSurfaces.module.css';
 import {
-  AlertTriangle,
+  ArrowLeft,
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
   GripVertical,
   UserRound,
-  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import {
   Avatar,
   Button,
-  GlassSurface,
   IconButton,
   Input,
+  PressTarget,
   Select,
 } from '@/components/fairway';
 import type {
@@ -30,11 +30,14 @@ import type {
   ScheduleEvaluation,
   ScheduleSnapshot,
 } from '@/lib/calendar/scheduling-contracts';
-import { evaluateSchedule, suggestScheduleTimes } from '@/lib/calendar/scheduling/evaluate';
+import { acceptProposal, evaluateSchedule, suggestScheduleTimes } from '@/lib/calendar/scheduling/evaluate';
+import { SchedulingTaskBoard } from './SchedulingTaskBoard';
 
 const SLOT_MINUTES = 15;
 const DEFAULT_DURATION = 60;
 const DURATION_OPTIONS = [30, 60, 90, 120] as const;
+/** A finger that moves further than this between down and up is a pan, not a tap. */
+const TAP_SLOP_PX = 8;
 
 type ParticipantState = 'available' | 'busy' | 'unknown';
 
@@ -77,7 +80,7 @@ export interface SchedulingWorkspaceProps {
    * that explains the overlap" instead of every invited person. A "Show
    * everyone" control reveals the rest.
    *
-   * Evaluation (`evaluateSelection`, `canChoose`, suggestions) always runs
+   * Evaluation (`evaluateSelection`, `acceptProposal`, suggestions) always runs
    * against the FULL `snapshot.participants` regardless of this filter —
    * only which ROWS render changes. Hiding a person's row must never make a
    * proposed time look safer than it is.
@@ -95,11 +98,18 @@ export interface SchedulingWorkspaceProps {
   /** Footer CTA label. Default "Use this time"; conflict detail passes
    * "Review new time" — same `onChoose` wiring, different call to action. */
   primaryActionLabel?: string;
-  /** Disables the footer CTA regardless of `canChoose` — conflict detail
+  /** Disables the board's confirm action regardless of acceptance — conflict detail
    * sets this while offline ("Resolve disabled", §2.8's offline state),
    * without borrowing `loading` (which would also relabel the button
    * "Publishing…"). Default false. */
   disablePrimaryAction?: boolean;
+  /** Render without the sticky "Find a time" header — the host (conflict
+   * detail) already provides its own chrome. Controls, timeline, status,
+   * suggestions and the dock still render. Default false. */
+  embedded?: boolean;
+  /** What is being scheduled, shown in the header subtitle before the
+   * duration (e.g. the draft event's title). Falls back to the people count. */
+  contextLabel?: string;
 }
 
 function safeDate(value: string): Date | null {
@@ -221,9 +231,45 @@ function durationBetween(proposal?: ScheduleProposal): number {
   return DURATION_OPTIONS.includes(minutes as (typeof DURATION_OPTIONS)[number]) ? minutes : DEFAULT_DURATION;
 }
 
+/** "3 – 4 PM" / "11 AM – 12 PM" / "3:15 – 4:15 PM": minutes only when
+ * needed, the period once when both ends share it. */
+function formatWindowShort(start: string, end: string, timeZone: string): string {
+  const parts = (value: string) => {
+    const date = safeDate(value);
+    if (!date) return null;
+    const list = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).formatToParts(date);
+    const hour = list.find((part) => part.type === 'hour')?.value ?? '';
+    const minute = list.find((part) => part.type === 'minute')?.value ?? '00';
+    const period = list.find((part) => part.type === 'dayPeriod')?.value ?? '';
+    return { text: minute === '00' ? hour : `${hour}:${minute}`, period };
+  };
+  const a = parts(start);
+  const b = parts(end);
+  if (!a || !b) return 'Unknown time';
+  if (a.period === b.period) return `${a.text} – ${b.text} ${b.period}`.trim();
+  return `${a.text} ${a.period} – ${b.text} ${b.period}`.trim();
+}
+
+/** Short zone name ("EDT") for the status line. */
+function shortZone(value: string, timeZone: string): string {
+  const date = safeDate(value) ?? new Date();
+  const part = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' })
+    .formatToParts(date)
+    .find((item) => item.type === 'timeZoneName');
+  return part?.value ?? timeZone;
+}
+
 function participantLabel(participant: ScheduleParticipant): string {
   if (participant.isViewer) return 'You';
   return participant.name || 'Unnamed participant';
+}
+
+/** Phone name column: the first name whole beats "Aud…" (the full name stays
+ *  in the accessible label and from `sm` up). */
+function participantShortLabel(participant: ScheduleParticipant): string {
+  const label = participantLabel(participant);
+  const first = label.split(/\s+/)[0];
+  return first || label;
 }
 
 function intervalLabel(interval: ScheduleInterval, timeZone: string): string {
@@ -246,13 +292,27 @@ export function SchedulingWorkspace({
   showDatePicker = true,
   primaryActionLabel = 'Use this time',
   disablePrimaryAction = false,
+  embedded = false,
+  contextLabel,
 }: SchedulingWorkspaceProps) {
   const slots = React.useMemo(() => createSlots(snapshot), [snapshot]);
   const firstSlot = slots.find((slot) => slot.minuteOfDay >= 9 * 60)?.start ?? slots[0]?.start ?? snapshot.window.start;
-  const [selectedStart, setSelectedStart] = React.useState(initialProposal?.start ?? firstSlot);
+  // Opening position: the caller's proposal when there is one; otherwise the
+  // first window at or after 9 AM where everyone is free and verified, so a
+  // fresh "Find a time" opens on a choosable slot instead of a busy one. Falls
+  // back to 9 AM when the day has no such window (the timeline still shows why).
+  const [selectedStart, setSelectedStart] = React.useState(() => {
+    if (initialProposal?.start) return initialProposal.start;
+    const wanted = durationBetween(undefined);
+    const free = suggestScheduleTimes(snapshot, wanted, firstSlot).find((proposal) => {
+      return acceptProposal(evaluateSelection(snapshot, proposal.start, addMinutes(proposal.start, wanted))).ok;
+    });
+    return free?.start ?? firstSlot;
+  });
   const [duration, setDuration] = React.useState(durationBetween(initialProposal));
   const [dragging, setDragging] = React.useState(false);
   const timelineRef = React.useRef<HTMLDivElement>(null);
+  const nameHeaderRef = React.useRef<HTMLDivElement>(null);
   const initialStart = initialProposal?.start;
   const initialEnd = initialProposal?.end;
   const [dateValue, setDateValue] = React.useState(formatDateInput(initialStart ?? firstSlot, snapshot.timeZone));
@@ -303,7 +363,7 @@ export function SchedulingWorkspace({
     const timeline = timelineRef.current;
     if (!timeline) return;
     const index = slots.findIndex((slot) => slot.start === (initialStart ?? firstSlot));
-    const slotWidth = window.innerWidth < 768 ? 24 : 32;
+    const slotWidth = window.innerWidth < 768 ? 24 : 40;
     timeline.scrollLeft = Math.max(0, index - 2) * slotWidth;
   }, [firstSlot, initialStart, slots]);
 
@@ -313,6 +373,14 @@ export function SchedulingWorkspace({
     [selectedEnd, selectedStart, snapshot],
   );
   const dateLabel = formatDate(dateValue, snapshot.timeZone);
+
+  const windowStartMs = Date.parse(snapshot.window.start);
+  const windowEndMs = Date.parse(snapshot.window.end);
+  const windowMs = Math.max(1, windowEndMs - windowStartMs);
+  const lensLeft = 100 * (Date.parse(selectedStart) - windowStartMs) / windowMs;
+  const lensWidth = 100 * duration * 60_000 / windowMs;
+  /** Whether a start would be choosable — the shared acceptance rule. */
+  const canChooseAt = (start: string) => acceptProposal(evaluateSelection(snapshot, start, addMinutes(start, duration))).ok;
 
   const validStarts = React.useMemo(
     () => slots.filter((slot) => safeDate(addMinutes(slot.start, duration))! <= safeDate(snapshot.window.end)!),
@@ -346,30 +414,208 @@ export function SchedulingWorkspace({
     if (next) setSelectedStart(next.start);
   };
 
-  const selectFromPointer = (clientX: number) => {
+  // ── Drag engine ──────────────────────────────────────────────────────────
+  // While a finger is down the lens and its readout follow the pointer
+  // continuously (free position written straight to the DOM inside one
+  // animation frame, no React render, no transition) and the snapped slot is
+  // committed to state only when the finger crosses a slot boundary. On
+  // release the free offset is cleared and the band settles onto the snapped
+  // slot through `.settle` (200ms). Grabbing the band keeps the grab offset,
+  // so the window never jumps under the finger; grabbing the readout places
+  // the window's start at the pointer (the keyboard/AT handle semantics the
+  // drag test relies on).
+  const lensRef = React.useRef<HTMLDivElement>(null);
+  const labelRef = React.useRef<HTMLDivElement>(null);
+  // `pointerId` is the gesture's owner. Everything else here is shared
+  // mutable state, so without an owner a second contact landing on the band
+  // or the handle would overwrite `grabOffsetPx`, feed its own x into the
+  // follow frame, and — whichever finger lifted first — commit that finger's
+  // position and strand the other mid-drag.
+  const dragRef = React.useRef<{ grabOffsetPx: number; frame: number | null; lastX: number; pointerId: number | null }>({ grabOffsetPx: 0, frame: null, lastX: 0, pointerId: null });
+  /** True only for the pointer that started the current drag. */
+  const ownsDrag = (event: React.PointerEvent<HTMLDivElement>) => dragRef.current.pointerId === event.pointerId;
+
+  const trackMetrics = () => {
     const timeline = timelineRef.current;
-    if (!timeline || validStarts.length === 0) return;
+    if (!timeline) return null;
     const rect = timeline.getBoundingClientRect();
-    const nameWidth = 96;
+    const nameWidth = nameHeaderRef.current?.offsetWidth || 96;
     // The schedule can be much wider than the viewport. Account for its
     // horizontal scroll position so dragging after a pan still lands on the
     // time under the finger rather than jumping back to the visible viewport.
-    const trackWidth = timeline.scrollWidth - nameWidth;
-    const position = clientX - rect.left + timeline.scrollLeft - nameWidth;
-    const fraction = Math.max(0, Math.min(0.999, position / trackWidth));
-    const nextIndex = Math.min(validStarts.length - 1, Math.round(fraction * slots.length));
-    const next = validStarts[nextIndex];
-    if (next) setSelectedStart(next.start);
+    const trackWidth = Math.max(1, timeline.scrollWidth - nameWidth);
+    return { rect, nameWidth, trackWidth, scrollLeft: timeline.scrollLeft };
   };
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  /** Pointer x → px from the track's left edge (scroll-aware). */
+  const trackX = (clientX: number) => {
+    const metrics = trackMetrics();
+    if (!metrics) return 0;
+    return clientX - metrics.rect.left + metrics.scrollLeft - metrics.nameWidth;
+  };
+
+  const paintFreeLens = (startPx: number) => {
+    const metrics = trackMetrics();
+    if (!metrics) return;
+    const slotPx = metrics.trackWidth / Math.max(1, slots.length);
+    const maxStartPx = Math.max(0, (validStarts.length - 1) * slotPx);
+    const clamped = Math.max(0, Math.min(maxStartPx, startPx));
+    const leftPct = (100 * clamped) / metrics.trackWidth;
+    // `--lens-free` is owned by the gesture, `--lens-left` by React; the
+    // element's `left` reads the free value first (`.follow`), so a React
+    // render mid-drag never yanks the band back to the snapped slot.
+    lensRef.current?.style.setProperty('--lens-free', `${leftPct}%`);
+    // The readout stays inside the visible part of the scroller so the time
+    // under the finger is always legible, even with the band half off-screen.
+    const timeline = timelineRef.current;
+    const halfLabelPx = (labelRef.current?.offsetWidth ?? 96) / 2 + 8;
+    const visibleStart = metrics.scrollLeft + halfLabelPx;
+    const visibleEnd = metrics.scrollLeft + (timeline?.clientWidth ?? metrics.trackWidth) - metrics.nameWidth - halfLabelPx;
+    const centerPx = clamped + (lensWidth / 100) * metrics.trackWidth / 2;
+    const labelPx = visibleEnd > visibleStart ? Math.max(visibleStart, Math.min(visibleEnd, centerPx)) : centerPx;
+    labelRef.current?.style.setProperty('--lens-free', `${(100 * labelPx) / metrics.trackWidth}%`);
+  };
+
+  /** The valid start a track position snaps to, or null when there is none. */
+  const snappedStart = (startPx: number): string | null => {
+    const metrics = trackMetrics();
+    if (!metrics || validStarts.length === 0) return null;
+    const fraction = Math.max(0, Math.min(0.999, startPx / metrics.trackWidth));
+    const nextIndex = Math.min(validStarts.length - 1, Math.round(fraction * slots.length));
+    return validStarts[nextIndex]?.start ?? null;
+  };
+
+  const commitSnapped = (startPx: number) => {
+    const next = snappedStart(startPx);
+    if (next && next !== selectedStart) setSelectedStart(next);
+  };
+
+  const selectFromPointer = (clientX: number) => {
+    const startPx = trackX(clientX) - dragRef.current.grabOffsetPx;
+    paintFreeLens(startPx);
+    commitSnapped(startPx);
+  };
+
+  const scheduleFollow = (clientX: number) => {
+    dragRef.current.lastX = clientX;
+    if (dragRef.current.frame !== null) return;
+    dragRef.current.frame = requestAnimationFrame(() => {
+      dragRef.current.frame = null;
+      selectFromPointer(dragRef.current.lastX);
+    });
+  };
+
+  /** Finish the gesture. The release position (or, on cancel, the last
+   * position a frame was queued for) is committed synchronously: a pending
+   * animation frame is cancelled, never dropped, so the snapped time always
+   * reflects where the finger actually let go — not the previous frame. */
+  const endDrag = (finalX?: number) => {
+    let pending: number | null = null;
+    if (dragRef.current.frame !== null) {
+      cancelAnimationFrame(dragRef.current.frame);
+      dragRef.current.frame = null;
+      pending = dragRef.current.lastX;
+    }
+    const commitX = finalX ?? pending;
+    if (commitX !== null && commitX !== undefined) selectFromPointer(commitX);
+    // Clear the free offset: React's snapped `left` takes over and `.settle`
+    // eases the band onto the slot.
+    lensRef.current?.style.removeProperty('--lens-free');
+    labelRef.current?.style.removeProperty('--lens-free');
+    dragRef.current.pointerId = null;
+    setDragging(false);
+  };
+
+  const beginDrag = (event: React.PointerEvent<HTMLDivElement>, mode: 'band' | 'handle') => {
+    if (validStarts.length === 0) return;
+    // One pointer at a time: a second touch does not take the gesture over.
+    if (dragRef.current.pointerId !== null) return;
+    const metrics = trackMetrics();
+    const lensStartPx = metrics ? (lensLeft / 100) * metrics.trackWidth : 0;
+    dragRef.current.grabOffsetPx = mode === 'band' ? trackX(event.clientX) - lensStartPx : 0;
+    dragRef.current.pointerId = event.pointerId;
     setDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
     selectFromPointer(event.clientX);
   };
 
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => beginDrag(event, 'handle');
+  const handleBandPointerDown = (event: React.PointerEvent<HTMLDivElement>) => beginDrag(event, 'band');
+
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragging) selectFromPointer(event.clientX);
+    if (dragging && ownsDrag(event)) scheduleFollow(event.clientX);
+  };
+
+  const cancelDrag = (event?: React.PointerEvent<HTMLDivElement>) => {
+    if (event && !ownsDrag(event)) return;
+    if (dragging) endDrag();
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging || !ownsDrag(event)) return;
+    // Read the landing slot from the release position, not from `selectedStart`
+    // (state — one render behind the commit endDrag is about to make).
+    const landed = snappedStart(trackX(event.clientX) - dragRef.current.grabOffsetPx) ?? selectedStart;
+    endDrag(event.clientX);
+    fwHaptic(canChooseAt(landed) ? 'success' : 'selection');
+  };
+
+  // Lane taps: a pointer that goes down and comes up in the same place
+  // places the window there. A pan (scrolling the schedule sideways, or the
+  // page vertically) also ends in pointerup and must not.
+  const tapRef = React.useRef<{ id: number; x: number; y: number } | null>(null);
+  // These three are attached to EVERY lane row, so the single record they
+  // share has to be scoped by pointer id: the first contact owns the pending
+  // tap, and only that pointer's up or cancel consumes it. Clearing on any
+  // pointer's up would throw away a still-valid tap belonging to another
+  // contact — the tap would then be silently dropped when it did arrive.
+  const handleLanePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (tapRef.current !== null) return;
+    tapRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  };
+  const handleLanePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const tap = tapRef.current;
+    if (!tap || tap.id !== event.pointerId) return;
+    tapRef.current = null;
+    if (dragging) return;
+    if (Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > TAP_SLOP_PX) return;
+    placeAtPointer(event.clientX);
+  };
+  const handleLanePointerCancel = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (tapRef.current?.id === event.pointerId) tapRef.current = null;
+  };
+
+  React.useEffect(() => () => {
+    if (dragRef.current.frame !== null) cancelAnimationFrame(dragRef.current.frame);
+  }, []);
+
+  // Keep the selected band in view after any settled change (release, a
+  // suggestion tap, the stepper): scroll the timeline, smoothly unless the
+  // viewer prefers reduced motion. Never while a finger is down.
+  React.useEffect(() => {
+    if (dragging) return;
+    const timeline = timelineRef.current;
+    const metrics = trackMetrics();
+    if (!timeline || !metrics) return;
+    const lensStartPx = (lensLeft / 100) * metrics.trackWidth;
+    const lensEndPx = lensStartPx + (lensWidth / 100) * metrics.trackWidth;
+    const viewStart = timeline.scrollLeft;
+    const viewEnd = viewStart + timeline.clientWidth - metrics.nameWidth;
+    if (lensStartPx >= viewStart && lensEndPx <= viewEnd) return;
+    const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const target = Math.max(0, lensStartPx - metrics.trackWidth / Math.max(1, slots.length) * 2);
+    if (typeof timeline.scrollTo === 'function') timeline.scrollTo({ left: target, behavior: reduce ? 'auto' : 'smooth' });
+    else timeline.scrollLeft = target;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- geometry is read live; only the settled selection matters
+  }, [dragging, lensLeft, lensWidth]);
+
+  /** Tap on an empty part of a lane: centre the window under the finger. */
+  const placeAtPointer = (clientX: number) => {
+    const metrics = trackMetrics();
+    if (!metrics) return;
+    commitSnapped(trackX(clientX) - (lensWidth / 100) * metrics.trackWidth / 2);
+    fwHaptic('selection');
   };
 
   const selectedIndex = Math.max(0, validStarts.findIndex((slot) => slot.start === selectedStart));
@@ -382,63 +628,90 @@ export function SchedulingWorkspace({
   const availableSummary = evaluation.allAvailable
     ? 'Everyone is available'
     : evaluation.unknown > 0
-      ? `${evaluation.requiredFree} of ${evaluation.requiredTotal} required free · ${evaluation.unknown} unverified`
-      : `${evaluation.requiredFree} of ${evaluation.requiredTotal} required free`;
+      ? `${evaluation.requiredFree} of ${evaluation.requiredTotal} available · ${evaluation.unknown} unverified`
+      : `${evaluation.requiredFree} of ${evaluation.requiredTotal} available`;
 
   const selectedWindowText = `${formatTime(selectedStart, snapshot.timeZone)}–${formatTime(selectedEnd, snapshot.timeZone)}`;
-  const canChoose = evaluation.unknown === 0 && evaluation.requiredFree === evaluation.requiredTotal;
+  // ONE acceptance rule (shared with the dialog's final recheck) drives the
+  // board's state and the confirm action — see acceptProposal.
+  const acceptance = acceptProposal(evaluation);
+  const busyNames = snapshot.participants
+    .filter((participant) => participant.required && evaluation.states.get(participant.id) === 'busy')
+    .map(participantLabel);
+  const unverifiedNames = snapshot.participants
+    .filter((participant) => evaluation.states.get(participant.id) === 'unknown')
+    .map(participantLabel);
+
+
+  // Rows: the viewer first, then everyone else in snapshot order.
+  const orderedParticipants = React.useMemo(() => {
+    const viewer = visibleParticipants.filter((participant) => participant.isViewer);
+    const others = visibleParticipants.filter((participant) => !participant.isViewer);
+    return [...viewer, ...others];
+  }, [visibleParticipants]);
+
+  const hourPercent = `${100 * 60 / Math.max(1, slots.length * SLOT_MINUTES)}%`;
+  const anyUnverified = snapshot.participants.some((participant) => participant.verification !== 'complete');
+  const viewerIncluded = snapshot.participants.some((participant) => participant.isViewer);
+  const peopleLine = viewerIncluded
+    ? `You + ${snapshot.participants.length - 1} ${snapshot.participants.length - 1 === 1 ? 'player' : 'players'}`
+    : `${snapshot.participants.length} ${snapshot.participants.length === 1 ? 'person' : 'people'}`;
+  const checkedLine = `${peopleLine} · Team time (${shortZone(snapshot.checkedAt, snapshot.timeZone)}) · checked ${formatTime(snapshot.checkedAt, snapshot.timeZone)}`;
+  const lensText = formatWindowShort(selectedStart, selectedEnd, snapshot.timeZone);
+  const subtitle = `${contextLabel ?? `${snapshot.participants.length} ${snapshot.participants.length === 1 ? 'person' : 'people'}`} · ${duration} min`;
+  const suggestionCards = [
+    ...(evaluation.allAvailable
+      ? [{ slot: { start: selectedStart, end: selectedEnd, minuteOfDay: minutesSinceMidnight(selectedStart, snapshot.timeZone) }, evaluation, current: true }]
+      : []),
+    ...suggestions.map((suggestion) => ({ ...suggestion, current: false })),
+  ];
+
+  const datePill = showDatePicker ? (
+    <label className="relative flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-border-subtle bg-surface px-3.5 font-fw-sans text-body-sm font-medium text-text-primary">
+      <CalendarDays className="h-4 w-4 text-text-secondary" aria-hidden="true" />
+      <span className="whitespace-nowrap">{dateLabel}</span>
+      <ChevronDown className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
+      <Input
+        type="date"
+        aria-label="Date"
+        value={dateValue}
+        onChange={(event) => setDate(event.target.value)}
+        className="absolute inset-0 h-full w-full min-h-0 cursor-pointer rounded-full border-0 bg-transparent p-0 opacity-0 shadow-none"
+      />
+    </label>
+  ) : null;
 
   return (
     <section
-      aria-labelledby="scheduling-workspace-title"
-      className={cn("flex min-h-0 w-full flex-1 flex-col text-text-primary", surfaces.panel)}
+      aria-labelledby={embedded ? undefined : 'scheduling-workspace-title'}
+      aria-label={embedded ? 'Find a time' : undefined}
+      className={cn('flex min-h-0 w-full flex-1 flex-col text-text-primary', surfaces.scope, surfaces.panel)}
       data-testid="scheduling-workspace"
     >
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border-subtle px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top,0px))] sm:px-6">
-        <div className="min-w-0">
-          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
-            Scheduling
-          </p>
-          <h1 id="scheduling-workspace-title" className="mt-1 font-fw-display text-[clamp(1.75rem,5vw,2.5rem)] font-semibold tracking-[-0.03em] text-text-primary">
-            Find a time
-          </h1>
-          <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
-            {snapshot.participants.length} {snapshot.participants.length === 1 ? 'person' : 'people'} · {duration} min
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {showDatePicker ? (
-            <Input
-              type="date"
-              aria-label="Date"
-              value={dateValue}
-              onChange={(event) => setDate(event.target.value)}
-              leading={<CalendarDays />}
-              size="md"
-              className="w-auto min-w-[170px] rounded-full bg-surface px-3.5 shadow-flat"
-            />
-          ) : null}
-          <IconButton variant="ghost" size="md" aria-label="Close scheduling workspace" onClick={onClose}>
-            <X className="h-5 w-5" />
+      {!embedded ? (
+        <header className="fw-glass-chrome sticky top-0 z-30 flex shrink-0 items-center gap-3 border-b px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-5">
+          <IconButton variant="ghost" size="md" aria-label="Close scheduling workspace" onClick={onClose} className="shrink-0">
+            <ArrowLeft className="h-5 w-5" />
           </IconButton>
-        </div>
-      </header>
-
-      <div ref={bodyScrollRef} data-testid="scheduling-body" className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 pb-6 sm:px-6">
-        {error ? (
-          <div role="alert" className="flex items-start gap-3 rounded-card border border-fw-danger/30 bg-fw-danger-bg px-4 py-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-fw-danger-ink" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <p className="font-fw-sans text-body-sm font-medium text-fw-danger-ink">Schedule could not be checked</p>
-              <p className="mt-1 font-fw-sans text-caption text-fw-danger-ink/90">{error}</p>
-            </div>
-            {onRetry ? <Button variant="secondary" size="sm" onClick={onRetry}>Retry</Button> : null}
+          <div className="min-w-0 flex-1">
+            <h1 id="scheduling-workspace-title" className="truncate font-fw-display text-[1.625rem] font-semibold leading-tight tracking-[-0.02em] text-text-primary">
+              Find a time
+            </h1>
+            <p className="mt-0.5 truncate font-fw-sans text-body-sm text-text-secondary">{subtitle}</p>
           </div>
-        ) : null}
+          {datePill}
+        </header>
+      ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex min-h-11 items-center gap-2 rounded-full border border-border-subtle bg-surface px-3.5 shadow-flat">
+      <div
+        ref={bodyScrollRef}
+        data-testid="scheduling-body"
+        className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 pb-6 sm:px-5 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6"
+      >
+        <div className="flex min-w-0 shrink-0 flex-col gap-4">
+          {/* Controls: duration and start time, two quiet bordered groups. */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="flex h-11 items-center gap-1.5 rounded-full border border-border-subtle bg-surface pl-3.5 pr-1">
               <Clock3 className="h-4 w-4 text-text-secondary" aria-hidden="true" />
               <span className="font-fw-sans text-caption font-medium text-text-secondary">Duration</span>
               <Select
@@ -447,144 +720,126 @@ export function SchedulingWorkspace({
                 onValueChange={(value) => value && setDuration(Number(value))}
                 size="sm"
                 options={DURATION_OPTIONS.map((option) => ({ value: String(option), label: `${option} min` }))}
-                className="min-w-[84px] border-0 bg-transparent px-0 shadow-none"
+                className="min-w-[84px] border-0 bg-transparent px-1 shadow-none"
               />
             </div>
-            <span className="hidden font-fw-sans text-caption text-text-tertiary sm:inline">{dateLabel}</span>
-          </div>
-          <div className="flex items-center gap-1 rounded-full border border-border-subtle bg-surface p-1 shadow-flat">
-            <IconButton variant="ghost" size="sm" aria-label="Earlier time" onClick={() => moveSelection(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </IconButton>
-            <Select
-              aria-label="Start time"
-              value={selectedStart}
-              onValueChange={(value) => value && setStart(value)}
-              size="sm"
-              options={validStarts.map((slot) => ({ value: slot.start, label: formatTime(slot.start, snapshot.timeZone) }))}
-              className="min-w-[112px] border-0 bg-transparent px-0 shadow-none"
-            />
-            <IconButton variant="ghost" size="sm" aria-label="Later time" onClick={() => moveSelection(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </IconButton>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-fw-sans text-body-sm font-semibold text-text-primary">Compare schedules</p>
-            <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{snapshot.timeZone} · checked {formatTime(snapshot.checkedAt, snapshot.timeZone)}</p>
-          </div>
-          <div className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-semibold',
-            evaluation.allAvailable ? 'bg-fw-success-bg text-fw-success-ink' : evaluation.unknown ? 'bg-fw-warning-bg text-fw-warning-ink' : 'bg-fw-danger-bg text-fw-danger-ink',
-          )} role="status">
-            {evaluation.allAvailable ? <Check className="h-4 w-4" aria-hidden="true" /> : <AlertTriangle className="h-4 w-4" aria-hidden="true" />}
-            {availableSummary}
-          </div>
-        </div>
-
-        {hasAffectedFilter ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              {showEveryone ? 'Showing everyone invited.' : 'Showing only the people this overlap affects.'}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-pressed={showEveryone}
-              onClick={toggleShowEveryone}
-              className={surfaces.press}
-            >
-              {showEveryone
-                ? `Show affected only (${affectedParticipantIds!.length})`
-                : `Show everyone (${snapshot.participants.length})`}
-            </Button>
-          </div>
-        ) : null}
-
-        <div className={cn("overflow-hidden rounded-card", surfaces.paper)}>
-          <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3", surfaces.chrome)}>
-            <div>
-              <p className="font-fw-sans text-caption font-semibold uppercase tracking-[0.1em] text-text-tertiary">{duration}-min windows</p>
-              <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">Slide to explore. Choose a time on the ruler.</p>
+            <div className="flex h-11 items-center gap-0.5 rounded-full border border-border-subtle bg-surface p-1">
+              <IconButton variant="ghost" size="sm" aria-label="Earlier time" onClick={() => moveSelection(-1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </IconButton>
+              <Select
+                aria-label="Start time"
+                value={selectedStart}
+                onValueChange={(value) => value && setStart(value)}
+                size="sm"
+                options={validStarts.map((slot) => ({ value: slot.start, label: formatTime(slot.start, snapshot.timeZone) }))}
+                className="min-w-[104px] border-0 bg-transparent px-1 shadow-none"
+              />
+              <IconButton variant="ghost" size="sm" aria-label="Later time" onClick={() => moveSelection(1)}>
+                <ChevronRight className="h-4 w-4" />
+              </IconButton>
             </div>
-            <GlassSurface
-              surface="chrome"
-              padding="none"
-              animateIn={false}
-              role="slider"
-              tabIndex={0}
-              aria-label="Move selected time window"
-              aria-valuemin={0}
-              aria-valuemax={Math.max(0, validStarts.length - 1)}
-              aria-valuenow={selectedIndex}
-              aria-valuetext={selectedWindowText}
-              onKeyDown={handleDragKeyDown}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={() => {
-                if (dragging) fwHaptic('selection');
-                setDragging(false);
-              }}
-              onPointerCancel={() => setDragging(false)}
-              className="flex min-h-11 touch-none items-center gap-1.5 px-3 py-1.5 font-fw-sans text-caption font-medium text-accent-700 shadow-flat outline-none transition-transform hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-border-focus motion-reduce:transition-none"
-            >
-              <GripVertical className="h-4 w-4" aria-hidden="true" />
-              {selectedWindowText}
-            </GlassSurface>
+            {embedded ? datePill : null}
           </div>
-          <div
-            ref={timelineRef}
-            data-testid="scheduling-timeline"
-            className="overflow-x-auto overscroll-x-contain touch-pan-x"
-            data-dragging={dragging || undefined}
-          >
-            <div
-              className="grid min-w-max [--slot-width:24px] md:[--slot-width:32px]"
-              style={{ gridTemplateColumns: `96px repeat(${slots.length}, minmax(var(--slot-width), 1fr))` }}
-            >
-              <div className="sticky left-0 z-20 border-b border-r border-border-subtle bg-surface px-3 py-3 font-fw-sans text-caption font-semibold text-text-tertiary">People</div>
-              {slots.map((slot, index) => {
-                const selected = slot.start >= selectedStart && slot.start < selectedEnd;
-                const showLabel = slot.minuteOfDay % 60 === 0;
-                return (
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    type="button"
-                    key={slot.start}
-                    aria-label={`Choose ${formatTime(slot.start, snapshot.timeZone)} start`}
-                    aria-pressed={selected}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setStart(slot.start);
-                    }}
-                    className={cn(
-                      'relative min-h-14 w-full !rounded-none !border-0 border-b border-r border-border-subtle px-2 text-left font-fw-mono text-caption text-text-tertiary transition-colors hover:bg-surface-tint focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
-                      selected && 'bg-accent-50 text-accent-700',
-                      index === 0 && 'border-l-0',
-                    )}
-                  >
-                    {showLabel ? formatTime(slot.start, snapshot.timeZone) : null}
-                  </Button>
-                );
-              })}
 
-              {visibleParticipants.map((participant) => (
-                <React.Fragment key={participant.id}>
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onPersonClick?.(participant.id);
-                    }}
-                    className="sticky left-0 z-20 flex min-h-[76px] w-full !rounded-none !border-0 border-b border-r border-border-subtle bg-surface px-3 text-left hover:bg-surface-tint focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus"
-                    aria-label={`Open ${participantLabel(participant)} schedule`}
+          {hasAffectedFilter ? (
+            <div className="flex shrink-0 items-center justify-between gap-3">
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                {showEveryone ? 'Showing everyone invited.' : 'Showing only the people this overlap affects.'}
+              </p>
+              <Button variant="ghost" size="sm" aria-pressed={showEveryone} onClick={toggleShowEveryone}>
+                {showEveryone
+                  ? `Show affected only (${affectedParticipantIds!.length})`
+                  : `Show everyone (${snapshot.participants.length})`}
+              </Button>
+            </div>
+          ) : null}
+
+          {/* ── The timeline: aligned rows under one selection lens ─────────── */}
+          <div className="shrink-0 overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
+            <div
+              ref={timelineRef}
+              data-testid="scheduling-timeline"
+              className="overflow-x-auto overscroll-x-contain touch-pan-x touch-pan-y"
+              data-dragging={dragging || undefined}
+            >
+              <div
+                className="relative grid min-w-max [--name-width:116px] [--slot-width:24px] md:[--name-width:120px] md:[--slot-width:40px]"
+                style={{ gridTemplateColumns: `var(--name-width) repeat(${slots.length}, minmax(var(--slot-width), 1fr))` }}
+              >
+                {/* Row 1: the floating readout above the ruler. */}
+                <div ref={nameHeaderRef} className="sticky left-0 z-20 bg-surface" aria-hidden="true" style={{ gridColumn: 1, gridRow: 1 }} />
+                <div className="relative h-12" style={{ gridColumn: `2 / span ${slots.length}`, gridRow: 1 }}>
+                  <div
+                    role="slider"
+                    tabIndex={0}
+                    aria-label="Move selected time window"
+                    aria-valuemin={0}
+                    aria-valuemax={Math.max(0, validStarts.length - 1)}
+                    aria-valuenow={selectedIndex}
+                    aria-valuetext={selectedWindowText}
+                    onKeyDown={handleDragKeyDown}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={cancelDrag}
+                    ref={labelRef}
+                    className={cn(
+                      '!absolute top-1.5 z-30 flex h-9 w-max min-w-[88px] -translate-x-1/2 cursor-grab touch-none select-none items-center justify-center gap-1 rounded-full px-3.5 font-fw-sans text-body-sm font-semibold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-border-focus active:cursor-grabbing',
+                      surfaces.lensLabel,
+                      surfaces.follow,
+                      surfaces.settle,
+                      dragging && surfaces.dragging,
+                    )}
+                    style={{ '--lens-left': `${lensLeft + lensWidth / 2}%` } as React.CSSProperties}
                   >
-                    <span className="flex min-w-0 w-full flex-col items-center gap-1.5">
+                    <GripVertical className="h-3.5 w-3.5 opacity-60" aria-hidden="true" />
+                    {lensText}
+                  </div>
+                </div>
+
+                {/* Row 2: hour ruler. */}
+                <div className="sticky left-0 z-20 border-b border-r border-border-subtle bg-surface" aria-hidden="true" style={{ gridColumn: 1, gridRow: 2 }} />
+                {slots.map((slot, slotIndex) => {
+                  const selected = slot.start >= selectedStart && slot.start < selectedEnd;
+                  const isHour = slot.minuteOfDay % 60 === 0;
+                  return (
+                    <PressTarget
+                      key={slot.start}
+                      aria-label={`Choose ${formatTime(slot.start, snapshot.timeZone)} start`}
+                      aria-pressed={selected}
+                      style={{ gridColumn: slotIndex + 2, gridRow: 2 }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setStart(slot.start);
+                      }}
+                      className={cn(
+                        // 32px keeps the ruler compact for a mouse, but these are real
+                        // start-time controls: on a coarse pointer they take the 44px
+                        // floor the rest of the kit uses (segmented.tsx, PopoverPanel),
+                        // restoring the hit area main had at `min-h-14`.
+                        'relative h-8 w-full border-b border-border-subtle px-0 font-fw-mono text-caption text-text-tertiary hover:bg-surface-sunken focus-visible:z-30 focus-visible:ring-inset focus-visible:ring-offset-0 [@media(pointer:coarse)]:min-h-[44px]',
+                        isHour && 'border-l border-l-border-subtle',
+                        selected && 'text-accent-700',
+                      )}
+                    >
+                      {isHour ? <span className="absolute left-1.5 top-1/2 -translate-y-1/2 whitespace-nowrap">{formatTime(slot.start, snapshot.timeZone).replace(':00', '')}</span> : null}
+                    </PressTarget>
+                  );
+                })}
+
+                {/* Rows 3+: one person per row. */}
+                {orderedParticipants.map((participant, rowIndex) => (
+                  <React.Fragment key={participant.id}>
+                    <PressTarget
+                      style={{ gridColumn: 1, gridRow: rowIndex + 3 }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onPersonClick?.(participant.id);
+                      }}
+                      className="sticky left-0 z-20 flex min-h-[60px] w-full items-center gap-2 border-b border-r border-border-subtle bg-surface px-2.5 text-left hover:bg-surface-sunken focus-visible:z-30 focus-visible:ring-inset focus-visible:ring-offset-0 md:min-h-[64px]"
+                      aria-label={`Open ${participantLabel(participant)} schedule`}
+                    >
                       <Avatar
                         src={participant.avatarUrl ?? undefined}
                         name={participant.avatarUrl ? participantLabel(participant) : null}
@@ -592,124 +847,179 @@ export function SchedulingWorkspace({
                         fallback={<UserRound className="h-4 w-4" />}
                         size="sm"
                       />
-                      <span className="w-full min-w-0 truncate text-center font-fw-sans text-caption font-medium text-text-primary">{participantLabel(participant)}</span>
-                    </span>
-                  </Button>
+                      <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                        <span className="sm:hidden">{participantShortLabel(participant)}</span>
+                        <span className="hidden sm:inline">{participantLabel(participant)}</span>
+                      </span>
+                    </PressTarget>
+                    <div
+                      className={cn('relative min-h-[60px] border-b border-border-subtle md:min-h-[64px]', surfaces.laneGrid)}
+                      style={{ gridColumn: `2 / span ${slots.length}`, gridRow: rowIndex + 3, ['--cal-slot' as string]: hourPercent }}
+                      data-testid="scheduling-lane"
+                      // Pointer-only convenience: tapping empty lane space
+                      // centres the window there. The keyboard/AT path is the
+                      // slider handle above; this adds no second control.
+                      onPointerDown={handleLanePointerDown}
+                      onPointerUp={handleLanePointerUp}
+                      onPointerCancel={handleLanePointerCancel}
+                    >
+                      {participant.verification !== 'complete' ? (
+                        <div className={cn('absolute inset-2 flex items-center rounded-fw-sm px-3 font-fw-sans text-caption', surfaces.hatch)}>Not verified</div>
+                      ) : null}
+                      {participant.intervals.map((interval) => {
+                        const start = Math.max(windowStartMs, Date.parse(interval.start));
+                        const end = Math.min(windowEndMs, Date.parse(interval.end));
+                        if (end <= start) return null;
+                        return (
+                          <div
+                            key={interval.id}
+                            title={intervalLabel(interval, snapshot.timeZone)}
+                            aria-label={intervalLabel(interval, snapshot.timeZone)}
+                            className={cn(
+                              'absolute inset-y-2 overflow-hidden rounded-fw-sm px-2.5 py-1.5',
+                              interval.type === 'class' ? surfaces.class : interval.type === 'event' ? surfaces.team : interval.type === 'blocked' ? surfaces.personal : surfaces.busy,
+                            )}
+                            style={{ left: `${100 * (start - windowStartMs) / windowMs}%`, width: `${100 * (end - start) / windowMs}%` }}
+                          >
+                            <span className="block truncate font-fw-sans text-caption font-medium">{interval.title || 'Busy'}</span>
+                            <span className="hidden truncate font-fw-mono text-microbadge opacity-75 md:block">{formatTime(interval.start, snapshot.timeZone)}–{formatTime(interval.end, snapshot.timeZone)}</span>
+                          </div>
+                        );
+                      })}
+                      {referenceInterval ? (() => {
+                        const start = Math.max(windowStartMs, Date.parse(referenceInterval.start));
+                        const end = Math.min(windowEndMs, Date.parse(referenceInterval.end));
+                        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+                        const label = referenceInterval.label ?? 'Current';
+                        const text = `${label}, ${formatTime(referenceInterval.start, snapshot.timeZone)}–${formatTime(referenceInterval.end, snapshot.timeZone)}`;
+                        return (
+                          <div
+                            key="reference"
+                            title={text}
+                            aria-label={text}
+                            className={cn('pointer-events-none absolute inset-y-2 overflow-hidden rounded-fw-sm px-2.5 py-1.5', surfaces.reference)}
+                            style={{ left: `${100 * (start - windowStartMs) / windowMs}%`, width: `${100 * (end - start) / windowMs}%` }}
+                          >
+                            <span className="block truncate font-fw-sans text-caption font-semibold text-text-secondary">{label}</span>
+                          </div>
+                        );
+                      })() : null}
+                    </div>
+                  </React.Fragment>
+                ))}
+
+                {/* The lens: one band over every row, clipped to the lanes. */}
+                {orderedParticipants.length > 0 ? (
                   <div
-                    className="relative min-h-[76px] border-b border-border-subtle"
-                    style={{ gridColumn: `span ${slots.length}`, backgroundImage: 'linear-gradient(to right, var(--fw-color-border-subtle) 1px, transparent 1px)', backgroundSize: `${100 / slots.length}% 100%` }}
+                    aria-hidden="true"
+                    className="pointer-events-none relative z-10 overflow-visible"
+                    style={{ gridColumn: `2 / span ${slots.length}`, gridRow: `3 / span ${orderedParticipants.length}` }}
                   >
-                    {participant.verification !== 'complete' ? (
-                      <div className="absolute inset-2 flex items-center rounded-fw-sm border border-dashed border-border-strong bg-surface-sunken/70 px-3 font-fw-sans text-caption text-text-secondary">Not verified</div>
-                    ) : null}
-                    {participant.intervals.map((interval) => {
-                      const windowStart = Date.parse(snapshot.window.start);
-                      const windowEnd = Date.parse(snapshot.window.end);
-                      const start = Math.max(windowStart, Date.parse(interval.start));
-                      const end = Math.min(windowEnd, Date.parse(interval.end));
-                      if (end <= start) return null;
-                      return (
-                        <div key={interval.id} title={intervalLabel(interval, snapshot.timeZone)}
-                          aria-label={intervalLabel(interval, snapshot.timeZone)}
-                          className={cn('absolute inset-y-3 overflow-hidden rounded-fw-sm border px-3 py-2 shadow-flat',
-                            interval.type === 'class' ? 'border-accent-200 bg-accent-50 text-accent-800' : interval.type === 'event' ? 'border-accent-700 bg-accent-650 text-text-on-accent' : 'border-border-subtle bg-surface-sunken text-text-secondary')}
-                          style={{ left: `${100 * (start - windowStart) / (windowEnd - windowStart)}%`, width: `${100 * (end - start) / (windowEnd - windowStart)}%` }}>
-                          <span className="block truncate font-fw-sans text-caption font-semibold">{interval.title || 'Busy'}</span>
-                          <span className="block truncate font-fw-mono text-microbadge opacity-75">{formatTime(interval.start, snapshot.timeZone)}–{formatTime(interval.end, snapshot.timeZone)}</span>
-                        </div>
-                      );
-                    })}
-                    {referenceInterval ? (() => {
-                      const windowStart = Date.parse(snapshot.window.start);
-                      const windowEnd = Date.parse(snapshot.window.end);
-                      const start = Math.max(windowStart, Date.parse(referenceInterval.start));
-                      const end = Math.min(windowEnd, Date.parse(referenceInterval.end));
-                      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-                      const label = referenceInterval.label ?? 'Current';
-                      return (
-                        <div
-                          key="reference"
-                          title={`${label}, ${formatTime(referenceInterval.start, snapshot.timeZone)}–${formatTime(referenceInterval.end, snapshot.timeZone)}`}
-                          aria-label={`${label}, ${formatTime(referenceInterval.start, snapshot.timeZone)}–${formatTime(referenceInterval.end, snapshot.timeZone)}`}
-                          className={cn('pointer-events-none absolute inset-y-3 overflow-hidden rounded-fw-sm px-3 py-2', surfaces.reference)}
-                          style={{ left: `${100 * (start - windowStart) / (windowEnd - windowStart)}%`, width: `${100 * (end - start) / (windowEnd - windowStart)}%` }}
-                        >
-                          <span className="block truncate font-fw-sans text-caption font-semibold text-text-secondary">{label}</span>
-                        </div>
-                      );
-                    })() : null}
-                    <div aria-hidden className={cn('pointer-events-none absolute inset-y-0 border-x-2 border-accent-500 bg-accent-500/10', surfaces.settle)}
-                      style={{ left: `${100 * (Date.parse(selectedStart) - Date.parse(snapshot.window.start)) / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%`, width: `${100 * duration * 60000 / (Date.parse(snapshot.window.end) - Date.parse(snapshot.window.start))}%` }} />
+                    <div
+                      data-testid="scheduling-lens"
+                      ref={lensRef}
+                      onPointerDown={handleBandPointerDown}
+                      onPointerMove={handlePointerMove}
+                      onPointerUp={handlePointerUp}
+                      onPointerCancel={cancelDrag}
+                      className={cn(
+                        'pointer-events-auto absolute inset-y-0 cursor-grab touch-none select-none rounded-sm active:cursor-grabbing',
+                        surfaces.lens,
+                        surfaces.follow,
+                        surfaces.settle,
+                        dragging && surfaces.dragging,
+                      )}
+                      style={{ '--lens-left': `${lensLeft}%`, width: `${lensWidth}%` } as React.CSSProperties}
+                    >
+                      <span className={cn('absolute -left-[6px] -top-[6px] h-3 w-3 rounded-full', surfaces.lensGrip)} />
+                      <span className={cn('absolute -right-[6px] -top-[6px] h-3 w-3 rounded-full', surfaces.lensGrip)} />
+                    </div>
                   </div>
-                </React.Fragment>
-              ))}
+                ) : null}
+              </div>
+            </div>
+
+            {/* Legend. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle px-4 py-2.5 font-fw-sans text-caption text-text-secondary">
+              <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.busy)} aria-hidden="true" /> Busy</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-sm border border-border-strong bg-surface" aria-hidden="true" /> Available</span>
+              <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.lens)} aria-hidden="true" /> Selected</span>
+              {anyUnverified ? (
+                <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.hatch)} aria-hidden="true" /> Not verified</span>
+              ) : null}
+              {referenceInterval ? (
+                <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.reference)} aria-hidden="true" /> {referenceInterval.label ?? 'Current'}</span>
+              ) : null}
+              <span className="basis-full text-text-tertiary sm:ml-auto sm:basis-auto">{checkedLine}</span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle px-4 py-3 font-fw-sans text-caption text-text-secondary">
-            <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-accent-100" aria-hidden="true" /> Busy</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm border border-dashed border-border-strong bg-surface-sunken" aria-hidden="true" /> Not verified</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-accent-100 ring-1 ring-inset ring-accent-500" aria-hidden="true" /> Selected</span>
-            {referenceInterval ? (
-              <span className="inline-flex items-center gap-1.5"><span className={cn("h-3 w-3 rounded-sm", surfaces.reference)} aria-hidden="true" /> {referenceInterval.label ?? 'Current'}</span>
-            ) : null}
-          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="font-fw-display text-body-lg font-semibold text-text-primary">Suggested times</h2>
-            <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">Based on the checked schedule window.</p>
+        {/* ── Suggested times ──────────────────────────────────────────────── */}
+        <aside className="flex min-w-0 shrink-0 flex-col gap-3 lg:sticky lg:top-0" aria-labelledby="scheduling-suggestions-heading">
+          <div className="flex items-end justify-between gap-3">
+            <h2 id="scheduling-suggestions-heading" className="font-fw-display text-title font-semibold tracking-[-0.01em] text-text-primary">Suggested times</h2>
+            {suggestions.length > 0 ? <span className="font-fw-sans text-caption text-text-tertiary">{suggestions.length} {suggestions.length === 1 ? 'alternative' : 'alternatives'}</span> : null}
           </div>
-          {suggestions.length > 0 ? <span className="font-fw-sans text-caption text-text-tertiary">{suggestions.length} alternatives</span> : null}
-        </div>
-        {suggestions.length > 0 ? (
-          <div className="grid gap-2 sm:grid-cols-3">
-            {suggestions.map(({ slot, evaluation: candidate }) => (
-              <Button
-                variant="ghost"
-                size="md"
-                type="button"
-                key={slot.start}
-                onClick={() => setStart(slot.start)}
-                className="group min-h-20 w-full !rounded-card border border-border-subtle bg-surface px-4 py-3 text-left shadow-flat transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-accent-300 hover:bg-surface-tint hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus motion-reduce:transition-none"
-              >
-                <span className="flex w-full min-w-0 items-center justify-between gap-3">
-                  <span className="min-w-0">
-                    <span className="block font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">{formatTime(slot.start, snapshot.timeZone)}–{formatTime(addMinutes(slot.start, duration), snapshot.timeZone)}</span>
-                    <span className="mt-1 block font-fw-sans text-caption text-text-secondary">{candidate.requiredFree} of {candidate.requiredTotal} required free{candidate.unknown ? ` · ${candidate.unknown} unverified` : ''}</span>
+          {suggestionCards.length > 0 ? (
+            <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:flex lg:flex-col">
+              {suggestionCards.map(({ slot, evaluation: candidate, current }) => (
+                <PressTarget
+                  key={slot.start}
+                  aria-pressed={current}
+                  onClick={() => { if (!current) setStart(slot.start); }}
+                  className={cn(
+                    'group flex min-h-[64px] w-full items-center gap-3 rounded-fw-md border border-border-subtle bg-surface px-4 py-3 text-left [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken',
+                    current && 'border-accent-650 ring-1 ring-inset ring-accent-650',
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'grid h-8 w-8 shrink-0 place-items-center rounded-full',
+                      current ? 'bg-accent-650 text-text-on-accent' : 'border-2 border-border-strong bg-surface',
+                    )}
+                  >
+                    {current ? <Check className="h-4 w-4" strokeWidth={2.5} /> : null}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-fw-sans text-body-lg font-semibold tabular-nums text-text-primary">{formatTime(slot.start, snapshot.timeZone)} – {formatTime(addMinutes(slot.start, duration), snapshot.timeZone)}</span>
+                    <span className="mt-0.5 block font-fw-sans text-caption text-text-secondary">{candidate.requiredFree} of {candidate.requiredTotal} available{candidate.unknown ? ` · ${candidate.unknown} unverified` : ''}</span>
                   </span>
                   <ChevronRight className="h-5 w-5 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
-                </span>
-              </Button>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-card border border-dashed border-border-subtle bg-surface-sunken px-4 py-4">
-            <p className="font-fw-sans text-body-sm font-medium text-text-primary">No other verified openings in this window.</p>
-            <p className="mt-1 font-fw-sans text-caption text-text-secondary">Try another date or adjust the duration.</p>
-          </div>
-        )}
+                </PressTarget>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-card border border-dashed border-border-subtle bg-surface-sunken px-4 py-4">
+              <p className="font-fw-sans text-body-sm font-medium text-text-primary">No other verified openings in this window.</p>
+              <p className="mt-1 font-fw-sans text-caption text-text-secondary">Try another date or adjust the duration.</p>
+            </div>
+          )}
+        </aside>
       </div>
 
-      <footer className={cn("sticky bottom-0 z-30 shrink-0 border-t px-4 py-3 sm:px-6 sm:pb-4", surfaces.chrome)}>
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="font-fw-sans text-caption font-semibold uppercase tracking-[0.1em] text-text-tertiary">Selected time</p>
-            <p className="mt-0.5 truncate font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">{dateLabel} · {selectedWindowText}</p>
-          </div>
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            busy={loading}
-            disabled={!canChoose || loading || disablePrimaryAction}
-            onClick={() => onChoose({ start: selectedStart, end: selectedEnd })}
-            className={cn("sm:w-auto sm:min-w-[220px]", surfaces.selected)}
-          >
-            {primaryActionLabel}
-          </Button>
-        </div>
-      </footer>
+      {/* The frame reserves the board's space below the scrolling body, so the
+          board floats over nothing it could hide. */}
+      <div className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-2 sm:px-5 sm:pb-4">
+        <SchedulingTaskBoard
+          className="mx-auto max-w-5xl"
+          dateLabel={dateLabel}
+          windowLabel={lensText}
+          acceptance={acceptance}
+          summary={availableSummary}
+          busyNames={busyNames}
+          unverifiedNames={unverifiedNames}
+          error={error}
+          onRetry={onRetry}
+          nextOpen={suggestions[0] ? { start: suggestions[0].slot.start, label: formatWindowShort(suggestions[0].slot.start, addMinutes(suggestions[0].slot.start, duration), snapshot.timeZone) } : null}
+          onJumpTo={setStart}
+          primaryActionLabel={primaryActionLabel}
+          onConfirm={() => onChoose({ start: selectedStart, end: selectedEnd })}
+          loading={loading}
+          disablePrimaryAction={disablePrimaryAction}
+        />
+      </div>
     </section>
   );
 }

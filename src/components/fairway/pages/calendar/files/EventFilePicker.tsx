@@ -11,7 +11,7 @@ import * as React from 'react';
 import { Search, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import surfaces from '../CalendarSurfaces.module.css';
-import { ModalShell, Button, Input, Segmented, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
+import { ModalShell, Button, Input, PressTarget, Segmented, EmptyState, InlineNotice, Skeleton } from '@/components/fairway';
 import { getDocuments } from '@/app/golf/actions/documents';
 import { attachDocumentToEvent } from '@/app/golf/actions/event-documents';
 import type { GolfDocument } from '@/lib/types/golf';
@@ -98,7 +98,7 @@ export function EventFilePicker({
   };
 
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} size="lg" title="Attach a file">
+    <ModalShell open={open} onOpenChange={onOpenChange} size="lg" title="Attach a file" className={cn(surfaces.scope, surfaces.panel)}>
       <ModalShell.Body className="flex flex-col gap-3">
         <Input
           leading={<Search className="h-4 w-4" aria-hidden />}
@@ -143,22 +143,18 @@ export function EventFilePicker({
             description={documents.length === 0 ? undefined : 'Try a different search or category.'}
           />
         ) : (
-          <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto">
+          <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto p-0.5">
             {filtered.map((doc) => (
               <li key={doc.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
+                <PressTarget
                   onClick={() => handleAttach(doc.id)}
                   disabled={attachingId !== null}
-                  className={cn(
-                    'flex h-auto w-full min-h-11 items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3.5 py-2.5 text-left font-normal',
-                    'hover:bg-surface-tint disabled:opacity-60',
-                    surfaces.press,
-                  )}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface py-2 pl-4 pr-3 text-left [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken"
                 >
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <Paperclip className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken text-text-secondary">
+                      <Paperclip className="h-4 w-4" aria-hidden />
+                    </span>
                     <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
                       {doc.title}
                     </span>
@@ -166,7 +162,7 @@ export function EventFilePicker({
                   <span className="shrink-0 font-fw-sans text-caption text-text-tertiary">
                     {attachingId === doc.id ? 'Attaching…' : doc.category ?? ''}
                   </span>
-                </Button>
+                </PressTarget>
               </li>
             ))}
           </ul>
