@@ -6,12 +6,12 @@
  * AND handed the identical string to `TrendChart`'s own `title` prop, which
  * ChartFrame renders into a second, `truncate`-d `<h3>` inside the card. Once
  * the header row's "View as table" toggle squeezed that inner h3, it clipped
- * to "Scoring tre…" — a duplicated AND clipped heading. The fix passes
- * `title={null}` to TrendChart (same pattern GenomeFingerprintTeaser already
- * uses below it) so the SectionTitle above is the ONE heading for this card.
+ * to "Scoring tre…" — a duplicated AND clipped heading. The stage (v2) keeps
+ * the rule: the SectionTitle is the ONE "Scoring trend" heading, and the
+ * Ribbon panel under it carries the verdict sentence, never that text again.
  *
- * This locks: exactly one "Scoring trend" heading renders on the page, and
- * ChartFrame's inner title slot is empty (no second copy to ever clip).
+ * This locks: exactly one "Scoring trend" heading renders on the page, as the
+ * page-level h2.
  * ========================================================================== */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';

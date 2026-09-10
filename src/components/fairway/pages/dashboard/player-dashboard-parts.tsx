@@ -5,43 +5,60 @@
  * Fairway · pages/dashboard · FairwayPlayerDashboard local sub-parts
  * ----------------------------------------------------------------------------
  * Presentation-only building blocks for the redesigned PLAYER dashboard. These
- * are page-local compositions of Fairway primitives (Surface / Inset / MetricCard
- * / Button / etc.) — they hold NO data fetching and NO business logic. All data
- * arrives as props derived from the UNCHANGED dashboard-data.ts payload.
+ * are page-local compositions of Fairway primitives — they hold NO data
+ * fetching and NO business logic. All data arrives as props derived from the
+ * UNCHANGED dashboard-data.ts payload.
  *
- * Per the redesign plan (dashboard-home.json player entry + _flow-dashboard-home
- * Dashboard-vs-Hub split):
- *   • Dashboard = the analytical overview (trend / standing / genome teasers).
- *   • The "today / action items" job belongs to the HUB — the Dashboard only
- *     shows a quiet "Today" summary card that links INTO the Hub instead of
- *     reproducing its tabs.
- *   • Honest insufficient-data everywhere (29/50 players have zero rounds and
- *     only 19 stats-cache rows) — never authoritative zeros.
+ * player-home.v2.md (the owner's bar: a stage that answers the player's first
+ * question with a real instrument, seam sections rather than boxes):
+ *   • PlayerStage — the score trajectory as a Ribbon with the LAST round
+ *     marked and the player's own scoring average as the dashed benchmark;
+ *     the panel headline is the verdict sentence derived from the SAME
+ *     five-round series the form strip's delta hint uses.
+ *   • SgFacetsPanel — the four strokes-gained zones as a diverging tornado
+ *     (x = 0 is the field average the SG vector is already computed against);
+ *     replaces the single-series radar teaser, which showed a shape when the
+ *     question is "which zone leaks".
+ *   • TodayTasks — the player's action items as seam rows under the schedule
+ *     (the old Today card restated the schedule's next event beside them).
+ *   • RecentRoundsList — unchanged rows.
+ *
+ * Honest insufficient-data everywhere (29/50 players have zero rounds and
+ * only 19 stats-cache rows) — never authoritative zeros, never a fabricated
+ * series: the Ribbon dims below three rounds, the tornado needs three of four
+ * zones.
  *
  * ADDITIVE + GATED. Renders inside a `.fairway-ds` scope on `bg-canvas`.
  * ========================================================================== */
 
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import { useMemo } from 'react';
-import {
-  ChevronRight,
-  ClipboardList,
-  CalendarClock,
-  Flag,
-  AlertCircle,
-  Compass,
-} from 'lucide-react';
+import { ChevronRight, ClipboardList, Flag, AlertCircle, Megaphone, CalendarClock } from 'lucide-react';
 
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { InsetGroup } from '@/components/fairway/surfaces/inset-group';
-import { Button } from '@/components/fairway/controls/button';
-import { GenomeRadar, type GenomeAxis } from '@/components/fairway/charts/GenomeRadar';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { Ribbon, type RibbonPoint } from '@/components/fairway/charts/Ribbon';
+import type { SGCategory } from '@/components/fairway/charts/StrokesGainedTornado';
+import type { SeriesTrend } from '@/components/fairway/charts/seriesTrend';
+import { cleanCourseName } from '@/lib/golf/course-name';
 import { cn } from '@/lib/utils';
-import type {
-  TodayEvent,
-  ActionItem,
-  StrokesGainedSnapshot,
-} from '@/app/golf/actions/dashboard-data';
+import type { ActionItem, StrokesGainedSnapshot } from '@/app/golf/actions/dashboard-data';
+
+// visx stays out of the server render path / first paint (same load contract
+// the page's TrendChart had): the tornado mounts client-side, chart-shaped
+// skeleton until then.
+const StrokesGainedTornado = nextDynamic(
+  () =>
+    import('@/components/fairway/charts/StrokesGainedTornado').then((m) => ({
+      default: m.StrokesGainedTornado,
+    })),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[280px] w-full rounded-card" />,
+  },
+);
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Section heading — quiet General Sans h3 with an optional trailing link.
@@ -80,228 +97,54 @@ export function SectionTitle({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * "Today" summary card — DEMOTES the old TodayTimeline + ActionItemsCard.
+ * The stage — score trajectory with the last round marked.
  * ----------------------------------------------------------------------------
- * The plan: the Dashboard must NOT reproduce the Hub's today/tasks tabs. It
- * shows a single compact summary and links into the Action center, which is
- * the canonical action surface.
- *
- * WAVE 3 (player-home premium pass): this card used to grow a SECOND "what
- * needs you" preview whenever a Hub feed (`hubSummary`) was present — a
- * hero-framed "N thing(s) need(s) you" row restating the same count the
- * Action center section already showed in full a few hundred pixels below.
- * Nick flagged that duplicate framing directly. Fixed by making the body
- * ALWAYS show real "today" content — the player's actual next event + lead
- * task.
- *
- * DaySchedule wave: the Action center section this card's footer used to
- * jump to (`#action-center`) is gone — replaced by the DaySchedule card
- * further down the page. The footer no longer references a count or an
- * in-page anchor; it's a single, always-honest link straight to the full
- * calendar, since that's the one place guaranteed to exist regardless of
- * whether this player has a Hub feed.
+ * The player's first question is "am I getting better". The Ribbon answers it
+ * with the trace itself (every scored round the payload carries, oldest to
+ * newest), the LAST round marked and named in the corner readout, and the
+ * player's own scoring average as the dashed benchmark, so the newest score
+ * reads above or below their norm at a glance. The headline is the verdict
+ * sentence, derived from the same `computeSeriesTrend` call the form strip's
+ * "last 5 rounds" delta hint uses (one series, one verdict, never two
+ * independently computed deltas).
  * ──────────────────────────────────────────────────────────────────────── */
 
-function formatEventTime(start: string, timezone?: string): string {
-  try {
-    return new Date(start).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: timezone,
-    });
-  } catch {
-    return '';
+export interface PlayerStageRound {
+  id: string;
+  course_name: string;
+  round_date: string;
+}
+
+export interface PlayerStageProps {
+  /** Chronological scores, oldest to newest (finite y only is plotted). */
+  points: ReadonlyArray<RibbonPoint>;
+  /** The newest scored round, for the corner readout label. */
+  lastRound: PlayerStageRound | null;
+  scoringAverage: number | null;
+  /** Split-half trend over the five-round scoring-average series. */
+  trend: SeriesTrend | null;
+  className?: string;
+}
+
+/**
+ * The verdict sentence. Scores are lower-is-better: `computeSeriesTrend`
+ * with `goodDirection: 'down'` already classifies a falling average as
+ * "improving", so the words follow the classification and the magnitude
+ * follows the value.
+ */
+export function scoringVerdict(trend: SeriesTrend | null, scoringAverage: number | null): string {
+  if (trend) {
+    const magnitude = Math.abs(trend.value).toFixed(1);
+    const span = `over your last ${trend.points} rounds`;
+    if (trend.direction === 'improving') return `Down ${magnitude} ${span}.`;
+    if (trend.direction === 'declining') return `Up ${magnitude} ${span}.`;
+    return scoringAverage != null
+      ? `Holding around ${scoringAverage.toFixed(1)}.`
+      : `Holding steady ${span}.`;
   }
+  if (scoringAverage != null) return `Scoring around ${scoringAverage.toFixed(1)}.`;
+  return 'Your trend draws after a few more rounds.';
 }
-
-export function TodayCard({
-  events,
-  actionItems,
-  timezone,
-}: {
-  events: TodayEvent[];
-  actionItems: ActionItem[];
-  timezone?: string;
-}) {
-  const nextEvent = events[0] ?? null;
-  const overdue = useMemo(
-    () => actionItems.filter((a) => a.overdue),
-    [actionItems],
-  );
-  const openTasks = useMemo(
-    () => actionItems.filter((a) => a.type === 'task'),
-    [actionItems],
-  );
-  const leadTask = overdue[0] ?? openTasks[0] ?? actionItems[0] ?? null;
-
-  // The body always shows the player's REAL today content (next event + lead
-  // task) — never a restated count of a different section's feed.
-  const nothingToday = !nextEvent && !leadTask;
-
-  const footerLabel = actionItems.length > 0
-    ? `${actionItems.length} update${actionItems.length === 1 ? '' : 's'} total`
-    : "You're caught up";
-
-  // ONE container of seam rows (player-home.mobile.md #5): header, the event
-  // and task rows divided by hairlines, a footer row — instead of tinted
-  // Insets stacked inside a padded card (a card inside a card).
-  return (
-    <Surface padding="none" className="flex h-full flex-col overflow-hidden">
-      <div className="px-4 pt-4">
-        <Surface.Header
-          title="Today"
-          subtitle={nothingToday ? "You're all caught up" : 'Your next event and task'}
-        />
-      </div>
-
-      <div className="flex flex-1 flex-col divide-y divide-border-subtle border-t border-border-subtle">
-        {/* Next event row */}
-        {nextEvent ? (
-          <InsetGroup.Row icon={<CalendarClock aria-hidden />} align="start">
-            <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
-              {nextEvent.title}
-            </span>
-            <span className="block font-fw-sans text-caption text-text-tertiary">
-              {formatEventTime(nextEvent.start_time, timezone)}
-              {nextEvent.location ? ` · ${nextEvent.location}` : ''}
-            </span>
-          </InsetGroup.Row>
-        ) : null}
-
-        {/* Lead task row (overdue first) */}
-        {leadTask ? (
-          <InsetGroup.Row
-            align="start"
-            icon={
-              leadTask.overdue ? (
-                <AlertCircle aria-hidden className="text-fw-warning-ink" />
-              ) : (
-                <ClipboardList aria-hidden className="text-text-tertiary" />
-              )
-            }
-          >
-            <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
-              {leadTask.title}
-            </span>
-            <span
-              className={cn(
-                'block font-fw-sans text-caption',
-                leadTask.overdue ? 'text-fw-warning-ink' : 'text-text-tertiary',
-              )}
-            >
-              {leadTask.overdue ? 'Overdue' : 'Open'}
-              {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
-            </span>
-          </InsetGroup.Row>
-        ) : null}
-
-        {nothingToday ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-1 px-4 py-6 text-center">
-            <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
-              Nothing scheduled
-            </p>
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              Check the full calendar for trips and upcoming events.
-            </p>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-subtle py-1.5 pl-4 pr-2">
-        <span className="font-fw-sans text-caption text-text-tertiary">{footerLabel}</span>
-        <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
-          <Link href="/golf/dashboard/calendar">Full calendar</Link>
-        </Button>
-      </div>
-    </Surface>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
- * Genome fingerprint teaser — a compact GenomeRadar that DEEP-LINKS to the
- * flagship My Game Profile surface (fixes the discoverability bug: the radar
- * was previously a dead-end). Degrades to insufficient-data honestly when the
- * SG vector is sparse.
- * ──────────────────────────────────────────────────────────────────────── */
-
-export function GenomeFingerprintTeaser({
-  strokesGained,
-}: {
-  strokesGained: StrokesGainedSnapshot;
-}) {
-  // Map the SG snapshot onto the radar's 0–100 axes. The mapping is purely
-  // presentational (it does not change the source vector): we center 0 SG at 50
-  // and scale ±3 SG to the full range so the shape reads as a fingerprint.
-  const axes: GenomeAxis[] = useMemo(() => {
-    const toPct = (sg: number | null) =>
-      sg == null ? null : Math.max(0, Math.min(100, 50 + (sg / 3) * 50));
-    const raw: Array<{ label: string; v: number | null }> = [
-      { label: 'Off the Tee', v: toPct(strokesGained.sg_off_tee) },
-      { label: 'Approach', v: toPct(strokesGained.sg_approach) },
-      { label: 'Around Green', v: toPct(strokesGained.sg_around_green) },
-      { label: 'Putting', v: toPct(strokesGained.sg_putting) },
-    ];
-    return raw
-      .filter((r): r is { label: string; v: number } => r.v != null)
-      .map((r) => ({ label: r.label, value: r.v }));
-  }, [strokesGained]);
-
-  // Only render a real shape when ≥3 of the four scoring zones carry SG data;
-  // otherwise the radar collapses to a degenerate/near-null vector, so fall
-  // back to GenomeRadar's honest insufficient-data state instead of plotting it.
-  const hasShape = axes.length >= 3;
-  // Below `md` the radar's own ChartFrame is the only card (player-home.mobile.md
-  // #3); the Surface chrome returns from `md`, where the teaser sits in a grid.
-  return (
-    <Surface
-      padding="md"
-      className="flex h-full flex-col max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:[box-shadow:none]"
-    >
-      <Surface.Header
-        title="Strokes-gained shape"
-        subtitle="Where your strokes come from across the four scoring zones"
-        actions={
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            rightIcon={<ChevronRight className="h-4 w-4" />}
-          >
-            <Link href="/golf/dashboard/my-game-profile">Full profile</Link>
-          </Button>
-        }
-      />
-      {/* `[&_svg]:overflow-visible` (audit #170): recharts' ResponsiveContainer
-          renders a plain `<svg>`, and every non-root `<svg>` gets `overflow:
-          hidden` from the browser's own UA stylesheet — so a polar axis label
-          positioned past the SVG's own width (e.g. "Approach" at the radar's
-          east spoke, on a narrow card) is clipped hard at that box edge
-          ("Approach" → "Approac") with nothing in this component's own CSS
-          asking for that. Nothing else in this single-series radar relies on
-          SVG clipping (no clip-path reveal here), so overriding it to visible
-          only lets the label text render in full — it doesn't affect the
-          Radar/PolarGrid geometry itself. */}
-      <div className="-mt-2 flex-1 [&_svg]:overflow-visible">
-        <GenomeRadar
-          title={null as unknown as React.ReactNode}
-          data={axes}
-          seriesName="Strokes gained"
-          height={220}
-          takeaway={
-            hasShape
-              ? 'Your strokes-gained shape across the four scoring zones.'
-              : undefined
-          }
-          state={hasShape ? 'ready' : 'insufficient-data'}
-        />
-      </div>
-    </Surface>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
- * Recent rounds — calm matte list (Inset rows). Replaces the divided Card.
- * ──────────────────────────────────────────────────────────────────────── */
 
 function formatRoundDate(date: string): string {
   try {
@@ -317,6 +160,201 @@ function formatRoundDate(date: string): string {
     return date;
   }
 }
+
+export function PlayerStage({ points, lastRound, scoringAverage, trend, className }: PlayerStageProps) {
+  const lastLabel = lastRound
+    ? [cleanCourseName(lastRound.course_name) || 'Last round', formatRoundDate(lastRound.round_date)]
+        .filter(Boolean)
+        .join(' · ')
+    : 'Last round';
+
+  return (
+    <Ribbon
+      title={scoringVerdict(trend, scoringAverage)}
+      data={points}
+      seriesName="Score"
+      goodDirection="down"
+      valueFormatter={(v) => String(Math.round(v))}
+      benchmark={
+        scoringAverage != null
+          ? { value: scoringAverage, label: `Avg ${scoringAverage.toFixed(1)}` }
+          : undefined
+      }
+      minPoints={3}
+      markLast
+      height={180}
+      // Stacked under the headline (never beside it): the bezel row is one
+      // column on a phone and the readout would otherwise split left/right.
+      readoutPlacement="below"
+      readoutLabels={(first) => ({
+        value: lastLabel,
+        delta: `vs ${String(first.x)}`,
+      })}
+      takeaway={
+        lastRound
+          ? `Your scores by round, newest last; the dashed line is your average.`
+          : undefined
+      }
+      className={className}
+    />
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Where your strokes go — the four scoring zones as a diverging tornado.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The four zones with a finite SG value, in course order. Row labels are the
+ * app's own SG abbreviations (the CoachHelm home uses the same set) because
+ * the tornado's label gutter is 56 px at phone width; the takeaway sentence
+ * spells each zone out.
+ */
+const SG_ZONE_PHRASE: Record<string, string> = {
+  Tee: 'off the tee',
+  App: 'on approach',
+  ATG: 'around the green',
+  Putt: 'on the greens',
+};
+
+export function sgFacetRows(sg: StrokesGainedSnapshot | null | undefined): SGCategory[] {
+  if (!sg) return [];
+  const raw: Array<{ label: string; value: number | null }> = [
+    { label: 'Tee', value: sg.sg_off_tee },
+    { label: 'App', value: sg.sg_approach },
+    { label: 'ATG', value: sg.sg_around_green },
+    { label: 'Putt', value: sg.sg_putting },
+  ];
+  return raw.filter((r): r is SGCategory => r.value != null && Number.isFinite(r.value));
+}
+
+/** One sentence naming the best and the worst zone; undefined below three zones. */
+export function sgTakeaway(rows: ReadonlyArray<SGCategory>): string | undefined {
+  if (rows.length < 3) return undefined;
+  const best = rows.reduce((a, b) => (b.value > a.value ? b : a));
+  const worst = rows.reduce((a, b) => (b.value < a.value ? b : a));
+  const phrase = (label: string) => SG_ZONE_PHRASE[label] ?? label.toLowerCase();
+  if (worst.value >= 0) {
+    return `Gaining in every zone; the thinnest edge is ${phrase(worst.label)}.`;
+  }
+  return `Gaining most ${phrase(best.label)}, leaking most ${phrase(worst.label)}.`;
+}
+
+export function SgFacetsPanel({
+  strokesGained,
+  className,
+}: {
+  strokesGained: StrokesGainedSnapshot | null | undefined;
+  className?: string;
+}) {
+  const rows = useMemo(() => sgFacetRows(strokesGained), [strokesGained]);
+  const ready = rows.length >= 3;
+  // The heading and the My Standing link are the page's SectionTitle, not
+  // ChartFrame's header row: with a link AND the table toggle in that row the
+  // title cluster was squeezed to "Wher…" at 390 px. The frame keeps its
+  // subtitle and toggle (title null, the pattern the scoring chart used).
+  return (
+    <div className={cn('min-w-0', className)}>
+      <SectionTitle action={{ label: 'My Standing', href: '/golf/dashboard/my-standing' }}>
+        Where your strokes go
+      </SectionTitle>
+      <StrokesGainedTornado
+        title={null}
+        subtitle="Strokes gained per zone vs the field average. Tee, approach, around the green, putting."
+        data={rows}
+        state={ready ? 'ready' : 'insufficient-data'}
+        stateMessage="Log a few more rounds with hole-by-hole stats and your four zones fill in."
+        takeaway={sgTakeaway(rows)}
+        height={220}
+      />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Today's tasks — seam rows under the schedule.
+ * ----------------------------------------------------------------------------
+ * The old Today card restated the schedule's next event (DayScheduleSwipe sits
+ * directly above) beside the lead task. Only the tasks are new information:
+ * overdue first, then open tasks, then everything else, three at most, and a
+ * "Full calendar" row that is always there while the group renders. Nothing
+ * renders when there are no items (the schedule already says what is on).
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export function sortActionItems(items: ReadonlyArray<ActionItem>): ActionItem[] {
+  const rank = (a: ActionItem) => (a.overdue ? 0 : a.type === 'task' ? 1 : a.type === 'deadline' ? 2 : 3);
+  return [...items].sort((a, b) => rank(a) - rank(b));
+}
+
+function actionItemStatus(item: ActionItem): { text: string; warn: boolean } {
+  if (item.overdue) return { text: 'Overdue', warn: true };
+  if (item.type === 'deadline') return { text: 'Deadline', warn: false };
+  if (item.type === 'announcement') return { text: 'Announcement', warn: false };
+  return { text: 'Open', warn: false };
+}
+
+function ActionItemIcon({ item }: { item: ActionItem }) {
+  if (item.overdue) return <AlertCircle aria-hidden className="text-fw-warning-ink" />;
+  if (item.type === 'deadline') return <CalendarClock aria-hidden />;
+  if (item.type === 'announcement') return <Megaphone aria-hidden />;
+  return <ClipboardList aria-hidden />;
+}
+
+export function TodayTasks({
+  actionItems,
+  className,
+}: {
+  actionItems: ReadonlyArray<ActionItem>;
+  className?: string;
+}) {
+  const items = useMemo(() => sortActionItems(actionItems).slice(0, 3), [actionItems]);
+  if (items.length === 0) return null;
+
+  return (
+    <section aria-label="Needs you" className={cn('flex flex-col gap-3', className)}>
+      <div className="flex items-center gap-2 px-1">
+        <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+          Needs you
+        </h2>
+        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+          {actionItems.length}
+        </span>
+      </div>
+      <InsetGroup variant="matte">
+        {items.map((item) => {
+          const status = actionItemStatus(item);
+          return (
+            <InsetGroup.Row key={item.id} align="start" icon={<ActionItemIcon item={item} />}>
+              <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                {item.title}
+              </span>
+              <span
+                className={cn(
+                  'block font-fw-sans text-caption',
+                  status.warn ? 'text-fw-warning-ink' : 'text-text-tertiary',
+                )}
+              >
+                {status.text}
+              </span>
+            </InsetGroup.Row>
+          );
+        })}
+        <InsetGroup.Row
+          as={Link}
+          href="/golf/dashboard/calendar"
+          trailing={<ChevronRight aria-hidden />}
+          align="center"
+        >
+          <span className="block font-fw-sans text-body-sm font-medium text-text-primary">Full calendar</span>
+        </InsetGroup.Row>
+      </InsetGroup>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Recent rounds — calm matte list (Inset rows). Replaces the divided Card.
+ * ──────────────────────────────────────────────────────────────────────── */
 
 function toParLabel(toPar: number): { text: string; tone: string } {
   if (toPar === 0) return { text: 'E', tone: 'text-text-secondary' };
@@ -387,51 +425,6 @@ export function RecentRoundsList({
           );
         })}
       </ul>
-    </Surface>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
- * "Where you stack up" card — the inbound link to My Standing (fixes the
- * discoverability bug). Honest: shows a calm prompt rather than a fake number.
- * ──────────────────────────────────────────────────────────────────────── */
-
-export function StandingCard({ ready, className }: { ready: boolean; className?: string }) {
-  return (
-    <Surface
-      as={Link}
-      // Surface spreads unknown props (incl. `href`) onto the `as` element; the
-      // base SurfaceProps type doesn't model element-specific attrs.
-      {...({ href: '/golf/dashboard/my-standing' } as { href: string })}
-      interactive
-      padding="md"
-      className={cn('flex h-full flex-col justify-between', className)}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
-          Where you stack up
-        </span>
-        <span className="shrink-0 text-text-tertiary">
-          <Compass aria-hidden className="h-5 w-5" />
-        </span>
-      </div>
-      <div className="mt-2">
-        <p className="font-fw-sans text-h3 font-semibold text-text-primary">
-          My Standing
-        </p>
-        <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
-          {ready
-            ? // conn-golf-player Finding 4: My Standing is read-only today (no
-              // goal-creation CTA is wired there yet — W17/W18) — the copy no
-              // longer promises a capability the page can't perform.
-              'See every metric vs your team and the PGA percentile, category by category.'
-            : 'Log a few rounds to compare your game against your team and the PGA baseline.'}
-        </p>
-      </div>
-      <span className="mt-3 inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700">
-        View standing
-        <ChevronRight aria-hidden className="h-3.5 w-3.5" />
-      </span>
     </Surface>
   );
 }

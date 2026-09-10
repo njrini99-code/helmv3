@@ -1,25 +1,92 @@
 /**
  * ============================================================================
- * player-dashboard-parts — GenomeFingerprintTeaser radar overflow (audit #170)
+ * player-dashboard-parts — the player home stage and its instruments (v2)
  * ----------------------------------------------------------------------------
- * The strokes-gained radar's `PolarAngleAxis` labels (e.g. "Approach") can sit
- * past the recharts `<svg>`'s own box on a narrow card. Every non-root `<svg>`
- * gets `overflow: hidden` from the browser's UA stylesheet by default, so that
- * label clips hard at the SVG edge ("Approach" → "Approac") with nothing in
- * this component's own styling asking for it. jsdom has no layout engine, so
- * this can't assert a literal pixel measurement — it asserts the class-level
- * contract that makes that clip impossible in a real browser: the radar's
- * wrapper overrides every descendant `<svg>` to `overflow: visible`.
+ * player-home.v2.md: the stage answers "am I getting better" with the score
+ * trajectory (last round marked, own average dashed) and a verdict sentence
+ * derived from ONE series; the strokes-gained zones read as a diverging
+ * tornado; today's tasks are seam rows under the schedule. These lock the
+ * honesty rules (never a fabricated trace, never a takeaway below three
+ * zones) and the copy contracts the page relies on.
  * ========================================================================== */
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-import { GenomeFingerprintTeaser, TodayCard } from './player-dashboard-parts';
-import type {
-  StrokesGainedSnapshot,
-  TodayEvent,
-  ActionItem,
-} from '@/app/golf/actions/dashboard-data';
+import {
+  PlayerStage,
+  TodayTasks,
+  scoringVerdict,
+  sgFacetRows,
+  sgTakeaway,
+  sortActionItems,
+} from './player-dashboard-parts';
+import type { StrokesGainedSnapshot, ActionItem } from '@/app/golf/actions/dashboard-data';
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * The stage
+ * ──────────────────────────────────────────────────────────────────────── */
+
+const POINTS = [
+  { x: 'Jun 10', y: 76 },
+  { x: 'Jun 20', y: 78 },
+  { x: 'Jul 1', y: 74 },
+];
+const LAST = { id: 'r1', course_name: 'Pinehurst No. 2', round_date: '2026-07-01' };
+
+describe('PlayerStage — the score trajectory with the last round marked', () => {
+  it('names the newest round in the readout, marks it on the trace, and draws the own-average benchmark', () => {
+    render(
+      <PlayerStage
+        points={POINTS}
+        lastRound={LAST}
+        scoringAverage={76.2}
+        trend={{ value: -1.8, direction: 'improving', points: 5 }}
+      />,
+    );
+    expect(screen.getByText('Pinehurst No. 2 · Jul 1')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="ribbon-last-marker"]')).not.toBeNull();
+    expect(screen.getByText('Avg 76.2')).toBeInTheDocument();
+    // The headline is the verdict sentence, from the trend the caller passed.
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Down 1.8 over your last 5 rounds.' }),
+    ).toBeInTheDocument();
+    // The delta caption names what the delta compares against (the first plotted round).
+    expect(screen.getByText(/vs Jun 10/)).toBeInTheDocument();
+  });
+
+  it('below three scored rounds the instrument is honestly awaiting: no trace, no marker, no fake line', () => {
+    render(
+      <PlayerStage points={POINTS.slice(0, 2)} lastRound={LAST} scoringAverage={null} trend={null} />,
+    );
+    expect(screen.getByText(/Awaiting points/)).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="ribbon-last-marker"]')).toBeNull();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Your trend draws after a few more rounds.' }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('scoringVerdict — one sentence from the SAME series the form strip uses', () => {
+  it('reads a falling scoring average as "Down" (scores are lower-is-better)', () => {
+    expect(scoringVerdict({ value: -1.8, direction: 'improving', points: 5 }, 74.4)).toBe(
+      'Down 1.8 over your last 5 rounds.',
+    );
+  });
+  it('reads a rising scoring average as "Up"', () => {
+    expect(scoringVerdict({ value: 0.9, direction: 'declining', points: 5 }, 74.4)).toBe(
+      'Up 0.9 over your last 5 rounds.',
+    );
+  });
+  it('a flat trend holds around the average; no trend yet scores around it; nothing at all says so', () => {
+    expect(scoringVerdict({ value: 0, direction: 'flat', points: 4 }, 74.4)).toBe('Holding around 74.4.');
+    expect(scoringVerdict(null, 74.4)).toBe('Scoring around 74.4.');
+    expect(scoringVerdict(null, null)).toBe('Your trend draws after a few more rounds.');
+  });
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Where your strokes go
+ * ──────────────────────────────────────────────────────────────────────── */
 
 const FULL_SG: StrokesGainedSnapshot = {
   sg_total: 1.2,
@@ -29,82 +96,51 @@ const FULL_SG: StrokesGainedSnapshot = {
   sg_putting: 0.1,
 };
 
-describe('GenomeFingerprintTeaser — radar axis labels are never clipped by the SVG box', () => {
-  it('wraps the radar in a container that overrides descendant <svg> overflow to visible', () => {
-    const { container } = render(<GenomeFingerprintTeaser strokesGained={FULL_SG} />);
+describe('sgFacetRows / sgTakeaway — four zones, honest below three', () => {
+  it('maps the four zones in course order and drops null facets', () => {
+    expect(sgFacetRows(FULL_SG).map((r) => r.label)).toEqual(['Tee', 'App', 'ATG', 'Putt']);
+    expect(sgFacetRows({ ...FULL_SG, sg_approach: null, sg_putting: null })).toHaveLength(2);
+    expect(sgFacetRows(null)).toEqual([]);
+  });
 
-    const wrapper = Array.from(container.querySelectorAll<HTMLElement>('div')).find((el) =>
-      el.className.includes('[&_svg]:overflow-visible'),
+  it('names the best and the worst zone, and never claims a takeaway below three zones', () => {
+    expect(sgTakeaway(sgFacetRows(FULL_SG))).toBe('Gaining most on approach, leaking most around the green.');
+    expect(sgTakeaway(sgFacetRows({ ...FULL_SG, sg_around_green: 0.05 }))).toBe(
+      'Gaining in every zone; the thinnest edge is around the green.',
     );
-    expect(wrapper).toBeDefined();
+    expect(sgTakeaway(sgFacetRows({ ...FULL_SG, sg_approach: null, sg_putting: null }))).toBeUndefined();
   });
 });
 
 /* ─────────────────────────────────────────────────────────────────────────
- * TodayCard — Wave 3 player-home premium pass (Nick's flagged element) +
- * the DaySchedule wave (Action center removal)
- * ----------------------------------------------------------------------------
- * The old "What needs you" subtitle + populated "N thing(s) need(s) you"
- * preview row (a hero-style restatement of the SAME count the Action center
- * section used to show in full below it) is gone. The card's body always
- * shows the player's real today content — next event + lead task.
- *
- * The Action center section itself is also gone (replaced by the DaySchedule
- * card further down the page) — TodayCard no longer accepts a `hubSummary`
- * prop or gates a "See details" jump-link on it. The footer is now a single,
- * always-honest link straight to the full calendar.
+ * Today's tasks
  * ──────────────────────────────────────────────────────────────────────── */
 
-const EVENT: TodayEvent = {
-  id: 'e1',
-  title: 'Team practice',
-  event_type: 'practice',
-  start_time: '2026-07-22T14:00:00.000Z',
-  end_time: null,
-  location: 'Range',
-};
+const TASK: ActionItem = { id: 't1', type: 'task', title: 'Submit round', date: '2026-07-22', overdue: false };
+const OVERDUE: ActionItem = { id: 't2', type: 'task', title: 'Sign the waiver', date: '2026-07-20', overdue: true };
+const NOTE: ActionItem = { id: 'a1', type: 'announcement', title: 'Van leaves at 6', date: '2026-07-22' };
+const DEADLINE: ActionItem = { id: 'd1', type: 'deadline', title: 'Qualifier entry', date: '2026-07-25' };
 
-const TASK: ActionItem = {
-  id: 't1',
-  type: 'task',
-  title: 'Submit round',
-  date: '2026-07-22',
-  overdue: false,
-};
+describe('TodayTasks — seam rows under the schedule, overdue first, three at most', () => {
+  it('orders overdue, then open tasks, then deadlines, then announcements', () => {
+    expect(sortActionItems([NOTE, TASK, DEADLINE, OVERDUE]).map((a) => a.id)).toEqual(['t2', 't1', 'd1', 'a1']);
+  });
 
-describe('TodayCard — no restated "N thing(s) need(s) you" preview row', () => {
-  it('renders the real next event + lead task', () => {
-    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
-
-    expect(screen.getByText('Team practice')).toBeInTheDocument();
+  it('renders at most three rows plus the calendar row, with the total count in the heading line', () => {
+    render(<TodayTasks actionItems={[NOTE, TASK, DEADLINE, OVERDUE]} />);
+    expect(screen.getByText('Sign the waiver')).toBeInTheDocument();
+    expect(screen.getByText('Overdue')).toBeInTheDocument();
     expect(screen.getByText('Submit round')).toBeInTheDocument();
-    // The old preview copy must never render again, in any form.
-    expect(screen.queryByText(/things? needs? you/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/what needs you/i)).not.toBeInTheDocument();
-  });
-
-  it('shows the honest "Nothing scheduled" empty state when there is no local today content', () => {
-    render(<TodayCard events={[]} actionItems={[]} />);
-
-    expect(screen.getByText('Nothing scheduled')).toBeInTheDocument();
+    expect(screen.getByText('Qualifier entry')).toBeInTheDocument();
+    expect(screen.queryByText('Van leaves at 6')).not.toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /full calendar/i })).toHaveAttribute('href', '/golf/dashboard/calendar');
+    // The old Today card's restated preview copy must never come back.
     expect(screen.queryByText(/things? needs? you/i)).not.toBeInTheDocument();
   });
-});
 
-describe('TodayCard — footer always links to the full calendar, never a stale in-page anchor', () => {
-  it('renders a "Full calendar" link regardless of today content', () => {
-    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
-    const link = screen.getByRole('link', { name: /full calendar/i });
-    expect(link).toHaveAttribute('href', '/golf/dashboard/calendar');
-  });
-
-  it('still renders the calendar link in the honest-empty state (never a dead-end card)', () => {
-    render(<TodayCard events={[]} actionItems={[]} />);
-    expect(screen.getByRole('link', { name: /full calendar/i })).toBeInTheDocument();
-  });
-
-  it('never links to the removed #action-center anchor', () => {
-    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
-    expect(screen.queryByRole('link', { name: /see details/i })).not.toBeInTheDocument();
+  it('renders nothing when there are no items (the schedule above already says what is on)', () => {
+    const { container } = render(<TodayTasks actionItems={[]} />);
+    expect(container.firstChild).toBeNull();
   });
 });
