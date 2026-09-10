@@ -441,6 +441,26 @@ reload (`lieFromShotResult`) restore position from.
   `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
+- **Rounds Library v2 (2026-09-10, `docs/design/fairway-facelift/screens/
+  rounds-library.v2.md`)** — `FairwayRoundsLibrary.tsx` reads as a ranked
+  instrument, not a card stack: Masthead (a verdict sentence, "{N} rounds
+  since {month}. {shots} better/worse/even than where the season started,"
+  once ≥6 scored rounds exist; otherwise the static per-role title + meta
+  line, unchanged) → Cockpit (an `InstrumentCluster`: a focal `RadialGauge`
+  "% under par," a two-item `Readout` rail for avg score / avg to par, a
+  four-up tertiary count row) → Spread (a borderless `DivergingBars` of avg
+  score-to-par by round type, omitting any type with zero rounds in scope)
+  → Toolbar (unchanged) → Ledger (unchanged sticky-seam-header `Surface`,
+  now with a `MicroBar` per row comparing that round's to-par against the
+  player's OWN season average, gated on ≥2 scored rounds for that player) +
+  Leaders rail (coach only: a best-of-scope spotlight `Elevated` card + a
+  season-avg-to-par leaderboard of `RankCell` rows, sticky beside the ledger
+  at `lg`+, collapsing to one tappable row opening a `Sheet` below `lg`) →
+  Footer (unchanged "Show 30 more," now with a "Showing N of M" footnote).
+  Player role: no Leaders rail (the grid collapses to one column); the
+  `MicroBar` still renders, comparing against that player's own average.
+  New primitive: `MicroBar` (`src/components/fairway/modules/MicroBar.tsx`),
+  a zero-centered inline bar for one signed per-row stat.
 
 ## Known Risk Areas
 

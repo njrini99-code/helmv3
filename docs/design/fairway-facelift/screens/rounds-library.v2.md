@@ -153,3 +153,78 @@ No new fetch, no schema change, no new query branch. `playerSeasonStats` and `ty
 ## Effort
 
 4 days for one engineer: cockpit cluster + spread (day 1), leaders rail + best-of-scope + leaderboard memo (day 2), `MicroBar` primitive + row wiring + player-role fork (day 3), polish, registry doc fix, tests, phone Sheet for the collapsed rail (day 4).
+
+## Result (shipped 2026-09-10)
+
+Shipped as specified. All seven regions built: Masthead verdict sentence,
+Cockpit `InstrumentCluster` (focal `RadialGauge` + two-item `Readout` rail +
+four-up tertiary), borderless `DivergingBars` Spread, unchanged Toolbar,
+Ledger with per-row `MicroBar`, coach-only Leaders rail (desktop sticky +
+phone collapsed `Sheet`), and Footer with the "Showing N of M" footnote.
+
+**New primitive**: `MicroBar` (`src/components/fairway/modules/MicroBar.tsx`),
+exported from the `modules`/root barrels, registered in `registry.ts`
+(`category: 'data-viz'`, `archetypes: ['B', 'E']`, `status: 'new'`). Covered
+by `src/components/fairway/modules/__tests__/MicroBar.test.tsx` (fill
+direction/color for both `goodDirection` values, a zero value's flat rail,
+the `role="img"`/`aria-label` contract, and a reduced-motion no-op check —
+the primitive draws a static fill with no animation to guard).
+
+**Deviations from the literal spec text, with reasons**:
+- The Cockpit's two secondary `Readout` delta lines are gated on the SAME
+  6-scored-round `hasScoreTrend`/`hasToParTrend` honesty threshold the old
+  "Scoring trend" pill used (not merely "not starved"), rather than passing
+  `delta` unconditionally as the spec's inline snippet showed. The spec's own
+  opening paragraph frames this Cockpit as replacing that gated pill, and the
+  file's established honesty convention (documented in its own header
+  comment before this pass) already drew that exact line — passing a delta
+  unconditionally would have shown a trend arrow off as few as 3 scored
+  rounds, weakening that convention rather than replacing it 1:1.
+- The Footer's "Showing N of M" footnote is gated on `hasMoreRows` (shown
+  only alongside the "Show 30 more" button), rather than always-on. The spec
+  describes it as "paired with the unchanged Button," and the Button itself
+  has always been conditional — pairing the footnote to a state that isn't
+  showing would be inventing a new always-visible UI element the spec never
+  asked for.
+- The Leaders rail's leaderboard "current scope" narrows on the coach's
+  player Select only, not the free-text search (which also matches course
+  names and would otherwise reshape the player ROSTER by an unrelated
+  field). The spec's own example ("the coach has filtered to one player")
+  names the Select, not the search box.
+- `MicroBar`'s two responsive sizes (28px phone / 40px desktop, per spec) are
+  two gated instances (`md:hidden` / `hidden md:inline-flex`) rather than a
+  single instance with a responsive width prop — the same pattern this file
+  already uses for the Month/Week Segmented-vs-Menu split, and simpler than
+  plumbing a breakpoint-aware prop through a primitive whose fill math is
+  already percentage-based (the pixel width only sets the rail's own size).
+- The Sheet's phone trigger uses the Fairway `Button` (`variant="secondary"`)
+  wrapping one pre-composed flex span, not a bare `<button>` — the repo's
+  `helm/no-raw-button` lint rule flagged the raw element; `Button`'s
+  `secondary` variant (matte surface + hairline + hover tint) already reads
+  as the intended quiet tappable row.
+
+**Verification**: `eslint` clean on every changed/new file (0 errors,
+0 warnings after the Button fix). Targeted vitest
+(`src/components/fairway/pages/rounds src/app/golf/(dashboard)/dashboard/rounds
+src/components/fairway/charts src/test/static`): 400/401 passing; the one
+failure (`fairway-facelift-ratchets.test.ts`'s registry-coverage ratchet) is
+two OTHER concurrently-shipped components (`ScoringHistogram`,
+`DrivingDotStrip`) missing their own registry entries — not this file's
+`MicroBar`, which was added and passes. Tree-wide `tsc --noEmit`: zero errors
+in any file this task touched (the errors present in the run belong to other
+agents' concurrent work in this shared worktree — `FairwayCoachDashboard.tsx`/
+`.test.tsx`, `buildReviewViewModel.ts`). Both pinned tests named in this spec
+(`FairwayRoundsLibrary.test.tsx`'s honest-meta-line assertion and the
+group-`Sparkline` coverage) pass unmodified.
+
+**Captures**: `ui-intelligence/facelift/captures/coach/rounds__desktop__full.png`
+(+ `__fold.png`) and `rounds__phone__full.png` (+ `__fold.png`), both
+re-captured after the rebuild and reviewed frame-by-frame — verdict masthead,
+dial + rail + tertiary cockpit, diverging Spread, per-row `MicroBar` at both
+widths, the sticky desktop Leaders rail, and the phone collapsed "Best: …"
+row all render as specified with no layout overflow or pill-flow regression.
+
+**Left undone**: nothing from this spec's scope. The registry documentation
+follow-up for `RadialGauge`/`InstrumentPanel`/`InstrumentCluster`/`Readout`
+(adding `'E'` to their `archetypes`) shipped in the same pass, as the spec
+allowed ("not blocking, do in the same PR").

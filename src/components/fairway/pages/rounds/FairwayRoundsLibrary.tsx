@@ -11,51 +11,71 @@
  * — this is a re-skin, never a data rewrite.
  *
  * ── ROLE FORK (the spec's shared coach/player surface) ─────────────────────
- *   PLAYER → masthead eyebrow "Your Rounds" / title "Your rounds."; a "New round"
- *            primary CTA; the player-only "In progress" banner (when any);
- *            honest "Submit First Round" empty state.
- *   COACH  → masthead eyebrow "Team Rounds" / title "The library."; NO New-round
- *            CTA; NO in-progress section; each row shows the player's Avatar;
- *            empty state reads "Players' rounds will appear here".
+ *   PLAYER → masthead eyebrow "Your Rounds" / title "Your rounds." (or the
+ *            verdict sentence once trustworthy, see MASTHEAD below); a
+ *            "New round" primary CTA; the player-only "In progress" banner
+ *            (when any); honest "Submit First Round" empty state; NO Leaders
+ *            rail (ranking teammates isn't meaningful for a player looking
+ *            at their own rounds — the Ledger runs full width instead).
+ *   COACH  → masthead eyebrow "Team Rounds" / title "The library." (or the
+ *            verdict sentence); NO New-round CTA; NO in-progress section;
+ *            each row shows the player's Avatar; empty state reads "Players'
+ *            rounds will appear here"; the ONLY role that gets the Leaders
+ *            rail (best-of-scope spotlight + season-avg leaderboard).
  *
- * ── FACELIFT COMPOSITION (docs/design/fairway-facelift/screens/rounds-library.md) ──
- *   1. ONE ViewHeader masthead (eyebrow + title + honest meta + primary CTA).
- *   2. (player) FairwayUnfinishedBanner, ABOVE the strip, when in-progress
+ * ── v2 FACELIFT COMPOSITION (docs/design/fairway-facelift/screens/
+ *    rounds-library.v2.md) — a ranked instrument reading of the season, not
+ *    a card stack: Masthead → Cockpit → Spread → Toolbar → Ledger (+ Leaders
+ *    rail) → Footer, each region a deliberately different shape.
+ *   1. MASTHEAD — ONE ViewHeader. Once the honesty gate clears (the same
+ *      6-scored-round `stats.trend` threshold the old "Scoring trend" pill
+ *      used, AND a real first-month label), the H1 itself becomes the
+ *      verdict sentence ("{N} rounds since {month}. {shots} shot(s) better/
+ *      worse/even than where the season started.") and the old meta line is
+ *      dropped — the verdict already carries the count + range. Starved:
+ *      falls back to the static per-role title + the unchanged meta line.
+ *   2. (player) FairwayUnfinishedBanner, ABOVE the Cockpit, when in-progress
  *      rounds exist.
- *   3. ONE StatMatrix — Rounds · Avg score (DeltaChip) · Best · Avg to par
- *      (DeltaChip) · % under par, as ONE shared object (five identical
- *      bordered StatTile cards read as card-soup — #rounds-polish). No
- *      sparklines inside cells — the "Scoring trend" pill this used to float
- *      separately between the tiles and the toolbar is folded into the avg
- *      score/avg-to-par cells' own DeltaChip hints (gated on the same
- *      `stats.trend` honesty threshold — 6+ scored rounds — the standalone
- *      pill used). Starved (<3 rounds): every cell honestly shows an em-dash
- *      + muted tone, never a fabricated 0.0 — the same convention the
- *      Breakdown StatMatrix further down FairwayRoundDetail.tsx uses.
- *   4. NO separate scoring-trend chart under the matrix (#rounds-polish: the
- *      desktop TickerStrip this used to render here — a second, redundant
- *      bar-chart of the last 15 scores — was removed). Each month's own
- *      sticky seam header already carries a Sparkline (≥6 scored rounds),
- *      which is the ONE trend chart for the page.
- *   5. ONE composed Toolbar row: search (player/course) · filters (the
- *      coach-only player Select + the four round-type FilterPills, one
- *      horizontally-scrolling row with an edge fade via the Toolbar
- *      primitive's own `useScrollFade`) · viewToggle (a Segmented Month/Week
- *      control from `md` up; on phone the same choice moves into an
- *      overflow Menu instead — #rounds-polish row 23).
- *   6. ONE matte Surface holding EVERY group — no per-group Surface, no
- *      nested cards. Each group is a sticky seam header (label · count ·
- *      avg; a Sparkline only when the group has ≥6 scored rounds, dropped
- *      above ~20 to avoid a jagged scribble at 40px, always brand green —
- *      #rounds-polish row 29) followed by its FairwayRoundRow rows,
- *      separated by hairlines.
+ *   3. COCKPIT — an `InstrumentCluster` (focal `RadialGauge` "% under par" +
+ *      a two-item Readout rail: avg score / avg to par, each with its own
+ *      delta line gated on the SAME 6-scored-round honesty threshold + a
+ *      four-up tertiary foot row of counts) replaces the five equal
+ *      StatMatrix boxes. Starved (<3 rounds): the dial shows its own built-in
+ *      honest "awaiting signal" gauge and both rail Readouts swap to
+ *      `state="awaiting"` — never a fabricated 0.0.
+ *   4. SPREAD — a borderless footnote (one top hairline, no Surface):
+ *      `DivergingBars` showing each round type's avg score-to-par against
+ *      the field average. A type with zero rounds in scope is omitted, never
+ *      shown as a fabricated 0. This is NOT a second scoring-trend chart —
+ *      each month's own sticky seam header already carries that Sparkline
+ *      (≥6 scored rounds), the ONE trend chart for the page.
+ *   5. TOOLBAR — unchanged: search (player/course) · filters (the coach-only
+ *      player Select + the four round-type FilterPills, one horizontally-
+ *      scrolling row with an edge fade via the Toolbar primitive's own
+ *      `useScrollFade`) · viewToggle (a Segmented Month/Week control from
+ *      `md` up; on phone the same choice moves into an overflow Menu).
+ *   6. LEDGER (+ LEADERS rail, coach only) — the dominant object, still ONE
+ *      matte Surface holding EVERY group (no per-group Surface, no nested
+ *      cards): a sticky seam header (label · count · avg · a Sparkline only
+ *      when the group has ≥6 and ≤20 scored rounds) followed by its
+ *      FairwayRoundRow rows. Each row now also carries a `MicroBar` — this
+ *      round's score-to-par against THAT PLAYER's own season average — a
+ *      fact nothing else on the row states, gated on the player having ≥2
+ *      scored rounds (honest; otherwise the row renders exactly as before).
+ *      Coach only: a `320px` sticky rail beside the ledger holds the
+ *      best-of-the-current-scope round (an `Elevated` spotlight card) and a
+ *      season-avg-to-par leaderboard (`RankCell` rows); below `lg` it
+ *      collapses to one tappable "Best: …" seam row that opens the same
+ *      content in a `Sheet`.
+ *   7. FOOTER — unchanged manual "Show 30 more" pagination, now paired with
+ *      a printed "Showing N of M" footnote — honest, no auto-load.
  *
  * ── PAGINATION (perf follow-up, not in the original screen spec) ───────────
  *   A large team's ledger (90+ rounds) rendered every row eagerly — measured
  *   lag on real accounts. The Surface now paints only the first
  *   `ROWS_PAGE_SIZE` rows across ALL groups, in order, with a "Show 30 more"
  *   Button at the bottom; group headers still report each group's FULL
- *   count/avg/best/sparkline, never the truncated slice. The matrix is
+ *   count/avg/best/sparkline, never the truncated slice. The Cockpit is
  *   unaffected — it already summarizes the full dataset, not the rendered
  *   list. No per-row mount/layout animation, by design, on a list this long.
  *
@@ -68,7 +88,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
@@ -79,16 +99,34 @@ import { Toolbar } from '@/components/fairway/controls/Toolbar';
 import { FilterPill } from '@/components/fairway/controls/filter-pill';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Menu } from '@/components/fairway/overlays/Menu';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input } from '@/components/fairway/forms/Input';
 import { Select } from '@/components/fairway/forms/Select';
 import { IconSearch, IconX } from '@/components/icons';
-import { StatMatrix } from '@/components/fairway/modules';
-import { DeltaChip } from '@/components/fairway/charts/Numeric';
+import {
+  InstrumentCluster,
+  InstrumentPanel,
+  Readout,
+  RadialGauge,
+  DivergingBars,
+  RankCell,
+  Elevated,
+  Avatar,
+  StatusPill,
+  type DivergingRow,
+} from '@/components/fairway';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
-import { parseDateOnly, dateOnlyToUtcDate, type DateOnlyParts } from '@/lib/golf/date-only';
+import { scoreToParTone, formatToPar } from './FairwayRoundCard';
+import { cleanCourseName } from '@/lib/golf/course-name';
+import {
+  parseDateOnly,
+  dateOnlyToUtcDate,
+  formatDateOnlyFull,
+  type DateOnlyParts,
+} from '@/lib/golf/date-only';
 
 // ── Types ────────────────────────────────────────────────────────────────--
 
@@ -237,6 +275,19 @@ function honestRange(rounds: RoundLibraryRound[]): string | null {
     : `${first.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })} – ${lastLabel}`;
 }
 
+/** The earliest round's month label only, e.g. "Jan 2026" — mirrors
+ *  `honestRange`'s own UTC-pinned date parsing, for the masthead's verdict
+ *  sentence ("… rounds since {firstMonthLabel}."). `null` when unparseable. */
+function firstMonthLabel(rounds: RoundLibraryRound[]): string | null {
+  const dates = rounds
+    .map((r) => parseDateOnly(r.round_date))
+    .filter((p): p is DateOnlyParts => p !== null)
+    .map(dateOnlyToUtcDate)
+    .sort((a, b) => a.getTime() - b.getTime());
+  if (dates.length === 0) return null;
+  return dates[0]!.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
 // ── Per-month summary (label + honest mini-stats + Sparkline) ───────────────
 
 /** Compute a month group's honest summary: scored count, 18-equiv avg/best,
@@ -328,6 +379,35 @@ export function FairwayRoundsLibrary({
     }
   }, [playerFilter, playerOptions]);
 
+  // v2 facelift — per-player season average score-to-par over the FULL
+  // `rounds` array (never `scopedRounds`/`filteredRounds` — a player's season
+  // average shouldn't shift because a search box narrowed the view). Built
+  // the same de-duped-by-name way `playerOptions` already is, aggregating
+  // `score_to_par` (+ a display avatar) instead of collecting names. Powers
+  // BOTH the Leaders rail leaderboard and every row's `MicroBar` — one memo,
+  // no new fetch. A min of 2 scored rounds to qualify: a season "average"
+  // from a single round is a coin flip, not a comparison.
+  const playerSeasonStats = React.useMemo(() => {
+    type Agg = { sum: number; count: number; avatarUrl: string | null };
+    const totals = new Map<string, Agg>();
+    for (const r of rounds) {
+      if (r.score_to_par === null) continue;
+      const name = playerName(r);
+      if (!name) continue;
+      const entry = totals.get(name) ?? { sum: 0, count: 0, avatarUrl: null };
+      entry.sum += r.score_to_par;
+      entry.count += 1;
+      if (!entry.avatarUrl && r.player?.avatar_url) entry.avatarUrl = r.player.avatar_url;
+      totals.set(name, entry);
+    }
+    const qualified = new Map<string, { avgToPar: number; count: number; avatarUrl: string | null }>();
+    for (const [name, { sum, count, avatarUrl }] of totals) {
+      if (count < 2) continue;
+      qualified.set(name, { avgToPar: sum / count, count, avatarUrl });
+    }
+    return qualified;
+  }, [rounds]);
+
   // P210 — apply the coach player filter + free-text search BEFORE the round-type
   // counts/filter, so the type pills count the currently-scoped set and the
   // history list shows only matching rounds. Search matches player name OR
@@ -363,6 +443,33 @@ export function FairwayRoundsLibrary({
     return counts;
   }, [scopedRounds]);
 
+  // v2 facelift Spread — avg score-to-par per round type over the CURRENTLY
+  // SCOPED rounds (player filter + search applied, same as `filterCounts`
+  // above). A type with zero rounds in scope is simply absent from the map —
+  // the Spread region below renders it as omitted, never a fabricated 0.
+  const typeAvgToPar = React.useMemo(() => {
+    const totals: Record<'practice' | 'qualifier' | 'tournament', { sum: number; count: number }> = {
+      practice: { sum: 0, count: 0 },
+      qualifier: { sum: 0, count: 0 },
+      tournament: { sum: 0, count: 0 },
+    };
+    for (const r of scopedRounds) {
+      if (r.score_to_par === null) continue;
+      const t = (r.round_type || '').toLowerCase();
+      if (t === 'practice') {
+        totals.practice.sum += r.score_to_par;
+        totals.practice.count += 1;
+      } else if (t === 'qualifier' || t === 'qualifying') {
+        totals.qualifier.sum += r.score_to_par;
+        totals.qualifier.count += 1;
+      } else if (t === 'tournament') {
+        totals.tournament.sum += r.score_to_par;
+        totals.tournament.count += 1;
+      }
+    }
+    return totals;
+  }, [scopedRounds]);
+
   const filteredRounds = React.useMemo(() => {
     if (filter === 'all') return scopedRounds;
     return scopedRounds.filter((r) => {
@@ -371,6 +478,35 @@ export function FairwayRoundsLibrary({
       return t === filter;
     });
   }, [scopedRounds, filter]);
+
+  // v2 facelift Leaders rail — the single best (lowest score_to_par) round
+  // over the whole FILTERED scope, the same "lowest score_to_par wins"
+  // computation each ledger group's own `bestId` already does, just over the
+  // full filtered set instead of one month/week group.
+  const bestOfScope = React.useMemo(() => {
+    let best: RoundLibraryRound | null = null;
+    let bestScoreToPar = Infinity;
+    for (const r of filteredRounds) {
+      if (r.score_to_par !== null && r.score_to_par < bestScoreToPar) {
+        bestScoreToPar = r.score_to_par;
+        best = r;
+      }
+    }
+    return best;
+  }, [filteredRounds]);
+
+  // v2 facelift Leaders rail — the season-avg-to-par leaderboard, ranked
+  // ascending (lower avg-to-par first). "Current scope" here means the
+  // coach's player Select (not the free-text search, which also matches
+  // course names and would otherwise narrow the ROSTER by an unrelated
+  // field) — selecting one player collapses this to that one entry, which
+  // is exactly the "fewer than 2 qualifying players" honest-empty case.
+  const leaderboardEntries = React.useMemo(() => {
+    const entries = Array.from(playerSeasonStats.entries());
+    const scoped =
+      isCoach && playerFilter !== 'all' ? entries.filter(([name]) => name === playerFilter) : entries;
+    return scoped.sort((a, b) => a[1].avgToPar - b[1].avgToPar).slice(0, 5);
+  }, [playerSeasonStats, isCoach, playerFilter]);
 
   // Is any narrowing active (drives the filter-zero empty-state copy + reset)?
   const isNarrowed = filter !== 'all' || playerFilter !== 'all' || search.trim() !== '';
@@ -462,9 +598,17 @@ export function FairwayRoundsLibrary({
     [grouped],
   );
   const hasMoreRows = visibleCount < totalGroupedRounds;
+  // The Footer's printed "Showing N of M" footnote — the TRUE rendered count
+  // (never `visibleCount` itself, which can overshoot `totalGroupedRounds`
+  // once the page size exceeds what's left to show).
+  const renderedRowCount = React.useMemo(
+    () => visibleGroups.reduce((sum, g) => sum + g.rows.length, 0),
+    [visibleGroups],
+  );
 
-  // Chronological (oldest → newest) scoring series for the hero DeltaChips.
-  // HONEST: real scored rounds only.
+  // Chronological (oldest → newest) scoring series for the Cockpit's Readout
+  // delta lines and the Masthead's verdict sentence. HONEST: real scored
+  // rounds only.
   const chronoScored = React.useMemo(
     () =>
       rounds
@@ -507,15 +651,13 @@ export function FairwayRoundsLibrary({
     </Button>
   ) : undefined;
 
-  // ── KPI hero — StatMatrix owns the starved swap (never a fabricated 0.0):
-  // an honest em-dash + muted tone, the same convention the Breakdown
-  // StatMatrix in FairwayRoundDetail.tsx uses for a missing figure. ────────--
+  // ── Cockpit + Masthead honesty ───────────────────────────────────────────
   const starved = !stats || stats.totalRounds < 3;
 
-  // The delta chips on the two scoring cells are gated on the SAME honesty
-  // threshold the old standalone "Scoring trend" pill used (`stats.trend` is
-  // `null` under 6 scored rounds) — this replaces that pill rather than
-  // adding a second, more permissive trend signal beside it.
+  // The delta lines on the Cockpit's two scoring Readouts are gated on the
+  // SAME honesty threshold the old standalone "Scoring trend" pill used
+  // (`stats.trend` is `null` under 6 scored rounds) — this replaces that
+  // pill rather than adding a second, more permissive trend signal beside it.
   const hasScoreTrend = !starved && stats?.trend != null && scoreDelta !== null;
   const hasToParTrend =
     !starved && stats?.trend != null && stats?.avgToPar !== null && toParDelta !== null;
@@ -531,17 +673,50 @@ export function FairwayRoundsLibrary({
         : stats.avgToPar.toFixed(1)
       : null;
 
+  // ── Masthead verdict sentence ─────────────────────────────────────────────
+  // Reuses `hasScoreTrend` (same 6-scored-round threshold `stats.trend`
+  // already gates) as the honesty gate for the H1 itself — a real verdict
+  // ("N rounds since {month}. {shots} shot(s) better/worse/even than where
+  // the season started.") once trustworthy, replacing the static per-role
+  // title AND absorbing the old meta line (it already carries the count +
+  // start date, so repeating it below would be redundant). Starved: falls
+  // back to the unchanged per-role title + meta line, byte-for-byte what
+  // this page has always shown.
+  const firstMonth = firstMonthLabel(rounds);
+  const showVerdict = hasScoreTrend && firstMonth !== null;
+  const verdictTitle = showVerdict
+    ? (() => {
+        const n = rounds.length;
+        const shots = Math.abs(Math.round(scoreDelta!));
+        const direction = scoreDelta! < 0 ? 'better' : scoreDelta! > 0 ? 'worse' : 'even';
+        return `${n} round${n === 1 ? '' : 's'} since ${firstMonth}. ${shots} shot${
+          shots === 1 ? '' : 's'
+        } ${direction} than where the season started.`;
+      })()
+    : null;
+
+  // ── Leaders rail (coach only) — spotlight card + collapsed-row copy ─────--
+  const bestName = bestOfScope ? playerName(bestOfScope) : null;
+  const bestCourse = bestOfScope ? cleanCourseName(bestOfScope.course_name) || 'Unknown course' : null;
+  const bestToParDisplay =
+    bestOfScope && bestOfScope.score_to_par !== null ? formatToPar(bestOfScope.score_to_par) : null;
+  const bestSummaryLine = bestOfScope
+    ? `Best: ${bestName ?? 'Unnamed player'}, ${bestOfScope.total_score ?? '—'}${
+        bestToParDisplay ? ` (${bestToParDisplay})` : ''
+      } at ${bestCourse}`
+    : null;
+
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-6 md:px-6">
-      {/* ── ONE MASTHEAD ──────────────────────────────────────────────────--*/}
+      {/* ── MASTHEAD — the one h1, now a verdict once trustworthy ──────────--*/}
       <ViewHeader
         eyebrow={eyebrow}
-        title={title}
-        meta={rounds.length > 0 ? meta : undefined}
+        title={verdictTitle ?? title}
+        meta={verdictTitle ? undefined : rounds.length > 0 ? meta : undefined}
         primaryAction={primaryAction}
       />
 
-      {/* ── 1. (player only) In-progress banner — ABOVE the strip. Rendered
+      {/* ── (player only) In-progress banner — ABOVE the Cockpit. Rendered
           regardless of whether any COMPLETED round exists yet — a player can
           have zero finished rounds and one in-progress round, and that
           in-progress round must stay discoverable/resumable either way. ───--*/}
@@ -549,64 +724,132 @@ export function FairwayRoundsLibrary({
         <FairwayUnfinishedBanner rounds={visibleInProgressRounds} playerId={playerId} />
       )}
 
-      {/* ── 2. ONE StatMatrix — five KPIs as ONE shared object, never five
-          identical bordered cards (#rounds-polish rows 22/27). The two
-          scoring cells carry a DeltaChip hint (magnitude, no sparkline)
-          instead of the old inline Sparkline + the separate floating
-          "Scoring trend" pill. Rendered even with zero completed rounds —
-          the starved swap below is honest either way. No separate
-          scoring-trend chart under it: each month's own seam header already
-          carries a Sparkline (see the ledger below). ─────────────────────--*/}
-      <StatMatrix
-        aria-label="Round summary"
-        columns={5}
-        variant="matte"
-        items={[
-          {
-            label: 'Rounds',
-            value: starved ? '—' : stats!.totalRounds,
-            tone: starved ? 'muted' : 'accent',
-          },
-          {
-            label: 'Avg score',
-            value: starved ? '—' : stats!.avg.toFixed(1),
-            tone: starved ? 'muted' : 'accent',
-            hint: hasScoreTrend ? (
-              <DeltaChip
-                value={scoreDelta!}
-                // Golf is lower-is-better: a falling average is the GOOD
-                // ('up'/green) direction.
-                direction={scoreDelta! < 0 ? 'up' : scoreDelta! > 0 ? 'down' : 'flat'}
+      {/* ── COCKPIT — a ranked InstrumentCluster replaces the five equal
+          StatMatrix boxes: a focal RadialGauge, a two-item Readout rail
+          (each delta-gated on the same 6-scored-round honesty threshold the
+          old "Scoring trend" pill used), a four-up tertiary count row.
+          Rendered even with zero completed rounds — every instrument owns
+          its own honest starved/awaiting swap, never a fabricated 0.0. ───--*/}
+      <InstrumentCluster
+        ariaLabel="Round summary instrument cluster"
+        balance="focal"
+        primary={
+          <RadialGauge
+            size="md"
+            title="% under par"
+            overline="SEASON"
+            readoutLabel="of scored rounds"
+            value={starved ? undefined : stats!.underParPct / 100}
+            awaiting={starved}
+            samples={stats?.totalRounds}
+            minSamples={3}
+            unit="rounds"
+          />
+        }
+        secondary={[
+          <InstrumentPanel key="avg-score" depth="base" padding="md">
+            {starved ? (
+              <Readout size="lg" label="Avg score" state="awaiting" />
+            ) : (
+              <Readout
+                size="lg"
+                label="Avg score"
+                display={stats!.avg.toFixed(1)}
+                delta={
+                  hasScoreTrend
+                    ? {
+                        value: scoreDelta!,
+                        // Golf is lower-is-better: a falling average is the
+                        // GOOD ('up'/green) direction.
+                        direction: scoreDelta! < 0 ? 'up' : scoreDelta! > 0 ? 'down' : 'flat',
+                      }
+                    : undefined
+                }
               />
-            ) : undefined,
-          },
-          {
-            label: 'Best round',
-            value: starved ? '—' : stats!.best,
-            tone: starved ? 'muted' : 'accent',
-          },
-          {
-            label: 'Avg to par',
-            // avgToPar can be null even with enough rounds → honest starve.
-            value: starved || avgToParDisplay === null ? '—' : avgToParDisplay,
-            tone: starved || avgToParDisplay === null ? 'muted' : 'accent',
-            hint: hasToParTrend ? (
-              <DeltaChip
-                value={toParDelta!}
-                direction={toParDelta! < 0 ? 'up' : toParDelta! > 0 ? 'down' : 'flat'}
+            )}
+          </InstrumentPanel>,
+          <InstrumentPanel key="avg-to-par" depth="base" padding="md">
+            {starved || avgToParDisplay === null ? (
+              <Readout size="lg" label="Avg to par" unit="strokes" state="awaiting" />
+            ) : (
+              <Readout
+                size="lg"
+                label="Avg to par"
+                unit="strokes"
+                display={avgToParDisplay}
+                delta={
+                  hasToParTrend
+                    ? {
+                        value: toParDelta!,
+                        direction: toParDelta! < 0 ? 'up' : toParDelta! > 0 ? 'down' : 'flat',
+                      }
+                    : undefined
+                }
               />
-            ) : undefined,
-          },
-          {
-            label: '% under par',
-            value: starved ? '—' : `${Math.round(stats!.underParPct)}%`,
-            tone: starved ? 'muted' : 'accent',
-          },
+            )}
+          </InstrumentPanel>,
+        ]}
+        tertiary={[
+          <InstrumentPanel key="rounds" depth="base" padding="md">
+            {starved ? (
+              <Readout size="sm" label="Rounds" state="awaiting" />
+            ) : (
+              <Readout size="sm" label="Rounds" display={stats!.totalRounds} />
+            )}
+          </InstrumentPanel>,
+          <InstrumentPanel key="best" depth="base" padding="md">
+            {starved ? (
+              <Readout size="sm" label="Best round" state="awaiting" />
+            ) : (
+              <Readout size="sm" label="Best round" display={stats!.best} />
+            )}
+          </InstrumentPanel>,
+          <InstrumentPanel key="practice" depth="base" padding="md">
+            <Readout size="sm" label="Practice" display={filterCounts.practice} />
+          </InstrumentPanel>,
+          <InstrumentPanel key="tournament" depth="base" padding="md">
+            <Readout size="sm" label="Tournament" display={filterCounts.tournament} />
+          </InstrumentPanel>,
         ]}
       />
 
+      {/* ── SPREAD — a borderless footnote, no card, no Surface: where the
+          team actually loses or gains strokes, by round type. Earns a shape
+          none of its neighbors have (one top hairline only). A type with
+          zero rounds in scope is omitted, never a fabricated 0. This is NOT
+          a second scoring-trend chart — each month's own seam header
+          already carries that Sparkline, the ONE trend chart for the page. */}
+      {(() => {
+        const spreadRows: DivergingRow[] = (
+          [
+            ['Practice', typeAvgToPar.practice],
+            ['Qualifier', typeAvgToPar.qualifier],
+            ['Tournament', typeAvgToPar.tournament],
+          ] as const
+        )
+          .filter(([, agg]) => agg.count > 0)
+          .map(([label, agg]) => {
+            const delta = agg.sum / agg.count;
+            return {
+              label,
+              delta,
+              display: delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1),
+            };
+          });
+        if (spreadRows.length === 0) return null;
+        const max = Math.max(...spreadRows.map((r) => Math.abs(r.delta)));
+        return (
+          <div className="border-t border-border-subtle pt-4">
+            <p className="mb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+              Against par, by type
+            </p>
+            <DivergingBars rows={spreadRows} max={max} />
+          </div>
+        );
+      })()}
+
       {/* ── Honest empty: zero completed rounds ─────────────────────────────
-          Below the matrix/banner (which stay honest on their own via the
+          Below the Cockpit/banner (which stay honest on their own via the
           starved swap), this gate covers only the toolbar + ledger — there
           is nothing to filter or group yet. ─────────────────────────────--*/}
       {rounds.length === 0 ? (
@@ -629,8 +872,8 @@ export function FairwayRoundsLibrary({
         </Surface>
       ) : (
         <>
-          {/* ── 3. ONE composed Toolbar row — search · filters (coach player
-              Select + round-type FilterPills) · viewToggle (grouping). ─────--*/}
+          {/* ── TOOLBAR — search · filters (coach player Select + round-type
+              FilterPills) · viewToggle (grouping). Unchanged. ─────────────--*/}
           <Toolbar
             aria-label="Rounds filters"
             search={
@@ -728,133 +971,297 @@ export function FairwayRoundsLibrary({
             }
           />
 
-          {/* ── 4. ONE matte ledger Surface · filter-zero honest empty ─────--*/}
-          {grouped.length === 0 ? (
-            <Surface padding="lg">
-              <EmptyState
-                variant="search"
-                title="No rounds in this view"
-                description={
-                  isNarrowed
-                    ? 'No rounds match the current filters.'
-                    : 'No rounds to show.'
-                }
-                action={
-                  isNarrowed ? (
-                    <Button variant="secondary" size="sm" onClick={resetFilters}>
-                      Clear filters
-                    </Button>
-                  ) : undefined
-                }
-              />
-            </Surface>
-          ) : (
-            // `overflow-clip`, NOT `overflow-hidden`: an `overflow-hidden`
-            // ancestor becomes the scroll container `position: sticky`
-            // resolves against, and this box never scrolls itself (the PAGE
-            // does) — so the group seam headers below would never engage.
-            // `overflow-clip` still clips content to the rounded corners
-            // without creating that scroll container.
-            <Surface padding="none" className="overflow-clip">
-              {visibleGroups.map((group) => (
-                // Each period is a sticky seam header + a divided run of
-                // rows — ONE surface for the whole ledger, not a card per
-                // group. `--golf-mobile-header-offset` is the shared
-                // AppShell offset every other sticky-under-the-top-bar
-                // strip in this app pins to (0 on desktop); this route also
-                // renders inside FairwayHubSubNav, so the seam must also
-                // clear `--fw-hub-subnav-offset` (2.5rem when the sub-nav
-                // is present, 0px otherwise) the same way
-                // FairwayCalendarHero/FairwayAgendaView do, or the header
-                // would slide underneath it instead of stopping below it.
-                <React.Fragment key={group.key}>
-                  <div
-                    className={cn(
-                      'sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-10',
-                      'flex items-end justify-between gap-4 border-b border-border-subtle bg-surface px-4 py-3',
-                    )}
-                  >
-                    <div className="flex min-w-0 items-baseline gap-3">
-                      <h3 className="whitespace-nowrap font-fw-display text-body-lg font-semibold tracking-[-0.01em] text-text-primary">
-                        {group.label}
-                      </h3>
-                      <div className="hidden items-baseline gap-2 font-fw-sans text-caption text-text-tertiary sm:flex">
-                        <span className="tabular-nums">
-                          {group.scoredCount} round{group.scoredCount === 1 ? '' : 's'}
+          {/* ── LEDGER (+ LEADERS rail, coach only) ─────────────────────────
+              Coach: a 320px sticky rail beside the ledger at `lg` and up;
+              below `lg` it collapses to one tappable "Best: …" row that
+              opens the same spotlight + leaderboard in a Sheet, directly
+              above the ledger's first group header. Player: the grid
+              collapses to a single column — ranking teammates isn't
+              meaningful when `rounds` is already just their own. ─────────--*/}
+          <div className={cn('grid grid-cols-1 gap-6', isCoach && 'lg:grid-cols-[minmax(0,1fr)_320px]')}>
+            <div className="flex min-w-0 flex-col gap-4">
+              {isCoach && bestOfScope && bestSummaryLine && (
+                <div className="lg:hidden">
+                  <Sheet
+                    title="Leaders"
+                    description="This season's best round and the season-avg leaderboard, for the current view."
+                    trigger={
+                      // Button's non-asChild CHILDREN CONTRACT wraps whatever
+                      // is passed in ONE bare span — a flex-row layout needs
+                      // its own pre-composed flex span as that single child.
+                      <Button variant="secondary" fullWidth className="justify-between text-left">
+                        <span className="flex w-full items-center justify-between gap-3">
+                          <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                            {bestSummaryLine}
+                          </span>
+                          <ChevronRight aria-hidden="true" className="h-4 w-4 flex-shrink-0 text-text-tertiary" />
                         </span>
-                        {group.avg !== null && (
-                          <>
-                            <span className="text-border-strong">·</span>
-                            <span className="tabular-nums">avg {group.avg.toFixed(1)}</span>
-                          </>
-                        )}
-                        {group.best !== null && (
-                          <>
-                            <span className="text-border-strong">·</span>
-                            <span className="tabular-nums text-accent-700">best {group.best}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    {/* Omit the group sparkline under 6 scored rounds — a
-                        2-3 point line reads as noise, not a trend — and
-                        above ~20, where a whole season's worth of scores at
-                        this 120px width was a jagged, unreadable scribble
-                        (#rounds-polish row 29). `flatThreshold` widens the
-                        neutral deadzone so ordinary round-to-round noise (a
-                        few strokes between the month's first and last round)
-                        reads as the quiet neutral tone instead of flipping
-                        this decorative header texture to amber on every
-                        month whose LAST round happened to be a rough one —
-                        the avg/best figures beside it, not this squiggle,
-                        carry the real verdict. A genuinely bad month (a
-                        real multi-round decline) still earns amber honestly. */}
-                    {group.spark.length >= 6 && group.spark.length <= 20 && (
-                      <Sparkline
-                        data={group.spark}
-                        goodDirection="down"
-                        flatThreshold={4}
-                        width={120}
-                        height={24}
-                        label={`${group.label} scores`}
-                        className="flex-shrink-0"
-                      />
-                    )}
-                  </div>
-
-                  <div className="divide-y divide-border-subtle">
-                    {group.rows.map((round) => (
-                      <FairwayRoundRow
-                        key={round.id}
-                        round={round}
-                        isBestOfPeriod={round.id === group.bestId && group.hasMultiple}
-                        userRole={userRole}
-                      />
-                    ))}
-                  </div>
-                </React.Fragment>
-              ))}
-
-              {/* Quiet, manual pagination — never an IntersectionObserver
-                  auto-load, so the coach controls exactly how much of a long
-                  ledger renders. No per-row mount/layout animation here (or
-                  in FairwayRoundRow) on purpose: a 90-row reveal animating in
-                  is its own jank on a long list. */}
-              {hasMoreRows && (
-                <div className="flex justify-center border-t border-border-subtle px-4 py-3">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setVisibleCount((c) => c + ROWS_PAGE_SIZE)}
+                      </Button>
+                    }
                   >
-                    Show 30 more
-                  </Button>
+                    <LeadersRailPanel
+                      bestOfScope={bestOfScope}
+                      bestName={bestName}
+                      bestCourse={bestCourse}
+                      bestToParDisplay={bestToParDisplay}
+                      leaderboardEntries={leaderboardEntries}
+                    />
+                  </Sheet>
                 </div>
               )}
-            </Surface>
-          )}
+
+              {/* ── ONE matte ledger Surface · filter-zero honest empty ────--*/}
+              {grouped.length === 0 ? (
+                <Surface padding="lg">
+                  <EmptyState
+                    variant="search"
+                    title="No rounds in this view"
+                    description={
+                      isNarrowed
+                        ? 'No rounds match the current filters.'
+                        : 'No rounds to show.'
+                    }
+                    action={
+                      isNarrowed ? (
+                        <Button variant="secondary" size="sm" onClick={resetFilters}>
+                          Clear filters
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                </Surface>
+              ) : (
+                // `overflow-clip`, NOT `overflow-hidden`: an `overflow-hidden`
+                // ancestor becomes the scroll container `position: sticky`
+                // resolves against, and this box never scrolls itself (the PAGE
+                // does) — so the group seam headers below would never engage.
+                // `overflow-clip` still clips content to the rounded corners
+                // without creating that scroll container.
+                <Surface padding="none" className="overflow-clip">
+                  {visibleGroups.map((group) => (
+                    // Each period is a sticky seam header + a divided run of
+                    // rows — ONE surface for the whole ledger, not a card per
+                    // group. `--golf-mobile-header-offset` is the shared
+                    // AppShell offset every other sticky-under-the-top-bar
+                    // strip in this app pins to (0 on desktop); this route also
+                    // renders inside FairwayHubSubNav, so the seam must also
+                    // clear `--fw-hub-subnav-offset` (2.5rem when the sub-nav
+                    // is present, 0px otherwise) the same way
+                    // FairwayCalendarHero/FairwayAgendaView do, or the header
+                    // would slide underneath it instead of stopping below it.
+                    <React.Fragment key={group.key}>
+                      <div
+                        className={cn(
+                          'sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-10',
+                          'flex items-end justify-between gap-4 border-b border-border-subtle bg-surface px-4 py-3',
+                        )}
+                      >
+                        <div className="flex min-w-0 items-baseline gap-3">
+                          <h3 className="whitespace-nowrap font-fw-display text-body-lg font-semibold tracking-[-0.01em] text-text-primary">
+                            {group.label}
+                          </h3>
+                          <div className="hidden items-baseline gap-2 font-fw-sans text-caption text-text-tertiary sm:flex">
+                            <span className="tabular-nums">
+                              {group.scoredCount} round{group.scoredCount === 1 ? '' : 's'}
+                            </span>
+                            {group.avg !== null && (
+                              <>
+                                <span className="text-border-strong">·</span>
+                                <span className="tabular-nums">avg {group.avg.toFixed(1)}</span>
+                              </>
+                            )}
+                            {group.best !== null && (
+                              <>
+                                <span className="text-border-strong">·</span>
+                                <span className="tabular-nums text-accent-700">best {group.best}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {/* Omit the group sparkline under 6 scored rounds — a
+                            2-3 point line reads as noise, not a trend — and
+                            above ~20, where a whole season's worth of scores at
+                            this 120px width was a jagged, unreadable scribble
+                            (#rounds-polish row 29). `flatThreshold` widens the
+                            neutral deadzone so ordinary round-to-round noise (a
+                            few strokes between the month's first and last round)
+                            reads as the quiet neutral tone instead of flipping
+                            this decorative header texture to amber on every
+                            month whose LAST round happened to be a rough one —
+                            the avg/best figures beside it, not this squiggle,
+                            carry the real verdict. A genuinely bad month (a
+                            real multi-round decline) still earns amber honestly. */}
+                        {group.spark.length >= 6 && group.spark.length <= 20 && (
+                          <Sparkline
+                            data={group.spark}
+                            goodDirection="down"
+                            flatThreshold={4}
+                            width={120}
+                            height={24}
+                            label={`${group.label} scores`}
+                            className="flex-shrink-0"
+                          />
+                        )}
+                      </div>
+
+                      <div className="divide-y divide-border-subtle">
+                        {group.rows.map((round) => (
+                          <FairwayRoundRow
+                            key={round.id}
+                            round={round}
+                            isBestOfPeriod={round.id === group.bestId && group.hasMultiple}
+                            userRole={userRole}
+                            seasonAvgToPar={
+                              playerSeasonStats.get(playerName(round) ?? '')?.avgToPar ?? null
+                            }
+                          />
+                        ))}
+                      </div>
+                    </React.Fragment>
+                  ))}
+
+                  {/* ── FOOTER — quiet, manual pagination — never an
+                      IntersectionObserver auto-load, so the coach controls
+                      exactly how much of a long ledger renders — paired with
+                      a printed "Showing N of M" footnote. No per-row mount/
+                      layout animation here (or in FairwayRoundRow) on
+                      purpose: a 90-row reveal animating in is its own jank
+                      on a long list. */}
+                  {hasMoreRows && (
+                    <div className="flex items-center justify-between border-t border-border-subtle px-4 py-3">
+                      <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                        Showing {renderedRowCount} of {totalGroupedRounds}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setVisibleCount((c) => c + ROWS_PAGE_SIZE)}
+                      >
+                        Show 30 more
+                      </Button>
+                    </div>
+                  )}
+                </Surface>
+              )}
+            </div>
+
+            {/* ── LEADERS rail (coach only, desktop) — sticky companion that
+                survives the ledger scroll. Same `--golf-mobile-header-offset`
+                + `--fw-hub-subnav-offset` static CSS custom-property chain
+                the seam headers above already use — a static `top: calc()`,
+                never the JS IntersectionObserver `rootMargin` string-math
+                that caused the Toolbar's earlier route-error regression. ──--*/}
+            {isCoach && (
+              <div className="hidden lg:block">
+                <div className="sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] flex flex-col gap-4">
+                  <LeadersRailPanel
+                    bestOfScope={bestOfScope}
+                    bestName={bestName}
+                    bestCourse={bestCourse}
+                    bestToParDisplay={bestToParDisplay}
+                    leaderboardEntries={leaderboardEntries}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * LeadersRailPanel — the Leaders rail's shared content. The desktop sticky
+ * rail AND the phone collapsed-row Sheet render this exact same panel, so
+ * the spotlight + leaderboard can never drift between the two presentations.
+ * ─────────────────────────────────────────────────────────────────────────── */
+interface LeadersRailPanelProps {
+  bestOfScope: RoundLibraryRound | null;
+  bestName: string | null;
+  bestCourse: string | null;
+  bestToParDisplay: string | null;
+  leaderboardEntries: ReadonlyArray<
+    readonly [string, { avgToPar: number; count: number; avatarUrl: string | null }]
+  >;
+}
+
+function LeadersRailPanel({
+  bestOfScope,
+  bestName,
+  bestCourse,
+  bestToParDisplay,
+  leaderboardEntries,
+}: LeadersRailPanelProps) {
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Spotlight — the single best round of the current filtered scope. */}
+      <Elevated level="raise" padding="md">
+        <p className="mb-3 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          Best of the scope
+        </p>
+        {bestOfScope ? (
+          <div className="flex flex-col gap-3">
+            <p className="truncate font-fw-sans text-body font-medium text-text-primary">{bestCourse}</p>
+            <div className="flex items-center gap-2">
+              <Avatar src={bestOfScope.player?.avatar_url} name={bestName} size="sm" />
+              <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                {bestName ?? 'Unnamed player'}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-fw-display text-h3 font-medium tabular-nums text-text-primary">
+                {bestOfScope.total_score ?? '—'}
+              </span>
+              {bestToParDisplay && bestOfScope.score_to_par !== null ? (
+                <StatusPill
+                  tone={
+                    scoreToParTone(bestOfScope.score_to_par) === 'under'
+                      ? 'accent'
+                      : scoreToParTone(bestOfScope.score_to_par) === 'over'
+                        ? 'warning'
+                        : 'neutral'
+                  }
+                  size="sm"
+                  dot={false}
+                  className="font-fw-mono tabular-nums"
+                >
+                  {bestToParDisplay}
+                </StatusPill>
+              ) : null}
+            </div>
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              {formatDateOnlyFull(bestOfScope.round_date)}
+            </p>
+          </div>
+        ) : (
+          <p className="font-fw-sans text-body-sm text-text-tertiary">No rounds in this view yet.</p>
+        )}
+      </Elevated>
+
+      {/* Leaderboard — season-avg score-to-par, ranked ascending. Honest
+          one-line fallback when the current player scope is too narrow to
+          rank (a coach filtered to one player, or too few players qualify). */}
+      <div className="border-t border-border-subtle pt-4">
+        {leaderboardEntries.length < 2 ? (
+          <p className="font-fw-sans text-body-sm text-text-tertiary">Only one player in this view.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {leaderboardEntries.map(([name, entry], i) => (
+              <div key={name} className="flex items-center gap-3">
+                <RankCell rank={i + 1} of={leaderboardEntries.length} />
+                <Avatar src={entry.avatarUrl} name={name} size="sm" />
+                <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-primary">
+                  {name}
+                </span>
+                <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">
+                  {entry.avgToPar > 0 ? `+${entry.avgToPar.toFixed(1)}` : entry.avgToPar.toFixed(1)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
