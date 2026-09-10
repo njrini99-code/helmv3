@@ -58,7 +58,6 @@ import {
   InstrumentPanel,
   Readout,
   Surface,
-  Inset,
   Button,
   IconButton,
   Menu,
@@ -67,6 +66,7 @@ import {
   Filmstrip,
   GradeDots,
   InlineNotice,
+  DeltaChip,
   gradeDotsForDelta,
   gradeLabel,
   VIZ_COLOR,
@@ -82,7 +82,7 @@ import { MoreHorizontal } from 'lucide-react';
 import { InstrumentTable } from '@/components/fairway/charts/InstrumentTable';
 import { classifyTrend, TREND_COLOR } from '@/components/fairway/charts/TrendChip';
 import { cn } from '@/lib/utils';
-import { formatDateOnlyWeekdayLong, formatDateOnlyFull } from '@/lib/golf/date-only';
+import { formatDateOnlyWeekdayLong, formatDateOnly } from '@/lib/golf/date-only';
 import { deriveRoundTotalsFromHoles } from '@/lib/golf/round-total';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import {
@@ -253,10 +253,19 @@ export function FairwayRoundDetail({
   // row on the calendar day (#916: a sibling surface's un-pinned formatter
   // read the previous day west of UTC).
   const dayOfWeek = formatDateOnlyWeekdayLong(round.round_date);
-  const dateLabel = formatDateOnlyFull(round.round_date);
+  // Short form ("Aug 31, 2026") — this is the DETAIL page's own eyebrow, not
+  // the /review route's "Round Review" masthead; keep it terse (#rounds-polish).
+  const dateLabel = formatDateOnly(round.round_date, { month: 'short', day: 'numeric', year: 'numeric' });
   const heroTitle = `${dayOfWeek} at ${shortCourse(round.course_name)}`;
   const holesPlayed = round.holes_played ?? 18;
-  const contextLine = `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · ${playerName}`;
+  // ONE meta line under the title (#rounds-polish row 19): the player used to
+  // be named a THIRD time via a separate "Viewing {player}'s round" ViewHeader
+  // `meta` line — folded into this single description line instead so a coach
+  // viewing a teammate's round still gets that framing, without a second row.
+  const contextLine =
+    isCoach && !viewerIsOwner
+      ? `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · Viewing ${playerName}’s round`
+      : `${roundTypeLabel(round.round_type)} · ${holesPlayed} holes · ${playerName}`;
 
   // ── Hero readouts ────────────────────────────────────────────────────────
   // Finding #1 (AUDIT-0724 stats-visual-accuracy.md): `golf_rounds.total_score`
@@ -290,12 +299,11 @@ export function FairwayRoundDetail({
   // worst-grade result rather than "no score logged" (see gradeDotsForDelta).
   const gradeScore = scoreToPar != null ? gradeDotsForDelta(scoreToPar) : null;
 
-  // "course · date · player" line under the score. Deliberately built from
-  // the already-UTC-pinned `shortCourse`/`dateLabel` above rather than
-  // `buildReviewViewModel.ts`'s `buildCourseDateLine` — that helper parses
-  // via `new Date(y, m, d)` in LOCAL time, which is exactly the west-of-UTC
-  // off-by-one this page's own date-only helpers exist to prevent (#916).
-  const courseDatePlayerLine = `${shortCourse(round.course_name)} · ${dateLabel} · ${playerName}`;
+  // #rounds-polish row 19/20: course, date, and player are ALL already given
+  // by the masthead above (title = "{day} at {course}", eyebrow = the date,
+  // description = round type/holes/player) — a THIRD "course · date · player"
+  // line here would repeat every one of them. The panel below carries only
+  // what the header does not: score, delta, grade.
 
   // ── Scorecard rows (the honest spine, from golf_holes) ──────────────────────
   const orderedHoles = useMemo(
@@ -404,17 +412,16 @@ export function FairwayRoundDetail({
     <div className="mx-auto w-full max-w-[1100px] px-4 py-6 md:px-6">
       <div className="flex flex-col gap-10">
         {/* ════════════════ 1 · MASTHEAD (the ONE masthead) ═════════════════ */}
+        {/* #rounds-polish row 18: this is the DETAIL page, not /review — the
+            eyebrow says "Round", never "Round Review" (that copy is reserved
+            for the review route's own masthead). `contextLine` is the single
+            meta line under the title (row 19) — it already folds in the
+            "Viewing {player}'s round" framing for a coach viewing a
+            teammate's round, so there is no separate `meta` line here. */}
         <ViewHeader
-          eyebrow={`Round Review · ${dateLabel}`}
+          eyebrow={`Round · ${dateLabel}`}
           title={heroTitle}
           description={contextLine}
-          meta={
-            isCoach && !viewerIsOwner ? (
-              <span className="font-fw-sans text-caption text-text-tertiary">
-                Viewing {playerName}&rsquo;s round
-              </span>
-            ) : undefined
-          }
           primaryAction={openReviewButton}
           secondaryActions={
             <Menu
@@ -454,62 +461,70 @@ export function FairwayRoundDetail({
         )}
 
         {/* ════════════════ 2 · HERO — the SCORE (one focal instrument) ═════ */}
+        {/* #rounds-polish rows 20/32: ONE eyebrow (Readout's own label —
+            the panel no longer ALSO carries "Final score" as a separate
+            InstrumentPanel eyebrow), a tabular-nums display numeral, the
+            delta as a toned DeltaChip (never Readout's mono ▼-glyph delta
+            line), and the recap as plain prose under a hairline (never a
+            sunken Inset well). Two-column at `md`+ — numeral/delta/grade
+            left, recap prose right; stacked on phone, recap under a top
+            hairline. Course/date/player all live in the masthead above
+            (row 19) — this panel carries only what the header does not. */}
         <InstrumentPanel
           depth="raised"
           tone="accent"
           padding="lg"
-          eyebrow="Final score"
           as="section"
           aria-label="Round score"
-          className="flex flex-col gap-4"
         >
-          <Readout
-            size="hero"
-            display={totalScore != null ? String(totalScore) : undefined}
-            value={totalScore ?? undefined}
-            state={totalScore != null ? 'live' : 'awaiting'}
-            samples={totalScore != null ? undefined : { have: 0, need: 1 }}
-            awaitingLabel="No score logged"
-            label="Strokes"
-            delta={
-              scoreToPar != null
-                ? {
-                    value: scoreToPar,
-                    // Bug #915: Readout's `direction` is the VERDICT
-                    // ('up' = green/good, 'down' = amber/bad), not the raw
-                    // numeric sign — golf is lower-is-better, so under par
-                    // (scoreToPar < 0) is the GOOD ('up') direction. The
-                    // previous `scoreToPar < 0 ? 'down' : ...` inverted
-                    // this: a great under-par round rendered amber ▼.
-                    direction: scoreToPar < 0 ? 'up' : scoreToPar > 0 ? 'down' : 'flat',
-                    format: () => `${formatToPar(scoreToPar)} vs par`,
-                  }
-                : undefined
-            }
-          />
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+            <div className="flex flex-shrink-0 flex-col gap-3 md:w-[220px]">
+              <Readout
+                size="hero"
+                display={totalScore != null ? String(totalScore) : undefined}
+                value={totalScore ?? undefined}
+                state={totalScore != null ? 'live' : 'awaiting'}
+                samples={totalScore != null ? undefined : { have: 0, need: 1 }}
+                awaitingLabel="No score logged"
+                label="Final score"
+              />
+              {scoreToPar != null ? (
+                <DeltaChip
+                  value={scoreToPar}
+                  // Bug #915: the VERDICT direction ('up' = green/good,
+                  // 'down' = amber/bad), not the raw numeric sign — golf is
+                  // lower-is-better, so under par (scoreToPar < 0) is the
+                  // GOOD ('up') direction. `scoreToPar < 0 ? 'down' : …`
+                  // inverts this: a great under-par round would render amber.
+                  direction={scoreToPar < 0 ? 'up' : scoreToPar > 0 ? 'down' : 'flat'}
+                  format={() => `${formatToPar(scoreToPar)} vs par`}
+                />
+              ) : null}
 
-          {/* This panel is `tone="accent"` — a cream instrument bezel with a
-              quiet green rim (see InstrumentPanel's own doc), NOT the dark
-              green fill ReviewHero's bespoke gradient panel uses. GradeDots
-              defaults to `onGreen` (light dots for a dark surface), so it is
-              rendered `onGreen={false}` here to read correctly on the cream
-              bezel. */}
-          {gradeScore != null ? (
-            <GradeDots score={gradeScore} label={gradeLabel(gradeScore)} onGreen={false} />
-          ) : null}
+              {/* This panel is `tone="accent"` — a cream instrument bezel
+                  with a quiet green rim (see InstrumentPanel's own doc), NOT
+                  the dark green fill ReviewHero's bespoke gradient panel
+                  uses. GradeDots defaults to `onGreen` (light dots for a
+                  dark surface), so it is rendered `onGreen={false}` here to
+                  read correctly on the cream bezel. */}
+              {gradeScore != null ? (
+                <GradeDots score={gradeScore} label={gradeLabel(gradeScore)} onGreen={false} />
+              ) : null}
+            </div>
 
-          <p className="font-fw-sans text-body-sm text-text-secondary">{courseDatePlayerLine}</p>
-
-          {/* ai_recap — the editorial lede. A real persisted string, quoted
-              verbatim. NOT serif, NOT a skeuomorphic blockquote — a quiet
-              display-type caption under the instrument. */}
-          {aiRecap ? (
-            <Inset padding="md">
-              <p className="max-w-[58ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
-                {aiRecap}
-              </p>
-            </Inset>
-          ) : null}
+            {/* ai_recap — the editorial lede. A real persisted string, quoted
+                verbatim. NOT serif, NOT a skeuomorphic blockquote, NOT a
+                sunken well — plain prose under a hairline (top hairline on
+                phone; a left hairline instead once it sits beside the score
+                at `md`+). */}
+            {aiRecap ? (
+              <div className="border-t border-border-subtle pt-4 md:flex-1 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+                <p className="max-w-[58ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
+                  {aiRecap}
+                </p>
+              </div>
+            ) : null}
+          </div>
         </InstrumentPanel>
 
         {/* Filmstrip + the Front/Back/GIR/Fairways/Putts breakdown only when
@@ -554,7 +569,7 @@ export function FairwayRoundDetail({
             />
           </>
         ) : (
-          <InlineNotice tone="info" title="Scorecard only — enter holes to unlock the breakdown" />
+          <InlineNotice tone="info" title="Scorecard only. Enter holes to unlock the breakdown." />
         )}
 
         {/* ════════════════ 3 · SCORECARD — the real spine (golf_holes) ═════ */}
