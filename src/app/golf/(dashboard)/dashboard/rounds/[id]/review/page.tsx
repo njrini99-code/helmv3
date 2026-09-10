@@ -50,7 +50,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import { FilmstripReview, type PromoteSuggestion } from '@/components/golf/coachhelm/round-review/FilmstripReview';
-import { sanitizeNaN } from '@/components/golf/coachhelm/round-review/buildReviewViewModel';
+import { sanitizeNaN, buildReviewHeaderTitle } from '@/components/golf/coachhelm/round-review/buildReviewViewModel';
 
 // ============================================================================
 // TYPES
@@ -203,10 +203,27 @@ export default function RoundReviewPage() {
   const [roundStats, setRoundStats] = useState<GolfStats | null>(null);
   const [loadingRoundStats, setLoadingRoundStats] = useState(true);
   const [roundStatsError, setRoundStatsError] = useState(false);
+  // True while the season-standing fetch is in flight — split out from
+  // `loadingStoredReview` (AUDIT perf row 15) so the review's own loading
+  // flag clears the moment `getRoundReview` resolves instead of waiting on
+  // this separate, independently-slow read. `FilmstripReview`'s "Where this
+  // sits" band renders its own inline pending/absent state off this flag.
+  const [loadingStanding, setLoadingStanding] = useState(true);
   const [loadingRound, setLoadingRound] = useState(true);
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
+  // Page-level failures only (auth, round-fetch, "not found") — renders the
+  // full-page error surface below. A review-GENERATION failure is a
+  // different, recoverable thing (the round loaded fine; only the AI call
+  // failed) and must never trip this — see `generationError`.
   const [error, setError] = useState<string | null>(null);
+  // Review-generation failure — rendered INLINE in the review body (with its
+  // own retry) so a scorecard-only round whose auto-generate call fails
+  // still shows the page shell + header, not the whole-page error surface
+  // (REVIEW.md: "We couldn't load this review · An unexpected error
+  // occurred" on a scorecard-only round — that message was this state
+  // wrongly routed through the page-level `error`).
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Evidence-backed takeaway — used ONLY to pre-fill the Promote-to-Focus-Area
   // CTA (title/description/category). The takeaway is no longer rendered as
@@ -334,9 +351,11 @@ export default function RoundReviewPage() {
 
   // Fetch the reviewed player's display name — ONLY for a coach viewer (a
   // player never needs their own name; StandingBar's 'self' viewer_context
-  // default already reads "You"). `getPlayerDisplayName` re-verifies access
-  // itself (verifyPlayerAccess), consistent with every other coach-viewing-a-
-  // teammate surface.
+  // default already reads "You", and the header identity line below reads
+  // the logged-in player's own name straight off `golfUser.name` instead —
+  // no need to round-trip for a name the viewer already carries in context).
+  // `getPlayerDisplayName` re-verifies access itself (verifyPlayerAccess),
+  // consistent with every other coach-viewing-a-teammate surface.
   useEffect(() => {
     if (!isCoachViewer || !round?.player_id) {
       setViewedPlayerName(null);
@@ -387,12 +406,18 @@ export default function RoundReviewPage() {
     void loadRoundStats(round.player_id, roundId);
   }, [round?.player_id, roundId, loadRoundStats]);
 
-  // Fetch stored review + season standing. Resets `loadingStoredReview`
-  // regardless of whether `round` resolved — previously an early
-  // `if (!round) return;` left the flag stuck on its initial `true`, which
-  // hung the umbrella `isLoading` boolean and the page on the "Loading
-  // review..." skeleton whenever the round-fetch step bailed (e.g. error
-  // path, auth rejection).
+  // Fetch the stored review. Resets `loadingStoredReview` regardless of
+  // whether `round` resolved — previously an early `if (!round) return;`
+  // left the flag stuck on its initial `true`, which hung the umbrella
+  // `isLoading` boolean and the page on the "Loading review..." skeleton
+  // whenever the round-fetch step bailed (e.g. error path, auth rejection).
+  //
+  // AUDIT perf row 15: this used to also `await getPlayerStandingForReview`
+  // in the SAME try block before clearing the flag, so the review sat behind
+  // a second, independently-slow read even though nothing it renders depends
+  // on the standing. Season standing is now fetched by its own effect below
+  // with its own loading flag — this effect clears as soon as the review
+  // itself resolves.
   useEffect(() => {
     if (!loadingRound && !round) {
       setLoadingStoredReview(false);
@@ -401,32 +426,58 @@ export default function RoundReviewPage() {
     if (!round) return;
     let cancelled = false;
 
-    async function fetchReviewAndStanding() {
-      if (!round) return;
+    async function fetchReview() {
       setLoadingStoredReview(true);
       try {
         const reviewResult = await getRoundReview(roundId);
         if (!cancelled && reviewResult.success && reviewResult.review) {
           setStoredReview(reviewResult.review);
         }
-
-        // Fetch season standing for the PGA/team/you band. Failure-silent
-        // (the action returns `{}` on error/cold-start, so the band simply
-        // won't render).
-        const standingMap = await getPlayerStandingForReview(round.player_id);
-        if (!cancelled) setStanding(standingMap);
       } catch {
-        // Silently ignore fetch errors
+        // Silently ignore fetch errors — a null `storedReview` routes to the
+        // auto-generate effect below, which surfaces its own inline state.
       } finally {
         if (!cancelled) setLoadingStoredReview(false);
       }
     }
 
-    fetchReviewAndStanding();
+    fetchReview();
     return () => {
       cancelled = true;
     };
   }, [round, roundId, loadingRound]);
+
+  // Fetch season standing (the PGA/team/you "Where this sits" band) — its
+  // own effect and its own `loadingStanding` flag, deliberately decoupled
+  // from the review fetch above (AUDIT perf row 15). `FilmstripReview`
+  // renders its own inline pending state while this is in flight and an
+  // inline absent state if it resolves empty, rather than blocking the
+  // review narrative on a read nothing else on the page depends on.
+  useEffect(() => {
+    if (!round?.player_id) {
+      setLoadingStanding(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingStanding(true);
+
+    getPlayerStandingForReview(round.player_id)
+      .then((standingMap) => {
+        if (!cancelled) setStanding(standingMap);
+      })
+      .catch(() => {
+        // getPlayerStandingForReview already resolves `{}` on a handled
+        // failure/cold-start; an unexpected throw just leaves `standing` at
+        // its prior value — the band's own absent state covers it either way.
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingStanding(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [round?.player_id]);
 
   // Fetch the evidence-backed takeaway once we know which player the round
   // belongs to — used only to pre-fill the Promote-to-Focus-Area CTA (see
@@ -457,12 +508,15 @@ export default function RoundReviewPage() {
     };
   }, [round, roundId]);
 
-  // Generate review if needed
+  // Generate review if needed. Failures set `generationError` — rendered
+  // INLINE in the review body with its own retry — never the page-level
+  // `error` (that surface replaces the ENTIRE page, including the header;
+  // a failed AI generation on an otherwise-fine round shouldn't do that).
   const generateReview = useCallback(async () => {
     if (!round) return;
 
     setGeneratingReview(true);
-    setError(null);
+    setGenerationError(null);
 
     try {
       const result = await generateAndStoreRoundReview(roundId, round.player_id);
@@ -475,10 +529,10 @@ export default function RoundReviewPage() {
           description: 'AI analysis complete for your round.',
         });
       } else {
-        setError(result.error ?? 'Failed to generate review');
+        setGenerationError(result.error ?? 'Failed to generate review');
       }
     } catch {
-      setError('An unexpected error occurred');
+      setGenerationError('An unexpected error occurred');
     } finally {
       setGeneratingReview(false);
     }
@@ -539,19 +593,33 @@ export default function RoundReviewPage() {
     }
   };
 
-  // Loading state — gated on the page's OWN states only. The vestigial
-  // `useRoundReviewV2` hook states (v1Loading / v1Generating) were removed
-  // from this umbrella on 2026-05-30: the page no longer renders the V1
-  // review object (IA audit 2026-05-28 trimmed the surface to V2-only), and
-  // that hook performs a REDUNDANT second auth + status + golf_round_reviews
-  // round-trip whose slowness/transient generating state would hold the whole
-  // page on the skeleton even when `storedReview` is already in hand. The
-  // page now renders its body from loadingRound / loadingStoredReview /
-  // generatingReview (its own generation). `v1Generating` is still consumed
-  // by `isGenerating` below to drive the Refresh-button spinner + the
-  // "Running CoachHelm analysis..." copy when the hook generates in the
+  // Header identity line — "Monday at Pine Lakes · Cole Bennett · Aug 31"
+  // (round-detail.md: the header carries the round's own course/date/player
+  // under a "Round review" eyebrow, replacing the old bare course-name title
+  // + generic "Your CoachHelm analysis for this round." subtitle). A coach
+  // viewer reads the REVIEWED player's name (`viewedPlayerName`, fetched
+  // above); a player viewing their own round reads it straight off their own
+  // context — no extra round trip for a name already in hand.
+  const headerPlayerName = isCoachViewer ? viewedPlayerName : golfUser.name;
+  const headerTitle = round
+    ? buildReviewHeaderTitle(displayCourseName(round.course_name), round.round_date, headerPlayerName)
+    : '';
+
+  // Loading state — gated on the page's OWN states only, and no longer on
+  // `generatingReview` (AUDIT perf row 15's second half): auto-generation now
+  // renders its own inline state inside the review body once the page shell
+  // is up, rather than holding the WHOLE page under this generic skeleton for
+  // however long the LLM call takes. The vestigial `useRoundReviewV2` hook
+  // states (v1Loading / v1Generating) were removed from this umbrella on
+  // 2026-05-30: the page no longer renders the V1 review object (IA audit
+  // 2026-05-28 trimmed the surface to V2-only), and that hook performs a
+  // REDUNDANT second auth + status + golf_round_reviews round-trip whose
+  // slowness/transient generating state would hold the whole page on the
+  // skeleton even when `storedReview` is already in hand. `v1Generating` is
+  // still consumed by `isGenerating` below to drive the Refresh-button
+  // spinner + the "Analyzing your round…" copy when the hook generates in the
   // background, so it remains referenced; `v1Loading` is intentionally unused.
-  const isLoading = loadingRound || loadingStoredReview || generatingReview;
+  const isLoading = loadingRound || loadingStoredReview;
   const isGenerating = generatingReview || v1Generating;
 
   // P216: one standardized analysis-in-progress message (no V1/V2 split copy)
@@ -565,9 +633,8 @@ export default function RoundReviewPage() {
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <div className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8 md:py-10">
           <FwViewHeader
-            eyebrow="Round Review"
-            title={displayCourseName(round?.course_name) || 'Round Review'}
-            description="Your CoachHelm analysis for this round."
+            eyebrow="Round review"
+            title={headerTitle || 'Round review'}
             primaryAction={
               <FwIconButton
                 aria-label="Refresh review"
@@ -695,17 +762,37 @@ export default function RoundReviewPage() {
   // still renders from the stored review.
   const hasComposedNarrative = Boolean(v2Body) || Boolean(storedReview?.review_content?.deepInsights?.[0]?.body?.trim());
 
+  // Whether there's a complete, renderable stored review — the guard
+  // `FilmstripReview` needs beyond just "a review row exists" (it also needs
+  // a score to build the hero from).
+  const hasRenderableReview = Boolean(
+    storedReview?.review_content && round.total_score !== null && roundScoreToPar !== null,
+  );
+
   // Round-review BODY, rendered once below inside the Fairway chrome (P203).
+  //
+  // Four mutually-exclusive states (AUDIT perf row 15's second half):
+  //   1. `hasRenderableReview` — the real thing.
+  //   2. no review yet, but `isGenerating` — the auto-generate (or manual
+  //      Refresh) call is in flight. Its OWN visible state, never the
+  //      page-level skeleton (that skeleton only ever covers loadingRound /
+  //      loadingStoredReview now — see `isLoading` above).
+  //   3. no review, not generating, `generationError` set — the LAST
+  //      generation attempt failed. Inline retry, scoped to the review body;
+  //      the page shell (header, identity) stays up around it.
+  //   4. no review, not generating, no error — nothing has been attempted
+  //      yet (or the auto-generate effect hasn't fired this tick) — the
+  //      manual "Generate review" entry point.
   const reviewBody = (
     <m.div variants={itemVariants} className="space-y-6">
-      {storedReview?.review_content && round.total_score !== null && roundScoreToPar !== null ? (
+      {hasRenderableReview && storedReview ? (
         <FilmstripReview
           roundId={roundId}
           playerId={round.player_id}
           courseName={displayCourseName(round.course_name)}
           roundDate={round.round_date}
-          totalScore={round.total_score}
-          scoreToPar={roundScoreToPar}
+          totalScore={round.total_score as number}
+          scoreToPar={roundScoreToPar as number}
           review={storedReview.review_content}
           reviewId={storedReview.id}
           sharedWithCoach={storedReview.shared_with_coach}
@@ -716,6 +803,7 @@ export default function RoundReviewPage() {
           coachNotes={storedReview.coach_notes ?? null}
           promoteSuggestion={promoteSuggestion}
           standing={standing}
+          standingLoading={loadingStanding}
           holes={round.holes ?? []}
           playerName={isCoachViewer ? viewedPlayerName : null}
           strokesGainedTotal={round.strokes_gained_total}
@@ -724,6 +812,34 @@ export default function RoundReviewPage() {
           strokesGainedAroundGreen={round.strokes_gained_around_green}
           strokesGainedPutting={round.strokes_gained_putting}
         />
+      ) : isGenerating ? (
+        <div
+          role="status"
+          aria-busy="true"
+          aria-live="polite"
+          className="flex flex-col items-center gap-3 rounded-card border border-border-subtle bg-surface p-8 text-center"
+        >
+          <FwStatusPill tone="accent" dot={false} size="sm">
+            <IconSparkles size={14} />
+            Analyzing your round…
+          </FwStatusPill>
+          <p className="font-fw-sans text-body-sm text-text-tertiary">
+            CoachHelm is building this round's analysis. This usually takes a few seconds.
+          </p>
+        </div>
+      ) : generationError ? (
+        <FwInlineNotice
+          tone="danger"
+          title="We couldn't generate this review"
+          action={
+            <FwButton variant="secondary" size="sm" onClick={() => generateReview()}>
+              <IconRefresh size={16} />
+              <span>Try again</span>
+            </FwButton>
+          }
+        >
+          {generationError}
+        </FwInlineNotice>
       ) : (
         <FwEmptyState
           variant="default"
@@ -790,9 +906,8 @@ export default function RoundReviewPage() {
           className="mx-auto w-full max-w-6xl px-4 py-6 pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] sm:px-5 md:px-8 md:py-8 lg:pb-10"
         >
           <FwViewHeader
-            eyebrow="Round Review"
-            title={displayCourseName(round.course_name) || 'Round Review'}
-            description="Your CoachHelm analysis for this round."
+            eyebrow="Round review"
+            title={headerTitle || 'Round review'}
             meta={
               hasComposedNarrative ? (
                 <FwStatusPill tone="accent" dot={false} size="sm">

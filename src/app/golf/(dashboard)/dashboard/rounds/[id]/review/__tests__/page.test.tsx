@@ -96,6 +96,14 @@ let roundRow: {
   total_gir_possible: number | null;
   holes_played: number | null;
   holes: Array<{ hole_number: number; score: number | null; par: number | null; yardage: number | null }>;
+  // Round-level Strokes Gained cache — omitted by default (undefined, same
+  // as a round predating the SG cache) so `hasAnySG` in `FilmstripReview`
+  // reads false and the "SG not computed" composition path exercises.
+  strokes_gained_total?: number | null;
+  strokes_gained_tee?: number | null;
+  strokes_gained_approach?: number | null;
+  strokes_gained_around_green?: number | null;
+  strokes_gained_putting?: number | null;
 } = {
   id: 'round-1',
   player_id: 'player-1',
@@ -283,10 +291,12 @@ describe('RoundReviewPage — course-name casing (#109)', () => {
     const { getByRole } = renderAsPlayer();
 
     // The ViewHeader title (an <h1>, present on both the loading and loaded
-    // surfaces) renders the display-cased name, never the raw lowercase
-    // value stored on the round.
+    // surfaces) is the round's identity line — "{weekday} at {course} ·
+    // {player} · {date}" — built from the display-cased course name, never
+    // the raw lowercase value stored on the round. 2026-06-01 is a Monday;
+    // the player is 'Player' per `renderAsPlayer`'s GolfUserProvider fixture.
     await waitFor(() => {
-      expect(getByRole('heading', { level: 1 }).textContent).toBe('Pine Lakes');
+      expect(getByRole('heading', { level: 1 }).textContent).toBe('Monday at Pine Lakes · Player · Jun 1');
     });
   });
 });
@@ -311,15 +321,36 @@ describe('RoundReviewPage — FilmstripReview mount', () => {
     expect(getByText(/3 pars · 6 bogeys/)).toBeInTheDocument();
   });
 
-  it('renders the round-level Strokes Gained summary section', async () => {
-    const { findByText } = renderAsPlayer();
+  it('collapses to one notice, not the RoundSGSummary instrument, when SG is not computed', async () => {
+    // `roundRow` carries no `strokes_gained_*` fields by default (undefined —
+    // same shape as a round predating the SG cache). round-detail.md
+    // CONTAINERS TO REMOVE #2: the empty "Strokes gained: This round" + "By
+    // category" cards collapse to nothing, replaced by one line in the
+    // standing surface — RoundSGSummary's own "This round" instrument must
+    // NOT mount at all in this case.
+    const { findByText, queryByText } = renderAsPlayer();
+
+    await findByText('SG not computed for this round.');
+    expect(queryByText('This round')).not.toBeInTheDocument();
+  });
+
+  it('renders the round-level Strokes Gained summary section when SG IS computed', async () => {
+    roundRow = {
+      ...DEFAULT_ROUND_ROW,
+      strokes_gained_total: 1.4,
+      strokes_gained_tee: 0.5,
+      strokes_gained_approach: 0.3,
+      strokes_gained_around_green: 0.1,
+      strokes_gained_putting: 0.5,
+    };
+
+    const { findByText, queryByText } = renderAsPlayer();
 
     // The V1 heuristic "Where strokes went" RailBars block was removed
     // (2026-07-23) — it contradicted the authoritative per-shot Strokes Gained
-    // rollup (RoundSGSummary) that now leads the review body. RoundSGSummary
-    // renders its "This round" headline even when SG hasn't been computed
-    // (honest awaiting state), so this asserts the replacement section mounts.
+    // rollup (RoundSGSummary) that now leads the review body.
     await findByText('This round');
+    expect(queryByText('SG not computed for this round.')).not.toBeInTheDocument();
   });
 
   it('renders a working Share-with-Coach CTA wired to shareRoundReviewWithCoach', async () => {
@@ -381,5 +412,66 @@ describe('RoundReviewPage — focus-area prescription (FocusAreaModal migration)
         }),
       );
     });
+  });
+});
+
+describe('RoundReviewPage — perf fix (AUDIT row 15): review no longer waits on standing', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
+  });
+
+  it('shows review content while the season-standing fetch is still pending', async () => {
+    const { getPlayerStandingForReview } = await import('@/app/golf/actions/round-review-system');
+    type StandingMap = Awaited<ReturnType<typeof getPlayerStandingForReview>>;
+    let resolveStanding: (value: StandingMap) => void = () => {};
+    const standingPromise = new Promise<StandingMap>((resolve) => {
+      resolveStanding = resolve;
+    });
+    vi.mocked(getPlayerStandingForReview).mockReturnValueOnce(standingPromise);
+
+    const { findByText } = renderAsPlayer();
+
+    // The review narrative is already mounted — `getRoundReview` resolved and
+    // `loadingStoredReview` cleared — even though `getPlayerStandingForReview`
+    // has not resolved yet. Before the fix these were awaited sequentially in
+    // one effect, so the review sat behind whatever the standing fetch was
+    // doing.
+    await findByText('The story');
+
+    // "Where this sits" carries its own pending state instead of the review
+    // waiting on it.
+    expect(await findByText('Loading season standing…')).toBeInTheDocument();
+
+    resolveStanding({});
+  });
+});
+
+describe('RoundReviewPage — review-generation failure surfaces inline, not page-wide', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
+  });
+
+  it('shows an inline retry in the review body, not the whole-page error', async () => {
+    const { getRoundReview } = await import('@/app/golf/actions/round-review-system');
+    // No stored review → the auto-generate effect fires and fails against
+    // the module-level default mock (`generateAndStoreRoundReview` resolves
+    // `{ success: false }`, no `error` message).
+    vi.mocked(getRoundReview).mockResolvedValueOnce({ success: false });
+
+    const { findByText, findByRole, queryByText } = renderAsPlayer();
+
+    // This text only exists on the new inline-retry path — the OLD code
+    // never produced it; a generation failure there set the page-level
+    // `error` and rendered "We couldn't load this review" instead.
+    await findByText("We couldn't generate this review");
+
+    // The page shell — the round's own identity header — is still up
+    // around it; this is NOT the whole-page error surface.
+    const heading = await findByRole('heading', { level: 1 });
+    expect(heading.textContent).toContain('Pinehurst No. 2');
+    expect(queryByText("We couldn't load this review")).not.toBeInTheDocument();
+
+    const retry = await findByRole('button', { name: 'Try again' });
+    expect(retry).toBeEnabled();
   });
 });

@@ -206,6 +206,53 @@ export function buildCourseDateLine(courseName: string, dateStr: string | null |
   return [courseName, date].filter((s) => s.length > 0).join(' · ');
 }
 
+const HEADER_WEEKDAYS_FULL = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+];
+const HEADER_MONTHS_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/**
+ * "Monday at Pine Lakes · Cole Bennett · Aug 31" — the Round Review page
+ * header's identity line (round-detail.md: the header carries the round's
+ * own course/date/player under a "Round review" eyebrow, replacing the old
+ * bare course-name-or-"Round Review" title). Every segment is honest-empty:
+ * a missing course/date/player simply drops its own segment (and the
+ * "{weekday} at {course}" pairing degrades to whichever half is present)
+ * rather than rendering a placeholder.
+ *
+ * A dedicated manual y/m/d parse rather than reusing `formatReviewDate` —
+ * this line needs the FULL weekday name plus a separately-joinable short
+ * "Aug 31" segment, not that helper's single combined "Sat, Jun 6" string.
+ * Same UTC-day-shift avoidance as `formatReviewDate` (`new Date("2026-06-01")`
+ * reads as the prior day in US timezones, so the date is parsed as local
+ * y/m/d components instead of handed to the `Date` constructor as a string).
+ */
+export function buildReviewHeaderTitle(
+  courseName: string,
+  dateStr: string | null | undefined,
+  playerName: string | null | undefined,
+): string {
+  let weekday = '';
+  let shortDate = '';
+  const parts = dateStr?.split('T')[0]?.split('-');
+  if (parts && parts.length === 3) {
+    const y = parseInt(parts[0]!, 10);
+    const m = parseInt(parts[1]!, 10) - 1;
+    const d = parseInt(parts[2]!, 10);
+    const date = new Date(y, m, d);
+    weekday = HEADER_WEEKDAYS_FULL[date.getDay()] ?? '';
+    const monthLabel = HEADER_MONTHS_SHORT[m];
+    shortDate = monthLabel ? `${monthLabel} ${d}` : '';
+  }
+
+  const lead = courseName ? (weekday ? `${weekday} at ${courseName}` : courseName) : weekday;
+  const trailing = [playerName?.trim() || '', shortDate].filter((s) => s.length > 0);
+
+  return [lead, ...trailing].filter((s) => s.length > 0).join(' · ');
+}
+
 /** "#7 · Par 4 · 7 (+3)" header + note body — the filmstrip's scrub detail
  *  line (mockup §04 `.fdetail`). A clean hole (no synthesized note) reads
  *  "Clean hole." rather than an empty body. */
