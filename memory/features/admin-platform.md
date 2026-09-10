@@ -251,11 +251,21 @@ them would have broken those routes, not the dead one.
   every status-based filter would have missed. Both `admin_reliability_collector`
   and `admin_selfheal` write to this shared table under this vocabulary.
   every status-based filter would have missed.
+- **`admin_events.source` is a closed enum** — `ADMIN_EVENT_SOURCES` in
+  `src/lib/admin-logger.ts` mirrors the DB check constraint
+  `admin_events_source_check`; `logAdminEvent`'s `source` is typed to it.
+  A caller's free-form origin belongs in metadata (`logEmailSuppressed` →
+  `metadata.origin`), never in `source`: the constraint rejected 1,006
+  `email.suppressed` writes as `bridge_write_failed` before this (#1917).
 - **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor
   check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,
   not a replacement for it.** `startCronCheckIn`/`finishCronCheckIn`
   (`src/lib/observability/cron-monitors.ts`) wrap all 3 exit paths (success,
-  a resolved >=400 Response, a thrown error), keyed by a monitor slug
+  a resolved >=400 Response, a thrown error), and each path `await`s
+  `flushCronCheckIn` before returning — Vercel freezes the function on
+  response, and an unflushed terminal check-in is what Sentry reports as a
+  monitor timeout (`api-cron-db-health-sampler`, ~half its runs, #1918).
+  Check-ins are keyed by a monitor slug
   resolved from `CRON_REGISTRY` (`api-cron-<dashed-path>`, or
   `job-<jobType>` for anything unregistered). This is Sentry's OWN Cron
   Monitors feature (an external "did this heartbeat arrive on schedule"
@@ -1514,7 +1524,14 @@ assumed it would:
   tagging casually: the current check keys on `VERCEL_ENV`'s absence, and if
   that assumption ever broke, real production errors would be relabelled and
   any alert rule scoped to `environment:production` would go silent, which is
-  worse than the noise. Sentry's Supabase tracing instrumentation
+  worse than the noise. The one downgrade that is safe, and now applied
+  first in both `resolveServerEnvironment` and the `admin_events` gate
+  (`shouldPersistAdminTables`/`getRuntimeEnv`), is `NODE_ENV === 'development'`:
+  Vercel forces `NODE_ENV=production` on every build and runtime, so
+  `next dev` is positive evidence of a laptop even when a pulled
+  `.env.local` carries `VERCEL="1"` + `VERCEL_ENV=production` (#1919 —
+  2026-09-08 dev traffic from `Mac.lan` tagged production in Sentry and
+  written to the prod ledger). Sentry's Supabase tracing instrumentation
   (`@supabase/supabase-js/tracing` + `Sentry.instrumentSupabaseClient()`)
   also reports a failed query to Sentry on its own, independent of whether
   the calling code caught and handled it gracefully — a correctly-handled

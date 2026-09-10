@@ -51,6 +51,23 @@ describe('shouldPersistAdminTables', () => {
     expect(shouldPersistAdminTables()).toBe(false);
   });
 
+  it('never persists from `next dev`, even with a pulled VERCEL_ENV=production (#1919)', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    expect(shouldPersistAdminTables()).toBe(false);
+    // The preview opt-in cannot be satisfied from a dev server either.
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('ADMIN_EVENTS_CAPTURE_PREVIEW', '1');
+    expect(shouldPersistAdminTables()).toBe(false);
+  });
+
+  it('ADMIN_EVENTS_FORCE_CAPTURE=1 still overrides the `next dev` guard', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('ADMIN_EVENTS_FORCE_CAPTURE', '1');
+    expect(shouldPersistAdminTables()).toBe(true);
+  });
+
   it('never persists when GITHUB_ACTIONS=true, even without VERCEL_ENV set', () => {
     vi.stubEnv('GITHUB_ACTIONS', 'true');
     expect(shouldPersistAdminTables()).toBe(false);
@@ -98,6 +115,12 @@ describe('getRuntimeEnv', () => {
 
   it('tags local dev (no VERCEL_ENV, no CI) as dev', () => {
     vi.stubEnv('VERCEL_ENV', '');
+    expect(getRuntimeEnv()).toBe('dev');
+  });
+
+  it('tags `next dev` as dev even with a pulled VERCEL_ENV=production (#1919)', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('VERCEL_ENV', 'production');
     expect(getRuntimeEnv()).toBe('dev');
   });
 });

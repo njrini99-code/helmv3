@@ -7,6 +7,33 @@
 
 > **2026-09-05:** `scripts/lib/sentry-cron-checkin.mjs` (removed) and the launchd `scripts/run-selfheal-repair.mjs` (removed) it served no longer exist — both were removed when Repair moved to `.github/workflows/selfheal-repair.yml` only. See `memory/features/admin-selfheal.md`. The entry below is left exactly as written at the time.
 
+## 2026-09-09 — fresh-slate fixes: `next dev` never production, terminal check-in flushed, closed `admin_events.source`
+
+- Branch: `agent/telemetry-env-guard`. Issues #1919, #1918, #1917 (filed from the
+  2026-09-09 Bridge sweep ahead of the Bridge consolidation PR #1914).
+- `src/lib/sentry-environment.ts` `resolveServerEnvironment` and
+  `src/lib/telemetry-gate.ts` `shouldPersistAdminTables`/`getRuntimeEnv`: a
+  development `NODE_ENV` now wins before the `VERCEL`/`VERCEL_ENV` read. A
+  pulled `.env.local` (`vercel env pull --environment=production`) carries
+  `VERCEL="1"` + `VERCEL_ENV=production`, and Next loads it for `next dev`, so
+  a laptop reported `environment: production` (S7 ×146, S9 ×64) and wrote
+  ~100 prod `admin_events` rows (`530e91c6`, `e9f122e7`). Safety property
+  intact: Vercel never runs with `NODE_ENV=development`. `next build && next
+  start` with the same pulled file is NOT covered by this (VERCEL is present)
+  — strip `VERCEL`/`VERCEL_ENV` from the pulled file for that case.
+- `src/lib/observability/cron-monitors.ts` `flushCronCheckIn(checkInId)`
+  (`Sentry.flush(2000)`, fail-open) awaited by `recordJobRun` after the
+  terminal check-in on all 3 exit paths. Cause of the
+  `api-cron-db-health-sampler` timeouts (RG ×776 while every run completed
+  <11s): the `ok` envelope was queued but the function froze on response.
+- `src/lib/admin-logger.ts`: `ADMIN_EVENT_SOURCES`/`AdminEventSource`
+  mirror `admin_events_source_check`; `logEmailSuppressed` writes
+  `source: 'system'` + `metadata.origin` (was the caller's path string,
+  rejected on every write — V0 ×15, EG `bridge_write_failed` ×1,006).
+- Tests: `sentry-environment.test.ts`, `telemetry-gate.test.ts`,
+  `cron-monitors.test.ts`, `job-log.test.ts` (131 across the 8 affected
+  suites). `tsc` clean.
+
 ## 2026-09-02 — client "maximum observability" build: profiling, replay privacy, third-party filter, feedback, breadcrumbs, feature tags
 
 - Branch: `agent/sentry-max-client` (Phase D of a multi-phase Sentry build;
