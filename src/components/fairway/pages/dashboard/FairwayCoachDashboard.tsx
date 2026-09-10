@@ -11,40 +11,64 @@
  * every value unchanged. No data fetching, no server actions, no mutations are
  * defined or altered here.
  *
- * FACELIFT PASS (docs/design/fairway-facelift/screens/coach-home.md): the
+ * FACELIFT PASS (docs/design/fairway-facelift/screens/coach-home.md, plus the
+ * home-polish fixes in docs/design/fairway-facelift/REVIEW.md): the
  * twelve-container "card soup" (hero + Window segmented + Latest + Today +
  * eight MetricCards + invite code + Recent rounds + Schedule + Performance
  * trend + Team pulse (3 insets) + Top performers = twelve containers, one
- * grammar) is recomposed into a 7/5 asymmetric grid with ONE dominant object
- * (Today) and everything else merged or compressed:
+ * grammar) is recomposed into a 7/5 asymmetric grid — an operations rail on
+ * the left, ONE bordered stats region on the right:
  *
- *   • ViewHeader — ONE <h1>, eyebrow (date), the promoted primary action
- *     ("New event" → the calendar), and an overflow Menu (Add player /
- *     Qualifiers / Invite) for what used to be three loose buttons + a
- *     separate invite-code card.
- *   • Today (row 1, 7/12) — the old "Today" card + the standalone "Schedule"
- *     card merged: the current/next event large, remaining today events and
- *     the next 3 days as quiet seam rows under a hairline. A genuinely clear
- *     near-term schedule is one quiet text line, never a notice card.
- *   • Team performance (row 1, 5/12) — the window Segmented (previously a
- *     page-level control) now lives in this panel's own header; the eight
- *     MetricCards compress into one StatMatrix (Scoring avg / GIR / Putts per
- *     round / Rounds); the separate "Performance Trend" card's chart moves in
- *     underneath a hairline.
- *   • Team pulse (row 2, 7/12) — the old three-inset Team Pulse card's
- *     improving/stable/declining counts become the KPI band of a MatrixBoard
- *     whose ranked rows are the former "Top Performers" list. (DEVIATION —
- *     see the RISKS comment below the component: the screen spec calls this
- *     board "Who needs attention" with a trend glyph + strokes-gained column;
- *     the payload has no per-player decline list or SG figure, only the
- *     best-5-by-average `topPlayers` array, so fabricating those columns
- *     would mean inventing data. This keeps the honest ranking semantics and
- *     folds the real aggregate pulse counts into the board's KPI band.)
- *   • Latest (row 2, 5/12) — unchanged `NotificationsLatestModule`, just
- *     relocated beside Team pulse instead of floating above Today.
- *   • Recent rounds (row 3, full width) — the DataTable becomes a TickerStrip
- *     of the last 10 scores (md+) over quiet seam rows (all breakpoints),
- *     replacing the table's own mobile card fork.
+ *   • ViewHeader — bare (no plinth band — review coach-home/9: a warm-tinted
+ *     hero box, stacked directly above two more bordered cards, read as a
+ *     third same-radius box), ONE <h1>, eyebrow (date), the promoted primary
+ *     action ("New event" → the calendar's own create composer, `?new=1`),
+ *     and an overflow Menu (Add player / Qualifiers / Invite) for what used
+ *     to be three loose buttons + a separate invite-code card.
+ *   • The LEFT rail (7/12) is the operations stack, top to bottom — Today,
+ *     "who needs attention" (Team pulse board), Recent rounds, Latest — each
+ *     a seam section (heading + hairline, no card border) rather than one
+ *     each per row of a row-locked 2-column grid (review coach-home/24-25:
+ *     that grid stretched the shorter Today column to match Team
+ *     performance's height, and blocked the attention board from starting
+ *     until the whole first row finished).
+ *     - Today — the old "Today" card + the standalone "Schedule" card
+ *       merged: the current/next event large, remaining today events and the
+ *       next 3 days as quiet seam rows under a hairline, ALL sharing one left
+ *       inset (review coach-home/8 — the empty-schedule line used to sit at
+ *       its own indent, off the seam grammar the rows around it use). A
+ *       genuinely clear near-term schedule is one quiet seam row, never a
+ *       floating sentence or a notice card.
+ *     - Team pulse / "who needs attention" — the old three-inset Team Pulse
+ *       card's improving/stable/declining counts become the KPI band of a
+ *       MatrixBoard whose ranked rows are the former "Top Performers" list,
+ *       no longer double-boxed inside an outer Surface. (DEVIATION — see the
+ *       RISKS comment below the component: the screen spec calls this board
+ *       "Who needs attention" with a trend glyph + strokes-gained column; the
+ *       payload has no per-player decline list or SG figure, only the
+ *       best-5-by-average `topPlayers` array, so fabricating those columns
+ *       would mean inventing data. This keeps the honest ranking semantics
+ *       and folds the real aggregate pulse counts into the board's KPI
+ *       band.)
+ *     - Recent rounds — quiet seam rows over the last 10 scores; the bar-
+ *       strip preview that used to sit above them is dropped (review
+ *       coach-home/26 — it clipped against the card's top edge and repeated
+ *       the same scores the rows below already show; the Performance Trend
+ *       chart already carries that shape).
+ *     - Latest — unchanged `NotificationsLatestModule`, moved into this rail
+ *       instead of sitting beside Team performance in the old row-2 grid.
+ *   • Team performance (right column, 5/12) — the ONE bordered region on the
+ *     page. The window Segmented (previously a page-level control) lives in
+ *     this panel's own header on desktop; on phone it's demoted to a compact
+ *     Menu (review coach-home/9 — a 5-way segmented row ran a full line above
+ *     the numbers it filters on a narrow card). The eight MetricCards
+ *     compress into one `variant="plain"` StatMatrix (Scoring avg / GIR /
+ *     Putts per round / Rounds) — plain, not the default sunken well, so it
+ *     reads as internal seams rather than a card nested inside this already-
+ *     bordered panel (review coach-home/24); the separate "Performance Trend"
+ *     card's chart moves in underneath a hairline, with extra right/bottom
+ *     padding at md+ so its last x-axis label clears the floating "Ask
+ *     CoachHelm" pill fixed at that same corner.
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -72,10 +96,8 @@ import {
 import {
   StatMatrix,
   MatrixBoard,
-  TickerStrip,
   type MatrixColumn,
   type MatrixBoardRow,
-  type TickerItem,
 } from '@/components/fairway/modules';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
 // the StatMatrix delta hints from a single call, so a hint can never disagree
@@ -91,6 +113,7 @@ import {
   IconCopy,
   IconCheck,
   IconArrowRight,
+  IconChevronDown,
   IconClock,
   IconMapPin,
   IconMoreHorizontal,
@@ -397,31 +420,6 @@ export function FairwayCoachDashboard({
     return Array.from(merged.values());
   }, [enhancedData?.todayEvents, enhancedData?.calendarEvents]);
 
-  // Recent-rounds TickerStrip (row 3): the last 10 scored rounds, oldest →
-  // newest, min–max normalized on `total_to_par` WITHIN this window — same
-  // convention as FairwayRoundsLibrary's desktop chronology strip, so a
-  // coach who has seen one strip reads the other identically. `recentRounds`
-  // arrives newest-first (dashboard-data.ts orders `round_date desc`); this
-  // reverses the latest-10 slice into chronological order for the strip.
-  // (Hook lives above the coach-without-team early return below.)
-  const tickerItems: TickerItem[] = useMemo(() => {
-    const windowRounds = recentRounds.slice(0, 10).slice().reverse();
-    if (windowRounds.length < 2) return [];
-    const toPars = windowRounds.map((r) => r.total_to_par ?? 0);
-    const min = Math.min(...toPars);
-    const max = Math.max(...toPars);
-    const spread = Math.max(1, max - min);
-    return windowRounds.map((r) => {
-      const tp = r.total_to_par ?? 0;
-      return {
-        label: String(r.total_score ?? '—'),
-        // best (lowest to-par) → 100%, worst (highest to-par) → 40%.
-        heightPct: 100 - ((tp - min) / spread) * 60,
-        emphasis: tp === min,
-      };
-    });
-  }, [recentRounds]);
-
   // ── COACH-WITHOUT-TEAM → onboarding funnel (not a zeroed dashboard) ──────
   if (!team) {
     return (
@@ -527,16 +525,22 @@ export function FairwayCoachDashboard({
   // pb-28 (112px) clears that 80px zone with margin.
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 overflow-x-clip px-5 pt-8 pb-8 md:gap-10 md:px-8 md:pt-10 md:pb-28">
-      {/* ── 1 · OPENER — the warm plinth (DESIGN-SYSTEM §4.1, ONE per page) ──
+      {/* ── 1 · OPENER — a bare page-level masthead (facelift review
+          coach-home/9): the warm `plinth` band this ViewHeader used to render
+          (DESIGN-SYSTEM §4.1) gave the greeting the SAME rounded-box family
+          as the Today and Team performance panels below it, so a phone
+          capture read as three same-radius boxes stacked in a row before any
+          content landed. The opener is the page's own welcome line, not a
+          card — it stays unboxed; Today (below) is now a seam section too,
+          so only Team performance keeps a bordered region on the page.
           • EYEBROW carries the DATE, formatted server-side in the team's
             timezone — it pairs with the time-of-day greeting directly under
             it.
-          • PRIMARY ACTION is "New event" (coach-home.md): the single most
-            common thing a coach does from this page's action cluster is put
-            something on the calendar, so it gets the one pill CTA. It links
-            to the calendar route — see the RISKS note below the component:
-            the calendar has no URL-addressable "open the composer" deep
-            link, so this opens the page rather than the composer itself.
+          • PRIMARY ACTION is "New event" (coach-home.md), deep-linked to the
+            calendar's own create composer via `?new=1` (FairwayCalendar
+            strips the param after opening it — see that file's
+            `initialComposeNew` doc) rather than just landing on the calendar
+            hub.
           • Add Player / Qualifiers / Invite — all promoted actions the old
             hero rendered as loose buttons/cards — now live in ONE overflow
             Menu beside the primary action, per coach-home.md's "Menu:
@@ -548,7 +552,6 @@ export function FairwayCoachDashboard({
             placeholder just sat. Settled content that was already placeheld
             must not re-enter — that IS the flicker. */}
       <ViewHeader
-        plinth
         disableAnimation
         eyebrow={todayLabel ?? 'Coach Dashboard'}
         title={greeting}
@@ -608,7 +611,7 @@ export function FairwayCoachDashboard({
         }
         primaryAction={
           <Button variant="primary" asChild>
-            <Link href="/golf/dashboard/calendar">
+            <Link href="/golf/dashboard/calendar?new=1">
               <IconPlus size={16} />
               <span>New event</span>
             </Link>
@@ -626,31 +629,207 @@ export function FairwayCoachDashboard({
           omitted (e.g. any other caller that hasn't wired it). */}
       <FairwayJoinRequestAlert requests={joinRequests} />
 
-      {/* ── 2 · ROW 1 (7/5) — Today | Team performance ─────────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+      {/* ── 2 · Today | Team performance + the operations rail (facelift
+          review coach-home/24,25): row 1 and row 2 used to be TWO stacked CSS
+          grids, so the shared grid row force-stretched the shorter "Today"
+          column to match Team performance's height (a 340px blank hole under
+          a short Today card), and "who needs attention" could never start
+          until the WHOLE first row — including the taller stats panel —
+          finished rendering. ONE grid, `items-start` (no row-stretch), two
+          genuinely independent columns: the left rail carries the full
+          operations stack (Today, who needs attention, recent rounds, latest
+          activity) as seam sections; the right column is the one bordered
+          region on the page, Team performance, sized by its own content
+          only. */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <div className="flex flex-col gap-8 lg:col-span-7">
           <TodayPanel
             todayEvents={enhancedData?.todayEvents ?? []}
             scheduleEvents={scheduleEvents}
             scheduleError={enhancedData?.todayScheduleError ?? false}
             timezone={enhancedData?.timezone}
           />
+
+          <TeamPulseBoard
+            pulse={enhancedData?.teamPulse}
+            topPlayers={topPlayers}
+            teamStatsUnavailable={teamStatsUnavailable}
+          />
+          {/* Invite + roster-cap notices — quiet matte status rows directly
+              under the board (coach-home.md Tertiary), not a standing card
+              in the KPI row the legacy layout used. */}
+          {showInviteNotice ? (
+            <InlineNotice
+              tone="info"
+              icon={LucideUsers}
+              title="Share your invite code"
+              action={
+                <Button variant="secondary" size="sm" onClick={handleCopy}>
+                  {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                  <span className="font-fw-mono tracking-[0.18em]">
+                    {copied ? 'Copied' : team.join_code}
+                  </span>
+                </Button>
+              }
+            >
+              Players join from the welcome screen with this code.
+            </InlineNotice>
+          ) : null}
+          {rosterFull ? (
+            <InlineNotice tone="warning" title="Roster full">
+              Your invite code is hidden because the roster has reached the 20-player limit.
+            </InlineNotice>
+          ) : null}
+
+          {/* Recent rounds — a matte surface with seam rows (coach-home.md
+              CONTAINERS TO REMOVE #7). Was a full-width row below both
+              columns; the fix for the grid-hole/late-start bug (review
+              coach-home/24-25) folds it into this operations rail instead,
+              directly under "who needs attention". The bar-strip preview
+              that used to sit above the list is dropped outright (review
+              coach-home/26): its bars clipped against the card's top edge and
+              duplicated the exact scores the rows below already show — the
+              Performance Trend chart already carries the shape of the team's
+              scoring over time. */}
+          <section aria-label="Recent rounds" className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
+              <Link
+                href="/golf/dashboard/rounds"
+                className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+              >
+                View all
+                <IconArrowRight size={14} />
+              </Link>
+            </div>
+            {/* Section hairline — more-green ruling. */}
+            <div aria-hidden="true" className="h-px w-full bg-accent-300" />
+            {recentRounds.length === 0 ? (
+              <Surface elevation="border" padding="sm">
+                {/* `teamStatsUnavailable` says a read behind the round data FAILED.
+                    Without it, a lock wait or timeout rendered "No rounds logged
+                    yet" to a team with a full season on file — the empty state and
+                    the failure state were the same screen. */}
+                {teamStatsUnavailable ? (
+                  <EmptyState
+                    variant="subtle"
+                    icon={LucideFlag}
+                    title="Couldn’t load rounds"
+                    description="Something went wrong reading this team’s rounds. Refresh to try again — nothing has been lost."
+                  />
+                ) : (
+                  <EmptyState
+                    variant="subtle"
+                    icon={LucideFlag}
+                    title={range !== 'all' ? 'No rounds in this window' : 'No rounds logged yet'}
+                    description={
+                      range !== 'all'
+                        ? 'Try a wider window, or have players log rounds from their dashboard.'
+                        : 'Players can submit rounds from their dashboard — they’ll appear here.'
+                    }
+                  />
+                )}
+              </Surface>
+            ) : (
+              <Surface elevation="border" padding="sm" className="flex flex-col gap-4">
+                <ul className="flex flex-col">
+                  {recentRounds.slice(0, 10).map((r) => (
+                    <li key={r.id}>
+                      {/* Every row is the obvious next action: open that round's
+                          detail (the route authorizes a coach for any team
+                          player's round) (P005). */}
+                      <Link
+                        href={`/golf/dashboard/rounds/${r.id}`}
+                        className="flex items-center gap-3 rounded-fw-sm border-t border-border-subtle px-1 py-2.5 transition-colors duration-150 first:border-t-0 hover:bg-surface-hover"
+                      >
+                        <Avatar decorative
+                          name={r.player_name}
+                          src={r.player_avatar_url}
+                          size="sm"
+                          className="shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                            {r.player_name}
+                          </p>
+                          <p className="truncate font-fw-sans text-caption text-text-tertiary">
+                            {toTitleCase(r.course_name)} · {shortDate(r.round_date)}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-baseline gap-2">
+                          <span className="font-fw-mono text-body font-medium tabular-nums text-text-primary">
+                            {r.total_score}
+                          </span>
+                          <StatusPill
+                            tone={r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral'}
+                            size="sm"
+                            dot={false}
+                            className="font-fw-mono tabular-nums"
+                          >
+                            {formatToPar(r.total_to_par)}
+                          </StatusPill>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </Surface>
+            )}
+          </section>
+
+          {/* Latest notifications — compact digest of the unified feed
+              (CoachHelm signals, event/RSVP lifecycle, task reminders…).
+              Self-fetching client module; renders nothing when there's
+              genuinely nothing new (the bell in the top bar stays the source
+              of truth either way). "View all" opens that same bell panel via
+              NotificationPanelContext. Moved into the operations rail
+              alongside Recent rounds (review coach-home/24) — it no longer
+              waits beside Team performance in a row-locked grid. */}
+          <NotificationsLatestModule />
         </div>
 
         <section aria-label="Team performance" className="lg:col-span-5">
-          <Surface elevation="border" padding="md" className="flex h-full flex-col gap-4">
+          <Surface elevation="border" padding="md" className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team performance</h2>
+              {/* Desktop: the full 5-way window Segmented, as coach-home.md's
+                  composition sketch shows it, in the panel's own header.
+                  Phone (review coach-home/9): demoted to a compact Menu — a
+                  5-option segmented row was consuming a full line above the
+                  fold on a narrow card, ahead of the numbers it exists to
+                  filter. */}
               <Segmented
                 value={range}
                 onValueChange={handleRangeChange}
                 options={RANGE_OPTIONS}
                 aria-label="Performance window"
                 size="sm"
+                className="hidden lg:inline-flex"
               />
+              <Menu
+                ariaLabel="Performance window"
+                align="end"
+                trigger={
+                  <Button variant="secondary" size="sm" className="lg:hidden">
+                    <span>{RANGE_OPTIONS.find((o) => o.value === range)?.label ?? 'All'}</span>
+                    <IconChevronDown size={14} />
+                  </Button>
+                }
+              >
+                {RANGE_OPTIONS.map((opt) => (
+                  <Menu.Item key={opt.value} onSelect={() => handleRangeChange(opt.value)}>
+                    {opt.label}
+                  </Menu.Item>
+                ))}
+              </Menu>
             </div>
 
+            {/* `variant="plain"` (review coach-home/24): the default sunken
+                well made this read as a card nested inside the already-
+                bordered Team performance panel. Internal seams only, never a
+                second box. */}
             <StatMatrix
+              variant="plain"
               items={[
                 {
                   label: 'Scoring avg',
@@ -696,7 +875,12 @@ export function FairwayCoachDashboard({
             <div aria-hidden="true" className="h-px w-full bg-border-subtle" />
 
             {hasTrend ? (
-              <div className="flex-1">
+              // Extra right/bottom clearance (review coach-home/24): the
+              // floating "Ask CoachHelm" pill is fixed bottom-right on every
+              // /golf/dashboard route at md+, and this panel's chart used to
+              // run its last x-axis label flush to the card edge, right
+              // where that pill sits.
+              <div className="flex-1 md:pb-2 md:pr-8">
                 <TrendChart
                   title="Performance Trend"
                   overline="Team scoring average"
@@ -750,144 +934,6 @@ export function FairwayCoachDashboard({
           </Surface>
         </section>
       </div>
-
-      {/* ── 3 · ROW 2 (7/5) — Team pulse (board) | Latest ───────────────────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="flex flex-col gap-4 lg:col-span-7">
-          <TeamPulseBoard
-            pulse={enhancedData?.teamPulse}
-            topPlayers={topPlayers}
-            teamStatsUnavailable={teamStatsUnavailable}
-          />
-          {/* Invite + roster-cap notices — quiet matte status rows directly
-              under the board (coach-home.md Tertiary), not a standing card
-              in the KPI row the legacy layout used. */}
-          {showInviteNotice ? (
-            <InlineNotice
-              tone="info"
-              icon={LucideUsers}
-              title="Share your invite code"
-              action={
-                <Button variant="secondary" size="sm" onClick={handleCopy}>
-                  {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                  <span className="font-fw-mono tracking-[0.18em]">
-                    {copied ? 'Copied' : team.join_code}
-                  </span>
-                </Button>
-              }
-            >
-              Players join from the welcome screen with this code.
-            </InlineNotice>
-          ) : null}
-          {rosterFull ? (
-            <InlineNotice tone="warning" title="Roster full">
-              Your invite code is hidden because the roster has reached the 20-player limit.
-            </InlineNotice>
-          ) : null}
-        </div>
-
-        {/* Latest notifications — compact digest of the unified feed
-            (CoachHelm signals, event/RSVP lifecycle, task reminders…).
-            Self-fetching client module; renders nothing when there's
-            genuinely nothing new (the bell in the top bar stays the source
-            of truth either way). "View all" opens that same bell panel via
-            NotificationPanelContext. */}
-        <div className="lg:col-span-5">
-          <NotificationsLatestModule />
-        </div>
-      </div>
-
-      {/* ── 4 · ROW 3 — Recent rounds (TickerStrip + seam rows) ─────────────── */}
-      <section aria-label="Recent rounds" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
-          <Link
-            href="/golf/dashboard/rounds"
-            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
-          >
-            View all
-            <IconArrowRight size={14} />
-          </Link>
-        </div>
-        {/* Section hairline — more-green ruling. */}
-        <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-        {recentRounds.length === 0 ? (
-          <Surface elevation="border" padding="sm">
-            {/* `teamStatsUnavailable` says a read behind the round data FAILED.
-                Without it, a lock wait or timeout rendered "No rounds logged
-                yet" to a team with a full season on file — the empty state and
-                the failure state were the same screen. */}
-            {teamStatsUnavailable ? (
-              <EmptyState
-                variant="subtle"
-                icon={LucideFlag}
-                title="Couldn’t load rounds"
-                description="Something went wrong reading this team’s rounds. Refresh to try again — nothing has been lost."
-              />
-            ) : (
-              <EmptyState
-                variant="subtle"
-                icon={LucideFlag}
-                title={range !== 'all' ? 'No rounds in this window' : 'No rounds logged yet'}
-                description={
-                  range !== 'all'
-                    ? 'Try a wider window, or have players log rounds from their dashboard.'
-                    : 'Players can submit rounds from their dashboard — they’ll appear here.'
-                }
-              />
-            )}
-          </Surface>
-        ) : (
-          <Surface elevation="border" padding="sm" className="flex flex-col gap-4">
-            {tickerItems.length >= 2 ? (
-              <div className="hidden md:block">
-                <TickerStrip items={tickerItems} />
-              </div>
-            ) : null}
-            <ul className="flex flex-col">
-              {recentRounds.slice(0, 10).map((r) => (
-                <li key={r.id}>
-                  {/* Every row is the obvious next action: open that round's
-                      detail (the route authorizes a coach for any team
-                      player's round) (P005). */}
-                  <Link
-                    href={`/golf/dashboard/rounds/${r.id}`}
-                    className="flex items-center gap-3 rounded-fw-sm border-t border-border-subtle px-1 py-2.5 transition-colors duration-150 first:border-t-0 hover:bg-surface-hover"
-                  >
-                    <Avatar decorative
-                      name={r.player_name}
-                      src={r.player_avatar_url}
-                      size="sm"
-                      className="shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                        {r.player_name}
-                      </p>
-                      <p className="truncate font-fw-sans text-caption text-text-tertiary">
-                        {toTitleCase(r.course_name)} · {shortDate(r.round_date)}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-baseline gap-2">
-                      <span className="font-fw-mono text-body font-medium tabular-nums text-text-primary">
-                        {r.total_score}
-                      </span>
-                      <StatusPill
-                        tone={r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral'}
-                        size="sm"
-                        dot={false}
-                        className="font-fw-mono tabular-nums"
-                      >
-                        {formatToPar(r.total_to_par)}
-                      </StatusPill>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Surface>
-        )}
-      </section>
     </div>
   );
 }
@@ -970,85 +1016,91 @@ function TeamPulseBoard({
     ),
   }));
 
+  // review coach-home/9,24: this used to wrap MatrixBoard in its own
+  // `Surface elevation="border"` — a card nested inside the board's own
+  // `rounded-card border` root, i.e. two boxes for one object. The board
+  // already IS the container (KPI band + header + ranked rows in one
+  // bordered shell); this is now a bare seam section — heading + hairline,
+  // like Today above it — with the board as the section's only box.
   return (
-    <section aria-label="Team pulse">
-      <Surface elevation="border" padding="md" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team pulse</h2>
-          {/* Suppressed when there is nothing to classify: the pill sat directly
-              above "No movement to read yet" and the card contradicted itself
-              (audit 2026-07-24, H6). The count still shows in the empty-state
-              copy below, where it reads as context rather than a claim. */}
-          {roundsThisWeek > 0 && tracked > 0 ? (
-            <StatusPill tone="accent" dot>
-              {roundsThisWeek} this week
-            </StatusPill>
-          ) : null}
-        </div>
-
-        {tracked === 0 ? (
-          <InsufficientData
-            compact
-            title="No movement to read yet"
-            description={
-              roundsThisWeek > 0
-                ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
-                : 'Pulse compares recent rounds. It fills in as players log activity.'
-            }
-          />
+    <section aria-label="Team pulse" className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team pulse</h2>
+        {/* Suppressed when there is nothing to classify: the pill sat directly
+            above "No movement to read yet" and the card contradicted itself
+            (audit 2026-07-24, H6). The count still shows in the empty-state
+            copy below, where it reads as context rather than a claim. */}
+        {roundsThisWeek > 0 && tracked > 0 ? (
+          <StatusPill tone="accent" dot>
+            {roundsThisWeek} this week
+          </StatusPill>
         ) : null}
+      </div>
+      {/* Section hairline — more-green ruling, matching Today's. */}
+      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
 
-        {ranked.length > 0 ? (
-          <MatrixBoard
-            kpis={tracked > 0 ? [
-              { label: 'Improving', value: improving },
-              { label: 'Stable', value: stable },
-              { label: 'Declining', value: declining },
-            ] : []}
-            columns={columns}
-            rows={rows}
-          />
-        ) : (
-          <InsufficientData
-            compact
-            title={teamStatsUnavailable ? 'Couldn’t load performers' : 'No leaderboard yet'}
-            description={
-              teamStatsUnavailable
-                ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
-                : 'Player averages appear once rounds are logged.'
-            }
-          />
-        )}
+      {tracked === 0 ? (
+        <InsufficientData
+          compact
+          title="No movement to read yet"
+          description={
+            roundsThisWeek > 0
+              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
+              : 'Pulse compares recent rounds. It fills in as players log activity.'
+          }
+        />
+      ) : null}
 
-        {pulse?.topMover && pulse.topMover.delta !== 0 ? (
-          <Inset padding="sm" className="flex items-center justify-between gap-3">
-            <span className="font-fw-sans text-body-sm text-text-secondary">
-              Top mover · <span className="font-medium text-text-primary">{pulse.topMover.name}</span>
-            </span>
-            <span
-              className={cn(
-                'font-fw-mono text-body-sm font-medium tabular-nums',
-                // delta is a POSITIVE improvement magnitude (olderAvg - recentAvg),
-                // so a positive delta means the player improved → success green.
-                pulse.topMover.delta > 0 ? 'text-fw-success-ink' : 'text-fw-warning-ink',
-              )}
-            >
-              {pulse.topMover.delta > 0 ? '−' : '+'}
-              {Math.abs(pulse.topMover.delta).toFixed(1)}
-            </span>
-          </Inset>
-        ) : null}
+      {ranked.length > 0 ? (
+        <MatrixBoard
+          kpis={tracked > 0 ? [
+            { label: 'Improving', value: improving },
+            { label: 'Stable', value: stable },
+            { label: 'Declining', value: declining },
+          ] : []}
+          columns={columns}
+          rows={rows}
+        />
+      ) : (
+        <InsufficientData
+          compact
+          title={teamStatsUnavailable ? 'Couldn’t load performers' : 'No leaderboard yet'}
+          description={
+            teamStatsUnavailable
+              ? 'Something went wrong reading this team’s rounds. Refresh to try again.'
+              : 'Player averages appear once rounds are logged.'
+          }
+        />
+      )}
 
-        <div className="flex justify-end">
-          <Link
-            href="/golf/dashboard/stats/team"
-            className="inline-flex items-center gap-1 py-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      {pulse?.topMover && pulse.topMover.delta !== 0 ? (
+        <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-0.5 py-2.5">
+          <span className="font-fw-sans text-body-sm text-text-secondary">
+            Top mover · <span className="font-medium text-text-primary">{pulse.topMover.name}</span>
+          </span>
+          <span
+            className={cn(
+              'font-fw-mono text-body-sm font-medium tabular-nums',
+              // delta is a POSITIVE improvement magnitude (olderAvg - recentAvg),
+              // so a positive delta means the player improved → success green.
+              pulse.topMover.delta > 0 ? 'text-fw-success-ink' : 'text-fw-warning-ink',
+            )}
           >
-            Rankings
-            <IconArrowRight size={14} />
-          </Link>
+            {pulse.topMover.delta > 0 ? '−' : '+'}
+            {Math.abs(pulse.topMover.delta).toFixed(1)}
+          </span>
         </div>
-      </Surface>
+      ) : null}
+
+      <div className="flex justify-end">
+        <Link
+          href="/golf/dashboard/stats/team"
+          className="inline-flex items-center gap-1 py-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+        >
+          Rankings
+          <IconArrowRight size={14} />
+        </Link>
+      </div>
     </section>
   );
 }
@@ -1240,7 +1292,7 @@ function TodayPanel({
   const nothingAtAll = todayIsClear && nextDayGroups.length === 0;
 
   return (
-    <section aria-label="Today's schedule" className="flex h-full flex-col gap-3">
+    <section aria-label="Today's schedule" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Today</h2>
@@ -1278,40 +1330,45 @@ function TodayPanel({
           Clear schedule today — a good window for practice or recovery.
         </p>
       ) : (
-        <div className="flex flex-1 flex-col gap-3">
-          <Surface elevation="border" padding="sm" className="flex flex-col">
-            {todayIsClear ? (
-              <p className="px-2 py-2 font-fw-sans text-body-sm text-text-tertiary">
-                Clear schedule today.
-              </p>
-            ) : (
-              <>
-                {/* Provably defined here: this branch only renders when
-                    `!todayIsClear`, i.e. `sortedToday.length > 0`. */}
-                <FeaturedEventRow event={featured!} tz={tz} />
-                {restToday.map((event) => (
-                  <QuietEventRow key={event.id} event={event} tz={tz} />
-                ))}
-              </>
-            )}
-            {nextDayGroups.length > 0 ? (
-              <div className={cn('flex flex-col gap-2', !todayIsClear && 'mt-2 border-t border-border-subtle pt-2')}>
-                <span className="px-0.5 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
-                  Next 3 days
-                </span>
-                {nextDayGroups.map((group) => (
-                  <div key={group.key} className="flex flex-col">
-                    <span className="px-0.5 py-1 font-fw-sans text-caption font-medium text-text-secondary">
-                      {group.label}
-                    </span>
-                    {group.events.map((event) => (
-                      <QuietEventRow key={event.id} event={event} tz={tz} />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </Surface>
+        // review coach-home/8,9: this used to be a bordered `Surface` card,
+        // and the empty-today line inside it sat at its own `px-2` indent —
+        // a different left edge from the `px-0.5` the "Next 3 days" eyebrow
+        // and every QuietEventRow use, i.e. two left edges in one box. Today
+        // is now a bare seam section (no card border, matching the hairline
+        // above), and every row — including the empty-today line — shares
+        // that ONE `px-0.5` inset and the same border-t seam rhythm.
+        <div className="flex flex-1 flex-col">
+          {todayIsClear ? (
+            <div className="border-t border-border-subtle px-0.5 py-2.5 first:border-t-0">
+              <span className="font-fw-sans text-body-sm text-text-tertiary">Clear schedule today.</span>
+            </div>
+          ) : (
+            <>
+              {/* Provably defined here: this branch only renders when
+                  `!todayIsClear`, i.e. `sortedToday.length > 0`. */}
+              <FeaturedEventRow event={featured!} tz={tz} />
+              {restToday.map((event) => (
+                <QuietEventRow key={event.id} event={event} tz={tz} />
+              ))}
+            </>
+          )}
+          {nextDayGroups.length > 0 ? (
+            <div className="mt-2 flex flex-col gap-2 border-t border-border-subtle pt-2">
+              <span className="px-0.5 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                Next 3 days
+              </span>
+              {nextDayGroups.map((group) => (
+                <div key={group.key} className="flex flex-col">
+                  <span className="px-0.5 py-1 font-fw-sans text-caption font-medium text-text-secondary">
+                    {group.label}
+                  </span>
+                  {group.events.map((event) => (
+                    <QuietEventRow key={event.id} event={event} tz={tz} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </section>

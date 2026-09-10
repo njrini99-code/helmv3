@@ -12,8 +12,19 @@
  *
  * Composition (deliberately GENERIC, not a section-by-section mirror):
  *   1. Masthead — ViewHeader-shaped: eyebrow + Fraunces title + description +
- *      the promoted action cluster. Both dashboards render a ViewHeader here,
- *      so this part IS a safe shape-match for either role.
+ *      the promoted action cluster. Both dashboards render a ViewHeader here.
+ *
+ *      DEVIATION (review docs/design/fairway-facelift/REVIEW.md,
+ *      coach-home/9): the coach opener dropped its `plinth` band — a warm
+ *      tinted box stacked directly above two more bordered panels read as a
+ *      third same-radius box on a phone capture. Player's opener (unchanged
+ *      by this pass) still renders `plinth`. This shared skeleton can only
+ *      paint ONE shape before the role resolves, so it now matches COACH
+ *      (bare masthead, no tint/rounding) — the newer, less-boxed shape this
+ *      facelift is moving every hero toward. ACCEPTED SWAP: a player sees
+ *      this flat masthead skeleton, then their real tinted plinth band pops
+ *      in on hydration — the same class of bounded, one-role mismatch #2
+ *      below already documents for the KPI grid.
  *   2. Row 1 (7/5 asymmetric grid) — a schedule band on the left standing in
  *      for the schedule block BOTH roles render first (player:
  *      DayScheduleSwipe; coach: the merged Today panel — coach-home.md); a
@@ -87,18 +98,16 @@ export function FairwayDashboardSkeleton() {
     >
       <span className="sr-only">Loading dashboard…</span>
 
-      {/* ── 1 · Masthead — ViewHeader PLINTH silhouette (shared by both roles)
-          Every class here is copied from what ViewHeader actually renders with
-          `plinth` at default size, so the real header lands on exactly these
-          pixels rather than near them:
-            plinth band   `rounded-fw-lg bg-surface-tint px-8 py-7` + `gap-4`
+      {/* ── 1 · Masthead — bare ViewHeader silhouette, matching COACH's
+          unboxed opener (review coach-home/9 — see file doc for the accepted
+          player-side swap). Every class here is copied from what
+          FairwayCoachDashboard's ViewHeader actually renders (no `plinth`),
+          so the real header lands on exactly these pixels rather than near
+          them:
             masthead row  `flex flex-col gap-5 sm:flex-row sm:items-start
                            sm:justify-between`
-            title column  `flex min-w-0 flex-col gap-1.5`
-          The plinth is rendered as a REAL tinted band, not a shimmer block:
-          `bg-surface-tint` is chrome the resolved header keeps, so painting it
-          here means the band is simply already there when the text arrives. */}
-      <div className="flex w-full flex-col gap-4 rounded-fw-lg bg-surface-tint px-6 py-5 md:px-8 md:py-7">
+            title column  `flex min-w-0 flex-col gap-1.5` */}
+      <div className="flex w-full flex-col gap-4">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1.5">
             {/* eyebrow → title → description, on the header's own 1.5 rhythm */}
