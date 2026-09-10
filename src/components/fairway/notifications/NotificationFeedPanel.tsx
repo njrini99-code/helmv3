@@ -43,6 +43,16 @@ export interface NotificationFeedPanelProps {
   onMarkAllRead: () => void;
   markingAllRead: boolean;
   unreadCount: number;
+  /**
+   * The caller's seeded wall-clock reference — REQUIRED, and nullable by
+   * design. Which day bucket an item lands in, and each row's relative
+   * label, are both wall-clock-dependent, so reading the clock directly here
+   * could disagree between the server render and the client's first paint
+   * (React #418). `null` (pre-mount) puts everything under "Earlier" — one
+   * deterministic bucket both passes agree on — same pattern as
+   * NotificationCenter's own `groupByDay`.
+   */
+  now: Date | null;
 }
 
 export function NotificationFeedPanel({
@@ -55,6 +65,7 @@ export function NotificationFeedPanel({
   onMarkAllRead,
   markingAllRead,
   unreadCount,
+  now,
 }: NotificationFeedPanelProps) {
   const counts = countByCategory(items);
   const availableCategories = NOTIFICATION_CATEGORY_IDS.filter((id) => counts[id] > 0);
@@ -66,7 +77,17 @@ export function NotificationFeedPanel({
   ];
 
   const visibleItems = items.filter((item) => itemMatchesFilter(item, filter));
-  const grouped = groupByDayBucket(visibleItems);
+  // Pre-hydration: skip time-based bucketing entirely so SSR and the client's
+  // first paint match (both put everything under "Earlier") rather than
+  // calling `groupByDayBucket`'s own `now = new Date()` default, which would
+  // read whatever instant each pass happened to run at. Empty buckets are
+  // omitted either way, matching `groupByDayBucket`'s own contract, so the
+  // empty-state checks below still see `grouped.length === 0`.
+  const grouped = now
+    ? groupByDayBucket(visibleItems, now)
+    : visibleItems.length > 0
+      ? [{ bucket: 'earlier' as const, items: visibleItems }]
+      : [];
   const isFiltered = filter !== 'all';
 
   return (
@@ -146,7 +167,7 @@ export function NotificationFeedPanel({
                 <ul>
                   {bucketItems.map((item) => (
                     <li key={`${item.source}:${item.id}`}>
-                      <NotificationRow item={item} onClick={onItemClick} />
+                      <NotificationRow item={item} onClick={onItemClick} now={now} />
                     </li>
                   ))}
                 </ul>

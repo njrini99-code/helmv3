@@ -33,6 +33,21 @@ export function NotificationsLatestModule() {
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
+  /**
+   * Wall-clock reference for each row's relative label. `null` until mount,
+   * matching NotificationBell's own state — though this module renders
+   * nothing until its fetch resolves (see the loading/empty guards below),
+   * so in practice `now` is already set by the time any row paints. Kept
+   * anyway so `NotificationRow`'s contract (a required, nullable `now`) is
+   * satisfied honestly rather than by always passing a live `new Date()`.
+   */
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -114,7 +129,7 @@ export function NotificationsLatestModule() {
         <ul className="divide-y divide-border-subtle">
           {items.map((item) => (
             <li key={`${item.source}:${item.id}`}>
-              <NotificationRow item={item} onClick={handleItemClick} density="compact" />
+              <NotificationRow item={item} onClick={handleItemClick} density="compact" now={now} />
             </li>
           ))}
         </ul>

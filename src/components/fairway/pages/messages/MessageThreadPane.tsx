@@ -224,11 +224,19 @@ function isSameCalendarDay(a: string | null, b: string | null): boolean {
  * Explicit `en-US` per the repo's locale rule — an implicit locale renders
  * differently for the server and the client and shows up as a hydration
  * mismatch.
+ *
+ * `now` is required and nullable, not an internal `new Date()`: which day is
+ * "today" is wall-clock-dependent, so reading it directly here could label a
+ * boundary "Today" on the server and a weekday name on the client's first
+ * paint. `null` (pre-mount) falls back to an explicit absolute date every
+ * pass renders identically.
  */
-function formatDaySeparator(iso: string | null): string {
+function formatDaySeparator(iso: string | null, now: Date | null): string {
   if (!iso) return '';
   const date = new Date(iso);
-  const now = new Date();
+  if (!now) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const dayDiff = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86_400_000);
@@ -279,6 +287,14 @@ export interface MessageThreadPaneProps {
   onBack: () => void;
   /** Open the New message modal (the no-select prompt CTA). */
   onNewMessage: () => void;
+  /**
+   * The caller's seeded wall-clock reference — REQUIRED, and nullable by
+   * design. `formatDaySeparator` reads it instead of an internal `new Date()`
+   * so the day-boundary chip cannot label a message "Today" on one render
+   * pass and a weekday name on another (React #418). `null` means "not
+   * mounted yet"; the caller (FairwayMessages) owns the mount-gated state.
+   */
+  now: Date | null;
 
   // Edit / delete — driven by FairwayMessages over the unchanged hook actions.
   editingMessageId: string | null;
@@ -567,6 +583,7 @@ export function MessageThreadPane({
   onOpenGroupDetails,
   scrollToMessageId,
   onScrolledToMessage,
+  now,
   children,
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
@@ -1441,7 +1458,7 @@ export function MessageThreadPane({
                         '[box-shadow:inset_0_1px_0_var(--fw-glass-border),var(--fw-shadow-pop)]',
                       )}
                     >
-                      {formatDaySeparator(msg.created_at)}
+                      {formatDaySeparator(msg.created_at, now)}
                     </span>
                   </div>
                 )}

@@ -370,7 +370,12 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
     },
     ref,
   ) {
-    const prefersReduced = useReducedMotion();
+    // `?? false` normalizes framer-motion's `boolean | null` to a plain
+    // `boolean`, matching the repo's convention. It does not by itself close
+    // the hydration gap on the docked panel's `initial` (via `reveal` below)
+    // for a reduced-motion user (server sees `null`/falsy, client's first
+    // render can resolve `true`) — that gap is a separate, open issue.
+    const prefersReduced = useReducedMotion() ?? false;
     const isWide = useIsWide();
     const titleId = useId();
     const tone = PRIORITY[priority];

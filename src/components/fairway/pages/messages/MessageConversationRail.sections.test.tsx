@@ -25,7 +25,7 @@
  * Both are locked here as behaviour, not as source strings.
  * ========================================================================== */
 import { render } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { MessageConversationRail } from './MessageConversationRail';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 
@@ -65,9 +65,10 @@ function stubMatchMedia(desktop: boolean) {
  * calendar day, so a UTC anchor only moves the bug: at UTC+13 midday UTC is
  * 01:00 the next local day and the 5/7-hour rows fall back into yesterday
  * again. Local midday leaves every offset in the fixture inside the same
- * local day in every timezone. `vi.setSystemTime` in `beforeEach` moves the
- * component's own clock to match, so the rail buckets against the same NOW
- * the rows were built from.
+ * local day in every timezone. The rail's `now` is a required, explicit prop
+ * rather than an internal `new Date()`, so each render below passes
+ * `new Date(NOW)` directly — no system-clock faking needed to keep the rail
+ * bucketing against the same instant the fixture's rows were built from.
  */
 const NOW = new Date(2026, 0, 15, 12, 0, 0).getTime();
 
@@ -112,12 +113,13 @@ function sectionLabels(container: HTMLElement): string[] {
 }
 
 describe('MessageConversationRail — section set matches the artboard', () => {
+  // `now` is now a required, explicit prop (not an internal `new Date()` the
+  // rail would need faking to control) — so the section split below is driven
+  // by the same fixed instant the fixture's `hoursAgo`/`daysAgo` offsets were
+  // built from, with no system clock involved at all.
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
     stubMatchMedia(false);
   });
-  afterEach(() => vi.useRealTimers());
 
   it('labels at most three sections — Unread, Today, Earlier — never the legacy four recency buckets', () => {
     const { container } = render(
@@ -126,6 +128,7 @@ describe('MessageConversationRail — section set matches the artboard', () => {
         selectedId={null}
         onSelect={vi.fn()}
         onNewMessage={vi.fn()}
+        now={new Date(NOW)}
       />,
     );
 
@@ -146,6 +149,7 @@ describe('MessageConversationRail — section set matches the artboard', () => {
         selectedId={null}
         onSelect={vi.fn()}
         onNewMessage={vi.fn()}
+        now={new Date(NOW)}
       />,
     );
 
@@ -164,6 +168,7 @@ describe('MessageConversationRail — section set matches the artboard', () => {
         selectedId={null}
         onSelect={vi.fn()}
         onNewMessage={vi.fn()}
+        now={new Date(NOW)}
       />,
     );
 
@@ -188,6 +193,7 @@ describe('MessageConversationRail — no selected fill on a phone', () => {
         selectedId="c3"
         onSelect={vi.fn()}
         onNewMessage={vi.fn()}
+        now={new Date(NOW)}
       />,
     );
 
@@ -202,6 +208,7 @@ describe('MessageConversationRail — no selected fill on a phone', () => {
         selectedId="c3"
         onSelect={vi.fn()}
         onNewMessage={vi.fn()}
+        now={new Date(NOW)}
       />,
     );
 

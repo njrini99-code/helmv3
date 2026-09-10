@@ -273,7 +273,12 @@ export function PremiumCalendarClient({
   // Use either media query or device detection for mobile UI
   const isMobile = isMobileQuery || (isMobileDevice && preferMobileUI);
   const showMobileUI = isMobile || (isTablet && preferMobileUI);
-  const prefersReducedMotion = useReducedMotion();
+  // `?? false` normalizes framer-motion's `boolean | null` to a plain
+  // `boolean`, matching the repo's convention. It does not by itself close
+  // the hydration gap on the `initial` props below for a reduced-motion user
+  // (server sees `null`/falsy, client's first render can resolve `true`) —
+  // that gap is a separate, open issue, not fixed by this normalization.
+  const prefersReducedMotion = useReducedMotion() ?? false;
   const resolvedCapabilities = { ...defaultCapabilities, ...capabilities };
 
   const [view, setView] = useState<CalendarView>(initialView ?? 'week');

@@ -22,9 +22,17 @@ export interface NotificationRowProps {
   onClick: (item: UnifiedNotificationItem) => void;
   /** Compact rows for the home "Latest" module (tighter padding, no body line). */
   density?: 'comfortable' | 'compact';
+  /**
+   * The caller's seeded wall-clock reference — REQUIRED, and nullable by
+   * design. "3m ago" is wall-clock-dependent, so a raw `Date.now()` read here
+   * could render one label on the server and a different one on the
+   * client's first paint (React #418). `null` (pre-mount) falls back to the
+   * same absolute, timezone-pinned date every pass renders identically.
+   */
+  now: Date | null;
 }
 
-export function NotificationRow({ item, onClick, density = 'comfortable' }: NotificationRowProps) {
+export function NotificationRow({ item, onClick, density = 'comfortable', now }: NotificationRowProps) {
   const Icon = categoryIcon(item.category);
   const unread = isUnread(item);
   const compact = density === 'compact';
@@ -65,7 +73,7 @@ export function NotificationRow({ item, onClick, density = 'comfortable' }: Noti
             title={fullDateTime(item.created_at)}
             className="flex-shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary"
           >
-            {relativeTimeFrom(item.created_at)}
+            {now ? relativeTimeFrom(item.created_at, now.getTime()) : fullDateTime(item.created_at)}
           </time>
         </div>
         {!compact && item.body ? (

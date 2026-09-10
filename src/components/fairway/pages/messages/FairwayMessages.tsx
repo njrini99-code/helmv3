@@ -58,6 +58,22 @@ export function FairwayMessages() {
   // Server-resolved user data — role/team via the same context the legacy used.
   const { userId, role: userRole, teamId } = useGolfUser();
 
+  /**
+   * Wall-clock reference for both children's relative-time formatting
+   * (conversation timestamps, day-boundary chips). `null` until mount so the
+   * server render and the client's first paint agree (both see "no now yet"
+   * and fall back to an absolute date) rather than diverging on whatever
+   * instant each happened to run at (React #418). Ticks every minute after
+   * mount so a thread left open overnight still relabels "Today" to
+   * "Yesterday" without a refresh — mirrors FairwayAgendaView's useMinuteClock.
+   */
+  const [now, setNow] = React.useState<Date | null>(null);
+  React.useEffect(() => {
+    setNow(new Date());
+    const id = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   // ── UNCHANGED hook: conversations + refetch ─────────────────────────────────
   const {
     conversations,
@@ -611,6 +627,7 @@ export function FairwayMessages() {
                 onRetry={refetch}
                 teamId={teamId}
                 onOpenMessage={handleOpenFromSearch}
+                now={now}
               />
             </PullToRefresh>
           </aside>
@@ -650,6 +667,7 @@ export function FairwayMessages() {
                 onOpenGroupDetails={() => setShowGroupDetails(true)}
                 scrollToMessageId={pendingScrollMessageId}
                 onScrolledToMessage={() => setPendingScrollMessageId(null)}
+                now={now}
                 className="flex-1 min-h-0"
               >
                 {selectedConversation ? (

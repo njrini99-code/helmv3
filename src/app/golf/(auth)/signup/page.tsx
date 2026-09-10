@@ -33,7 +33,12 @@ function SignInLink() {
 }
 
 export default function SignupPage() {
-  const prefersReducedMotion = useReducedMotion();
+  // `?? false` normalizes framer-motion's `boolean | null` to a plain
+  // `boolean`, matching the repo's convention. It does not by itself close
+  // the hydration gap on the `initial` props below for a reduced-motion user
+  // (server sees `null`/falsy, client's first render can resolve `true`) —
+  // that gap is a separate, open issue, not fixed by this normalization.
+  const prefersReducedMotion = useReducedMotion() ?? false;
   const router = useRouter();
   // Defer native detection to useEffect to avoid hydration mismatch.
   const [isNative, setIsNative] = useState(false);

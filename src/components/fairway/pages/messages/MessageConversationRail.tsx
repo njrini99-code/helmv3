@@ -47,6 +47,7 @@ import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { isGroupConversation, conversationDisplayName } from './conversation-kind';
+import { formatShortDate } from '@/lib/golf/format-date';
 
 export interface MessageConversationRailProps {
   /** Rows from the unchanged useGolfConversations() hook. */
@@ -57,6 +58,17 @@ export interface MessageConversationRailProps {
   onSelect: (id: string) => void;
   /** Open the New message modal from the honest-empty CTA. */
   onNewMessage: () => void;
+  /**
+   * The caller's seeded wall-clock reference — REQUIRED, and nullable by
+   * design. Relative labels ("Today", "2h ago"-style bucketing) and the
+   * Today/Earlier section split both read wall-clock time, so a raw internal
+   * `new Date()` here would diverge between the server render and the
+   * client's first paint (React #418). `null` means "not mounted yet" and
+   * renders the timezone-safe absolute fallback instead; the caller (e.g.
+   * FairwayMessages) owns the mount-gated state and passes the resolved
+   * `Date` once it is safe to.
+   */
+  now: Date | null;
   /** First-paint skeleton rail. */
   loading?: boolean;
   /**
@@ -81,12 +93,19 @@ export interface MessageConversationRailProps {
   className?: string;
 }
 
-/** Relative time for a row — only ever called with a real ISO string. */
-function formatTime(dateStr: string | null | undefined): string {
+/**
+ * Relative time for a row — only ever called with a real ISO string.
+ *
+ * `now` is required and nullable (not an internal `new Date()`): before mount
+ * neither the server nor the client knows "now", so both render the same
+ * timezone-safe absolute date instead of guessing at a relative label that
+ * could disagree between the two passes.
+ */
+function formatTime(dateStr: string | null | undefined, now: Date | null): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';
-  const now = new Date();
+  if (!now) return formatShortDate(date);
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   if (diffDays === 1) return 'Yesterday';
@@ -109,10 +128,16 @@ function formatTime(dateStr: string | null | undefined): string {
  * finer boundaries actually belonged. Collapsing to one boundary also shrinks
  * the surface of M03A F09 (row time and section grouping used two different
  * day rules) from three shared boundaries to one.
+ *
+ * `now` is required and nullable, same reason as `formatTime`: which bucket a
+ * conversation lands in is wall-clock-dependent, so a raw internal
+ * `new Date()` would let the section a row appears under (and therefore the
+ * DOM structure itself) disagree between the server render and the client's
+ * first paint. When `now` is null every conversation falls into "older" —
+ * one deterministic bucket both passes agree on — rather than guessing.
  */
-function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+function groupConversationsByTime(conversations: GolfConversationWithMeta[], now: Date | null) {
+  const today = now ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : null;
 
   const groups = {
     today: [] as GolfConversationWithMeta[],
@@ -123,7 +148,7 @@ function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
     const lastMsgDate = conv.last_message?.created_at
       ? new Date(conv.last_message.created_at)
       : new Date(0);
-    if (lastMsgDate >= today) groups.today.push(conv);
+    if (today && lastMsgDate >= today) groups.today.push(conv);
     else groups.older.push(conv);
   });
 
@@ -139,10 +164,12 @@ function ConversationRow({
   conv,
   isSelected,
   onSelect,
+  now,
 }: {
   conv: GolfConversationWithMeta;
   isSelected: boolean;
   onSelect: () => void;
+  now: Date | null;
 }) {
   const hasUnread = conv.unread_count > 0;
   // Not `conv.is_group` — that flag is true for any team-chat-flagged
@@ -151,7 +178,7 @@ function ConversationRow({
   // conversation-kind.ts.
   const isGroup = isGroupConversation(conv);
   const displayName = conversationDisplayName(conv);
-  const time = formatTime(conv.last_message?.created_at);
+  const time = formatTime(conv.last_message?.created_at, now);
 
   return (
     <Button
@@ -386,6 +413,7 @@ export function MessageConversationRail({
   onRetry,
   teamId,
   onOpenMessage,
+  now,
   className,
 }: MessageConversationRailProps) {
   // ── P259: cross-conversation message search ────────────────────────────────
@@ -553,7 +581,7 @@ export function MessageConversationRail({
   const visibleConversations = conversations.filter(c => filter === 'all' || (filter === 'unread' ? c.unread_count > 0 : isGroupConversation(c)));
   const unread = visibleConversations.filter(c => c.unread_count > 0);
   const read = visibleConversations.filter(c => c.unread_count === 0);
-  const grouped = groupConversationsByTime(read);
+  const grouped = groupConversationsByTime(read, now);
 
   return (
     <InstrumentPanel
@@ -675,6 +703,7 @@ export function MessageConversationRail({
                     conv={conv}
                     isSelected={activeId === conv.id}
                     onSelect={() => onSelect(conv.id)}
+                    now={now}
                   />
                 </li>
               ))}
@@ -701,6 +730,7 @@ export function MessageConversationRail({
                       conv={conv}
                       isSelected={activeId === conv.id}
                       onSelect={() => onSelect(conv.id)}
+                      now={now}
                     />
                   </li>
                 ))}
