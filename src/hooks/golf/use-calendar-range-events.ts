@@ -28,6 +28,19 @@
  *  - optionally owns ONE stable realtime channel per team (deps: teamId only —
  *    no leave/join per navigation) and refetches the visible range whenever the
  *    channel (re)subscribes so gap events are recovered.
+ *  - PATCHES a single changed row into the cache from the realtime payload
+ *    itself (insert/update/delete by id) instead of refetching the whole
+ *    visible range for every write ANY teammate makes (2026-09-10 perf
+ *    audit). A row whose mapped content is unchanged from what's cached
+ *    keeps its exact object reference, so a downstream memo keyed on
+ *    reference identity still bails out. The full router.refresh() +
+ *    range-refetch path is now reserved for the reconnect-after-gap case
+ *    above, WITH ONE DELIBERATE EXCEPTION: an insert/update on a class-type
+ *    row for a non-coach viewer still falls back to it, because the
+ *    class-privacy filter below (`viewer`/`ownClassIds`) is applied
+ *    server-side, in the query, and cannot be reconstructed from a bare
+ *    realtime payload — this channel's own filter is `team_id` only, so a
+ *    teammate's class write reaches every subscriber regardless of role.
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -123,6 +136,37 @@ export function mergeIntervals(intervals: LoadedInterval[]): LoadedInterval[] {
 /** True when [start, end] is fully covered by one merged interval. */
 export function isRangeCovered(intervals: LoadedInterval[], start: number, end: number): boolean {
   return intervals.some((iv) => iv.start <= start && iv.end >= end);
+}
+
+/**
+ * Structural compare over every field `mapGolfEventRow` produces — i.e.
+ * every field the calendar UI can read off a `CalendarEvent`. Used by the
+ * realtime patch handler to bail a cache write out to the SAME object when
+ * an incoming row is content-identical to what's already cached (a write to
+ * a column outside `CALENDAR_EVENT_COLUMNS`, or a duplicate delivery), so a
+ * downstream memo keyed on reference identity still bails out too.
+ */
+function sameEventContent(a: CalendarEvent, b: CalendarEvent): boolean {
+  return (
+    a.id === b.id &&
+    a.team_id === b.team_id &&
+    a.title === b.title &&
+    a.event_type === b.event_type &&
+    a.start_date === b.start_date &&
+    a.end_date === b.end_date &&
+    a.start_time === b.start_time &&
+    a.end_time === b.end_time &&
+    a.location === b.location &&
+    a.description === b.description &&
+    a.status === b.status &&
+    a.all_day === b.all_day &&
+    a.created_by === b.created_by &&
+    a.requires_rsvp === b.requires_rsvp &&
+    a.rsvp_deadline === b.rsvp_deadline &&
+    a.max_attendees === b.max_attendees &&
+    a.parent_event_id === b.parent_event_id &&
+    a.recurrence_rule === b.recurrence_rule
+  );
 }
 
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
@@ -493,6 +537,12 @@ export function useCalendarRangeEvents({
   onRealtimeEventRef.current = onRealtimeEvent;
   const refetchVisibleRangeRef = useRef(refetchVisibleRange);
   refetchVisibleRangeRef.current = refetchVisibleRange;
+  // Kept fresh every render, read only inside the postgres_changes handler
+  // below — NOT a dependency of the realtime effect itself, so a
+  // coach/player toggle never rejoins the channel (same reasoning as the two
+  // refs above).
+  const viewerRef = useRef(viewer);
+  viewerRef.current = viewer;
 
   // Unique per-mount suffix: two calendar surfaces can be mounted at once
   // (e.g. the Fairway shell hosting the legacy grid) — identical topic names
@@ -507,7 +557,7 @@ export function useCalendarRangeEvents({
     const channel = observeRealtimeChannel(
       supabase
         .channel(`calendar-events-${teamId}-${instanceId}`)
-        .on(
+        .on<GolfEventRangeRow>(
           'postgres_changes',
           {
             event: '*',
@@ -515,10 +565,71 @@ export function useCalendarRangeEvents({
             table: 'golf_events',
             filter: `team_id=eq.${teamId}`,
           },
-          () => {
-            onRealtimeEventRef.current?.();
-            // Keep client-fetched (outside-window) ranges fresh too.
-            refetchVisibleRangeRef.current();
+          (payload) => {
+            // The full router.refresh() + visible-range refetch (below) is a
+            // fallback now, not the default — see the module doc's realtime
+            // bullet for why. `loadedRef` is deliberately never touched by
+            // this handler: patching one row is not proof a whole RANGE was
+            // fetched, and extending it here would make a later navigation's
+            // isRangeCovered() check skip a fetch the user actually needs.
+            const fallbackToRefetch = () => {
+              onRealtimeEventRef.current?.();
+              refetchVisibleRangeRef.current();
+            };
+
+            if (payload.eventType === 'DELETE') {
+              // Default REPLICA IDENTITY only guarantees the primary key in
+              // `old` — but removing an id from the local cache can never
+              // expose anything, so a delete patches unconditionally with
+              // no privacy check (unlike insert/update below).
+              const deletedId = payload.old?.id;
+              if (!deletedId) {
+                fallbackToRefetch();
+                return;
+              }
+              setEventVersions((prev) => {
+                if (!prev.has(deletedId)) return prev;
+                const next = new Map(prev);
+                next.delete(deletedId);
+                return next;
+              });
+              return;
+            }
+
+            const row = payload.new;
+            if (!row?.id) {
+              fallbackToRefetch();
+              return;
+            }
+
+            // Class-privacy floor (see the fetch effect's `ownClassIds`
+            // above, and the `viewer` doc comment on this hook's options): a
+            // player only receives their OWN class rows there via a
+            // server-side filter this handler has no way to reconstruct
+            // from a bare payload. This channel's filter is `team_id` only,
+            // so a teammate's class write reaches every subscriber — fall
+            // back to the filtered refetch rather than trust it client-side.
+            // A coach is entitled to every class row already, so this never
+            // applies to them.
+            if (row.event_type === CLASS_EVENT_TYPE && !viewerRef.current?.isCoach) {
+              fallbackToRefetch();
+              return;
+            }
+
+            const mapped = mapGolfEventRow(row);
+            setEventVersions((prev) => {
+              const existing = prev.get(mapped.id);
+              if (existing && sameEventContent(existing.event, mapped)) {
+                // Nothing the UI reads changed (e.g. a write to a column
+                // outside CALENDAR_EVENT_COLUMNS) — bail out, keep the
+                // existing reference so a memoized consumer still bails too.
+                return prev;
+              }
+              genRef.current += 1;
+              const next = new Map(prev);
+              next.set(mapped.id, { event: mapped, gen: genRef.current });
+              return next;
+            });
           },
         ),
       {
