@@ -426,7 +426,14 @@ export function SchedulingWorkspace({
   // drag test relies on).
   const lensRef = React.useRef<HTMLDivElement>(null);
   const labelRef = React.useRef<HTMLDivElement>(null);
-  const dragRef = React.useRef<{ grabOffsetPx: number; frame: number | null; lastX: number }>({ grabOffsetPx: 0, frame: null, lastX: 0 });
+  // `pointerId` is the gesture's owner. Everything else here is shared
+  // mutable state, so without an owner a second contact landing on the band
+  // or the handle would overwrite `grabOffsetPx`, feed its own x into the
+  // follow frame, and — whichever finger lifted first — commit that finger's
+  // position and strand the other mid-drag.
+  const dragRef = React.useRef<{ grabOffsetPx: number; frame: number | null; lastX: number; pointerId: number | null }>({ grabOffsetPx: 0, frame: null, lastX: 0, pointerId: null });
+  /** True only for the pointer that started the current drag. */
+  const ownsDrag = (event: React.PointerEvent<HTMLDivElement>) => dragRef.current.pointerId === event.pointerId;
 
   const trackMetrics = () => {
     const timeline = timelineRef.current;
@@ -515,14 +522,18 @@ export function SchedulingWorkspace({
     // eases the band onto the slot.
     lensRef.current?.style.removeProperty('--lens-free');
     labelRef.current?.style.removeProperty('--lens-free');
+    dragRef.current.pointerId = null;
     setDragging(false);
   };
 
   const beginDrag = (event: React.PointerEvent<HTMLDivElement>, mode: 'band' | 'handle') => {
     if (validStarts.length === 0) return;
+    // One pointer at a time: a second touch does not take the gesture over.
+    if (dragRef.current.pointerId !== null) return;
     const metrics = trackMetrics();
     const lensStartPx = metrics ? (lensLeft / 100) * metrics.trackWidth : 0;
     dragRef.current.grabOffsetPx = mode === 'band' ? trackX(event.clientX) - lensStartPx : 0;
+    dragRef.current.pointerId = event.pointerId;
     setDragging(true);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     selectFromPointer(event.clientX);
@@ -532,15 +543,16 @@ export function SchedulingWorkspace({
   const handleBandPointerDown = (event: React.PointerEvent<HTMLDivElement>) => beginDrag(event, 'band');
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragging) scheduleFollow(event.clientX);
+    if (dragging && ownsDrag(event)) scheduleFollow(event.clientX);
   };
 
-  const cancelDrag = () => {
+  const cancelDrag = (event?: React.PointerEvent<HTMLDivElement>) => {
+    if (event && !ownsDrag(event)) return;
     if (dragging) endDrag();
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
+    if (!dragging || !ownsDrag(event)) return;
     // Read the landing slot from the release position, not from `selectedStart`
     // (state — one render behind the commit endDrag is about to make).
     const landed = snappedStart(trackX(event.clientX) - dragRef.current.grabOffsetPx) ?? selectedStart;
@@ -552,19 +564,26 @@ export function SchedulingWorkspace({
   // places the window there. A pan (scrolling the schedule sideways, or the
   // page vertically) also ends in pointerup and must not.
   const tapRef = React.useRef<{ id: number; x: number; y: number } | null>(null);
+  // These three are attached to EVERY lane row, so the single record they
+  // share has to be scoped by pointer id: the first contact owns the pending
+  // tap, and only that pointer's up or cancel consumes it. Clearing on any
+  // pointer's up would throw away a still-valid tap belonging to another
+  // contact — the tap would then be silently dropped when it did arrive.
   const handleLanePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (tapRef.current !== null) return;
     tapRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
   };
   const handleLanePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     const tap = tapRef.current;
+    if (!tap || tap.id !== event.pointerId) return;
     tapRef.current = null;
-    if (dragging || !tap || tap.id !== event.pointerId) return;
+    if (dragging) return;
     if (Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > TAP_SLOP_PX) return;
     placeAtPointer(event.clientX);
   };
-  const handleLanePointerCancel = () => {
-    tapRef.current = null;
+  const handleLanePointerCancel = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (tapRef.current?.id === event.pointerId) tapRef.current = null;
   };
 
   React.useEffect(() => () => {

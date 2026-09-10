@@ -55,6 +55,22 @@ function stubPointerCapture() {
   };
 }
 
+/** The timeline has no layout in jsdom. Give it the same geometry the drag
+ * tests use: a 1056px box whose 96px name column leaves a 960px track for 32
+ * fifteen-minute slots, i.e. 30px per slot. */
+function stubTimelineGeometry() {
+  const timeline = screen.getByTestId('scheduling-timeline');
+  timeline.getBoundingClientRect = () => ({
+    left: 0, top: 0, right: 1056, bottom: 0, width: 1056, height: 0, x: 0, y: 0, toJSON() {},
+  });
+  Object.defineProperty(timeline, 'scrollWidth', { value: 1056, configurable: true });
+  Object.defineProperty(timeline, 'clientWidth', { value: 1056, configurable: true });
+  Object.defineProperty(timeline, 'scrollLeft', { value: 0, configurable: true, writable: true });
+  const nameHeader = timeline.querySelector('[aria-hidden="true"]') as HTMLElement;
+  Object.defineProperty(nameHeader, 'offsetWidth', { value: 96, configurable: true });
+  return timeline;
+}
+
 describe('SchedulingWorkspace', () => {
   it('keeps the selected time, timeline, and accessible start controls in one workspace', () => {
     render(
@@ -80,7 +96,6 @@ describe('SchedulingWorkspace', () => {
     expect(timelineCard.className).toMatch(/\bshrink-0\b/);
     expect(screen.getByTestId('scheduling-lens')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open Alex Player schedule' })).toBeVisible();
-    expect(screen.getByTestId('scheduling-workspace')).toHaveAttribute('data-testid', 'scheduling-workspace');
   });
 
   it('keeps unverified people in the denominator and blocks an unverified choice', () => {
@@ -472,6 +487,75 @@ describe('SchedulingWorkspace', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show affected only (1)' }));
     expect(body.scrollTop).toBe(140);
+  });
+
+  // A phone is a multi-touch device: a resting thumb, a palm, or a second
+  // finger lands on the same band and lanes the gesture is using. One pointer
+  // has to own the gesture, or the band jumps between contacts and whichever
+  // finger lifts first commits its own position.
+  it('ignores a second touch on the band: only the pointer that started the drag can move or end it', async () => {
+    const restorePointerCapture = stubPointerCapture();
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    const timeline = stubTimelineGeometry();
+    const handle = screen.getByRole('slider', { name: 'Move selected time window' });
+    const band = screen.getByTestId('scheduling-lens');
+
+    // Finger A grabs the band 30px in from its left edge.
+    fireEvent.pointerDown(band, { clientX: 246, pointerId: 1, pointerType: 'touch' });
+    expect(timeline).toHaveAttribute('data-dragging', 'true');
+
+    // Finger B lands on the band mid-drag and then lifts, far to the right.
+    // It owns nothing: it must not re-grab, and its release must not commit
+    // its own position or end finger A's drag.
+    fireEvent.pointerDown(band, { clientX: 500, pointerId: 2, pointerType: 'touch' });
+    fireEvent.pointerMove(band, { clientX: 900, pointerId: 2, pointerType: 'touch' });
+    fireEvent.pointerUp(band, { clientX: 900, pointerId: 2, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '1:00 PM–2:00 PM');
+    expect(timeline).toHaveAttribute('data-dragging', 'true');
+
+    // Finger A still owns the gesture and still lands where it let go.
+    fireEvent.pointerMove(band, { clientX: 306, pointerId: 1, pointerType: 'touch' });
+    await waitFor(() => expect(handle).toHaveAttribute('aria-valuetext', '1:30 PM–2:30 PM'));
+    fireEvent.pointerUp(band, { clientX: 306, pointerId: 1, pointerType: 'touch' });
+    expect(timeline).not.toHaveAttribute('data-dragging');
+    expect(handle).toHaveAttribute('aria-valuetext', '1:30 PM–2:30 PM');
+    restorePointerCapture();
+  });
+
+  it('still places a lane tap when a stray second contact touches another lane first', () => {
+    render(
+      <SchedulingWorkspace
+        snapshot={SNAPSHOT}
+        initialProposal={{ start: '2026-09-08T13:00:00.000Z', end: '2026-09-08T14:00:00.000Z' }}
+        onChoose={() => {}}
+        onClose={() => {}}
+        onDateChange={() => {}}
+      />,
+    );
+    stubTimelineGeometry();
+    const handle = screen.getByRole('slider', { name: 'Move selected time window' });
+    const [laneA, laneB] = screen.getAllByTestId('scheduling-lane');
+
+    // Finger A taps lane one; a stray contact lands on lane two before A
+    // lifts. The lanes share one pending-tap record, so an unscoped second
+    // contact used to overwrite it — and A's release then found someone
+    // else's id and silently dropped a perfectly good tap.
+    fireEvent.pointerDown(laneA!, { clientX: 500, clientY: 10, pointerId: 2, pointerType: 'touch' });
+    fireEvent.pointerDown(laneB!, { clientX: 300, clientY: 60, pointerId: 3, pointerType: 'touch' });
+    fireEvent.pointerUp(laneA!, { clientX: 500, clientY: 10, pointerId: 2, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '2:45 PM–3:45 PM');
+
+    // The stray contact's own release places nothing on top of it.
+    fireEvent.pointerUp(laneB!, { clientX: 300, clientY: 60, pointerId: 3, pointerType: 'touch' });
+    expect(handle).toHaveAttribute('aria-valuetext', '2:45 PM–3:45 PM');
   });
 
   it('does not render the "Show everyone" toggle when there is nothing more to reveal', () => {
