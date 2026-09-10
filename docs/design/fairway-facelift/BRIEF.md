@@ -21,7 +21,7 @@ Before any screen: ask "what is the most important thing here, what architecture
 ## 2. Materials (semantic)
 
 | Material | Use | Character |
-|---|---|---|
+| --- | --- | --- |
 | 0 Canvas | page / workspace / calendar environment | warm ivory, quiet tonal gradient allowed, no border, no shadow |
 | 1 Matte | calendar grid, boards, stat detail, settings, forms, tables, long text | near-opaque, low-contrast border, minimal shadow, strong text |
 | 2 Inset | metadata groups, response matrices, event details, settings rows, nested evidence | slightly warmer/darker, inner boundary, seams, no outer shadow |
@@ -37,7 +37,7 @@ Frost budget per screen: one major frosted region plus at most two small floatin
 ## 3. Radius hierarchy (closed ramp, Tailwind names)
 
 | Role | px | class |
-|---|---|---|
+| --- | --- | --- |
 | shell (sheet, drawer, hero shell) | 28 | `rounded-fw-lg` |
 | surface (primary large surface) | 20 | `rounded-card` |
 | panel (raised / inset panel) | 14 | `rounded-fw-md` |

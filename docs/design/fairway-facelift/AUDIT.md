@@ -7,7 +7,7 @@ Evidence: `ui-intelligence/facelift/` captures (2026-09-10) and the read-only au
 ## Competing surfaces (from the captures)
 
 | # | Surfaces | What overlaps | Decision |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | `/dashboard` (coach home), `/intelligence` (CoachHelm brief), `/development` | All three open with "Welcome back, Nick", team KPIs, "who needs attention", trend. `/development` repeats the roster health header ("Who needs your attention", "Did the coaching land?", the 4 numbers) verbatim from `/roster`. | Home = operations (today, attention board, pulse, rounds, activity). Intelligence = CoachHelm cockpit (Spine + signals workspace). Development = the players/focus-areas board only; its welcome, pulse and "bleeding strokes" sections are removed (they live in the cockpit). Roster keeps the health header. |
 | 2 | `/coachhelm` for a coach | Renders a locked card ("This CoachHelm dashboard is the player view… Open Brief"). Direct-URL only: the coach rail, dock and More sheet all point at `/intelligence` (nav-registry). | Keep the in-place card. A session-conditional `redirect()` inside the RSC render is the React #310 crash class pinned by `src/test/static/golf-conditional-redirect.test.ts`; the only safe redirect is pre-render in `src/lib/supabase/middleware.ts`, which today runs no role lookup on golf routes. Follow-up: a pathname-scoped coach lookup for these two exact paths in middleware. |
 | 3 | `/stats` for a coach | Locked card ("Personal stats belong to a player profile… Team Stats"). Direct-URL only: the coach Rounds & Stats hub lands on `/stats/team`. | Same as #2. |
@@ -22,7 +22,7 @@ Evidence: `ui-intelligence/facelift/` captures (2026-09-10) and the read-only au
 Static audit, verified by reading each site. "Fix" names the in-repo pattern reused.
 
 | # | File | Pattern | Risk | Fix |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | `fairway/pages/messages/MessageThreadPane.tsx` formatDaySeparator | `new Date()` during render | High, live | server-seeded `now` / mount-gated now (FairwayAgendaView `nowRef` pattern) |
 | 2 | `fairway/pages/messages/MessageConversationRail.tsx` formatTime | `new Date()` during render | High, live | same |
 | 3 | `fairway/pages/coachhelm/FairwayPlayerInsight.tsx` formatRelativeDate | `new Date()` during render | High, live | same |
@@ -39,7 +39,7 @@ Also seen in the captures: the coach home desktop first paint had the trend char
 knip + import-graph + per-file `rg` verification. Routes: no unreachable `page.tsx` under golf — `/hub`, `/patterns`, `/insights`, `/my-insights`, `/my-development`, `/my-game-profile`, `/my-standing`, `/alerts`, `/development` are documented redirect shims with `legacy: true, hidden: true` registry entries; `/fairway-preview` and `/vizlab` are deliberate direct-URL / dev-only surfaces; `/dev/haptics` is linked from Settings.
 
 | Path | Why | LOC | Action |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `hooks/golf/use-offline-sync.ts` | guarded by a must-not-import test | 508 | delete |
 | `app/golf/actions/v3/llm.ts` | zero references | 536 | delete |
 | `app/golf/actions/v3/{practice-rx,team-practice-rx,focus-area-progress,goal-progress}.ts` | zero references | 295 | delete |
