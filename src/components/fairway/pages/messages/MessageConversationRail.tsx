@@ -446,6 +446,30 @@ export function MessageConversationRail({
   const trimmedQuery = searchQuery.trim();
   const isSearching = trimmedQuery.length >= 2;
 
+  /**
+   * Row 14 (perf audit) — the triage split (unread-first, then Today/Earlier)
+   * used to run as plain `const`s on every render, unconditionally, even
+   * though it's dead work whenever `isSearching` is true (the search-results
+   * view renders instead) and even though the ONLY thing that should
+   * recompute it is `conversations`, `now` (the minute clock) or the filter
+   * itself — not, say, a keystroke in the search box, which re-renders this
+   * component on every character. `useMemo` here, ahead of the early returns
+   * below (loading/error/empty), so it stays a single, unconditional hook
+   * call.
+   */
+  const triage = React.useMemo(() => {
+    const visible = conversations.filter(
+      (c) => filter === 'all' || (filter === 'unread' ? c.unread_count > 0 : isGroupConversation(c)),
+    );
+    const unreadRows = visible.filter((c) => c.unread_count > 0);
+    const readRows = visible.filter((c) => c.unread_count === 0);
+    return {
+      visibleConversations: visible,
+      unread: unreadRows,
+      grouped: groupConversationsByTime(readRows, now),
+    };
+  }, [conversations, filter, now]);
+
   React.useEffect(() => {
     if (trimmedQuery.length < 2) {
       setSearchResults([]);
@@ -578,10 +602,7 @@ export function MessageConversationRail({
 
   // TRIAGE: unread floats to top, then recency groups (each kept in the hook's
   // most-recent-first order within the bucket).
-  const visibleConversations = conversations.filter(c => filter === 'all' || (filter === 'unread' ? c.unread_count > 0 : isGroupConversation(c)));
-  const unread = visibleConversations.filter(c => c.unread_count > 0);
-  const read = visibleConversations.filter(c => c.unread_count === 0);
-  const grouped = groupConversationsByTime(read, now);
+  const { visibleConversations, unread, grouped } = triage;
 
   return (
     <InstrumentPanel
