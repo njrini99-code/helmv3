@@ -113,6 +113,7 @@ Each renders server-side from `Date.now()` / `new Date()` / an undefined-locale 
 | Framer `layout` in the dock | `FairwayBottomNav.tsx:140–165`: `layout="position"` on five `li`/`span` pairs plus one `layoutId` pill. Five items, not a list — cheap, kept. The rule "no framer `layout` on long lists" is honoured: no `layout` prop remains anywhere in `pages/calendar/**`. | Keep. |
 
 ### Mobile performance
+
 Constraint (owner, relayed 2026-09-10): no `backdrop-filter` on a panel while it translates, frost only in the settled open state; no framer `layout` on long lists; no heavy trees mounted inside a sheet before it settles; `will-change` only on the moving panel; reduced motion respected.
 
 How the calendar/dock pass meets it:
