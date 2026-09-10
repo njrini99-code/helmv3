@@ -387,7 +387,11 @@ describe('FEATURE_REGISTRY completeness', () => {
     // and v3/focus-area-progress.ts were already-empty `export {}` relocation
     // stubs (0 real exports each, per the 2026-07-09 note above) so their
     // removal contributes no further delta.
-    expect(total).toBe(419);
+    // 2026-09-10 (+1), round review v3: getRoundReviewTrend added to
+    // round-review-system.ts, which is an 'ALL'-mapped manifest entry, so it
+    // needs no explicit name here. Matches 427 -> 428 in
+    // coverage-contract.foundation.
+    expect(total).toBe(420);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

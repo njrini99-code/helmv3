@@ -393,6 +393,11 @@ describe('global tripwire', () => {
     // this walk no longer discovers them. v3/goal-progress.ts and
     // v3/focus-area-progress.ts were also deleted but were already-empty
     // `export {}` relocation stubs contributing 0 to this count. Total 436 -> 427.
-    expect(total).toBe(427);
+    // 2026-09-10 (+1), round review v3: getRoundReviewTrend added to the
+    // 'ALL'-mapped round-review-system.ts, so the walk discovers it with no
+    // manifest edit. It lands in the same window as the dead-code sweep
+    // above, which is why the sweep's arithmetic (436 -> 427) was correct on
+    // its own terms and still one short of what the tree now holds.
+    expect(total).toBe(428);
   });
 });
