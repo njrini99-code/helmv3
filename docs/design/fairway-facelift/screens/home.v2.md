@@ -229,3 +229,24 @@ New primitive: `AgendaStrip` (`src/components/fairway/modules/AgendaStrip.tsx`) 
   - `ui-intelligence/facelift/captures/coach/home__desktop__full.png`
   - `ui-intelligence/facelift/captures/coach/home__phone__fold.png`
   - `ui-intelligence/facelift/captures/coach/home__phone__full.png`
+
+### Addendum (2026-09-10): `FairwayDashboardSkeleton.tsx`
+
+`FairwayDashboardSkeleton` is the shared pre-role `loading.tsx` shell for both
+`/golf/dashboard` roles (role isn't known until the server resolves the
+session). It was rewritten in the same pass to shape-match this composition
+where it favors coach — the new verdict-line bar, the bare toolbar row with
+one right-pinned pill, and the 8/4 ledger row (a bar-strip + list Panel
+beside a bare list) — and to shape-match `FairwayPlayerDashboard`'s own v2
+pass (landed separately, `2f7dd217b`) where it favors player instead — row
+1's `SectionTitle` + Ribbon-shaped 180px panel on the left, a schedule Surface
++ bare task rows on the right, and a flat `StatMatrix`-shaped KPI strip at
+every width for the full-width band. Neither role gets a perfect mirror
+everywhere; the file's own doc comment names exactly which role each section
+favors and what the other role's accepted mismatch looks like on handoff —
+the same trade-off principle this file has used since 2026-07-22, now applied
+across the whole page instead of only row 1. Verified with a new
+`FairwayDashboardSkeleton.test.tsx` (a11y contract + "shapes only, no visible
+text") and, since a loading boundary is transient, with a throttled-navigation
+Playwright capture at both 1440 and 390 confirming the six sections render in
+the intended shapes and proportions with no overflow.
