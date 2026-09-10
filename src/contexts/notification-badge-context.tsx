@@ -41,6 +41,16 @@ interface NotificationBadges {
   refetch: () => Promise<void>;
 }
 
+/**
+ * Shared empty-array constant (2026-09-10 perf audit) — every "no unseen
+ * announcements" write reuses THIS reference instead of allocating a fresh
+ * `[]`. `unseenAnnouncements` flows into the memoized context `value` below,
+ * so a new array reference on every 45s poll — even one whose CONTENT never
+ * changed — produced a new `value` object and re-rendered all 8 consumers
+ * of `useNotificationBadges()` for nothing.
+ */
+const EMPTY_UNSEEN_ANNOUNCEMENTS: GolfAnnouncementMeta[] = [];
+
 const EMPTY_BADGES: NotificationBadges = {
   announcements: 0,
   tasks: 0,
@@ -50,13 +60,44 @@ const EMPTY_BADGES: NotificationBadges = {
   coachhelm: 0,
   notificationsUnread: 0,
   total: 0,
-  unseenAnnouncements: [],
+  unseenAnnouncements: EMPTY_UNSEEN_ANNOUNCEMENTS,
   hasUnseenAnnouncements: false,
   markAnnouncementsSeen: async () => {},
   refetch: async () => {},
 };
 
 const POLL_INTERVAL = 45_000; // 45 seconds
+
+/**
+ * Structural compare over the fields the badge/login-modal UI actually
+ * reads: `updated_at` catches a title/body edit, the count/ack fields catch
+ * an acknowledgement or task completion landing on an announcement that was
+ * already unseen. Used to bail a `setUnseenAnnouncements` update out to the
+ * SAME array reference when a poll's payload is content-identical to what's
+ * already in state, same spirit as `useCalendarRangeEvents`' recency merge.
+ */
+function sameUnseenAnnouncements(
+  a: readonly GolfAnnouncementMeta[],
+  b: readonly GolfAnnouncementMeta[],
+): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (
+      x.id !== y.id ||
+      x.updated_at !== y.updated_at ||
+      x.acknowledged_count !== y.acknowledged_count ||
+      x.has_player_acknowledged !== y.has_player_acknowledged ||
+      x.task_count !== y.task_count ||
+      x.completed_task_count !== y.completed_task_count
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
 
 // ============================================================================
 // CONTEXT
@@ -79,7 +120,9 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
   const [calendarNotifications, setCalendarNotifications] = useState(0);
   const [coachhelm, setCoachhelm] = useState(0);
   const [notificationsUnread, setNotificationsUnread] = useState(0);
-  const [unseenAnnouncements, setUnseenAnnouncements] = useState<GolfAnnouncementMeta[]>([]);
+  const [unseenAnnouncements, setUnseenAnnouncements] = useState<GolfAnnouncementMeta[]>(
+    EMPTY_UNSEEN_ANNOUNCEMENTS,
+  );
   const isVisibleRef = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /**
@@ -117,85 +160,121 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
     if (sessionExpiredRef.current) return;
     if (!isVisibleRef.current) return;
 
-    // Tracks whether THIS poll already learned the session is gone, so the
-    // additive `notifications` unread fetch below can skip a second
-    // round-trip to relearn the same thing (same spirit as the CoachHelm
-    // badge's own skip-on-expired check).
-    let sessionExpiredThisPoll = false;
-
     try {
       if (isPlayer && playerId && userId && teamId) {
-        const result = await getPlayerNotificationCounts(playerId, userId, teamId);
-        if (result.authExpired) {
-          // Same circuit breaker the coach branch has had since the 45s poll
-          // was added; the player branch kept polling a dead session.
-          stopPolling();
-          sessionExpiredThisPoll = true;
-        } else if (result.success && result.data) {
-          setAnnouncements(result.data.unreadAnnouncements);
-          setTasks(result.data.pendingTasks);
-          // null means the count could not be read. HOLD the previous value
-          // rather than dropping the badge to 0 — a confident "no unread
-          // messages" during a transient fault is how a player misses a message
-          // entirely. It self-corrects on the next 45s poll.
-          const nextUnread = result.data.unreadMessages;
-          setMessages((prev) => nextUnread ?? prev);
-          setTravel(result.data.unseenTravel ?? 0);
-          setCalendarNotifications(result.data.calendarNotifications ?? 0);
-          setUnseenAnnouncements(result.data.unseenAnnouncements);
-        }
-      } else if (isCoach && userId) {
-        const result = await getCoachNotificationCounts(userId, teamId);
-        if (result.authExpired) {
-          stopPolling();
-          sessionExpiredThisPoll = true;
-        } else if (result.success && result.data) {
-          // null means the count could not be read. HOLD the previous value
-          // rather than dropping the badge to 0 — a confident "no unread
-          // messages" during a transient fault is how a coach misses a message
-          // entirely. It self-corrects on the next 45s poll.
-          const nextCoachUnread = result.data.unreadMessages;
-          setMessages((prev) => nextCoachUnread ?? prev);
-          setCalendarNotifications(result.data.calendarNotifications);
-          setAnnouncements(0);
-          setTasks(0);
-          setTravel(0);
-          setUnseenAnnouncements([]);
-        }
-        // CoachHelm unread-signal badge — same poll, additive. Failure/empty
-        // leaves the count at 0 (honest: no badge), never a fabricated value.
-        // Skip when the session already proved expired above — no point
-        // spending a second round-trip to learn the same thing twice.
-        if (coachId && !result.authExpired) {
-          try {
-            const alerts = await getAlertCounts(coachId);
-            setCoachhelm(alerts.success ? (alerts.counts?.critical ?? 0) : 0);
-            if (alerts.authExpired) {
-              stopPolling();
-              sessionExpiredThisPoll = true;
-            }
-          } catch {
-            setCoachhelm(0);
-          }
-        }
-      }
+        // Both calls dispatched together (2026-09-10 perf audit) — this poll
+        // used to await the main counts call, THEN the unified-notifications
+        // call, back to back, doubling the round-trip latency of every 45s
+        // poll for no reason (neither call's result decides whether the
+        // other should run). One trade-off from going concurrent: the coach
+        // branch below can no longer skip the unified call just because the
+        // main call already learned the session is gone — both always fire,
+        // and each independently calls `stopPolling()` if IT sees
+        // `authExpired`, which is idempotent.
+        const [countsResult, unifiedResult] = await Promise.allSettled([
+          getPlayerNotificationCounts(playerId, userId, teamId),
+          getNotificationsUnreadCount(),
+        ]);
 
-      // Unified notifications bell badge, half 2/2: unread rows in the
-      // generic `notifications` table (CoachHelm dispatch.ts lifecycle
-      // receipts + task-reminders.ts reminders). Same 45s poll, additive,
-      // BOTH roles (CoachHelm dispatches to players; task-reminders notifies
-      // assigned players AND the assigning coach) — never a second poll loop
-      // (NotificationBell reads this + `calendarNotifications` above from
-      // this same context instead of fetching its own count).
-      if (userId && !sessionExpiredThisPoll) {
-        try {
-          const unread = await getNotificationsUnreadCount();
+        if (countsResult.status === 'fulfilled') {
+          const result = countsResult.value;
+          if (result.authExpired) {
+            // Same circuit breaker the coach branch has had since the 45s
+            // poll was added; the player branch kept polling a dead session.
+            stopPolling();
+          } else if (result.success && result.data) {
+            setAnnouncements(result.data.unreadAnnouncements);
+            setTasks(result.data.pendingTasks);
+            // null means the count could not be read. HOLD the previous value
+            // rather than dropping the badge to 0 — a confident "no unread
+            // messages" during a transient fault is how a player misses a message
+            // entirely. It self-corrects on the next 45s poll.
+            const nextUnread = result.data.unreadMessages;
+            setMessages((prev) => nextUnread ?? prev);
+            setTravel(result.data.unseenTravel ?? 0);
+            setCalendarNotifications(result.data.calendarNotifications ?? 0);
+            const nextUnseen = result.data.unseenAnnouncements;
+            setUnseenAnnouncements((prev) =>
+              sameUnseenAnnouncements(prev, nextUnseen) ? prev : nextUnseen,
+            );
+          }
+        } else if (process.env.NODE_ENV === 'development') {
+          console.error(countsResult.reason);
+        }
+
+        if (unifiedResult.status === 'fulfilled') {
+          const unread = unifiedResult.value;
           if (unread.authExpired) {
             stopPolling();
           } else {
             setNotificationsUnread(unread.success ? (unread.data?.unread ?? 0) : 0);
           }
-        } catch {
+        } else {
+          setNotificationsUnread(0);
+        }
+      } else if (isCoach && userId) {
+        // All three calls dispatched together, same reasoning as the player
+        // branch above. `getAlertCounts` still only fires when there's a
+        // `coachId` to ask about — that gating doesn't depend on either
+        // sibling call's result, only on an id already in hand.
+        const [coachResult, alertsResult, unifiedResult] = await Promise.allSettled([
+          getCoachNotificationCounts(userId, teamId),
+          coachId ? getAlertCounts(coachId) : Promise.resolve(null),
+          getNotificationsUnreadCount(),
+        ]);
+
+        if (coachResult.status === 'fulfilled') {
+          const result = coachResult.value;
+          if (result.authExpired) {
+            stopPolling();
+          } else if (result.success && result.data) {
+            // null means the count could not be read. HOLD the previous value
+            // rather than dropping the badge to 0 — a confident "no unread
+            // messages" during a transient fault is how a coach misses a message
+            // entirely. It self-corrects on the next 45s poll.
+            const nextCoachUnread = result.data.unreadMessages;
+            setMessages((prev) => nextCoachUnread ?? prev);
+            setCalendarNotifications(result.data.calendarNotifications);
+            setAnnouncements(0);
+            setTasks(0);
+            setTravel(0);
+            setUnseenAnnouncements((prev) =>
+              prev.length === 0 ? prev : EMPTY_UNSEEN_ANNOUNCEMENTS,
+            );
+          }
+        } else if (process.env.NODE_ENV === 'development') {
+          console.error(coachResult.reason);
+        }
+
+        // CoachHelm unread-signal badge — additive. Failure/empty leaves the
+        // count at 0 (honest: no badge), never a fabricated value. `null`
+        // here means there was no `coachId` to ask about at all (the ternary
+        // above), matching the original "skip entirely without one" behavior.
+        if (alertsResult.status === 'fulfilled') {
+          if (alertsResult.value) {
+            const alerts = alertsResult.value;
+            setCoachhelm(alerts.success ? (alerts.counts?.critical ?? 0) : 0);
+            if (alerts.authExpired) stopPolling();
+          }
+        } else {
+          setCoachhelm(0);
+        }
+
+        // Unified notifications bell badge, half 2/2: unread rows in the
+        // generic `notifications` table (CoachHelm dispatch.ts lifecycle
+        // receipts + task-reminders.ts reminders). BOTH roles (CoachHelm
+        // dispatches to players; task-reminders notifies assigned players
+        // AND the assigning coach) — never a second poll loop (NotificationBell
+        // reads this + `calendarNotifications` above from this same context
+        // instead of fetching its own count).
+        if (unifiedResult.status === 'fulfilled') {
+          const unread = unifiedResult.value;
+          if (unread.authExpired) {
+            stopPolling();
+          } else {
+            setNotificationsUnread(unread.success ? (unread.data?.unread ?? 0) : 0);
+          }
+        } else {
           setNotificationsUnread(0);
         }
       }
@@ -205,7 +284,7 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
   }, [isActive, isPlayer, isCoach, playerId, userId, teamId, coachId, stopPolling]);
 
   const handleMarkSeen = useCallback(async () => {
-    setUnseenAnnouncements([]);
+    setUnseenAnnouncements((prev) => (prev.length === 0 ? prev : EMPTY_UNSEEN_ANNOUNCEMENTS));
     try {
       await markSeenAction();
     } catch {
