@@ -18,10 +18,17 @@
  *   scope.
  *
  * ── MENTAL-MODEL ORDER (triage → is-it-working → what's-next) ───────────────
- *   1. HERO  — the single active/upcoming qualifier as a focal Card at top.
- *   2. ACTIVE — upcoming / in_progress qualifiers as a matte Surface/Card list.
- *   3. CONCLUDED — completed qualifiers; honest `subtle` EmptyState when none
- *      (NEVER fabricate a past event).
+ *   1. HERO  — the single active/upcoming qualifier as an Elevated block,
+ *      ABOVE the Toolbar. It is the one persistent "what matters right now"
+ *      object and deliberately ignores the Toolbar's own search/status
+ *      filter (screens/qualifiers.md) — ANY qualifier list state below it
+ *      still surfaces the live/next qualifier up top.
+ *   2. TOOLBAR — search + status filter as ONE composed row (was three loose
+ *      controls: a status-pill group + a full-width search field stacked).
+ *   3. ACTIVE / CONCLUDED — one matte Surface with two seam sections; rows
+ *      (name · dates · spots · course · StatusPill · →), not cards. Honest
+ *      `subtle` EmptyState for an empty Concluded section (NEVER fabricate a
+ *      past event).
  *
  * ── CRITICAL HONESTY ────────────────────────────────────────────────────────
  *   The legacy time-based "progress" bar is DROPPED entirely — it implied play
@@ -43,14 +50,17 @@ import { useMemo, useState } from 'react';
 import {
   ViewHeader,
   Surface,
+  Elevated,
   StatusPill,
   Button,
   EmptyState,
   FilterPill,
   SearchField,
+  Toolbar,
 } from '@/components/fairway';
 import { IconCalendar, IconMapPin, IconGolf, IconArrowRight, IconPlus } from '@/components/icons';
 import type { GolfQualifier } from '@/lib/types/golf';
+import { cn } from '@/lib/utils';
 import { qualifierStatusMeta } from './qualifier-status';
 
 const CREATE_HREF = '/golf/dashboard/qualifiers/new';
@@ -167,26 +177,42 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
   const concludedShown = concluded.slice(0, concludedVisible);
   const concludedRemaining = concluded.length - concludedShown.length;
 
-  // The HERO is the single most-relevant active/upcoming qualifier (P327). The
-  // `active` bucket arrives start_date-DESC, so `active[0]` would be the qualifier
+  // The HERO is the single most-relevant active/upcoming qualifier (P327),
+  // derived from `allActive` — the UNFILTERED bucket — not `active`. The Elevated
+  // hero now renders ABOVE the Toolbar (screens/qualifiers.md), so it must not
+  // wink out because a coach typed into search or picked the "Concluded" status
+  // pill; those controls govern the seam-list below, not the persistent hero.
+  // `allActive` arrives start_date-DESC, so `allActive[0]` would be the qualifier
   // starting FURTHEST in the future — the opposite of "focal". Re-derive instead:
   // prefer a live (in_progress) qualifier, else the upcoming one with the SOONEST
   // start_date (the next one to play). Ties on start_date keep list order (stable).
   const hero = useMemo(() => {
-    if (active.length === 0) return null;
-    const live = active.find((q) => q.status === 'in_progress');
+    if (allActive.length === 0) return null;
+    const live = allActive.find((q) => q.status === 'in_progress');
     if (live) return live;
     // No live qualifier — choose the upcoming with the minimum start_date.
-    return active.reduce((soonest, q) =>
+    return allActive.reduce((soonest, q) =>
       new Date(q.start_date).getTime() < new Date(soonest.start_date).getTime() ? q : soonest,
     );
-  }, [active]);
-  // Everything else in the active bucket renders in the "Active" list below the
-  // hero — keep the original start_date-desc order for the remainder.
+  }, [allActive]);
+  // Everything else in the (filtered) active bucket renders in the "Active"
+  // seam section below the hero — keep the original start_date-desc order for
+  // the remainder, and drop the hero's own row if it's still in the filtered set
+  // (never render the live/next qualifier twice).
   const restActive = useMemo(
     () => (hero ? active.filter((q) => q.id !== hero.id) : active),
     [hero, active],
   );
+
+  // Section visibility, computed AFTER excluding the hero's own row. Without
+  // this, a search/filter that leaves only the hero behind still rendered a
+  // bare "Concluded" seam heading over an empty body (the inner empty-state
+  // was suppressed by `isFiltering`, but the heading above it wasn't) — a
+  // stray label inside a bordered Surface reads as broken, not honest-empty.
+  // `showConcludedSection` mirrors `showConcludedBucket`'s own contract: show
+  // the section when it has rows, OR when it's genuinely (not search-)empty.
+  const showActiveSection = restActive.length > 0;
+  const showConcludedSection = showConcludedBucket && (concluded.length > 0 || !isFiltering);
 
   // The ONE coach-only primary action. This deliberately remains a document
   // navigation: the coach dashboard's streamed data can keep a soft transition
@@ -261,36 +287,18 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
           </Surface>
         </div>
       ) : (
-        <div className="mt-8 flex flex-col gap-8">
-          {/* ── TOOLBAR (P328) — status filter + name search ─────────────────── */}
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter qualifiers by status">
-              <FilterPill
-                selected={statusFilter === 'all'}
-                showCheck={false}
-                count={qualifiers.length}
-                onClick={() => setStatusFilter('all')}
-              >
-                All
-              </FilterPill>
-              <FilterPill
-                selected={statusFilter === 'active'}
-                showCheck={false}
-                count={activeCount}
-                onClick={() => setStatusFilter('active')}
-              >
-                Active
-              </FilterPill>
-              <FilterPill
-                selected={statusFilter === 'concluded'}
-                showCheck={false}
-                count={concludedCount}
-                onClick={() => setStatusFilter('concluded')}
-              >
-                Concluded
-              </FilterPill>
-            </div>
-            <div className="max-w-md">
+        <div className="mt-8 flex flex-col gap-6">
+          {/* ── 1 · HERO — the single persistent live/next qualifier, above the
+              Toolbar (screens/qualifiers.md "Dominant object"). Unaffected by
+              the Toolbar's own search/status filter below. ───────────────── */}
+          {hero && <QualifierHero qualifier={hero} />}
+
+          {/* ── 2 · TOOLBAR — search + status filter as ONE composed row (was
+              a loose status-pill group stacked over a full-width search
+              field) ─────────────────────────────────────────────────────── */}
+          <Toolbar
+            aria-label="Search and filter qualifiers"
+            search={
               <SearchField
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -298,9 +306,43 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
                 placeholder="Search qualifiers by name, course, or detail"
                 aria-label="Search qualifiers"
               />
-            </div>
-          </div>
+            }
+            viewToggle={
+              <div
+                className="flex flex-wrap items-center gap-2"
+                role="group"
+                aria-label="Filter qualifiers by status"
+              >
+                <FilterPill
+                  selected={statusFilter === 'all'}
+                  showCheck={false}
+                  count={qualifiers.length}
+                  onClick={() => setStatusFilter('all')}
+                >
+                  All
+                </FilterPill>
+                <FilterPill
+                  selected={statusFilter === 'active'}
+                  showCheck={false}
+                  count={activeCount}
+                  onClick={() => setStatusFilter('active')}
+                >
+                  Active
+                </FilterPill>
+                <FilterPill
+                  selected={statusFilter === 'concluded'}
+                  showCheck={false}
+                  count={concludedCount}
+                  onClick={() => setStatusFilter('concluded')}
+                >
+                  Concluded
+                </FilterPill>
+              </div>
+            }
+          />
 
+          {/* ── 3 · ACTIVE / CONCLUDED — ONE matte Surface with two seam
+              sections; rows, not cards. ─────────────────────────────────── */}
           {active.length === 0 && concluded.length === 0 ? (
             // ── NO MATCHES — search/filter narrowed everything away ───────────
             <Surface elevation="border" padding="lg">
@@ -321,36 +363,38 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
                 }
               />
             </Surface>
+          ) : !showActiveSection && !showConcludedSection ? (
+            // Only the hero matched — it's already visible above; nothing
+            // honest left to list, so render nothing rather than an empty box.
+            null
           ) : (
-            <div className="flex flex-col gap-10">
-              {/* ── 1 · HERO — the single focal active/upcoming qualifier ────── */}
-              {hero && <QualifierHero qualifier={hero} />}
-
-              {/* ── 2 · ACTIVE — remaining upcoming / in_progress qualifiers ── */}
-              {restActive.length > 0 && (
-                <section className="flex flex-col gap-3">
-                  <SectionHeading>Active</SectionHeading>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Surface elevation="border" padding="none" className="overflow-hidden">
+              {showActiveSection && (
+                <section aria-label="Active qualifiers">
+                  <SeamHeading>Active</SeamHeading>
+                  <div className="divide-y divide-border-subtle border-t border-border-subtle">
                     {restActive.map((q) => (
-                      <QualifierCard key={q.id} qualifier={q} />
+                      <QualifierRow key={q.id} qualifier={q} />
                     ))}
                   </div>
                 </section>
               )}
 
-              {/* ── 3 · CONCLUDED — bounded; honest-empty when none ─────────── */}
-              {showConcludedBucket && (
-                <section className="flex flex-col gap-3">
-                  <SectionHeading>Concluded</SectionHeading>
+              {showConcludedSection && (
+                <section
+                  aria-label="Concluded qualifiers"
+                  className={showActiveSection ? 'border-t border-border-subtle' : undefined}
+                >
+                  <SeamHeading>Concluded</SeamHeading>
                   {concluded.length > 0 ? (
                     <>
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="divide-y divide-border-subtle border-t border-border-subtle">
                         {concludedShown.map((q) => (
-                          <QualifierCard key={q.id} qualifier={q} />
+                          <QualifierRow key={q.id} qualifier={q} />
                         ))}
                       </div>
                       {concludedRemaining > 0 && (
-                        <div className="flex justify-center pt-1">
+                        <div className="flex justify-center border-t border-border-subtle px-4 py-3">
                           <Button
                             variant="secondary"
                             onClick={() =>
@@ -365,18 +409,21 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
                         </div>
                       )}
                     </>
-                  ) : isFiltering ? null : (
-                    <Surface elevation="border" padding="none">
+                  ) : (
+                    // `showConcludedSection` already guarantees `!isFiltering`
+                    // whenever `concluded.length === 0` — this is a genuinely
+                    // empty Concluded bucket, never a search/filter artifact.
+                    <div className="border-t border-border-subtle">
                       <EmptyState
                         variant="subtle"
                         title="No concluded qualifiers yet"
                         description="Qualifiers move here once they're completed."
                       />
-                    </Surface>
+                    </div>
                   )}
                 </section>
               )}
-            </div>
+            </Surface>
           )}
         </div>
       )}
@@ -385,11 +432,12 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * Section heading — quiet uppercase overline (matches the stats-page sections).
+ * Seam heading — quiet uppercase overline inside the sectioned Surface (a
+ * seam label, not a card header — matches the stats-page sections' voice).
  * ────────────────────────────────────────────────────────────────────────── */
-function SectionHeading({ children }: { children: React.ReactNode }) {
+function SeamHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+    <h3 className="px-4 pt-4 pb-2 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
       {children}
     </h3>
   );
@@ -432,93 +480,111 @@ function QualifierMeta({ qualifier }: { qualifier: GolfQualifier }) {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * HERO — the focal active/upcoming qualifier. A soft-lit shadow Surface (the
- * ONE hero), interactive, linking to its leaderboard/detail with a quiet CTA.
+ * HERO — the ONE raised object (Elevated, not a shadow Surface card). The
+ * block itself is presentational; "View leaderboard/details/results" is the
+ * ONLY link inside it (screens/qualifiers.md "CONTAINERS TO REMOVE" #3). A
+ * leaderboard top-3 peek (RankCell) is intentionally NOT rendered here: the
+ * `qualifiers` prop is the verbatim `golf_qualifiers` row list (no joined
+ * `golf_qualifier_entries`), and the screen spec's own RISKS section calls
+ * for exactly this fallback when entries aren't already in the data — "show
+ * spots + dates only (no new data logic)".
  * ────────────────────────────────────────────────────────────────────────── */
 function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
   const status = qualifier.status ?? 'upcoming';
   const cfg = qualifierStatusMeta(status);
 
   return (
-    <Surface
-      as={Link}
-      // Surface spreads unknown props (incl. `href`) onto the `as` element; the
-      // base SurfaceProps type doesn't model element-specific attrs.
-      {...({ href: detailHref(qualifier.id) } as { href: string })}
-      interactive
-      elevation="shadow"
-      padding="lg"
-      className="group block"
-    >
+    <Elevated level="raise" padding="lg" data-slot="qualifier-hero">
       <div className="flex flex-col gap-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <StatusPill tone={cfg.tone} pulse={cfg.pulse} size="md">
-              {cfg.label}
-            </StatusPill>
-            <h2 className="font-fw-display text-h2 font-medium tracking-[-0.01em] text-text-primary">
-              {qualifier.name}
-            </h2>
-            {qualifier.description && (
-              <p className="max-w-[60ch] font-fw-sans text-body text-text-secondary">
-                {qualifier.description}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <QualifierMeta qualifier={qualifier} />
-
-        <span className="inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-accent-700 transition-colors [transition-duration:180ms] group-hover:text-accent-600 motion-reduce:transition-none">
-          {ctaLabel(status)}
-          <IconArrowRight size={16} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
-        </span>
-      </div>
-    </Surface>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * CARD — a matte list-row qualifier (cream, rounded-card, border at rest; lifts
- * to shadow-raise on hover). Identical for coach + player; links to detail.
- * ────────────────────────────────────────────────────────────────────────── */
-function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
-  const status = qualifier.status ?? 'upcoming';
-  const cfg = qualifierStatusMeta(status);
-
-  return (
-    <Surface
-      as={Link}
-      // Surface spreads unknown props (incl. `href`) onto the `as` element; the
-      // base SurfaceProps type doesn't model element-specific attrs.
-      {...({ href: detailHref(qualifier.id) } as { href: string })}
-      interactive
-      elevation="border"
-      padding="md"
-      className="group flex h-full flex-col gap-4"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <h3 className="line-clamp-2 font-fw-sans text-body-lg font-medium text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+        <div className="min-w-0 space-y-2">
+          <StatusPill tone={cfg.tone} pulse={cfg.pulse} size="md">
+            {cfg.label}
+          </StatusPill>
+          <h2 className="font-fw-display text-h2 font-medium tracking-[-0.01em] text-text-primary">
             {qualifier.name}
-          </h3>
+          </h2>
           {qualifier.description && (
-            <p className="line-clamp-2 font-fw-sans text-body-sm text-text-tertiary">
+            <p className="max-w-[60ch] font-fw-sans text-body text-text-secondary">
               {qualifier.description}
             </p>
           )}
         </div>
-        <StatusPill tone={cfg.tone} pulse={cfg.pulse} size="sm" className="flex-shrink-0">
-          {cfg.label}
-        </StatusPill>
+
+        <QualifierMeta qualifier={qualifier} />
+
+        <Link
+          href={detailHref(qualifier.id)}
+          className="group inline-flex w-fit items-center gap-1.5 font-fw-sans text-label font-medium text-accent-700 transition-colors [transition-duration:180ms] hover:text-accent-600 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-elevated"
+        >
+          {ctaLabel(status)}
+          <IconArrowRight
+            size={16}
+            className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
+          />
+        </Link>
       </div>
+    </Elevated>
+  );
+}
 
-      <QualifierMeta qualifier={qualifier} />
+/* ───────────────────────────────────────────────────────────────────────────
+ * ROW — one seam row inside the Active/Concluded Surface (replaces the card
+ * galleries — screens/qualifiers.md "CONTAINERS TO REMOVE" #2). The whole row
+ * is the link. Desktop: name · date range (tabular) · spots · course ·
+ * StatusPill · →. Phone compresses to name · date · StatusPill (· →) — spots
+ * and course drop out rather than wrap or truncate into noise.
+ * ────────────────────────────────────────────────────────────────────────── */
+function QualifierRow({ qualifier }: { qualifier: GolfQualifier }) {
+  const status = qualifier.status ?? 'upcoming';
+  const cfg = qualifierStatusMeta(status);
+  const { start_date, end_date, course_name, spots_available } = qualifier;
+  const hasEnd = end_date && end_date !== start_date;
+  const spotsLabel =
+    spots_available != null ? `${spots_available} ${spots_available === 1 ? 'spot' : 'spots'}` : null;
 
-      <span className="mt-auto inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-text-tertiary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
-        {ctaLabel(status)}
-        <IconArrowRight size={15} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
+  return (
+    <Link
+      href={detailHref(qualifier.id)}
+      className={cn(
+        'group flex min-h-11 items-center gap-3 px-4 py-3 sm:gap-4',
+        'transition-colors [transition-duration:180ms] motion-reduce:transition-none',
+        '[@media(hover:hover)]:hover:bg-surface-sunken',
+        // `ring-inset`, not an offset ring: the row sits inside a
+        // Surface with `overflow-hidden` (so the seam corners stay clean),
+        // which would otherwise clip an offset ring at the row's own edges.
+        'outline-none focus-visible:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+      )}
+    >
+      <span className="min-w-0 flex-1 truncate font-fw-sans text-body font-medium text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+        {qualifier.name}
       </span>
-    </Surface>
+
+      {/* Full date range — desktop/tablet only; phone shows the compact date below. */}
+      <span className="hidden shrink-0 whitespace-nowrap font-fw-sans text-body-sm tabular-nums text-text-secondary sm:inline">
+        {formatDate(start_date)}
+        {hasEnd ? <> &ndash; {formatDate(end_date as string)}</> : null}
+      </span>
+      {/* Compact single date — phone only (the compressed name · date · status row). */}
+      <span className="shrink-0 whitespace-nowrap font-fw-sans text-caption tabular-nums text-text-tertiary sm:hidden">
+        {formatDate(start_date)}
+      </span>
+
+      <span className="hidden w-20 shrink-0 whitespace-nowrap font-fw-sans text-body-sm tabular-nums text-text-tertiary md:inline">
+        {spotsLabel ?? '—'}
+      </span>
+
+      <span className="hidden w-40 shrink-0 truncate font-fw-sans text-body-sm text-text-tertiary lg:inline">
+        {course_name ?? '—'}
+      </span>
+
+      <StatusPill tone={cfg.tone} pulse={cfg.pulse} size="sm" className="shrink-0">
+        {cfg.label}
+      </StatusPill>
+
+      <IconArrowRight
+        size={15}
+        className="shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
+      />
+    </Link>
   );
 }
