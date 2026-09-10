@@ -461,6 +461,22 @@ reload (`lieFromShotResult`) restore position from.
   `MicroBar` still renders, comparing against that player's own average.
   New primitive: `MicroBar` (`src/components/fairway/modules/MicroBar.tsx`),
   a zero-centered inline bar for one signed per-row stat.
+- **Player rounds v2 (2026-09-10, `docs/design/fairway-facelift/screens/
+  player-rounds.v2.md`)** — the `userRole === 'player'` branch of
+  `FairwayRoundsLibrary.tsx` replaces the Cockpit + Spread with the parts in
+  `pages/rounds/rounds-instruments.tsx`: `RoundsStage` (Avg score with a
+  newest-five-vs-prior-five delta, To par, the verdict sentence, a `Ribbon`
+  of every scored round with the last round marked and its readout a link to
+  `/golf/dashboard/rounds/[id]`), `ScoreBandHistogram` (five score-to-par
+  bands, ≥3 rounds), `RoundTypeSegment` (counts by type as one `SegmentBar`,
+  averages by type as caption, ≥2 types), `MonthDeviationBars` (month average
+  minus season average, `md`+ only, ≥2 months), and captioned Score · Putts ·
+  GIR seam-header sparklines from `md` (`SeamSpark`). The in-progress banner
+  sits between the stage and the instruments on phone and full width under
+  that row from `md`. The masthead verdict sentence is coach-only; the player
+  masthead keeps its static title + meta line. `normalizedScore` moved to the
+  part file (the library imports it). The route skeleton draws one stage
+  block for either role. Coach branch unchanged.
 
 ## Known Risk Areas
 

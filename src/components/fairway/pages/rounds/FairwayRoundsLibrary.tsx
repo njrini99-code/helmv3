@@ -119,12 +119,23 @@ import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
+import {
+  RoundsStage,
+  ScoreBandHistogram,
+  RoundTypeSegment,
+  MonthDeviationBars,
+  SeamSpark,
+  normalizedScore,
+  monthDeviations,
+  recentShift,
+} from './rounds-instruments';
 import { scoreToParTone, formatToPar } from './FairwayRoundCard';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import {
   parseDateOnly,
   dateOnlyToUtcDate,
   formatDateOnlyFull,
+  formatDateOnlyShort,
   type DateOnlyParts,
 } from '@/lib/golf/date-only';
 
@@ -241,13 +252,6 @@ function playerName(round: RoundLibraryRound): string | null {
   return full.length > 0 ? full : null;
 }
 
-/** Normalize a round's score to its 18-hole equivalent (for charts). */
-function normalizedScore(round: RoundLibraryRound): number | null {
-  if (round.total_score === null || round.total_score <= 0) return null;
-  const hp = round.holes_played ?? 18;
-  return Math.round((round.total_score * 18) / Math.max(1, hp));
-}
-
 /** Honest month range over the rounds, e.g. "Jan–Apr 2026" or "Apr 2026". */
 function honestRange(rounds: RoundLibraryRound[]): string | null {
   const dates = rounds
@@ -301,7 +305,20 @@ function monthSummary(rounds: RoundLibraryRound[]) {
     .filter((v): v is number => v !== null);
   const avg = spark.length > 0 ? spark.reduce((s, v) => s + v, 0) / spark.length : null;
   const best = spark.length > 0 ? Math.min(...spark) : null;
-  return { scoredCount: scored.length, spark, avg, best };
+  // Player seam headers at `md`+ (player-rounds.v2.md): putts and GIR% lines
+  // beside the score line, each over the rounds that logged that column.
+  const chrono = rounds.slice().reverse();
+  const puttsSpark = chrono
+    .map((r) => r.total_putts)
+    .filter((v): v is number => v !== null && v > 0);
+  const girSpark = chrono
+    .map((r) =>
+      r.total_gir_possible !== null && r.total_gir_possible > 0 && r.total_gir !== null
+        ? Math.round((r.total_gir / r.total_gir_possible) * 100)
+        : null,
+    )
+    .filter((v): v is number => v !== null);
+  return { scoredCount: scored.length, spark, avg, best, puttsSpark, girSpark };
 }
 
 /** Signed change from the first to the last point of a chronological series
@@ -554,6 +571,8 @@ export function FairwayRoundsLibrary({
       label: string;
       scoredCount: number;
       spark: number[];
+      puttsSpark: number[];
+      girSpark: number[];
       avg: number | null;
       best: number | null;
       bestId: string | null;
@@ -577,12 +596,14 @@ export function FairwayRoundsLibrary({
           bestId = r.id;
         }
       }
-      const { scoredCount, spark, avg, best } = monthSummary(group.rounds);
+      const { scoredCount, spark, avg, best, puttsSpark, girSpark } = monthSummary(group.rounds);
       result.push({
         key: `${group.label}-${i}`,
         label: group.label,
         scoredCount,
         spark,
+        puttsSpark,
+        girSpark,
         avg,
         best,
         bestId,
@@ -630,6 +651,26 @@ export function FairwayRoundsLibrary({
   );
   const scoreDelta = React.useMemo(() => seriesDelta(scoreSeries), [scoreSeries]);
   const toParDelta = React.useMemo(() => seriesDelta(toParSeries), [toParSeries]);
+
+  // ── Player stage (player-rounds.v2.md) ─────────────────────────────────--
+  // The Ribbon's points are the same chronological normalized series the
+  // Cockpit delta reads, one point per scored round, labelled by its date
+  // (UTC-pinned). The newest scored round is named in the readout.
+  const stagePoints = React.useMemo(
+    () =>
+      chronoScored
+        .map((r) => ({ x: formatDateOnlyShort(r.round_date), y: normalizedScore(r) }))
+        .filter((pt): pt is { x: string; y: number } => pt.y !== null),
+    [chronoScored],
+  );
+  const lastScored = chronoScored.length > 0 ? chronoScored[chronoScored.length - 1]! : null;
+  // Newest five vs the five before: the split `stats.trend` is classified
+  // from, so the verdict's word and number come from one computation.
+  const scoreShift = React.useMemo(() => recentShift(scoreSeries), [scoreSeries]);
+  const monthRows = React.useMemo(
+    () => (stats ? monthDeviations(rounds, stats.avg) : []),
+    [rounds, stats],
+  );
 
   // ── Masthead copy + honest meta ────────────────────────────────────────--
   const eyebrow = isCoach ? 'Team Rounds' : 'Your Rounds';
@@ -682,8 +723,10 @@ export function FairwayRoundsLibrary({
   // start date, so repeating it below would be redundant). Starved: falls
   // back to the unchanged per-role title + meta line, byte-for-byte what
   // this page has always shown.
+  // Player: the stage below carries the verdict (player-rounds.v2.md), so the
+  // masthead keeps its static title + meta line rather than saying it twice.
   const firstMonth = firstMonthLabel(rounds);
-  const showVerdict = hasScoreTrend && firstMonth !== null;
+  const showVerdict = isCoach && hasScoreTrend && firstMonth !== null;
   const verdictTitle = showVerdict
     ? (() => {
         const n = rounds.length;
@@ -716,137 +759,173 @@ export function FairwayRoundsLibrary({
         primaryAction={primaryAction}
       />
 
-      {/* ── (player only) In-progress banner — ABOVE the Cockpit. Rendered
-          regardless of whether any COMPLETED round exists yet — a player can
-          have zero finished rounds and one in-progress round, and that
-          in-progress round must stay discoverable/resumable either way. ───--*/}
-      {showUnfinished && playerId && (
-        <FairwayUnfinishedBanner rounds={visibleInProgressRounds} playerId={playerId} />
+      {/* ── ROLE FORK ───────────────────────────────────────────────────────
+          Coach: the Cockpit + Spread (rounds-library.v2.md). Player: the
+          stage (player-rounds.v2.md) — two readouts, the verdict, the score
+          line with the last round marked — beside the score-band histogram
+          and the round-type bar from `md`, with the in-progress group
+          between the stage and the instruments on a phone and full width
+          under the row from `md` (CSS order, no media query). ─────────────*/}
+      {isCoach ? (
+        <>
+        {/* ── COCKPIT — a ranked InstrumentCluster replaces the five equal
+            StatMatrix boxes: a focal RadialGauge, a two-item Readout rail
+            (each delta-gated on the same 6-scored-round honesty threshold the
+            old "Scoring trend" pill used), a four-up tertiary count row.
+            Rendered even with zero completed rounds — every instrument owns
+            its own honest starved/awaiting swap, never a fabricated 0.0. ───--*/}
+        <InstrumentCluster
+          ariaLabel="Round summary instrument cluster"
+          balance="focal"
+          primary={
+            <RadialGauge
+              size="md"
+              title="% under par"
+              overline="SEASON"
+              readoutLabel="of scored rounds"
+              value={starved ? undefined : stats!.underParPct / 100}
+              awaiting={starved}
+              samples={stats?.totalRounds}
+              minSamples={3}
+              unit="rounds"
+            />
+          }
+          secondary={[
+            <InstrumentPanel key="avg-score" depth="base" padding="md">
+              {starved ? (
+                <Readout size="lg" label="Avg score" state="awaiting" />
+              ) : (
+                <Readout
+                  size="lg"
+                  label="Avg score"
+                  display={stats!.avg.toFixed(1)}
+                  delta={
+                    hasScoreTrend
+                      ? {
+                          value: scoreDelta!,
+                          // Golf is lower-is-better: a falling average is the
+                          // GOOD ('up'/green) direction.
+                          direction: scoreDelta! < 0 ? 'up' : scoreDelta! > 0 ? 'down' : 'flat',
+                        }
+                      : undefined
+                  }
+                />
+              )}
+            </InstrumentPanel>,
+            <InstrumentPanel key="avg-to-par" depth="base" padding="md">
+              {starved || avgToParDisplay === null ? (
+                <Readout size="lg" label="Avg to par" unit="strokes" state="awaiting" />
+              ) : (
+                <Readout
+                  size="lg"
+                  label="Avg to par"
+                  unit="strokes"
+                  display={avgToParDisplay}
+                  delta={
+                    hasToParTrend
+                      ? {
+                          value: toParDelta!,
+                          direction: toParDelta! < 0 ? 'up' : toParDelta! > 0 ? 'down' : 'flat',
+                        }
+                      : undefined
+                  }
+                />
+              )}
+            </InstrumentPanel>,
+          ]}
+          tertiary={[
+            <InstrumentPanel key="rounds" depth="base" padding="md">
+              {starved ? (
+                <Readout size="sm" label="Rounds" state="awaiting" />
+              ) : (
+                <Readout size="sm" label="Rounds" display={stats!.totalRounds} />
+              )}
+            </InstrumentPanel>,
+            <InstrumentPanel key="best" depth="base" padding="md">
+              {starved ? (
+                <Readout size="sm" label="Best round" state="awaiting" />
+              ) : (
+                <Readout size="sm" label="Best round" display={stats!.best} />
+              )}
+            </InstrumentPanel>,
+            <InstrumentPanel key="practice" depth="base" padding="md">
+              <Readout size="sm" label="Practice" display={filterCounts.practice} />
+            </InstrumentPanel>,
+            <InstrumentPanel key="tournament" depth="base" padding="md">
+              <Readout size="sm" label="Tournament" display={filterCounts.tournament} />
+            </InstrumentPanel>,
+          ]}
+        />
+
+        {/* ── SPREAD — a borderless footnote, no card, no Surface: where the
+            team actually loses or gains strokes, by round type. Earns a shape
+            none of its neighbors have (one top hairline only). A type with
+            zero rounds in scope is omitted, never a fabricated 0. This is NOT
+            a second scoring-trend chart — each month's own seam header
+            already carries that Sparkline, the ONE trend chart for the page. */}
+        {(() => {
+          const spreadRows: DivergingRow[] = (
+            [
+              ['Practice', typeAvgToPar.practice],
+              ['Qualifier', typeAvgToPar.qualifier],
+              ['Tournament', typeAvgToPar.tournament],
+            ] as const
+          )
+            .filter(([, agg]) => agg.count > 0)
+            .map(([label, agg]) => {
+              const delta = agg.sum / agg.count;
+              return {
+                label,
+                delta,
+                display: delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1),
+              };
+            });
+          if (spreadRows.length === 0) return null;
+          const max = Math.max(...spreadRows.map((r) => Math.abs(r.delta)));
+          return (
+            <div className="border-t border-border-subtle pt-4">
+              <p className="mb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+                Against par, by type
+              </p>
+              <DivergingBars rows={spreadRows} max={max} />
+            </div>
+          );
+        })()}
+        </>
+      ) : (
+        <>
+          {(stats || showUnfinished) && (
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-6">
+              {stats && (
+                <RoundsStage
+                  stats={stats}
+                  points={stagePoints}
+                  lastRound={lastScored}
+                  shift={scoreShift}
+                  className="min-w-0 md:order-1 md:col-span-7"
+                />
+              )}
+              {/* Rendered regardless of whether any COMPLETED round exists
+                  yet — a player can have zero finished rounds and one
+                  in-progress round, and it must stay resumable either way. */}
+              {showUnfinished && playerId && (
+                <div className="order-2 min-w-0 md:order-3 md:col-span-12">
+                  <FairwayUnfinishedBanner rounds={visibleInProgressRounds} playerId={playerId} />
+                </div>
+              )}
+              {stats && (
+                <div className="order-3 flex min-w-0 flex-col gap-8 empty:hidden md:order-2 md:col-span-5 md:gap-6">
+                  <ScoreBandHistogram rounds={rounds} underParPct={stats.underParPct} />
+                  <RoundTypeSegment rounds={rounds} />
+                </div>
+              )}
+            </div>
+          )}
+          {stats && (
+            <MonthDeviationBars rows={monthRows} seasonAvg={stats.avg} className="hidden md:flex" />
+          )}
+        </>
       )}
-
-      {/* ── COCKPIT — a ranked InstrumentCluster replaces the five equal
-          StatMatrix boxes: a focal RadialGauge, a two-item Readout rail
-          (each delta-gated on the same 6-scored-round honesty threshold the
-          old "Scoring trend" pill used), a four-up tertiary count row.
-          Rendered even with zero completed rounds — every instrument owns
-          its own honest starved/awaiting swap, never a fabricated 0.0. ───--*/}
-      <InstrumentCluster
-        ariaLabel="Round summary instrument cluster"
-        balance="focal"
-        primary={
-          <RadialGauge
-            size="md"
-            title="% under par"
-            overline="SEASON"
-            readoutLabel="of scored rounds"
-            value={starved ? undefined : stats!.underParPct / 100}
-            awaiting={starved}
-            samples={stats?.totalRounds}
-            minSamples={3}
-            unit="rounds"
-          />
-        }
-        secondary={[
-          <InstrumentPanel key="avg-score" depth="base" padding="md">
-            {starved ? (
-              <Readout size="lg" label="Avg score" state="awaiting" />
-            ) : (
-              <Readout
-                size="lg"
-                label="Avg score"
-                display={stats!.avg.toFixed(1)}
-                delta={
-                  hasScoreTrend
-                    ? {
-                        value: scoreDelta!,
-                        // Golf is lower-is-better: a falling average is the
-                        // GOOD ('up'/green) direction.
-                        direction: scoreDelta! < 0 ? 'up' : scoreDelta! > 0 ? 'down' : 'flat',
-                      }
-                    : undefined
-                }
-              />
-            )}
-          </InstrumentPanel>,
-          <InstrumentPanel key="avg-to-par" depth="base" padding="md">
-            {starved || avgToParDisplay === null ? (
-              <Readout size="lg" label="Avg to par" unit="strokes" state="awaiting" />
-            ) : (
-              <Readout
-                size="lg"
-                label="Avg to par"
-                unit="strokes"
-                display={avgToParDisplay}
-                delta={
-                  hasToParTrend
-                    ? {
-                        value: toParDelta!,
-                        direction: toParDelta! < 0 ? 'up' : toParDelta! > 0 ? 'down' : 'flat',
-                      }
-                    : undefined
-                }
-              />
-            )}
-          </InstrumentPanel>,
-        ]}
-        tertiary={[
-          <InstrumentPanel key="rounds" depth="base" padding="md">
-            {starved ? (
-              <Readout size="sm" label="Rounds" state="awaiting" />
-            ) : (
-              <Readout size="sm" label="Rounds" display={stats!.totalRounds} />
-            )}
-          </InstrumentPanel>,
-          <InstrumentPanel key="best" depth="base" padding="md">
-            {starved ? (
-              <Readout size="sm" label="Best round" state="awaiting" />
-            ) : (
-              <Readout size="sm" label="Best round" display={stats!.best} />
-            )}
-          </InstrumentPanel>,
-          <InstrumentPanel key="practice" depth="base" padding="md">
-            <Readout size="sm" label="Practice" display={filterCounts.practice} />
-          </InstrumentPanel>,
-          <InstrumentPanel key="tournament" depth="base" padding="md">
-            <Readout size="sm" label="Tournament" display={filterCounts.tournament} />
-          </InstrumentPanel>,
-        ]}
-      />
-
-      {/* ── SPREAD — a borderless footnote, no card, no Surface: where the
-          team actually loses or gains strokes, by round type. Earns a shape
-          none of its neighbors have (one top hairline only). A type with
-          zero rounds in scope is omitted, never a fabricated 0. This is NOT
-          a second scoring-trend chart — each month's own seam header
-          already carries that Sparkline, the ONE trend chart for the page. */}
-      {(() => {
-        const spreadRows: DivergingRow[] = (
-          [
-            ['Practice', typeAvgToPar.practice],
-            ['Qualifier', typeAvgToPar.qualifier],
-            ['Tournament', typeAvgToPar.tournament],
-          ] as const
-        )
-          .filter(([, agg]) => agg.count > 0)
-          .map(([label, agg]) => {
-            const delta = agg.sum / agg.count;
-            return {
-              label,
-              delta,
-              display: delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1),
-            };
-          });
-        if (spreadRows.length === 0) return null;
-        const max = Math.max(...spreadRows.map((r) => Math.abs(r.delta)));
-        return (
-          <div className="border-t border-border-subtle pt-4">
-            <p className="mb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
-              Against par, by type
-            </p>
-            <DivergingBars rows={spreadRows} max={max} />
-          </div>
-        );
-      })()}
 
       {/* ── Honest empty: zero completed rounds ─────────────────────────────
           Below the Cockpit/banner (which stay honest on their own via the
@@ -1091,16 +1170,56 @@ export function FairwayRoundsLibrary({
                             the avg/best figures beside it, not this squiggle,
                             carry the real verdict. A genuinely bad month (a
                             real multi-round decline) still earns amber honestly. */}
-                        {group.spark.length >= 6 && group.spark.length <= 20 && (
-                          <Sparkline
-                            data={group.spark}
-                            goodDirection="down"
-                            flatThreshold={4}
-                            width={120}
-                            height={24}
-                            label={`${group.label} scores`}
-                            className="flex-shrink-0"
-                          />
+                        {isCoach ? (
+                          group.spark.length >= 6 && group.spark.length <= 20 && (
+                            <Sparkline
+                              data={group.spark}
+                              goodDirection="down"
+                              flatThreshold={4}
+                              width={120}
+                              height={24}
+                              label={`${group.label} scores`}
+                              className="flex-shrink-0"
+                            />
+                          )
+                        ) : (
+                          // Player (player-rounds.v2.md): the score line at
+                          // every width; putts and GIR% lines beside it from
+                          // `md`, each behind the same six-round gate over the
+                          // rounds that logged that column. Captions only where
+                          // there is more than one line to tell apart.
+                          <div className="flex items-end gap-4">
+                            {group.spark.length >= 6 && group.spark.length <= 20 && (
+                              <SeamSpark
+                                data={group.spark}
+                                goodDirection="down"
+                                flatThreshold={4}
+                                caption="Score"
+                                label={`${group.label} scores`}
+                                captionClassName="hidden md:block"
+                              />
+                            )}
+                            {group.puttsSpark.length >= 6 && group.puttsSpark.length <= 20 && (
+                              <SeamSpark
+                                data={group.puttsSpark}
+                                goodDirection="down"
+                                flatThreshold={3}
+                                caption="Putts"
+                                label={`${group.label} putts`}
+                                className="hidden md:flex"
+                              />
+                            )}
+                            {group.girSpark.length >= 6 && group.girSpark.length <= 20 && (
+                              <SeamSpark
+                                data={group.girSpark}
+                                goodDirection="up"
+                                flatThreshold={8}
+                                caption="GIR"
+                                label={`${group.label} greens in regulation`}
+                                className="hidden md:flex"
+                              />
+                            )}
+                          </div>
                         )}
                       </div>
 

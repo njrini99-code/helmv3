@@ -1,7 +1,6 @@
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { StatStrip } from '@/components/fairway/charts/StatStrip';
 
 /**
  * P206 — the Suspense fallback for the Rounds library matches the LIVE
@@ -13,13 +12,13 @@ import { StatStrip } from '@/components/fairway/charts/StatStrip';
  * - Masthead: ViewHeader's 3-row title column — eyebrow ("Team Rounds"/
  *   "Your Rounds"), title ("The library."/"Your rounds."), and a `meta`
  *   count+range line.
- * - KPI hero: the real `StatStrip` primitive (RSC-safe, no hooks/'use
- *   client' — safe to render straight from this server component), so the
- *   loading state gets the identical phone-rail / desktop-grid shape the
- *   live hero uses instead of a hand-rolled approximation that could drift.
- *   Five StatTile-shaped shells inside (label row, then the big value row —
- *   Numeric renders value-then-label — no sparkline/delta-chip slot, since a
- *   skeleton can't know in advance whether a tile even has a trend).
+ * - Stage block: a readout line (two large values) over one chart-height
+ *   rectangle. The route cannot know the role: the player page opens with
+ *   the scoring stage (two Readouts, a verdict, a Ribbon —
+ *   player-rounds.v2.md) and the coach page with the Cockpit cluster (a
+ *   dial beside two Readouts — rounds-library.v2.md). Both are "big numbers
+ *   over a plotted instrument," so one block reserves roughly the same
+ *   height for either, with no fabricated dial or line.
  * - Toolbar row: a search-input-shaped block, then a row of filter-pill
  *   shapes on the left and one grouping-toggle shape on the right — the
  *   Toolbar itself is a `'use client'` component with framer-motion/scroll
@@ -49,21 +48,23 @@ export default function Loading() {
           <Skeleton className="h-4 w-56" />
         </div>
 
-        {/* StatStrip hero — the real layout primitive, so phone gets the
-            live component's horizontal rail (not a 2-col grid) and desktop
-            gets its 5-up grid, exactly like FairwayRoundsLibrary's own
-            hero. */}
-        <StatStrip count={5} columns={5} ariaLabel="Loading round summary">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex flex-col gap-3 rounded-fw-md border border-border-subtle bg-surface p-4 shadow-flat"
-            >
+        {/* Stage block — eyebrow, two large readouts, a verdict line, then
+            the plotted instrument's rectangle (Ribbon / cluster height). */}
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-3 w-16" />
+          <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-9 w-24" />
               <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-8 w-20" />
             </div>
-          ))}
-        </StatStrip>
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-[200px] w-full rounded-fw-md" />
+        </div>
 
         {/* Toolbar — search input + filter pills + Month/Week toggle */}
         <div className="flex flex-col gap-3">
