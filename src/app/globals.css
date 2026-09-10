@@ -3264,7 +3264,6 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
    A frosted object is a LAYER above content: chrome, dock, toolbar, sheet,
    popover. Resting content stays matte (Surface). Never glass-on-glass. */
 .fw-frost {
-  position: relative;
   isolation: isolate;
   background: var(--fw-frost-bg-floating);
   border: 1px solid var(--fw-frost-rim);
@@ -3316,7 +3315,6 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
    transparency `backdrop-filter: none` overrides below since it never sets
    one. */
 .fw-frost-static {
-  position: relative;
   background: var(--fw-frost-bg-subtle);
   border: 1px solid var(--fw-frost-rim);
   box-shadow:
@@ -3325,6 +3323,17 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
     var(--fw-frost-shadow-subtle);
 }
 /* Tinted-glass selection capsule: green shows through the frost. */
+/* Frost surfaces need a positioned box for their edge light, but this file
+   sits outside Tailwind's layers, so a bare `position: relative` here beat
+   the `fixed`/`sticky`/`absolute` utilities on any element carrying the
+   class directly: a frost Sheet panel rendered at the bottom of the
+   document and a sticky frost toolbar never stuck (2026-09-10). Elements
+   that position themselves keep their own value. */
+.fw-frost:where(:not(.fixed, .sticky, .absolute)),
+.fw-frost-static:where(:not(.fixed, .sticky, .absolute)) {
+  position: relative;
+}
+
 .fw-frost-selection {
   background: var(--fw-frost-selection-bg);
   border-color: var(--fw-frost-selection-rim);
