@@ -19,9 +19,12 @@
  * CoachHelm elsewhere).
  *
  * Deviations from the literal screen spec (reported to team-lead, see PR/task
- * notes): the per-row overflow menu and the desktop/phone drill surface are
- * both constrained by MatrixBoard.tsx, which this file may not edit — see the
- * comments at COLUMNS and RowDetail below.
+ * notes): the MatrixBoard column-key reuse in COLUMNS below (a pure wiring
+ * detail, never visible text). The per-row overflow menu now lives in
+ * `MatrixBoardRow.actions` (a real sibling control, not nested inside the
+ * row's own button) and the desktop-inline / phone-Sheet expand split is
+ * driven from this file via MatrixBoard's `expandedRowId`/
+ * `onExpandedRowChange`, once `primitives` added both to MatrixBoard.tsx.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -30,6 +33,7 @@ import Link from 'next/link';
 import { Download } from 'lucide-react';
 
 import { cn, pluralize } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { Chip } from '@/components/fairway/controls/badge';
 import { FilterPill } from '@/components/fairway/controls/filter-pill';
@@ -37,6 +41,7 @@ import { SearchField } from '@/components/fairway/command/search-field';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
 import { Surface } from '@/components/fairway/surfaces/surface';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Toolbar } from '@/components/fairway/controls/Toolbar';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { StatMatrix } from '@/components/fairway/modules/StatMatrix';
@@ -87,6 +92,18 @@ const SORT_OPTIONS = [
   { value: 'handicap', label: 'Handicap' },
   { value: 'rounds', label: 'Rounds' },
 ] as const;
+
+/** Matches Tailwind's `sm` (640px) — same threshold FairwayTasks.tsx's own
+ *  `DESKTOP_QUERY` uses for an identical inline-vs-Sheet split. Below this,
+ *  a row tap opens a Sheet instead of MatrixBoard's inline expand band. */
+const DESKTOP_QUERY = '(min-width: 640px)';
+
+/** The trend cell's desktop Sparkline is drawn at the SAME width MatrixBoard
+ *  would have given the literal 'trend' column key (`trackFor()`'s 96px
+ *  track) — this file can't use that key (see COLUMNS below), so the width
+ *  is pinned here explicitly instead of trusting the Sparkline's own
+ *  smaller default to happen to match. */
+const TREND_SPARKLINE_WIDTH = 96;
 
 /** Up to this many "needs a look" rows show as seams in the header; the rest
  *  collapse into a "+N more" control that filters the board instead. */
@@ -152,6 +169,25 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
   // `formatDate(dateStr, now)` client-only-clock pattern in this directory.
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
+
+  // Desktop keeps MatrixBoard's inline expand band; below `sm` a row tap
+  // opens a Sheet with the same RowDetail body instead (roster.md's phone
+  // reading). `isDesktop` is SSR-safe/false-on-server via useMediaQuery, so
+  // the very first paint (before hydration) never shows a phantom inline
+  // expand on what turns out to be a phone.
+  const isDesktop = useMediaQuery(DESKTOP_QUERY);
+  const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
+  const [sheetPlayerId, setSheetPlayerId] = React.useState<string | null>(null);
+  const handleExpandedRowChange = React.useCallback(
+    (candidate: string | null) => {
+      if (isDesktop) {
+        setExpandedRowId(candidate);
+      } else if (candidate !== null) {
+        setSheetPlayerId(candidate);
+      }
+    },
+    [isDesktop],
+  );
 
   // P253 — name search/filter. A roster is a list surface, so a coach overseeing
   // a large dev squad needs a way to find a player beyond scrolling (Nielsen
@@ -231,6 +267,15 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
     [sorted, attentionFilter, attentionIds],
   );
 
+  // The player behind the phone Sheet, looked up from `board` (the same
+  // list the visible rows come from) rather than the full `players` array,
+  // since `sheetPlayerId` can only ever be set from a row that's currently
+  // rendered.
+  const sheetPlayer = React.useMemo(
+    () => board.find((p) => p.id === sheetPlayerId) ?? null,
+    [board, sheetPlayerId],
+  );
+
   const handleAddFocusArea = React.useCallback(
     (playerId?: string) => {
       router.push(`/golf/dashboard/intelligence?view=players${playerId ? `&player=${playerId}` : ''}&playersTab=areas`);
@@ -278,7 +323,12 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
             <div key="trendline">
               <span className="hidden min-[940px]:inline-flex">
                 {hasTrendSignal ? (
-                  <Sparkline data={scores} goodDirection="down" label={`${name} scoring trend`} />
+                  <Sparkline
+                    data={scores}
+                    goodDirection="down"
+                    label={`${name} scoring trend`}
+                    width={TREND_SPARKLINE_WIDTH}
+                  />
                 ) : (
                   <span className="font-fw-mono text-body-sm text-text-tertiary">—</span>
                 )}
@@ -315,6 +365,13 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               intent={intents[p.id] ?? null}
               onIntentSaved={() => router.refresh()}
             />
+          ),
+          // A real sibling control (MatrixBoard renders `actions` outside
+          // the row's own press-target button), always visible at every
+          // width — not gated behind the expand band, so the menu's own
+          // "Message" item is reachable without opening the row first.
+          actions: (
+            <FairwayPlayerActionsMenu playerId={p.id} playerName={name} currentStatus={p.status} />
           ),
         };
       }),
@@ -467,10 +524,43 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
               }
             />
           ) : (
-            <MatrixBoard kpis={[]} columns={COLUMNS} rows={rows} />
+            <MatrixBoard
+              kpis={[]}
+              columns={COLUMNS}
+              rows={rows}
+              // Clamped to `null` when not desktop even though this file
+              // never SETS it off-desktop, so a live resize from desktop
+              // (with a row already expanded) down to phone can't leave a
+              // stale inline expand band open underneath the Sheet flow.
+              expandedRowId={isDesktop ? expandedRowId : null}
+              onExpandedRowChange={handleExpandedRowChange}
+            />
           )}
         </>
       )}
+
+      {/* Phone reading of a row's detail: MatrixBoard's own inline expand
+          only engages at/above `sm` (see `isDesktop` above) — below it, a
+          row tap opens this Sheet with the SAME RowDetail body instead,
+          per roster.md's phone spec ("Sheet, matte, side bottom"). */}
+      <Sheet
+        open={sheetPlayer != null}
+        onOpenChange={(open) => {
+          if (!open) setSheetPlayerId(null);
+        }}
+        title={sheetPlayer ? playerName(sheetPlayer) : 'Player'}
+      >
+        <Sheet.Body className="px-4 pb-4">
+          {sheetPlayer ? (
+            <RowDetail
+              player={sheetPlayer}
+              name={playerName(sheetPlayer)}
+              intent={intents[sheetPlayer.id] ?? null}
+              onIntentSaved={() => router.refresh()}
+            />
+          ) : null}
+        </Sheet.Body>
+      </Sheet>
     </div>
   );
 }
@@ -574,32 +664,23 @@ function AttentionPanel({
 }
 
 /* ---------------------------------------------------------------------------
- * RowDetail — the board row's expand content.
+ * RowDetail — a board row's detail content. Rendered as MatrixBoard's inline
+ * expand band at/above `sm` (desktop keeps the drill-in-place reading) and
+ * as this same body inside the phone Sheet below `sm` (see `isDesktop` /
+ * `sheetPlayer` in FairwayCoachRoster) — ONE content component, two hosts.
  *
- * Two deviations from the literal spec, both forced by MatrixBoard.tsx (not
- * editable here) and reported to team-lead:
+ * Not wrapped in <DrillPanel>: that component's `onBack`/`backLabel` imply a
+ * real close affordance. MatrixBoard's inline expand band has no such
+ * affordance of its own (closing means re-tapping the row), and the phone
+ * Sheet already supplies its own close control — a DrillPanel back-chip in
+ * either host would be a non-functional, dishonest affordance. Plain JSX
+ * instead, following TeamStatsBoard's `ExpandBand` precedent (the only other
+ * real MatrixBoard consumer in the codebase).
  *
- *  1. Not wrapped in <DrillPanel>: that component's `onBack`/`backLabel`
- *     imply a real close affordance, but MatrixRow keeps its `open` state
- *     fully internal with no exposed close callback — a DrillPanel back-chip
- *     here would be a non-functional, dishonest affordance. Plain JSX
- *     instead, following TeamStatsBoard's `ExpandBand` precedent (the only
- *     other real MatrixBoard consumer in the codebase).
- *  2. One expand body at every width, not a desktop inline band + a phone
- *     Sheet: MatrixRow's row button has exactly one onClick (its own
- *     open/close toggle) with no `onRowActivate`/controlled-open hook to
- *     drive a separate Sheet, and no per-row slot outside the row button to
- *     mount a second trigger safely. The "Open profile" CTA still becomes a
- *     full-width block button below the row's own single-column breakpoint,
- *     matching the spec's intent for the phone reading of this content.
- *
- * The overflow menu (FairwayPlayerActionsMenu, which already has its own
- * "Message" item) lives here rather than as a row cell for the same reason:
- * cells render INSIDE the row's real <button> (PressTarget), so a second
- * interactive trigger there would nest <button> in <button> — invalid HTML
- * that breaks hydration. This band renders as a DOM sibling of that button
- * (confirmed safe by the same TeamStatsBoard precedent), so the menu's own
- * IconButton trigger is safe here.
+ * The overflow menu (FairwayPlayerActionsMenu) is NOT rendered here — it
+ * lives in the row's own `MatrixBoardRow.actions` slot instead (see the
+ * `rows` memo above), a real sibling of the row's press-target button, so
+ * it's reachable at every width without opening this detail band first.
  * ------------------------------------------------------------------------- */
 function RowDetail({
   player,
@@ -628,7 +709,6 @@ function RowDetail({
           size="sm"
           onSaved={onIntentSaved}
         />
-        <FairwayPlayerActionsMenu playerId={player.id} playerName={name} currentStatus={player.status} />
       </div>
       <Button asChild variant="secondary" size="sm" shape="block" fullWidth className="sm:w-auto">
         <Link href={`/golf/dashboard/roster/${player.id}`}>Open profile</Link>
