@@ -115,7 +115,13 @@ export function FieldReadouts({ items }: { items: ReadoutItem[] }) {
         const delta = deltaText(item);
         return (
           <div key={item.key} className="flex min-w-0 flex-col gap-1 py-2 xl:py-3.5 xl:first:pt-0 xl:last:pb-0">
-            <dt className={OVERLINE}>{item.label}</dt>
+            {/* Reserve two lines for the label wherever the readouts sit side
+                by side, which is every width below xl. "Greens in regulation"
+                wraps and the other three do not, so without this its number
+                drops a line below its neighbour's and the band stops reading as
+                one row of figures. The rail at xl stacks vertically, where the
+                reservation would only be dead space. */}
+            <dt className={cn(OVERLINE, 'flex min-h-[2.25em] items-start xl:block xl:min-h-0')}>{item.label}</dt>
             <dd className="flex items-end justify-between gap-3">
               <span className="font-fw-mono text-h2 font-medium leading-none tabular-nums text-text-primary">
                 {item.value ?? '–'}
