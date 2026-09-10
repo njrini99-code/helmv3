@@ -63,7 +63,8 @@ Confirmed 12 | Refuted 2 | 0 blockers
 
 
 ## [HIGH] src/components/fairway/pages/calendar/CalendarSchedulingDialog.tsx:70
-**Scheduling dialog's error/loading fallback ignores the safe-area contract ModalShell delegates to it, on every date-window change**  
+**Scheduling dialog's error/loading fallback ignores the safe-area contract ModalShell delegates to it, on every date-window change**
+
 *dimension: design-system-a11y · panel 3/3 standing*
 
 ModalShell's `presentation="workspace"` phone layout is full-bleed (`top:0`, `rounded-none`, no shell padding) and explicitly documents that the child owns safe-area insets: `src/components/fairway/overlays/ModalShell.tsx:242-244` — "Phone workspace: top 0 / bottom = keyboard; the safe-area padding is the child's job (its header pads env(safe-area-inset-top))." `SchedulingWorkspace.tsx` upholds this: its header pads `env(safe-area-inset-top,0px)` (line 673) and its footer pads `env(safe-area-inset-bottom,0px)` (line 981). But `CalendarSchedulingDialog` renders `SchedulingWorkspace` only when `snapshot` is non-null; whenever it is null it falls back to a second, sibling branch (`CalendarSchedulingDialog.tsx:70-74`) that is a bare `<div className="min-h-0 flex-1 overflow-auto p-4 md:p-6">` with no `env(safe-area-inset-*)` padding at all — just a flat 16px (`p-4`) on phone. Its first content, the Back button + "Find a time" title (line 71), sits ~16px from the true top edge of a `top:0` full-bleed sheet. Per `useScheduleWindow`'s reducer (`src/hooks/golf/use-schedule-window.ts:89-93`), `snapshot` resets to `null` on *every* request-key change (i.e. every date jump inside the workspace, not just first mount), so this un-padded branch recurs throughout normal use, not only at initial open. The error sub-branch (line 72: `role="alert"` + "Try again") is the more serious case: it persists indefinitely until a retry succeeds, unlike the transient loading skeleton (line 73). ModalShell's own code comments (`ModalShell.tsx:295-305`) record a prior, materially identical incident for the `dialog` presentation — a modal rendered flush to `top:0` without accounting for the safe area and "the clock painted on top of the panel" on a notched iPhone (owner device report, 2026-08-26) — showing this exact failure mode has already bitten this codebase once and was fixed only for the other code path.
@@ -74,7 +75,8 @@ ModalShell's `presentation="workspace"` phone layout is full-bleed (`top:0`, `ro
 
 
 ## [MEDIUM] src/components/fairway/pages/calendar/scheduling/SchedulingWorkspace.tsx:534
-**Drag handle/band pointer handlers have no pointerId check, so a second touch on them mid-drag can hijack or truncate the gesture**  
+**Drag handle/band pointer handlers have no pointerId check, so a second touch on them mid-drag can hijack or truncate the gesture**
+
 *dimension: scheduling-workspace · panel 3/3 standing*
 
 beginDrag (521-529), handlePointerMove (534-536), handlePointerUp (542-549) and cancelDrag (538-540) are the shared handlers wired to BOTH the slider handle (onPointerDown={handlePointerDown} at 763, onPointerMove/Up/Cancel at 764-766) and the band (onPointerDown={handleBandPointerDown} at 898, onPointerMove/Up/Cancel at 899-901). None of them compares event.pointerId to the pointer that started the gesture. `dragging` is a single boolean and `dragRef.current` (grabOffsetPx, frame, lastX) is a single shared record, not keyed by pointer id.
@@ -85,7 +87,8 @@ beginDrag (521-529), handlePointerMove (534-536), handlePointerUp (542-549) and 
 
 
 ## [MEDIUM] src/components/fairway/pages/calendar/scheduling/SchedulingWorkspace.tsx:798
-**Scheduling-workspace time-ruler slot touch target regressed from a compliant 56px to a non-compliant 32px tall hit area**  
+**Scheduling-workspace time-ruler slot touch target regressed from a compliant 56px to a non-compliant 32px tall hit area**
+
 *dimension: design-system-a11y · panel 3/3 standing*
 
 The hour-ruler row is a real, keyboard/AT-exposed interactive control: `<PressTarget aria-label={`Choose ${formatTime(...)} start`} aria-pressed={selected} onClick={...}>` (lines 787-796) with `className` including `'relative h-8 w-full ...'` (line 798) — `h-8` = 32px tall. Its column width is fixed by the grid track at `[--slot-width:24px]` on mobile (line 748), unchanged from `main`. On `main` (`git show main:...SchedulingWorkspace.tsx:544-564`), the equivalent control was `<Button variant="ghost" size="md" className="relative min-h-14 w-full ...">` — `min-h-14` = 56px tall, at the same 24px width. So the mobile hit area shrank from 24x56px (1344px^2) to 24x32px (768px^2), a ~43% reduction, and now both dimensions sit well under the repo's own stated 44px WCAG 2.2 AA 2.5.8 touch-target convention, which this very PR applies elsewhere in the same file's sibling controls and cites explicitly in `segmented.tsx:81,130,133` ("44px touch-target minimum (WCAG 2.2 AA 2.5.8)") and enforces in `PopoverPanel.tsx:198-199` ("44px tap-target floor... was min-h-[36px], 8px short. Every PopoverPanel menu app-wide inherits the fix."). `PressTarget` itself (`src/components/fairway/controls/press-target.tsx`) renders a plain native button with no hit-slop/padding trick that would compensate for the smaller visual box, so this is a real shrink of the actual hit area, not just a visual one.
@@ -96,7 +99,8 @@ The hour-ruler row is a real, keyboard/AT-exposed interactive control: `<PressTa
 
 
 ## [MEDIUM] src/components/fairway/overlays/ModalShell.tsx:242
-**ModalShell presentation="workspace" has zero test coverage anywhere**  
+**ModalShell presentation="workspace" has zero test coverage anywhere**
+
 *dimension: test-quality · panel 2/3 standing*
 
 ModalShellPresentation ('dialog'|'workspace') and the phone-vs-stage branching (workspace && workspacePhone at line 242-247, the divergent inline style block at lines 320-338, and the sm+ wide-stage class list at line 351) are brand-new in this diff. The ONLY caller that passes presentation="workspace" is CalendarSchedulingDialog.tsx:44. There is no CalendarSchedulingDialog test file at all (confirmed: no file matches `find src -iname '*CalendarSchedulingDialog*'` other than the source itself), and none of the three existing ModalShell test files (ModalShell.focus-restore.test.tsx, ModalShell.coarse-pointer-focus.test.tsx, ModalShell.select-focus.test.tsx) reference 'workspace' (grep confirms zero matches). SchedulingWorkspace.test.tsx renders <SchedulingWorkspace> directly, never through ModalShell, so it cannot exercise this branch either.
@@ -107,7 +111,8 @@ ModalShellPresentation ('dialog'|'workspace') and the phone-vs-stage branching (
 
 
 ## [MEDIUM] src/components/fairway/controls/segmented.tsx:91
-**Segmented's new `quiet` prop has no assertion anywhere in the test suite**  
+**Segmented's new `quiet` prop has no assertion anywhere in the test suite**
+
 *dimension: test-quality · panel 3/3 standing*
 
 `quiet` (segmented.tsx:91-97) drives three real behavioral branches: SegmentedPill's flat vs. lifted-thumb-with-dot rendering (segmented.tsx:218-229 vs 230-276), the track's `data-quiet`/transparent-border/no-inset-shadow styling (segmented.tsx:335-337), and is the only reason FairwayCalendarHero passes `quiet` to its view selector (FairwayCalendarHero.tsx:266). The pre-existing segmented.test.tsx was NOT touched by this diff and has zero references to 'quiet' (grep confirms). FairwayCalendarHero.test.tsx renders the real (unmocked) Segmented but its only assertion touching the view selector is `getByRole('radiogroup', { name: 'Calendar view' })` — nothing checks the quiet-specific rendering (no dot, flat pill, transparent border).
@@ -118,7 +123,8 @@ ModalShellPresentation ('dialog'|'workspace') and the phone-vs-stage branching (
 
 
 ## [MEDIUM] src/components/fairway/pages/calendar/FairwayCalendar.tsx:247
-**Month-scoped agenda window and empty-state period naming are untested**  
+**Month-scoped agenda window and empty-state period naming are untested**
+
 *dimension: test-quality · panel 2/3 standing*
 
 This diff changes Agenda's fetch/render window from a fixed ±3-month span to exactly the focused month (`if (view === 'agenda') { return { start: startOfMonth(focusDate), end: endOfMonth(focusDate) }; }`) and wires a new `periodLabel` prop into FairwayAgendaView for both month (`format(focusDate, 'MMMM yyyy')`) and week (`` `the week of ${format(visibleWindow.start, 'MMMM d')}` ``) so an empty period names itself instead of saying generic 'Nothing upcoming'. There is no FairwayCalendar.tsx test file that exercises view-window computation (only the narrow, untouched FairwayCalendar.sortEventsStably.test.tsx exists). FairwayAgendaView.test.tsx — which does test empty/range behavior — was NOT touched by this diff and never passes `periodLabel`; grep confirms zero references to `periodLabel` anywhere under src/**/*.test.ts*.
@@ -129,7 +135,8 @@ This diff changes Agenda's fetch/render window from a fixed ±3-month span to ex
 
 
 ## [MEDIUM] src/components/fairway/pages/calendar/FairwayAgendaView.tsx:77
-**New "in N days" agenda heading cue (relativeDayCue) has no test**  
+**New "in N days" agenda heading cue (relativeDayCue) has no test**
+
 *dimension: test-quality · panel 2/3 standing*
 
 `relativeDayCue` is entirely new in this diff (git diff shows the whole function added) and renders next to every day heading within the coming week. FairwayAgendaView.test.tsx exists but was NOT touched by this diff, and none of its tests pass a `nowRef` combined with buckets 2-6 days out or assert on 'in N days' / 'Yesterday' text; a repo-wide grep for 'relativeDayCue' or 'in \d days' inside test files returns nothing relevant.
@@ -140,7 +147,8 @@ This diff changes Agenda's fetch/render window from a fixed ±3-month span to ex
 
 
 ## [MEDIUM] src/components/fairway/pages/calendar/CalendarSchedulingDialog.tsx:40
-**CalendarSchedulingDialog's recheck/error-branch (acceptProposal reason mapping) has no test**  
+**CalendarSchedulingDialog's recheck/error-branch (acceptProposal reason mapping) has no test**
+
 *dimension: test-quality · panel 3/3 standing*
 
 This diff replaces a single `allAvailable` check with a three-way `acceptProposal(...).reason` branch ('unverified' / 'nobody' / else) that produces different user-facing copy on the final server recheck before confirming a chosen time. No test file exists for CalendarSchedulingDialog.tsx at all (confirmed by `find` and by grepping test files for the component name) — SchedulingWorkspace.test.tsx and evaluate.test.ts each test only their own layer (the workspace's local UI state, and the pure evaluate/acceptProposal functions), never this component's async recheck-and-branch flow.
@@ -151,7 +159,8 @@ This diff replaces a single `allAvailable` check with a three-way `acceptProposa
 
 
 ## [MEDIUM] src/components/fairway/pages/calendar/FairwayMonthGrid.tsx:236
-**Month grid renders two focusable, redundant day-select controls per cell below the sm breakpoint**  
+**Month grid renders two focusable, redundant day-select controls per cell below the sm breakpoint**
+
 *dimension: sweep · panel 3/3 standing*
 
 Below `sm` (640px), each day cell in FairwayMonthGrid now renders TWO separate `PressTarget` (native `<button>`) elements that both call `onSelectDate(day)`: (1) a full-cell button at line 236-243 with className `absolute inset-0 z-0 ... sm:hidden` (visible + tabbable on phone, hidden+removed-from-tab-order at sm+), and (2) the day-number button at line 257-262 with className `... max-sm:sr-only sm:pointer-events-auto` (pointer-events:none and visually clipped via Tailwind's `sr-only` on phone, but NOT removed from the tab order or the accessibility tree — `sr-only` only clips visually, it doesn't set `display:none` or `tabindex=-1`, and `pointer-events-none` only blocks pointer/touch hit-testing, not keyboard Enter/Space activation on a native `<button>`). The comment at line 232-234 explicitly states the intent ('Phone: ONE day action... each viewport has exactly one day target'), but the code produces two independent, always-both-rendered tab stops per cell on phone widths, since `onSelectDate` is unconditionally supplied by both call sites in FairwayCalendar.tsx (lines ~1170 and ~1259). Before this PR there was exactly one `<Button>` per cell at every breakpoint; this diff is what introduces the duplication.
@@ -162,7 +171,8 @@ Below `sm` (640px), each day cell in FairwayMonthGrid now renders TWO separate `
 
 
 ## [MEDIUM] src/components/fairway/pages/calendar/FairwayCalendarHero.tsx:148
-**Day-view prev/next controls are labeled "day" but actually jump 7 days**  
+**Day-view prev/next controls are labeled "day" but actually jump 7 days**
+
 *dimension: sweep · panel 3/3 standing*
 
 `stepLabel` maps `view === 'day'` to the literal string `'day'`, which feeds directly into the prev/next `IconButton` aria-labels at lines 273 and 276 (`Previous ${stepLabel}` / `Next ${stepLabel}`). But `FairwayCalendar.tsx`'s `navigate()` callback (~lines 849-862) only steps by a single day for `view === 'week'`... actually steps Month/Agenda by month and routes everything else (Day AND Week) through `setFocusDate((d) => addDays(d, dir * 7))` — a 7-day jump. This 7-day jump for Day view is intentional (confirmed via `FairwayDayStrip.tsx`'s documented `onSwipe` contract: "a horizontal swipe across the strip moves one week... the way a page turns", i.e. the day-strip itself is the single-day picker and prev/next page by week). So the behavior is by design, but the new `stepLabel` derivation asserts a granularity (day) that the button it labels does not honor.
@@ -175,7 +185,8 @@ FairwayCalendar.tsx (~849-862): `if (view === 'month' || view === 'agenda') { se
 
 
 ## [LOW] src/components/fairway/pages/calendar/scheduling/SchedulingWorkspace.tsx:561
-**Lane tap-vs-pan detector uses one shared ref across every row, so an overlapping second touch silently drops a legitimate tap**  
+**Lane tap-vs-pan detector uses one shared ref across every row, so an overlapping second touch silently drops a legitimate tap**
+
 *dimension: scheduling-workspace · panel 3/3 standing*
 
 tapRef (line 554) is a single `{id,x,y}|null` ref owned by the whole SchedulingWorkspace instance, but handleLanePointerDown/Up/Cancel (554-568) are attached identically to EVERY participant row's lane div (839-841, inside `orderedParticipants.map`). handleLanePointerUp unconditionally nulls tapRef.current (line 561) before checking whether the id matches (line 562), so a mismatched pointerup destroys tracking data belonging to a still-pending, different pointer.
@@ -186,7 +197,8 @@ tapRef (line 554) is a single `{id,x,y}|null` ref owned by the whole SchedulingW
 
 
 ## [LOW] src/components/fairway/pages/calendar/scheduling/__tests__/SchedulingWorkspace.test.tsx:83
-**Tautological self-referential assertion in SchedulingWorkspace.test.tsx pins nothing**  
+**Tautological self-referential assertion in SchedulingWorkspace.test.tsx pins nothing**
+
 *dimension: test-quality · panel 3/3 standing*
 
 `expect(screen.getByTestId('scheduling-workspace')).toHaveAttribute('data-testid', 'scheduling-workspace')` checks the exact attribute value that `getByTestId` already used to locate the element — it can never fail regardless of what the component renders, so it contributes zero coverage. It sits harmlessly alongside real assertions in the same test, but is dead weight, not a behavior pin.
