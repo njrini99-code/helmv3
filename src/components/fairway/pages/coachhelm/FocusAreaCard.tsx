@@ -243,6 +243,45 @@ export interface FocusAreaCardProps {
    * Renders nothing when absent — honest-empty, never a fabricated bar.
    */
   standing?: PlayerStanding | null;
+  /**
+   * `card` (default): the card owns its own bordered Surface, exactly as
+   * before. `bare`: drops that chrome (border, background, radius, shadow)
+   * and keeps only its padding rhythm, for hosting inside another container
+   * (an `InstrumentPanel`, a seam-row list) that already supplies the
+   * matte plane — mirrors `StandingBars`' `frame="bare"`. Never nest two
+   * bordered boxes.
+   */
+  frame?: 'card' | 'bare';
+}
+
+/* ---------------------------------------------------------------------------
+ * CardFrame — the card's own bordered Surface, or a plain padded div when a
+ * host container already supplies the matte plane (frame="bare").
+ * ------------------------------------------------------------------------- */
+
+function CardFrame({
+  frame,
+  padding,
+  className,
+  children,
+}: {
+  frame: 'card' | 'bare';
+  padding: 'sm' | 'md';
+  className?: string;
+  children: ReactNode;
+}) {
+  if (frame === 'bare') {
+    return (
+      <div className={cn(padding === 'sm' ? 'p-4' : 'p-6', 'text-text-primary', className)}>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <Surface padding={padding} elevation="border" className={className}>
+      {children}
+    </Surface>
+  );
 }
 
 /* ---------------------------------------------------------------------------
@@ -498,8 +537,8 @@ function ProgressMeter({
         // authoritative; a one-line reason is honest and actionable.
         <p className="font-fw-sans text-eyebrow text-text-tertiary">
           {!autoTracked
-            ? 'Tracked manually — log progress to move this one.'
-            : 'Progress starts from the next update — no starting value on record.'}
+            ? 'Tracked manually. Log progress to move this one.'
+            : 'Progress starts from the next update. No starting value on record.'}
         </p>
       )}
     </div>
@@ -634,6 +673,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
       index = 0,
       className,
       standing,
+      frame = 'card',
     },
     ref,
   ) {
@@ -712,9 +752,9 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           animate="visible"
           transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : index * 0.04, ease: [0.16, 1, 0.3, 1] }}
         >
-          <Surface
+          <CardFrame
+            frame={frame}
             padding="sm"
-            elevation="border"
             className={cn('flex flex-col gap-3', className)}
           >
             <div className="flex items-center gap-4">
@@ -773,7 +813,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 />
               </div>
             ) : null}
-          </Surface>
+          </CardFrame>
         </motion.div>
       );
     }
@@ -802,7 +842,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
         animate="visible"
         transition={{ duration: reduced ? 0 : 0.4, delay: reduced ? 0 : index * 0.04, ease: [0.16, 1, 0.3, 1] }}
       >
-        <Surface padding="md" elevation="border" className={cn('space-y-4', className)}>
+        <CardFrame frame={frame} padding="md" className={cn('space-y-4', className)}>
           {/* Header: area icon + title + status */}
           <div className="flex items-start gap-4">
             <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
@@ -1044,7 +1084,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               ) : null}
             </div>
           )}
-        </Surface>
+        </CardFrame>
       </motion.div>
     );
   },
