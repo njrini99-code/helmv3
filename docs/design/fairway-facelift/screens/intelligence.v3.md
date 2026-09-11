@@ -626,3 +626,82 @@ by this spec):
   generic phone note "the view control becomes a Menu") is a deliberate,
   cited exception — see Phone — justified by `ViewSwitch.tsx:20-29`'s own
   frozen `role="link"` test contract, not an oversight.
+
+## Result
+
+Built on `agent/frost-facelift`. Files: `src/components/golf/coachhelm/triage/TriageDesk.tsx`
+(rewritten), `intelligence-logic.ts` + `intelligence-parts.tsx` (new, page-local),
+`SignalDossier.tsx` (chrome stripped), `__tests__/intelligence-logic.test.ts` (new),
+`__tests__/TriageDesk.navigation.test.tsx` / `SignalDossier.test.tsx` /
+`SignalDossier.teamRollup.test.tsx` (updated to the new composition),
+`memory/features/coach-intelligence-triage.md`. Deleted: `SignalQueue.tsx`,
+`SignalRow.tsx`, `SignalInsightPanel.tsx`.
+
+Deviations from the spec above, each with its reason.
+
+1. **The stage is a page-local `LeakRail`, not `modules/RailBars`.** The spec's
+   own Risks section says `RailBars` needs two additive fields — `tone` and
+   `href` — and both live on `RailBarRow` in `modules/types.ts`, which this pass
+   does not own (`modules/index.ts`, `modules/types.ts` and `registry.ts` are the
+   lead's files). `LeakRail` reproduces the canonical geometry (label column,
+   flexible track, right-aligned mono figure with its sample one step down,
+   percentage-only layout, capped stagger entrance behind `useReducedMotionGuard`)
+   without touching any of the three.
+
+2. **No per-row rail track, and the shared tick is a vertical rule instead.**
+   `RailBars` draws `bg-surface-sunken` under every bar and a 2px `tickPct` mark
+   part-way along it. LANGUAGE.md bans exactly that shape: a rail under a mark
+   turns the mark into a handle on a slider. The bars are anchored to one
+   vertical zero rule spanning every row, and the across-category mean is a
+   second vertical rule spanning every row — vertical ground rather than eight
+   private sliders. Every row still states its own value in mono beside it.
+   `MIN_BAR_PCT` (1.5%) gives a measured-but-tiny leak a visible nub; the printed
+   figure is untouched.
+
+3. **The `ViewSwitch` sits on the masthead eyebrow row, not above the table.**
+   Players and Effectiveness replace the entire field sheet, so the control
+   belongs to the page. Drawn above the table it would put the only route to
+   those two views below the fold on every load. The `Toolbar` above the table
+   keeps the Severity/Category `FilterMenu`s, which genuinely do scope the table.
+
+4. **Readouts carry no links.** `ReadoutItem` (`coach-home-parts.tsx`) has no
+   `href` field and that file belongs to the coach-home pass. The readouts state
+   direction-of-good in their caption, as specced; the links are the only part
+   dropped.
+
+5. **The drill renders inline at every width rather than as a bottom sheet on
+   phone.** `Sheet` portals to `document.body`, so a `md:hidden` wrapper cannot
+   gate it and an open sheet would cover the desktop page too; choosing between
+   them needs a runtime breakpoint read, which LANGUAGE.md bans outright. The
+   `DrillPanel` is appended under the table and scrolled into view with
+   `block: 'nearest'` when a ledger row selects a signal from further up the page.
+
+6. **Two signal counts exist, and they are captioned apart.** `Open signals`
+   (the readout, and the table's own total) counts every open signal including
+   roster roll-ups; `Queue` (the ledger column's count, and the denominator the
+   rail's per-category samples add up to) counts only the triageable ones. They
+   differ by exactly the roll-up count, which the readout's own note states
+   ("includes N team roll-ups"). The table's heading names the active filter
+   ("Signals · Urgent") whenever one is set, so a filtered count never wears the
+   same caption as an unfiltered one.
+
+7. **`SeverityChip` moved from the deleted `SignalRow.tsx` into
+   `intelligence-parts.tsx`** and now resolves `urgent`/`high`/`medium` to the
+   amber `warning` tone and `low` to neutral, as the spec requires. The grade is
+   carried by the text label, which is never abbreviated away.
+
+8. **The `groupsError` notice is rendered ONCE, in the stage**, rather than
+   repeated in place of Ledger Columns 1-2 and again in place of the table.
+   Those three regions are omitted while it shows; Column 3 (Focus areas, with
+   its own independent `loadError` branch) and Readouts 3-4 keep rendering, which
+   is the scoping the spec asks for.
+
+9. **`categoryInsights` and `teamName` stay on the props contract** even though
+   nothing renders them now. Removing them is a `page.tsx` /
+   `CoachIntelligenceHome.tsx` change that belongs with the loader, not with this
+   screen's composition.
+
+Verification: `npx tsc --noEmit -p tsconfig.json` exit 0; `npx eslint` on all
+changed files exit 0, zero warnings; `npx vitest run
+src/components/golf/coachhelm/triage/__tests__/
+src/components/golf/coachhelm/home/__tests__/` exit 0, 202 passed.

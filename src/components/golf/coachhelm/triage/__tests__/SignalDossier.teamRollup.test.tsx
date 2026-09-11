@@ -62,7 +62,6 @@ function renderDossier(s: GroupedSignal) {
       onReview={noop}
       onDismiss={noop}
       onPromoted={noop}
-      onBack={noop}
       onSelectSignal={noop}
     />,
   );
