@@ -170,10 +170,15 @@ describe('ratchet 2 — no new consumer of the legacy dot-on-a-rail standing fam
     'src/components/fairway/charts/StandingStrip.tsx',
     'src/components/fairway/charts/StandingStrip.test.tsx',
   ];
-  const STANDING_TRACK_OWN = [
-    'src/components/fairway/modules/StandingTrack.tsx',
-    'src/components/fairway/modules/__tests__/StandingTrack.test.tsx',
-  ];
+  /**
+   * Deleted 2026-09-10. `StandingTrack` was the dot-on-a-rail this ratchet
+   * existed to stop spreading; once its ALLOWLIST reached zero the component
+   * had no consumer and no route, and `route-reachability.test.ts` failed on
+   * it. The exemption stays as an empty list rather than disappearing, so the
+   * scan below still reads as "everything except the component's own file",
+   * which is what it must mean again if the file is ever restored.
+   */
+  const STANDING_TRACK_OWN: string[] = [];
   /** The whole legacy variant family lives here; its own tests live alongside it. */
   const STANDING_BAR_V3_DIR = 'src/components/golf/coachhelm/v3/StandingBar/';
   const STANDING_BAR_DEDICATED_TEST = 'src/test/golf/components/StandingBar.test.tsx';
