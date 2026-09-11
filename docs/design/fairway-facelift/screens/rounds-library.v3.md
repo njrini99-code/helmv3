@@ -670,3 +670,161 @@ client-only breakpoint branch, no hydration flip.
 
   `rounds-instruments.test.tsx` covers only player-branch functions and
   components and remains entirely unaffected.
+
+## Result
+
+Deviations from this spec, and why, in the order they were found.
+
+- **Scope correction: this spec governs the COACH persona only — the player
+  ledger stays byte-identical.** Commit `02a9266fd` had already deleted
+  `FairwayRoundRow.tsx`/`FairwayRoundRow.test.tsx` and hardened "The table"
+  section above to describe one shared bare `<table>` for both roles. Acting
+  on that text, the table was implemented as one component (`RoundsTable`,
+  `rounds-library-parts.tsx`) taking a `userRole` prop and rendering the
+  player's rows as dense `<tr>`s too — dropping `FairwayRoundRow`'s `MicroBar`,
+  its mobile condensed stat line, its "Best" badge, and its hover chevron for
+  players, a real information loss on a screen this spec was never asked to
+  touch. Team-lead ruled this out of scope: another session owns every player
+  surface and had already committed to keeping the player ledger unchanged;
+  this spec's scope sentence names the player STAGE instruments as the shared
+  risk, not a grant over the shared ledger row markup. Corrected by reading
+  the boundary as the persona, not the line range:
+  - `FairwayRoundRow.tsx` restored verbatim (byte-for-byte, via `git show` of
+    its last content before deletion, commit `0a1bede1f`) — untouched from
+    here on.
+  - The render site in `FairwayRoundsLibrary.tsx` now forks on `isCoach`
+    where "The table" begins: the coach branch renders the bare
+    `<RoundsTable>` this spec describes below; the player branch renders its
+    pre-facelift markup inline (one `Surface`-wrapped sticky seam header per
+    group — avg/best + the Score/Putts/GIR `SeamSpark` triple — over a
+    `divide-y` run of `FairwayRoundRow` cards), restored from this file's
+    state immediately before `02a9266fd`. The player's empty-filtered-rows
+    state keeps its `Surface` too, for the same reason.
+  - `RoundsTable` lost its `userRole` prop and the now-dead player branch
+    inside its seam header (`isCoach ? ... : ...`) — it is coach-only by
+    construction now, and its group header stopped printing avg/best/spark
+    entirely (this spec's "Grouping stays" already called for that on the
+    coach side; the player-only avg/best/`SeamSpark` content simply moved to
+    the restored player branch instead of disappearing).
+  - `RoundsTableGroup` (the one shared group shape both branches read) grew
+    two fields, `bestId`/`hasMultiple`, that only `FairwayRoundRow`'s
+    "Best"-badge logic needs; the coach table ignores both. Recomputed in
+    `FairwayRoundsLibrary.tsx`'s `visibleGroups` memo exactly as the
+    pre-`02a9266fd` code did (lowest `score_to_par` in the full group, not
+    just the visible slice), rather than forking a second grouping pass.
+  - Net effect: **this spec's "Bare on the canvas, no Surface" now describes
+    the coach table only.** The player ledger keeps its own Surface, exactly
+    as it always has. The single-Surface invariant test
+    (`FairwayRoundsLibrary.test.tsx`) was rewritten accordingly — see below.
+
+- **Sticky-header regression, now fixed to match what this spec already
+  prescribed.** An early implementation pass wrapped the coach `<table>` in
+  `overflow-x-auto` instead of the `overflow-x-clip` this section names
+  above. Per the CSS Overflow spec's visible→auto coupling rule, a non-`clip`
+  `overflow-x` other than `visible` promotes the same box's `overflow-y` to
+  `auto`, making that div a scroll container — so the group header `<td>`'s
+  `position: sticky; top: ...` resolved its `top` against that div's own top
+  instead of the viewport/fixed chrome, and the header detached and slid
+  under the navbar/tabs on scroll instead of stopping below them. This was
+  never a browser bug (an earlier note here wrongly called it one — retracted
+  by this paragraph). Root-caused via exact pixel arithmetic (measured
+  sticky-container top 339px + computed `top` 104px = the measured, wrong,
+  resting position 443px) and fixed by using `overflow-x-clip` exactly as
+  already specified above; a standalone test confirmed `overflow-x: clip`
+  does not trigger the same coupling (`overflow-y` stays `visible`), so it
+  clips rounded corners without becoming a scroll container.
+
+- **Spec silence, now closed: `truncate` on a bare `<Link>` doesn't clip.**
+  Not called out anywhere above. The "Best" readout's caption
+  (`FairwayRoundsLibrary.tsx`, the `readoutItems` memo) wrapped
+  `{bestName}, {bestCourse}` in a `<Link>` styled with `truncate` alone.
+  Tailwind's `truncate` (`overflow:hidden` + `text-overflow:ellipsis` +
+  `white-space:nowrap`) only clips a block-level (or flex/grid-blockified)
+  box; a bare `<Link>`/`<a>` is `display:inline` by default, so `overflow`
+  never applied and the name+course string painted straight into the next
+  readout column with no ellipsis. Fixed by adding `block` to the Link's
+  className — a one-word fix, verified via phone and desktop captures
+  (clean "Cole Bennett, Pebble B…" truncation, no overlap).
+
+- **Empty-state defect (shared code, both roles): two primary actions on one
+  screen.** Found by a peer session, assigned here since the file is shared.
+  The zero-rounds `EmptyState` at the bottom of the masthead area rendered a
+  filled `variant="primary"` "Log your first round" button while the
+  `ViewHeader`'s own unconditional primary "New round" action was still on
+  screen above it — the player-only combination, since the coach masthead
+  carries no `primaryAction` at all. Fixed by demoting the empty state's
+  button to `variant="secondary"` rather than removing it: the header's
+  action has to be the one that survives once this empty state stops
+  rendering (i.e. once a round exists), and the empty-state button remains
+  the only forward path on a screen with genuinely nothing on it otherwise.
+
+- **Phone breakpoint gap, closed: the ledger row's stacked hairline was
+  missing.** "The ledger row" section (above) specifies "the two columns
+  stack, `divide-x` becomes a horizontal hairline between them" on phone.
+  The implementation had `xl:divide-x` for the desktop split but nothing for
+  the stacked case below it — just a bare `gap-y-10`, no rule line. Fixed by
+  adding `divide-y divide-border-subtle` as the base (stacked) state,
+  cancelled at `md:divide-y-0` (the `md` two-up grid keeps a plain gap, which
+  this spec doesn't call out either way), with `xl:divide-x` taking over
+  the vertical hairline from `xl`.
+
+- **Breakpoint floor (LANGUAGE.md, rewritten mid-implementation at commit
+  `00a73b901` from a flat "xl" rule to a floor: a split is legal only at the
+  width where every column still holds its content whole). Both of this
+  screen's splits were checked against the new text:**
+  - The stage's `xl:grid-cols-[minmax(0,1fr)_15rem]` (fixed rail beside the
+    flexible `RoundField`) is exactly the failure case the rule names, and
+    is already gated at `xl` — compliant. Below `xl` the readouts render as
+    the four-across band above the instrument the rule describes, not a
+    starved side rail.
+  - The ledger row's `xl:grid-cols-12` with `xl:col-span-7`/`xl:col-span-5`
+    (Leaders/Score bands) is a fractional split, which the rule allows lower
+    than `xl` provided it's measured there — this one stays gated at `xl`
+    too, the more conservative choice, so no lower-width check is required
+    by the rule as written. Visually confirmed at 1440 (captured): the
+    longest name in the fixture data ("Dylan Brooks") resolves with wide
+    margin inside its column, well short of the truncation this spec's
+    `min-w-0 flex-1 truncate` already guards against. **Not independently
+    captured at 1280 for this pass** — the shared dev server's login became
+    unreliable under that day's severe multi-agent resource contention
+    (several capture attempts timed out or reused stale results); the 1280
+    case is arithmetically comfortable (a ~58%/12-column share losing only
+    the gap and page padding, versus the rule's failure case of a 25%
+    column), but this is reasoning from the 1440 capture and the grid math,
+    not a literal 1280 screenshot. Flagging honestly rather than claiming a
+    check that wasn't run.
+
+- **Observed, not confirmed: one empty `RoundField` capture.** A single
+  1440px capture of the coach stage rendered the `RoundField` scatter with
+  zero visible marks despite 97 real scored rounds and a fully populated
+  table below it; an equivalent phone capture of the identical data, taken
+  in the same session, showed the marks correctly (green/amber dots across
+  Jun/Jul/Aug). `RoundField`'s marks fade in via Framer Motion's
+  `LazyMotion`/`loadFeatures()` code-split, a pattern used repo-wide
+  (including the outer `FairwayDashboardShell`, which mounts before this
+  page's content and would very likely have already warmed that same chunk).
+  The most likely explanation is a one-off paint/chunk-load timing artifact
+  under that day's exceptional shared-machine load, not a defect in this
+  component's geometry — but a second capture attempt could not get a clean
+  re-run (its own login attempt failed and the tool silently reported a
+  stale prior result instead of a fresh one). This is left as an open,
+  honestly-flagged observation rather than either a claimed-fixed bug or a
+  silently-ignored one; worth one clean re-capture when the shared machine
+  is calmer.
+
+- **Button `[&>span]:min-w-0 [&>span]:flex-1` fix, both ledger columns.**
+  `Button`'s `fullWidth` prop wraps children in a bare, unstyled
+  `<span>{children}</span>` that flex-item-sizes to its content, not to the
+  button's own full width — so the `w-full` grid inside each `RoundsLeadersColumn`/
+  `ScoreBandRow` row resolved against a content-sized span instead of the
+  real row, and the `1fr` rail-bar track collapsed to 0px. Fixed by adding
+  `[&>span]:min-w-0 [&>span]:flex-1` to each Button's own `className`, which
+  reaches through to that one child and makes it actually grow to fill the
+  button.
+
+- **Loader: not touched.** The `player.id` field named under Risks above
+  (needed to turn the masthead leader and Leaders-column rows into real
+  links to the roster) was left as a follow-up; this pass didn't need it for
+  any of the deviations above, and the scope for this work was to touch the
+  loader only for that one named change, not to also implement it
+  speculatively.

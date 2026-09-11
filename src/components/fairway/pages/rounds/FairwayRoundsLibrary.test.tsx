@@ -178,17 +178,20 @@ describe('FairwayRoundsLibrary — in-progress round discoverability', () => {
 
 /**
  * ============================================================================
- * Facelift — ONE ledger Surface for every group (docs/design/fairway-facelift/
- * screens/rounds-library.md "CONTAINERS TO REMOVE" #3)
+ * Facelift — the page's only Surface is the stage (rounds-library.v3.md
+ * "The table" → "Bare on the canvas, no Surface"; LANGUAGE.md:32/:60)
  * ----------------------------------------------------------------------------
- * The redesign replaced "one Surface per date group" with one matte Surface
- * holding every group as a sticky seam header + divided rows. `inProgressRounds`
- * is empty here so the only Surface in the tree is the ledger's own — the
- * player-only unfinished banner renders a Surface per row (a separate
- * component, out of scope for this assertion).
+ * Pre-v3, this test asserted one ledger Surface wrapping the grouped table.
+ * v3 removes that wrapper entirely — the table (and its group seam headers)
+ * render bare on the canvas — and moves the page's one-and-only Surface to
+ * the stage (`RoundField`'s "Round scatter" region), which renders
+ * unconditionally off `rounds.length > 0`, not off the `stats` prop this
+ * test passes as `null`. So this now asserts: exactly one Surface total,
+ * and it's the stage, not the ledger; the month labels live directly in the
+ * (bare) document, not nested inside that Surface.
  * ========================================================================== */
-describe('FairwayRoundsLibrary — facelift: single ledger Surface for every group', () => {
-  it('renders exactly one Surface holding every date group, not one per group', () => {
+describe('FairwayRoundsLibrary — facelift: the stage is the page\'s only Surface', () => {
+  it('renders exactly one Surface — the stage — with the bare table outside it', () => {
     const { container } = render(
       <FairwayRoundsLibrary
         rounds={[
@@ -201,15 +204,22 @@ describe('FairwayRoundsLibrary — facelift: single ledger Surface for every gro
       />,
     );
 
-    // Both months' rounds are present…
+    // Both months' rounds are present, directly on the canvas…
     expect(screen.getByText('June 2026')).toBeInTheDocument();
     expect(screen.getByText('July 2026')).toBeInTheDocument();
 
-    // …inside exactly ONE Surface (the ledger), never one Surface per group.
-    const surfaces = container.querySelectorAll('[data-slot="surface"]');
+    // …exactly one Surface on the page, and it's the stage, not the ledger:
+    // a regression that re-wraps the table (or drops the stage) would fail
+    // this either by count or by which node it is.
+    const surfaces = Array.from(container.querySelectorAll('[data-slot="surface"]'));
     expect(surfaces).toHaveLength(1);
-    expect(surfaces[0]!.textContent).toContain('June 2026');
-    expect(surfaces[0]!.textContent).toContain('July 2026');
+    const stage = screen.getByRole('region', { name: 'Round scatter' });
+    expect(surfaces[0]).toBe(stage);
+
+    // …and the month labels are NOT nested inside that Surface — they live
+    // in the bare table beside it.
+    expect(stage.textContent ?? '').not.toContain('June 2026');
+    expect(stage.textContent ?? '').not.toContain('July 2026');
   });
 });
 
@@ -220,9 +230,10 @@ describe('FairwayRoundsLibrary — facelift: single ledger Surface for every gro
  * rendered eagerly in one pass)
  * ----------------------------------------------------------------------------
  * Only the first page of rows renders across ALL groups (never per group);
- * a "Show 30 more" Button grows it. Row count is asserted via each row's own
- * `<a href="/golf/dashboard/rounds/:id">` link, since that's the one DOM node
- * FairwayRoundRow always renders exactly once per round.
+ * a "Show 30 more" Button grows it. Row count is asserted via each TABLE
+ * row's own `<a href="/golf/dashboard/rounds/:id">` link (one per round),
+ * scoped to `[data-slot="rounds-table"]` — the v3 stage above also links
+ * every plotted round (`RoundField`), so an unscoped count would double-count.
  * ========================================================================== */
 describe('FairwayRoundsLibrary — pagination for long ledgers', () => {
   function makeManyRounds(count: number): RoundLibraryRound[] {
@@ -245,7 +256,8 @@ describe('FairwayRoundsLibrary — pagination for long ledgers', () => {
         stats={null}
       />,
     );
-    const rowLinks = () => container.querySelectorAll('a[href^="/golf/dashboard/rounds/"]');
+    const rowLinks = () =>
+      container.querySelector('[data-slot="rounds-table"]')!.querySelectorAll('a[href^="/golf/dashboard/rounds/"]');
 
     expect(rowLinks()).toHaveLength(30);
 
@@ -271,9 +283,10 @@ describe('FairwayRoundsLibrary — pagination for long ledgers', () => {
 
 /**
  * ============================================================================
- * player-rounds.v2.md — the player branch opens with the scoring stage; the
- * coach branch keeps its Cockpit cluster. Both roles still render the one
- * ledger Surface.
+ * player-rounds.v2.md / rounds-library.v3.md — both roles open with their own
+ * stage now: the player's scoring stage (unchanged), the coach's v3 Round
+ * scatter stage (replacing the old Cockpit cluster, see the next describe
+ * block). Neither role has a ledger Surface anymore — the table is bare.
  * ========================================================================== */
 describe('FairwayRoundsLibrary — player v2 stage (role fork)', () => {
   const stats = {
@@ -304,11 +317,12 @@ describe('FairwayRoundsLibrary — player v2 stage (role fork)', () => {
     expect(screen.queryByLabelText('Round summary instrument cluster')).not.toBeInTheDocument();
   });
 
-  it('coach: the cockpit cluster renders and the stage does not', () => {
+  it('coach: the v3 Round scatter stage renders and the old cockpit does not', () => {
     render(
       <FairwayRoundsLibrary rounds={rounds} inProgressRounds={[]} userRole="coach" stats={stats} />,
     );
-    expect(screen.getByLabelText('Round summary instrument cluster')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Round scatter' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Scoring' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Round summary instrument cluster')).not.toBeInTheDocument();
   });
 });
