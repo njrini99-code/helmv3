@@ -423,10 +423,15 @@ export function generateReviewContent(
   const scoreParts: string[] = [];
   if (eagleHoles.length > 0) scoreParts.push(`${eagleHoles.length} eagle${eagleHoles.length > 1 ? 's' : ''}`);
   if (birdieHoles.length > 0) scoreParts.push(`${birdieHoles.length} birdie${birdieHoles.length > 1 ? 's' : ''}`);
-  scoreParts.push(`${parHoles.length} par${parHoles.length !== 1 ? 's' : ''}`);
+  // The par count is the one clause that prints at zero, and that is right for
+  // a round we measured hole by hole: "0 pars" says something true about it.
+  // It is not true of a scorecard-only round, which carries no hole rows at
+  // all — there the sentence invents a measurement nobody took. Guard on
+  // having holes, not on the count being non-zero.
+  if (holes.length > 0) scoreParts.push(`${parHoles.length} par${parHoles.length !== 1 ? 's' : ''}`);
   if (bogeyHoles.length > 0) scoreParts.push(`${bogeyHoles.length} bogey${bogeyHoles.length > 1 ? 's' : ''}`);
   if (doublePlusHoles.length > 0) scoreParts.push(`${doublePlusHoles.length} double+`);
-  summary += scoreParts.join(', ') + '. ';
+  if (scoreParts.length > 0) summary += scoreParts.join(', ') + '. ';
 
   if (worstHoles.length > 0) {
     const blowups = worstHoles.slice(0, 2).map(h => `#${h.hole} (+${h.scoreToPar})`).join(' and ');
