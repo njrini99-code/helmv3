@@ -240,14 +240,20 @@ export function ScoreField({
                 role="row"
                 className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5 border-b border-border-subtle py-2 md:grid-cols-[var(--sf-identity)_minmax(0,1fr)_var(--sf-avg)_var(--sf-trend)] md:py-0.5"
               >
+                {/* `truncate` sets `white-space: nowrap`, which makes a flex
+                    item's automatic minimum size its whole unbroken line. The
+                    `min-w-0` therefore has to be on the truncating child as
+                    well as on this row: without it the name refuses to shrink
+                    and spills out of the identity track instead of clipping
+                    inside it. */}
                 <div role="rowheader" className="flex min-w-0 items-center gap-2.5 md:order-1">
                   <Avatar decorative name={row.name} src={row.avatarUrl} size="xs" className="shrink-0" />
                   {row.href ? (
-                    <Link href={row.href} className="truncate font-fw-sans text-body-sm font-medium text-text-primary hover:text-accent-700">
+                    <Link href={row.href} className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary hover:text-accent-700">
                       {row.name}
                     </Link>
                   ) : (
-                    <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">{row.name}</span>
+                    <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">{row.name}</span>
                   )}
                 </div>
                 <div role="cell" className="text-right font-fw-mono text-body-sm font-medium tabular-nums text-text-primary md:order-3">
