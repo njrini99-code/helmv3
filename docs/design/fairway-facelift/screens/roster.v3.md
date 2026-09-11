@@ -655,6 +655,28 @@ Built against this spec. Deviations, in the order a reviewer would hit them:
   viewport. This also let the phone-only "All-time" header span and its
   `aria-label` workaround come back out: the table only ever renders at `md`
   and up now, where "Avg all-time" always has room on its own.
+- **`min-w-0`/`truncate` audit — no fix needed.** Following up on a real class
+  of bug (`truncate`'s `white-space: nowrap` gives a flex item an automatic
+  minimum size equal to its whole unbroken line, so the item that truncates
+  needs its OWN `min-w-0`, not only an ancestor's), audited every truncating
+  element this page owns. `RosterFocusOutcomesColumn`'s row Link already
+  carries `min-w-0 truncate` on itself (matches `qualifiers-parts.tsx`'s
+  `LedgerRow` exactly). `PlayerIdentity`'s name span is never itself a flex
+  item at either of this page's two call sites (neither passes `nameAddon`,
+  the one branch where the span IS a direct flex item without its own
+  `min-w-0`) — it sits inside `PlayerIdentity`'s own `min-w-0 flex-1` wrapper,
+  which already isolates it from the ancestor chain's shrinking. No missing
+  `min-w-0` found; nothing changed.
+- **Duplicate-truncation check — no case found in current data.** Two
+  different players truncating to the same visible string on a phone would
+  be a reading hazard no `title` attribute fixes. Checked the actual roster
+  this pass has been verifying against (8 players): Cole Bennett, Dylan
+  Brooks, Owen Carter, Jackson Hale, Tyler Hayes, Ethan Park, Mason Rivers,
+  Audit Testplayer — eight distinct first names, so no pair collides even
+  before truncation enters into it. Not a general guarantee (a larger roster
+  with two players sharing a first name could still collide) — just a
+  report that the present data doesn't exhibit it, per instruction not to
+  fix a case that hasn't been found.
 - **The "Ask CoachHelm" launcher's overlap with the table's action column is
   reported, not fixed here.** Real collision (lead measured it directly
   against a capture: the launcher's ~200×80px fixed bottom-right footprint
