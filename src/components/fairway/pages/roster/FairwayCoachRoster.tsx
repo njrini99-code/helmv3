@@ -214,7 +214,15 @@ export function FairwayCoachRoster({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col overflow-x-clip px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-28">
+    // Right clearance for the "Ask CoachHelm" pill (fixed bottom-6/right-6,
+    // h-14 — src/test/golf/coachhelm-fab-clearance.test.ts): its LEFT edge
+    // sits 80px from the viewport's right edge. The dashboard sidebar eats
+    // the page's left margin, so at md+ a symmetric `md:px-8` is the only
+    // inset from the true viewport edge on the right — the table's last
+    // column (the per-row overflow menu) sits well inside that 80px band.
+    // `md:pr-24` (96px, mirroring the dashboard layout's own `md:pb-24`
+    // reservation for the same pill) clears it with margin to spare.
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col overflow-x-clip px-5 pt-6 pb-10 md:pl-8 md:pr-24 md:pt-8 md:pb-28">
       {/* ── 1 · Masthead ─────────────────────────────────────────────────── */}
       <header className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">

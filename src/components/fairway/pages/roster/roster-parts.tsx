@@ -71,8 +71,8 @@ export function RosterAttentionColumn({
       {needs.length === 0 ? (
         <p className="px-0.5 py-1 font-fw-sans text-body-sm text-text-tertiary">
           {playersWithRounds === 0
-            ? 'Nothing to assess yet — attention flags appear once players start logging rounds.'
-            : "Roster's covered — everyone with rounds has a focus area and no one's trending down."}
+            ? 'Nothing to assess yet. Attention flags appear once players start logging rounds.'
+            : "Roster's covered. Everyone with rounds has a focus area and no one's trending down."}
         </p>
       ) : (
         <>
@@ -178,8 +178,21 @@ export function RosterTable({
                 DIFFERENT number: the stage averages only the selected window
                 while this column is the player's whole career. Two columns
                 with one word between them, disagreeing by three strokes, is a
-                reading hazard the stage's eyebrow cannot fix from up there. */}
-            <th scope="col" className={cn(TH, NUM, 'whitespace-nowrap')}>Avg all-time</th>
+                reading hazard the stage's eyebrow cannot fix from up there.
+                "Avg all-time" is the honest label, but at phone width (this
+                column sits beside Player/Trend/actions with no room to
+                spare) it forced the table's own overflow-x-auto to clip —
+                same failure shape as the min-w bug above, different column.
+                "All-time" alone still disambiguates from the stage's Avg
+                without the width. `aria-label` keeps the accessible name the
+                full, honest "Avg all-time" on every viewport regardless of
+                which visual span is showing (the two inner spans are
+                `aria-hidden` so they never double up into the computed
+                name). */}
+            <th scope="col" aria-label="Avg all-time" className={cn(TH, NUM, 'whitespace-nowrap')}>
+              <span aria-hidden="true" className="md:hidden">All-time</span>
+              <span aria-hidden="true" className="hidden md:inline">Avg all-time</span>
+            </th>
             <th scope="col" className={cn(TH, NUM)}>Trend</th>
             <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>Rounds</th>
             <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>SG:Total</th>
@@ -216,8 +229,19 @@ export function RosterTable({
                       <PlayerIdentity name={name} avatarUrl={p.avatar_url} size="sm" />
                     </Link>
                     <FairwayYearBadge year={p.graduation_year} />
+                    {/* Hidden below `md`: a `table-layout: auto` table sizes
+                        every column to its widest content, and this pill's
+                        own label ("+ No intent") was, alone, wide enough to
+                        push Trend and the row's own actions button past the
+                        table's overflow-x-auto — invisibly, since that's an
+                        internal scroll a page-level overflow check can't see
+                        (measured: 77px of hidden width at 393px). Row tap
+                        still opens the player; setting intent from a phone is
+                        one tap further, on their page — the same trade this
+                        table already makes for Rounds/SG:Total/Focus below
+                        `md`. */}
                     {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents the intent pill's own click from also firing the row link */}
-                    <div onClick={(e) => e.stopPropagation()}>
+                    <div className="hidden md:block" onClick={(e) => e.stopPropagation()}>
                       <FairwayIntentControl playerId={p.id} playerName={name} current={intents[p.id] ?? null} size="sm" onSaved={onIntentSaved} />
                     </div>
                   </div>
