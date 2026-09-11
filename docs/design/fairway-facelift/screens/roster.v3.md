@@ -593,17 +593,19 @@ Built against this spec. Deviations, in the order a reviewer would hit them:
   `All`, a multi-season player's full history packs into one fixed-height row at
   a few pixels per bar, which fails the "reviewed at full size" bar for any
   roster with real history. `All` is one Segmented/Menu click away.
-- **The stage ships without the Focus column.** The spec's one "additive,
-  backward-compatible" instrument change (`ScoreFieldRow.focus`,
-  `ScoreFieldProps.showFocusColumn`) requires edits to
-  `modules/types.ts`/`modules/ScoreField.tsx`, both reserved to the facelift
-  lead to avoid cross-agent commit races. Sent the lead the exact 2-line-plus-
-  rendering diff before starting the rest of the build; no response had landed
-  by commit time. Not worked around with a shadow type on this file — the
-  table's own Focus column (present, per spec) carries the same number per
-  player, so no data is missing from the page, only the one stage cell. Wire
-  `showFocusColumn`/`row.focus` into the `<ScoreField>` call in
-  `FairwayCoachRoster.tsx` once the lead lands the primitive change.
+- **The stage ships without the Focus column — declined, not blocked.**
+  Originally reported as blocked pending a `modules/types.ts`/
+  `modules/ScoreField.tsx` change reserved to the facelift lead; the lead
+  reviewed the proposed diff and declined it outright rather than approving
+  or deferring it. Reasoning: (1) it duplicates the table's own Focus column
+  and the Attention ledger's own per-player callouts — the same count under
+  the same word in three places on one screen is the identical smell this
+  build's own stage-caption fix (below) removed from Avg/Trend; (2) a fifth
+  fixed column takes real width from the one thing ScoreField exists to show,
+  the rounds strip itself; (3) a focus-area count is roster metadata — "what
+  are we doing about it" — not a score over time, which is the one question
+  the stage answers. The table's Focus column (present, per spec) remains
+  the only place this number renders on the page.
 - **Player cell link differs from "the exact pattern `RoundsLedgerTable`
   already uses."** `RoundsLedgerTable` wraps a plain name string in `<Link>`; it
   doesn't use `PlayerIdentity` at all. `PlayerIdentity` is deliberately
@@ -631,6 +633,41 @@ Built against this spec. Deviations, in the order a reviewer would hit them:
   from the real, unnormalized `rounds` field instead — but the field and its
   loader computation are left in place rather than removed, since it's a
   shared, exported type other code may still construct or expect.
+- **The table is two branches, not one, below `md`.** Not in the spec text at
+  all — found during this pass's own re-verification, not proposed up front.
+  A concurrent commit on this file (`8371a557b`, renaming the table's Avg
+  header to "Avg all-time" to fix a real Avg-column ambiguity) made the
+  header just wide enough to push the table's own `overflow-x-auto` past its
+  visible width at 393px, silently clipping the Trend value and the row's
+  actions button — measured directly (page-level overflow stayed 0px the
+  whole time; the clipping was internal to the table's own scroll container).
+  First fix hid the row's intent-pill control below `md`: wrong, caught by
+  the lead — `FairwayPlayerCard` (its other render site) no longer renders
+  anywhere and the player-profile page carries no intent control either, so
+  hiding it removed a coach's only way to set intent from a phone, not just
+  compressed it. Rebuilt instead as `QualifiersTable`'s pattern
+  (`qualifiers-parts.tsx`, commit `db18ee51c`): a `md:hidden` stacked `<ul>`
+  (name + year badge, trend, a mono avg/rounds/SG meta line, then the intent
+  control and actions menu each with their own untruncated touch target) and
+  the existing dense table wrapped `hidden md:block`, both always in the DOM
+  with CSS choosing — no client-only breakpoint branch, no data hidden on any
+  viewport. This also let the phone-only "All-time" header span and its
+  `aria-label` workaround come back out: the table only ever renders at `md`
+  and up now, where "Avg all-time" always has room on its own.
+- **The "Ask CoachHelm" launcher's overlap with the table's action column is
+  reported, not fixed here.** Real collision (lead measured it directly
+  against a capture: the launcher's ~200×80px fixed bottom-right footprint
+  passes over whatever sits at the viewport's bottom-right corner at any
+  scroll position, including a mid-list row's own overflow menu). Tried
+  page-container padding (`md:pl-8 md:pr-24`) first — reverted: padding only
+  moves content relative to the page's own edges, not the viewport's current
+  scroll position, so a row in the middle of a long roster still passes under
+  a `position: fixed` launcher no matter how the container is padded, and the
+  asymmetric padding cost the whole masthead its true center for a fix that
+  didn't hold. Every other screen with content in that corner has the same
+  collision (confirmed on coach home's own readouts rail); the lead is taking
+  it upstream as a launcher-level product decision (icon-only, or
+  scroll-aware) rather than a per-page one.
 - Everything else matches the spec as written: masthead template and every
   clause's missing/present branching, the readouts' four items and their
   breakdown text, both ledger columns' caps/empty states, the table's columns/
@@ -670,3 +707,25 @@ classification change. Re-ran guarded `tsc --noEmit` (still clean for every
 roster file) and the same three-file vitest suite (still 44/44) after both the
 caption edit and this section's rewrite; re-captured desktop + phone via
 `capture-golf-facelift.mjs` to pick up the caption change.
+
+A third pass, after the lead declined the Focus column, reverted the FAB
+page-padding attempt, and asked for the phone table/list split above: with
+six agents sharing the machine, full-project `tsc` was withdrawn from this
+screen's own verification (the lead runs one at the end of the whole pass
+instead) and vitest moved behind a shared `mkdir /tmp/helm-vitest.lock` with
+`--maxWorkers=1`, scoped to this screen's own files only — no more
+project-wide runs, no more `pgrep` guards (two different agents' `pgrep -f
+'vitest run'` guards had been self-deadlocking on their own command line).
+Verified: `eslint` on every file this pass touched (zero errors, zero
+warnings); locked, scoped `vitest run --maxWorkers=1` across
+`roster-logic.test.ts` + `FairwayCoachRoster.test.tsx` +
+`FairwayPlayerCard.test.tsx` + `coachhelm-fab-clearance.test.ts` (49/49,
+lock acquired and released cleanly, confirmed after); all five widths this
+doc now names — 768, 1024, 1280, 1440, and phone (393) — captured through
+the shared `mkdir`-style capture lock and read directly, not just the
+overflow number. 768's read initially mis-stated the Focus column as
+missing from a downscaled screenshot; re-checked with `getComputedStyle` on
+every `<th>` before writing it down — it renders. Phone's read confirmed
+the table/list split holds: the compact `<ul>` shows name, trend, the
+avg/rounds/SG meta line, and both the intent control and actions menu with
+real touch targets; the desktop table stays hidden below `md`.

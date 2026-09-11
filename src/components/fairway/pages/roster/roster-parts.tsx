@@ -165,109 +165,134 @@ export function RosterTable({
 }) {
   const router = useRouter();
   return (
-    <div className="overflow-x-auto">
-      {/* The min-width only kicks in once md:table-cell columns actually
-          exist to need it — forcing it below md would push Avg/Trend/
-          actions off-screen behind a horizontal scroll on a phone that
-          already hid every OTHER column to make them fit. */}
-      <table data-slot="roster-table" className="w-full md:min-w-[720px] border-collapse">
-        <thead>
-          <tr className="border-b border-border-strong">
-            <th scope="col" className={TH}>Player</th>
-            {/* The stage above also heads a column "Avg", and it is a
-                DIFFERENT number: the stage averages only the selected window
-                while this column is the player's whole career. Two columns
-                with one word between them, disagreeing by three strokes, is a
-                reading hazard the stage's eyebrow cannot fix from up there.
-                "Avg all-time" is the honest label, but at phone width (this
-                column sits beside Player/Trend/actions with no room to
-                spare) it forced the table's own overflow-x-auto to clip —
-                same failure shape as the min-w bug above, different column.
-                "All-time" alone still disambiguates from the stage's Avg
-                without the width. `aria-label` keeps the accessible name the
-                full, honest "Avg all-time" on every viewport regardless of
-                which visual span is showing (the two inner spans are
-                `aria-hidden` so they never double up into the computed
-                name). */}
-            <th scope="col" aria-label="Avg all-time" className={cn(TH, NUM, 'whitespace-nowrap')}>
-              <span aria-hidden="true" className="md:hidden">All-time</span>
-              <span aria-hidden="true" className="hidden md:inline">Avg all-time</span>
-            </th>
-            <th scope="col" className={cn(TH, NUM)}>Trend</th>
-            <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>Rounds</th>
-            <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>SG:Total</th>
-            <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>Focus</th>
-            <th scope="col" className={cn(TH, NUM, 'hidden lg:table-cell')}>Handicap</th>
-            <th scope="col" className={cn(TH, 'w-10')}>
-              <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {players.map((p) => {
-            const name = playerName(p);
-            const href = `/golf/dashboard/roster/${p.id}`;
-            const hasScore = Boolean(p.avg_score && p.avg_score > 0);
-            const trend: ScoreFieldTrend | null = p.recent_trend ? { direction: p.recent_trend, delta: p.recent_trend_delta ?? 0 } : null;
-            return (
-              <tr
-                key={p.id}
-                onClick={() => router.push(href)}
-                className="cursor-pointer border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover"
-              >
-                <td className={cn(TD, 'min-w-0')}>
-                  <div className="flex min-w-0 items-center gap-2" data-sentry-mask="">
-                    {/* The identity block (avatar + name) is a real Link —
-                        PlayerIdentity itself renders no link of its own
-                        (it's deliberately non-interactive; a parent owns the
-                        interaction), so this is the closest keyboard/no-JS
-                        equivalent to RoundsLedgerTable's linked-name cell.
-                        The year badge sits OUTSIDE the anchor (not passed as
-                        `nameAddon`) so its own text doesn't get folded into
-                        the link's accessible name alongside the player's. */}
-                    <Link href={href} className="min-w-0 hover:text-accent-700">
-                      <PlayerIdentity name={name} avatarUrl={p.avatar_url} size="sm" />
-                    </Link>
-                    <FairwayYearBadge year={p.graduation_year} />
-                    {/* Hidden below `md`: a `table-layout: auto` table sizes
-                        every column to its widest content, and this pill's
-                        own label ("+ No intent") was, alone, wide enough to
-                        push Trend and the row's own actions button past the
-                        table's overflow-x-auto — invisibly, since that's an
-                        internal scroll a page-level overflow check can't see
-                        (measured: 77px of hidden width at 393px). Row tap
-                        still opens the player; setting intent from a phone is
-                        one tap further, on their page — the same trade this
-                        table already makes for Rounds/SG:Total/Focus below
-                        `md`. */}
-                    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents the intent pill's own click from also firing the row link */}
-                    <div className="hidden md:block" onClick={(e) => e.stopPropagation()}>
-                      <FairwayIntentControl playerId={p.id} playerName={name} current={intents[p.id] ?? null} size="sm" onSaved={onIntentSaved} />
+    <>
+      {/* Phone: the same rows, stacked, not a truncated table. A table narrow
+          enough to fit a phone either scrolls its own overflow-x-auto sideways
+          or drops the one control (intent) that has no other home anywhere in
+          the product — FairwayPlayerCard no longer renders and the player
+          profile carries no intent control either, so hiding this below `md`
+          (as an earlier pass here did) removed the feature outright. Both
+          branches stay in the DOM with CSS choosing between them, so nothing
+          reads a breakpoint at runtime and the server/client markup agree —
+          same shape as QualifiersTable (qualifiers-parts.tsx). */}
+      <ul data-slot="roster-ledger-compact" className="flex flex-col md:hidden">
+        {players.map((p) => {
+          const name = playerName(p);
+          const href = `/golf/dashboard/roster/${p.id}`;
+          const hasScore = Boolean(p.avg_score && p.avg_score > 0);
+          const trend: ScoreFieldTrend | null = p.recent_trend ? { direction: p.recent_trend, delta: p.recent_trend_delta ?? 0 } : null;
+          return (
+            <li key={p.id} className="flex flex-col gap-2 border-b border-border-subtle py-3 last:border-b-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2" data-sentry-mask="">
+                  {/* Badge stays outside the anchor — see the desktop row
+                      below for why (its own text would fold into the link's
+                      accessible name alongside the player's). */}
+                  <Link href={href} className="min-w-0 hover:text-accent-700">
+                    <PlayerIdentity name={name} avatarUrl={p.avatar_url} size="sm" />
+                  </Link>
+                  <FairwayYearBadge year={p.graduation_year} />
+                </div>
+                <RosterTrendCell trend={trend} />
+              </div>
+              <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                {hasScore ? (p.avg_score ?? 0).toFixed(1) : '—'} avg
+                {' · '}
+                {p.rounds_count ?? 0} {p.rounds_count === 1 ? 'round' : 'rounds'}
+                {' · '}
+                SG {p.sg_total != null ? formatSgTotal(p.sg_total) : '—'}
+              </p>
+              {/* Real touch targets, not nested inside the identity Link —
+                  same reason the desktop row keeps them out of its own <tr>
+                  onClick (a control inside an anchor/clickable row is invalid
+                  and unreliable on touch either way). */}
+              <div className="flex items-center justify-between gap-3">
+                <FairwayIntentControl playerId={p.id} playerName={name} current={intents[p.id] ?? null} size="sm" onSaved={onIntentSaved} />
+                <FairwayPlayerActionsMenu playerId={p.id} playerName={name} currentStatus={p.status} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
+        <table data-slot="roster-table" className="w-full min-w-[720px] border-collapse">
+          <thead>
+            <tr className="border-b border-border-strong">
+              <th scope="col" className={TH}>Player</th>
+              {/* The stage above also heads a column "Avg", and it is a
+                  DIFFERENT number: the stage averages only the selected window
+                  while this column is the player's whole career. Two columns
+                  with one word between them, disagreeing by three strokes, is
+                  a reading hazard the stage's eyebrow cannot fix from up
+                  there. This table only ever renders at `md` and up (the list
+                  above covers phone), where "Avg all-time" always has room —
+                  no phone-width span/aria-label workaround needed here. */}
+              <th scope="col" className={cn(TH, NUM, 'whitespace-nowrap')}>Avg all-time</th>
+              <th scope="col" className={cn(TH, NUM)}>Trend</th>
+              <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>Rounds</th>
+              <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>SG:Total</th>
+              <th scope="col" className={cn(TH, NUM, 'hidden md:table-cell')}>Focus</th>
+              <th scope="col" className={cn(TH, NUM, 'hidden lg:table-cell')}>Handicap</th>
+              <th scope="col" className={cn(TH, 'w-10')}>
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((p) => {
+              const name = playerName(p);
+              const href = `/golf/dashboard/roster/${p.id}`;
+              const hasScore = Boolean(p.avg_score && p.avg_score > 0);
+              const trend: ScoreFieldTrend | null = p.recent_trend ? { direction: p.recent_trend, delta: p.recent_trend_delta ?? 0 } : null;
+              return (
+                <tr
+                  key={p.id}
+                  onClick={() => router.push(href)}
+                  className="cursor-pointer border-b border-border-subtle transition-colors duration-150 hover:bg-surface-hover"
+                >
+                  <td className={cn(TD, 'min-w-0')}>
+                    <div className="flex min-w-0 items-center gap-2" data-sentry-mask="">
+                      {/* The identity block (avatar + name) is a real Link —
+                          PlayerIdentity itself renders no link of its own
+                          (it's deliberately non-interactive; a parent owns the
+                          interaction), so this is the closest keyboard/no-JS
+                          equivalent to RoundsLedgerTable's linked-name cell.
+                          The year badge sits OUTSIDE the anchor (not passed as
+                          `nameAddon`) so its own text doesn't get folded into
+                          the link's accessible name alongside the player's. */}
+                      <Link href={href} className="min-w-0 hover:text-accent-700">
+                        <PlayerIdentity name={name} avatarUrl={p.avatar_url} size="sm" />
+                      </Link>
+                      <FairwayYearBadge year={p.graduation_year} />
+                      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents the intent pill's own click from also firing the row link */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <FairwayIntentControl playerId={p.id} playerName={name} current={intents[p.id] ?? null} size="sm" onSaved={onIntentSaved} />
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className={cn(TD, NUM, 'font-medium', hasScore ? 'text-text-primary' : 'text-text-tertiary')}>
-                  {hasScore ? (p.avg_score ?? 0).toFixed(1) : '—'}
-                </td>
-                <td className={cn(TD, NUM)}>
-                  <RosterTrendCell trend={trend} />
-                </td>
-                <td className={cn(TD, NUM, 'hidden md:table-cell')}>{p.rounds_count ?? 0}</td>
-                <td className={cn(TD, NUM, 'hidden md:table-cell', 'font-medium', p.sg_total != null ? sgTone(p.sg_total) : 'text-text-tertiary')}>
-                  {p.sg_total != null ? formatSgTotal(p.sg_total) : '—'}
-                </td>
-                <td className={cn(TD, NUM, 'hidden md:table-cell', p.active_focus_areas ? 'text-accent-700' : 'text-text-tertiary')}>
-                  {p.active_focus_areas ? p.active_focus_areas : '—'}
-                </td>
-                <td className={cn(TD, NUM, 'hidden lg:table-cell')}>{formatHandicap(p.handicap)}</td>
-                <td className={cn(TD, 'text-right')} onClick={(e) => e.stopPropagation()}>
-                  <FairwayPlayerActionsMenu playerId={p.id} playerName={name} currentStatus={p.status} />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                  <td className={cn(TD, NUM, 'font-medium', hasScore ? 'text-text-primary' : 'text-text-tertiary')}>
+                    {hasScore ? (p.avg_score ?? 0).toFixed(1) : '—'}
+                  </td>
+                  <td className={cn(TD, NUM)}>
+                    <RosterTrendCell trend={trend} />
+                  </td>
+                  <td className={cn(TD, NUM, 'hidden md:table-cell')}>{p.rounds_count ?? 0}</td>
+                  <td className={cn(TD, NUM, 'hidden md:table-cell', 'font-medium', p.sg_total != null ? sgTone(p.sg_total) : 'text-text-tertiary')}>
+                    {p.sg_total != null ? formatSgTotal(p.sg_total) : '—'}
+                  </td>
+                  <td className={cn(TD, NUM, 'hidden md:table-cell', p.active_focus_areas ? 'text-accent-700' : 'text-text-tertiary')}>
+                    {p.active_focus_areas ? p.active_focus_areas : '—'}
+                  </td>
+                  <td className={cn(TD, NUM, 'hidden lg:table-cell')}>{formatHandicap(p.handicap)}</td>
+                  <td className={cn(TD, 'text-right')} onClick={(e) => e.stopPropagation()}>
+                    <FairwayPlayerActionsMenu playerId={p.id} playerName={name} currentStatus={p.status} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
