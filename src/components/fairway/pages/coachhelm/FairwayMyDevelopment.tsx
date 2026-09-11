@@ -525,10 +525,15 @@ export function FairwayMyDevelopment({
             </StageFrame>
           </div>
 
-          {/* ── 3. The ledger row. ── */}
+          {/* ── 3. The ledger row: two columns, not three. Measured at every
+                width, the stage content tops out near 762px because the shell
+                keeps a right rail, and a third of that cannot hold a sentence.
+                "Why" is prose, so it takes the full width below instead. ── */}
           <div className="mt-12">
-            <LedgerRow columns={[decisionsColumn, goalsColumn, whyColumn]} />
+            <LedgerRow columns={[decisionsColumn, goalsColumn]} />
           </div>
+
+          {whyColumn ? <div className="mt-10 flex flex-col gap-3">{whyColumn}</div> : null}
 
           {/* ── 4. The table: the dated evidence behind the stage. ── */}
           {logRows.length > 0 ? (

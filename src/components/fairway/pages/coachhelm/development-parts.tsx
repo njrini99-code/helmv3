@@ -59,6 +59,7 @@ import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { causeLabel, effectLabel } from './CausalWhyPanel';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import { updateFocusAreaProgress } from '@/app/golf/actions/development';
 import { acceptGoalSuggestion, dismissGoalSuggestion } from '@/app/golf/actions/v3/goals';
@@ -611,7 +612,6 @@ export function DevelopmentVerdict({
       <p className="max-w-[64ch] font-fw-display text-h3 font-normal leading-snug text-text-primary">
         {parts.map((part, i) => (
           <span key={`${part.text}-${i}`}>
-            {i > 0 ? ' ' : null}
             {part.href ? (
               <Link
                 href={part.href}
@@ -703,13 +703,12 @@ export function focusFieldRows(
 const LEDGER_SPANS: Record<number, string[]> = {
   1: ['md:col-span-12'],
   2: ['md:col-span-7', 'md:col-span-5'],
-  3: ['md:col-span-5', 'md:col-span-4', 'md:col-span-3'],
 };
 
 export function LedgerRow({ columns }: { columns: readonly React.ReactNode[] }) {
   const present = columns.filter(Boolean);
   if (present.length === 0) return null;
-  const spans = LEDGER_SPANS[present.length] ?? LEDGER_SPANS[3]!;
+  const spans = LEDGER_SPANS[present.length] ?? LEDGER_SPANS[2]!;
   return (
     <div
       data-slot="development-ledger"
@@ -735,37 +734,62 @@ export function LedgerRow({ columns }: { columns: readonly React.ReactNode[] }) 
 }
 
 /** One hairline row inside a ledger column. */
+/**
+ * One hairline row inside a ledger column.
+ *
+ * NOTHING HERE TRUNCATES. A ledger column is a fraction of an already narrow
+ * page, and `truncate` gives every row a hard minimum width equal to its
+ * longest unbroken line: measured at 1440, a suggestion row wanted 262px of a
+ * 92px cell and pushed 4px of horizontal overflow all the way up through
+ * DrillPanel. Wrapping holds the content whole at every width, which is what
+ * the breakpoint rule actually asks for.
+ *
+ * `actions` sit on their OWN line, never beside the text. Two 44px buttons
+ * plus a sentence do not share a third of this page at any width it renders
+ * at, so there is no breakpoint at which the inline arrangement is correct.
+ * `trailing` stays inline for a short figure, a percent or a word.
+ */
 export function LedgerRowItem({
   title,
   meta,
   trailing,
+  actions,
   href,
   onClick,
 }: {
   title: React.ReactNode;
   meta?: React.ReactNode;
   trailing?: React.ReactNode;
+  actions?: React.ReactNode;
   href?: string;
   onClick?: () => void;
 }) {
   const body = (
     <>
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-          {title}
-        </span>
+        <span className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</span>
         {meta ? (
-          <span className="truncate font-fw-sans text-caption text-text-tertiary">{meta}</span>
+          <span className="font-fw-sans text-caption text-text-tertiary">{meta}</span>
         ) : null}
       </span>
       {trailing ? <span className="shrink-0">{trailing}</span> : null}
     </>
   );
   const shell =
-    'flex min-h-11 w-full items-center justify-between gap-3 border-b border-border-subtle py-2 text-left last:border-b-0';
+    'flex min-h-11 w-full items-center justify-between gap-3 text-left';
+  const frame = 'border-b border-border-subtle py-2 last:border-b-0';
+
+  if (actions) {
+    return (
+      <div className={cn('flex flex-col gap-2', frame)}>
+        <div className={shell}>{body}</div>
+        <div className="flex flex-wrap items-center gap-1">{actions}</div>
+      </div>
+    );
+  }
   if (href) {
     return (
-      <Link href={href} className={cn(shell, fwTransition, 'hover:text-accent-700')}>
+      <Link href={href} className={cn(shell, frame, fwTransition, 'hover:text-accent-700')}>
         {body}
       </Link>
     );
@@ -776,12 +800,12 @@ export function LedgerRowItem({
       // min-height, padding and hover fill, which would turn a ledger row
       // back into the tile this page bans.
       // eslint-disable-next-line helm/no-raw-button -- see above
-      <button type="button" onClick={onClick} className={cn(shell, fwFocusRing, fwTransition)}>
+      <button type="button" onClick={onClick} className={cn(shell, frame, fwFocusRing, fwTransition)}>
         {body}
       </button>
     );
   }
-  return <div className={shell}>{body}</div>;
+  return <div className={cn(shell, frame)}>{body}</div>;
 }
 
 /**
@@ -815,7 +839,7 @@ export function WhyRows({
           className="flex flex-col gap-1 border-b border-border-subtle py-2.5 last:border-b-0"
         >
           <span className="font-fw-sans text-body-sm font-medium text-text-primary">
-            {rel.cause} tracks with {rel.effect}
+            {causeLabel(rel)} tracks with {effectLabel(rel)}
             {rel.dose_response ? (
               <span className="ml-2 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
                 dose response
@@ -997,8 +1021,8 @@ export function SuggestionLedgerRow({ view }: { view: GoalSuggestionView }) {
           {`, ${suggestion.suggested_window_days}-day window`}
         </>
       }
-      trailing={
-        <span className="inline-flex items-center gap-1">
+      actions={
+        <>
           <Button
             variant="secondary"
             busy={isPending}
@@ -1014,7 +1038,7 @@ export function SuggestionLedgerRow({ view }: { view: GoalSuggestionView }) {
           >
             Dismiss
           </Button>
-        </span>
+        </>
       }
     />
   );
@@ -1053,15 +1077,15 @@ export function ProposedLedgerRow({
           {timeframe ? `, ${timeframe}` : ''}
         </>
       }
-      trailing={
-        <span className="inline-flex items-center gap-1">
+      actions={
+        <>
           <Button variant="secondary" busy={deciding} disabled={deciding} onClick={onAccept}>
             Accept
           </Button>
           <Button variant="ghost" disabled={deciding} onClick={onDecline}>
             Decline
           </Button>
-        </span>
+        </>
       }
     />
   );
@@ -1087,9 +1111,10 @@ export function FieldReadout({
       <span
         className={cn(
           'font-fw-mono text-h3 font-medium tabular-nums leading-none',
-          tone === 'good' && 'text-accent-700',
-          tone === 'warn' && 'text-fw-warning-ink',
-          tone === 'neutral' && 'text-text-primary',
+          // Zero is neither good news nor bad news.
+          value !== 0 && tone === 'good' && 'text-accent-700',
+          value !== 0 && tone === 'warn' && 'text-fw-warning-ink',
+          (value === 0 || tone === 'neutral') && 'text-text-primary',
         )}
       >
         {value}

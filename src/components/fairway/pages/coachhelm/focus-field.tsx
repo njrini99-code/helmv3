@@ -26,6 +26,24 @@
  * step-to-step story is carried by slope, which is what slope is for. The
  * connecting line is therefore one neutral hue for its whole length.
  *
+ * ONE COLUMN AT EVERY WIDTH, and that is a measured decision, not a default.
+ * A three-column row (identity, track, reading) was built first and measured
+ * at 390 / 768 / 1024 / 1280 / 1440 inside the shell this page actually
+ * renders in. The shell grows a right rail at 940px and keeps widening it, so
+ * the stage's usable width does NOT rise with the viewport, and the split lost
+ * at every size:
+ *
+ *     width   track split   track stacked
+ *     768       281 px        594 px
+ *     1024      167 px        366 px
+ *     1280      285 px        602 px
+ *     1440      365 px        762 px
+ *
+ * The split was worse everywhere and non-monotonic besides: a reader widening
+ * from 1024 to 1280 watched the chart shrink from 285 to 167 and back. No
+ * breakpoint fixes that, because the cause is the rail, not the viewport. So
+ * the row does not split, and there is no breakpoint here to get wrong later.
+ *
  * ACCESSIBILITY: the marks are not links. Every reading on this page is also a
  * row in the readings log table below, with its date, value and change, so the
  * table is the accessible equivalent of the plot and the plot does not repeat
@@ -41,6 +59,7 @@ import { EASE_CINEMATIC, DURATION, useReducedMotionGuard } from '@/lib/coachhelm
 import { VIZ_CHROME } from '../../charts/theme';
 import {
   markTone,
+  thinRowCaption,
   type FieldDomain,
   type FieldMark,
   type FieldRowState,
@@ -196,7 +215,8 @@ export interface FocusFieldProps {
 const TONE_DOT: Record<ReturnType<typeof markTone>, string> = {
   good: 'bg-accent-500',
   warn: 'bg-fw-warning',
-  neutral: 'bg-text-tertiary',
+  // Sits ON the baseline rule, so it needs to out-contrast it.
+  neutral: 'bg-text-secondary',
 };
 
 function Mark({
@@ -230,10 +250,10 @@ function Mark({
       }}
       style={{ left: `calc(${x}% + ${nudge}px)`, top: `${y}%` }}
       className={cn(
-        'absolute block -translate-x-1/2 -translate-y-1/2 rounded-full',
-        // The newest reading is the one a player looks for, so it carries a
-        // ring: a size change alone reads as noise among sixteen dots.
-        last ? 'h-[9px] w-[9px] ring-2 ring-surface' : 'h-[6px] w-[6px]',
+        'absolute block -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-surface',
+        // The newest reading is the one a player looks for, so it is larger: a
+        // colour change alone would not survive a row of same-toned marks.
+        last ? 'h-[9px] w-[9px]' : 'h-[6px] w-[6px]',
         TONE_DOT[tone],
       )}
     />
@@ -255,6 +275,7 @@ function Track({
 }) {
   const marks = marksOf(row.state);
   const baselineY = fieldY(0, floor);
+  const targetY = fieldY(100, floor);
   const points = marks
     .map((mark) => `${dateFraction(mark.day, domain)},${fieldY(mark.raw, floor)}`)
     .join(' ');
@@ -262,69 +283,70 @@ function Track({
 
   return (
     <div className="relative h-14 min-w-0">
-      {/* The two rules the marks are read against. Target is green because
-          reaching it is the good outcome; the baseline is neutral because a
-          starting value is a fact, not a verdict. */}
-      <span
-        aria-hidden="true"
-        style={{ top: `${fieldY(100, floor)}%` }}
-        className="absolute inset-x-0 h-px bg-accent-300"
-      />
-      <span
-        aria-hidden="true"
-        style={{ top: `${baselineY}%` }}
-        className="absolute inset-x-0 h-px bg-border-strong"
-      />
-
-      {marks.length >= 2 ? (
-        // Stretched viewBox with a non-scaling stroke: the geometry follows the
-        // column width while the line stays one pixel at every width. The dots
-        // are DOM, not SVG circles, which would squash into slivers here.
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-          className="absolute inset-0 block h-full w-full"
-        >
-          <polyline
-            points={points}
-            fill="none"
-            stroke={VIZ_CHROME.axis}
-            strokeWidth={1.25}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      ) : null}
-
-      {marks.map((mark, i) => {
-        const seen = seenByDay.get(mark.day) ?? 0;
-        seenByDay.set(mark.day, seen + 1);
-        return (
-          <Mark
-            key={`${mark.day}-${i}`}
-            mark={mark}
-            x={dateFraction(mark.day, domain)}
-            y={fieldY(mark.raw, floor)}
-            nudge={seen * SAME_DAY_NUDGE_PX}
-            index={offset + i}
-            reduced={reduced}
-            last={i === marks.length - 1}
-          />
-        );
-      })}
-
-      {/* A row with nothing to plot says why, on the line where the line would
-          have been. It never draws a track at a guessed position. */}
-      {marks.length === 0 && row.readout.kind === 'caption' && row.readout.caption ? (
+      {/*
+        The plot is INSET from the row box by half a mark's height. A mark sits
+        at its own centre, so one drawn exactly on the target rule (y=0) or on
+        the floor (y=100) had half of itself outside the box and was clipped:
+        a reader at 100 percent saw a half-moon, and a reader at their starting
+        value saw a sliver at the row's bottom edge.
+      */}
+      <div className="absolute inset-x-0 bottom-[7px] top-[7px]">
+        {/*
+          Chart furniture, not page rules. Both are dashed and low-contrast so
+          they read as the scale a mark is measured against, rather than as the
+          section rules this page uses elsewhere at full strength.
+        */}
         <span
+          aria-hidden="true"
+          style={{ top: `${targetY}%` }}
+          className="absolute inset-x-0 border-t border-dashed border-accent-300"
+        />
+        <span
+          aria-hidden="true"
           style={{ top: `${baselineY}%` }}
-          className="absolute left-0 -translate-y-1/2 bg-surface pr-2 font-fw-sans text-caption text-text-tertiary"
-        >
-          {row.readout.caption}
-        </span>
-      ) : null}
+          className="absolute inset-x-0 border-t border-dashed border-border-strong"
+        />
+
+        {marks.length >= 2 ? (
+          // Stretched viewBox with a non-scaling stroke: the geometry follows
+          // the column width while the line stays one pixel at every width.
+          // The dots are DOM, not SVG circles, which would squash into slivers.
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            className="absolute inset-0 block h-full w-full"
+          >
+            <polyline
+              points={points}
+              fill="none"
+              stroke={VIZ_CHROME.axis}
+              strokeWidth={1.25}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+        ) : null}
+
+        {marks.map((mark, i) => {
+          const seen = seenByDay.get(mark.day) ?? 0;
+          seenByDay.set(mark.day, seen + 1);
+          return (
+            <Mark
+              key={`${mark.day}-${i}`}
+              mark={mark}
+              x={dateFraction(mark.day, domain)}
+              y={fieldY(mark.raw, floor)}
+              nudge={seen * SAME_DAY_NUDGE_PX}
+              index={offset + i}
+              reduced={reduced}
+              last={i === marks.length - 1}
+            />
+          );
+        })}
+
+      </div>
     </div>
   );
 }
@@ -332,11 +354,14 @@ function Track({
 function RowReadoutCell({ row }: { row: FocusFieldRow }) {
   const { readout } = row;
   return (
-    <div className="flex min-w-0 flex-col items-start gap-0.5 md:items-end md:text-right">
+    <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
       <div className="flex items-baseline gap-1.5">
         {row.currentDisplay ? (
-          <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
-            {row.currentDisplay}
+          <span className="font-fw-sans text-caption text-text-tertiary">
+            now{' '}
+            <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
+              {row.currentDisplay}
+            </span>
           </span>
         ) : null}
         {row.trend ? (
@@ -379,56 +404,31 @@ export function FocusField({
   const reduced = useReducedMotionGuard();
   const floor = useMemo(() => fieldFloor(rows), [rows]);
   const ticks = useMemo(() => focusFieldTicks(domain), [domain]);
-  // A shared counter so the stagger sweeps the whole instrument once, left to
-  // right, instead of restarting inside every row.
+  // A shared counter so the stagger sweeps the whole instrument once, top to
+  // bottom, instead of restarting inside every row.
   let markIndex = 0;
-
-  const COLS =
-    'md:grid-cols-[minmax(0,5fr)_minmax(0,10fr)_minmax(0,5fr)] md:gap-x-4';
 
   return (
     <LazyMotion features={loadFeatures}>
       <div
-        role="table"
         aria-label={ariaLabel}
         data-slot="focus-field"
-        className={cn('flex min-w-0 flex-col', className)}
+        className={cn('flex min-w-0 flex-col border-t border-border-strong', className)}
       >
-        <div role="row" className={cn('hidden md:grid md:pb-1.5', COLS)}>
-          <span
-            role="columnheader"
-            className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary"
-          >
-            Focus area
-          </span>
-          <span
-            role="columnheader"
-            className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary"
-          >
-            Readings, target above, starting value below
-          </span>
-          <span
-            role="columnheader"
-            className="text-right font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary"
-          >
-            Now
-          </span>
-        </div>
-
-        <div role="rowgroup" className="flex flex-col border-t border-border-strong">
-          {rows.map((row) => {
-            const offset = markIndex;
-            markIndex += marksOf(row.state).length;
-            return (
-              <div
-                key={row.id}
-                role="row"
-                className={cn(
-                  'grid grid-cols-1 items-center gap-y-1 border-b border-border-subtle py-3 md:grid md:py-2',
-                  COLS,
-                )}
-              >
-                <div role="rowheader" className="flex min-w-0 flex-col gap-0.5">
+        {rows.map((row) => {
+          const offset = markIndex;
+          markIndex += marksOf(row.state).length;
+          return (
+            <div
+              key={row.id}
+              className="flex min-w-0 flex-col gap-1 border-b border-border-subtle py-3"
+            >
+              {/* Identity and reading share one line: both are short, and
+                  keeping them on the same baseline lets the eye read down a
+                  column of names and a column of values without the track
+                  between them. */}
+              <div className="flex min-w-0 items-baseline justify-between gap-4">
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                   {row.href ? (
                     <Link
                       href={row.href}
@@ -445,50 +445,44 @@ export function FocusField({
                     {row.metricLabel}
                   </span>
                 </div>
-                <div role="cell" className="min-w-0">
-                  <Track
-                    row={row}
-                    domain={domain}
-                    floor={floor}
-                    reduced={reduced}
-                    offset={offset}
-                  />
-                </div>
-                <div role="cell" className="min-w-0">
-                  <RowReadoutCell row={row} />
-                </div>
+                <RowReadoutCell row={row} />
               </div>
-            );
-          })}
-        </div>
+              <Track row={row} domain={domain} floor={floor} reduced={reduced} offset={offset} />
+              {/* Says what the row is waiting for: no readings, one reading and
+                  so no movement to draw, or a metric whose direction cannot be
+                  resolved. A row never leaves a bare track unexplained. */}
+              {thinRowCaption(row.state) ? (
+                <p className="font-fw-sans text-caption text-text-tertiary">
+                  {thinRowCaption(row.state)}
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
 
-        {/* The axis sits in the track column of the same template, so it stays
-            aligned without hard-coding any column width. */}
-        <div aria-hidden="true" className={cn('mt-1 grid grid-cols-1 md:grid', COLS)}>
-          <span className="hidden md:block" />
-          <div className="relative h-5 min-w-0">
-            {ticks.map((tick) => (
-              <span
-                key={tick.key}
-                className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
-                style={{ left: `${tick.x}%` }}
-              >
-                <span className="block h-1.5 w-px bg-border-strong" />
-                {tick.label ? (
-                  <span className="mt-0.5 whitespace-nowrap font-fw-mono text-eyebrow font-normal leading-none tabular-nums text-text-tertiary">
-                    {tick.label}
-                  </span>
-                ) : null}
-              </span>
-            ))}
-            <span className="absolute right-0 top-0 flex flex-col items-end">
-              <span className="block h-1.5 w-px bg-accent-500" />
-              <span className="mt-0.5 font-fw-mono text-eyebrow font-normal leading-none text-accent-700">
-                Today
-              </span>
+        {/* One shared axis under every row, full width: the track is full
+            width too, so no column offset is needed to line them up. */}
+        <div aria-hidden="true" className="relative mt-1 h-5 min-w-0">
+          {ticks.map((tick) => (
+            <span
+              key={tick.key}
+              className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+              style={{ left: `${tick.x}%` }}
+            >
+              <span className="block h-1.5 w-px bg-border-strong" />
+              {tick.label ? (
+                <span className="mt-0.5 whitespace-nowrap font-fw-mono text-eyebrow font-normal leading-none tabular-nums text-text-tertiary">
+                  {tick.label}
+                </span>
+              ) : null}
             </span>
-          </div>
-          <span className="hidden md:block" />
+          ))}
+          <span className="absolute right-0 top-0 flex flex-col items-end">
+            <span className="block h-1.5 w-px bg-accent-500" />
+            <span className="mt-0.5 font-fw-mono text-eyebrow font-normal leading-none text-accent-700">
+              Today
+            </span>
+          </span>
         </div>
       </div>
     </LazyMotion>

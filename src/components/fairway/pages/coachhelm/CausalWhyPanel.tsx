@@ -119,11 +119,11 @@ function humanize(token: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
-function causeLabel(row: CausalRelationshipRow): string {
+export function causeLabel(row: CausalRelationshipRow): string {
   return CAUSE_LABELS[row.cause] ?? humanize(row.cause);
 }
 
-function effectLabel(row: CausalRelationshipRow): string {
+export function effectLabel(row: CausalRelationshipRow): string {
   return EFFECT_LABELS[row.effect] ?? humanize(row.effect);
 }
 
