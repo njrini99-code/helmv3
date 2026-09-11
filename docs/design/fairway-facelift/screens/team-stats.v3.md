@@ -88,7 +88,14 @@ zero-player state, mirroring Home's `!team` branch
   **Template:** `"{leakClause} {ownerClause} {trajectoryClause}"`
 
   - `leakClause`, from `sgData` (`TeamStatsBoard.tsx:276-288`, weighted by
-    `roundsPlayed` via `weightedMean`, `buildTeamBoardViewModel.ts:115`):
+    `roundsPlayed` via `weightedMean`, `buildTeamBoardViewModel.ts:115`).
+    `worstLabel`/`bestLabel` are `sgData`'s own `label` strings, sourced
+    verbatim from `SG_CATEGORY_BARS` (`TeamStatsBoard.tsx:106-111`):
+    `'Off the Tee'`, `'Approach'`, `'Around the Green'`, `'Putting'`. Two of
+    those are title-cased for a column heading, not mid-sentence prose —
+    lowercase them to `'Off the tee'`/`'Around the green'` before
+    interpolating, matching this page's own naming everywhere else (The one
+    idea, the Column headers' full-word spans below).
     - Some category is negative → `"{worstLabel} is the leak, {fmtSg(value)}
       strokes a round against {tourLabel}."` This is the existing
       `sgTakeaway` sentence (`TeamStatsBoard.tsx:316-322`) promoted from a
@@ -117,9 +124,12 @@ zero-player state, mirroring Home's `!team` branch
     block goes away.
 - **Facts line**, `font-fw-mono text-caption tabular-nums`, same treatment
   as Home's (`FairwayCoachDashboard.tsx:330-337`):
-  `"{rows.length} players · {rounds30d} rounds in 30 days · {freshness}"`,
-  where freshness is `formatTeamStatsFreshnessHeadline(freshness)`
-  (`teamStatsFreshness.ts:35`), unchanged.
+  `"{rows.length} players · {freshness}"`, where freshness is
+  `formatTeamStatsFreshnessHeadline(freshness)` (`teamStatsFreshness.ts:35`),
+  unchanged. `rounds30d` (`vm.kpis.rounds30d`, `buildTeamBoardViewModel.ts:308`)
+  is dropped from this line on purpose: it already has a home in the
+  Readouts below ("Rounds · 30d"), and a count printed here and again a few
+  inches down is the same reading typeset twice, not two facts.
 
 The three-flag `InlineNotice` (`TeamStatsBoard.tsx:457-461` with
 `statsLoadErrorMessage` at `:148-158`) stays exactly as it is, directly
@@ -158,18 +168,36 @@ the swatches line up as a field, not as a table that reflows.
 
 Each header is a sort control, not decoration. Clicking a category sorts the
 player register by that column's rank, ascending, ties broken by name.
-Default sort: the leaking category from the verdict, so the page opens
-already showing who owns the problem. Where `hasSg` is false, default to
-scoring rank; where that is also absent, default to name.
+Default sort: the category with the lowest strokes-gained value, whether or
+not it is negative — the same minimum `sgData` already computes for
+`sgTakeaway` today (`TeamStatsBoard.tsx:318-319`), not a new "leaking"
+filter. On a roster with no true leak (every category positive) this still
+opens on the team's weakest column, which is the honest reading of "what to
+work on" even when nothing is technically over par. Where `hasSg` is false,
+default to scoring rank; where that is also absent, default to name.
 
 Header text follows the existing 940px switch (`TeamStatsBoard.tsx:182-196`)
-but not its mechanism: render both label spans in every header cell —
+but not its mechanism, and corrects one naming split along the way. Render
+both label spans in every header cell —
 `<span className="hidden min-[940px]:inline">Approach</span><span
-className="min-[940px]:hidden">App</span>` (and the same pair for
-Short game/Shrt, Putting/Putt, Scoring/Scor) — and let the stylesheet pick,
-the same arbitrary-variant idiom `TeamStatsBoard.tsx:470` already uses for
-its own sticky band. `useMediaQuery('(min-width: 940px)')`
-(`TeamStatsBoard.tsx:182`) and `isBoardWide` are retired by this change —
+className="min-[940px]:hidden">App</span>` — for Approach/App, Putting/Putt
+and Scoring/Scor, unchanged from today's strings. The third category is
+`'Around the Green'` in the data itself (`SG_CATEGORY_BARS`,
+`TeamStatsBoard.tsx:109`) and `'Around the green'` everywhere else in this
+spec (The one idea, the verdict's `worstLabel`/`bestLabel` above); the
+current header alone calls it `'Short game'`/`'Shrt'`
+(`TeamStatsBoard.tsx:188`) — rename that pair to Around the green/Grn so the
+column header agrees with its own column's data label instead of
+contradicting it. The Tee column's header stays exactly `'Tee'`
+(`TeamStatsBoard.tsx:186`) at every width — it is already short enough that
+it never had a wide-form switch in the source, and it does not gain one
+here; "Off the tee" is this page's name for the category in prose (The one
+idea, the verdict), not a second header string to build.
+
+Let the stylesheet pick, the same arbitrary-variant idiom
+`TeamStatsBoard.tsx:470` already uses for its own sticky band.
+`useMediaQuery('(min-width: 940px)')` (`TeamStatsBoard.tsx:182`) and
+`isBoardWide` are retired by this change —
 LANGUAGE.md's Bans list names this exact pattern outright ("a client-only
 breakpoint branch"), and the header text still changes at the same width as
 the columns it labels, because both spans key off one CSS breakpoint rather
@@ -183,15 +211,40 @@ the default sort on the server, and derive the sorted order in the same
 
 One row above the grid rule, aligned to the category columns.
 
-- Four `DivergingBars`-style signed bars, one per SG category. `DivergingRow`
-  is `{ label, delta, display }` (`modules/types.ts:153`) and
-  `DivergingBarsProps` needs a shared `max` (`:154`) — use
-  `Math.max(1, ...sgData.map(d => Math.abs(d.value)))` so all four bars share
-  one scale. Do NOT give each column its own scale; a −0.1 leak must not
-  render the same size as a −3.2 leak.
-- `display` is `fmtSg(value)` (`buildTeamBoardViewModel.ts:36`), unchanged.
-- Tone: `bg-fw-warning` below zero, `bg-accent-500` above. Green is ink,
-  amber means over par — LANGUAGE.md's materials rule.
+- Four `MicroBar`s (`modules/MicroBar.tsx`, registered `registry.ts:216`),
+  one per SG category — not `DivergingBars`. `DivergingBars`' exported row
+  is a fixed `grid-cols-[40px_1fr_42px]` layout (label, rail, value —
+  `DivergingBars.tsx:25`) built to be its own ledger row, not a `3.25rem`
+  grid track, and its tone is hardcoded backwards for this data: `over =
+  row.delta > 0` colored `bg-fw-warning`, the negative case colored
+  `bg-accent-500` (`DivergingBars.tsx:23,37`) is correct for a metric where
+  positive is worse — the opposite of strokes gained, where positive is
+  good. `MicroBar` sizes in px (`width`/`height` props, default 40×6,
+  `MicroBar.tsx:41-44`), so it drops into a `3.25rem`/`4.5rem` cell cleanly,
+  and its fill color already follows a `goodDirection` prop rather than a
+  hardcoded sign (`MicroBar.tsx:63,83-88`). Props: `value={category's SG
+  value}`; `domain={Math.max(1, ...sgData.map(d => Math.abs(d.value)))}`,
+  one figure shared across all four so a −0.1 leak never renders the same
+  size as a −3.2 leak; `goodDirection="high"` (positive strokes gained is
+  the good side, `MicroBar.tsx:38-39`); `label` stating the reading in
+  words, e.g. `` `${label}: ${fmtSg(value)} strokes a round versus Tour` ``.
+  Keep `DivergingRow`'s data shape as the row type feeding this list,
+  `{ label, delta, display }` (`modules/types.ts:153`), but do not reach for
+  `DivergingBarsProps`' `max` (`:154`) — that types the row component this
+  section does not use; `MicroBar`'s scale prop is `domain`.
+- `display` next to the bar is still `fmtSg(value)`
+  (`buildTeamBoardViewModel.ts:36`), as mono text, unchanged.
+- Tone comes from `MicroBar` itself once `goodDirection="high"` is set:
+  positive renders `bg-accent-500` (green, gaining strokes on Tour),
+  negative renders `bg-fw-warning` (amber, the leak) —
+  `MicroBar.tsx:63,83-88`. Do not read LANGUAGE.md's "amber below zero"
+  materials rule as license to copy `DivergingBars`' own polarity; that
+  component's hardcoded tone is inverted for SG and must not be reused here.
+  `value === 0` is a real measured reading — exactly at Tour, not a missing
+  one — and `MicroBar` already renders it correctly with no extra work: its
+  `value !== 0` guard (`MicroBar.tsx:79`) leaves the fill out, showing only
+  the sunken rail and center zero tick, never a colored bar and never this
+  section's missing-category en dash below.
 - The zero line is the Tour baseline, not an assumption: every `sg_*` row
   seeded into `golf_pga_standards` carries `pga_tour_value = 0`
   (`supabase/migrations/20260610040300_seed_golf_pga_standards.sql:35-39`),
@@ -241,6 +294,20 @@ current sort.
   the player register and the scoring column are real. The team register
   shows the full cold-start sentence
   (`TeamStatsBoard.tsx:509`) once, spanning the four SG columns.
+- Fetch failed (`roundsError === true`, `TeamStatsBoard.tsx:98`, one of the
+  three independent flags the masthead's `InlineNotice` already surfaces
+  above the facts line — see Masthead): `vm.rows` does not go empty when a
+  fetch fails, only the values inside it do, which makes this branch render
+  identically to the cold-start branch above unless it is named separately.
+  It is not the same state. Follow `FairwayCoachDashboard.tsx:411-414`'s
+  precedent of surfacing the warning ahead of the empty-state branch, and
+  gate the cold-start sentence strictly on `hasSg === false && !roundsError`.
+  When `roundsError` is true, the team register's SG cells render the same
+  en dash as an absent category (Missing, above) but never the "Strokes
+  gained appears once players log rounds..." sentence — that sentence
+  asserts a data-collection gap that did not happen here, and printing it
+  anyway is exactly the failure-rendered-as-empty-state the Honesty rules
+  forbid.
 
 ---
 
@@ -252,13 +319,18 @@ Bare, no box. Same component and same responsive behaviour as
 `xl`. Reuse `FieldReadouts` if its props fit; otherwise copy its class
 string exactly rather than inventing a second rhythm.
 
-Four items, the same four `statItems` the sticky band shows today
-(`TeamStatsBoard.tsx:379-397`), with their containers removed:
+This page renders three of the four `statItems` the sticky band shows today
+(`TeamStatsBoard.tsx:379-397`), with their containers removed. Team scoring
+is not one of them: `vm.kpis.teamScoring` already has a home in the stage's
+team register (Scoring column, above), and printing it a second time here
+would be the same figure typeset twice, not two readings. Three items in the
+4-up `md` grid leave one track empty; three items in the 2-up phone grid
+leave a trailing single on its own row — both are `FieldReadouts`'
+existing behaviour with fewer children, not a new rhythm to build.
 
 | Readout | Source | Missing |
 |---|---|---|
-| Team scoring | `vm.kpis.teamScoring` (`buildTeamBoardViewModel.ts:304`) | en dash (see Risks: `fmtScoringAvg` renders an em dash today) |
-| Team SG / rd | `vm.kpis.teamSg` (`:305`) | en dash (see Risks: `fmtSg` renders an em dash today) |
+| Team SG / rd | `vm.kpis.teamSg` (`buildTeamBoardViewModel.ts:305`) | en dash (see Risk 6: the null case is `teamSg`'s own inline ternary at `:514`, not `fmtSg`'s null branch at `:38` — `fmtSg` only formats the non-null half of that ternary) |
 | Trajectory | `vm.kpis.trajectory` (`:307`), rendered by the existing `TrajectoryKpi` (`TeamStatsBoard.tsx:586-603`) | `hasTrajectorySignal === false` → "Not yet" in `text-text-tertiary`; the verdict already carries the explanation, so do NOT repeat the `InsufficientData` block here |
 | Rounds · 30d | `vm.kpis.rounds30d` (`:308`) | `0` is a real count here and prints as `0` |
 
@@ -277,8 +349,13 @@ same construction as Home's
 
 **Column 1 (span 5), "Where it leaks."** The four SG categories as a
 sorted list, worst first: category name, `fmtSg` value, and a `MicroBar`
-(`registry.ts:216`) showing the signed magnitude on the shared `max` from
-the stage. This is the tornado's information without the tornado's box; the
+(`modules/MicroBar.tsx`, registered `registry.ts:216`) with
+`value={that category's SG value}`, `domain={the same shared
+Math.max(1, ...sgData.map(d => Math.abs(d.value))) the Team register
+computes above — one scale, not a second one}`, `goodDirection="high"`
+(positive strokes gained is the good side, `MicroBar.tsx:38-39`), and
+`label` stating the reading in words. This is the tornado's information
+without the tornado's box; the
 `StrokesGainedTornado` in `BentoCell` (`TeamStatsBoard.tsx:502-512`) is
 deleted, and with it the duplicate `takeaway` caption. **Missing:**
 `hasSg === false` → the column renders only the cold-start sentence.
@@ -374,10 +451,10 @@ starving a 15rem rail and clipping player names to one character.
 
 | Width | Stage | Readouts | Ledger | Diptych |
 |---|---|---|---|---|
-| < 640 | Field, abbreviated headers, horizontal scroll inside the Surface only | 2-up grid below the stage | stacked | stacked |
-| 640–939 | same, abbreviated headers | 2-up | stacked | stacked |
-| 940–1279 | full-word headers (CSS, see Stage above) | 4-up row below the stage | 2-up (`md:grid-cols-2`) | stacked |
-| ≥ 1280 | Field + right rail `xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x` | vertical hairline stack in the rail | 12-col, spans 5/3/4, `xl:divide-x` | 2-up, `xl:divide-x` |
+| < 640 | Field, abbreviated headers, horizontal scroll inside the Surface only | 2-up grid below the stage, three items, third alone on its own row | stacked | stacked |
+| 640–939 | same, abbreviated headers | 2-up, third item alone on its own row | stacked | stacked |
+| 940–1279 | full-word headers (CSS, see Stage above) | 4-up row below the stage, three of four tracks populated | 2-up (`md:grid-cols-2`) | stacked |
+| ≥ 1280 | Field + right rail `xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x` | vertical hairline stack in the rail, three items | 12-col, spans 5/3/4, `xl:divide-x` | 2-up, `xl:divide-x` |
 
 No interpolated Tailwind classes. `xl:col-span-5` as a literal string, never
 `` `xl:col-span-${n}` ``.
@@ -390,7 +467,7 @@ change.
 - **The stage becomes** the same `CategoryField`, unchanged in kind:
   identity column plus five fixed category columns, horizontal scroll
   inside the Surface's own `overflow-x-auto` so the page body never scrolls
-  sideways. Column headers show the abbreviated span (App, Shrt, Putt,
+  sideways. Column headers show the abbreviated span (App, Grn, Putt,
   Scor) — see Stage above.
 - **The table drops** Composite, Trend and Signal below `md`
   (`hidden md:table-cell` — removed from layout, not scrolled to), keeping
@@ -486,7 +563,14 @@ rewrite is the easiest place to lose them.
    function at `:36`) and its four
    siblings `fmtScoringAvg`/`fmtScore`/`fmtPercent`/`fmtPerRound`
    (`:47,52,57,62` — the last three feed the table's row-expand fields via
-   `:425-430`), plus `TeamStatsBoard.tsx`'s own `fmtPct`/`fmtOneDecimal`
+   `:425-430`), plus two bare `'—'` ternaries that are NOT inside any of
+   those named functions — `teamScoring` (`:462`, backing the Team register's
+   Scoring column above) and `teamSg` (`:514`, backing the Readouts' Team
+   SG / rd item above) each null-check inline in the main view-model body,
+   so fixing `fmtScoringAvg` or `fmtSg` alone leaves both of those readings
+   showing an em dash — this is exactly the gap the Readouts table above
+   corrects its own citations for. Continue the sweep with
+   `TeamStatsBoard.tsx`'s own `fmtPct`/`fmtOneDecimal`
    (`:632,636`, feeding the Fundamentals ledger column via `:296-308` and
    `:531-532`), the Composite column's null fallback (`:358`),
    `ExpandStat`'s `?? '—'` (`:613`), `RankOrDash` (`:573`), and the
