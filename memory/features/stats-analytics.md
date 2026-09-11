@@ -122,6 +122,12 @@ Round completion
   leave both labels in the accessibility tree), and the phone table is a
   `md:hidden` stacked list beside a `hidden md:block` table, both always in the
   DOM with CSS choosing.
+- A `CategoryField` player row is a `div role="row"` holding a real `<Link>` on
+  the player name, whose `after:absolute after:inset-0` stretches the anchor
+  over the whole row. `role="row"` placed on the anchor itself overrides the
+  implicit link role and leaves a screen reader announcing cells with no
+  destination; a div `onClick` instead costs a keyboard listener and a second
+  tab stop.
 - `CategoryField` is deliberately page-local. It is a promotion candidate for
   `modules/`, but `modules/index.ts`, `modules/types.ts` and `registry.ts` are
   lead-owned and the facelift ratchet requires every barrel export to be named
