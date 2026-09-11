@@ -4,7 +4,6 @@
  * the lead-area pick, the ladder order, the plan bar's gate, the stage's
  * readout and verdict.
  */
-import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { FocusAreaCardData } from './FocusAreaCard';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
@@ -14,13 +13,7 @@ vi.mock('@/app/golf/actions/development', () => ({
 }));
 vi.mock('@/lib/fairway/haptics', () => ({ fwHaptic: vi.fn() }));
 
-import {
-  LeadAreaStage,
-  PlanSegmentBar,
-  ladderOrder,
-  leadAreaVerdict,
-  pickLeadArea,
-} from './development-parts';
+import { ladderOrder, pickLeadArea } from './development-parts';
 
 function area(overrides: Partial<FocusAreaCardData> = {}): FocusAreaCardData {
   return {
@@ -99,39 +92,5 @@ describe('ladderOrder', () => {
     const none = area({ id: 'none', target_value: null, current_value: null, baseline_value: null });
     const fresh = area({ id: 'fresh', current_value: 50 });
     expect(ladderOrder([done, none, mid, fresh]).map((fa) => fa.id)).toEqual(['fresh', 'mid', 'done', 'none']);
-  });
-});
-
-describe('PlanSegmentBar', () => {
-  it('renders nothing below two areas', () => {
-    const { container } = render(<PlanSegmentBar active={1} completed={0} />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it('reads the completed share as the figure and speaks it as the takeaway', () => {
-    render(<PlanSegmentBar active={3} completed={3} proposed={0} />);
-    expect(screen.getByRole('img', { name: /3 of 6 areas complete/ })).toBeInTheDocument();
-    expect(screen.getByText('(3 of 6)')).toBeInTheDocument();
-  });
-});
-
-describe('LeadAreaStage', () => {
-  it('reads the lead area’s current value, its verdict and opens on press', () => {
-    const onOpen = vi.fn();
-    render(<LeadAreaStage area={area()} onOpen={onOpen} />);
-    const stage = screen.getByRole('region', { name: 'Your next stroke' });
-    expect(stage).toHaveTextContent('56%');
-    expect(stage).toHaveTextContent('Up 6% since you started, 40% of the way.');
-    expect(stage).toHaveTextContent('Last: 56% · Aug 31');
-    screen.getByRole('button', { name: /Greens in regulation/ }).click();
-    expect(onOpen).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows the honest line and no ribbon with a single reading', () => {
-    const fresh = area({ current_value: 50, snapshots: [{ date: '2026-08-01', value: 50 }] });
-    render(<LeadAreaStage area={fresh} onOpen={() => {}} />);
-    expect(leadAreaVerdict(fresh)).toBe('No reading since you started; log progress or play a round.');
-    expect(screen.queryByText(/^Last:/)).toBeNull();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 });

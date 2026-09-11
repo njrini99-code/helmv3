@@ -195,8 +195,8 @@ describe('GoalsSection — 44px touch targets', () => {
   });
 });
 
-describe('GoalsSection — inline variant (player development v2)', () => {
-  it('renders the empty state as an InlineNotice with a 44px "Set a goal"', () => {
+describe('GoalsSection — inline variant, the development ledger column (v3)', () => {
+  it('states the empty case in one line with a quiet control, never a second primary', () => {
     render(
       <GoalsSection
         // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
@@ -208,14 +208,17 @@ describe('GoalsSection — inline variant (player development v2)', () => {
         focusAreaCount={2}
       />,
     );
-    expect(screen.getByRole('status')).toHaveTextContent('No goals set yet');
+    // Names the focus areas the reader can see above rather than denying them.
+    expect(screen.getByText(/No goals set yet/)).toHaveTextContent('2 focus areas');
     expect(screen.queryByText('Goals in flight')).toBeNull();
     const btn = screen.getByRole('button', { name: 'Set a goal' });
     expect(btn.className).toMatch(/min-h-\[44px\]/);
+    // The page's one filled primary lives in its header; this control is quiet.
+    expect(btn.getAttribute('data-variant')).toBe('ghost');
   });
 
-  it('lists each active goal as one seam row with its rail, and no hero', () => {
-    render(
+  it('is bare hairline rows on the canvas: no Surface, no InsetGroup, no hero', () => {
+    const { container } = render(
       <GoalsSection
         // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
         role="player"
@@ -225,11 +228,43 @@ describe('GoalsSection — inline variant (player development v2)', () => {
         suggestions={[]}
       />,
     );
-    const group = screen.getByLabelText('Active goals');
-    const rows = group.querySelectorAll('[data-slot="goal-row"]');
+    const rows = container.querySelectorAll('[data-goal-id]');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('33%');
     expect(rows[1]).toHaveTextContent('67%');
     expect(screen.queryByText('Your one thing')).toBeNull();
+    // The development page's ONE Surface is already spent on the stage (or on
+    // DrillPanel), so this column must not add another.
+    expect(container.querySelector('[data-slot="surface"]')).toBeNull();
+    expect(container.querySelector('[data-slot="inset-group"]')).toBeNull();
+  });
+
+  it('shows "now" and "target" as two figures with no glyph between them', () => {
+    const { container } = render(
+      <GoalsSection
+        // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
+        role="player"
+        variant="inline"
+        activeGoals={[makeGoalData({ id: 'g1' })]}
+        suggestions={[]}
+      />,
+    );
+    const row = container.querySelector('[data-goal-id="g1"]')!;
+    expect(row.textContent).toMatch(/now .*, target /);
+    // An arrow between two numbers is chrome pretending to be data.
+    expect(row.textContent).not.toMatch(/[→←⟶]|--|—/);
+  });
+
+  it('does NOT render the suggestions rail: those belong to the page Decisions column', () => {
+    render(
+      <GoalsSection
+        // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
+        role="player"
+        variant="inline"
+        activeGoals={[makeGoalData({ id: 'g1' })]}
+        suggestions={[makeSuggestion()]}
+      />,
+    );
+    expect(screen.queryByText('CoachHelm suggests')).toBeNull();
   });
 });

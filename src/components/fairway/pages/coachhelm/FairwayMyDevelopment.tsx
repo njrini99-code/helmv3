@@ -44,41 +44,50 @@
  * port of this body, is deleted.
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle2, MessageSquare, Target } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
 import { fairwayScope } from '@/lib/redesign/flag';
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
 // that barrel, so importing the barrel back here created an import cycle,
 // flagged by npm run check:cycles.
 import { Button } from '@/components/fairway/controls';
-import { Surface } from '@/components/fairway/surfaces';
-import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
+import { InlineNotice } from '@/components/fairway/feedback';
 import { CoachHelmShell } from './CoachHelmShell';
 import { DrillPanel } from '@/components/fairway/modules/DrillPanel';
 import { useStage } from '@/components/fairway/modules/StageRouter';
-import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
+import type { FocusAreaCardData } from './FocusAreaCard';
 import {
-  ActiveFocusAreaList,
+  DevelopmentVerdict,
+  FieldReadout,
   FocusAreaSheet,
-  LeadAreaStage,
+  LedgerRow,
   LogProgressSheet,
-  PlanSegmentBar,
-  ProposedAreaCard,
-  pickLeadArea,
+  ProposedLedgerRow,
+  ReadingsLogTable,
+  SectionHead,
+  StageFrame,
+  SuggestionLedgerRow,
+  WhyRows,
+  focusFieldRows,
   useFocusAreaSheet,
-  standingForArea,
   type LogProgressState,
 } from './development-parts';
+import { standingForArea } from './development-parts';
+import { FocusField } from './focus-field';
+import {
+  buildDevelopmentVerdict,
+  fieldDomain,
+  movementCounts,
+  readingsLog,
+} from './development-logic';
 import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 import type { AreaAutoFillStats } from './areaTypes';
 import { IconPlus } from '@/components/icons';
 import { GoalsSection, type GoalSuggestionView } from './GoalsSection';
-import { CausalWhyPanel } from './CausalWhyPanel';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import type { FairwayGoalCardData } from './FairwayGoalCard';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -192,10 +201,13 @@ export function FairwayMyDevelopment({
   const [createOpen, setCreateOpen] = useState(false);
 
   // Phone focus-area Sheet (player-development.mobile.md #3).
-  const areaSheet = useFocusAreaSheet(activeAreas);
+  const sheetAreas = useMemo(
+    () => [...activeAreas, ...completedAreas],
+    [activeAreas, completedAreas],
+  );
+  const areaSheet = useFocusAreaSheet(sheetAreas);
 
   const total = activeAreas.length + completedAreas.length;
-  const hasAnyArea = total + proposedAreas.length > 0;
   const canCreateOwn = Boolean(playerId);
 
   // Accept a coach-prescribed area → it becomes active and the window starts.
@@ -346,28 +358,51 @@ export function FairwayMyDevelopment({
     </div>
   );
 
-  // The lead area is derived on every render, never stored, so it cannot
-  // drift while a sheet is open (player-development.v2.md, context rule).
-  const leadArea = useMemo(
-    () => pickLeadArea(activeAreas, causalRelationships),
-    [activeAreas, causalRelationships],
-  );
-  const showPlan = total + proposedAreas.length >= 2;
-  const showFirstRow = leadArea != null || showPlan || proposedAreas.length > 0;
+  /* ═══════════════════════════════════════════════════════════════════════
+   * v3 derivations. Every judgement below comes from `development-logic.ts`;
+   * nothing on this page derives inline, so the stage, the ledger and the
+   * table cannot tell three different stories about the same reading.
+   * ═══════════════════════════════════════════════════════════════════════ */
 
-  const prescribed =
-    proposedAreas.length > 0 ? (
-      <section>
-        <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-          <Target className="h-5 w-5 text-accent-600" aria-hidden />
-          Prescribed for you
-          <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-            {proposedAreas.length} pending
-          </span>
-        </h2>
-        <div className="flex flex-col gap-3">
+  // The clock is read AFTER mount, never during render: an SSR timestamp and a
+  // client timestamp disagree across a day boundary and the axis labels would
+  // hydrate mismatched. Before it resolves the domain ends at the latest
+  // reading, which is correct for every mark's position.
+  const [today, setToday] = useState<string | null>(null);
+  useEffect(() => setToday(new Date().toISOString().slice(0, 10)), []);
+
+  const verdictParts = useMemo(
+    () =>
+      buildDevelopmentVerdict({
+        activeAreas,
+        causalRelationships,
+        proposedCount: proposedAreas.length,
+        suggestionCount: suggestions.length,
+      }),
+    [activeAreas, causalRelationships, proposedAreas.length, suggestions.length],
+  );
+
+  const fieldRows = useMemo(() => focusFieldRows(activeAreas), [activeAreas]);
+  const logRows = useMemo(
+    () => readingsLog(activeAreas, completedAreas),
+    [activeAreas, completedAreas],
+  );
+  const movement = useMemo(() => movementCounts(activeAreas), [activeAreas]);
+  const axisEnd = today ?? logRows[0]?.day ?? '2000-01-01';
+  const domain = useMemo(
+    // A degenerate one-day domain when nothing is dated at all: the rows still
+    // render, each carrying its own caption saying what it is waiting for.
+    () => fieldDomain(activeAreas, axisEnd) ?? { start: axisEnd, end: axisEnd },
+    [activeAreas, axisEnd],
+  );
+
+  const decisionsColumn =
+    proposedAreas.length > 0 || suggestions.length > 0 ? (
+      <>
+        <SectionHead id="decisions">Waiting on you</SectionHead>
+        <div className="flex flex-col">
           {proposedAreas.map((fa) => (
-            <ProposedAreaCard
+            <ProposedLedgerRow
               key={fa.id}
               focusArea={fa}
               deciding={decidingId === fa.id}
@@ -375,166 +410,135 @@ export function FairwayMyDevelopment({
               onDecline={() => handleDecline(fa)}
             />
           ))}
+          {suggestions.map((view) => (
+            <SuggestionLedgerRow key={view.suggestion.id} view={view} />
+          ))}
         </div>
-      </section>
+      </>
     ) : null;
 
-  // The body is host-independent; each host only supplies its chrome. Order
-  // (player-development.v2.md): stage · plan · ladder · goals · suggestions
-  // · why · completed, as three 7/5 rows from `md`; one column below it.
+  const goalsColumn = (
+    <>
+      <SectionHead>Goals</SectionHead>
+      <GoalsSection
+        // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
+        role="player"
+        variant="inline"
+        canCreate={canCreateOwn}
+        activeGoals={goals ?? []}
+        suggestions={[]}
+        achievedGoals={achievedGoals ?? []}
+        // ACTIVE areas only: `total` folds in completed ones, and the copy must
+        // name a number the reader can actually see on the stage above.
+        focusAreaCount={activeAreas.length}
+      />
+    </>
+  );
+
+  // Empty for most players by design (CausalWhyPanel's own docstring), so the
+  // column simply does not render rather than printing an apology.
+  const whyColumn =
+    causalRelationships.length > 0 ? (
+      <>
+        <SectionHead>Why your scores move</SectionHead>
+        <WhyRows relationships={causalRelationships} />
+      </>
+    ) : null;
+
+  /* The body is host-independent; each host supplies only its chrome. Order
+     (player-development.v3.md): masthead · stage · ledger · table. */
   const body = (
     <>
-          {/* ── Error state — distinct from empty (mustFix: silent fall-through).
-                When the focus-area select failed, show ONLY the error — Goals
-                are a separate population but we don't want to imply the page
-                loaded cleanly. ── */}
-          {loadError ? (
-            <InlineNotice
-              tone="danger"
-              title="Couldn't load your plans"
-              action={
-                <Button variant="secondary" onClick={() => router.refresh()}>
-                  Retry
-                </Button>
-              }
-            >
-              Something went wrong loading your development plans. Try again in a
-              moment.
-            </InlineNotice>
-          ) : (
-            <div className="flex flex-col gap-10">
-              {/* ── Row 1: the stage ("Your next stroke", the lead area with
-                    its rail, trend and standing) beside the plan's shape and
-                    any prescribed areas awaiting a decision. With no active
-                    area the prescribed areas take the stage's place. ── */}
-              {showFirstRow ? (
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-                  {leadArea ? (
-                    <LeadAreaStage
-                      area={leadArea}
-                      standing={standingForArea(leadArea, standingByMetric)}
-                      onOpen={() => areaSheet.openArea(leadArea.id)}
-                      className="md:col-span-7"
-                    />
-                  ) : null}
-                  {showPlan || prescribed ? (
-                    <div
-                      className={cn(
-                        'flex flex-col gap-8',
-                        leadArea ? 'md:col-span-5' : 'md:col-span-12',
-                      )}
-                    >
-                      {showPlan ? (
-                        <PlanSegmentBar
-                          active={activeAreas.length}
-                          completed={completedAreas.length}
-                          proposed={proposedAreas.length}
-                        />
-                      ) : null}
-                      {prescribed}
+      {loadError ? (
+        /* A failed read is never the empty state. */
+        <InlineNotice
+          tone="danger"
+          title="Couldn't load your plans"
+          action={
+            <Button variant="secondary" onClick={() => router.refresh()}>
+              Retry
+            </Button>
+          }
+        >
+          Something went wrong loading your development plans. Try again in a moment.
+        </InlineNotice>
+      ) : (
+        <div className="flex flex-col">
+          {/* ── 1. Masthead: the verdict and a facts line, bare on the canvas.
+                No eyebrow and no title; DrillPanel prints "Development" one
+                line above on the live host and CoachHelmShell prints its own
+                heading on the preview host. ── */}
+          <DevelopmentVerdict
+            parts={verdictParts}
+            facts={
+              <>
+                <span className="font-fw-mono tabular-nums">{activeAreas.length}</span> active,{' '}
+                <span className="font-fw-mono tabular-nums">{completedAreas.length}</span>{' '}
+                completed, <span className="font-fw-mono tabular-nums">{goals.length}</span>{' '}
+                {goals.length === 1 ? 'goal' : 'goals'}
+              </>
+            }
+          />
+
+          {/* ── 2. The stage: the one instrument that IS this page. ── */}
+          <div className="mt-10">
+            <StageFrame host={host}>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                      Focus areas
+                    </span>
+                    <p className="max-w-[52ch] font-fw-sans text-caption text-text-tertiary">
+                      Each line runs from where you started to your target. Green sits above
+                      your starting value, amber below it.
+                    </p>
+                  </div>
+                  {fieldRows.length > 0 ? (
+                    <div className="flex shrink-0 items-start gap-6 md:border-l md:border-border-subtle md:pl-6">
+                      <FieldReadout label="Active" value={activeAreas.length} />
+                      <FieldReadout label="Moving" value={movement.improving} tone="good" />
+                      <FieldReadout label="Sliding" value={movement.declining} tone="warn" />
                     </div>
                   ) : null}
                 </div>
-              ) : null}
 
-              {!hasAnyArea ? (
-                /* ── Genuinely-empty (Goals below still render). The player can
-                      create their own focus area OR reach out to their coach. ── */
-                <Surface padding="lg">
-                  <EmptyState
-                    title="No development plans yet"
-                    description="Set your own focus area to track an improvement, or your coach can prescribe one for you to accept."
-                    action={
-                      canCreateOwn ? (
-                        <Button variant="primary" leftIcon={<IconPlus size={16} />} onClick={() => setCreateOpen(true)}>
-                          New focus area
-                        </Button>
-                      ) : (
-                        <Button asChild variant="primary">
-                          <Link href="/golf/dashboard/messages">Message coach</Link>
-                        </Button>
-                      )
-                    }
-                  />
-                </Surface>
-              ) : null}
-
-              {/* ── Row 2: the progress ladder (every active area, least
-                    progressed first, rails aligned) beside the goals and the
-                    suggestions. GoalsSection owns its own honest empty
-                    states; `variant="inline"` is the seam reading. ── */}
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-                {activeAreas.length > 0 ? (
-                  <section className="md:col-span-7">
-                    <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                      <Clock className="h-5 w-5 text-accent-600" aria-hidden />
-                      Active focus areas
-                      <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                        {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
-                      </span>
-                    </h2>
-                    {/* Phone: ONE matte group of seam rows, a tap opens the
-                          full card in a Sheet (player-development.mobile.md
-                          #3); md and up: the full cards, in the same order. */}
-                    <ActiveFocusAreaList
-                      areas={activeAreas}
-                      standingByMetric={standingByMetric}
-                      onOpen={areaSheet.openArea}
-                      onLogProgress={handleLogProgress}
-                      onComplete={handleComplete}
-                      completingId={completingId}
-                    />
-                  </section>
-                ) : null}
-                <div className={activeAreas.length > 0 ? 'md:col-span-5' : 'md:col-span-12'}>
-                  <GoalsSection
-                    // eslint-disable-next-line jsx-a11y/aria-role
-                    role="player"
-                    variant="inline"
-                    canCreate
-                    activeGoals={goals ?? []}
-                    suggestions={suggestions ?? []}
-                    achievedGoals={achievedGoals ?? []}
-                    // ACTIVE areas only — `total` folds in completed ones, and the
-                    // copy must name a number the reader can actually see above.
-                    focusAreaCount={activeAreas.length}
-                  />
-                </div>
+                {fieldRows.length > 0 ? (
+                  <FocusField rows={fieldRows} domain={domain} />
+                ) : (
+                  /* Bare, never an EmptyState card: under host="stage" a
+                     Surface here would be a card inside DrillPanel. */
+                  <div className="flex flex-col items-start gap-3 py-6">
+                    <p className="max-w-[52ch] font-fw-sans text-body-sm text-text-secondary">
+                      {proposedAreas.length > 0
+                        ? 'Nothing in progress. Accept one of the areas your coach sent and its line starts here.'
+                        : 'Nothing in progress. Set a focus area and every reading you log draws a line here.'}
+                    </p>
+                    {/* No button here. The header row already carries this
+                        page's ONE primary ("New focus area", or "Message
+                        coach" when the player cannot create their own); a
+                        second filled primary in the same view is the defect
+                        this pass is fixing elsewhere, not reintroducing. */}
+                  </div>
+                )}
               </div>
+            </StageFrame>
+          </div>
 
-              {/* ── "Why your scores move" (the causal-engine layer, its own
-                    honest empty state), then the completed areas, both full
-                    width: the completed card's one-line status cluster needs
-                    the whole column (a 7-col cell clipped "Bounce-back" to
-                    "Bounce-ba…" in the capture). ── */}
-              <CausalWhyPanel relationships={causalRelationships} />
-              {completedAreas.length > 0 ? (
-                  <section>
-                    <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                      <CheckCircle2 className="h-5 w-5 text-text-tertiary" aria-hidden />
-                      Completed
-                      <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                        {completedAreas.length}{' '}
-                        {completedAreas.length === 1 ? 'area' : 'areas'}
-                      </span>
-                    </h2>
-                    <div className="flex flex-col gap-3">
-                      {completedAreas.map((fa, i) => (
-                        <FocusAreaCard
-                          key={fa.id}
-                          focusArea={fa}
-                          // eslint-disable-next-line jsx-a11y/aria-role
-                          role="player"
-                          index={i}
-                          onReopen={handleReopen}
-                          reopening={reopeningId === fa.id}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
+          {/* ── 3. The ledger row. ── */}
+          <div className="mt-12">
+            <LedgerRow columns={[decisionsColumn, goalsColumn, whyColumn]} />
+          </div>
+
+          {/* ── 4. The table: the dated evidence behind the stage. ── */}
+          {logRows.length > 0 ? (
+            <div className="mt-10 flex flex-col gap-3">
+              <SectionHead>Readings</SectionHead>
+              <ReadingsLogTable rows={logRows} onOpenArea={areaSheet.openArea} />
             </div>
-          )}
+          ) : null}
+        </div>
+      )}
     </>
   );
 

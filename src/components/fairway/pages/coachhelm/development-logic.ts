@@ -284,6 +284,35 @@ export function movementCounts(areas: readonly FocusAreaCardData[]): MovementCou
   return { improving, declining, flat, legible: improving + declining + flat };
 }
 
+/* ── Row trend ─────────────────────────────────────────── */
+
+export interface RowTrend {
+  direction: 'improving' | 'declining';
+  /** Absolute change in the metric's own unit, unformatted. */
+  delta: number;
+}
+
+/**
+ * The most recent movement for one area, or null when the row cannot make the
+ * claim: fewer than two readings, an unresolved direction, or a flat step.
+ *
+ * Measured over the LAST TWO readings, deliberately the same pair the readings
+ * log's `Change` column prints, so the triangle beside a row and the number in
+ * the table below it can never tell different stories about the same step.
+ * `movementCounts` measures first-to-last instead, because a count of who is
+ * moving is a claim about the whole journey, not the latest step.
+ */
+export function rowTrend(fa: FocusAreaCardData): RowTrend | null {
+  const direction = resolveMetricDirection(fa.target_metric);
+  if (direction === 'unknown') return null;
+  const entries = focusAreaTrendEntries(fa);
+  if (entries.length < 2) return null;
+  const delta = entries[entries.length - 1]!.value - entries[entries.length - 2]!.value;
+  if (delta === 0) return null;
+  const improving = direction === 'lower' ? delta < 0 : delta > 0;
+  return { direction: improving ? 'improving' : 'declining', delta: Math.abs(delta) };
+}
+
 /* ── The verdict ────────────────────────────────────────────────────────── */
 
 export interface DevelopmentVerdictInput {

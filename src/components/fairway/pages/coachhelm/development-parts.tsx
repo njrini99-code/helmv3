@@ -27,9 +27,9 @@
  * Every write action is imported UNCHANGED from development.ts.
  * ========================================================================== */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
@@ -37,33 +37,22 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 // Leaf and sub-barrel imports only: this folder is re-exported from the top
 // `@/components/fairway` barrel, and importing it back here is a cycle.
 import { Button } from '@/components/fairway/controls';
-import { Eyebrow } from '@/components/fairway/controls/eyebrow';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
 import { Surface } from '@/components/fairway/surfaces';
-import { InsetGroup } from '@/components/fairway/surfaces/inset-group';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { Readout } from '@/components/fairway/instrument';
-import { Sparkline } from '@/components/fairway/charts/Sparkline';
-import { Ribbon, type RibbonPoint } from '@/components/fairway/charts/Ribbon';
-import { SegmentBar, type SegmentBarPart } from '@/components/fairway/charts/SegmentBar';
-import { StandingBars } from '@/components/fairway/charts/StandingBars';
 import { FormField, Input, TextArea } from '@/components/fairway/forms';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import { ProgressTrack } from './ProgressTrack';
 import { formatDay } from './format-day';
 import {
   FocusAreaCard,
   SourceChip,
-  focusAreaTrendEntries,
-  focusAreaTrendSeries,
   formatTimeframe,
   type FocusAreaCardData,
 } from './FocusAreaCard';
 import {
   getAreaType,
   getProgressPercent,
-  isLowerIsBetter,
   formatTargetMetricLabel,
 } from './areaTypes';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
@@ -72,6 +61,16 @@ import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import { updateFocusAreaProgress } from '@/app/golf/actions/development';
+import { acceptGoalSuggestion, dismissGoalSuggestion } from '@/app/golf/actions/v3/goals';
+import type { GoalSuggestionView } from './GoalsSection';
+import {
+  fieldRowState,
+  rowReadout,
+  rowTrend,
+  type ReadingLogRow,
+  type VerdictPart,
+} from './development-logic';
+import type { FocusFieldRow } from './focus-field';
 
 /**
  * Phone focus-area Sheet: the full FocusAreaCard (Sparkline, StandingBars,
@@ -292,95 +291,6 @@ export function LogProgressSheet({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * FocusAreaRow — the phone reading of one ACTIVE focus area: a seam row with
- * the area icon, the title, one metric line ("Putts Made 3-5 ft · now 46.5 ·
- * target 68.5 · 40% there"), a slim ProgressTrack when a bar is honest (same
- * getProgressPercent rule as the card's meter, so the two never disagree) and
- * the REAL per-area Sparkline at the right when the merged history has two
- * or more points (same series as the card; nothing drawn when it is thin).
- * One visible affordance: the row itself, which opens the full card in a
- * Sheet. No target → "No target set yet", no bar.
- * ─────────────────────────────────────────────────────────────────────────── */
-export function FocusAreaRow({
-  focusArea,
-  onOpen,
-}: {
-  focusArea: FocusAreaCardData;
-  onOpen: () => void;
-}) {
-  const area = getAreaType(focusArea.area_type);
-  const AreaIcon = area.icon;
-  const hasTarget = focusArea.target_value != null && focusArea.target_value > 0;
-  const metricLabel = formatTargetMetricLabel(focusArea.target_metric) || 'Progress';
-  const pct = hasTarget
-    ? getProgressPercent(
-        focusArea.current_value ?? null,
-        focusArea.target_value!,
-        focusArea.target_metric,
-        focusArea.baseline_value ?? null,
-      )
-    : null;
-  const meta = hasTarget
-    ? [metricLabel, `now ${focusArea.current_value ?? 0}`, `target ${focusArea.target_value}`].join(' · ')
-    : 'No target set yet';
-  const series = focusAreaTrendSeries(focusArea);
-  const hasTrend = series.length >= 2;
-  const title = focusArea.title || 'Untitled';
-
-  return (
-    <InsetGroup.Row
-      as="button"
-      align="start"
-      icon={<AreaIcon size={18} />}
-      trailing={<ChevronRight aria-hidden />}
-      aria-haspopup="dialog"
-      onClick={onOpen}
-    >
-      {/* Ladder layout (player-development.v2.md #2): the title line carries
-          the sparkline; the rail is its own full-width line with a fixed
-          width pct label, so every row's rail starts and ends at the same x
-          and the eye reads one ladder instead of five separate bars. The
-          sparkline sits inside the content column (not `trailing`, whose
-          svg sizing is the 16px glyph recipe). */}
-      <span className="flex flex-col gap-1.5">
-        <span className="flex items-start gap-3">
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
-              {title}
-            </span>
-            <span className="block truncate font-fw-sans text-caption text-text-tertiary">{meta}</span>
-          </span>
-          {hasTrend ? (
-            <Sparkline
-              data={series}
-              goodDirection={isLowerIsBetter(focusArea.target_metric) ? 'down' : 'up'}
-              width={56}
-              height={18}
-              label={`Progress trend for ${title}`}
-              className="mt-0.5 shrink-0"
-            />
-          ) : null}
-        </span>
-        {pct != null ? (
-          <span className="flex items-center gap-3">
-            <ProgressTrack
-              pct={pct}
-              size="sm"
-              tone={pct >= 100 ? 'done' : 'active'}
-              label={`${metricLabel}: ${pct}% toward target`}
-              className="flex-1"
-            />
-            <span className="w-9 shrink-0 text-right font-fw-mono text-caption tabular-nums text-text-secondary">
-              {pct}%
-            </span>
-          </span>
-        ) : null}
-      </span>
-    </InsetGroup.Row>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
  * useFocusAreaSheet / FocusAreaSheet — the phone focus-area Sheet
  * ----------------------------------------------------------------------------
  * `openId` drives the open state; `heldId` keeps the last opened area so the
@@ -514,55 +424,6 @@ export function ladderOrder(areas: readonly FocusAreaCardData[]): FocusAreaCardD
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * ActiveFocusAreaList — the active areas at both widths, CSS-gated so the
- * first paint never flips: below `md` ONE matte group of FocusAreaRows (a tap
- * opens the FocusAreaSheet); from `md` the full cards. Both read in ladder
- * order (least progressed first) so the phone and the desktop agree.
- * ─────────────────────────────────────────────────────────────────────────── */
-
-export function ActiveFocusAreaList({
-  areas,
-  standingByMetric,
-  onOpen,
-  onLogProgress,
-  onComplete,
-  completingId,
-}: {
-  areas: FocusAreaCardData[];
-  standingByMetric: Record<string, PlayerStanding> | undefined;
-  onOpen: (id: string) => void;
-  onLogProgress: (focusArea: FocusAreaCardData) => void;
-  onComplete: (focusArea: FocusAreaCardData) => void;
-  completingId: string | null;
-}) {
-  const ordered = useMemo(() => ladderOrder(areas), [areas]);
-  return (
-    <>
-      <InsetGroup variant="matte" className="md:hidden" aria-label="Active focus areas">
-        {ordered.map((fa) => (
-          <FocusAreaRow key={fa.id} focusArea={fa} onOpen={() => onOpen(fa.id)} />
-        ))}
-      </InsetGroup>
-      <div className="hidden flex-col gap-4 md:flex">
-        {ordered.map((fa, i) => (
-          <FocusAreaCard
-            key={fa.id}
-            focusArea={fa}
-            // eslint-disable-next-line jsx-a11y/aria-role
-            role="player"
-            index={i}
-            onLogProgress={onLogProgress}
-            onComplete={onComplete}
-            completing={completingId === fa.id}
-            standing={standingForArea(fa, standingByMetric)}
-          />
-        ))}
-      </div>
-    </>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
  * ProposedAreaCard — a coach-prescribed focus area awaiting the player's call.
  * A compact matte card showing the target + an Accept / Decline pair. Kept
  * separate from FocusAreaCard (which models active/completed lifecycles) so the
@@ -624,43 +485,6 @@ export function ProposedAreaCard({
         </Button>
       </div>
     </Surface>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
- * PlanSegmentBar — the plan's shape as ONE bar: Active · Completed · Proposed
- * (counts), Completed as the called-out primary readout, "3 of 6 areas
- * complete" as the takeaway. Replaced DevelopmentOverviewInstrument (a 2×2
- * StatMatrix below `md` plus a three-readout panel above it: four numbers
- * for one fact). Hidden below two areas: one area is not a shape.
- * ─────────────────────────────────────────────────────────────────────────── */
-export function PlanSegmentBar({
-  active,
-  completed,
-  proposed = 0,
-  className,
-}: {
-  active: number;
-  completed: number;
-  proposed?: number;
-  className?: string;
-}) {
-  const total = active + completed + proposed;
-  if (total < 2) return null;
-  const parts: SegmentBarPart[] = [
-    { label: 'Active', value: active, tone: 'neutral' },
-    { label: 'Completed', value: completed, tone: 'good' },
-  ];
-  // Proposed areas wait on the player's call: amber, and only when any exist.
-  if (proposed > 0) parts.push({ label: 'Proposed', value: proposed, tone: 'caution' });
-  return (
-    <SegmentBar
-      title="Your plan"
-      parts={parts}
-      primary="good"
-      takeaway={`${completed} of ${total} ${total === 1 ? 'area' : 'areas'} complete`}
-      className={className}
-    />
   );
 }
 
@@ -745,163 +569,534 @@ export function formatAreaValue(value: number, targetMetric: string | null | und
  * moved off the baseline or logged a second point; then the change since
  * the start and how far along the rail that is.
  */
-export function leadAreaVerdict(area: FocusAreaCardData): string {
-  const cur = area.current_value ?? null;
-  const base = area.baseline_value ?? null;
-  const readings = focusAreaTrendEntries(area).length;
-  const delta = cur != null && base != null ? cur - base : null;
-  const hasReading = readings >= 2 || (delta != null && delta !== 0);
-  if (cur == null || delta == null || !hasReading) {
-    return 'No reading since you started; log progress or play a round.';
-  }
-  const metric = area.target_metric;
-  const pct = areaProgress(area);
-  const along = pct != null && pct < 100 ? `, ${pct}% of the way` : '';
-  if (pct != null && pct >= 100) {
-    return delta === 0
-      ? 'Target reached.'
-      : `Target reached, ${delta > 0 ? 'up' : 'down'} ${formatAreaValue(Math.abs(delta), metric)} since you started.`;
-  }
-  if (delta === 0) return `Holding at ${formatAreaValue(cur, metric)} since you started${along}.`;
-  return `${delta > 0 ? 'Up' : 'Down'} ${formatAreaValue(Math.abs(delta), metric)} since you started${along}.`;
+export function SectionHead({
+  children,
+  action,
+  id,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  id?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id={id} className="font-fw-display text-h3 font-semibold text-text-primary">
+          {children}
+        </h2>
+        {action}
+      </div>
+      <div className="h-px w-full bg-accent-300" aria-hidden="true" />
+    </div>
+  );
 }
 
-export function LeadAreaStage({
-  area,
-  standing,
-  onOpen,
-  className,
+/**
+ * The masthead verdict: one honest sentence assembled from clauses, with the
+ * names and numbers as links. No eyebrow and no title, because DrillPanel
+ * already prints "Development" one line above on the live host and
+ * `CoachHelmShell` prints its own heading on the preview host; a second title
+ * would be duplication, not anatomy.
+ */
+export function DevelopmentVerdict({
+  parts,
+  facts,
 }: {
-  area: FocusAreaCardData;
-  standing?: PlayerStanding;
-  onOpen: () => void;
-  className?: string;
+  parts: readonly VerdictPart[];
+  facts?: React.ReactNode;
 }) {
-  const metric = area.target_metric ?? null;
-  const cfg = metric ? getMetricRenderConfig(metric) : null;
-  const metricLabel = formatTargetMetricLabel(metric) || 'Progress';
-  const title = area.title || getAreaType(area.area_type).label;
-  const cur = area.current_value ?? null;
-  const base = area.baseline_value ?? null;
-  const target = area.target_value ?? null;
-  const entries = focusAreaTrendEntries(area);
-  const pct = areaProgress(area);
-  const lowerBetter = isLowerIsBetter(metric);
-  const delta = cur != null && base != null ? cur - base : null;
-  const hasReading = entries.length >= 2 || (delta != null && delta !== 0);
-  const fmt = (v: number) => formatAreaValue(v, metric);
-  const timeframe = formatTimeframe(area);
-  const targetLine =
-    target != null ? `target ${fmt(target)}${timeframe ? ` ${timeframe}` : ''}` : 'No target set yet';
-  const subline = metricLabel !== title && metric ? `${metricLabel} · ${targetLine}` : targetLine;
-  const points: RibbonPoint[] = entries.map((e) => ({ x: formatDay(e.day), y: e.value }));
-  const last = entries[entries.length - 1];
-  const showStanding = standing != null && cfg != null;
+  if (parts.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="max-w-[64ch] font-fw-display text-h3 font-normal leading-snug text-text-primary">
+        {parts.map((part, i) => (
+          <span key={`${part.text}-${i}`}>
+            {i > 0 ? ' ' : null}
+            {part.href ? (
+              <Link
+                href={part.href}
+                className="text-text-primary underline decoration-accent-300 decoration-[1.5px] underline-offset-[5px] hover:decoration-accent-500"
+              >
+                {part.text}
+              </Link>
+            ) : (
+              part.text
+            )}
+          </span>
+        ))}
+      </p>
+      {facts ? (
+        <p className="font-fw-sans text-caption text-text-tertiary">{facts}</p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The stage's frame, decided by host.
+ *
+ * DO NOT "restore" a border on the stage host. Under `host="stage"` DrillPanel
+ * is already this page's one Surface (`modules/DrillPanel.tsx:28-53`: rounded,
+ * bordered, shadowed), so a Surface here would be a nested card, the first ban
+ * on LANGUAGE.md's list. Under `host="page"` nothing else on the route is a
+ * Surface, so the stage takes one.
+ */
+export function StageFrame({
+  host,
+  children,
+}: {
+  host: 'stage' | 'page';
+  children: React.ReactNode;
+}) {
+  if (host === 'stage') return <div data-slot="development-stage">{children}</div>;
+  return (
+    <Surface padding="lg" data-slot="development-stage">
+      {children}
+    </Surface>
+  );
+}
+
+/**
+ * Build the instrument's rows. Presentation-adjacent (it formats values and
+ * resolves metric labels) but derives nothing: every judgement comes from
+ * `development-logic.ts`, so the row and the table below it cannot disagree.
+ */
+export function focusFieldRows(
+  areas: readonly FocusAreaCardData[],
+  onHref?: (id: string) => string,
+): FocusFieldRow[] {
+  return ladderOrder(areas).map((fa) => {
+    const state = fieldRowState(fa);
+    const trend = rowTrend(fa);
+    const current =
+      typeof fa.current_value === 'number' && Number.isFinite(fa.current_value)
+        ? fa.current_value
+        : null;
+    return {
+      id: fa.id,
+      title: fa.title || 'Untitled area',
+      metricLabel: formatTargetMetricLabel(fa.target_metric) || 'Progress',
+      href: onHref?.(fa.id),
+      state,
+      readout: rowReadout(state),
+      currentDisplay: current === null ? null : formatAreaValue(current, fa.target_metric),
+      trend: trend
+        ? {
+            direction: trend.direction,
+            magnitude: formatAreaValue(trend.delta, fa.target_metric),
+          }
+        : null,
+    };
+  });
+}
+
+/**
+ * The ledger row: bare columns divided by vertical hairlines, never equal
+ * cards. Only non-empty columns are passed in, and the grid takes the shape of
+ * however many arrive, so a player with no goals does not get an empty third.
+ *
+ * The split is fractional (5/4/3, 7/5), so a narrow width costs every column
+ * proportionally instead of starving one. Per the amended breakpoint rule the
+ * split point is whatever width still holds every column's content whole; it
+ * is verified in the captures, not chosen by breakpoint name.
+ */
+const LEDGER_SPANS: Record<number, string[]> = {
+  1: ['md:col-span-12'],
+  2: ['md:col-span-7', 'md:col-span-5'],
+  3: ['md:col-span-5', 'md:col-span-4', 'md:col-span-3'],
+};
+
+export function LedgerRow({ columns }: { columns: readonly React.ReactNode[] }) {
+  const present = columns.filter(Boolean);
+  if (present.length === 0) return null;
+  const spans = LEDGER_SPANS[present.length] ?? LEDGER_SPANS[3]!;
+  return (
+    <div
+      data-slot="development-ledger"
+      className="grid grid-cols-1 divide-y divide-border-subtle md:grid-cols-12 md:divide-x md:divide-y-0"
+    >
+      {present.map((column, i) => (
+        <div
+          key={i}
+          className={cn(
+            'flex min-w-0 flex-col gap-3 py-5 md:py-0',
+            spans[i],
+            // The hairlines are the division; the padding keeps content off
+            // them. First column has no left rule, so it needs no left pad.
+            i > 0 ? 'md:pl-6' : '',
+            i < present.length - 1 ? 'md:pr-6' : '',
+          )}
+        >
+          {column}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** One hairline row inside a ledger column. */
+export function LedgerRowItem({
+  title,
+  meta,
+  trailing,
+  href,
+  onClick,
+}: {
+  title: React.ReactNode;
+  meta?: React.ReactNode;
+  trailing?: React.ReactNode;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const body = (
+    <>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+          {title}
+        </span>
+        {meta ? (
+          <span className="truncate font-fw-sans text-caption text-text-tertiary">{meta}</span>
+        ) : null}
+      </span>
+      {trailing ? <span className="shrink-0">{trailing}</span> : null}
+    </>
+  );
+  const shell =
+    'flex min-h-11 w-full items-center justify-between gap-3 border-b border-border-subtle py-2 text-left last:border-b-0';
+  if (href) {
+    return (
+      <Link href={href} className={cn(shell, fwTransition, 'hover:text-accent-700')}>
+        {body}
+      </Link>
+    );
+  }
+  if (onClick) {
+    return (
+      // The hairline ROW is the tap target. <Button> brings its own
+      // min-height, padding and hover fill, which would turn a ledger row
+      // back into the tile this page bans.
+      // eslint-disable-next-line helm/no-raw-button -- see above
+      <button type="button" onClick={onClick} className={cn(shell, fwFocusRing, fwTransition)}>
+        {body}
+      </button>
+    );
+  }
+  return <div className={shell}>{body}</div>;
+}
+
+/**
+ * The Why column: the strongest causal relationships, one short row each.
+ *
+ * `dose_response` is a plain text tag, NEVER accent ink: on this page green
+ * means improving or under par, and "more of it helps more" is a property of
+ * the relationship, not a performance signal. Colouring it green would spend
+ * the page's one meaningful hue on a taxonomy label.
+ */
+export function WhyRows({
+  relationships,
+  limit = 4,
+}: {
+  relationships: readonly CausalRelationshipRow[];
+  limit?: number;
+}) {
+  const rows = useMemo(
+    () =>
+      [...relationships]
+        .sort((a, b) => b.strength * b.confidence - a.strength * a.confidence)
+        .slice(0, limit),
+    [relationships, limit],
+  );
+  if (rows.length === 0) return null;
+  return (
+    <div className="flex flex-col">
+      {rows.map((rel) => (
+        <div
+          key={rel.id}
+          className="flex flex-col gap-1 border-b border-border-subtle py-2.5 last:border-b-0"
+        >
+          <span className="font-fw-sans text-body-sm font-medium text-text-primary">
+            {rel.cause} tracks with {rel.effect}
+            {rel.dose_response ? (
+              <span className="ml-2 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                dose response
+              </span>
+            ) : null}
+          </span>
+          {rel.mechanism ? (
+            <span className="line-clamp-2 font-fw-sans text-caption text-text-tertiary">
+              {rel.mechanism}
+            </span>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── The readings log ───────────────────────────────────────────────────── */
+
+const TH =
+  'py-2 text-left font-fw-sans text-eyebrow font-normal uppercase tracking-[0.07em] text-text-tertiary';
+const TD = 'py-2.5 align-top font-fw-sans text-body-sm text-text-primary';
+const NUM = 'text-right font-fw-mono tabular-nums';
+
+const LOG_PAGE = 10;
+
+/**
+ * The dated evidence behind the stage: one row is one reading a player logged,
+ * newest first, across active and completed areas. The stage plots; this is
+ * the rows it plotted, which is also why the marks on the stage are not links
+ * — every reading is reachable, dated and described here.
+ */
+export function ReadingsLogTable({
+  rows,
+  onOpenArea,
+  onViewAll,
+}: {
+  rows: readonly ReadingLogRow[];
+  onOpenArea: (areaId: string) => void;
+  onViewAll?: () => void;
+}) {
+  const shown = rows.slice(0, LOG_PAGE);
+  if (shown.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full border-collapse">
+          <caption className="sr-only">Every logged reading, newest first</caption>
+          <thead>
+            <tr className="border-b border-border-strong">
+              <th scope="col" className={TH}>
+                Date
+              </th>
+              <th scope="col" className={TH}>
+                Area
+              </th>
+              <th scope="col" className={cn(TH, 'text-right')}>
+                Value
+              </th>
+              <th scope="col" className={cn(TH, 'hidden text-right md:table-cell')}>
+                Change
+              </th>
+              <th scope="col" className={cn(TH, 'hidden md:table-cell')}>
+                Note
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((row) => (
+              <tr key={row.key} className="border-b border-border-subtle">
+                <td className={cn(TD, 'whitespace-nowrap font-fw-mono tabular-nums text-text-secondary')}>
+                  {formatDay(row.day)}
+                </td>
+                <td className={TD}>
+                  {/* eslint-disable-next-line helm/no-raw-button -- one table
+                      row is one link (LANGUAGE.md); this one opens a Sheet
+                      rather than navigating, so it cannot be a <Link>, and
+                      <Button>'s chrome would break the row rhythm. */}
+                  <button
+                    type="button"
+                    onClick={() => onOpenArea(row.areaId)}
+                    className={cn(
+                      'flex min-h-11 items-center text-left font-medium hover:text-accent-700',
+                      fwFocusRing,
+                      fwTransition,
+                    )}
+                  >
+                    <span className="truncate">{row.areaTitle}</span>
+                    {row.completed ? (
+                      <span className="ml-2 shrink-0 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                        done
+                      </span>
+                    ) : null}
+                  </button>
+                </td>
+                <td className={cn(TD, NUM)}>{formatAreaValue(row.value, row.targetMetric)}</td>
+                {/* Blank, never 0, on an area's first reading: a zero here
+                    would read as "logged, no movement", which is a lie. */}
+                <td className={cn(TD, NUM, 'hidden md:table-cell')}>
+                  {row.change === null ? (
+                    ''
+                  ) : (
+                    <span
+                      className={cn(
+                        row.towardTarget === true && 'text-accent-700',
+                        row.towardTarget === false && 'text-fw-warning-ink',
+                      )}
+                    >
+                      {row.change > 0 ? '+' : row.change < 0 ? '−' : ''}
+                      {formatAreaValue(Math.abs(row.change), row.targetMetric)}
+                    </span>
+                  )}
+                </td>
+                <td className={cn(TD, 'hidden max-w-[28ch] md:table-cell')}>
+                  <span className="line-clamp-1 text-text-secondary">{row.note ?? ''}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rows.length > shown.length && onViewAll ? (
+        <Button variant="ghost" className="self-start" onClick={onViewAll}>
+          View all {rows.length}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * One pending decision as a hairline ledger row.
+ *
+ * A coach's PROPOSED focus area and CoachHelm's suggested GOAL are the same
+ * thing to a player, something waiting on their answer, so they share a column.
+ * They are NOT the same underneath: a proposal accepts through the focus-area
+ * actions, a suggestion through `acceptGoalSuggestion`. Each row says which it
+ * is in its own label, because a blind shared shape would let a player accept
+ * a goal thinking they accepted their coach's plan.
+ *
+ * The suggestion wiring is reproduced here rather than reusing GoalsSection's
+ * `SuggestionRow`: that one is an `InsetGroup.Row`, and a matte inset panel
+ * inside a bare ledger column is the nested card this page bans. The server
+ * actions are the shared contract; the row shape is not.
+ */
+export function SuggestionLedgerRow({ view }: { view: GoalSuggestionView }) {
+  const { suggestion, display_label, unit } = view;
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) => {
+    startTransition(async () => {
+      try {
+        const result = await fn();
+        if (!result.ok) {
+          fairwayToast.danger(result.error || 'Something went wrong');
+          return;
+        }
+        fairwayToast.success(ok);
+        router.refresh();
+      } catch {
+        fairwayToast.danger('Something went wrong');
+      }
+    });
+  };
+
+  const target =
+    suggestion.suggested_target_value !== null
+      ? formatValue(suggestion.suggested_target_value, unit)
+      : null;
 
   return (
-    <section aria-label="Your next stroke" className={cn('flex flex-col gap-4', className)}>
-      <Eyebrow>Your next stroke</Eyebrow>
-      {/* A raw button on purpose: the press target is a block of Readout,
-          verdict and rail, which the Button primitive's inline label span
-          cannot host. Same recipe as InsetGroup.Row's `as="button"`. */}
-      {/* eslint-disable-next-line helm/no-raw-button */}
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-haspopup="dialog"
+    <LedgerRowItem
+      title={display_label}
+      meta={
+        <>
+          Suggested goal
+          {target ? `, target ${target}` : ''}
+          {`, ${suggestion.suggested_window_days}-day window`}
+        </>
+      }
+      trailing={
+        <span className="inline-flex items-center gap-1">
+          <Button
+            variant="secondary"
+            busy={isPending}
+            disabled={isPending}
+            onClick={() => run(() => acceptGoalSuggestion(suggestion.id), 'Goal started')}
+          >
+            Accept
+          </Button>
+          <Button
+            variant="ghost"
+            disabled={isPending}
+            onClick={() => run(() => dismissGoalSuggestion(suggestion.id), 'Suggestion dismissed')}
+          >
+            Dismiss
+          </Button>
+        </span>
+      }
+    />
+  );
+}
+
+/** A coach-prescribed focus area as a hairline ledger row. */
+export function ProposedLedgerRow({
+  focusArea,
+  deciding,
+  onAccept,
+  onDecline,
+}: {
+  focusArea: FocusAreaCardData;
+  deciding: boolean;
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const target =
+    focusArea.target_value != null
+      ? formatAreaValue(focusArea.target_value, focusArea.target_metric)
+      : null;
+  // Absent on legacy rows and until migration 20260621230000 lands, so it is
+  // simply omitted rather than rendered as an empty timeframe.
+  const timeframe = formatTimeframe(focusArea);
+  // Names WHAT the target measures. Without it the row reads "target 68.5",
+  // a number with no unit and no subject.
+  const metricLabel = formatTargetMetricLabel(focusArea.target_metric);
+  return (
+    <LedgerRowItem
+      title={focusArea.title || 'Untitled area'}
+      meta={
+        <>
+          From your coach
+          {metricLabel ? `, ${metricLabel}` : ''}
+          {target ? `, target ${target}` : ''}
+          {timeframe ? `, ${timeframe}` : ''}
+        </>
+      }
+      trailing={
+        <span className="inline-flex items-center gap-1">
+          <Button variant="secondary" busy={deciding} disabled={deciding} onClick={onAccept}>
+            Accept
+          </Button>
+          <Button variant="ghost" disabled={deciding} onClick={onDecline}>
+            Decline
+          </Button>
+        </span>
+      }
+    />
+  );
+}
+
+/**
+ * One readout in the stage's readouts column: a number typeset as part of the
+ * page, not a tile. No panel, no border, no fill behind the figure. Green and
+ * amber are ink on the numeral itself, which is the only place LANGUAGE.md
+ * spends them.
+ */
+export function FieldReadout({
+  label,
+  value,
+  tone = 'neutral',
+}: {
+  label: string;
+  value: number;
+  tone?: 'neutral' | 'good' | 'warn';
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span
         className={cn(
-          'group flex min-h-11 w-full flex-col gap-4 rounded-fw-md text-left',
-          fwTransition,
-          fwFocusRing,
-          '[@media(hover:hover)]:hover:bg-surface-tint active:bg-surface-tint',
-          '-mx-2 w-[calc(100%+1rem)] px-2 py-1',
+          'font-fw-mono text-h3 font-medium tabular-nums leading-none',
+          tone === 'good' && 'text-accent-700',
+          tone === 'warn' && 'text-fw-warning-ink',
+          tone === 'neutral' && 'text-text-primary',
         )}
       >
-        <span className="flex w-full items-start justify-between gap-3">
-          <span className="flex min-w-0 flex-col gap-1">
-            <Readout
-              size="lg"
-              value={cur ?? undefined}
-              display={cur != null ? fmt(cur) : undefined}
-              label={title}
-              state={cur == null ? 'awaiting' : 'live'}
-              samples={cur == null ? { have: 0, need: 1 } : undefined}
-              awaitingLabel="No value yet"
-              delta={
-                delta != null && hasReading
-                  ? {
-                      value: delta,
-                      direction:
-                        delta === 0 ? 'flat' : (delta > 0) !== lowerBetter ? 'up' : 'down',
-                      format: (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt(Math.abs(v))}`,
-                      caption: 'since start',
-                    }
-                  : undefined
-              }
-            />
-            <span className="font-fw-sans text-caption text-text-tertiary">{subline}</span>
-          </span>
-          <ChevronRight
-            aria-hidden
-            className="mt-1 h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5"
-          />
-        </span>
-        <span className="font-fw-sans text-body-sm text-text-secondary">{leadAreaVerdict(area)}</span>
-        {pct != null && cur != null && target != null ? (
-          <span className="flex w-full flex-col gap-1.5">
-            <ProgressTrack
-              pct={pct}
-              size="md"
-              tone={pct >= 100 ? 'done' : 'active'}
-              label={`${metricLabel}: ${pct}% toward target`}
-            />
-            <span className="flex justify-between font-fw-mono text-caption tabular-nums text-text-tertiary">
-              <span>{fmt(cur)} now</span>
-              <span>{fmt(target)} target</span>
-            </span>
-          </span>
-        ) : null}
-      </button>
-
-      {points.length >= 2 && last ? (
-        <Ribbon
-          title={null}
-          seriesName={metricLabel}
-          data={points}
-          benchmark={target != null ? { value: target, label: `Target ${fmt(target)}` } : undefined}
-          valueFormatter={fmt}
-          goodDirection={lowerBetter ? 'down' : 'up'}
-          minPoints={2}
-          markLast
-          height={160}
-          readoutPlacement="below"
-          readoutLabels={(first) => ({
-            value: `Last: ${fmt(last.value)} · ${formatDay(last.day)}`,
-            delta: `vs ${String(first.x)}`,
-          })}
-        />
-      ) : null}
-
-      {showStanding ? (
-        <StandingBars
-          frame="bare"
-          size="sm"
-          layout="compact"
-          viewer_context="self"
-          metric_id={standing.metric_id}
-          metric_label={cfg.display_label}
-          player_value={standing.player_value}
-          team_avg={standing.team_avg}
-          team_n={standing.team_n}
-          team_pct={standing.team_pct}
-          pga_value={standing.pga_value}
-          is_womens={standing.is_womens}
-          direction={cfg.direction}
-          unit={cfg.unit}
-          scale={cfg.default_scale}
-          show_cohort_text={false}
-        />
-      ) : null}
-    </section>
+        {value}
+      </span>
+      <span className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+        {label}
+      </span>
+    </div>
   );
 }

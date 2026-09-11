@@ -141,6 +141,8 @@ describe('FairwayMyDevelopment — no raw snake_case metric key leaks', () => {
       />,
     );
     expect(screen.queryByText('custom_swing_tempo')).toBeNull();
-    expect(screen.getByText('Custom Swing Tempo')).not.toBeNull();
+    // The label now sits inside the decision row's meta line rather than in a
+    // chip of its own, so it is one text node among several.
+    expect(screen.getByText(/Custom Swing Tempo/)).not.toBeNull();
   });
 });

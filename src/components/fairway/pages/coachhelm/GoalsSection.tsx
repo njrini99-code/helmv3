@@ -69,6 +69,7 @@ import {
   dismissGoalSuggestion,
 } from '@/app/golf/actions/v3/goals';
 import type { Goal, GoalSuggestion } from '@/lib/coachhelm/v3/goals/types';
+import { cn } from '@/lib/utils';
 import type { Unit } from '@/components/golf/coachhelm/v3/StandingBar';
 
 import {
@@ -364,6 +365,58 @@ function GoalSheet({
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * GoalLedgerRow — one goal as a hairline row in the development page's ledger.
+ * Name, then `now` and `target` as two mono columns with NO glyph between them
+ * (an arrow between two numbers is chrome pretending to be data), then the
+ * percent from `progressPct`, the shipped function, so this number and the
+ * goal's own Sheet can never disagree.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function GoalLedgerRow({
+  data,
+  onOpen,
+  achieved = false,
+}: {
+  data: FairwayGoalCardData;
+  onOpen: () => void;
+  achieved?: boolean;
+}) {
+  const { goal } = data;
+  const cfg = getMetricRenderConfig(goal.metric_id);
+  const fmt = (v: number) => (cfg ? formatValue(v, cfg.unit) : String(v));
+  const pct = progressPct(goal);
+  return (
+    // The hairline row is the tap target; <Button> chrome would turn a ledger
+    // row into a tile.
+    // eslint-disable-next-line helm/no-raw-button -- see above
+    <button
+      type="button"
+      onClick={onOpen}
+      data-goal-id={goal.id}
+      className="flex min-h-11 w-full items-center justify-between gap-3 border-b border-border-subtle py-2 text-left last:border-b-0"
+    >
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+          {goalDisplayLabel(goal)}
+        </span>
+        <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+          {goal.current_value !== null ? `now ${fmt(goal.current_value)}` : 'no reading'}
+          {goal.target_value !== null ? `, target ${fmt(goal.target_value)}` : ''}
+        </span>
+      </span>
+      <span
+        className={cn(
+          'shrink-0 font-fw-mono text-body-sm tabular-nums',
+          achieved ? 'text-accent-700' : 'text-text-secondary',
+        )}
+      >
+        {achieved ? 'hit' : pct !== null ? `${pct}%` : ''}
+      </span>
+    </button>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
  * Suggestion row — one seam row of the "CoachHelm suggests" InsetGroup:
  * label · target line, then ONE primary Accept and a quiet Dismiss glyph
  * (player-development.mobile.md #4). Two text buttons used to crush the
@@ -579,6 +632,79 @@ export function GoalsSection({
       Set a goal
     </Button>
   );
+
+  /* ── `inline`: the Goals column of the development page's ledger row
+        (player-development.v3.md #3). Bare hairline rows on the canvas, no
+        Surface and no heading of its own: the page prints the section head
+        with the green ruling, and the one Surface on that page is already
+        spent. Suggestions are NOT rendered here; they belong to the page's
+        Decisions column beside the coach's proposed focus areas, because a
+        suggestion and a proposal are the same kind of thing to a player,
+        which is a decision waiting on them. ── */
+  if (inline) {
+    return (
+      <div data-slot="goals-section" className="flex min-w-0 flex-col gap-4">
+        {hasGoals ? (
+          <div className="flex flex-col">
+            {activeGoals.map((data) => (
+              <GoalLedgerRow
+                key={data.goal.id}
+                data={data}
+                onOpen={() => goalSheet.openGoal(data.goal.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          /* One honest line and ONE quiet control. The filled primary on this
+             page belongs to the masthead; a second one here made two competing
+             primaries in the same eyeline (audit 2026-09-10). */
+          <div className="flex flex-col gap-2">
+            <p className="font-fw-sans text-body-sm text-text-secondary">
+              {focusAreaCount > 0
+                ? `No goals set yet. A goal puts a number on one stat; you have ${focusAreaCount} focus ${
+                    focusAreaCount === 1 ? 'area' : 'areas'
+                  } to set one on.`
+                : 'No goals set yet. A goal puts a number on one stat you want to move.'}
+            </p>
+            {canCreate ? (
+              <Button variant="ghost" className="self-start" onClick={() => setCreateOpen(true)}>
+                Set a goal
+              </Button>
+            ) : null}
+          </div>
+        )}
+
+        {role === 'player' && achievedGoals.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <h3 className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+              Recent wins
+            </h3>
+            <div className="flex flex-col">
+              {achievedGoals.map((data) => (
+                <GoalLedgerRow
+                  key={data.goal.id}
+                  data={data}
+                  achieved
+                  onOpen={() => goalSheet.openGoal(data.goal.id)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {hasGoals && canCreate ? (
+          <Button variant="ghost" className="self-start" onClick={() => setCreateOpen(true)}>
+            Set a goal
+          </Button>
+        ) : null}
+
+        <GoalSheet data={goalSheet.data} open={goalSheet.open} onClose={goalSheet.close} role={role} />
+        {canCreate ? (
+          <GoalCreationModal open={createOpen} onClose={() => setCreateOpen(false)} />
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <section data-slot="goals-section" className="flex flex-col gap-6">
